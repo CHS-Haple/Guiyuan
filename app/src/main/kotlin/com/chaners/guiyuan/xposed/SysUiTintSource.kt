@@ -24,6 +24,8 @@ internal object SysUiTintSource {
     private const val UPDATE_HOOK_ID = "combinedstatus.tint.battery.update"
     private const val INTERNAL_HOOK_ID = "combinedstatus.tint.battery.internal"
     private val lastStates = WeakHashMap<View, TintState>()
+    // Native reads and successful owner delivery are independent facts.
+    private val deliveredStates = WeakHashMap<View, TintState>()
     private val firstEventLogged = WeakHashMap<View, Unit>()
     private val batteryIconStructureLogged = WeakHashMap<View, Unit>()
     private val batteryIconClipFields = HashMap<Class<*>, List<Field>>()
@@ -44,6 +46,7 @@ internal object SysUiTintSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onTintState: (TintUpdate) -> Unit,
+        onRuntimeFailure: (Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
@@ -101,6 +104,7 @@ internal object SysUiTintSource {
                                     sourceView = sourceView,
                                     percentField = percentField,
                                     onTintState = onTintState,
+                                    onRuntimeFailure = onRuntimeFailure,
                                 )
                             diagnose {
                                 if (onEvent != null && isDetailedDiagnosticsEnabled()) {
@@ -162,6 +166,7 @@ internal object SysUiTintSource {
                                 sourceView = sourceView,
                                 percentField = percentField,
                                 onTintState = onTintState,
+                                onRuntimeFailure = onRuntimeFailure,
                             )
                             diagnose {
                                 if (onEvent != null && isDetailedDiagnosticsEnabled()) {
@@ -204,6 +209,7 @@ internal object SysUiTintSource {
         sourceView: View,
         percentField: Field,
         onTintState: (TintUpdate) -> Unit,
+        onRuntimeFailure: (Throwable) -> Unit,
     ): TintState? {
         val state =
             readAppliedState(
@@ -213,17 +219,37 @@ internal object SysUiTintSource {
 
         val changed =
             synchronized(this) {
-                val changed = lastStates[sourceView] != state
-                if (changed) {
-                    lastStates[sourceView] = state
-                }
+                lastStates[sourceView] = state
                 if (lastSourceView?.get() !== sourceView) {
                     lastSourceView = WeakReference(sourceView)
                 }
-                changed
+                if (deliveredStates[sourceView] == state) {
+                    false
+                } else {
+                    deliveredStates[sourceView] = state
+                    true
+                }
             }
         if (changed) {
-            onTintState(TintUpdate(sourceView, state))
+            try {
+                onTintState(TintUpdate(sourceView, state))
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                try {
+                    onRuntimeFailure(error)
+                } catch (failure: Throwable) {
+                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                    if (failure !== error) error.addSuppressed(failure)
+                } finally {
+                    // Keep the failed delivery marked during native ownership cleanup.
+                    synchronized(this) {
+                        if (deliveredStates[sourceView] == state) {
+                            deliveredStates.remove(sourceView)
+                        }
+                    }
+                }
+                return null
+            }
         }
         return state
     }
@@ -391,6 +417,7 @@ internal object SysUiTintSource {
     private fun clearSourceState() {
         hooksReady = false
         lastStates.clear()
+        deliveredStates.clear()
         firstEventLogged.clear()
         batteryIconStructureLogged.clear()
         batteryIconClipFields.clear()
