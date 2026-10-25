@@ -608,9 +608,8 @@ internal object NativeStatusObserver {
                 noSimVisible = noSimVisible,
                 noSimIcon = noSimIcon,
             )
-        if (presentation != lastStatusPresentation) {
-            lastStatusPresentation = presentation
-            statusPresentationSink?.invoke(presentation)
+        val sink = statusPresentationSink
+        if (sink != null && deliverPresentation(presentation, sink)) {
             eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
                 "statusIconPresentation source=" + source +
                     " tint=" +
@@ -658,6 +657,27 @@ internal object NativeStatusObserver {
             )
         }
 
+    }
+
+    @Synchronized
+    internal fun deliverPresentation(
+        presentation: PresentationStore.StatusIconPresentation,
+        deliver: (PresentationStore.StatusIconPresentation) -> Unit,
+    ): Boolean {
+        if (presentation == lastStatusPresentation) return false
+
+        val previous = lastStatusPresentation
+        lastStatusPresentation = presentation
+        try {
+            deliver(presentation)
+        } catch (error: Throwable) {
+            // Keep the provisional value during callbacks to avoid reentrant delivery.
+            if (lastStatusPresentation == presentation) {
+                lastStatusPresentation = previous
+            }
+            throw error
+        }
+        return true
     }
 
     private fun isNativeStatusIconVisible(view: View): Boolean {
