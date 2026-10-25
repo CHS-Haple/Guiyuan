@@ -44,6 +44,27 @@ class SysUiDefaultDataSubSourceTest {
     }
 
     @Test
+    fun failedOlderForcedDeliveryDoesNotUndoSameIdSuccess() {
+        SysUiDefaultDataSubSource.detach()
+        try {
+            val failure = IllegalStateException("older callback")
+            assertSame(
+                failure,
+                runCatching {
+                    SysUiDefaultDataSubSource.deliverSubscription(8, true) {
+                        assertTrue(SysUiDefaultDataSubSource.deliverSubscription(8, true) {})
+                        throw failure
+                    }
+                }.exceptionOrNull(),
+            )
+            assertEquals(8, SysUiDefaultDataSubSource.currentSubscriptionId())
+            assertFalse(SysUiDefaultDataSubSource.deliverSubscription(8, false) {})
+        } finally {
+            SysUiDefaultDataSubSource.detach()
+        }
+    }
+
+    @Test
     fun oldDeliveryFailureDoesNotEraseNewerSuccess() {
         SysUiDefaultDataSubSource.detach()
         try {

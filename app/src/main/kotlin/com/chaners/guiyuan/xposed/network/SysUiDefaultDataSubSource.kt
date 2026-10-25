@@ -36,7 +36,9 @@ internal object SysUiDefaultDataSubSource {
     @Volatile
     private var currentSubscriptionId: Int =
         SubscriptionManager.INVALID_SUBSCRIPTION_ID
-    private var deliveredSubscriptionId: Int? = null
+    private class Delivery(val subscriptionId: Int)
+
+    private var lastDelivery: Delivery? = null
 
     fun currentSubscriptionId(): Int = currentSubscriptionId
 
@@ -97,6 +99,8 @@ internal object SysUiDefaultDataSubSource {
 
         this.onChanged = onChanged
         this.onEvent = onEvent
+        // A failed seed must not leave the previous listener's receipt in place.
+        lastDelivery = null
 
         // Keep the seed even when registration fails, without retaining its callbacks.
         try {
@@ -108,7 +112,7 @@ internal object SysUiDefaultDataSubSource {
             if (receiver == null) {
                 this.onChanged = null
                 this.onEvent = null
-                deliveredSubscriptionId = null
+                lastDelivery = null
             }
         }
         return receiver != null
@@ -123,7 +127,7 @@ internal object SysUiDefaultDataSubSource {
             onEvent = null
             currentSubscriptionId =
                 SubscriptionManager.INVALID_SUBSCRIPTION_ID
-            deliveredSubscriptionId = null
+            lastDelivery = null
         }
     }
 
@@ -171,14 +175,15 @@ internal object SysUiDefaultDataSubSource {
         deliver: (Int) -> Unit,
     ): Boolean {
         currentSubscriptionId = next
-        if (!force && deliveredSubscriptionId == next) return false
+        if (!force && lastDelivery?.subscriptionId == next) return false
 
-        val previous = deliveredSubscriptionId
-        deliveredSubscriptionId = next
+        val previous = lastDelivery
+        val pending = Delivery(next)
+        lastDelivery = pending
         try {
             deliver(next)
         } catch (error: Throwable) {
-            if (deliveredSubscriptionId == next) deliveredSubscriptionId = previous
+            if (lastDelivery === pending) lastDelivery = previous
             throw error
         }
         return true
@@ -192,6 +197,6 @@ internal object SysUiDefaultDataSubSource {
         }
         receiver = null
         registeredContext = null
-        deliveredSubscriptionId = null
+        lastDelivery = null
     }
 }
