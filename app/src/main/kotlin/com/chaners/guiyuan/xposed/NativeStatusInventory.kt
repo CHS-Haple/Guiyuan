@@ -37,8 +37,8 @@ internal object NativeStatusInventory {
 
     fun schedule(
         host: Any,
-        onSnapshot: (Snapshot) -> Unit,
         defer: Boolean = false,
+        onSnapshot: (Snapshot) -> Unit,
     ) {
         detach()
         val hostView = host as? View ?: return
