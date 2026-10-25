@@ -9,6 +9,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal object SysUiPresentationRuntime {
     private var current: AttachResult? = null
 
+    internal fun throwIfFatal(error: Throwable) {
+        if (error is VirtualMachineError || error is ThreadDeath) throw error
+    }
+
     val installedHookCount: Int
         @Synchronized get() =
             current?.let {
@@ -79,7 +83,7 @@ internal object SysUiPresentationRuntime {
             try {
                 onKeyguardAodEvent?.invoke(message)
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                throwIfFatal(error)
                 if (warned.compareAndSet(false, true)) {
                     runCatching { Log.w("Guiyuan[Aod]", "Install diagnostic failed", error) }
                 }
@@ -96,6 +100,7 @@ internal object SysUiPresentationRuntime {
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
+                throwIfFatal(error)
                 tintFailure = error.message ?: error.javaClass.simpleName
                 SysUiTintSource.failedInstallHookCount
             }
@@ -109,6 +114,7 @@ internal object SysUiPresentationRuntime {
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
+                throwIfFatal(error)
                 reportAodFailure(
                     "keyguardAod install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
@@ -127,6 +133,7 @@ internal object SysUiPresentationRuntime {
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
+                throwIfFatal(error)
                 reportAodFailure(
                     "keyguardFullAod install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
@@ -144,6 +151,7 @@ internal object SysUiPresentationRuntime {
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
+                throwIfFatal(error)
                 reportAodFailure(
                     "keyguardStatusIconTransition install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
@@ -162,6 +170,7 @@ internal object SysUiPresentationRuntime {
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
+                throwIfFatal(error)
                 sceneFailure = error.message ?: error.javaClass.simpleName
                 0
             }
@@ -174,6 +183,7 @@ internal object SysUiPresentationRuntime {
                     onChanged = onMobileTypeChanged,
                 ).size
             }.getOrElse { error ->
+                throwIfFatal(error)
                 mobileTypeFailure = error.message ?: error.javaClass.simpleName
                 0
             }
