@@ -78,7 +78,10 @@ internal object SysUiNetworkSource {
         }
 
     private val wifiRoots = WeakHashMap<ViewGroup, Any?>()
-    private val mobileRoots = WeakHashMap<ViewGroup, Int>()
+    // A new native bind can reuse the same subscription ID.
+    private class MobileBinding(val subscriptionId: Int)
+
+    private val mobileRoots = WeakHashMap<ViewGroup, MobileBinding>()
     private val lastWifiEvents = WeakHashMap<ImageView, String>()
     private val lastWifiTaggedResources = WeakHashMap<ImageView, Int?>()
     private val lastMobileEvents = WeakHashMap<ImageView, String>()
@@ -501,9 +504,9 @@ internal object SysUiNetworkSource {
         }
 
         val mobile = ArrayList<Any>(mobileRoots.size)
-        mobileRoots.forEach { (root, subscriptionId) ->
+        mobileRoots.forEach { (root, binding) ->
             if (root.isAttachedToWindow) {
-                mobile.add(arrayOf(root, subscriptionId))
+                mobile.add(arrayOf(root, binding.subscriptionId))
             }
         }
 
@@ -546,7 +549,7 @@ internal object SysUiNetworkSource {
             val root = pair.getOrNull(0) as? ViewGroup ?: return@forEach
             val subscriptionId = (pair.getOrNull(1) as? Number)?.toInt() ?: return@forEach
             if (root.isAttachedToWindow && subscriptionId >= 0) {
-                mobileRoots[root] = subscriptionId
+                mobileRoots[root] = MobileBinding(subscriptionId)
             }
         }
 
@@ -565,9 +568,9 @@ internal object SysUiNetworkSource {
 
     @Synchronized
     fun mobilePresentationBindings(): List<MobilePresentationBinding> =
-        mobileRoots.mapNotNull { (root, subscriptionId) ->
+        mobileRoots.mapNotNull { (root, binding) ->
             if (root.isAttachedToWindow) {
-                MobilePresentationBinding(root, subscriptionId)
+                MobilePresentationBinding(root, binding.subscriptionId)
             } else {
                 null
             }
@@ -584,9 +587,9 @@ internal object SysUiNetworkSource {
                         " layout=" + layoutToken(root),
                 )
             }
-            mobileRoots.forEach { (root, subscriptionId) ->
+            mobileRoots.forEach { (root, binding) ->
                 add(
-                    "nativeSlot binding=mobile subId=" + subscriptionId +
+                    "nativeSlot binding=mobile subId=" + binding.subscriptionId +
                         " root=" + root.javaClass.simpleName +
                         " rootId=" + resourceId(root) +
                         " parentChain=" + parentChain(root) +
@@ -1051,20 +1054,25 @@ internal object SysUiNetworkSource {
         val iconViewModel = chain.getArg(2)
         var bindingLog: String? = null
         var bindingChanged = false
-
-        if (
-            root != null &&
+        var pending: MobileBinding? = null
+        var previous: MobileBinding? = null
+        val boundRoot = root?.takeIf {
             locationViewModel?.javaClass?.name == HOME_MOBILE_VIEW_MODEL_CLASS_NAME
-        ) {
+        }
+
+        if (boundRoot != null) {
             val subscriptionId = readOrNull {
                 (subscriptionIdMethod.invoke(locationViewModel) as Number).toInt()
             } ?: -1
 
             val nextId = subscriptionId.takeIf { it >= 0 }
-            val previous = synchronized(this) {
-                if (nextId == null) mobileRoots.remove(root) else mobileRoots.put(root, nextId)
+            val candidate = nextId?.let(::MobileBinding)
+            pending = candidate
+            previous = synchronized(this) {
+                if (candidate == null) mobileRoots.remove(boundRoot)
+                else mobileRoots.put(boundRoot, candidate)
             }
-            bindingChanged = previous != nextId
+            bindingChanged = previous?.subscriptionId != nextId
             if (bindingChanged && onEvent != null && isDetailedDiagnosticsEnabled()) {
                 bindingLog =
                     "networkPipeline mobile bound " +
@@ -1079,7 +1087,23 @@ internal object SysUiNetworkSource {
             }
         }
 
-        val result = chain.proceed()
+        val result =
+            try {
+                chain.proceed()
+            } catch (error: Throwable) {
+                // Restore this unfinished bind only; a nested bind may use the same SIM.
+                val candidate = pending
+                if (boundRoot != null && candidate != null) {
+                    synchronized(this) {
+                        if (mobileRoots[boundRoot] === candidate) {
+                            val old = previous
+                            if (old == null) mobileRoots.remove(boundRoot)
+                            else mobileRoots[boundRoot] = old
+                        }
+                    }
+                }
+                throw error
+            }
         if (bindingChanged) bindingLog?.let { onEvent?.invoke(it) }
         // A binder can replace a native child without changing its subscription ID.
         if (root != null &&
@@ -1181,7 +1205,7 @@ internal object SysUiNetworkSource {
         while (current != null) {
             val group = current as? ViewGroup
             if (group != null && mobileRoots.containsKey(group)) {
-                return mobileRoots[group]
+                return mobileRoots[group]?.subscriptionId
             }
             current = current.parent as? View
         }
