@@ -39,7 +39,7 @@ internal object SettingsEntryHook {
         if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
     }
 
-    private fun reportFailure(message: String, error: Throwable) {
+    internal fun reportFailure(message: String, error: Throwable) {
         rethrowFatal(error)
         try {
             Log.w(TAG, message, error)
