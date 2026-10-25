@@ -1689,8 +1689,13 @@ class GyModule : XposedModule() {
                 module = this,
                 classLoader = classLoader,
                 onTintState = ::onTintStateUpdate,
+                onTintRuntimeFailure = { error ->
+                    onPresentationCallbackFailure("tint", error)
+                },
                 onSceneState = ::onSceneStateUpdate,
-                onSceneRuntimeFailure = ::onSceneRuntimeFailure,
+                onSceneRuntimeFailure = { error ->
+                    onPresentationCallbackFailure("scene", error)
+                },
                 onKeyguardAodState = ::onKeyguardAodStateUpdate,
                 onKeyguardFullAodTransitionStarted = ::onFullAodStarted,
                 onKeyguardFullAodTransitionCommitted = ::onFullAodCommitted,
@@ -2827,7 +2832,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun onSceneRuntimeFailure(error: Throwable) {
+    private fun onPresentationCallbackFailure(source: String, error: Throwable) {
         val cleanupFailures = mutableListOf<String>()
         fun restore(step: String, action: () -> Unit) {
             try {
@@ -2845,13 +2850,13 @@ class GyModule : XposedModule() {
             KeyguardRenderSession.setAodNativeHandoffActive(true)
         }
         restore("presentation-release") {
-            releaseFeatureOwnership("scene-callback-failed")
+            releaseFeatureOwnership(source + "-callback-failed")
         }
         restore("diagnostic") {
             logDiagnostic(
                 level = Log.ERROR,
                 event = "runtime.callback",
-                component = "sceneSource",
+                component = source + "Source",
                 state = if (cleanupFailures.isEmpty()) "fallback-requested" else "cleanup-incomplete",
                 "reason" to (error.message ?: error.javaClass.simpleName),
                 "fallback" to if (cleanupFailures.isEmpty()) "native-systemui" else "unconfirmed",

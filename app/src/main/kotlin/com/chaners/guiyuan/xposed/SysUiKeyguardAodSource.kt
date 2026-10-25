@@ -26,6 +26,18 @@ internal object SysUiKeyguardAodSource {
     private const val TOGGLE_AOD_HOOK_ID =
         "combinedstatus.keyguardAod.toggleAodMode"
 
+    internal fun rethrowFatal(error: Throwable) {
+        if (error is VirtualMachineError || error is ThreadDeath) throw error
+    }
+
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            rethrowFatal(error)
+            null
+        }
+
     // Stored values must not keep their weak View keys alive.
     private val states = WeakHashMap<View, AodState>()
     @Volatile private var hooksReady = false
@@ -106,11 +118,9 @@ internal object SysUiKeyguardAodSource {
                             )
                         }
                     } catch (error: Throwable) {
-                        if (error is VirtualMachineError || error is ThreadDeath) throw error
+                        rethrowFatal(error)
                         if (warned.compareAndSet(false, true)) {
-                            runCatching {
-                                Log.w("Guiyuan[Aod]", "Diagnostic failed", error)
-                            }
+                            readOrNull { Log.w("Guiyuan[Aod]", "Diagnostic failed", error) }
                         }
                     }
                 }
@@ -178,7 +188,7 @@ internal object SysUiKeyguardAodSource {
     // Style 3 does not use the native battery alpha/mode handoff.
     fun usesAnimatedBatteryMode(sourceView: View): Boolean =
         storedStyleField
-            ?.let { field -> runCatching { field.getInt(sourceView) }.getOrNull() }
+            ?.let { field -> readOrNull { field.getInt(sourceView) } }
             ?.let { it != 3 } == true
 
     @Synchronized
@@ -270,7 +280,7 @@ internal object SysUiKeyguardAodSource {
             ?.apply { isAccessible = true }
 
     private fun readBoolean(owner: Any, field: Field): Boolean? =
-        runCatching { field.get(owner) as? Boolean }.getOrNull()
+        readOrNull { field.get(owner) as? Boolean }
 
     internal fun matchesToggleAodSignature(
         parameterTypes: Array<Class<*>>,

@@ -13,6 +13,7 @@ import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.lang.reflect.Method
+import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiBatterySource {
@@ -47,6 +48,19 @@ internal object SysUiBatterySource {
     @Volatile
 
     private var lastChargingIconResId: Int? = null
+
+    internal fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            rethrowFatal(error)
+            null
+        }
 
     internal data class VerifiedFont(
         val host: View,
@@ -103,8 +117,7 @@ internal object SysUiBatterySource {
             var parent = iconView.parent
             while (parent is View) {
                 if (meterClass.isInstance(parent)) {
-                    return runCatching { chargingIconMethod.invoke(parent) as? Int }
-                        .getOrNull()
+                    return readOrNull { chargingIconMethod.invoke(parent) as? Int }
                         ?.takeIf { it != 0 }
                 }
                 parent = parent.parent
@@ -114,25 +127,23 @@ internal object SysUiBatterySource {
 
         fun readState(iconView: View): StatusStateStore.BatteryState? {
             val level =
-                runCatching { levelField.getInt(iconView) }
-                    .getOrNull()
+                readOrNull { levelField.getInt(iconView) }
                     ?.coerceIn(0, 100)
                     ?: return null
             val charging =
-                runCatching { chargingField.getBoolean(iconView) }
-                    .getOrNull()
+                readOrNull { chargingField.getBoolean(iconView) }
                     ?: return null
             val nativeStatusName =
-                runCatching {
+                readOrNull {
                     (progressStatusMethod.invoke(iconView) as? Enum<*>)?.name
-                }.getOrNull()
+                }
             val semanticState =
                 BatterySemanticState.fromNativeProgressStatus(
                     nativeStatusName,
                 )
             val miuiOptimizationEnabled =
-                runCatching { miuiOptimizationField.getBoolean(iconView) }
-                    .getOrDefault(false)
+                readOrNull { miuiOptimizationField.getBoolean(iconView) }
+                    ?: false
             val systemSemanticColor =
                 if (miuiOptimizationEnabled) {
                     semanticState?.let { state ->
@@ -157,7 +168,7 @@ internal object SysUiBatterySource {
                 systemSemanticColor = systemSemanticColor,
                 lowSystemColor =
                     if (miuiOptimizationEnabled) {
-                        runCatching { lowColorField.getInt(iconView) }.getOrNull()
+                        readOrNull { lowColorField.getInt(iconView) }
                     } else null,
                 chargingIconResId =
                     if (charging) {
@@ -174,9 +185,9 @@ internal object SysUiBatterySource {
             try {
                 sink(message())
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 if (warned.compareAndSet(false, true)) {
-                    runCatching { Log.w("Guiyuan[Battery]", "Diagnostic failed", error) }
+                    readOrNull { Log.w("Guiyuan[Battery]", "Diagnostic failed", error) }
                 }
             }
         }
@@ -219,8 +230,7 @@ internal object SysUiBatterySource {
             sourceMethod: String,
         ) {
             val iconId =
-                runCatching { chargingIconMethod.invoke(meterView) as? Int }
-                    .getOrNull()
+                readOrNull { chargingIconMethod.invoke(meterView) as? Int }
                     ?.takeIf { it != 0 }
                     ?: return
 
@@ -344,36 +354,36 @@ internal object SysUiBatterySource {
 
     // Verified against the exact SystemUI fingerprint: both native number
     // routes must use the known file-backed faces, not mipro family fallbacks.
-    fun readHostNumberFont(host: View): Pair<Typeface, String>? = runCatching {
-        val root = host as? ViewGroup ?: return@runCatching null
+    fun readHostNumberFont(host: View): Pair<Typeface, String>? = readOrNull {
+        val root = host as? ViewGroup ?: return@readOrNull null
         val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
-            ?: return@runCatching null
+            ?: return@readOrNull null
         val battery = container.directChild(BATTERY_METER_VIEW_CLASS_NAME)
-            ?: return@runCatching null
-        val loader = battery.javaClass.classLoader ?: return@runCatching null
+            ?: return@readOrNull null
+        val loader = battery.javaClass.classLoader ?: return@readOrNull null
         val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
         val percentFace = config.getField("sMiproTypefaceWght500").get(null) as? Typeface
-            ?: return@runCatching null
+            ?: return@readOrNull null
         val markFace = config.getField("sMiproTypefaceWght600").get(null) as? Typeface
-            ?: return@runCatching null
+            ?: return@readOrNull null
         val percent = battery.javaClass.getField("mBatteryPercentView").get(battery) as? TextView
-            ?: return@runCatching null
+            ?: return@readOrNull null
         val mark = battery.javaClass.getField("mBatteryPercentMarkView").get(battery) as? TextView
-            ?: return@runCatching null
+            ?: return@readOrNull null
         if (percent.typeface !== percentFace || mark.typeface !== markFace) {
-            return@runCatching null
+            return@readOrNull null
         }
         val hollow = battery.javaClass.getField("mHollowBatteryIconView").get(battery)
-            ?: return@runCatching null
+            ?: return@readOrNull null
         val hollowPaint = hollow.javaClass.getField("textPaint").get(hollow) as? Paint
-            ?: return@runCatching null
+            ?: return@readOrNull null
         val hollowFace = loader.loadClass("com.android.systemui.statusbar.util.MiuiBatteryUtils")
-            .getField("FONT_WGHT").get(null) as? Typeface ?: return@runCatching null
-        if (hollowPaint.typeface !== hollowFace) return@runCatching null
+            .getField("FONT_WGHT").get(null) as? Typeface ?: return@readOrNull null
+        if (hollowPaint.typeface !== hollowFace) return@readOrNull null
         val path = config.getField("FONT_MIPRO_PATH").get(null) as? String
-            ?: return@runCatching null
+            ?: return@readOrNull null
         hollowFace to path
-    }.getOrNull()
+    }
 
     fun readHostChargingIconId(host: Any): Int? {
         val root = host as? ViewGroup ?: return null
@@ -381,11 +391,11 @@ internal object SysUiBatterySource {
             ?: return null
         val battery = container.directChild(BATTERY_METER_VIEW_CLASS_NAME)
             ?: return null
-        return runCatching {
+        return readOrNull {
             battery.javaClass.getDeclaredMethod("getHollowChargingIconId").apply {
                 isAccessible = true
             }.invoke(battery) as? Int
-        }.getOrNull()?.takeIf { it != 0 }
+        }?.takeIf { it != 0 }
     }
 
     private fun ViewGroup.directChild(className: String): View? {
@@ -415,8 +425,7 @@ internal object SysUiBatterySource {
                 BatterySemanticState.PERFORMANCE -> performanceColorField
                 BatterySemanticState.LOW -> lowColorField
             }
-        return runCatching { field.getInt(icon) }
-            .getOrNull()
+        return readOrNull { field.getInt(icon) }
             ?.takeIf { color -> color ushr 24 != 0 }
     }
 
@@ -425,9 +434,9 @@ internal object SysUiBatterySource {
 
     private fun Class<*>.optionalField(vararg names: String): Field? =
         names.firstNotNullOfOrNull { name ->
-            runCatching {
+            readOrNull {
                 getDeclaredField(name).apply { isAccessible = true }
-            }.getOrNull()
+            }
         }
 
     private fun colorHex(color: Int): String =
