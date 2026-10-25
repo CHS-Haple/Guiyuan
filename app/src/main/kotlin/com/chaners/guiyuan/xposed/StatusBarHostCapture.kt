@@ -45,15 +45,21 @@ internal object StatusBarHostCapture {
         onCaptured: (SysUiHostRegistry.Capture) -> Unit,
     ): Hooker = Hooker { chain ->
         val result = chain.proceed()
-
-        chain.thisObject?.let { host ->
+        val host =
             try {
-                SysUiHostRegistry.capture(host)?.let(onCaptured)
+                chain.thisObject
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                return@Hooker result
+            }
+        host?.let { captured ->
+            try {
+                SysUiHostRegistry.capture(captured)?.let(onCaptured)
             } catch (error: Throwable) {
                 if (error is VirtualMachineError || error is ThreadDeath) throw error
                 // Nonfatal callback failures must not replace the native return.
                 try {
-                    SysUiHostRegistry.discardIfCurrent(host)
+                    SysUiHostRegistry.discardIfCurrent(captured)
                 } catch (failure: Throwable) {
                     if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
                 }
