@@ -112,7 +112,9 @@ class GyModule : XposedModule() {
     private var inSettings = false
     private var settingsHookInstalled = false
     private var reportedFont: Typeface? = null
+    private var reportedFontPath: String? = null
     private var reportedBatteryFont: Typeface? = null
+    private var reportedBatteryFontPath: String? = null
     private var reportedFontHost: View? = null
     private var fontAxisReported = false
 
@@ -1838,7 +1840,8 @@ class GyModule : XposedModule() {
         val batteryFont = SysUiBatterySource.readHostNumberFont(host)
         val batteryFace = batteryFont?.first
         if (!force && fontAxisReported && reportedFontHost === host &&
-            reportedFont === face && reportedBatteryFont === batteryFace
+            reportedFont === face && reportedFontPath == networkType?.fontPath &&
+            reportedBatteryFont === batteryFace && reportedBatteryFontPath == batteryFont?.second
         ) return
         // A live face without a verified file must not borrow the static font's axis.
         val mobileFont =
@@ -1887,7 +1890,9 @@ class GyModule : XposedModule() {
             host.context.sendBroadcast(intent, null, options)
         }.onSuccess {
             reportedFont = face
+            reportedFontPath = networkType?.fontPath
             reportedBatteryFont = batteryFace
+            reportedBatteryFontPath = batteryFont?.second
             reportedFontHost = host
             fontAxisReported = true
         }.onFailure { Log.w(TAG, "Unable to report verified native font axes", it) }

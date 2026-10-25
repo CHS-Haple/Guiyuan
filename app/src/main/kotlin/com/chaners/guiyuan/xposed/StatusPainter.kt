@@ -134,6 +134,7 @@ internal class StatusPainter(
         nativeWifiReferenceIds.clear()
         batteryTextSamples.clear()
         mobileTextSamples.clear()
+        mobileInkSamples.clear()
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
     }
