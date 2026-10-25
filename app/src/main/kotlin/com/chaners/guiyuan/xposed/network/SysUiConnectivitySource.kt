@@ -59,13 +59,15 @@ internal object SysUiConnectivitySource {
                     mobileDataEnabled = mobileDataEnabled(context),
                 )
             onState(state)
-            onEvent?.invoke(
-                "connectivity source=" + source +
-                    " transport=" + state.transport.name +
-                    " validated=" + state.validated +
-                    " internetCapability=" + state.hasInternetCapability +
-                    " mobileDataEnabled=" + (state.mobileDataEnabled?.toString() ?: "unknown"),
-            )
+            readOrNull {
+                onEvent?.invoke(
+                    "connectivity source=" + source +
+                        " transport=" + state.transport.name +
+                        " validated=" + state.validated +
+                        " internetCapability=" + state.hasInternetCapability +
+                        " mobileDataEnabled=" + (state.mobileDataEnabled?.toString() ?: "unknown"),
+                )
+            }
         }
 
         var currentDefaultNetwork: Network? = null
