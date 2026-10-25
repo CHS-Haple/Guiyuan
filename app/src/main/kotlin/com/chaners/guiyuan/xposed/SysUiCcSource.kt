@@ -299,10 +299,17 @@ internal object SysUiCcSource {
             return handles
         } catch (error: Throwable) {
             val remaining = handles.asReversed().filter { handle ->
-                runCatching { handle.unhook() }.isFailure
+                try {
+                    handle.unhook()
+                    false
+                } catch (failure: Throwable) {
+                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                    true
+                }
             }
             failedInstallHandles = remaining
             homeEligible = false
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
             if (remaining.isNotEmpty()) {
                 throw IllegalStateException("control-center-hook-cleanup-failed", error)
             }
