@@ -5,16 +5,22 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.telephony.SubscriptionManager
+import java.lang.reflect.InvocationTargetException
 
 internal object SysUiDefaultDataSubSource {
     private const val DEFAULT_DATA_SUBSCRIPTION_CHANGED_ACTION =
         "android.intent.action.ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED"
 
+    private fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
     private inline fun <T> readOrNull(block: () -> T): T? =
         try {
             block()
         } catch (error: Throwable) {
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            rethrowFatal(error)
             null
         }
 
@@ -30,6 +36,7 @@ internal object SysUiDefaultDataSubSource {
     @Volatile
     private var currentSubscriptionId: Int =
         SubscriptionManager.INVALID_SUBSCRIPTION_ID
+    private var deliveredSubscriptionId: Int? = null
 
     fun currentSubscriptionId(): Int = currentSubscriptionId
 
@@ -101,6 +108,7 @@ internal object SysUiDefaultDataSubSource {
             if (receiver == null) {
                 this.onChanged = null
                 this.onEvent = null
+                deliveredSubscriptionId = null
             }
         }
         return receiver != null
@@ -115,6 +123,7 @@ internal object SysUiDefaultDataSubSource {
             onEvent = null
             currentSubscriptionId =
                 SubscriptionManager.INVALID_SUBSCRIPTION_ID
+            deliveredSubscriptionId = null
         }
     }
 
@@ -127,18 +136,52 @@ internal object SysUiDefaultDataSubSource {
             readOrNull { SubscriptionManager.getDefaultDataSubscriptionId() }
                 ?: SubscriptionManager.INVALID_SUBSCRIPTION_ID
 
-        if (!force && currentSubscriptionId == next) {
+        val deliver = onChanged
+        if (deliver == null) {
+            currentSubscriptionId = next
             return
         }
 
-        currentSubscriptionId = next
-        onChanged?.invoke(next)
+        val changed =
+            try {
+                deliverSubscription(next, force, deliver)
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                readOrNull {
+                    onEvent?.invoke(
+                        "defaultDataSubscription delivery-failed type=" +
+                            error.javaClass.simpleName + " source=" + source,
+                    )
+                }
+                return
+            }
+        if (!changed) return
         readOrNull {
             onEvent?.invoke(
                 "defaultDataSubscription id=" + next +
                     " source=" + source,
             )
         }
+    }
+
+    @Synchronized
+    internal fun deliverSubscription(
+        next: Int,
+        force: Boolean,
+        deliver: (Int) -> Unit,
+    ): Boolean {
+        currentSubscriptionId = next
+        if (!force && deliveredSubscriptionId == next) return false
+
+        val previous = deliveredSubscriptionId
+        deliveredSubscriptionId = next
+        try {
+            deliver(next)
+        } catch (error: Throwable) {
+            if (deliveredSubscriptionId == next) deliveredSubscriptionId = previous
+            throw error
+        }
+        return true
     }
 
     private fun unregisterReceiver() {
@@ -149,5 +192,6 @@ internal object SysUiDefaultDataSubSource {
         }
         receiver = null
         registeredContext = null
+        deliveredSubscriptionId = null
     }
 }
