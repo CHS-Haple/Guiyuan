@@ -260,6 +260,46 @@ class MainThreadRetireTest {
     }
 
     @Test
+    fun startedCleanupFinishesBeforeFatalDispatchEscapes() {
+        val started = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val finished = CountDownLatch(1)
+        val error = OutOfMemoryError("late-dispatch")
+        val outcome = AtomicReference<Throwable?>()
+        val cancelled = AtomicInteger()
+        val caller =
+            Thread {
+                outcome.set(
+                    runCatching {
+                        MainThreadRetire(
+                            post = { task ->
+                                Thread(task).start()
+                                check(started.await(2, TimeUnit.SECONDS))
+                                throw error
+                            },
+                            cancel = { cancelled.incrementAndGet() },
+                        ).run {
+                            started.countDown()
+                            check(release.await(2, TimeUnit.SECONDS))
+                        }
+                    }.exceptionOrNull(),
+                )
+                finished.countDown()
+            }
+        caller.start()
+        try {
+            assertTrue(started.await(2, TimeUnit.SECONDS))
+            assertFalse(finished.await(40, TimeUnit.MILLISECONDS))
+        } finally {
+            release.countDown()
+        }
+        assertTrue(finished.await(2, TimeUnit.SECONDS))
+        caller.join(2_000)
+        assertSame(error, outcome.get())
+        assertEquals(0, cancelled.get())
+    }
+
+    @Test
     fun cleanupFailureDoesNotReportSuccess() {
         try {
             MainThreadRetire(

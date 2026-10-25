@@ -33,27 +33,25 @@ internal class MainThreadRetire(
                     done.countDown()
                 }
             }
+        var dispatchFatal: Throwable? = null
         val posted =
             try {
                 post(task)
             } catch (error: Throwable) {
-                fatalCause(error)?.let { fatal ->
-                    // A failed dispatch may still have queued the old View owner.
-                    if (phase.compareAndSet(Phase.Queued, Phase.Cancelled)) {
-                        try {
-                            cancel(task)
-                        } catch (_: Throwable) {
-                            // Preserve the original fatal failure.
-                        }
-                    }
-                    throw fatal
-                }
+                dispatchFatal = fatalCause(error)
                 false
             }
-        if (!posted && phase.compareAndSet(Phase.Queued, Phase.Cancelled)) {
-            cancel(task)
-            return false
+        fun cancelQueued(): Boolean {
+            if (!phase.compareAndSet(Phase.Queued, Phase.Cancelled)) return false
+            try {
+                cancel(task)
+            } finally {
+                // Fatal dispatch must not leave an old View mutation queued.
+                dispatchFatal?.let { throw it }
+            }
+            return true
         }
+        if (!posted && cancelQueued()) return false
 
         var interrupted = false
         try {
@@ -64,10 +62,7 @@ internal class MainThreadRetire(
                     interrupted = true
                     false
                 }
-            if (!completed && phase.compareAndSet(Phase.Queued, Phase.Cancelled)) {
-                cancel(task)
-                return false
-            }
+            if (!completed && cancelQueued()) return false
 
             // Once the main thread has begun retiring Views, rejection cannot race
             // a late mutation of the old generation. Wait for that owner to finish.
@@ -79,6 +74,7 @@ internal class MainThreadRetire(
                     interrupted = true
                 }
             }
+            dispatchFatal?.let { throw it }
             failure?.let { error ->
                 fatalCause(error)?.let { throw it }
                 throw IllegalStateException("old-generation-retirement-failed", error)
