@@ -73,6 +73,7 @@ internal object SysUiPresentationRuntime {
         onKeyguardAodState: (SysUiKeyguardAodSource.AodUpdate) -> Unit,
         onKeyguardFullAodTransitionStarted: () -> Unit,
         onKeyguardFullAodTransitionCommitted: () -> Unit,
+        onKeyguardFullAodRuntimeFailure: (String, Throwable) -> Unit,
         onKeyguardStatusIconTransition: () -> Unit,
         onMobileTypeChanged: (Drawable) -> Unit,
         onTintEvent: ((String) -> Unit)?,
@@ -132,6 +133,7 @@ internal object SysUiPresentationRuntime {
                     classLoader = classLoader,
                     onTransitionStarted = onKeyguardFullAodTransitionStarted,
                     onTransitionCommitted = onKeyguardFullAodTransitionCommitted,
+                    onRuntimeFailure = onKeyguardFullAodRuntimeFailure,
                     onEvent = onKeyguardAodEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size

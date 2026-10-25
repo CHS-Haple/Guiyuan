@@ -1699,6 +1699,9 @@ class GyModule : XposedModule() {
                 onKeyguardAodState = ::onKeyguardAodStateUpdate,
                 onKeyguardFullAodTransitionStarted = ::onFullAodStarted,
                 onKeyguardFullAodTransitionCommitted = ::onFullAodCommitted,
+                onKeyguardFullAodRuntimeFailure = { source, error ->
+                    onPresentationCallbackFailure(source, error)
+                },
                 onKeyguardStatusIconTransition = ::onKeyguardIconTransition,
                 onMobileTypeChanged = { drawable ->
                     refreshMobilePresentation(
