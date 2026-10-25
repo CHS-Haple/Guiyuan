@@ -13,9 +13,23 @@ import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 import java.lang.reflect.Method
+import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.ConcurrentHashMap
 
 internal object NativeStatusObserver {
+    internal fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            rethrowFatal(error)
+            null
+        }
+
     private const val HOME_MANAGER_CLASS =
         "com.android.systemui.statusbar.phone.ui.DarkIconManager"
     private const val STATUS_BAR_ICON_CONTROLLER_IMPL_CLASS =
@@ -205,7 +219,13 @@ internal object NativeStatusObserver {
             null
         }.getOrElse { error ->
             val remaining = created.filter { handle ->
-                runCatching { handle.unhook() }.isFailure
+                try {
+                    handle.unhook()
+                    false
+                } catch (failure: Throwable) {
+                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                    true
+                }
             }
             installedHandles.clear()
             installedHandles.addAll(remaining)
@@ -222,6 +242,7 @@ internal object NativeStatusObserver {
             diagnosticsEnabled = isDetailedDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
             val reason = error.message ?: error.javaClass.simpleName
             if (installIncomplete) "$reason-hook-cleanup-failed" else reason
         }
@@ -339,9 +360,9 @@ internal object NativeStatusObserver {
             observeAfterNative(result, { reportObservationFailure("noSimVisibility", it) }) {
                 val view = chain.thisObject as? View
                 val slot =
-                    runCatching {
+                    readOrNull {
                         airplaneSlotAccessor?.invoke(chain.thisObject) as? String
-                    }.getOrNull()
+                    }
                 val homeGroup = activeGroup?.get()
                 if (
                     slot == NO_SIM_SLOT &&
@@ -453,13 +474,13 @@ internal object NativeStatusObserver {
                         return null
                     }
                     val companionClass =
-                        runCatching {
+                        readOrNull {
                             Class.forName(
                                 groupClass.name + "\$Companion",
                                 false,
                                 groupClass.classLoader,
                             )
-                        }.getOrNull()
+                        }
                     val resolved =
                         companionClass
                             ?.declaredMethods
@@ -474,9 +495,9 @@ internal object NativeStatusObserver {
                     resolved.isAccessible = true
                     transitionStateAccessorCache.putIfAbsent(groupClass, resolved) ?: resolved
                 }
-        return runCatching {
+        return readOrNull {
             accessor.invoke(null, view)
-        }.getOrNull()
+        }
     }
 
     private fun transitionStateFields(stateClass: Class<*>): TransitionStateFields =
@@ -504,7 +525,7 @@ internal object NativeStatusObserver {
         target: Any,
     ): Any? =
         field?.let { resolved ->
-            runCatching { resolved.get(target) }.getOrNull()
+            readOrNull { resolved.get(target) }
         }
 
     internal data class IslandVisibilityState(
@@ -641,9 +662,9 @@ internal object NativeStatusObserver {
             return false
         }
         val accessor = statusIconVisibleAccessor ?: return true
-        return runCatching {
+        return readOrNull {
             accessor.invoke(view) as? Boolean
-        }.getOrNull() ?: true
+        } ?: true
     }
 
     private fun resolveNativeIconResource(
@@ -651,9 +672,9 @@ internal object NativeStatusObserver {
     ): PresentationStore.NativeIconResource? {
         val accessor = statusIconSourceAccessor ?: return null
         val icon =
-            runCatching {
+            readOrNull {
                 accessor.invoke(view) as? Icon
-            }.getOrNull() ?: return null
+            } ?: return null
         if (icon.type != Icon.TYPE_RESOURCE) {
             return null
         }
@@ -690,7 +711,7 @@ internal object NativeStatusObserver {
                 as? Collection<*>
                 ?: return null
 
-        return runCatching {
+        return readOrNull {
             val managerClass = manager.javaClass
             val getTint =
                 tintMethodByManagerClass[managerClass]
@@ -707,11 +728,11 @@ internal object NativeStatusObserver {
                             method.parameterTypes[2] ==
                                 Int::class.javaPrimitiveType
                     }?.also { tintMethodByManagerClass[managerClass] = it }
-                    ?: return@runCatching null
+                    ?: return@readOrNull null
             (getTint.invoke(null, tintAreas, anchorView, iconTint) as? Number)
                 ?.toInt()
                 ?.takeIf(StatusIconTintPolicy::isVisibleTint)
-        }.getOrNull()
+        }
     }
 
     private fun resolveManagerFallbackTint(manager: Any?): Int? {
@@ -780,10 +801,10 @@ internal object NativeStatusObserver {
             tintFields(target.javaClass)
                 .firstOrNull { it.name == name }
                 ?: return null
-        return runCatching {
+        return readOrNull {
             field.isAccessible = true
             field.get(target)
-        }.getOrNull()
+        }
     }
 
     private fun readIntField(
@@ -798,10 +819,10 @@ internal object NativeStatusObserver {
                             it.type == Int::class.javaObjectType)
                 }
                 ?: return null
-        return runCatching {
+        return readOrNull {
             field.isAccessible = true
             (field.get(target) as? Number)?.toInt()
-        }.getOrNull()
+        }
     }
 
     private fun resolveStaticDrawableColor(view: View): Int? {
@@ -809,10 +830,9 @@ internal object NativeStatusObserver {
         if (!accessor.declaringClass.isInstance(view)) {
             return null
         }
-        return runCatching {
+        return readOrNull {
             (accessor.invoke(view) as? Number)?.toInt()
-        }.getOrNull()
-            ?.takeIf { color -> (color ushr 24) != 0 }
+        }?.takeIf { color -> (color ushr 24) != 0 }
     }
 
     @Synchronized

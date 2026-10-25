@@ -52,6 +52,7 @@ internal object SysUiKeyguardAodSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onAodState: (AodUpdate) -> Unit,
+        onRuntimeFailure: (Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
@@ -131,11 +132,11 @@ internal object SysUiKeyguardAodSource {
             handles +=
                 module.hook(setAnimateMethod)
                     .setId(SET_AOD_ANIMATE_HOOK_ID)
-                    .intercept(aodHooker(SET_AOD_ANIMATE_METHOD, onAodState, onDiagnostic))
+                    .intercept(aodHooker(SET_AOD_ANIMATE_METHOD, onAodState, onRuntimeFailure, onDiagnostic))
             handles +=
                 module.hook(toggleMethod)
                     .setId(TOGGLE_AOD_HOOK_ID)
-                    .intercept(aodHooker(TOGGLE_AOD_METHOD, onAodState, onDiagnostic))
+                    .intercept(aodHooker(TOGGLE_AOD_METHOD, onAodState, onRuntimeFailure, onDiagnostic))
             hooksReady = true
             return handles
         } catch (error: Throwable) {
@@ -164,6 +165,7 @@ internal object SysUiKeyguardAodSource {
     private fun aodHooker(
         source: String,
         onAodState: (AodUpdate) -> Unit,
+        onRuntimeFailure: (Throwable) -> Unit,
         onDiagnostic: ((AodUpdate) -> Unit)?,
     ): Hooker =
         Hooker { chain ->
@@ -171,7 +173,16 @@ internal object SysUiKeyguardAodSource {
             if (!hooksReady) return@Hooker result
             val sourceView = chain.thisObject as? View
             if (sourceView != null) {
-                publish(sourceView, source, onAodState, onDiagnostic)
+                try {
+                    publish(sourceView, source, onAodState, onDiagnostic)
+                } catch (error: Throwable) {
+                    rethrowFatal(error)
+                    try {
+                        onRuntimeFailure(error)
+                    } catch (failure: Throwable) {
+                        rethrowFatal(failure)
+                    }
+                }
             }
             result
         }

@@ -10,6 +10,14 @@ import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiSceneSource {
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            null
+        }
+
     const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
     const val UPDATE_STATE_METHOD_NAME = "updateState"
@@ -124,8 +132,7 @@ internal object SysUiSceneSource {
             states[sourceView]
                 ?: run {
                     val field = statusBarStateField ?: return null
-                    runCatching { field.getInt(sourceView) }
-                        .getOrNull()
+                    readOrNull { field.getInt(sourceView) }
                         ?.also { states[sourceView] = it }
                         ?: return null
                 }
@@ -207,7 +214,7 @@ internal object SysUiSceneSource {
             } catch (error: Throwable) {
                 if (error is VirtualMachineError || error is ThreadDeath) throw error
                 if (warned.compareAndSet(false, true)) {
-                    runCatching { Log.w("Guiyuan[Scene]", "Diagnostic failed", error) }
+                    readOrNull { Log.w("Guiyuan[Scene]", "Diagnostic failed", error) }
                 }
             }
         }

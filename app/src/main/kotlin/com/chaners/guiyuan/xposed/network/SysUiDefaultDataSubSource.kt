@@ -10,6 +10,14 @@ internal object SysUiDefaultDataSubSource {
     private const val DEFAULT_DATA_SUBSCRIPTION_CHANGED_ACTION =
         "android.intent.action.ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED"
 
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            null
+        }
+
     private var registeredContext: Context? = null
     private var receiver: BroadcastReceiver? = null
 
@@ -60,7 +68,7 @@ internal object SysUiDefaultDataSubSource {
                 }
 
             val registered =
-                runCatching {
+                try {
                     appContext.registerReceiver(
                         nextReceiver,
                         IntentFilter(
@@ -69,7 +77,10 @@ internal object SysUiDefaultDataSubSource {
                         Context.RECEIVER_EXPORTED,
                     )
                     true
-                }.getOrDefault(false)
+                } catch (error: Throwable) {
+                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    false
+                }
 
             if (registered) {
                 registeredContext = appContext
@@ -113,9 +124,8 @@ internal object SysUiDefaultDataSubSource {
         force: Boolean,
     ) {
         val next =
-            runCatching {
-                SubscriptionManager.getDefaultDataSubscriptionId()
-            }.getOrDefault(SubscriptionManager.INVALID_SUBSCRIPTION_ID)
+            readOrNull { SubscriptionManager.getDefaultDataSubscriptionId() }
+                ?: SubscriptionManager.INVALID_SUBSCRIPTION_ID
 
         if (!force && currentSubscriptionId == next) {
             return

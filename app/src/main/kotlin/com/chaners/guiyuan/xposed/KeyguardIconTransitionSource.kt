@@ -19,6 +19,7 @@ internal object KeyguardIconTransitionSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onTransition: () -> Unit,
+        onRuntimeFailure: (Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
@@ -47,7 +48,16 @@ internal object KeyguardIconTransitionSource {
                 .intercept(
                     Hooker { chain ->
                         val result = chain.proceed()
-                        onTransition()
+                        try {
+                            onTransition()
+                        } catch (error: Throwable) {
+                            if (error is VirtualMachineError || error is ThreadDeath) throw error
+                            try {
+                                onRuntimeFailure(error)
+                            } catch (failure: Throwable) {
+                                if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                            }
+                        }
                         try {
                             if (onEvent != null && isDetailedDiagnosticsEnabled()) {
                                 val rawArg0 = chain.getArg(0) as? Boolean
@@ -59,7 +69,11 @@ internal object KeyguardIconTransitionSource {
                         } catch (error: Throwable) {
                             if (error is VirtualMachineError || error is ThreadDeath) throw error
                             if (warned.compareAndSet(false, true)) {
-                                runCatching { Log.w("Guiyuan[Keyguard]", "Diagnostic failed", error) }
+                                try {
+                                    Log.w("Guiyuan[Keyguard]", "Diagnostic failed", error)
+                                } catch (failure: Throwable) {
+                                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                                }
                             }
                         }
                         result

@@ -59,8 +59,10 @@ internal object SysUiIslandSource {
                         } catch (error: Throwable) {
                             if (error is VirtualMachineError || error is ThreadDeath) throw error
                             if (warned.compareAndSet(false, true)) {
-                                runCatching {
+                                try {
                                     Log.w("Guiyuan[Island]", "Observation failed", error)
+                                } catch (failure: Throwable) {
+                                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
                                 }
                             }
                         }

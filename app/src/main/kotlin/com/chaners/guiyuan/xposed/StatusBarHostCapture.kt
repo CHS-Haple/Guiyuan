@@ -52,8 +52,16 @@ internal object StatusBarHostCapture {
             } catch (error: Throwable) {
                 if (error is VirtualMachineError || error is ThreadDeath) throw error
                 // Nonfatal callback failures must not replace the native return.
-                runCatching { SysUiHostRegistry.discardIfCurrent(host) }
-                runCatching { Log.w("Guiyuan[HostCapture]", "Host attachment failed", error) }
+                try {
+                    SysUiHostRegistry.discardIfCurrent(host)
+                } catch (failure: Throwable) {
+                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                }
+                try {
+                    Log.w("Guiyuan[HostCapture]", "Host attachment failed", error)
+                } catch (failure: Throwable) {
+                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                }
             }
         }
 

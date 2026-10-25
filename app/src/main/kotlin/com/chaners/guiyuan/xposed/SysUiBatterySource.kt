@@ -84,6 +84,7 @@ internal object SysUiBatterySource {
         classLoader: ClassLoader,
         onBatteryState: (StatusStateStore.BatteryState) -> Unit,
         onChargingIconResource: (Int) -> Unit,
+        onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): List<HookHandle> {
         check(!hooksReady && failedInstallHandles.isEmpty()) { "battery-hooks-already-installed" }
@@ -180,6 +181,15 @@ internal object SysUiBatterySource {
         }
 
         val warned = AtomicBoolean(false)
+        fun fallback(source: String, error: Throwable) {
+            rethrowFatal(error)
+            try {
+                onRuntimeFailure(source, error)
+            } catch (failure: Throwable) {
+                rethrowFatal(failure)
+            }
+        }
+
         fun report(message: () -> String) {
             val sink = onEvent ?: return
             try {
@@ -212,7 +222,15 @@ internal object SysUiBatterySource {
                     }
                 }
             if (!changed) return
-            onBatteryState(state)
+            try {
+                onBatteryState(state)
+            } catch (error: Throwable) {
+                fallback("state", error)
+                synchronized(this) {
+                    if (lastState == state) lastState = null
+                }
+                return
+            }
             report {
                 "batteryState source=MiuiBatteryMeterIconView." + sourceMethod +
                     " percent=" + state.percent +
@@ -241,7 +259,12 @@ internal object SysUiBatterySource {
                     changed
                 }
             // Repeated samples still reconcile the state store after Hot Reload.
-            onChargingIconResource(iconId)
+            try {
+                onChargingIconResource(iconId)
+            } catch (error: Throwable) {
+                fallback("charging-glyph", error)
+                return
+            }
             if (changed) {
                 report {
                     "batteryChargingGlyph source=MiuiBatteryMeterView." + sourceMethod +
@@ -264,10 +287,14 @@ internal object SysUiBatterySource {
                         if (!hooksReady) return@Hooker result
                         val iconView = chain.thisObject as? View
                             ?: return@Hooker result
-                        publish(
-                            iconView = iconView,
-                            sourceMethod = method.name,
-                        )
+                        try {
+                            publish(
+                                iconView = iconView,
+                                sourceMethod = method.name,
+                            )
+                        } catch (error: Throwable) {
+                            fallback("state", error)
+                        }
                         result
                     },
                 )
@@ -315,10 +342,14 @@ internal object SysUiBatterySource {
                             if (!hooksReady) return@Hooker result
                             val meterView = chain.thisObject as? View
                                 ?: return@Hooker result
-                            publishChargingGlyph(
-                                meterView = meterView,
-                                sourceMethod = updateChargeAndTextMethod.name,
-                            )
+                            try {
+                                publishChargingGlyph(
+                                    meterView = meterView,
+                                    sourceMethod = updateChargeAndTextMethod.name,
+                                )
+                            } catch (error: Throwable) {
+                                fallback("charging-glyph", error)
+                            }
                             result
                         },
                     )
