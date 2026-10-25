@@ -1,10 +1,26 @@
 package com.chaners.guiyuan.xposed.network
 
 import org.junit.Assert.assertEquals
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertSame
 import org.junit.Test
 
 class NativeStatusObserverTest {
+    @Test
+    fun reflectedFatalReadDoesNotLookLikeMissingNativeState() {
+        val fatal = OutOfMemoryError("native reflected cause")
+        try {
+            NativeStatusObserver.rethrowFatal(InvocationTargetException(fatal))
+            throw AssertionError("fatal reflected cause was swallowed")
+        } catch (cause: OutOfMemoryError) {
+            assertSame(fatal, cause)
+        }
+
+        NativeStatusObserver.rethrowFatal(
+            InvocationTargetException(NoSuchFieldException("optional"))
+        )
+    }
+
     @Test
     fun fatalObservationOrFailureHandlerErrorsPropagate() {
         val fatalObservation = ThreadDeath()

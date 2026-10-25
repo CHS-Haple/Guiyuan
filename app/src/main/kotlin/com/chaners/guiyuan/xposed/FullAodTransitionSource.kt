@@ -20,6 +20,7 @@ internal object FullAodTransitionSource {
         classLoader: ClassLoader,
         onTransitionStarted: () -> Unit,
         onTransitionCommitted: () -> Unit,
+        onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
@@ -41,6 +42,14 @@ internal object FullAodTransitionSource {
                 )
 
         val warned = AtomicBoolean(false)
+        fun fallback(stage: String, error: Throwable) {
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            try {
+                onRuntimeFailure(stage, error)
+            } catch (failure: Throwable) {
+                if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+            }
+        }
         val handle =
             module
                 .hook(method)
@@ -51,12 +60,34 @@ internal object FullAodTransitionSource {
                         // animateIconContainer may be invoked inside proceed(),
                         // so waiting until animateFullAod returns would miss the
                         // actual status-icon visual lifecycle event.
-                        onTransitionStarted()
-                        val result = chain.proceed()
+                        var startFailure: Throwable? = null
+                        try {
+                            onTransitionStarted()
+                        } catch (error: Throwable) {
+                            if (error is VirtualMachineError || error is ThreadDeath) throw error
+                            startFailure = error
+                        }
+                        val result =
+                            try {
+                                chain.proceed()
+                            } catch (error: Throwable) {
+                                if (error !is VirtualMachineError && error !is ThreadDeath) {
+                                    fallback("full-aod-native", error)
+                                }
+                                throw error
+                            }
 
-                        // Direction is read from mToLockScreen only after native
-                        // code returns. Raw arguments remain diagnostics only.
-                        onTransitionCommitted()
+                        // Do not commit a start that did not complete.
+                        if (startFailure != null) {
+                            fallback("full-aod-start", startFailure)
+                        } else {
+                            try {
+                                // Native mToLockScreen is readable after proceed.
+                                onTransitionCommitted()
+                            } catch (error: Throwable) {
+                                fallback("full-aod-commit", error)
+                            }
+                        }
                         try {
                             if (onEvent != null && isDetailedDiagnosticsEnabled()) {
                                 val rawArg0 = chain.getArg(0) as? Boolean
@@ -70,7 +101,11 @@ internal object FullAodTransitionSource {
                         } catch (error: Throwable) {
                             if (error is VirtualMachineError || error is ThreadDeath) throw error
                             if (warned.compareAndSet(false, true)) {
-                                runCatching { Log.w("Guiyuan[FullAod]", "Diagnostic failed", error) }
+                                try {
+                                    Log.w("Guiyuan[FullAod]", "Diagnostic failed", error)
+                                } catch (failure: Throwable) {
+                                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                                }
                             }
                         }
                         result
