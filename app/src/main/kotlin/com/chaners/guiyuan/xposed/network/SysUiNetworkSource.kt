@@ -11,6 +11,7 @@ import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.lang.reflect.Method
+import java.lang.reflect.InvocationTargetException
 import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -62,6 +63,19 @@ internal object SysUiNetworkSource {
         MOBILE_BIND_HOOK_ID,
         MOBILE_SIGNAL_HOOK_ID,
     )
+
+    internal fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            rethrowFatal(error)
+            null
+        }
 
     private val wifiRoots = WeakHashMap<ViewGroup, Any?>()
     private val mobileRoots = WeakHashMap<ViewGroup, Int>()
@@ -150,9 +164,9 @@ internal object SysUiNetworkSource {
     ): InstallResult {
         val warned = AtomicBoolean(false)
         fun warn(error: Throwable) {
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            rethrowFatal(error)
             if (warned.compareAndSet(false, true)) {
-                runCatching { Log.w("Guiyuan[Network]", "Diagnostic failed", error) }
+                readOrNull { Log.w("Guiyuan[Network]", "Diagnostic failed", error) }
             }
         }
         val diagnosticEvent: ((String) -> Unit)? =
@@ -588,7 +602,7 @@ internal object SysUiNetworkSource {
         try {
             block()
         } catch (error: Throwable) {
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            rethrowFatal(error)
             throw InstallStageException(stage, error)
         }
 
@@ -615,7 +629,7 @@ internal object SysUiNetworkSource {
                 handle.unhook()
                 false
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 true
             }
         }
@@ -725,6 +739,7 @@ internal object SysUiNetworkSource {
             runCatching {
                 getter.invoke(viewModel)
             }.getOrElse { error ->
+                rethrowFatal(error)
                 onEvent?.invoke(
                     "networkPipeline wifi seed source=" + source +
                         " state=unavailable reason=wifiIcon-read-" +
@@ -759,6 +774,7 @@ internal object SysUiNetworkSource {
             runCatching {
                 valueGetter.invoke(flow)
             }.getOrElse { error ->
+                rethrowFatal(error)
                 onEvent?.invoke(
                     "networkPipeline wifi seed source=" + source +
                         " state=unavailable reason=stateFlow-value-" +
@@ -813,9 +829,9 @@ internal object SysUiNetworkSource {
 
         listOf("resId", "res").forEach { name ->
             val field =
-                runCatching {
+                readOrNull {
                     iconResourceClass.getDeclaredField(name)
-                }.getOrNull()
+                }
             if (
                 field != null &&
                 (
@@ -869,14 +885,14 @@ internal object SysUiNetworkSource {
         }
 
         val modelResId =
-            runCatching {
+            readOrNull {
                 val icon = wifiVisibleIconField.get(value)
                 if (icon?.javaClass?.name == ICON_RESOURCE_CLASS_NAME) {
                     iconResourceIdAccessor.read(icon)
                 } else {
                     null
                 }
-            }.getOrNull()
+            }
         val modelResourceName =
             modelResId?.let { id -> resourceName(sourceView, id) }
 
@@ -910,18 +926,18 @@ internal object SysUiNetworkSource {
         val value = chain.getArg(0)
         val emitter = chain.thisObject
         val classId =
-            runCatching {
+            readOrNull {
                 wifiClassIdField.getInt(emitter)
-            }.getOrDefault(-1)
+            } ?: -1
 
         if (classId != WIFI_ICON_COLLECTOR_CLASS_ID) {
             return@Hooker chain.proceed()
         }
 
         val image =
-            runCatching {
+            readOrNull {
                 wifiImageField.get(emitter) as? ImageView
-            }.getOrNull()
+            }
         val semantic =
             image
                 ?.takeIf(::findWifiBinding)
@@ -1040,9 +1056,9 @@ internal object SysUiNetworkSource {
             root != null &&
             locationViewModel?.javaClass?.name == HOME_MOBILE_VIEW_MODEL_CLASS_NAME
         ) {
-            val subscriptionId = runCatching {
+            val subscriptionId = readOrNull {
                 (subscriptionIdMethod.invoke(locationViewModel) as Number).toInt()
-            }.getOrDefault(-1)
+            } ?: -1
 
             val nextId = subscriptionId.takeIf { it >= 0 }
             val previous = synchronized(this) {
@@ -1085,12 +1101,12 @@ internal object SysUiNetworkSource {
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
         val emitter = chain.thisObject
-        val image = runCatching {
+        val image = readOrNull {
             mobileImageField.get(emitter) as? ImageView
-        }.getOrNull()
-        val classId = runCatching {
+        }
+        val classId = readOrNull {
             mobileClassIdField.getInt(emitter)
-        }.getOrDefault(-1)
+        } ?: -1
         val value = chain.getArg(0)
 
         var eventLog: String? = null
@@ -1269,11 +1285,9 @@ internal object SysUiNetworkSource {
             return "none"
         }
 
-        return runCatching {
+        return readOrNull {
             view.resources.getResourceName(view.id)
-        }.getOrElse {
-            view.id.toString()
-        }
+        } ?: view.id.toString()
     }
 
     private fun resourceName(
@@ -1284,10 +1298,8 @@ internal object SysUiNetworkSource {
             return "none"
         }
 
-        return runCatching {
+        return readOrNull {
             view.resources.getResourceName(resId)
-        }.getOrElse {
-            resId.toString()
-        }
+        } ?: resId.toString()
     }
 }

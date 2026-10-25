@@ -67,6 +67,7 @@ internal object SysUiPresentationRuntime {
         module: XposedModule,
         classLoader: ClassLoader,
         onTintState: (SysUiTintSource.TintUpdate) -> Unit,
+        onTintRuntimeFailure: (Throwable) -> Unit,
         onSceneState: (SysUiSceneSource.SceneUpdate) -> Unit,
         onSceneRuntimeFailure: (Throwable) -> Unit,
         onKeyguardAodState: (SysUiKeyguardAodSource.AodUpdate) -> Unit,
@@ -97,6 +98,7 @@ internal object SysUiPresentationRuntime {
                     module = module,
                     classLoader = classLoader,
                     onTintState = onTintState,
+                    onRuntimeFailure = onTintRuntimeFailure,
                     onEvent = onTintEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
