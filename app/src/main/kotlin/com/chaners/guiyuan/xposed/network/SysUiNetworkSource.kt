@@ -157,6 +157,7 @@ internal object SysUiNetworkSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onWifiState: (StatusStateStore.WifiState) -> Unit,
+        onRuntimeFailure: (Throwable) -> Unit,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
@@ -192,6 +193,7 @@ internal object SysUiNetworkSource {
                 module = module,
                 classLoader = classLoader,
                 onWifiState = onWifiState,
+                onRuntimeFailure = onRuntimeFailure,
                 onEvent = diagnosticEvent,
                 isDetailedDiagnosticsEnabled = diagnosticEnabled,
             )
@@ -217,6 +219,7 @@ internal object SysUiNetworkSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onWifiState: (StatusStateStore.WifiState) -> Unit,
+        onRuntimeFailure: (Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): BranchInstallResult {
@@ -306,6 +309,7 @@ internal object SysUiNetworkSource {
                                 active = active,
                                 seedContract = seedContract,
                                 onWifiState = onWifiState,
+                                onRuntimeFailure = onRuntimeFailure,
                                 onEvent = onEvent,
                                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                             ),
@@ -652,6 +656,7 @@ internal object SysUiNetworkSource {
         active: AtomicBoolean,
         seedContract: WifiSeedContract,
         onWifiState: (StatusStateStore.WifiState) -> Unit,
+        onRuntimeFailure: (Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Hooker = Hooker { chain ->
@@ -659,36 +664,60 @@ internal object SysUiNetworkSource {
         val root = chain.getArg(0) as? ViewGroup
         val viewModel = chain.getArg(1)
 
-        if (
-            root != null &&
-            viewModel?.javaClass?.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
-        ) {
-            val previous = synchronized(this) {
-                wifiRoots.put(root, viewModel)
-            }
-            val bindingChanged = previous !== viewModel
-            if (bindingChanged) {
+        val boundRoot =
+            root?.takeIf { viewModel?.javaClass?.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME }
+        // Native bind may emit the icon before returning.
+        val previous =
+            boundRoot?.let { synchronized(this) { wifiRoots.put(it, viewModel) } }
+        var seedFailure: Throwable? = null
+        if (boundRoot != null && previous !== viewModel) {
+            try {
                 val diagnosticEvent = onEvent?.takeIf { isDetailedDiagnosticsEnabled() }
                 diagnosticEvent?.invoke(
                     "networkPipeline wifi bound " +
                         "stage=beforeProceed " +
-                        "root=" + root.javaClass.simpleName +
-                        " rootId=" + resourceId(root) +
-                        " vm=" + viewModel.javaClass.simpleName +
-                        " parentChain=" + parentChain(root) +
-                        " layout=" + layoutToken(root),
+                        "root=" + boundRoot.javaClass.simpleName +
+                        " rootId=" + resourceId(boundRoot) +
+                        " vm=" + viewModel?.javaClass?.simpleName +
+                        " parentChain=" + parentChain(boundRoot) +
+                        " layout=" + layoutToken(boundRoot),
                 )
                 readWifiSeed(
-                    root = root,
-                    viewModel = viewModel,
+                    root = boundRoot,
+                    viewModel = requireNotNull(viewModel),
                     contract = seedContract,
                     source = "bind",
                     onEvent = diagnosticEvent,
                 )?.let(onWifiState)
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                seedFailure = error
             }
         }
 
-        chain.proceed()
+        val result =
+            try {
+                chain.proceed()
+            } catch (error: Throwable) {
+                // Revert only our unfinished bind, not a nested newer bind.
+                if (boundRoot != null) {
+                    synchronized(this) {
+                        if (wifiRoots[boundRoot] === viewModel) {
+                            if (previous == null) wifiRoots.remove(boundRoot)
+                            else wifiRoots[boundRoot] = previous
+                        }
+                    }
+                }
+                throw error
+            }
+        seedFailure?.let { error ->
+            try {
+                onRuntimeFailure(error)
+            } catch (failure: Throwable) {
+                rethrowFatal(failure)
+            }
+        }
+        result
     }
 
     @Synchronized
