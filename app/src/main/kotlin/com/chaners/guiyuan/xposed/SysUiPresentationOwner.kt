@@ -223,11 +223,9 @@ internal object SysUiPresentationOwner {
         }
 
         val containerClass =
-            runCatching {
+            readOrNull {
                 Class.forName(STATUS_ICON_CONTAINER, false, classLoader)
-            }.getOrElse {
-                return "status-icon-container-class-missing"
-            }
+            } ?: return "status-icon-container-class-missing"
         val field =
             generateSequence(containerClass) { clazz -> clazz.superclass }
                 .mapNotNull { clazz ->
@@ -264,11 +262,9 @@ internal object SysUiPresentationOwner {
                 ?.apply { isAccessible = true }
                 ?: return "set-ignored-slots-contract-missing"
         val batteryContainerClass =
-            runCatching {
+            readOrNull {
                 Class.forName(BATTERY_CONTAINER, false, classLoader)
-            }.getOrElse {
-                return "battery-container-class-missing"
-            }
+            } ?: return "battery-container-class-missing"
         val hideField =
             generateSequence(batteryContainerClass) { clazz -> clazz.superclass }
                 .mapNotNull { clazz ->
@@ -1508,11 +1504,11 @@ internal object SysUiPresentationOwner {
                 statusIcons.javaClass.name ==
                     "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
             ) {
-                runCatching {
+                readOrNull {
                     val cls = statusIcons.javaClass
                     cls.getDeclaredField("measureViews").apply { isAccessible = true } to
                         cls.getDeclaredField("iconSpacing").apply { isAccessible = true }
-                }.getOrNull()
+                }
             } else {
                 null
             }
