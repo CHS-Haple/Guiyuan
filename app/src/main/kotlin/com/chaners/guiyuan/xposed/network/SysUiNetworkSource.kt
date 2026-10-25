@@ -1293,7 +1293,7 @@ internal object SysUiNetworkSource {
                 }
             }
         }
-        eventLog?.let { onEvent?.invoke(it) }
+        readOrNull { eventLog?.let { onEvent?.invoke(it) } }
         result
     }
 
