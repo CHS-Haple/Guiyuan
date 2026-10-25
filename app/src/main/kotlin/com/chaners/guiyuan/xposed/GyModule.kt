@@ -303,6 +303,7 @@ class GyModule : XposedModule() {
             runCatching {
                 SysUiHotReload.retireOnMain(::teardownOldGeneration)
             }.onFailure { error ->
+                SysUiHotReload.rethrowFatal(error)
                 log(Log.ERROR, TAG, "Hot reload old-generation retirement failed", error)
             }.getOrDefault(false)
         if (!retired) {
@@ -336,6 +337,7 @@ class GyModule : XposedModule() {
         val restored =
             runCatching { SysUiHotReload.restoreTransfer(param) }
                 .onFailure { error ->
+                    SysUiHotReload.rethrowFatal(error)
                     Log.w(TAG, "Hot reload transfer unavailable; restart SystemUI", error)
                 }.getOrNull()
         if (restored == null) {
@@ -359,7 +361,7 @@ class GyModule : XposedModule() {
                     param = param,
                     onCaptured = ::onStatusHostCaptured,
                 )
-            }
+            }.onFailure(SysUiHotReload::rethrowFatal)
         val takeover = takeoverResult.getOrNull()
 
         if (takeover == null) {
