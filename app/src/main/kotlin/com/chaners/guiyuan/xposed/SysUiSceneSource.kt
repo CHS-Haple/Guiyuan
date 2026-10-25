@@ -61,9 +61,9 @@ internal object SysUiSceneSource {
                 .intercept(
                     Hooker { chain ->
                         val result = chain.proceed()
-                        val sourceView = chain.thisObject as? View
+                        val sourceView = readOrNull { chain.thisObject as? View }
                             ?: return@Hooker result
-                        val rawState = (chain.getArg(0) as? Number)?.toInt()
+                        val rawState = readOrNull { (chain.getArg(0) as? Number)?.toInt() }
                             ?: return@Hooker result
                         publish(
                             sourceView = sourceView,
