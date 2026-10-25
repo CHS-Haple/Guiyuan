@@ -803,13 +803,14 @@ internal object SysUiNetworkSource {
             }
 
         val valueGetter =
-            flow.javaClass.methods
-                .firstOrNull { method ->
-                    method.name == "getValue" &&
-                        method.parameterCount == 0
-                }
-                ?.apply { isAccessible = true }
-                ?: run {
+            readOrNull {
+                flow.javaClass.methods
+                    .firstOrNull { method ->
+                        method.name == "getValue" &&
+                            method.parameterCount == 0
+                    }
+                    ?.apply { isAccessible = true }
+            } ?: run {
                     reportSeed(onEvent,
                         "networkPipeline wifi seed source=" + source +
                             " state=unavailable reason=stateFlow-value-missing " +
