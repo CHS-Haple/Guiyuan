@@ -73,6 +73,13 @@ internal object SysUiPresentationOwner {
         }
     }
 
+    private fun guardedDiagnostic(
+        sink: ((String) -> Unit)?,
+    ): ((String) -> Unit)? =
+        sink?.let { callback ->
+            { event: String -> emitDiagnostic { callback(event) } }
+        }
+
     val installedHookCount: Int
         @Synchronized get() =
             listOfNotNull(
@@ -199,7 +206,7 @@ internal object SysUiPresentationOwner {
         onFailNative: ((String) -> Unit)? = null,
     ): String? {
         if (installedHookCount == HOOK_COUNT) {
-            eventSink = onEvent
+            eventSink = guardedDiagnostic(onEvent)
             failNativeSink = onFailNative
             return null
         }
@@ -322,7 +329,7 @@ internal object SysUiPresentationOwner {
                 ?.apply { isAccessible = true }
                 ?: return "island-showing-contract-missing"
 
-        eventSink = onEvent
+        eventSink = guardedDiagnostic(onEvent)
         failNativeSink = onFailNative
         ignoredSlotsField = field
         addIgnoredSlotsMethod = addIgnoredSlots
@@ -600,7 +607,7 @@ internal object SysUiPresentationOwner {
                 surface.surfaceName + "-ignored-slots-list-unavailable",
             )
 
-        keyguardFamilyEventSink = onEvent
+        keyguardFamilyEventSink = guardedDiagnostic(onEvent)
         keyguardFamilyFailNativeSink = onFailNative
         keyguardFamilyReadySink = onReady
 
@@ -785,7 +792,7 @@ internal object SysUiPresentationOwner {
                 retryAfterLayout = true,
             )
 
-        controlCenterEventSink = onEvent
+        controlCenterEventSink = guardedDiagnostic(onEvent)
         controlCenterFailNativeSink = onFailNative
         controlCenterReadySink = onReady
 
@@ -2656,12 +2663,10 @@ internal object SysUiPresentationOwner {
             compactLayoutReady = true
             val callback = layoutReadyCallback
             layoutReadyCallback = null
-            emitDiagnostic {
-                onEvent(
-                    eventPrefix + " layoutReady source=hot-reload-transfer" +
-                        " maskedViews=" + masked,
-                )
-            }
+            onEvent(
+                eventPrefix + " layoutReady source=hot-reload-transfer" +
+                    " maskedViews=" + masked,
+            )
             callback?.invoke(masked)
             return masked
         }
@@ -2770,12 +2775,10 @@ internal object SysUiPresentationOwner {
             compactLayoutReady = true
             val callback = layoutReadyCallback
             layoutReadyCallback = null
-            emitDiagnostic {
-                onEvent(
-                    eventPrefix + " layoutReady source=native-status-icons-onLayout" +
-                        " maskedViews=" + maskedViews,
-                )
-            }
+            onEvent(
+                eventPrefix + " layoutReady source=native-status-icons-onLayout" +
+                    " maskedViews=" + maskedViews,
+            )
             callback?.invoke(maskedViews)
         }
 
@@ -2836,13 +2839,11 @@ internal object SysUiPresentationOwner {
         fun reportSteadyPeerMirrorIslandSuppression() {
             if (mirrorIslandSuppressionLogged) return
             mirrorIslandSuppressionLogged = true
-            emitDiagnostic {
-                onEvent(
-                    eventPrefix +
-                        " steadyPeerMirror islandSuppressed" +
-                        " authority=home-native-island-state",
-                )
-            }
+            onEvent(
+                eventPrefix +
+                    " steadyPeerMirror islandSuppressed" +
+                    " authority=home-native-island-state",
+            )
         }
 
         private fun refreshMirroredPeerClipMasks(): Int {
