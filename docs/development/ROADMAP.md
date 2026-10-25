@@ -56,6 +56,18 @@ For a new SystemUI target:
 
 Compatibility expansion must not weaken the current target's ownership and restoration contracts.
 
+## 0.9.1 checkpoint qualification
+
+0.9.1 is a **pre-1.0 development checkpoint**, not the first formal stable release. Before promoting `dev` to `main`:
+
+- complete source-proven native callback ownership and exception recovery in [#758](https://github.com/CHS-Haple/Guiyuan/issues/758), retaining exactly-once native methods, single writer and fail-native cleanup; do not treat passing CI as proof of injected failures;
+- accept the **last integrated runtime candidate** on the target for Home, Keyguard, AOD, Control Center, tint/charging, network and Hot Reload. An untested new runtime change invalidates the corresponding earlier device acceptance;
+- independently review the full `main → dev` net diff, source ownership/lifecycle, security, cache/performance, configuration/backup compatibility, latest dependency pins and release assets; resolve deterministic issues before promotion;
+- move the final durable user-visible `[Unreleased]` notes to a dated `[0.9.1]` section, set `combinedStatus.versionName=0.9.1` with a monotonic internal Build, and validate the exact `dev → main` PR using **Full CI** and the signed APK;
+- preserve [#769](https://github.com/CHS-Haple/Guiyuan/issues/769) as an evidence-only third-party font compatibility limitation if the required real font cannot be tested, and do not advertise compatibility that was not verified.
+
+The current Release workflow reserves `stable` publishing for version **1.0.0 or later**. If an explicit 0.9.1 GitHub Release is requested, use the documented **test/prerelease** channel from the accepted source; do not bypass the workflow by relabeling it stable. Main promotion and any release publication require their own explicit acceptance.
+
 ## 1.0.0 qualification
 
 Before the first formal release:
