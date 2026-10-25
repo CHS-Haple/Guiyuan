@@ -33,6 +33,7 @@ internal object SysUiMobileTypeSource {
                         try {
                             (chain.thisObject as? Drawable)?.let(onChanged)
                         } catch (error: Throwable) {
+                            if (error is VirtualMachineError || error is ThreadDeath) throw error
                             if (warned.compareAndSet(false, true)) {
                                 runCatching {
                                     Log.w("Guiyuan[MobileType]", "Observation failed", error)

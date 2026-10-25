@@ -50,7 +50,8 @@ internal object StatusBarHostCapture {
             try {
                 SysUiHostRegistry.capture(host)?.let(onCaptured)
             } catch (error: Throwable) {
-                // The callback is ours; onFinishInflate must still return natively.
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                // Nonfatal callback failures must not replace the native return.
                 runCatching { SysUiHostRegistry.discardIfCurrent(host) }
                 runCatching { Log.w("Guiyuan[HostCapture]", "Host attachment failed", error) }
             }

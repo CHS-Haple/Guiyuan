@@ -6,6 +6,29 @@ import org.junit.Test
 
 class NativeStatusObserverTest {
     @Test
+    fun fatalObservationOrFailureHandlerErrorsPropagate() {
+        val fatalObservation = ThreadDeath()
+        try {
+            NativeStatusObserver.observeAfterNative(1, { error("should not report") }) {
+                throw fatalObservation
+            }
+            throw AssertionError("fatal observer failure was swallowed")
+        } catch (error: ThreadDeath) {
+            assertSame(fatalObservation, error)
+        }
+
+        val fatalReporter = OutOfMemoryError("fatal reporter")
+        try {
+            NativeStatusObserver.observeAfterNative(1, { throw fatalReporter }) {
+                error("ordinary observer failure")
+            }
+            throw AssertionError("fatal reporter failure was swallowed")
+        } catch (error: OutOfMemoryError) {
+            assertSame(fatalReporter, error)
+        }
+    }
+
+    @Test
     fun observationOrReportingFailureKeepsNativeResult() {
         val nativeResult = Any()
         val observationError = IllegalStateException("observer failed")
