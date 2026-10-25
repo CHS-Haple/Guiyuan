@@ -130,10 +130,17 @@ internal object SysUiKeyguardAodSource {
             return handles
         } catch (error: Throwable) {
             val remaining = handles.asReversed().filter { handle ->
-                runCatching { handle.unhook() }.isFailure
+                try {
+                    handle.unhook()
+                    false
+                } catch (failure: Throwable) {
+                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                    true
+                }
             }
             failedInstallHandles = remaining
             clearSourceState()
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
             if (remaining.isNotEmpty()) {
                 throw IllegalStateException("keyguard-aod-hook-cleanup-failed", error)
             }
