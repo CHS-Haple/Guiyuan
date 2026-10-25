@@ -7,8 +7,14 @@ import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
+import java.lang.reflect.InvocationTargetException
 
 internal object SysUiHotReload {
+    internal fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
     internal sealed interface PrepareResult {
         data class Ready(
             val host: Any,
@@ -85,6 +91,7 @@ internal object SysUiHotReload {
         runCatching {
             param.setSavedInstanceState(transfer)
         }.getOrElse { error ->
+            rethrowFatal(error)
             return PrepareResult.Unavailable(
                 reason = error.message ?: error.javaClass.simpleName,
                 wifiRoots = bindingCounts.first,
@@ -117,7 +124,7 @@ internal object SysUiHotReload {
                 handle.unhook()
                 false
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 true
             }
         }
@@ -144,7 +151,7 @@ internal object SysUiHotReload {
                 try {
                     handle.unhook()
                 } catch (error: Throwable) {
-                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    rethrowFatal(error)
                     throw IllegalStateException("stale-hook-unhook-failed", error)
                 }
                 removed += 1
