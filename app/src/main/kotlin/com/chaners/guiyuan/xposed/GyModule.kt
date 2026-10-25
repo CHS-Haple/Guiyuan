@@ -4031,6 +4031,12 @@ class GyModule : XposedModule() {
                 },
             )
         if (renderFailure == null) {
+            // Native icon Tint can arrive before Home attaches during Hot Reload.
+            if (!allowLiveTintSeed && rendererInitialTintState == null) {
+                HomeRenderSession.onStatusIconTintUpdate(
+                    PresentationStore.snapshot().statusIcons.appliedTint,
+                )
+            }
             logDiagnostic(
                 level = Log.INFO,
                 event = "renderer.attach",
