@@ -1,11 +1,79 @@
 package com.chaners.guiyuan.xposed.network
 
-import org.junit.Assert.assertEquals
+import com.chaners.guiyuan.xposed.PresentationStore
 import java.lang.reflect.InvocationTargetException
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NativeStatusObserverTest {
+    @Test
+    fun failedDeliveryCanRetryTheSameNativePresentation() {
+        NativeStatusObserver.resetRuntimeState()
+        try {
+            val state = PresentationStore.StatusIconPresentation(appliedTint = 42)
+            val failure = IllegalStateException("renderer")
+            assertSame(
+                failure,
+                runCatching {
+                    NativeStatusObserver.deliverPresentation(state) { throw failure }
+                }.exceptionOrNull(),
+            )
+
+            var deliveries = 0
+            assertTrue(NativeStatusObserver.deliverPresentation(state) { deliveries++ })
+            assertFalse(NativeStatusObserver.deliverPresentation(state) { deliveries++ })
+            assertEquals(1, deliveries)
+        } finally {
+            NativeStatusObserver.resetRuntimeState()
+        }
+    }
+
+    @Test
+    fun sameStateReentryIsDedupedDuringDelivery() {
+        NativeStatusObserver.resetRuntimeState()
+        try {
+            val state = PresentationStore.StatusIconPresentation(appliedTint = 43)
+            var deliveries = 0
+            assertTrue(
+                NativeStatusObserver.deliverPresentation(state) {
+                    deliveries++
+                    assertFalse(
+                        NativeStatusObserver.deliverPresentation(state) { deliveries++ },
+                    )
+                },
+            )
+            assertEquals(1, deliveries)
+        } finally {
+            NativeStatusObserver.resetRuntimeState()
+        }
+    }
+
+    @Test
+    fun failedOlderDeliveryNeverRevertsAReentrantNewerState() {
+        NativeStatusObserver.resetRuntimeState()
+        try {
+            val older = PresentationStore.StatusIconPresentation(appliedTint = 44)
+            val newer = PresentationStore.StatusIconPresentation(appliedTint = 45)
+            val failure = IllegalArgumentException("older-render")
+            assertSame(
+                failure,
+                runCatching {
+                    NativeStatusObserver.deliverPresentation(older) {
+                        assertTrue(NativeStatusObserver.deliverPresentation(newer) { })
+                        throw failure
+                    }
+                }.exceptionOrNull(),
+            )
+            assertFalse(NativeStatusObserver.deliverPresentation(newer) { })
+            assertTrue(NativeStatusObserver.deliverPresentation(older) { })
+        } finally {
+            NativeStatusObserver.resetRuntimeState()
+        }
+    }
+
     @Test
     fun reflectedFatalReadDoesNotLookLikeMissingNativeState() {
         val fatal = OutOfMemoryError("native reflected cause")

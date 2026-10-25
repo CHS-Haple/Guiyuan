@@ -1982,6 +1982,9 @@ class GyModule : XposedModule() {
                     "noSimResId" to state.noSimIcon?.resourceId,
                 )
             }
+        } else {
+            // A previous delivery may have committed the store before renderer failure.
+            HomeRenderSession.onPresentationStateChanged()
         }
     }
 
