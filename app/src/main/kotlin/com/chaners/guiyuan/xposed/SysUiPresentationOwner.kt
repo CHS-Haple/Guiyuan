@@ -64,6 +64,15 @@ internal object SysUiPresentationOwner {
     private var steadyPeerMirrorActive = false
     private var steadyPeerMirrorHiddenSlots: Set<String> = emptySet()
 
+    // Diagnostic sinks must not interrupt native layout or its readiness callbacks.
+    internal inline fun emitDiagnostic(block: () -> Unit) {
+        try {
+            block()
+        } catch (error: Throwable) {
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
+        }
+    }
+
     val installedHookCount: Int
         @Synchronized get() =
             listOfNotNull(
@@ -1159,12 +1168,14 @@ internal object SysUiPresentationOwner {
                     steadyPeerMirrorActive = snapshot.active
                     steadyPeerMirrorHiddenSlots = snapshot.hiddenSlots
                     if (changed) {
-                        eventSink?.invoke(
-                            "steadyPeerMirror source=home active=" + snapshot.active +
-                                " hiddenSlots=[" +
-                                snapshot.hiddenSlots.sorted().joinToString(",") +
-                                "] authority=home-native-island-state",
-                        )
+                        emitDiagnostic {
+                            eventSink?.invoke(
+                                "steadyPeerMirror source=home active=" + snapshot.active +
+                                    " hiddenSlots=[" +
+                                    snapshot.hiddenSlots.sorted().joinToString(",") +
+                                    "] authority=home-native-island-state",
+                            )
+                        }
                     }
                     controlCenterCurrent
                 }
@@ -2645,10 +2656,12 @@ internal object SysUiPresentationOwner {
             compactLayoutReady = true
             val callback = layoutReadyCallback
             layoutReadyCallback = null
-            onEvent(
-                eventPrefix + " layoutReady source=hot-reload-transfer" +
-                    " maskedViews=" + masked,
-            )
+            emitDiagnostic {
+                onEvent(
+                    eventPrefix + " layoutReady source=hot-reload-transfer" +
+                        " maskedViews=" + masked,
+                )
+            }
             callback?.invoke(masked)
             return masked
         }
@@ -2665,22 +2678,24 @@ internal object SysUiPresentationOwner {
             if (liveWidth == appliedWidth) return
 
             firstLeaseWidthMismatch = boundary
-            val parent = hostView.parent as? ViewGroup
-            onEvent(
-                eventPrefix + " fakeCarrierCapacity boundary=width-mismatch" +
-                    " firstObserved=" + boundary +
-                    " liveWidth=" + liveWidth +
-                    " appliedWidth=" + appliedWidth +
-                    " nativeWidth=" + nativeFakeCarrierLayoutWidthPx +
-                    " viewWidth=" + hostView.width +
-                    " measuredWidth=" + hostView.measuredWidth +
-                    " layoutRequested=" + hostView.isLayoutRequested +
-                    " parentContentWidth=" +
-                    (parent?.let { it.width - it.paddingLeft - it.paddingRight } ?: "unavailable") +
-                    " endAnchored=" +
-                    (parent?.let { isFakeCarrierEndAnchored(hostView, it) } ?: "unavailable") +
-                    " phase=" + leasePhase.name,
-            )
+            emitDiagnostic {
+                val parent = hostView.parent as? ViewGroup
+                onEvent(
+                    eventPrefix + " fakeCarrierCapacity boundary=width-mismatch" +
+                        " firstObserved=" + boundary +
+                        " liveWidth=" + liveWidth +
+                        " appliedWidth=" + appliedWidth +
+                        " nativeWidth=" + nativeFakeCarrierLayoutWidthPx +
+                        " viewWidth=" + hostView.width +
+                        " measuredWidth=" + hostView.measuredWidth +
+                        " layoutRequested=" + hostView.isLayoutRequested +
+                        " parentContentWidth=" +
+                        (parent?.let { it.width - it.paddingLeft - it.paddingRight } ?: "unavailable") +
+                        " endAnchored=" +
+                        (parent?.let { isFakeCarrierEndAnchored(hostView, it) } ?: "unavailable") +
+                        " phase=" + leasePhase.name,
+                )
+            }
         }
 
         fun validateNativeLayoutBeforeVisualMask(): Boolean {
@@ -2755,10 +2770,12 @@ internal object SysUiPresentationOwner {
             compactLayoutReady = true
             val callback = layoutReadyCallback
             layoutReadyCallback = null
-            onEvent(
-                eventPrefix + " layoutReady source=native-status-icons-onLayout" +
-                    " maskedViews=" + maskedViews,
-            )
+            emitDiagnostic {
+                onEvent(
+                    eventPrefix + " layoutReady source=native-status-icons-onLayout" +
+                        " maskedViews=" + maskedViews,
+                )
+            }
             callback?.invoke(maskedViews)
         }
 
@@ -2819,11 +2836,13 @@ internal object SysUiPresentationOwner {
         fun reportSteadyPeerMirrorIslandSuppression() {
             if (mirrorIslandSuppressionLogged) return
             mirrorIslandSuppressionLogged = true
-            onEvent(
-                eventPrefix +
-                    " steadyPeerMirror islandSuppressed" +
-                    " authority=home-native-island-state",
-            )
+            emitDiagnostic {
+                onEvent(
+                    eventPrefix +
+                        " steadyPeerMirror islandSuppressed" +
+                        " authority=home-native-island-state",
+                )
+            }
         }
 
         private fun refreshMirroredPeerClipMasks(): Int {
