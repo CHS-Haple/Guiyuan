@@ -350,6 +350,21 @@ internal object CcTransitionPolicy {
             SourceScene.UNKNOWN -> false
         }
 
+    fun reservationSourceChanged(
+        previous: RenderModel,
+        current: RenderModel,
+        visualChanged: Boolean,
+    ): Boolean =
+        visualChanged ||
+            previous.centerIndicator != current.centerIndicator ||
+            previous.batteryPercent != current.batteryPercent ||
+            previous.charging != current.charging ||
+            previous.chargingIconResId != current.chargingIconResId ||
+            previous.mobileLevel != current.mobileLevel ||
+            previous.mobileUnavailableMark != current.mobileUnavailableMark ||
+            previous.effectiveDataSubscriptionId != current.effectiveDataSubscriptionId ||
+            previous.dualMobileLevels != current.dualMobileLevels
+
     data class ReservationSpan(
         val sourceLeft: Float,
         val sourceRight: Float,

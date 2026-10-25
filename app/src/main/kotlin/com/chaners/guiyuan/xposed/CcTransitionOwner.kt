@@ -645,6 +645,17 @@ internal object CcTransitionOwner {
                 reservationRetarget = null
                 frozenAdditionalMobileTargets = null
             }
+            // Source content can change without a native FINAL layout change.
+            // Retarget its held reservation instead of snapping to a new width.
+            if (
+                CcTransitionPolicy.reservationSourceChanged(
+                    previous = previous,
+                    current = model,
+                    visualChanged = currentSnapshot.visual != next.visual,
+                )
+            ) {
+                reservationLayout = null
+            }
             currentSnapshot = next
         }
 
