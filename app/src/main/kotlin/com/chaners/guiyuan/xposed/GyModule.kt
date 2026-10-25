@@ -3775,7 +3775,12 @@ class GyModule : XposedModule() {
         // One failed participant must not leave the other old callbacks registered.
         val errors = ArrayList<Throwable>(1)
         fun release(action: () -> Unit) {
-            runCatching(action).onFailure { errors.add(it) }
+            try {
+                action()
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                errors.add(error)
+            }
         }
 
         release { CcTransitionOwner.detach("hotReload-oldGeneration") }
@@ -4357,7 +4362,12 @@ class GyModule : XposedModule() {
         // A failing surface must not prevent sibling native representations from returning.
         val failures = ArrayList<Throwable>(1)
         fun release(action: () -> Unit) {
-            runCatching(action).onFailure(failures::add)
+            try {
+                action()
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                failures.add(error)
+            }
         }
         release { CcRenderSession.setSceneEligible(false) }
         release { CcTransitionOwner.setSceneEligible(false) }

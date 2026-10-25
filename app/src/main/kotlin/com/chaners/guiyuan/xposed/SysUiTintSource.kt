@@ -177,9 +177,17 @@ internal object SysUiTintSource {
                         },
                     )
             }.getOrElse { error ->
-                val cleanupFailed = runCatching { updateHandle.unhook() }.isFailure
+                val cleanupFailed =
+                    try {
+                        updateHandle.unhook()
+                        false
+                    } catch (failure: Throwable) {
+                        if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                        true
+                    }
                 if (cleanupFailed) failedInstallHandles = listOf(updateHandle)
                 clearSourceState()
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
                 if (cleanupFailed) {
                     throw IllegalStateException("tint-source-hook-cleanup-failed", error)
                 }
