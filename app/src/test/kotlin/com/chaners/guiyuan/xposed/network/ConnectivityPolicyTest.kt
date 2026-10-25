@@ -9,6 +9,27 @@ import org.junit.Test
 
 class ConnectivityPolicyTest {
     @Test
+    fun mobileTypeKeepsVerifiedNativeFontPathWithItsFace() {
+        val source =
+            NativePresentationResolver.NetworkType(
+                label = "5G",
+                enhanced = false,
+                source = NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
+                fontPath = "/system/fonts/verified-variable.ttf",
+            )
+        val result =
+            ConnectivityPolicy.resolve(
+                wifi = StatusStateStore.WifiState.Hidden,
+                airplaneMode = false,
+                connectivity = SysUiConnectivitySource.State.Unknown,
+                mobileType = source,
+            ) as CenterIndicator.MobileType
+
+        assertEquals(source.fontPath, result.fontPath)
+        assertEquals(source.typeface, result.typeface)
+    }
+
+    @Test
     fun systemUiWifiNoInternetWinsEvenWhenCellularIsDefault() {
         val result =
             ConnectivityPolicy.resolve(
