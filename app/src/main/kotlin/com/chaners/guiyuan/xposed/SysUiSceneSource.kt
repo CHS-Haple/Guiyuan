@@ -1,11 +1,13 @@
 package com.chaners.guiyuan.xposed
 
+import android.util.Log
 import android.view.View
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.util.WeakHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiSceneSource {
     const val BATTERY_VIEW_CLASS_NAME =
@@ -40,6 +42,7 @@ internal object SysUiSceneSource {
                 Int::class.javaPrimitiveType,
             ).apply { isAccessible = true }
 
+        val warned = AtomicBoolean(false)
         val handle =
             module
                 .hook(updateStateMethod)
@@ -58,6 +61,7 @@ internal object SysUiSceneSource {
                             onSceneState = onSceneState,
                             onEvent = onEvent,
                             isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                            warned = warned,
                         )
                         result
                     },
@@ -145,6 +149,7 @@ internal object SysUiSceneSource {
         onSceneState: (SceneUpdate) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
+        warned: AtomicBoolean,
     ) {
         synchronized(this) {
             if (states[sourceView] == rawState) {
@@ -159,14 +164,23 @@ internal object SysUiSceneSource {
                 rawState = rawState,
             )
         onSceneState(update)
-        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-            onEvent(
-                "sceneState source=" + source +
-                    " raw=" + rawState +
-                    " batteryState=" + update.surface.name +
-                    " authority=battery-status-state-readonly" +
-                    " homeVisibilityAuthority=host+panel-coordinator",
-            )
+        if (onEvent != null) {
+            try {
+                if (isDetailedDiagnosticsEnabled()) {
+                    onEvent(
+                        "sceneState source=" + source +
+                            " raw=" + rawState +
+                            " batteryState=" + update.surface.name +
+                            " authority=battery-status-state-readonly" +
+                            " homeVisibilityAuthority=host+panel-coordinator",
+                    )
+                }
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                if (warned.compareAndSet(false, true)) {
+                    runCatching { Log.w("Guiyuan[Scene]", "Diagnostic failed", error) }
+                }
+            }
         }
     }
 
