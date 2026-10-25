@@ -71,6 +71,7 @@ internal object SysUiPresentationRuntime {
         onSceneState: (SysUiSceneSource.SceneUpdate) -> Unit,
         onSceneRuntimeFailure: (Throwable) -> Unit,
         onKeyguardAodState: (SysUiKeyguardAodSource.AodUpdate) -> Unit,
+        onKeyguardRuntimeFailure: (String, Throwable) -> Unit,
         onKeyguardFullAodTransitionStarted: () -> Unit,
         onKeyguardFullAodTransitionCommitted: () -> Unit,
         onKeyguardStatusIconTransition: () -> Unit,
@@ -113,6 +114,9 @@ internal object SysUiPresentationRuntime {
                     module = module,
                     classLoader = classLoader,
                     onAodState = onKeyguardAodState,
+                    onRuntimeFailure = { error ->
+                        onKeyguardRuntimeFailure("aod-state", error)
+                    },
                     onEvent = onKeyguardAodEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
@@ -150,6 +154,9 @@ internal object SysUiPresentationRuntime {
                     module = module,
                     classLoader = classLoader,
                     onTransition = onKeyguardStatusIconTransition,
+                    onRuntimeFailure = { error ->
+                        onKeyguardRuntimeFailure("icon-transition", error)
+                    },
                     onEvent = onKeyguardAodEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size

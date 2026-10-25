@@ -1697,6 +1697,9 @@ class GyModule : XposedModule() {
                     onPresentationCallbackFailure("scene", error)
                 },
                 onKeyguardAodState = ::onKeyguardAodStateUpdate,
+                onKeyguardRuntimeFailure = { source, error ->
+                    onPresentationCallbackFailure("keyguard-" + source, error)
+                },
                 onKeyguardFullAodTransitionStarted = ::onFullAodStarted,
                 onKeyguardFullAodTransitionCommitted = ::onFullAodCommitted,
                 onKeyguardStatusIconTransition = ::onKeyguardIconTransition,
