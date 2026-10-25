@@ -117,9 +117,11 @@ internal object SysUiAirplaneSource {
         }
         lastState = enabled
         onAirplaneMode?.invoke(enabled)
-        onEvent?.invoke(
-            "airplaneState setting enabled=" + enabled +
-                " source=" + source,
-        )
+        readOrNull {
+            onEvent?.invoke(
+                "airplaneState setting enabled=" + enabled +
+                    " source=" + source,
+            )
+        }
     }
 }

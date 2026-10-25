@@ -133,10 +133,12 @@ internal object SysUiDefaultDataSubSource {
 
         currentSubscriptionId = next
         onChanged?.invoke(next)
-        onEvent?.invoke(
-            "defaultDataSubscription id=" + next +
-                " source=" + source,
-        )
+        readOrNull {
+            onEvent?.invoke(
+                "defaultDataSubscription id=" + next +
+                    " source=" + source,
+            )
+        }
     }
 
     private fun unregisterReceiver() {
