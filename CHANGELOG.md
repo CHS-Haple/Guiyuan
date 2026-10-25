@@ -8,7 +8,25 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
-No changes since the 0.9.0 development checkpoint.
+### Added
+- Added feature-page search with Chinese, pinyin, initials, English titles and curated related terms; results navigate to the relevant settings without changing the regular browsing layout.
+- Added a compact live-preview dock in the Sandbox with a shortcut back to the full preview. Simulation remains separate from real network and battery state.
+
+### Fixed
+- Localized recognized states in compact diagnostics while preserving raw technical details and exports.
+- Reconciled feature and visual settings after initial remote-listener registration, preventing changes in the startup binding window from being missed.
+- Rejected non-finite visual inputs before saving and retained existing settings and backup compatibility.
+- Corrected native scene-state delivery when a prior SystemUI state read would otherwise suppress a pending Home/Keyguard update.
+- Improved native icon restoration and callback isolation around Control Center, AOD, Hot Reload and network/battery observation; normal SystemUI behavior remains the fallback when a feature cannot safely take ownership.
+
+### Changed
+- Removed obsolete native icon-observation paths and tightened font-source verification, keeping the native Typeface when its variable-weight source is unverified. Preserved native Control Center endpoints.
+- Made feature search and live-preview navigation follow existing MIUIX focus, Back and scrolling behavior.
+
+### Engineering
+- Strengthened native Hook installation, cleanup and diagnostic exception handling without adding persistent status writers or polling.
+- Retained Modern Xposed API 102 and pinned MIUIX `0.9.4-8972f941-SNAPSHOT`; no dependency update is claimed in this checkpoint.
+- Compatibility checks remain specific to the tested SystemUI target; real third-party variable-font rendering and exceptional callback failure injection are not certified.
 
 ## [0.9.0] - 2026-10-23
 
