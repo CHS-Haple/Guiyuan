@@ -111,7 +111,7 @@ internal object SysUiTintSource {
                         Hooker { chain ->
                             val result = chain.proceed()
                             if (!hooksReady) return@Hooker result
-                            val sourceView = chain.thisObject as? View
+                            val sourceView = readOrNull { chain.thisObject as? View }
                                 ?: return@Hooker result
                             val state =
                                 dispatchAppliedState(
@@ -174,7 +174,7 @@ internal object SysUiTintSource {
                         Hooker { chain ->
                             val result = chain.proceed()
                             if (!hooksReady) return@Hooker result
-                            val sourceView = chain.thisObject as? View
+                            val sourceView = readOrNull { chain.thisObject as? View }
                                 ?: return@Hooker result
                             dispatchAppliedState(
                                 sourceView = sourceView,
