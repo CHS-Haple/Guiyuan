@@ -50,7 +50,7 @@ internal object NativeStatusInventory {
                 deferredScan = null
                 if (hostView.isAttachedToWindow) {
                     try {
-                        schedule(hostView, onSnapshot)
+                        schedule(hostView, onSnapshot = onSnapshot)
                     } catch (error: Throwable) {
                         if (error is VirtualMachineError || error is ThreadDeath) throw error
                         Log.w("Guiyuan[NativeProbe]", "Deferred native probe failed", error)
