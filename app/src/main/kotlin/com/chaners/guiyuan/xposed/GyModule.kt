@@ -647,6 +647,7 @@ class GyModule : XposedModule() {
                 source = "hotReloadRestore",
                 initialTintState = transferredTint,
                 allowLiveTintSeed = false,
+                deferProbe = true,
             )
 
             logDiagnostic(
@@ -3846,6 +3847,7 @@ class GyModule : XposedModule() {
         source: String,
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
+        deferProbe: Boolean = false,
     ) {
         val hostContext = (host as? android.view.View)?.context
         val coreRuntime =
@@ -4055,7 +4057,7 @@ class GyModule : XposedModule() {
             )
         }
 
-        scheduleNativeSlotProbe(host = host, source = source)
+        scheduleNativeSlotProbe(host = host, source = source, deferProbe = deferProbe)
 
         logDiagnostic(
             level = Log.INFO,
@@ -4141,6 +4143,7 @@ class GyModule : XposedModule() {
     private fun scheduleNativeSlotProbe(
         host: Any,
         source: String,
+        deferProbe: Boolean,
     ) {
         if (
             !BuildConfig.DEVELOPMENT_PROBES &&
@@ -4155,7 +4158,7 @@ class GyModule : XposedModule() {
 
 
 
-        NativeStatusInventory.schedule(host) { snapshot ->
+        NativeStatusInventory.schedule(host, defer = deferProbe) { snapshot ->
             log(Log.INFO, TAG, snapshot.summary)
             log(Log.INFO, TAG, snapshot.hostLine)
             snapshot.entries.forEach { entry ->
