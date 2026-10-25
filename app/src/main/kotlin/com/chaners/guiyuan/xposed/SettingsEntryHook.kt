@@ -34,7 +34,7 @@ internal object SettingsEntryHook {
     private const val ICON_HOOK_ID = "guiyuan.settings.header.icon"
     private const val HEADER_ID = 0x475955414E4CL
 
-    private fun rethrowFatal(error: Throwable) {
+    internal fun rethrowFatal(error: Throwable) {
         val cause = (error as? InvocationTargetException)?.targetException ?: error
         if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
     }
