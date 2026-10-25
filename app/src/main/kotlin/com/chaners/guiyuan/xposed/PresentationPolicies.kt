@@ -183,7 +183,12 @@ internal object OwnedEntries {
             }
             applied
         } catch (error: Throwable) {
-            applied.asReversed().forEach(target::remove)
+            try {
+                restore(target, applied)
+            } catch (cleanup: Throwable) {
+                if (cleanup is VirtualMachineError || cleanup is ThreadDeath) throw cleanup
+                if (cleanup !== error) error.addSuppressed(cleanup)
+            }
             throw error
         }
     }
@@ -192,19 +197,15 @@ internal object OwnedEntries {
         target: MutableList<T>,
         ownedEntries: List<T>,
     ) {
-        ownedEntries.asReversed().forEach(target::remove)
-    }
-
-    fun <T, R> withTemporary(
-        target: MutableList<T>,
-        entries: Collection<T>,
-        block: () -> R,
-    ): R {
-        val owned = add(target, entries)
-        return try {
-            block()
-        } finally {
-            restore(target, owned)
+        var failure: Throwable? = null
+        ownedEntries.asReversed().forEach { entry ->
+            try {
+                target.remove(entry)
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                if (failure == null) failure = error else failure?.addSuppressed(error)
+            }
         }
+        failure?.let { throw it }
     }
 }

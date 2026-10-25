@@ -7,18 +7,57 @@ import org.junit.Test
 
 class PresentationPoliciesTest {
     @Test
-    fun temporaryEntriesPreserveExistingAndRestoreOnlyOwnedEntries() {
+    fun ownedEntriesPreserveExistingAndRestoreOnlyAddedSlots() {
         val slots = mutableListOf("alarm_clock", "wifi")
-        OwnedEntries.withTemporary(
-            target = slots,
-            entries = listOf("wifi", "mobile", "no_sim"),
-        ) {
-            assertEquals(
-                listOf("alarm_clock", "wifi", "mobile", "no_sim"),
-                slots,
-            )
-        }
+        val owned = OwnedEntries.add(slots, listOf("wifi", "mobile", "no_sim"))
+        assertEquals(listOf("mobile", "no_sim"), owned)
+        assertEquals(listOf("alarm_clock", "wifi", "mobile", "no_sim"), slots)
+        OwnedEntries.restore(slots, owned)
         assertEquals(listOf("alarm_clock", "wifi"), slots)
+    }
+
+    @Test
+    fun rollbackFailureKeepsOriginalAdditionError() {
+        val addError = IllegalStateException("add-failed")
+        val rollbackError = IllegalStateException("rollback-failed")
+        val slots =
+            object : ArrayList<String>() {
+                override fun add(element: String): Boolean {
+                    if (element == "airplane") throw addError
+                    return super.add(element)
+                }
+
+                override fun remove(element: String): Boolean {
+                    if (element == "mobile") throw rollbackError
+                    return super.remove(element)
+                }
+            }
+        slots.add("native")
+        val error =
+            runCatching {
+                OwnedEntries.add(slots, listOf("mobile", "airplane"))
+            }.exceptionOrNull()
+        assertTrue(error === addError)
+        assertEquals(listOf(rollbackError), error?.suppressed?.toList())
+    }
+
+    @Test
+    fun restoreAttemptsEveryOwnedEntryAfterOneRemovalFails() {
+        val removalError = IllegalStateException("no-sim-removal-failed")
+        val slots =
+            object : ArrayList<String>() {
+                override fun remove(element: String): Boolean {
+                    if (element == "no_sim") throw removalError
+                    return super.remove(element)
+                }
+            }
+        slots.addAll(listOf("native", "mobile", "no_sim", "airplane"))
+        val error =
+            runCatching {
+                OwnedEntries.restore(slots, listOf("mobile", "no_sim", "airplane"))
+            }.exceptionOrNull()
+        assertTrue(error === removalError)
+        assertEquals(listOf("native", "no_sim"), slots)
     }
 
     @Test
@@ -237,20 +276,6 @@ class PresentationPoliciesTest {
         )
     }
 
-    @Test
-    fun temporaryEntriesRestoreAfterFailure() {
-        val slots = mutableListOf("alarm_clock")
-        runCatching {
-            OwnedEntries.withTemporary(
-                target = slots,
-                entries = listOf("wifi", "mobile"),
-            ) {
-                error("expected")
-            }
-        }
-        assertEquals(listOf("alarm_clock"), slots)
-        assertTrue("wifi" !in slots && "mobile" !in slots)
-    }
     @Test
     fun chargingIslandCapacityCountsOnlyExpansionBeyondCompactSlot() {
         assertEquals(
