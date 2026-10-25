@@ -2164,17 +2164,20 @@ internal class StatusPainter(
 
     private fun weightedPaint(
         source: Typeface,
-        weight: Int,
+        weight: Int?,
         samples: MutableMap<Int, Paint>,
         step: Int,
     ): Paint {
-        val valid = weight.coerceIn(1, 1000)
-        val sample = ((valid + step / 2) / step * step).coerceIn(1, 1000)
-        return samples.getOrPut(sample) {
+        val sample = weight?.let {
+            val valid = it.coerceIn(1, 1000)
+            ((valid + step / 2) / step * step).coerceIn(1, 1000)
+        }
+        // Key 0 retains the captured face without setting an unverified axis.
+        return samples.getOrPut(sample ?: 0) {
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 typeface = source
                 // A rejected variation keeps the captured source face unchanged.
-                runCatching { setWeightAxis(sample) }
+                if (sample != null) runCatching { setWeightAxis(sample) }
             }
         }
     }
@@ -3016,7 +3019,10 @@ internal class StatusPainter(
         val previewFace = Typeface.DEFAULT.takeIf { preview && indicator.typeface == null }
         configureMobileTypeTextStyle(
             nativeFace = indicator.typeface ?: previewFace,
-            weight = geometry.mobileTypeWeight,
+            weight =
+                geometry.mobileTypeWeight.takeIf {
+                    indicator.typeface == null || indicator.fontPath != null
+                },
             targetStyle = targetStyle,
             progress = transitionProgress,
             textSize = mainTextSize,
@@ -3194,7 +3200,7 @@ internal class StatusPainter(
 
     private fun configureMobileTypeTextStyle(
         nativeFace: Typeface?,
-        weight: Int,
+        weight: Int?,
         targetStyle: TransitionTextStyle?,
         progress: Float,
         textSize: Float,
