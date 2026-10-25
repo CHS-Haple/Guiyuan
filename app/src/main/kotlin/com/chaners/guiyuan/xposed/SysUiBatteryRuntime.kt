@@ -14,6 +14,7 @@ internal object SysUiBatteryRuntime {
         classLoader: ClassLoader,
         onBatteryState: (StatusStateStore.BatteryState) -> Unit,
         onChargingIconResource: (Int) -> Unit,
+        onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): Int {
         hooks =
@@ -22,6 +23,7 @@ internal object SysUiBatteryRuntime {
                 classLoader = classLoader,
                 onBatteryState = onBatteryState,
                 onChargingIconResource = onChargingIconResource,
+                onRuntimeFailure = onRuntimeFailure,
                 onEvent = onEvent,
             ).size
         return hooks
