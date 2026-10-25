@@ -1690,6 +1690,7 @@ class GyModule : XposedModule() {
                 classLoader = classLoader,
                 onTintState = ::onTintStateUpdate,
                 onSceneState = ::onSceneStateUpdate,
+                onSceneRuntimeFailure = ::onSceneRuntimeFailure,
                 onKeyguardAodState = ::onKeyguardAodStateUpdate,
                 onKeyguardFullAodTransitionStarted = ::onFullAodStarted,
                 onKeyguardFullAodTransitionCommitted = ::onFullAodCommitted,
@@ -2823,6 +2824,39 @@ class GyModule : XposedModule() {
                     "familyVisual" to KeyguardRenderSession.visualState(),
                 )
             }
+        }
+    }
+
+    private fun onSceneRuntimeFailure(error: Throwable) {
+        val cleanupFailures = mutableListOf<String>()
+        fun restore(step: String, action: () -> Unit) {
+            try {
+                action()
+            } catch (failure: Throwable) {
+                if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                cleanupFailures += step + ":" + failure.javaClass.simpleName
+            }
+        }
+
+        restore("keyguard-handoff") {
+            KeyguardRenderSession.setNativeHandoffActive(true)
+        }
+        restore("aod-handoff") {
+            KeyguardRenderSession.setAodNativeHandoffActive(true)
+        }
+        restore("presentation-release") {
+            releaseFeatureOwnership("scene-callback-failed")
+        }
+        restore("diagnostic") {
+            logDiagnostic(
+                level = Log.ERROR,
+                event = "runtime.callback",
+                component = "sceneSource",
+                state = if (cleanupFailures.isEmpty()) "fallback-requested" else "cleanup-incomplete",
+                "reason" to (error.message ?: error.javaClass.simpleName),
+                "fallback" to if (cleanupFailures.isEmpty()) "native-systemui" else "unconfirmed",
+                "cleanupFailures" to cleanupFailures.takeIf { it.isNotEmpty() }?.joinToString(","),
+            )
         }
     }
 
