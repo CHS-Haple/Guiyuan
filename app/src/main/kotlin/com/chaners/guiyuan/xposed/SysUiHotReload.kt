@@ -113,7 +113,13 @@ internal object SysUiHotReload {
 
     fun releaseOldHooks(param: HotReloadedParam): Int =
         param.oldHookHandles.count { handle ->
-            runCatching { handle.unhook() }.isFailure
+            try {
+                handle.unhook()
+                false
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                true
+            }
         }
 
     fun takeOverHooks(
@@ -135,10 +141,12 @@ internal object SysUiHotReload {
         var removed = 0
         oldHandles.forEach { handle ->
             if (handle !== hostHandle) {
-                runCatching { handle.unhook() }
-                    .getOrElse { cause ->
-                        throw IllegalStateException("stale-hook-unhook-failed", cause)
-                    }
+                try {
+                    handle.unhook()
+                } catch (error: Throwable) {
+                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    throw IllegalStateException("stale-hook-unhook-failed", error)
+                }
                 removed += 1
             }
         }

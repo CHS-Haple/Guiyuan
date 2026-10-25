@@ -322,9 +322,16 @@ internal object SysUiBatterySource {
         } catch (error: Throwable) {
             hooksReady = false
             val remaining = handles.asReversed().filter { handle ->
-                runCatching { handle.unhook() }.isFailure
+                try {
+                    handle.unhook()
+                    false
+                } catch (failure: Throwable) {
+                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                    true
+                }
             }
             failedInstallHandles = remaining
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
             if (remaining.isNotEmpty()) {
                 throw IllegalStateException("battery-source-hook-cleanup-failed", error)
             }
