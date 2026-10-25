@@ -1,8 +1,10 @@
 package com.chaners.guiyuan.xposed
 
 import android.graphics.drawable.Drawable
+import android.util.Log
 import com.chaners.guiyuan.xposed.network.SysUiMobileTypeSource
 import io.github.libxposed.api.XposedModule
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiPresentationRuntime {
     private var current: AttachResult? = null
@@ -72,6 +74,17 @@ internal object SysUiPresentationRuntime {
         onSceneEvent: ((String) -> Unit)?,
         onKeyguardAodEvent: ((String) -> Unit)?,
     ): AttachResult {
+        val warned = AtomicBoolean(false)
+        fun reportAodFailure(message: String) {
+            try {
+                onKeyguardAodEvent?.invoke(message)
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                if (warned.compareAndSet(false, true)) {
+                    runCatching { Log.w("Guiyuan[Aod]", "Install diagnostic failed", error) }
+                }
+            }
+        }
         var tintFailure: String? = null
         val tintHooks =
             runCatching {
@@ -96,7 +109,7 @@ internal object SysUiPresentationRuntime {
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
-                onKeyguardAodEvent?.invoke(
+                reportAodFailure(
                     "keyguardAod install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
                         " fallback=native-keyguard",
@@ -114,7 +127,7 @@ internal object SysUiPresentationRuntime {
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
-                onKeyguardAodEvent?.invoke(
+                reportAodFailure(
                     "keyguardFullAod install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
                         " fallback=status-icons-alpha",
@@ -131,7 +144,7 @@ internal object SysUiPresentationRuntime {
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
-                onKeyguardAodEvent?.invoke(
+                reportAodFailure(
                     "keyguardStatusIconTransition install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
                         " fallback=status-icons-alpha",
