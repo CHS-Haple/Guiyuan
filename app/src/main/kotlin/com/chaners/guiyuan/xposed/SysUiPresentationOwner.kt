@@ -227,111 +227,119 @@ internal object SysUiPresentationOwner {
                 Class.forName(STATUS_ICON_CONTAINER, false, classLoader)
             } ?: return "status-icon-container-class-missing"
         val field =
-            generateSequence(containerClass) { clazz -> clazz.superclass }
-                .mapNotNull { clazz ->
-                    clazz.declaredFields.firstOrNull { candidate ->
-                        candidate.name == "ignoredSlots" &&
-                            List::class.java.isAssignableFrom(candidate.type)
+            readOrNull {
+                generateSequence(containerClass) { clazz -> clazz.superclass }
+                    .mapNotNull { clazz ->
+                        clazz.declaredFields.firstOrNull { candidate ->
+                            candidate.name == "ignoredSlots" &&
+                                List::class.java.isAssignableFrom(candidate.type)
+                        }
                     }
-                }
-                .firstOrNull()
-                ?.apply { isAccessible = true }
-                ?: return "ignored-slots-field-missing"
+                    .firstOrNull()
+                    ?.apply { isAccessible = true }
+            } ?: return "ignored-slots-field-missing"
         val addIgnoredSlots =
-            containerClass.declaredMethods
-                .filter { method ->
-                    method.name == "addIgnoredSlots" &&
-                        method.parameterTypes.contentEquals(
-                            arrayOf(List::class.java),
-                        ) &&
-                        method.returnType == Void.TYPE
-                }
-                .singleOrNull()
-                ?.apply { isAccessible = true }
-                ?: return "add-ignored-slots-contract-missing"
+            readOrNull {
+                containerClass.declaredMethods
+                    .filter { method ->
+                        method.name == "addIgnoredSlots" &&
+                            method.parameterTypes.contentEquals(
+                                arrayOf(List::class.java),
+                            ) &&
+                            method.returnType == Void.TYPE
+                    }
+                    .singleOrNull()
+                    ?.apply { isAccessible = true }
+            } ?: return "add-ignored-slots-contract-missing"
         val setIgnoredSlots =
-            containerClass.declaredMethods
-                .filter { method ->
-                    method.name == "setIgnoredSlots" &&
-                        method.parameterTypes.contentEquals(
-                            arrayOf(List::class.java),
-                        ) &&
-                        method.returnType == Void.TYPE
-                }
-                .singleOrNull()
-                ?.apply { isAccessible = true }
-                ?: return "set-ignored-slots-contract-missing"
+            readOrNull {
+                containerClass.declaredMethods
+                    .filter { method ->
+                        method.name == "setIgnoredSlots" &&
+                            method.parameterTypes.contentEquals(
+                                arrayOf(List::class.java),
+                            ) &&
+                            method.returnType == Void.TYPE
+                    }
+                    .singleOrNull()
+                    ?.apply { isAccessible = true }
+            } ?: return "set-ignored-slots-contract-missing"
         val batteryContainerClass =
             readOrNull {
                 Class.forName(BATTERY_CONTAINER, false, classLoader)
             } ?: return "battery-container-class-missing"
         val hideField =
-            generateSequence(batteryContainerClass) { clazz -> clazz.superclass }
-                .mapNotNull { clazz ->
-                    clazz.declaredFields.firstOrNull { candidate ->
-                        candidate.name == "mIsHideBattery" &&
-                            candidate.type == java.lang.Boolean.TYPE
+            readOrNull {
+                generateSequence(batteryContainerClass) { clazz -> clazz.superclass }
+                    .mapNotNull { clazz ->
+                        clazz.declaredFields.firstOrNull { candidate ->
+                            candidate.name == "mIsHideBattery" &&
+                                candidate.type == java.lang.Boolean.TYPE
+                        }
                     }
-                }
-                .firstOrNull()
-                ?.apply { isAccessible = true }
-                ?: return "battery-hide-field-missing"
+                    .firstOrNull()
+                    ?.apply { isAccessible = true }
+            } ?: return "battery-hide-field-missing"
         val batterySetIsHide =
-            batteryContainerClass.declaredMethods
-                .firstOrNull { method ->
-                    method.name == "setIsHideBattery" &&
-                        method.parameterTypes.contentEquals(
-                            arrayOf(Boolean::class.javaObjectType),
-                        ) &&
-                        method.returnType == Void.TYPE
-                }
-                ?.apply { isAccessible = true }
-                ?: return "battery-hide-method-contract-missing"
+            readOrNull {
+                batteryContainerClass.declaredMethods
+                    .firstOrNull { method ->
+                        method.name == "setIsHideBattery" &&
+                            method.parameterTypes.contentEquals(
+                                arrayOf(Boolean::class.javaObjectType),
+                            ) &&
+                            method.returnType == Void.TYPE
+                    }
+                    ?.apply { isAccessible = true }
+            } ?: return "battery-hide-method-contract-missing"
 
         val onMeasure =
-            containerClass.declaredMethods
-                .firstOrNull { method ->
-                    method.name == "onMeasure" &&
-                        method.parameterTypes.contentEquals(
-                            arrayOf(
-                                Int::class.javaPrimitiveType,
-                                Int::class.javaPrimitiveType,
-                            ),
-                        ) &&
-                        method.returnType == Void.TYPE
-                }
-                ?.apply { isAccessible = true }
-                ?: return "on-measure-contract-missing"
+            readOrNull {
+                containerClass.declaredMethods
+                    .firstOrNull { method ->
+                        method.name == "onMeasure" &&
+                            method.parameterTypes.contentEquals(
+                                arrayOf(
+                                    Int::class.javaPrimitiveType,
+                                    Int::class.javaPrimitiveType,
+                                ),
+                            ) &&
+                            method.returnType == Void.TYPE
+                    }
+                    ?.apply { isAccessible = true }
+            } ?: return "on-measure-contract-missing"
         val onLayout =
-            containerClass.declaredMethods
-                .firstOrNull { method ->
-                    method.name == "onLayout" &&
-                        method.parameterTypes.contentEquals(
-                            arrayOf(
-                                Boolean::class.javaPrimitiveType,
-                                Int::class.javaPrimitiveType,
-                                Int::class.javaPrimitiveType,
-                                Int::class.javaPrimitiveType,
-                                Int::class.javaPrimitiveType,
-                            ),
-                        ) &&
-                        method.returnType == Void.TYPE
-                }
-                ?.apply { isAccessible = true }
-                ?: return "on-layout-contract-missing"
+            readOrNull {
+                containerClass.declaredMethods
+                    .firstOrNull { method ->
+                        method.name == "onLayout" &&
+                            method.parameterTypes.contentEquals(
+                                arrayOf(
+                                    Boolean::class.javaPrimitiveType,
+                                    Int::class.javaPrimitiveType,
+                                    Int::class.javaPrimitiveType,
+                                    Int::class.javaPrimitiveType,
+                                    Int::class.javaPrimitiveType,
+                                ),
+                            ) &&
+                            method.returnType == Void.TYPE
+                    }
+                    ?.apply { isAccessible = true }
+            } ?: return "on-layout-contract-missing"
 
         val getIslandShowing =
-            generateSequence(containerClass) { clazz -> clazz.superclass }
-                .mapNotNull { clazz ->
-                    clazz.declaredMethods.firstOrNull { method ->
-                        method.name == "getIslandShowing" &&
-                            method.parameterCount == 0 &&
-                            method.returnType == Boolean::class.javaPrimitiveType
+            readOrNull {
+                generateSequence(containerClass) { clazz -> clazz.superclass }
+                    .mapNotNull { clazz ->
+                        clazz.declaredMethods.firstOrNull { method ->
+                            method.name == "getIslandShowing" &&
+                                method.parameterCount == 0 &&
+                                method.returnType == Boolean::class.javaPrimitiveType
+                        }
                     }
-                }
-                .firstOrNull()
-                ?.apply { isAccessible = true }
-                ?: return "island-showing-contract-missing"
+                    .firstOrNull()
+                    ?.apply { isAccessible = true }
+            } ?: return "island-showing-contract-missing"
 
         eventSink = guardedDiagnostic(onEvent)
         failNativeSink = onFailNative
