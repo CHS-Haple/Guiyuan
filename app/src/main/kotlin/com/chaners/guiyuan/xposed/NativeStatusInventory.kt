@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 
@@ -23,8 +24,11 @@ internal object NativeStatusInventory {
     private const val STATUS_ICON_SUBTREE_MAX_NODES = 64
 
     private var pending: Pair<View, View.OnLayoutChangeListener>? = null
+    private var deferredScan: Pair<View, Runnable>? = null
 
     fun detach() {
+        deferredScan?.let { (view, task) -> view.removeCallbacks(task) }
+        deferredScan = null
         pending?.let { (view, listener) ->
             view.removeOnLayoutChangeListener(listener)
         }
@@ -33,10 +37,30 @@ internal object NativeStatusInventory {
 
     fun schedule(
         host: Any,
+        defer: Boolean = false,
         onSnapshot: (Snapshot) -> Unit,
     ) {
         detach()
         val hostView = host as? View ?: return
+
+        if (defer) {
+            if (!hostView.isAttachedToWindow) return
+            // The diagnostic tree walk must not delay the Home handoff.
+            val task = Runnable {
+                deferredScan = null
+                if (hostView.isAttachedToWindow) {
+                    try {
+                        schedule(hostView, onSnapshot = onSnapshot)
+                    } catch (error: Throwable) {
+                        if (error is VirtualMachineError || error is ThreadDeath) throw error
+                        Log.w("Guiyuan[NativeProbe]", "Deferred native probe failed", error)
+                    }
+                }
+            }
+            deferredScan = hostView to task
+            if (!hostView.post(task)) deferredScan = null
+            return
+        }
 
         if (hostView.isLaidOut) {
             onSnapshot(inspect(hostView))
