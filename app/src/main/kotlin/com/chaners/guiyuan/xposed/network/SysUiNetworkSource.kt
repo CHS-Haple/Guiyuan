@@ -1079,7 +1079,9 @@ internal object SysUiNetworkSource {
             if (image != null) {
                 synchronized(this) {
                     if (lastWifiEvents[image] === deliveredKey) {
+                        // Both caches describe this one applied icon delivery.
                         lastWifiEvents.remove(image)
+                        lastWifiTaggedResources.remove(image)
                     }
                 }
             }
