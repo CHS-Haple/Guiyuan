@@ -205,7 +205,13 @@ internal object NativeStatusObserver {
             null
         }.getOrElse { error ->
             val remaining = created.filter { handle ->
-                runCatching { handle.unhook() }.isFailure
+                try {
+                    handle.unhook()
+                    false
+                } catch (failure: Throwable) {
+                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                    true
+                }
             }
             installedHandles.clear()
             installedHandles.addAll(remaining)
@@ -222,6 +228,7 @@ internal object NativeStatusObserver {
             diagnosticsEnabled = isDetailedDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
             val reason = error.message ?: error.javaClass.simpleName
             if (installIncomplete) "$reason-hook-cleanup-failed" else reason
         }
