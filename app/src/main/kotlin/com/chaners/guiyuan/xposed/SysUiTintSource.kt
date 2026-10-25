@@ -10,11 +10,25 @@ import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
+import java.lang.reflect.InvocationTargetException
 import java.util.ArrayList
 import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiTintSource {
+    private fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            rethrowFatal(error)
+            null
+        }
+
     const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
     const val UPDATE_TINT_METHOD_NAME = "updateLightDarkTint"
@@ -83,7 +97,7 @@ internal object SysUiTintSource {
             } catch (error: Throwable) {
                 if (error is VirtualMachineError || error is ThreadDeath) throw error
                 if (warned.compareAndSet(false, true)) {
-                    runCatching { Log.w("Guiyuan[Tint]", "Diagnostic failed", error) }
+                    readOrNull { Log.w("Guiyuan[Tint]", "Diagnostic failed", error) }
                 }
             }
         }
@@ -261,9 +275,9 @@ internal object SysUiTintSource {
         onEvent: (String) -> Unit,
     ) {
         val iconView =
-            runCatching {
+            readOrNull {
                 iconField.get(sourceView) as? View
-            }.getOrNull() ?: return
+            } ?: return
 
         if (synchronized(this) { batteryIconStructureLogged.containsKey(iconView) }) {
             return
@@ -273,9 +287,9 @@ internal object SysUiTintSource {
         val clipStates: List<BatteryClipTintState> =
             clipFields.map { field ->
                 val clip =
-                    runCatching {
+                    readOrNull {
                         field.get(iconView) as? ClipDrawable
-                    }.getOrNull()
+                    }
                 val filter = clip?.colorFilter
                 BatteryClipTintState(
                     fieldName = field.name,
@@ -353,9 +367,9 @@ internal object SysUiTintSource {
                     }
             }
                 ?: return null
-        return runCatching {
+        return readOrNull {
             (getter.invoke(filter) as? Number)?.toInt()
-        }.getOrNull()
+        }
     }
 
 
@@ -458,9 +472,9 @@ internal object SysUiTintSource {
         percentField: Field,
     ): TintState? {
         val percentView =
-            runCatching {
+            readOrNull {
                 percentField.get(sourceView) as? TextView
-            }.getOrNull() ?: return null
+            } ?: return null
         return TintState(
             appliedTint = percentView.currentTextColor,
         )
