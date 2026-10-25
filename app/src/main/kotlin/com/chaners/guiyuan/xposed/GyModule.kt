@@ -790,8 +790,8 @@ class GyModule : XposedModule() {
             SysUiNetworkRuntime.attach(
                 module = this,
                 classLoader = classLoader,
-                onRuntimeFailure = { error ->
-                    onPresentationCallbackFailure("network-wifi-bind", error)
+                onRuntimeFailure = { source, error ->
+                    onPresentationCallbackFailure("network-" + source, error)
                 },
                 onWifiState = { state ->
                     val trace = beginRenderTrace("wifi")

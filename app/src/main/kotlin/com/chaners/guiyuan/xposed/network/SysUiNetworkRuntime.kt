@@ -17,7 +17,7 @@ internal object SysUiNetworkRuntime {
         module: XposedModule,
         classLoader: ClassLoader,
         onWifiState: (StatusStateStore.WifiState) -> Unit,
-        onRuntimeFailure: (Throwable) -> Unit,
+        onRuntimeFailure: (String, Throwable) -> Unit,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
