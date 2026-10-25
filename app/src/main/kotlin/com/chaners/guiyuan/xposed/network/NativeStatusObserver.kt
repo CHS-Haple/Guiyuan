@@ -223,7 +223,7 @@ internal object NativeStatusObserver {
                     handle.unhook()
                     false
                 } catch (failure: Throwable) {
-                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                    rethrowFatal(failure)
                     true
                 }
             }
@@ -242,7 +242,7 @@ internal object NativeStatusObserver {
             diagnosticsEnabled = isDetailedDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            rethrowFatal(error)
             val reason = error.message ?: error.javaClass.simpleName
             if (installIncomplete) "$reason-hook-cleanup-failed" else reason
         }
@@ -482,17 +482,18 @@ internal object NativeStatusObserver {
                             )
                         }
                     val resolved =
-                        companionClass
-                            ?.declaredMethods
-                            ?.firstOrNull { method ->
-                                method.name == "access\$getViewStateFromChild" &&
-                                    method.parameterTypes.contentEquals(arrayOf(View::class.java))
-                            }
+                        readOrNull {
+                            companionClass
+                                ?.declaredMethods
+                                ?.firstOrNull { method ->
+                                    method.name == "access\$getViewStateFromChild" &&
+                                        method.parameterTypes.contentEquals(arrayOf(View::class.java))
+                                }?.apply { isAccessible = true }
+                        }
                     if (resolved == null) {
                         transitionStateAccessorMissing += groupClass
                         return null
                     }
-                    resolved.isAccessible = true
                     transitionStateAccessorCache.putIfAbsent(groupClass, resolved) ?: resolved
                 }
         return readOrNull {
@@ -513,12 +514,14 @@ internal object NativeStatusObserver {
         clazz: Class<*>,
         name: String,
     ): Field? =
-        generateSequence(clazz) { candidate -> candidate.superclass }
-            .mapNotNull { candidate ->
-                candidate.declaredFields.firstOrNull { field -> field.name == name }
-            }
-            .firstOrNull()
-            ?.apply { isAccessible = true }
+        readOrNull {
+            generateSequence(clazz) { candidate -> candidate.superclass }
+                .mapNotNull { candidate ->
+                    candidate.declaredFields.firstOrNull { field -> field.name == name }
+                }
+                .firstOrNull()
+                ?.apply { isAccessible = true }
+        }
 
     private fun readCachedField(
         field: Field?,
@@ -787,10 +790,12 @@ internal object NativeStatusObserver {
 
     private fun tintFields(clazz: Class<*>): List<Field> =
         tintFieldsByClass.computeIfAbsent(clazz) {
-            generateSequence(clazz) { it.superclass }
-                .flatMap { it.declaredFields.asSequence() }
-                .filter { it.name in tintFieldNames }
-                .toList()
+            readOrNull {
+                generateSequence(clazz) { it.superclass }
+                    .flatMap { it.declaredFields.asSequence() }
+                    .filter { it.name in tintFieldNames }
+                    .toList()
+            } ?: emptyList()
         }
 
     private fun readObjectField(
