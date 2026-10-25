@@ -1840,10 +1840,13 @@ class GyModule : XposedModule() {
         if (!force && fontAxisReported && reportedFontHost === host &&
             reportedFont === face && reportedBatteryFont === batteryFace
         ) return
-        val mobileFont = networkType?.let { type ->
-            val path = type.fontPath
-            if (face != null && path != null) face to path else null
-        } ?: NativePresentationResolver.verifiedMobileFont(host.context)
+        // A live face without a verified file must not borrow the static font's axis.
+        val mobileFont =
+            if (face != null) {
+                networkType?.fontPath?.let { face to it }
+            } else {
+                NativePresentationResolver.verifiedMobileFont(host.context)
+            }
 
         fun weightAxis(path: String?): FontWeightAxis? =
             path?.let {
