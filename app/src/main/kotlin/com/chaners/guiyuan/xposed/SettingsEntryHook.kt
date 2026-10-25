@@ -33,6 +33,15 @@ internal object SettingsEntryHook {
     private const val ICON_HOOK_ID = "guiyuan.settings.header.icon"
     private const val HEADER_ID = 0x475955414E4CL
 
+    private fun reportFailure(message: String, error: Throwable) {
+        if (error is VirtualMachineError || error is ThreadDeath) throw error
+        try {
+            Log.w(TAG, message, error)
+        } catch (failure: Throwable) {
+            if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+        }
+    }
+
     fun install(
         module: XposedModule,
         loader: ClassLoader,
@@ -85,11 +94,11 @@ internal object SettingsEntryHook {
                         },
                     )
                     headers.add(anchor + 1, header)
-                }.onFailure { Log.w(TAG, "Native Settings header insertion skipped", it) }
+                }.onFailure { reportFailure("Native Settings header insertion skipped", it) }
                 result
             })
             installIcon(module, loader, headerClass, id, style)
-        }.onFailure { Log.w(TAG, "Unsupported Settings header contract", it) }
+        }.onFailure { reportFailure("Unsupported Settings header contract", it) }
             .isSuccess
     }
 
@@ -152,15 +161,16 @@ internal object SettingsEntryHook {
                         image.clearColorFilter()
                         image.setImageDrawable(it)
                     }
-                }.onFailure {
+                }.onFailure { error ->
+                    if (error is VirtualMachineError || error is ThreadDeath) throw error
                     if (!warned) {
                         warned = true
-                        Log.w(TAG, "Guiyuan Settings icon skipped", it)
+                        reportFailure("Guiyuan Settings icon skipped", error)
                     }
                 }
                 result
             })
-        }.onFailure { Log.w(TAG, "Native Settings icon binding unavailable", it) }
+        }.onFailure { reportFailure("Native Settings icon binding unavailable", it) }
     }
 
     private fun createIcon(context: Context, style: SettingsEntryIcon): Drawable? {
@@ -226,7 +236,12 @@ internal object SettingsEntryHook {
         var current: Class<*>? = this
         while (current != null) {
             val clazz = current
-            val field = runCatching { clazz.getDeclaredField(name) }.getOrNull()
+            val field = try {
+                clazz.getDeclaredField(name)
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                null
+            }
             if (field != null) return field.apply { isAccessible = true }
             current = clazz.superclass
         }
