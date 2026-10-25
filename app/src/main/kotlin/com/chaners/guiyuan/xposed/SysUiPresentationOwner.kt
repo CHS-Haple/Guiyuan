@@ -73,6 +73,14 @@ internal object SysUiPresentationOwner {
         }
     }
 
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            null
+        }
+
     private fun guardedDiagnostic(
         sink: ((String) -> Unit)?,
     ): ((String) -> Unit)? =
@@ -429,7 +437,7 @@ internal object SysUiPresentationOwner {
         SysUiCarrierMetrics.resolveWidthPx(batteryCarrier)
             ?: return Result.Failure("battery-core-width-unavailable")
 
-        runCatching { field.get(statusIcons) as? MutableList<*> }.getOrNull()
+        readOrNull { field.get(statusIcons) as? MutableList<*> }
             ?: return Result.Failure("ignored-slots-list-unavailable")
 
         val existing = current
@@ -602,7 +610,7 @@ internal object SysUiPresentationOwner {
         SysUiCarrierMetrics.resolveWidthPx(resolved.batteryCarrier)
             ?: return Result.Failure(surface.surfaceName + "-battery-core-width-unavailable")
 
-        runCatching { field.get(resolved.statusIcons) as? MutableList<*> }.getOrNull()
+        readOrNull { field.get(resolved.statusIcons) as? MutableList<*> }
             ?: return Result.Failure(
                 surface.surfaceName + "-ignored-slots-list-unavailable",
             )
@@ -786,7 +794,7 @@ internal object SysUiPresentationOwner {
                 retryAfterLayout = true,
             )
 
-        runCatching { field.get(statusIcons) as? MutableList<*> }.getOrNull()
+        readOrNull { field.get(statusIcons) as? MutableList<*> }
             ?: return Result.Failure(
                 "ignored-slots-list-unavailable",
                 retryAfterLayout = true,
@@ -1928,9 +1936,9 @@ internal object SysUiPresentationOwner {
             }
             @Suppress("UNCHECKED_CAST")
             val list =
-                runCatching {
+                readOrNull {
                     ignoredSlotsField.get(container) as? MutableList<String>
-                }.getOrNull()
+                }
             if (list == null) {
                 onFailNative("ignored-slots-list-unavailable")
                 return block()
@@ -1994,9 +2002,9 @@ internal object SysUiPresentationOwner {
                     }
             @Suppress("UNCHECKED_CAST")
             val live =
-                runCatching {
+                readOrNull {
                     ignoredSlotsField.get(group) as? MutableList<String>
-                }.getOrNull()
+                }
                     ?: run {
                         onFailNative("ignored-slots-list-unavailable")
                         return false
@@ -2067,9 +2075,9 @@ internal object SysUiPresentationOwner {
             val group = statusIcons.get() ?: return false
             @Suppress("UNCHECKED_CAST")
             val live =
-                runCatching {
+                readOrNull {
                     ignoredSlotsField.get(group) as? MutableList<String>
-                }.getOrNull() ?: return false
+                } ?: return false
             val target =
                 OwnedEntries.restoreTarget(
                     live = live,
@@ -2176,9 +2184,8 @@ internal object SysUiPresentationOwner {
 
         private fun measuredNativePeerWidth(group: ViewGroup): Int? {
             val (viewsField, spacingField) = fakePeerMetrics ?: return null
-            val views = runCatching { viewsField.get(group) as? List<*> }
-                .getOrNull() ?: return null
-            val spacing = runCatching { spacingField.getInt(group) }.getOrNull()
+            val views = readOrNull { viewsField.get(group) as? List<*> } ?: return null
+            val spacing = readOrNull { spacingField.getInt(group) }
                 ?: return null
             if (spacing < 0 || views.size > group.childCount) return null
 
@@ -2223,7 +2230,7 @@ internal object SysUiPresentationOwner {
                 return false
             }
             val nativeHide =
-                runCatching { batteryHideField.getBoolean(container) }.getOrNull()
+                readOrNull { batteryHideField.getBoolean(container) }
                     ?: run { onFailNative("battery-hide-state-unavailable"); return false }
             val actualBatteryWidthPx =
                 (if (batteryView.measuredWidth > 0) batteryView.measuredWidth else batteryView.width)
