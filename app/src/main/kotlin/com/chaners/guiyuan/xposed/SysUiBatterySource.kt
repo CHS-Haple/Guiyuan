@@ -285,7 +285,7 @@ internal object SysUiBatterySource {
                     Hooker { chain ->
                         val result = chain.proceed()
                         if (!hooksReady) return@Hooker result
-                        val iconView = chain.thisObject as? View
+                        val iconView = readOrNull { chain.thisObject as? View }
                             ?: return@Hooker result
                         try {
                             publish(
@@ -340,7 +340,7 @@ internal object SysUiBatterySource {
                         Hooker { chain ->
                             val result = chain.proceed()
                             if (!hooksReady) return@Hooker result
-                            val meterView = chain.thisObject as? View
+                            val meterView = readOrNull { chain.thisObject as? View }
                                 ?: return@Hooker result
                             try {
                                 publishChargingGlyph(

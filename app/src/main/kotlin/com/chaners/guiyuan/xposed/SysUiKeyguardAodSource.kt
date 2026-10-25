@@ -171,7 +171,7 @@ internal object SysUiKeyguardAodSource {
         Hooker { chain ->
             val result = chain.proceed()
             if (!hooksReady) return@Hooker result
-            val sourceView = chain.thisObject as? View
+            val sourceView = readOrNull { chain.thisObject as? View }
             if (sourceView != null) {
                 try {
                     publish(sourceView, source, onAodState, onDiagnostic)
