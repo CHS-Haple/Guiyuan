@@ -10,6 +10,14 @@ import android.provider.Settings
 internal object SysUiAirplaneSource {
     private val uri = Settings.Global.getUriFor(Settings.Global.AIRPLANE_MODE_ON)
 
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            null
+        }
+
     private var resolver: ContentResolver? = null
     private var observer: ContentObserver? = null
 
@@ -50,13 +58,17 @@ internal object SysUiAirplaneSource {
                 }
 
             val registered =
-                runCatching {
+                try {
                     nextResolver.registerContentObserver(
                         uri,
                         false,
                         nextObserver,
                     )
-                }.isSuccess
+                    true
+                } catch (error: Throwable) {
+                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    false
+                }
             if (!registered) {
                 this.onAirplaneMode = null
                 this.onEvent = null
@@ -92,13 +104,13 @@ internal object SysUiAirplaneSource {
     private fun publish(source: String) {
         val currentResolver = resolver ?: return
         val enabled =
-            runCatching {
+            readOrNull {
                 Settings.Global.getInt(
                     currentResolver,
                     Settings.Global.AIRPLANE_MODE_ON,
                     0,
                 ) != 0
-            }.getOrNull() ?: return
+            } ?: return
 
         if (lastState == enabled) {
             return
