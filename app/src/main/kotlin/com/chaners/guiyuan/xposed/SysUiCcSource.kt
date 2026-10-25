@@ -178,7 +178,12 @@ internal object SysUiCcSource {
                     .intercept(
                         Hooker { chain ->
                             val result = chain.proceed()
-                            val root = chain.thisObject as? ViewGroup
+                            var observed: ViewGroup? = null
+                            dispatchRuntimeCallback(
+                                callback = { observed = chain.thisObject as? ViewGroup },
+                                onFailure = onRuntimeFailure,
+                            )
+                            val root = observed
                             if (root != null) {
                                 dispatchRuntimeCallback(
                                     callback =
