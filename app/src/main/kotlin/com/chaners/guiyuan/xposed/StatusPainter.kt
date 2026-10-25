@@ -9,6 +9,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
+import android.os.Build
 import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
@@ -41,6 +42,9 @@ internal class StatusPainter(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     // Keep 5G font axes separate from other Canvas text.
     private val mobileTypePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val hasFontOverride =
+        Build.VERSION.SDK_INT >= 36 &&
+            Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1
     private var mobileTextSource: Typeface? = null
     private val mobileTextSamples =
         object : LinkedHashMap<Int, Paint>(128, 0.75f, true) {
@@ -130,6 +134,7 @@ internal class StatusPainter(
         nativeWifiReferenceIds.clear()
         batteryTextSamples.clear()
         mobileTextSamples.clear()
+        mobileInkSamples.clear()
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
     }
@@ -2148,6 +2153,15 @@ internal class StatusPainter(
         canvas.drawText(layout.text, textX, baselineY, batteryTextPaint)
     }
 
+    private fun Paint.setWeightAxis(weight: Int?) {
+        val variation = weight?.let { "'wght' $it" }
+        if (hasFontOverride) {
+            setFontVariationOverride(variation)
+        } else {
+            setFontVariationSettings(variation)
+        }
+    }
+
     private fun weightedPaint(
         source: Typeface,
         weight: Int,
@@ -2160,7 +2174,7 @@ internal class StatusPainter(
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 typeface = source
                 // A rejected variation keeps the captured source face unchanged.
-                runCatching { setFontVariationSettings("'wght' $sample") }
+                runCatching { setWeightAxis(sample) }
             }
         }
     }
@@ -2199,7 +2213,7 @@ internal class StatusPainter(
         batteryTextPaint.strokeWidth = if (native) targetStyle.strokeWidth else 0f
         if (native) {
             batteryTextPaint.typeface = targetStyle.typeface
-            batteryTextPaint.setFontVariationSettings(null)
+            batteryTextPaint.setWeightAxis(null)
         }
     }
 
@@ -3152,7 +3166,9 @@ internal class StatusPainter(
         val key =
             MobileInkKey(
                 face = mobileTypePaint.typeface,
-                variation = mobileTypePaint.fontVariationSettings,
+                variation =
+                    if (hasFontOverride) mobileTypePaint.fontVariationOverride
+                    else mobileTypePaint.fontVariationSettings,
                 text = text,
                 size = mobileTypePaint.textSize,
                 scaleX = mobileTypePaint.textScaleX,
@@ -3205,7 +3221,7 @@ internal class StatusPainter(
         mobileTypePaint.strokeWidth = if (native) targetStyle.strokeWidth else 0f
         if (native) {
             mobileTypePaint.typeface = targetStyle.typeface
-            mobileTypePaint.setFontVariationSettings(null)
+            mobileTypePaint.setWeightAxis(null)
         }
         mobileTypePaint.textSize = textSize
     }

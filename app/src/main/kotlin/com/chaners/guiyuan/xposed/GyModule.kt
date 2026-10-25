@@ -112,7 +112,9 @@ class GyModule : XposedModule() {
     private var inSettings = false
     private var settingsHookInstalled = false
     private var reportedFont: Typeface? = null
+    private var reportedFontPath: String? = null
     private var reportedBatteryFont: Typeface? = null
+    private var reportedBatteryFontPath: String? = null
     private var reportedFontHost: View? = null
     private var fontAxisReported = false
 
@@ -1838,12 +1840,16 @@ class GyModule : XposedModule() {
         val batteryFont = SysUiBatterySource.readHostNumberFont(host)
         val batteryFace = batteryFont?.first
         if (!force && fontAxisReported && reportedFontHost === host &&
-            reportedFont === face && reportedBatteryFont === batteryFace
+            reportedFont === face && reportedFontPath == networkType?.fontPath &&
+            reportedBatteryFont === batteryFace && reportedBatteryFontPath == batteryFont?.second
         ) return
-        val mobileFont = networkType?.let { type ->
-            val path = type.fontPath
-            if (face != null && path != null) face to path else null
-        } ?: NativePresentationResolver.verifiedMobileFont(host.context)
+        // A live face without a verified file must not borrow the static font's axis.
+        val mobileFont =
+            if (face != null) {
+                networkType?.fontPath?.let { face to it }
+            } else {
+                NativePresentationResolver.verifiedMobileFont(host.context)
+            }
 
         fun weightAxis(path: String?): FontWeightAxis? =
             path?.let {
@@ -1884,7 +1890,9 @@ class GyModule : XposedModule() {
             host.context.sendBroadcast(intent, null, options)
         }.onSuccess {
             reportedFont = face
+            reportedFontPath = networkType?.fontPath
             reportedBatteryFont = batteryFace
+            reportedBatteryFontPath = batteryFont?.second
             reportedFontHost = host
             fontAxisReported = true
         }.onFailure { Log.w(TAG, "Unable to report verified native font axes", it) }
