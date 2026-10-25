@@ -283,6 +283,7 @@ internal object CcTransitionOwner {
                         frozenNoSimTarget = null
                         changed = true
                     }
+                    if (nativeWifiTargetChanged()) changed = true
                     if (changed) {
                         // Retarget the existing reservation instead of jumping to a new width.
                         reservationLayout = null
@@ -290,6 +291,8 @@ internal object CcTransitionOwner {
                     }
                 }
             }
+        private var nativeWifiRoot: View? = null
+        private var nativeWifiSignal: View? = null
         private var frozenAirplaneTarget: TargetWitness? = null
         private var airplaneTargetResolved = false
         private var frozenNoSimTarget: TargetWitness? = null
@@ -412,6 +415,29 @@ internal object CcTransitionOwner {
             return slot == MOBILE_SLOT || slot == STACKED_MOBILE_SLOT
         }
 
+        private fun nativeWifiTargetChanged(): Boolean {
+            val root =
+                slotViews(finalStatusIcons, WIFI_SLOT).firstOrNull { view ->
+                    view.visibility == View.VISIBLE && isUsableSlotView(view)
+                }
+            val signal =
+                root?.let { wifi ->
+                    NativeParticipantAccess.findResourceView(
+                        root = wifi,
+                        entryName = "wifi_signal",
+                    )?.takeIf(::isReliableSemanticTarget)
+                }
+            if (root === nativeWifiRoot && signal === nativeWifiSignal) return false
+            nativeWifiRoot = root
+            nativeWifiSignal = signal
+            targetCache.keys.removeAll { key ->
+                (key.target as? StatusPainter.TransitionTarget.Slots)
+                    ?.preferredSlots
+                    ?.contains(WIFI_SLOT) == true
+            }
+            return true
+        }
+
         private fun supplementalTargetChanged(
             slot: String,
             resolved: Boolean,
@@ -508,10 +534,7 @@ internal object CcTransitionOwner {
         // Sample both native carriers in one frame; neither layer is a stable
         // proxy for the other while HyperOS switches CC presentation.
         fun wifiMotionProbe(): String? {
-            val native = PresentationStore.snapshot().mobilePresentation
-            if (currentSnapshot.model.centerIndicator !is CenterIndicator.Wifi ||
-                native?.mode != NativePresentationResolver.Mode.DUAL_SEPARATE
-            ) return null
+            if (currentSnapshot.model.centerIndicator !is CenterIndicator.Wifi) return null
             val root = rootRef.get() ?: return null
             val source = sourceViewRef.get() ?: return null
 
