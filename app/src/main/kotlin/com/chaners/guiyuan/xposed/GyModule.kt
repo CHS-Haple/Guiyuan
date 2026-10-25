@@ -790,6 +790,9 @@ class GyModule : XposedModule() {
             SysUiNetworkRuntime.attach(
                 module = this,
                 classLoader = classLoader,
+                onRuntimeFailure = { source, error ->
+                    onPresentationCallbackFailure("network-" + source, error)
+                },
                 onWifiState = { state ->
                     val trace = beginRenderTrace("wifi")
                     val changed = StatusStateStore.updateWifi(state)
@@ -1630,6 +1633,9 @@ class GyModule : XposedModule() {
             SysUiBatteryRuntime.attach(
                 module = this,
                 classLoader = classLoader,
+                onRuntimeFailure = { source, error ->
+                    onPresentationCallbackFailure("battery-" + source, error)
+                },
                 onBatteryState = { state ->
                     val trace = beginRenderTrace("battery")
                     StatusStateStore.updateBattery(state)?.let { snapshot ->
@@ -1697,8 +1703,14 @@ class GyModule : XposedModule() {
                     onPresentationCallbackFailure("scene", error)
                 },
                 onKeyguardAodState = ::onKeyguardAodStateUpdate,
+                onKeyguardRuntimeFailure = { source, error ->
+                    onPresentationCallbackFailure("keyguard-" + source, error)
+                },
                 onKeyguardFullAodTransitionStarted = ::onFullAodStarted,
                 onKeyguardFullAodTransitionCommitted = ::onFullAodCommitted,
+                onKeyguardFullAodRuntimeFailure = { source, error ->
+                    onPresentationCallbackFailure(source, error)
+                },
                 onKeyguardStatusIconTransition = ::onKeyguardIconTransition,
                 onMobileTypeChanged = { drawable ->
                     refreshMobilePresentation(

@@ -71,8 +71,10 @@ internal object SysUiPresentationRuntime {
         onSceneState: (SysUiSceneSource.SceneUpdate) -> Unit,
         onSceneRuntimeFailure: (Throwable) -> Unit,
         onKeyguardAodState: (SysUiKeyguardAodSource.AodUpdate) -> Unit,
+        onKeyguardRuntimeFailure: (String, Throwable) -> Unit,
         onKeyguardFullAodTransitionStarted: () -> Unit,
         onKeyguardFullAodTransitionCommitted: () -> Unit,
+        onKeyguardFullAodRuntimeFailure: (String, Throwable) -> Unit,
         onKeyguardStatusIconTransition: () -> Unit,
         onMobileTypeChanged: (Drawable) -> Unit,
         onTintEvent: ((String) -> Unit)?,
@@ -113,6 +115,9 @@ internal object SysUiPresentationRuntime {
                     module = module,
                     classLoader = classLoader,
                     onAodState = onKeyguardAodState,
+                    onRuntimeFailure = { error ->
+                        onKeyguardRuntimeFailure("aod-state", error)
+                    },
                     onEvent = onKeyguardAodEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
@@ -132,6 +137,7 @@ internal object SysUiPresentationRuntime {
                     classLoader = classLoader,
                     onTransitionStarted = onKeyguardFullAodTransitionStarted,
                     onTransitionCommitted = onKeyguardFullAodTransitionCommitted,
+                    onRuntimeFailure = onKeyguardFullAodRuntimeFailure,
                     onEvent = onKeyguardAodEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
@@ -150,6 +156,9 @@ internal object SysUiPresentationRuntime {
                     module = module,
                     classLoader = classLoader,
                     onTransition = onKeyguardStatusIconTransition,
+                    onRuntimeFailure = { error ->
+                        onKeyguardRuntimeFailure("icon-transition", error)
+                    },
                     onEvent = onKeyguardAodEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
