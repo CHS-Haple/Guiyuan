@@ -30,6 +30,10 @@ internal object NativeStatusObserver {
             null
         }
 
+    private inline fun reportEvent(message: () -> String) {
+        readOrNull { eventSink?.takeIf { diagnosticsEnabled() }?.invoke(message()) }
+    }
+
     private const val HOME_MANAGER_CLASS =
         "com.android.systemui.statusbar.phone.ui.DarkIconManager"
     private const val STATUS_BAR_ICON_CONTROLLER_IMPL_CLASS =
@@ -284,11 +288,11 @@ internal object NativeStatusObserver {
         activeGroup = WeakReference(group)
         refreshStatusPresentationLocked("observerAttach")
 
-        eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
+        reportEvent {
             "nativeNetworkSuppression observerOnly source=" + source + " " +
                 "manager=" + manager.javaClass.name +
-                " group=" + group.javaClass.name,
-        )
+                " group=" + group.javaClass.name
+        }
         return Result.Active
     }
 
@@ -408,18 +412,18 @@ internal object NativeStatusObserver {
                                     observationAttachedSink?.invoke(
                                         pendingSource ?: "homeManagerRegistered",
                                     )
-                                    eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
+                                    reportEvent {
                                         "statusIconObservation ready source=" +
                                             (pendingSource ?: "homeManagerRegistered") +
-                                            " trigger=homeManagerRegistered",
-                                    )
+                                            " trigger=homeManagerRegistered"
+                                    }
                                 }
                                 is Result.Failure ->
-                                    eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
+                                    reportEvent {
                                         "statusIconObservation unavailable " +
                                             "source=" + (pendingSource ?: "homeManagerRegistered") +
-                                            " reason=" + state.reason,
-                                    )
+                                            " reason=" + state.reason
+                                    }
                                 is Result.Pending,
                                 is Result.Inactive,
                                 -> Unit
@@ -610,7 +614,7 @@ internal object NativeStatusObserver {
             )
         val sink = statusPresentationSink
         if (sink != null && deliverPresentation(presentation, sink)) {
-            eventSink?.takeIf { diagnosticsEnabled() }?.invoke(
+            reportEvent {
                 "statusIconPresentation source=" + source +
                     " tint=" +
                     (presentation.appliedTint
@@ -653,8 +657,8 @@ internal object NativeStatusObserver {
                         presentation.noSimIcon?.packageName +
                             ":" +
                             presentation.noSimIcon?.resourceId
-                    ),
-            )
+                    )
+            }
         }
 
     }
