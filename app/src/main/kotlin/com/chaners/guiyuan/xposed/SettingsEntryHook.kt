@@ -20,6 +20,7 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
+import java.lang.reflect.InvocationTargetException
 import java.util.ArrayList
 
 // An unrecognized Settings list stays entirely native.
@@ -33,12 +34,17 @@ internal object SettingsEntryHook {
     private const val ICON_HOOK_ID = "guiyuan.settings.header.icon"
     private const val HEADER_ID = 0x475955414E4CL
 
+    private fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
     private fun reportFailure(message: String, error: Throwable) {
-        if (error is VirtualMachineError || error is ThreadDeath) throw error
+        rethrowFatal(error)
         try {
             Log.w(TAG, message, error)
         } catch (failure: Throwable) {
-            if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+            rethrowFatal(failure)
         }
     }
 
@@ -162,7 +168,7 @@ internal object SettingsEntryHook {
                         image.setImageDrawable(it)
                     }
                 }.onFailure { error ->
-                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    rethrowFatal(error)
                     if (!warned) {
                         warned = true
                         reportFailure("Guiyuan Settings icon skipped", error)
@@ -239,7 +245,7 @@ internal object SettingsEntryHook {
             val field = try {
                 clazz.getDeclaredField(name)
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 null
             }
             if (field != null) return field.apply { isAccessible = true }
