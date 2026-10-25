@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed.network
 
 import android.content.res.ColorStateList
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -147,13 +148,38 @@ internal object SysUiNetworkSource {
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): InstallResult {
+        val warned = AtomicBoolean(false)
+        fun warn(error: Throwable) {
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            if (warned.compareAndSet(false, true)) {
+                runCatching { Log.w("Guiyuan[Network]", "Diagnostic failed", error) }
+            }
+        }
+        val diagnosticEvent: ((String) -> Unit)? =
+            onEvent?.let { sink ->
+                { event: String ->
+                    try {
+                        sink(event)
+                    } catch (error: Throwable) {
+                        warn(error)
+                    }
+                }
+            }
+        val diagnosticEnabled: () -> Boolean = {
+            try {
+                isDetailedDiagnosticsEnabled()
+            } catch (error: Throwable) {
+                warn(error)
+                false
+            }
+        }
         val wifi =
             installWifi(
                 module = module,
                 classLoader = classLoader,
                 onWifiState = onWifiState,
-                onEvent = onEvent,
-                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                onEvent = diagnosticEvent,
+                isDetailedDiagnosticsEnabled = diagnosticEnabled,
             )
         val mobile =
             installMobile(
@@ -161,8 +187,8 @@ internal object SysUiNetworkSource {
                 classLoader = classLoader,
                 onMobileSignal = onMobileSignal,
                 onPresentationChanged = onPresentationChanged,
-                onEvent = onEvent,
-                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                onEvent = diagnosticEvent,
+                isDetailedDiagnosticsEnabled = diagnosticEnabled,
             )
 
         return InstallResult(
