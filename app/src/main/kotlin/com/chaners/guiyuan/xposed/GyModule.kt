@@ -246,8 +246,8 @@ class GyModule : XposedModule() {
             return runCatching {
                 param.setSavedInstanceState(SETTINGS_RELOAD)
                 true
-            }.getOrElse {
-                Log.w(TAG, "Settings hot reload preparation failed", it)
+            }.getOrElse { error ->
+                SettingsEntryHook.reportFailure("Settings hot reload preparation failed", error)
                 false
             }
         }
@@ -324,8 +324,9 @@ class GyModule : XposedModule() {
             val (entry, icon) = settingsEntry()
             val restored = runCatching {
                 SettingsEntryHook.reload(this, param.oldHookHandles, entry, icon)
-            }.onFailure { Log.w(TAG, "Settings hot reload failed; restart Settings", it) }
-                .getOrDefault(false)
+            }.onFailure { error ->
+                SettingsEntryHook.reportFailure("Settings hot reload failed; restart Settings", error)
+            }.getOrDefault(false)
             settingsHookInstalled = restored && entry != SettingsEntry.Disabled
             if (!restored) Log.w(TAG, "Settings hook restoration unavailable; restart Settings")
             return

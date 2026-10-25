@@ -20,6 +20,7 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
+import java.lang.reflect.InvocationTargetException
 import java.util.ArrayList
 
 // An unrecognized Settings list stays entirely native.
@@ -32,6 +33,20 @@ internal object SettingsEntryHook {
     private const val HOOK_ID = "guiyuan.settings.header"
     private const val ICON_HOOK_ID = "guiyuan.settings.header.icon"
     private const val HEADER_ID = 0x475955414E4CL
+
+    internal fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
+    internal fun reportFailure(message: String, error: Throwable) {
+        rethrowFatal(error)
+        try {
+            Log.w(TAG, message, error)
+        } catch (failure: Throwable) {
+            rethrowFatal(failure)
+        }
+    }
 
     fun install(
         module: XposedModule,
@@ -85,11 +100,11 @@ internal object SettingsEntryHook {
                         },
                     )
                     headers.add(anchor + 1, header)
-                }.onFailure { Log.w(TAG, "Native Settings header insertion skipped", it) }
+                }.onFailure { reportFailure("Native Settings header insertion skipped", it) }
                 result
             })
             installIcon(module, loader, headerClass, id, style)
-        }.onFailure { Log.w(TAG, "Unsupported Settings header contract", it) }
+        }.onFailure { reportFailure("Unsupported Settings header contract", it) }
             .isSuccess
     }
 
@@ -152,15 +167,16 @@ internal object SettingsEntryHook {
                         image.clearColorFilter()
                         image.setImageDrawable(it)
                     }
-                }.onFailure {
+                }.onFailure { error ->
+                    rethrowFatal(error)
                     if (!warned) {
                         warned = true
-                        Log.w(TAG, "Guiyuan Settings icon skipped", it)
+                        reportFailure("Guiyuan Settings icon skipped", error)
                     }
                 }
                 result
             })
-        }.onFailure { Log.w(TAG, "Native Settings icon binding unavailable", it) }
+        }.onFailure { reportFailure("Native Settings icon binding unavailable", it) }
     }
 
     private fun createIcon(context: Context, style: SettingsEntryIcon): Drawable? {
@@ -226,7 +242,12 @@ internal object SettingsEntryHook {
         var current: Class<*>? = this
         while (current != null) {
             val clazz = current
-            val field = runCatching { clazz.getDeclaredField(name) }.getOrNull()
+            val field = try {
+                clazz.getDeclaredField(name)
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                null
+            }
             if (field != null) return field.apply { isAccessible = true }
             current = clazz.superclass
         }
