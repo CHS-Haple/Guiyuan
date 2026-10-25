@@ -682,8 +682,17 @@ internal object SysUiNetworkSource {
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
-        val root = chain.getArg(0) as? ViewGroup
-        val viewModel = chain.getArg(1)
+        val root: ViewGroup?
+        val viewModel: Any?
+        try {
+            root = chain.getArg(0) as? ViewGroup
+            viewModel = chain.getArg(1)
+        } catch (error: Throwable) {
+            rethrowFatal(error)
+            val result = chain.proceed()
+            callbackFailed("wifi-bind-args", error, onRuntimeFailure)
+            return@Hooker result
+        }
 
         val boundRoot =
             root?.takeIf { viewModel?.javaClass?.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME }
@@ -977,7 +986,15 @@ internal object SysUiNetworkSource {
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
-        val value = chain.getArg(0)
+        val value =
+            try {
+                chain.getArg(0)
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                val result = chain.proceed()
+                callbackFailed("wifi-icon-args", error, onRuntimeFailure)
+                return@Hooker result
+            }
         val emitter = chain.thisObject
         val classId =
             readOrNull {
@@ -1118,9 +1135,19 @@ internal object SysUiNetworkSource {
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
-        val root = chain.getArg(0) as? ViewGroup
-        val locationViewModel = chain.getArg(1)
-        val iconViewModel = chain.getArg(2)
+        val root: ViewGroup?
+        val locationViewModel: Any?
+        val iconViewModel: Any?
+        try {
+            root = chain.getArg(0) as? ViewGroup
+            locationViewModel = chain.getArg(1)
+            iconViewModel = chain.getArg(2)
+        } catch (error: Throwable) {
+            rethrowFatal(error)
+            val result = chain.proceed()
+            callbackFailed("mobile-bind-args", error, onRuntimeFailure)
+            return@Hooker result
+        }
         val boundRoot =
             root?.takeIf {
                 locationViewModel?.javaClass?.name == HOME_MOBILE_VIEW_MODEL_CLASS_NAME
@@ -1216,7 +1243,15 @@ internal object SysUiNetworkSource {
         val classId = readOrNull {
             mobileClassIdField.getInt(emitter)
         } ?: -1
-        val value = chain.getArg(0)
+        val value =
+            try {
+                chain.getArg(0)
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                val result = chain.proceed()
+                callbackFailed("mobile-signal-args", error, onRuntimeFailure)
+                return@Hooker result
+            }
 
         var eventLog: String? = null
         var pendingKey: String? = null
