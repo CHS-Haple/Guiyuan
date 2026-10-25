@@ -1784,6 +1784,7 @@ class GyModule : XposedModule() {
     private fun refreshMobilePresentation(
         trace: RuntimeRenderTrace? = null,
         pendingMobileTypeDrawable: Drawable? = null,
+        forceRefresh: Boolean = false,
     ) {
         val presentation =
             NativePresentationResolver.resolve(
@@ -1803,8 +1804,13 @@ class GyModule : XposedModule() {
                         .connectivity
                         .mobileDataEnabled,
             )
-        if (changed != null || recoveryCompleted != null) {
-            val presentationTrace = markPresentationCommitted(trace)
+        if (changed != null || recoveryCompleted != null || forceRefresh) {
+            val presentationTrace =
+                if (changed != null || recoveryCompleted != null) {
+                    markPresentationCommitted(trace)
+                } else {
+                    trace
+                }
             if (detailedDiagnosticsEnabled && changed != null) {
                 val platformIds = presentation.platformActiveSubscriptionIds?.sorted()
                 val mobile = StatusStateStore.snapshot().mobile
@@ -3874,6 +3880,7 @@ class GyModule : XposedModule() {
                         SysUiConnectivitySource.refreshDataSubscription()
                         refreshMobilePresentation(
                             beginRenderTrace("defaultDataSubscription"),
+                            forceRefresh = true,
                         )
                     },
                     onConnectivityState = { state ->
