@@ -293,6 +293,8 @@ internal object CcTransitionOwner {
             }
         private var nativeWifiRoot: View? = null
         private var nativeWifiSignal: View? = null
+        private var wifiTargetReady: Boolean? = null
+        private var wifiRetarget: WifiRetarget? = null
         private var frozenAirplaneTarget: TargetWitness? = null
         private var airplaneTargetResolved = false
         private var frozenNoSimTarget: TargetWitness? = null
@@ -678,6 +680,16 @@ internal object CcTransitionOwner {
                 )
             ) {
                 reservationLayout = null
+            }
+            if (previous.centerIndicator !is CenterIndicator.Wifi &&
+                model.centerIndicator is CenterIndicator.Wifi
+            ) {
+                // The source can switch to Wi-Fi before its native FINAL slot exists.
+                wifiTargetReady = false
+                wifiRetarget = null
+            } else if (model.centerIndicator !is CenterIndicator.Wifi) {
+                wifiTargetReady = null
+                wifiRetarget = null
             }
             currentSnapshot = next
         }
@@ -1268,6 +1280,54 @@ internal object CcTransitionOwner {
                                 carrierFrames = carrierFrames,
                             )
                     }
+                var wifiRetargetOpacity = 1f
+                val renderedGeometry =
+                    if (spec.component == StatusPainter.TransitionComponent.CENTER &&
+                        model.centerIndicator is CenterIndicator.Wifi
+                    ) {
+                        val ready = matchedTargetGeometry != null
+                        if (ready && wifiTargetReady == false &&
+                            componentMotionProgress > 0f && componentMotionProgress < 1f
+                        ) {
+                            val before = carriedSourceGeometry(sourceGeometry, carrierFrames)
+                            val delta = FloatArray(geometry.size) { index ->
+                                before[index] - geometry[index]
+                            }
+                            wifiRetarget =
+                                if (delta.all(Float::isFinite)) {
+                                    WifiRetarget(
+                                        progress = componentMotionProgress,
+                                        delta = delta,
+                                        sourceOpacity =
+                                            CcTransitionPolicy.unmatchedExitOpacity(
+                                                componentMotionProgress,
+                                            ),
+                                    )
+                                } else null
+                        } else if (!ready) {
+                            wifiRetarget = null
+                        }
+                        wifiTargetReady = ready
+                        val retarget = wifiRetarget.takeIf { ready }
+                        if (retarget != null) {
+                            val weight =
+                                CcTransitionPolicy.retargetWeight(
+                                    componentMotionProgress,
+                                    retarget.progress,
+                                )
+                            wifiRetargetOpacity =
+                                1f - (1f - retarget.sourceOpacity) * weight
+                            geometry.copyOf().apply {
+                                indices.forEach { index ->
+                                    this[index] += retarget.delta[index] * weight
+                                }
+                            }
+                        } else {
+                            geometry
+                        }
+                    } else {
+                        geometry
+                    }
                 val componentVisibleFraction =
                     if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
                         // The ring retracts independently of the final native battery target.
@@ -1321,7 +1381,7 @@ internal object CcTransitionOwner {
                     }
                 val matrix =
                     matrixForBoundsGeometry(
-                        geometry = geometry,
+                        geometry = renderedGeometry,
                         bounds = matrixBounds,
                     ) ?: return@forEach
 
@@ -1331,7 +1391,8 @@ internal object CcTransitionOwner {
                     hasTarget ||
                         spec.component == StatusPainter.TransitionComponent.CHARGING_ICON
                 val layerOpacity =
-                    opacity * if (clipExit) 1f else componentVisibleFraction
+                    opacity * (if (clipExit) 1f else componentVisibleFraction) *
+                        wifiRetargetOpacity
                 val save =
                     canvas.saveLayerAlpha(
                         null,
@@ -3846,6 +3907,12 @@ internal object CcTransitionOwner {
         private data class ReservationRetarget(
             val progress: Float,
             val shift: Float,
+        )
+
+        private data class WifiRetarget(
+            val progress: Float,
+            val delta: FloatArray,
+            val sourceOpacity: Float,
         )
 
         private data class CarrierFrames(
