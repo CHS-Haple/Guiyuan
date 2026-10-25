@@ -1882,17 +1882,42 @@ internal object SysUiPresentationOwner {
                 try {
                     OwnedEntries.add(list, representedSlots)
                 } catch (error: Throwable) {
-                    onFailNative(
-                        "ignored-slots-add-" +
-                            (error.message ?: error.javaClass.simpleName),
-                    )
+                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    try {
+                        onFailNative(
+                            "ignored-slots-add-" +
+                                (error.message ?: error.javaClass.simpleName),
+                        )
+                    } catch (failure: Throwable) {
+                        if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                        if (failure !== error) error.addSuppressed(failure)
+                    }
                     return block()
                 }
 
+            var nativeFailure: Throwable? = null
             return try {
                 block()
+            } catch (error: Throwable) {
+                nativeFailure = error
+                throw error
             } finally {
-                OwnedEntries.restore(list, owned)
+                try {
+                    OwnedEntries.restore(list, owned)
+                } catch (error: Throwable) {
+                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    try {
+                        onFailNative(
+                            "ignored-slots-restore-" +
+                                (error.message ?: error.javaClass.simpleName),
+                        )
+                    } catch (failure: Throwable) {
+                        if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                        if (failure !== error) error.addSuppressed(failure)
+                    }
+                    // A failed cleanup must not replace the native method's exception.
+                    if (nativeFailure !== error) nativeFailure?.addSuppressed(error)
+                }
             }
         }
 
