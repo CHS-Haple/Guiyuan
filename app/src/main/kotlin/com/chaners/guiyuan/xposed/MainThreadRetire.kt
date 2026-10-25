@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -11,6 +12,11 @@ internal class MainThreadRetire(
     private val waitMs: Long = 5_000L,
 ) {
     private enum class Phase { Queued, Running, Cancelled }
+
+    private fun fatalCause(error: Throwable): Throwable? {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        return cause.takeIf { it is VirtualMachineError || it is ThreadDeath }
+    }
 
     fun run(cleanup: () -> Unit): Boolean {
         val phase = AtomicReference(Phase.Queued)
@@ -27,7 +33,23 @@ internal class MainThreadRetire(
                     done.countDown()
                 }
             }
-        val posted = runCatching { post(task) }.getOrDefault(false)
+        val posted =
+            try {
+                post(task)
+            } catch (error: Throwable) {
+                fatalCause(error)?.let { fatal ->
+                    // A failed dispatch may still have queued the old View owner.
+                    if (phase.compareAndSet(Phase.Queued, Phase.Cancelled)) {
+                        try {
+                            cancel(task)
+                        } catch (_: Throwable) {
+                            // Preserve the original fatal failure.
+                        }
+                    }
+                    throw fatal
+                }
+                false
+            }
         if (!posted && phase.compareAndSet(Phase.Queued, Phase.Cancelled)) {
             cancel(task)
             return false
@@ -57,7 +79,10 @@ internal class MainThreadRetire(
                     interrupted = true
                 }
             }
-            failure?.let { throw IllegalStateException("old-generation-retirement-failed", it) }
+            failure?.let { error ->
+                fatalCause(error)?.let { throw it }
+                throw IllegalStateException("old-generation-retirement-failed", error)
+            }
             return true
         } finally {
             if (interrupted) Thread.currentThread().interrupt()

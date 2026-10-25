@@ -8,6 +8,8 @@ import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertSame
+import java.lang.reflect.InvocationTargetException
 import org.junit.Test
 
 class MainThreadRetireTest {
@@ -210,6 +212,51 @@ class MainThreadRetireTest {
         assertTrue(interrupted.get())
         assertEquals(0, cancellations.get())
         assertEquals(1, changes.get())
+    }
+
+    @Test
+    fun fatalCleanupRetainsItsIdentity() {
+        val fatal = ThreadDeath()
+        val actual =
+            runCatching {
+                MainThreadRetire(
+                    post = { it.run(); true },
+                    cancel = {},
+                ).run { throw fatal }
+            }.exceptionOrNull()
+        assertSame(fatal, actual)
+    }
+
+    @Test
+    fun reflectedFatalCleanupRetainsItsIdentity() {
+        val fatal = OutOfMemoryError("cleanup")
+        val actual =
+            runCatching {
+                MainThreadRetire(
+                    post = { it.run(); true },
+                    cancel = {},
+                ).run { throw InvocationTargetException(fatal) }
+            }.exceptionOrNull()
+        assertSame(fatal, actual)
+    }
+
+    @Test
+    fun fatalDispatchCancelsQueuedOldGenerationWork() {
+        val fatal = OutOfMemoryError("dispatch")
+        var queued: Runnable? = null
+        var cancelled = false
+        var touched = false
+        val actual =
+            runCatching {
+                MainThreadRetire(
+                    post = { task -> queued = task; throw fatal },
+                    cancel = { cancelled = true },
+                ).run { touched = true }
+            }.exceptionOrNull()
+        assertSame(fatal, actual)
+        assertTrue(cancelled)
+        queued!!.run()
+        assertFalse(touched)
     }
 
     @Test
