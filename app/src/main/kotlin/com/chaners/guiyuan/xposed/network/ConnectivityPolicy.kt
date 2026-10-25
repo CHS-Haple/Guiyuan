@@ -51,6 +51,7 @@ internal object ConnectivityPolicy {
                     label = it.label,
                     enhanced = it.enhanced,
                     typeface = it.typeface,
+                    fontPath = it.fontPath,
                     internet = InternetState.UNKNOWN,
                 )
             }
@@ -73,6 +74,7 @@ internal object ConnectivityPolicy {
                             label = it.label,
                             enhanced = it.enhanced,
                             typeface = it.typeface,
+                    fontPath = it.fontPath,
                             internet = connectivity.internetState(),
                         )
                     } ?: CenterIndicator.Empty
@@ -88,6 +90,7 @@ internal object ConnectivityPolicy {
                                 label = it.label,
                                 enhanced = it.enhanced,
                                 typeface = it.typeface,
+                    fontPath = it.fontPath,
                                 internet = connectivity.internetState(),
                             )
                         } ?: CenterIndicator.Empty
@@ -99,6 +102,7 @@ internal object ConnectivityPolicy {
                         label = mobileType.label,
                         enhanced = mobileType.enhanced,
                         typeface = mobileType.typeface,
+                        fontPath = mobileType.fontPath,
                         internet = connectivity.internetState(),
                     )
                 } else {
@@ -179,6 +183,7 @@ internal sealed interface CenterIndicator {
         val enhanced: Boolean,
         val internet: InternetState,
         val typeface: Typeface? = null,
+        val fontPath: String? = null,
     ) : CenterIndicator
 
     data object Airplane : CenterIndicator
