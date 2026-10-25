@@ -1630,6 +1630,9 @@ class GyModule : XposedModule() {
             SysUiBatteryRuntime.attach(
                 module = this,
                 classLoader = classLoader,
+                onRuntimeFailure = { source, error ->
+                    onPresentationCallbackFailure("battery-" + source, error)
+                },
                 onBatteryState = { state ->
                     val trace = beginRenderTrace("battery")
                     StatusStateStore.updateBattery(state)?.let { snapshot ->
