@@ -134,7 +134,7 @@ internal object SysUiDefaultDataSubSource {
     ) {
         val next =
             readOrNull { SubscriptionManager.getDefaultDataSubscriptionId() }
-                ?: SubscriptionManager.INVALID_SUBSCRIPTION_ID
+                ?: return
 
         val deliver = onChanged
         if (deliver == null) {
