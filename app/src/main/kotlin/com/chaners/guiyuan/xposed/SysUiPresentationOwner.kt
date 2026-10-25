@@ -205,7 +205,7 @@ internal object SysUiPresentationOwner {
         onEvent: ((String) -> Unit)? = null,
         onFailNative: ((String) -> Unit)? = null,
     ): String? {
-        if (installedHookCount == HOOK_COUNT) {
+        if (installedHookCount == HOOK_COUNT && ignoredSlotsField != null) {
             eventSink = guardedDiagnostic(onEvent)
             failNativeSink = onFailNative
             return null
@@ -986,12 +986,13 @@ internal object SysUiPresentationOwner {
         val failures = ArrayList<Throwable>(1)
         fun stop(session: Session?): Int =
             session?.let {
-                runCatching {
+                try {
                     it.stop(
                         source = "hotReload-oldGeneration",
                         requestLayout = requestLayout,
                     )
-                }.getOrElse { error ->
+                } catch (error: Throwable) {
+                    if (error is VirtualMachineError || error is ThreadDeath) throw error
                     failures.add(error)
                     0
                 }
@@ -1034,17 +1035,38 @@ internal object SysUiPresentationOwner {
     fun resetRuntimeState(source: String) {
         val failures = ArrayList<Throwable>(1)
         fun release(action: () -> Unit) {
-            runCatching(action).onFailure(failures::add)
+            try {
+                action()
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                failures.add(error)
+            }
+        }
+        fun unhook(handle: HookHandle?): HookHandle? {
+            if (handle == null) return null
+            return try {
+                handle.unhook()
+                null
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                failures.add(error)
+                handle
+            }
         }
         release { deactivateCc(source) }
         release { deactivateAod(source) }
         release { deactivateKeyguard(source) }
         release { deactivate(source) }
-        runCatching { measureHook?.unhook() }
-        runCatching { layoutHook?.unhook() }
-        runCatching { batteryHideHook?.unhook() }
-        runCatching { islandShowingHook?.unhook() }
+        val failedMeasure = unhook(measureHook)
+        val failedLayout = unhook(layoutHook)
+        val failedBatteryHide = unhook(batteryHideHook)
+        val failedIsland = unhook(islandShowingHook)
         clearInstallState()
+        // Unremoved Hooks still belong to this source: do not reinstall duplicates.
+        measureHook = failedMeasure
+        layoutHook = failedLayout
+        batteryHideHook = failedBatteryHide
+        islandShowingHook = failedIsland
         if (failures.isNotEmpty()) {
             val error = IllegalStateException("presentation-reset-incomplete", failures.first())
             failures.drop(1).forEach(error::addSuppressed)
@@ -1227,10 +1249,17 @@ internal object SysUiPresentationOwner {
             result
         }
 
-    // A failed restore must not prevent the other owners from reaching native fallback.
+    // Ordinary restore failures must not block other owners' native fallback.
     private fun finishFailure(vararg actions: () -> Unit) {
         val failures = ArrayList<Throwable>(1)
-        actions.forEach { runCatching(it).onFailure(failures::add) }
+        actions.forEach { action ->
+            try {
+                action()
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                failures.add(error)
+            }
+        }
         failures.firstOrNull()?.let { error ->
             failures.drop(1).forEach(error::addSuppressed)
             throw error
@@ -1360,7 +1389,13 @@ internal object SysUiPresentationOwner {
         handles: List<HookHandle>,
     ): String {
         val remaining = handles.filter { handle ->
-            runCatching { handle.unhook() }.isFailure
+            try {
+                handle.unhook()
+                false
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                true
+            }
         }
         clearInstallState()
         measureHook = remaining.firstOrNull { it.id == MEASURE_HOOK_ID }
@@ -1842,7 +1877,12 @@ internal object SysUiPresentationOwner {
 
             val failures = ArrayList<Throwable>(1)
             fun release(action: () -> Unit) {
-                runCatching(action).onFailure(failures::add)
+                try {
+                    action()
+                } catch (error: Throwable) {
+                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    failures.add(error)
+                }
             }
             release { host.get()?.removeOnAttachStateChangeListener(this) }
             release { battery.get()?.removeOnLayoutChangeListener(batteryLayoutListener) }
@@ -2938,9 +2978,12 @@ internal object SysUiPresentationOwner {
             states.clear()
             var restored = 0
             snapshot.forEach { state ->
-                runCatching { restoreClipState(state) }
-                    .onSuccess { if (it) restored += 1 }
-                    .onFailure(failures::add)
+                try {
+                    if (restoreClipState(state)) restored += 1
+                } catch (error: Throwable) {
+                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    failures.add(error)
+                }
             }
             return restored
         }

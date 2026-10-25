@@ -89,7 +89,11 @@ internal object SysUiPresentationRuntime {
             } catch (error: Throwable) {
                 throwIfFatal(error)
                 if (warned.compareAndSet(false, true)) {
-                    runCatching { Log.w("Guiyuan[Aod]", "Install diagnostic failed", error) }
+                    try {
+                        Log.w("Guiyuan[Aod]", "Install diagnostic failed", error)
+                    } catch (failure: Throwable) {
+                        throwIfFatal(failure)
+                    }
                 }
             }
         }
