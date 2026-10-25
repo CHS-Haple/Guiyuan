@@ -588,6 +588,7 @@ internal object SysUiNetworkSource {
         try {
             block()
         } catch (error: Throwable) {
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
             throw InstallStageException(stage, error)
         }
 
@@ -610,7 +611,13 @@ internal object SysUiNetworkSource {
         handles: List<HookHandle>,
     ): BranchInstallResult {
         val remaining = handles.filter { handle ->
-            runCatching { handle.unhook() }.isFailure
+            try {
+                handle.unhook()
+                false
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                true
+            }
         }
         val failure = installFailure(component, error)
         return BranchInstallResult(
