@@ -1126,7 +1126,7 @@ internal object SysUiPresentationOwner {
 
     private fun layoutHooker(refreshMasksAfter: Boolean): Hooker =
         Hooker { chain ->
-            val target = chain.thisObject as? ViewGroup
+            val target = readOrNull { chain.thisObject as? ViewGroup }
                 ?: return@Hooker chain.proceed()
             val session =
                 synchronized(this) {
@@ -1162,7 +1162,7 @@ internal object SysUiPresentationOwner {
                 nativeResult as? Boolean
                     ?: return@Hooker nativeResult
             val target =
-                chain.thisObject as? ViewGroup
+                readOrNull { chain.thisObject as? ViewGroup }
                     ?: return@Hooker nativeResult
             val session =
                 synchronized(this) {
@@ -1246,7 +1246,7 @@ internal object SysUiPresentationOwner {
     }
     private fun batteryHideStateHooker(): Hooker =
         Hooker { chain ->
-            val target = chain.thisObject as? ViewGroup
+            val target = readOrNull { chain.thisObject as? ViewGroup }
                 ?: return@Hooker chain.proceed()
             val result = chain.proceed()
             val session =
