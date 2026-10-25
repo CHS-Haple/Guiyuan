@@ -749,7 +749,7 @@ internal object SysUiNetworkSource {
                 root.isAttachedToWindow &&
                     viewModel?.javaClass?.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
             } ?: run {
-                reportSeed(onEvent, 
+                reportSeed(onEvent,
                     "networkPipeline wifi seed source=hotReloadRestore " +
                         "state=unavailable reason=view-model-not-transferred",
                 )
@@ -776,7 +776,7 @@ internal object SysUiNetworkSource {
         val getter =
             contract.wifiIconGetter
                 ?: run {
-                    reportSeed(onEvent, 
+                    reportSeed(onEvent,
                         "networkPipeline wifi seed source=" + source +
                             " state=unavailable reason=getWifiIcon-missing",
                     )
@@ -788,14 +788,14 @@ internal object SysUiNetworkSource {
                 getter.invoke(viewModel)
             }.getOrElse { error ->
                 rethrowFatal(error)
-                reportSeed(onEvent, 
+                reportSeed(onEvent,
                     "networkPipeline wifi seed source=" + source +
                         " state=unavailable reason=wifiIcon-read-" +
                         error.javaClass.simpleName,
                 )
                 return null
             } ?: run {
-                reportSeed(onEvent, 
+                reportSeed(onEvent,
                     "networkPipeline wifi seed source=" + source +
                         " state=unavailable reason=wifiIcon-null",
                 )
@@ -810,7 +810,7 @@ internal object SysUiNetworkSource {
                 }
                 ?.apply { isAccessible = true }
                 ?: run {
-                    reportSeed(onEvent, 
+                    reportSeed(onEvent,
                         "networkPipeline wifi seed source=" + source +
                             " state=unavailable reason=stateFlow-value-missing " +
                             "flow=" + flow.javaClass.name,
@@ -823,7 +823,7 @@ internal object SysUiNetworkSource {
                 valueGetter.invoke(flow)
             }.getOrElse { error ->
                 rethrowFatal(error)
-                reportSeed(onEvent, 
+                reportSeed(onEvent,
                     "networkPipeline wifi seed source=" + source +
                         " state=unavailable reason=stateFlow-value-" +
                         error.javaClass.simpleName,
@@ -839,7 +839,7 @@ internal object SysUiNetworkSource {
                 iconResourceIdAccessor = contract.iconResourceIdAccessor,
             )
 
-        reportSeed(onEvent, 
+        reportSeed(onEvent,
             "networkPipeline wifi seed source=" + source +
                 " state=" + (if (semantic.state != null) "ready" else "unavailable") +
                 " getter=" + getter.name +
