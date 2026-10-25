@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.view.View
 import android.view.ViewGroup
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
@@ -21,6 +22,15 @@ internal object NativeParticipantAccess {
     // walking the method hierarchy for every child on every layout.
     private val slotAccessorCache = ConcurrentHashMap<Class<*>, Method>()
     private val slotAccessorMissing = ConcurrentHashMap.newKeySet<Class<*>>()
+
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            val cause = (error as? InvocationTargetException)?.targetException ?: error
+            if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+            null
+        }
 
     fun managerFor(host: Any): Any? {
         val hostView = host as? View ?: return null
@@ -208,28 +218,25 @@ internal object NativeParticipantAccess {
         val getSlot =
             slotAccessorCache[viewClass]
                 ?: run {
-                    if (viewClass in slotAccessorMissing) {
-                        return null
-                    }
+                    if (viewClass in slotAccessorMissing) return null
                     val resolved =
-                        viewClass
-                            .allMethods()
-                            .firstOrNull { method ->
-                                method.name == "getSlot" &&
-                                    method.parameterCount == 0 &&
-                                    method.returnType == String::class.java
-                            }
+                        readOrNull {
+                            viewClass
+                                .allMethods()
+                                .firstOrNull { method ->
+                                    method.name == "getSlot" &&
+                                        method.parameterCount == 0 &&
+                                        method.returnType == String::class.java
+                                }?.apply { isAccessible = true }
+                        }
                     if (resolved == null) {
                         slotAccessorMissing += viewClass
                         return null
                     }
-                    resolved.isAccessible = true
                     slotAccessorCache.putIfAbsent(viewClass, resolved) ?: resolved
                 }
 
-        return runCatching {
-            getSlot.invoke(view) as? String
-        }.getOrNull()
+        return readOrNull { getSlot.invoke(view) as? String }
     }
 
     fun resourceEntryName(view: View): String? {
