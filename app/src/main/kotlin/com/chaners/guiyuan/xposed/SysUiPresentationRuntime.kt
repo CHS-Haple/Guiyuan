@@ -68,6 +68,7 @@ internal object SysUiPresentationRuntime {
         classLoader: ClassLoader,
         onTintState: (SysUiTintSource.TintUpdate) -> Unit,
         onSceneState: (SysUiSceneSource.SceneUpdate) -> Unit,
+        onSceneRuntimeFailure: (Throwable) -> Unit,
         onKeyguardAodState: (SysUiKeyguardAodSource.AodUpdate) -> Unit,
         onKeyguardFullAodTransitionStarted: () -> Unit,
         onKeyguardFullAodTransitionCommitted: () -> Unit,
@@ -166,6 +167,7 @@ internal object SysUiPresentationRuntime {
                     module = module,
                     classLoader = classLoader,
                     onSceneState = onSceneState,
+                    onRuntimeFailure = onSceneRuntimeFailure,
                     onEvent = onSceneEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size

@@ -20,6 +20,8 @@ internal object SysUiSceneSource {
 
     // Values must not retain the weak View keys.
     private val states = WeakHashMap<View, Int>()
+    // A native state read is not proof that its owner callback completed.
+    private val deliveredStates = WeakHashMap<View, Int>()
 
     @Volatile
     private var statusBarStateField: Field? = null
@@ -28,6 +30,7 @@ internal object SysUiSceneSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onSceneState: (SceneUpdate) -> Unit,
+        onRuntimeFailure: (Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
@@ -59,6 +62,7 @@ internal object SysUiSceneSource {
                             rawState = rawState,
                             source = "updateState",
                             onSceneState = onSceneState,
+                            onRuntimeFailure = onRuntimeFailure,
                             onEvent = onEvent,
                             isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                             warned = warned,
@@ -131,6 +135,7 @@ internal object SysUiSceneSource {
     @Synchronized
     fun resetRuntimeState() {
         states.clear()
+        deliveredStates.clear()
         statusBarStateField = null
     }
 
@@ -147,23 +152,47 @@ internal object SysUiSceneSource {
         rawState: Int,
         source: String,
         onSceneState: (SceneUpdate) -> Unit,
+        onRuntimeFailure: (Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
         warned: AtomicBoolean,
     ) {
-        synchronized(this) {
-            if (states[sourceView] == rawState) {
-                return
+        val changed =
+            synchronized(this) {
+                states[sourceView] = rawState
+                if (deliveredStates[sourceView] == rawState) {
+                    false
+                } else {
+                    deliveredStates[sourceView] = rawState
+                    true
+                }
             }
-            states[sourceView] = rawState
-        }
+        if (!changed) return
         val update =
             SceneUpdate(
                 sourceView = sourceView,
                 surface = classifyRawState(rawState),
                 rawState = rawState,
             )
-        onSceneState(update)
+        try {
+            onSceneState(update)
+        } catch (error: Throwable) {
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            try {
+                onRuntimeFailure(error)
+            } catch (failure: Throwable) {
+                if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                if (failure !== error) error.addSuppressed(failure)
+            } finally {
+                // Keep the failed delivery marked during owner cleanup to avoid reentrant retries.
+                synchronized(this) {
+                    if (deliveredStates[sourceView] == rawState) {
+                        deliveredStates.remove(sourceView)
+                    }
+                }
+            }
+            return
+        }
         if (onEvent != null) {
             try {
                 if (isDetailedDiagnosticsEnabled()) {
