@@ -995,7 +995,15 @@ internal object SysUiNetworkSource {
                 callbackFailed("wifi-icon-args", error, onRuntimeFailure)
                 return@Hooker result
             }
-        val emitter = chain.thisObject
+        val emitter =
+            try {
+                chain.thisObject
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                val result = chain.proceed()
+                callbackFailed("wifi-icon-receiver", error, onRuntimeFailure)
+                return@Hooker result
+            }
         val classId =
             readOrNull {
                 wifiClassIdField.getInt(emitter)
@@ -1236,7 +1244,15 @@ internal object SysUiNetworkSource {
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
-        val emitter = chain.thisObject
+        val emitter =
+            try {
+                chain.thisObject
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                val result = chain.proceed()
+                callbackFailed("mobile-signal-receiver", error, onRuntimeFailure)
+                return@Hooker result
+            }
         val image = readOrNull {
             mobileImageField.get(emitter) as? ImageView
         }
