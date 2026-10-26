@@ -590,6 +590,7 @@ internal object CcTransitionOwner {
                 " endOffset=$lastNativePeerTargetEndOffsetPx" +
                 " wifiReady=$wifiTargetReady retargetAt=${wifiRetarget?.progress}" +
                 " retargetDx=${wifiRetarget?.delta?.get(0)}" +
+                " chargeAt=${chargeRetarget?.progress} chargePeerShift=${chargeRetarget?.peerShift}" +
                 " paintP=${wifiDraw[0]} sourceX=${wifiDraw[1]}" +
                 " targetX=${wifiDraw[2]} paintedX=${wifiDraw[3]}" +
                 " fakeRoot=${viewPos(fakeRootRef.get())}" +
@@ -2025,12 +2026,17 @@ internal object CcTransitionOwner {
             if (
                 previous == null ||
                 (
+                    previous.batteryWidth == next.batteryWidth &&
+                        chargeRetarget == null
+                ) ||
+                (
                     previous.peerX == next.peerX &&
                         previous.batteryX == next.batteryX
                 )
             ) return
 
-            // The native row can finish moving after battery measurement.
+            // Only a battery-width change can start charge reflow. Once started,
+            // retain the native row's later layout passes in the same handoff.
             val old = chargeRetarget
             val peerShift = CcTransitionPolicy.retargetShift(
                 priorShift = old?.peerShift ?: 0f,
