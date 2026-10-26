@@ -144,10 +144,13 @@ class GyModule : XposedModule() {
 
     private fun settingsEntry(): Pair<SettingsEntry, SettingsEntryIcon> {
         val prefs = runCatching { getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME) }
+            .onFailure(SettingsEntryHook::rethrowFatal)
             .getOrNull() ?: return SettingsEntry.Disabled to SettingsEntryIcon.Rounded
         val entry = runCatching { SettingsEntry.from(prefs.getInt(SETTINGS_ENTRY_KEY, 0)) }
+            .onFailure(SettingsEntryHook::rethrowFatal)
             .getOrDefault(SettingsEntry.Disabled)
         val icon = runCatching { SettingsEntryIcon.from(prefs.getInt(SETTINGS_ENTRY_ICON_KEY, 0)) }
+            .onFailure(SettingsEntryHook::rethrowFatal)
             .getOrDefault(SettingsEntryIcon.Rounded)
         return entry to icon
     }
