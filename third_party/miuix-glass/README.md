@@ -5,9 +5,20 @@ Source revision: `b9f70838509fbc3f63f1a972777a7e6ce07f578f`
 License: Apache-2.0 (source copyright and SPDX headers unchanged; LICENSE retained)
 
 The app-only glass sources in `app/src/main/kotlin/top/yukonga/miuix/kmp/glass/`
-are copied from a fixed upstream revision while the official module is not
-published. MIUIX UI/Preference/Nav/Blur stay pinned to one published main
+are based on a fixed upstream revision while the official module is not
+published. Two limited compatibility adjustments are tracked below. MIUIX UI/Preference/Nav/Blur stay pinned to one published main
 snapshot. Do not independently mix upstream revisions.
+
+## Temporary published-snapshot compatibility
+
+- `GlassPopup.kt`: an unused KDoc import of the unpublished
+  `CascadingPopupDefaults` API was removed; rendering and motion are unchanged.
+- `GlassTopAppBar.kt`: replaces the unpublished `BlurTopAppBar` delegate with
+  the published native `TopAppBar`. The glass buttons/material and bar
+  interaction remain upstream-owned, but OS4 large-title blur is **not**
+  implemented. The input title opacity is still forwarded to existing MIUIX
+  title colors. Remove this adjustment when PR #423's full UI revision is
+  available; do not treat this as complete top-bar parity.
 
 ## Coverage and remaining API boundary
 

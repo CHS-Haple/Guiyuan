@@ -37,7 +37,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import top.yukonga.miuix.kmp.basic.BlurTopAppBar
+import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
@@ -343,12 +343,14 @@ fun GlassTopAppBar(
                 shadow = buttonShadow,
             ),
         ) {
-            BlurTopAppBar(
+            // PR #423's title-blur API is not published in the pinned MIUIX UI snapshot.
+            // Keep native title layout/scroll handling rather than fork TopAppBarLayout.
+            TopAppBar(
                 title = title,
                 modifier = contentModifier,
-                titleAlpha = titleAlpha,
+                titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = titleAlpha()),
+                largeTitleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = titleAlpha()),
                 largeTitle = largeTitle,
-                largeTitleBlurRadius = largeTitleBlurRadius,
                 subtitle = subtitle,
                 color = Color.Transparent,
                 scrollBehavior = scrollBehavior,

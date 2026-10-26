@@ -48,7 +48,6 @@ import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.basic.Check
-import top.yukonga.miuix.kmp.layout.CascadingPopupDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** Default values for [GlassPopup]. */
@@ -327,7 +326,7 @@ private fun directionFrame(
  * @param selected Whether this row is the current choice, which puts a tick at its end.
  * @param showArrow Whether the row leads to a further menu, which puts a chevron at its end.
  * @param arrowRotation How far that chevron is turned, in degrees. A row whose menu is open turns
- *   it by [CascadingPopupDefaults.arrowRotation].
+ *   it by the OS4 cascading-popup rotation contract.
  * @param contentColor Colour of the label and the icon.
  * @param summaryColor Colour of the second line.
  * @param selectedContentColor Colour of a selected row's label and its tick.
