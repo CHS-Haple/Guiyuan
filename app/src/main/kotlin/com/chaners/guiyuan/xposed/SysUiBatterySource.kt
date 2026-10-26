@@ -45,9 +45,9 @@ internal object SysUiBatterySource {
     private class Delivery(val state: StatusStateStore.BatteryState)
     @Volatile
     private var lastDelivery: Delivery? = null
-
     @Volatile
-
+    private var nativeStateReader: ((View) -> StatusStateStore.BatteryState?)? = null
+    @Volatile
     private var lastChargingIconResId: Int? = null
 
     internal fun rethrowFatal(error: Throwable) {
@@ -357,10 +357,12 @@ internal object SysUiBatterySource {
             handles += hook(powerSaveMethod, POWER_SAVE_HOOK_ID)
             handles += hook(performanceMethod, PERFORMANCE_HOOK_ID)
             handles += hook(miuiOptimizationMethod, MIUI_OPTIMIZATION_HOOK_ID)
+            nativeStateReader = ::readState
             hooksReady = true
             return handles
         } catch (error: Throwable) {
             hooksReady = false
+            nativeStateReader = null
             val remaining = handles.asReversed().filter { handle ->
                 try {
                     handle.unhook()
@@ -413,6 +415,36 @@ internal object SysUiBatterySource {
         val path = config.getField("FONT_MIPRO_PATH").get(null) as? String
             ?: return@readOrNull null
         hollowFace to path
+    }
+
+    // Reconcile the transferred snapshot once against the same native authority as the hooks.
+    fun readHostBatteryState(host: Any): StatusStateStore.BatteryState? {
+        if (!hooksReady) return null
+        val readState = nativeStateReader ?: return null
+        val root = host as? ViewGroup ?: return null
+        val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
+            ?: return null
+        val meter = container.directChild(BATTERY_METER_VIEW_CLASS_NAME) as? ViewGroup
+            ?: return null
+        val pending = ArrayDeque<View>()
+        pending.add(meter)
+        var icon: View? = null
+        var visited = 0
+        while (pending.isNotEmpty()) {
+            // A changed or ambiguous native subtree cannot be a charging-state authority.
+            if (++visited > 64) return null
+            val view = pending.removeFirst()
+            if (view.javaClass.name == BATTERY_ICON_VIEW_CLASS_NAME) {
+                if (icon != null) return null
+                icon = view
+            }
+            if (view is ViewGroup) {
+                for (index in 0 until view.childCount) {
+                    pending.add(view.getChildAt(index))
+                }
+            }
+        }
+        return icon?.let(readState)
     }
 
     fun readHostChargingIconId(host: Any): Int? {
@@ -485,6 +517,7 @@ internal object SysUiBatterySource {
         failedInstallHandles = emptyList()
         hooksReady = false
         lastDelivery = null
+        nativeStateReader = null
         lastChargingIconResId = null
         verifiedFont = null
     }
