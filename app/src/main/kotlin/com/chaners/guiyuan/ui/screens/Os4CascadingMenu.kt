@@ -77,7 +77,7 @@ internal fun Os4CascadingMenu(
                 GlassDropdownPopupContent(
                     show = expanded,
                     onDismissRequest = {
-                        if (submenu != null) submenu = null else expanded = false
+                        if (renderedSubmenu != null) submenu = null else expanded = false
                     },
                     anchorBounds = anchor,
                     coordinateOrigin = origin,

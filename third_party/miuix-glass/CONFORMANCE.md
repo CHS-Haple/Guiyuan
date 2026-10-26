@@ -81,8 +81,11 @@ and secondary popup presentation inside one Scaffold-owned popup host; OS3 and
 devices without a usable shader still use the original Window cascading menu.
 All group boundaries use GlassPopupDefaults' 20dp inset, 7.75dp spacing and
 0.5dp divider rather than reusing OS3 separator styling. The host survives both closing animations and frees its anchor state on
-disposal. Primary Back handling is disabled while the secondary panel owns Back,
-so the same gesture cannot dismiss both levels. This is source-only adaptation:
+disposal. The secondary panel handles Back while expanded. During its exit, the primary
+Back handler becomes active to prevent a second fast Back from reaching page
+navigation, but its dismiss callback is inert until the rendered secondary
+panel actually unmounts. The outside-tap catcher follows the same rule.
+No duplicate close or page navigation is initiated while secondary exits. This is source-only adaptation:
 real-device gesture/Back dispatch, window overlap, 80–110% density, RTL, focus
 and themes still require confirmation.
 
