@@ -4,7 +4,7 @@ Source of truth: compose-miuix-ui/miuix [PR #423](https://github.com/compose-miu
 
 | Area | Upstream OS4 contract | Guiyuan status and required gate |
 | --- | --- | --- |
-| Bottom destinations | `GlassNavigationBar`: minimum 54dp, **content-driven height**, equal-width destinations, fills the **caller-bounded width**, optional trailing action; outer insets belong to caller | App uses actual upstream component with documented 24dp horizontal and 12dp vertical margins. Review touch/drag, fontScale, 80–110% density and two-line labels; do not impose a fixed height/width. |
+| Bottom destinations | `GlassNavigationBar`: minimum 54dp, **content-driven height**, equal-width destinations, fills the **caller-bounded width**, optional trailing action; outer insets belong to caller | App follows PR #423 GlassPage's 24dp side, 20dp top and max(24dp, navigationBarInset+8dp) bottom spacing; preview preserves top/bottom rhythm with a narrower card. Review device bottom placement, touch/drag, fontScale, 80–110% scaling and wrapped captions; do not impose a fixed bar height/width. |
 | Appearance mini-preview | Preview must respect the **same intrinsic height** as the component and reserve room for shadows | OS4 path now measures the real bar and reserves surrounding space instead of treating the old 76dp preview as authoritative; OS3 preview unchanged. |
 | Top app bars | PR modifies core `TopAppBar` viewport clipping so floating action shadows extend past title region, and adds `BlurTopAppBar` with title blur and draw-phase opacity | Published `TopAppBar` still uses whole-region clipping. App uses a temporary native delegate and native top-bar IconButtons while incompatible. **Not compliant** until matching core UI revision is integrated. Avoid alpha, shadow clipping or padding patches. |
 | Scroll/overlap | Glass title bar supports an explicit `isContentScrolled` input based on actual list position; scroll behavior retains title collapse | All four screen owners should supply their own `LazyListState.canScrollBackward` rather than infer overlap solely from collapsing title; keep list ownership local. |
@@ -40,11 +40,15 @@ keyboard/Back, scrolling, overlay host ownership and shader-free fallback togeth
   upstream title-local clipping API is published. This is a fail-native
   compatibility boundary, not completed OS4 action styling.
   SearchBar, input, focus and Back remain MIUIX-owned.
-- **Bottom navigation:** upstream 54dp is a minimum content height, not a
-  certification of on-screen placement. Confirm icon/caption sizing, intrinsic
-  height, status/navigation Insets, theme and 80–110% scale before modifying
-  the caller's outer margins. Never fix perceived low placement with a
-  screenshot-fitted translation.
+- **Bottom navigation:** 54dp is the upstream glass capsule's minimum
+  content height, not the bottom placement. The upstream full GlassPage uses
+  24dp horizontal and 20dp top margins, with bottom clearance
+  max(24dp, navigationBarInset + 8dp). The main hub now follows that
+  layout contract directly instead of layering 12dp over navigationBarsPadding;
+  the Appearance preview uses matching 20/24dp vertical rhythm. This
+  is a source-conformant choice, not physical-device acceptance. Confirm
+  icon/caption intrinsic sizing, theme, density/fontScale, and gesture areas
+  before declaring the bottom bar finished.
 
 ## Current evidence and unresolved diagnostics
 

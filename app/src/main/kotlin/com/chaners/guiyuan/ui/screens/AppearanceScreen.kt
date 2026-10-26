@@ -684,7 +684,7 @@ private fun MiniNavigationPreview(
                 }
             }
             Column(modifier = Modifier.fillMaxWidth()) {
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 GlassNavigationBar(
                     items = listOf(
                         GlassNavigationItem(MiuixIcons.Normal.Home, stringResource(R.string.nav_home)),
@@ -696,7 +696,7 @@ private fun MiniNavigationPreview(
                     backdrop = miuixBackdrop,
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
-                        .padding(bottom = 12.dp),
+                        .padding(bottom = 24.dp),
                 )
             }
         }
