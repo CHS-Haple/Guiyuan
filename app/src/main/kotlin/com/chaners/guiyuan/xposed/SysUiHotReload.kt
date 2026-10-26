@@ -36,6 +36,14 @@ internal object SysUiHotReload {
         val classLoader: ClassLoader,
     )
 
+    // Mobile type can fail native from its verified SystemUI view after a rootless handoff.
+    // A visible Wi-Fi state without its model cannot be reseeded safely.
+    internal fun networkTransferReady(
+        wifi: StatusStateStore.WifiState,
+        boundWifiRoots: Int,
+    ): Boolean =
+        wifi !is StatusStateStore.WifiState.Visible || boundWifiRoots > 0
+
     fun prepare(
         param: HotReloadingParam,
     ): PrepareResult {
@@ -53,12 +61,9 @@ internal object SysUiHotReload {
         val snapshot = StatusStateStore.snapshot()
         val stableTint = HomeRenderSession.currentTintState()
         val bindingCounts = SysUiNetworkSource.hotReloadBindingCounts()
-        val bindingStateReady =
-            (snapshot.wifi is StatusStateStore.WifiState.Unknown || bindingCounts.first > 0) &&
-                (snapshot.mobile.isEmpty() || bindingCounts.second > 0)
-        if (!bindingStateReady) {
+        if (!networkTransferReady(snapshot.wifi, bindingCounts.first)) {
             return PrepareResult.Unavailable(
-                reason = "network-bindings-not-ready",
+                reason = "visible-wifi-binding-missing",
                 wifiRoots = bindingCounts.first,
                 mobileRoots = bindingCounts.second,
             )
