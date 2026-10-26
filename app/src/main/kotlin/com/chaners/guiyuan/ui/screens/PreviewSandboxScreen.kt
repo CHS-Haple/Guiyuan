@@ -49,6 +49,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.FeatureRepo
@@ -72,12 +75,12 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
+import top.yukonga.miuix.kmp.glass.GlassTabRow
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -375,7 +378,7 @@ internal fun PreviewSandboxScreen(
                                 .padding(horizontal = 12.dp)
                                 .padding(bottom = 12.dp),
                     ) {
-                        TabRowWithContour(
+                        UiTabRow(
                             tabs = networkModeOptions,
                             selectedTabIndex = previewNetworkTabs.indexOf(state.networkMode),
                             onTabSelected = { index ->
@@ -421,7 +424,7 @@ internal fun PreviewSandboxScreen(
                             maxWidth = 300.dp,
                         )
                         if (state.mobileOptionsVisible && state.dualMobile) {
-                            OverlayDropdownPreference(
+                            UiDropdownPreference(
                                 title = stringResource(R.string.home_preview_data_sim_title),
                                 startAction = {
                                     SemanticLeadingIcon(
@@ -473,7 +476,7 @@ internal fun PreviewSandboxScreen(
                         if (state.mobileControlsEnabled) {
                             if (state.sim1Active) {
                                 if (state.mobileOptionsVisible) {
-                                    OverlayDropdownPreference(
+                                    UiDropdownPreference(
                                         title = stringResource(
                                             if (state.dualMobile) R.string.home_preview_sim1_network_title
                                             else R.string.home_preview_mobile_network_title,
@@ -522,7 +525,7 @@ internal fun PreviewSandboxScreen(
                             }
                             if (state.sim2Active) {
                                 if (state.mobileOptionsVisible) {
-                                    OverlayDropdownPreference(
+                                    UiDropdownPreference(
                                         title = stringResource(R.string.home_preview_sim2_network_title),
                                         startAction = {
                                             SemanticLeadingIcon(
@@ -711,7 +714,7 @@ private fun SandboxSegmentedField(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center,
             ) {
-                TabRowWithContour(
+                UiTabRow(
                     tabs = options,
                     selectedTabIndex = selectedIndex,
                     onTabSelected = onSelected,
@@ -734,3 +737,28 @@ private val SandboxPreferenceInsideMargin =
         vertical = 10.dp,
     )
 
+
+@Composable
+private fun UiTabRow(
+    tabs: List<String>,
+    selectedTabIndex: Int,
+    onTabSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (LocalUiStyle.current == UiStyle.OS4) {
+        GlassTabRow(
+            tabs = tabs,
+            selectedIndex = selectedTabIndex,
+            onSelect = onTabSelected,
+            backdrop = LocalGlassBackdrop.current,
+            modifier = modifier,
+        )
+    } else {
+        TabRowWithContour(
+            tabs = tabs,
+            selectedTabIndex = selectedTabIndex,
+            onTabSelected = onTabSelected,
+            modifier = modifier,
+        )
+    }
+}

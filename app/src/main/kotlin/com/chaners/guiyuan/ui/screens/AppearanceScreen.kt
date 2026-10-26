@@ -70,7 +70,6 @@ import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.preference.SliderPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
@@ -167,7 +166,7 @@ internal fun AppearanceScreen(
         }
 
         Section(R.string.section_theme) {
-            OverlayDropdownPreference(
+            UiDropdownPreference(
                 items = themeOptions,
                 selectedIndex = appearance.theme.ordinal,
                 title = stringResource(R.string.theme_mode),
@@ -198,7 +197,7 @@ internal fun AppearanceScreen(
                 onCheckedChange = onDynamicChange,
             )
             AnimatedPreferenceGroup(visible = appearance.dynamicColor) {
-                OverlayDropdownPreference(
+                UiDropdownPreference(
                     items = colorSpecOptions,
                     selectedIndex = appearance.colorSpec?.ordinal?.plus(1) ?: 0,
                     title = stringResource(R.string.theme_color_spec),
@@ -216,7 +215,7 @@ internal fun AppearanceScreen(
                 )
                 AnimatedPreferenceGroup(visible = appearance.colorSpec != null) {
                     if (paletteStyles.isNotEmpty()) {
-                        OverlayDropdownPreference(
+                        UiDropdownPreference(
                             items = paletteStyles.map { paletteNames.getValue(it) },
                             selectedIndex = paletteStyles.indexOf(appearance.paletteStyle).coerceAtLeast(0),
                             title = stringResource(R.string.theme_palette_style),
@@ -237,7 +236,7 @@ internal fun AppearanceScreen(
         }
 
         Section(R.string.section_visual_effects) {
-            OverlayDropdownPreference(
+            UiDropdownPreference(
                 items = listOf(
                     stringResource(R.string.ui_style_os3),
                     stringResource(R.string.ui_style_os4),
@@ -288,7 +287,7 @@ internal fun AppearanceScreen(
                 onCheckedChange = onNavEnabledChange,
             )
             AnimatedPreferenceGroup(visible = appearance.navEnabled) {
-                OverlayDropdownPreference(
+                UiDropdownPreference(
                     items = floatingStyleOptions,
                     selectedIndex = appearance.navStyle.ordinal,
                     title = stringResource(R.string.floating_navigation_style),
@@ -308,7 +307,7 @@ internal fun AppearanceScreen(
                     },
                 )
                 AnimatedPreferenceGroup(visible = appearance.navStyle == NavStyle.Liquid) {
-                    OverlayDropdownPreference(
+                    UiDropdownPreference(
                         items = liquidModeOptions,
                         selectedIndex = appearance.liquidMode.ordinal,
                         title = stringResource(R.string.floating_navigation_liquid_mode),
@@ -328,7 +327,7 @@ internal fun AppearanceScreen(
                         },
                     )
                 }
-                OverlayDropdownPreference(
+                UiDropdownPreference(
                     items = floatingContentOptions,
                     selectedIndex = appearance.activeNavContent.ordinal,
                     title = stringResource(R.string.floating_navigation_content),

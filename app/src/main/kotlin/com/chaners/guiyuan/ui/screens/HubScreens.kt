@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Icon
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,6 +50,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.settings.SettingsEntry
 import com.chaners.guiyuan.settings.SettingsEntryCfg
@@ -122,10 +127,11 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -423,7 +429,7 @@ internal fun FeaturesScreen(
                         search.any(R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset)) ||
                     (searching && visual.layout == ContentLayout.BATTERY_CENTER &&
                         search.matches(R.string.top_info_vertical_offset))) {
-                    OverlayDropdownPreference(
+                    UiDropdownPreference(
                         items = layoutOptions,
                         selectedIndex = visual.layout.ordinal,
                         title = stringResource(R.string.content_layout_title),
@@ -457,7 +463,7 @@ internal fun FeaturesScreen(
                 }
                 AnimatedPreferenceGroup(visible = visual.dualSignal) {
                     if (search.matches(R.string.dual_dot_style_title)) {
-                        OverlayDropdownPreference(
+                        UiDropdownPreference(
                             title = stringResource(R.string.dual_dot_style_title),
                             items = dualDotStyles,
                             selectedIndex = visual.dualDotStyle.ordinal,
@@ -1153,7 +1159,7 @@ internal fun SettingsHubScreen(
             )
         }
         Section(R.string.section_app) {
-            OverlayDropdownPreference(
+            UiDropdownPreference(
                 items = languageOptions,
                 selectedIndex = lang.ordinal,
                 title = stringResource(R.string.language_title),
@@ -1179,7 +1185,7 @@ internal fun SettingsHubScreen(
                 checked = iconHidden,
                 onCheckedChange = onIconHiddenChange,
             )
-            OverlayDropdownPreference(
+            UiDropdownPreference(
                 items = entryOptions,
                 selectedIndex = entry.ordinal,
                 title = stringResource(R.string.settings_entry_title),
@@ -1208,7 +1214,7 @@ internal fun SettingsHubScreen(
                 },
             )
             if (entry != SettingsEntry.Disabled) {
-                OverlayDropdownPreference(
+                UiDropdownPreference(
                     items = iconOptions,
                     selectedIndex = entryIcon.ordinal,
                     title = stringResource(R.string.settings_entry_icon_title),
@@ -1296,69 +1302,88 @@ private fun HubPage(
         if (filtering) resultsState.scrollToItem(0)
     }
 
+    val os4 = LocalUiStyle.current == UiStyle.OS4
+    val searchAction: @Composable RowScope.() -> Unit = {
+        if (search != null && !search.active) {
+            val label = stringResource(R.string.feature_search)
+            TooltipBox(text = label) {
+                if (os4) {
+                    GlassIconButton(onClick = search::open) {
+                        Icon(MiuixIcons.Search, contentDescription = label)
+                    }
+                } else {
+                    IconButton(onClick = search::open) {
+                        Icon(MiuixIcons.Search, contentDescription = label)
+                    }
+                }
+            }
+        }
+    }
+    val searchContent: @Composable () -> Unit = {
+        if (search != null) {
+            AnimatedVisibility(
+                visible = search.active,
+                modifier = Modifier.fillMaxWidth(),
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                SearchBar(
+                    modifier = Modifier.fillMaxWidth(),
+                    inputField = {
+                        InputField(
+                            query = search.query,
+                            onQueryChange = search::update,
+                            onSearch = { keyboardController?.hide() },
+                            modifier = Modifier.fillMaxWidth(),
+                            expanded = search.active,
+                            onExpandedChange = { if (!it) search.close() },
+                            label = stringResource(R.string.feature_search),
+                        )
+                    },
+                    expanded = search.active,
+                    onExpandedChange = { if (!it) search.close() },
+                    outsideEndAction = {
+                        Text(
+                            modifier = Modifier
+                                .padding(start = 4.dp, end = 16.dp)
+                                .clickable(
+                                    interactionSource = null,
+                                    indication = null,
+                                    onClick = search::close,
+                                ),
+                            text = stringResource(R.string.cancel),
+                            fontWeight = FontWeight.Bold,
+                            color = MiuixTheme.colorScheme.primary,
+                        )
+                    },
+                    content = {},
+                )
+            }
+        }
+    }
+
+    CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
     Scaffold(
         topBar = {
-            MiuixBlurredTopBar(
-                backdrop = topBarBackdrop,
-                scrollBehavior = scrollBehavior,
-            ) { barColor ->
-                if (search == null) {
-                    TopAppBar(title = title, color = barColor, scrollBehavior = scrollBehavior)
-                } else {
+            if (os4) {
+                GlassTopAppBar(
+                    title = title,
+                    backdrop = topBarBackdrop,
+                    scrollBehavior = scrollBehavior,
+                    actions = searchAction,
+                    bottomContent = searchContent,
+                )
+            } else {
+                MiuixBlurredTopBar(
+                    backdrop = topBarBackdrop,
+                    scrollBehavior = scrollBehavior,
+                ) { barColor ->
                     TopAppBar(
                         title = title,
                         color = barColor,
                         scrollBehavior = scrollBehavior,
-                        actions = {
-                            if (!search.active) {
-                                val label = stringResource(R.string.feature_search)
-                                TooltipBox(text = label) {
-                                    IconButton(onClick = search::open) {
-                                        Icon(MiuixIcons.Search, contentDescription = label)
-                                    }
-                                }
-                            }
-                        },
-                        bottomContent = {
-                            AnimatedVisibility(
-                                visible = search.active,
-                                modifier = Modifier.fillMaxWidth(),
-                                enter = expandVertically() + fadeIn(),
-                                exit = shrinkVertically() + fadeOut(),
-                            ) {
-                                SearchBar(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    inputField = {
-                                        InputField(
-                                            query = search.query,
-                                            onQueryChange = search::update,
-                                            onSearch = { keyboardController?.hide() },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            expanded = search.active,
-                                            onExpandedChange = { if (!it) search.close() },
-                                            label = stringResource(R.string.feature_search),
-                                        )
-                                    },
-                                    expanded = search.active,
-                                    onExpandedChange = { if (!it) search.close() },
-                                    outsideEndAction = {
-                                        Text(
-                                            modifier = Modifier
-                                                .padding(start = 4.dp, end = 16.dp)
-                                                .clickable(
-                                                    interactionSource = null,
-                                                    indication = null,
-                                                    onClick = search::close,
-                                                ),
-                                            text = stringResource(R.string.cancel),
-                                            fontWeight = FontWeight.Bold,
-                                            color = MiuixTheme.colorScheme.primary,
-                                        )
-                                    },
-                                    content = {},
-                                )
-                            }
-                        },
+                        actions = searchAction,
+                        bottomContent = searchContent,
                     )
                 }
             }
@@ -1387,6 +1412,7 @@ private fun HubPage(
         }
 
         overlay()
+    }
     }
 }
 

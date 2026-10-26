@@ -47,7 +47,6 @@ import top.yukonga.miuix.kmp.basic.TextFieldDefaults
 import top.yukonga.miuix.kmp.color.api.toHsv
 import top.yukonga.miuix.kmp.color.space.Hsv
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 
@@ -149,7 +148,7 @@ internal fun BatteryCustomModeEditor(
                 .padding(bottom = 24.dp),
     ) {
         Card(modifier = Modifier.fillMaxWidth()) {
-            OverlayDropdownPreference(
+            UiDropdownPreference(
                 items = sourceLabels,
                 selectedIndex = selectedSourceIndex,
                 title = stringResource(R.string.battery_color_source),

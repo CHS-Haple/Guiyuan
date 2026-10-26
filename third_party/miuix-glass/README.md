@@ -1,18 +1,40 @@
 # Experimental MIUIX OS4 Glass (PR #423)
 
-Source: https://github.com/compose-miuix-ui/miuix/pull/423
-Pinned upstream commit: b9f70838509fbc3f63f1a972777a7e6ce07f578f
-License: Apache-2.0 (see LICENSE; original per-file headers retained).
+Upstream: https://github.com/compose-miuix-ui/miuix/pull/423
+Source revision: `b9f70838509fbc3f63f1a972777a7e6ce07f578f`
+License: Apache-2.0 (source copyright and SPDX headers unchanged; LICENSE retained)
 
-This experimental app-only source subset lives in
-`app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` and comprises the upstream material,
-shader, silhouette, stroke, shadow, motion, navigation and tab primitives. Source files are
-copied unchanged. OS3 UI remains on the normal published MIUIX modules.
+The app-only glass sources in `app/src/main/kotlin/top/yukonga/miuix/kmp/glass/`
+are copied from a fixed upstream revision while the official module is not
+published. MIUIX UI/Preference/Nav/Blur stay pinned to one published main
+snapshot. Do not independently mix upstream revisions.
 
-Do not copy unsupported new popup-host APIs into old MIUIX dependencies, or mix two MIUIX
-release revisions. When `miuix-glass-android` is officially published, remove these vendored
-sources and replace them with a pinned module dependency after parity/CI/device review.
+## Coverage and remaining API boundary
 
-Known non-parity: the pending PR's `GlassTopAppBar`, `GlassDialog`, and `GlassBottomSheet`
-need upstream UI interfaces not in the currently published main snapshot. Do not label
-OS4 experimental as complete until those components and OS4 icon contracts are integrated.
+- Implemented in the experimental app integration: GlassNavigationBar,
+  GlassTopAppBar and GlassIconButton, GlassDropdownPreference with the official
+  popup material/host, and GlassTabRow in the existing sandbox selector.
+- GlassPopup, GlassDropdownPopup, GlassTransformPopup, GlassSecondaryPopup
+  are copied as upstream dependencies. They are not permission to replace
+  semantically different app menus just to change their appearance.
+- Not integrated: GlassDialog and GlassBottomSheet; both depend on PR #423's
+  revised MIUIX Overlay/DialogSurfaceScope/BottomSheetSurfaceScope APIs, absent
+  from the published main snapshot. Updating a dependency version alone does
+  not supply those unpublished contracts. Do not ship a locally invented
+  replacement surface/overlay lifecycle as an upstream adaptation.
+- OS4 icons still need a relevance/compatibility pass; do not copy the entire
+  icon catalog speculatively.
+
+The app uses the page's own background recording as the shared backdrop for
+the top bar, tabs and popup surfaces; popup hosts must not be recorded by
+their own backdrop. The existing OS3 component tree, saved navigation prefs,
+and the SystemUI/Xposed runtime are left intact.
+
+Review gates: actual Gradle Debug/Canary compile and unit tests (a green
+Draft PR Light check is insufficient); OS3 parity, OS4 design conventions,
+density/window scaling, RTL, themes, accessibility, popup placement, layered
+host ownership, lifecycle and target-device behavior.
+
+Once `miuix-glass-android` has a compatible published revision, remove
+the copied sources and replace them with its pinned module dependency,
+subject to CI and physical parity review.

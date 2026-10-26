@@ -80,11 +80,22 @@ class AppearanceTest {
         val settings = Appearance()
 
         assertTrue(settings.navEnabled)
+        assertEquals(UiStyle.OS3, settings.uiStyle)
         assertEquals(NavStyle.Glass, settings.navStyle)
         assertEquals(NavContent.IconOnly, settings.navContent)
         assertEquals(NavContent.IconAndText, settings.liquidContent)
         assertEquals(NavContent.IconOnly, settings.activeNavContent)
         assertEquals(LiquidMode.Balanced, settings.liquidMode)
+    }
+
+    @Test
+    fun os4SelectionDoesNotRewriteOs3NavigationPreferences() {
+        val old = Appearance(navStyle = NavStyle.Liquid, liquidMode = LiquidMode.Clear)
+        val experimental = old.copy(uiStyle = UiStyle.OS4)
+        assertEquals(NavStyle.Liquid, experimental.navStyle)
+        assertEquals(NavContent.IconAndText, experimental.activeNavContent)
+        assertEquals(LiquidMode.Clear, experimental.liquidMode)
+        assertEquals(old, experimental.copy(uiStyle = UiStyle.OS3))
     }
 
     @Test
