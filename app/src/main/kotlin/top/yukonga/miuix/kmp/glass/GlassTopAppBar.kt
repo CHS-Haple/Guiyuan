@@ -442,6 +442,8 @@ fun GlassTopAppBar(
  *   the bar's backdrop and effective blur; elsewhere `null` gives the traditional [fill].
  * @param modifier The modifier applied to the button.
  * @param surfaceAlpha Opacity of the pill. Inside [GlassTopAppBar], leave this at its default.
+ * @param enabled Whether the button receives interaction.
+ * @param holdDownState Keeps press feedback while a long-running action is active.
  * @param style Compatibility style forwarded to the renderer.
  * @param size Diameter of the button.
  * @param shape The button's silhouette. Defaults to a circle of [size].
@@ -455,6 +457,8 @@ fun GlassIconButton(
     modifier: Modifier = Modifier,
     backdrop: Backdrop? = null,
     surfaceAlpha: Float = 1f,
+    enabled: Boolean = true,
+    holdDownState: Boolean = false,
     style: GlassStyle = LocalGlassTopAppBarContext.current?.style ?: GlassDefaults.Style,
     size: Dp = LocalGlassTopAppBarContext.current?.size ?: GlassTopAppBarDefaults.ButtonSize,
     shape: GlassShape = LocalGlassTopAppBarContext.current?.shape ?: GlassShape(size / 2),
@@ -466,7 +470,7 @@ fun GlassIconButton(
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val topBarContext = LocalGlassTopAppBarContext.current
-    val resolvedSurfaceAlpha = surfaceAlpha * (topBarContext?.alpha ?: 1f)
+    val resolvedSurfaceAlpha = surfaceAlpha * (if (enabled) 1f else 0.38f) * (topBarContext?.alpha ?: 1f)
     val topBarRamp = topBarContext?.ramp
     GlassButtonSurface(
         backdrop = topBarContext?.backdrop ?: backdrop,
@@ -483,9 +487,10 @@ fun GlassIconButton(
         shadow = shadow,
         sharedProgress = topBarContext?.materialProgress,
         sharedKeepMaterial = topBarContext?.keepMaterial,
-        pressed = pressed,
+        pressed = pressed || holdDownState,
         modifier = modifier
             .clickable(
+                enabled = enabled,
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick,

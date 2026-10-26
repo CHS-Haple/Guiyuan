@@ -35,7 +35,10 @@ keyboard/Back, scrolling, overlay host ownership and shader-free fallback togeth
   Longer labels use the existing scaffold-hosted glass dropdown with full option
   text rather than squeezing equal-width segments or shrinking typography.
   Layout fit is measured with the active MIUIX text styles and font scale.
-- **Top-bar actions:** published TopAppBar still clips every child, unlike PR
+- **Top-bar actions:** the experimental GlassIconButton has enabled and holdDownState
+  compatibility parameters for Home's long-running action; these must be
+  reconciled with upstream before removing the vendor sources.
+  Published TopAppBar still clips every child, unlike PR
   #423's title-only clip. Native TopAppBar owns slot measurement, scrolling
   and title geometry; its action slots are noninteractive size placeholders.
   The real OS4 glass controls are composed once above the legacy clip in the
@@ -104,7 +107,7 @@ shadows are not a valid single-owner solution.
 | Screen / owner | Current code path | OS4-specific review |
 | --- | --- | --- |
 | Main hub | `ui/MainHub.kt` | Glass 3-destination navigation, Scaffold-owned bottom insets, shader fallback, pager sampling, dialogs/snackbar layering and fast page switches |
-| Home | `screens/HomeScreen.kt` | Glass title bar; hot-reload control stays native until busy/disabled/hold state has an exact OS4 counterpart; preview/dock remains consistent |
+| Home | `screens/HomeScreen.kt` | Glass title bar and rounded Hot Reload action. The experimental GlassIconButton supports the existing disabled/hold state so it cannot repeatedly hot-reload while busy; the native action path remains OS3. |
 | Features + Settings hub | `screens/HubScreens.kt` | Glass title/search action, round outside-end search close, sixteen-plus sliders and switch rows stay MIUIX absent a changed base norm; review four `OverlayDialog` sites |
 | Detail pages | `screens/SettingsScreenLayout.kt`, `screens/StaticScopeScreen.kt`, `screens/AboutScreen.kt` | Back/action glass, title scroll state, official Insets and title clipping, long text wrapping and window-safe popup roots |
 | Appearance | `screens/AppearanceScreen.kt` | Intrinsic OS4 navigation preview height, retained OS3 configuration, density and no-shader standard-nav preview |

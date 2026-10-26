@@ -182,6 +182,7 @@ internal fun HomeScreen(
                     backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
                     actions = actions,
+                    unclippedActions = true,
                 )
             } else {
                 MiuixBlurredTopBar(
