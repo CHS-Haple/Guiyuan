@@ -4217,9 +4217,14 @@ class GyModule : XposedModule() {
     private fun retireFailedHostAttach(host: Any, error: Throwable) {
         if (SysUiHostRegistry.current() !== host) return
 
-        // Independently retire partial ownership without hiding the attach error.
+        // Retire independently; never replace the attach error with ordinary cleanup failures.
         fun retire(action: () -> Unit) {
-            runCatching(action).onFailure(error::addSuppressed)
+            try {
+                action()
+            } catch (failure: Throwable) {
+                SysUiHotReload.rethrowFatal(failure)
+                if (failure !== error) error.addSuppressed(failure)
+            }
         }
         retire { releaseFeatureOwnership("host-attach-failed") }
         retire { HomeRenderSession.detach() }
