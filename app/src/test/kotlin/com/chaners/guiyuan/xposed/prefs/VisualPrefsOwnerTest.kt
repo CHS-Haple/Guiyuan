@@ -6,6 +6,7 @@ import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.settings.VisualCfg
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class VisualPrefsOwnerTest {
@@ -109,6 +110,29 @@ class VisualPrefsOwnerTest {
         // Rebinding must resynchronize a pending request in this new owner generation.
         VisualPrefsOwner.bind(prefs, onAxisRequest = { requests++ }, onChanged = {})
         assertEquals(3, requests)
+    }
+
+    @Test
+    fun failedAxisRequestCanRetrySameId() {
+        val prefs = FakePreferences(dual = false)
+        val failure = IllegalStateException("axis-request")
+        var deliveries = 0
+        VisualPrefsOwner.bind(
+            prefs,
+            onAxisRequest = {
+                deliveries++
+                if (deliveries == 1) throw failure
+            },
+            onChanged = {},
+        )
+        assertSame(
+            failure,
+            runCatching { prefs.requestAxis(300L) }.exceptionOrNull(),
+        )
+        prefs.notify(NativeFontAxis.REQUEST_KEY)
+        assertEquals(2, deliveries)
+        prefs.notify(NativeFontAxis.REQUEST_KEY)
+        assertEquals(2, deliveries)
     }
 
     private class FakePreferences(private var dual: Boolean) : SharedPreferences {

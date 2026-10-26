@@ -34,10 +34,14 @@ internal object VisualPrefsOwner {
 
         // A remote request may already exist before this SystemUI binding is installed.
         fun deliverAxisRequest(request: Long) {
-            if (request > 0L && lastRequest.getAndSet(request) != request &&
-                state.get().token === token
-            ) {
+            if (request <= 0L || state.get().token !== token) return
+            val previous = lastRequest.getAndSet(request)
+            if (previous == request) return
+            try {
                 onAxisRequest()
+            } catch (error: Throwable) {
+                lastRequest.compareAndSet(request, previous)
+                throw error
             }
         }
 
