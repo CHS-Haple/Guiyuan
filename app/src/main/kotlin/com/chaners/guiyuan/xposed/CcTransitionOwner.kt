@@ -982,22 +982,25 @@ internal object CcTransitionOwner {
                             if (native != null && battery != null &&
                                 coherentWifiLayout(rootView, witness.slotView)
                             ) {
-                                wifiAnchor = WifiAnchor(witness.slotView, witness.opticalView, native.copyOf(), battery)
+                                wifiAnchor = WifiAnchor(
+                                    witness.slotView,
+                                    witness.opticalView,
+                                    native.copyOf(),
+                                    battery,
+                                )
                                 native
-                            } else {
-                                wifiAnchor?.takeIf {
-                                        it.slot === witness.slotView &&
-                                            it.optical === witness.opticalView &&
-                                            battery != null
-                                    }
-                                    ?.let { anchor ->
-                                        CcTransitionPolicy.followBatteryAnchor(
-                                            target = anchor.target,
-                                            previousBattery = anchor.battery,
-                                            currentBattery = battery!!,
-                                        )
-                                    }
-                            }
+                            } else if (battery != null) {
+                                wifiAnchor?.takeIf { anchor ->
+                                    anchor.slot === witness.slotView &&
+                                        anchor.optical === witness.opticalView
+                                }?.let { anchor ->
+                                    CcTransitionPolicy.followBatteryAnchor(
+                                        target = anchor.target,
+                                        previousBattery = anchor.battery,
+                                        currentBattery = battery,
+                                    )
+                                }
+                            } else null
                         }
                     }
                 } else null
