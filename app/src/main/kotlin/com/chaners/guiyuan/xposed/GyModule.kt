@@ -878,7 +878,7 @@ class GyModule : XposedModule() {
                 )
             }
         }.onFailure { error ->
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            SysUiHotReload.rethrowFatal(error)
             SysUiNetworkRuntime.resetRuntimeState()
             logDiagnostic(
                 level = Log.ERROR,
@@ -924,7 +924,7 @@ class GyModule : XposedModule() {
                 "source" to source,
             )
         }.onFailure { error ->
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            SysUiHotReload.rethrowFatal(error)
             islandSourceInstalled = false
             logDiagnostic(
                 level = Log.ERROR,
@@ -983,7 +983,7 @@ class GyModule : XposedModule() {
                 "source" to source,
             )
         }.onFailure { error ->
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            SysUiHotReload.rethrowFatal(error)
             ccSourceInstalled = false
             HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
@@ -1680,7 +1680,7 @@ class GyModule : XposedModule() {
                     "BatteryController callbacks",
             )
         }.onFailure { error ->
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.ERROR,
                 event = "source.install",
@@ -1771,7 +1771,7 @@ class GyModule : XposedModule() {
                 }
             }
         }.onFailure { error ->
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.ERROR,
                 event = "source.install",
