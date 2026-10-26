@@ -2221,8 +2221,6 @@ internal object CcTransitionOwner {
         }
 
         private fun syncTransitionReservation() {
-            // Do not freeze provisional FINAL coordinates into the native peer lease.
-            if (finalWifiLayoutPending()) return
             if (!transitionReservationEnabled) {
                 if (lastNativeReservationWidthPx != null) {
                     SysUiPresentationOwner.clearCcTransitionReservation(
@@ -2234,6 +2232,8 @@ internal object CcTransitionOwner {
                 lastNativePeerTargetEndOffsetPx = null
                 return
             }
+            // Do not freeze provisional FINAL coordinates into the native peer lease.
+            if (finalWifiLayoutPending()) return
             val source = sourceViewRef.get() ?: return
             if (source.width <= 0) return
             val compactWidth =
