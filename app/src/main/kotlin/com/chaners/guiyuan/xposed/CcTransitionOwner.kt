@@ -21,12 +21,22 @@ import com.chaners.guiyuan.xposed.network.NativeStatusObserver
 import com.chaners.guiyuan.xposed.network.SignalStrength
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
+import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 internal object CcTransitionOwner {
+    internal inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            val cause = (error as? InvocationTargetException)?.targetException ?: error
+            if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+            null
+        }
+
     private const val STATUS_ICON_CONTAINER_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
     private const val BATTERY_VIEW_CLASS_NAME =
@@ -510,13 +520,7 @@ internal object CcTransitionOwner {
                                 val child = signal.getChildAt(index)
                                 val visual =
                                     if (child.isShown && child.width > 0 && child.height > 0) {
-                                        runCatching { ParticipantVisualSnapshot.resolveView(child) }
-                                            .getOrElse { error ->
-                                                if (error is VirtualMachineError || error is ThreadDeath) {
-                                                    throw error
-                                                }
-                                                null
-                                            }
+                                        readOrNull { ParticipantVisualSnapshot.resolveView(child) }
                                     } else {
                                         null
                                     }
@@ -566,8 +570,8 @@ internal object CcTransitionOwner {
                     .joinToString(",") { index ->
                         val child = group.getChildAt(index)
                         val slot =
-                            runCatching { NativeParticipantAccess.slotOf(child) }
-                                .getOrNull() ?: "-"
+                            readOrNull { NativeParticipantAccess.slotOf(child) }
+                                 ?: "-"
                         val clip = child.clipBounds
                         val mask = clip?.let {
                             "${it.left}/${it.top}/${it.right}/${it.bottom}"
@@ -2375,11 +2379,11 @@ internal object CcTransitionOwner {
             if (fakeRtl != targetRtl) return null
 
             val located =
-                runCatching {
+                readOrNull {
                     fakeStatusIcons.getLocationInWindow(batteryIslandFakeLocationScratch)
                     finalBattery.getLocationInWindow(batteryIslandTargetLocationScratch)
                     true
-                }.getOrDefault(false)
+                } ?: false
             if (!located) return null
 
             val fakeEndPhysical =
@@ -3458,8 +3462,8 @@ internal object CcTransitionOwner {
         }
 
         private fun batteryNumberTypefaceWeight(paint: Paint): Int? =
-            runCatching { paint.typeface?.weight }
-                .getOrNull()
+            readOrNull { paint.typeface?.weight }
+                
                 ?.takeIf { it > 0 }
 
         private fun captureTextStyle(
@@ -3472,8 +3476,8 @@ internal object CcTransitionOwner {
                 textScaleX = paint.textScaleX,
                 textSkewX = paint.textSkewX,
                 letterSpacing =
-                    runCatching { paint.letterSpacing }
-                        .getOrDefault(0f),
+                    readOrNull { paint.letterSpacing }
+                         ?: 0f,
                 strokeWidth = paint.strokeWidth,
                 paintStyle = paint.style,
             )
@@ -3504,8 +3508,8 @@ internal object CcTransitionOwner {
         private fun resolveNativeTextWeight(view: View?): Int? {
             if (view == null) return null
             if (view is TextView) {
-                return runCatching { view.paint.typeface?.weight ?: view.typeface?.weight }
-                    .getOrNull()
+                return readOrNull { view.paint.typeface?.weight ?: view.typeface?.weight }
+                    
                     ?.takeIf { it > 0 }
             }
             val descendant =
@@ -3521,8 +3525,8 @@ internal object CcTransitionOwner {
                 }
             return descendant
                 ?.let { text ->
-                    runCatching { text.paint.typeface?.weight ?: text.typeface?.weight }
-                        .getOrNull()
+                    readOrNull { text.paint.typeface?.weight ?: text.typeface?.weight }
+                        
                 }
                 ?.takeIf { it > 0 }
         }
@@ -3532,10 +3536,10 @@ internal object CcTransitionOwner {
                 .flatMap { clazz -> clazz.declaredFields.asSequence() }
                 .filter { field -> Paint::class.java.isAssignableFrom(field.type) }
                 .mapNotNull { field ->
-                    runCatching {
+                    readOrNull {
                         field.isAccessible = true
                         field.get(view) as? Paint
-                    }.getOrNull()
+                    }
                 }
                 .filter { paint -> paint.textSize > BATTERY_NUMBER_MIN_TEXT_SIZE_PX }
                 .maxByOrNull { paint ->
@@ -3613,8 +3617,8 @@ internal object CcTransitionOwner {
                         ":v=" + view.visibility
                 return if (view is TextView) {
                     val weight =
-                        runCatching { view.typeface?.weight }
-                            .getOrNull()
+                        readOrNull { view.typeface?.weight }
+                            
                             ?: -1
                     base +
                         ":text=" + view.text.toString().replace("|", "/") +
@@ -3662,16 +3666,16 @@ internal object CcTransitionOwner {
                                 Paint::class.java.isAssignableFrom(field.type)
                             }
                             .mapNotNull { field ->
-                                runCatching {
+                                readOrNull {
                                     field.isAccessible = true
-                                    val paint = field.get(owner) as? Paint ?: return@runCatching null
+                                    val paint = field.get(owner) as? Paint ?: return@readOrNull null
                                     val weight = batteryNumberTypefaceWeight(paint) ?: -1
                                     field.name +
                                         ":textSize=" + paint.textSize +
                                         ":weight=" + weight +
                                         ":style=" + (paint.typeface?.style ?: -1) +
                                         ":align=" + paint.textAlign.name
-                                }.getOrNull()
+                                }
                             }
                             .filterNotNull()
                             .take(BATTERY_NUMBER_PROBE_MAX_PAINTS)
@@ -3717,10 +3721,10 @@ internal object CcTransitionOwner {
                 }
                 .firstOrNull()
                 ?.let { field ->
-                    runCatching {
+                    readOrNull {
                         field.isAccessible = true
                         field.get(target) as? View
-                    }.getOrNull()
+                    }
                 }
 
         private fun readIntField(
@@ -3733,10 +3737,10 @@ internal object CcTransitionOwner {
                 }
                 .firstOrNull()
                 ?.let { field ->
-                    runCatching {
+                    readOrNull {
                         field.isAccessible = true
                         field.getInt(target)
-                    }.getOrNull()
+                    }
                 }
 
         private fun resolveSingleIconOpticalTarget(root: View): ImageView? {
@@ -3819,14 +3823,14 @@ internal object CcTransitionOwner {
                         }
                         .firstOrNull()
                         ?.let { candidate ->
-                            runCatching {
+                            readOrNull {
                                 candidate.isAccessible = true
                                 candidate
-                            }.getOrNull()
+                            }
                         }
                         .also { mobileSubIdFields[viewClass] = it }
                 } ?: return null
-            return runCatching { field.getInt(view) }.getOrNull()
+            return readOrNull { field.getInt(view) }
         }
 
         private fun selectSlotView(
@@ -4152,13 +4156,13 @@ internal object CcTransitionOwner {
 
             private fun windowOriginOnScreen(view: View): Pair<Int, Int>? {
                 if (!view.isAttachedToWindow) return null
-                return runCatching {
+                return readOrNull {
                     val screen = IntArray(2)
                     val window = IntArray(2)
                     view.getLocationOnScreen(screen)
                     view.getLocationInWindow(window)
                     (screen[0] - window[0]) to (screen[1] - window[1])
-                }.getOrNull()
+                }
             }
 
             private fun slotViews(
