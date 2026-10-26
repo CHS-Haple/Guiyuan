@@ -1,8 +1,10 @@
 package com.chaners.guiyuan.xposed
 
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -29,6 +31,27 @@ class SysUiCcSourceTest {
             )
 
         assertFalse(completed)
+    }
+
+    @Test
+    fun optionalAnchorReadDoesNotSwallowNativeFatal() {
+        val fatal = ThreadDeath()
+        assertSame(
+            fatal,
+            runCatching {
+                SysUiCcSource.readOrNull<Any> { throw InvocationTargetException(fatal) }
+            }.exceptionOrNull(),
+        )
+        val direct = OutOfMemoryError("direct-fatal")
+        assertSame(
+            direct,
+            runCatching { SysUiCcSource.readOrNull<Any> { throw direct } }.exceptionOrNull(),
+        )
+        assertNull(
+            SysUiCcSource.readOrNull<Any> {
+                throw InvocationTargetException(IllegalStateException("missing native field"))
+            },
+        )
     }
 
     @Test
