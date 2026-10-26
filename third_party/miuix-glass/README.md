@@ -36,7 +36,7 @@ glass components with published older UI modules and then conceal API drift
 using copied overlays, private API shadows, hand-written effects or geometry
 patches. A green experimental APK compile is not OS4 conformance.
 
-## Current experimental snapshot (B1410, not release-ready)
+## Current experimental snapshot (B1450, not release-ready)
 
 - GlassNavigationBar on the main three-page navigation and its preview.
 - GlassTopAppBar / GlassIconButton in hub/detail layouts, and OS4
@@ -93,7 +93,7 @@ address the separate preview geometry and sampling ownership defects;
 full title-button clipping needs the matching unpublished upstream UI ABI.
 Source parity and physical acceptance remain unverified. See CONFORMANCE.md.
 
-B1410 tracks the full source-level audit in CONFORMANCE.md, syncs B1406–1409
+B1450 tracks the full source-level audit in CONFORMANCE.md, syncs B1406–1409
 runtime safety fixes from dev and adjusts OS4 no-shader fallback/search.
 It does **not** patch the released MIUIX Blur binary. Upstream PR #423's
 continuous downscaled sample position and retained prefilter effect are
@@ -101,3 +101,7 @@ relevant to the user-reported scrolling flash, but only a version-matched
 published Blur/UI/Preference/Glass module set can close that ABI gap.
 This snapshot needs fresh build and device acceptance. The upstream PR is
 still unmerged and the PR remains Draft.
+
+The OS4 experimental Build identifier is intentionally separated from rapidly
+advancing dev/runtime Builds; B1410 is also used by a concurrent runtime PR
+and must not be treated as the OS4 distribution identity.
