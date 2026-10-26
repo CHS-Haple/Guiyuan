@@ -79,6 +79,7 @@ import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Surface
@@ -253,6 +254,7 @@ internal fun DiagnosticsScreen(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
         titlePadding = 0.dp,
+        glassActions = true,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
         navigationActions = {
             LogFilterMenu(
@@ -276,7 +278,7 @@ internal fun DiagnosticsScreen(
         },
         actions = {
             TooltipBox(text = shareTitle) {
-                IconButton(
+                DiagActionButton(
                     onClick = {
                         withReport { report ->
                             val prepared =
@@ -320,7 +322,7 @@ internal fun DiagnosticsScreen(
                 }
             }
             TooltipBox(text = exportTitle) {
-                IconButton(
+                DiagActionButton(
                     onClick = {
                         exportOpen = true
                         exportLauncher.launch(DiagFiles.fileName())
@@ -566,6 +568,19 @@ private val CategoryOptions =
         ),
         FilterOption(R.string.diagnostics_filter_other, CAT_OTHER),
     )
+
+@Composable
+private fun DiagActionButton(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    content: @Composable () -> Unit,
+) {
+    if (LocalUiStyle.current == UiStyle.OS4) {
+        GlassIconButton(onClick = onClick, enabled = enabled, content = content)
+    } else {
+        IconButton(onClick = onClick, enabled = enabled, content = content)
+    }
+}
 
 @Composable
 private fun LogFilterMenu(

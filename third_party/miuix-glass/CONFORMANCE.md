@@ -74,6 +74,12 @@ The source-screen pager still owns only the trigger, not the popup.
 
 ## Diagnostic glass menu acceptance boundary
 
+The Diagnostics top bar keeps share/export enabled state and tooltip semantics, but
+all OS4 actions now use official GlassIconButton, including the two report
+actions and the cascading-menu trigger. SettingsPage opts this populated
+right-side action row into the native-slot/glass-parent drawing boundary;
+pages with no actions reserve no empty 44dp placeholder.
+
 The Diagnostics filter menu keeps its existing level/category toggle callbacks and does not
 collapse when a selection changes. The other menu retains mode, scrolling and clear
 callbacks and closes after an action. OS4 uses the official glass dropdown primary

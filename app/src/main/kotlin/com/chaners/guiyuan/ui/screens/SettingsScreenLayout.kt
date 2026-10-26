@@ -177,6 +177,7 @@ internal fun SettingsPage(
     snackbarHost: @Composable () -> Unit = {},
     navigationActions: @Composable RowScope.() -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
+    glassActions: Boolean = false,
     titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     titleAlpha: Float = 1f,
     listState: LazyListState? = null,
@@ -221,6 +222,7 @@ internal fun SettingsPage(
                     navigationIcon = navigationIcon,
                     actions = actions,
                     unclippedNavigationIcon = true,
+                    unclippedActions = glassActions,
                 )
             } else {
                 MiuixBlurredTopBar(
