@@ -7,8 +7,8 @@ import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
-import java.lang.reflect.Method
 import java.lang.reflect.InvocationTargetException
+import java.lang.reflect.Method
 
 internal object SysUiCcSource {
     const val HOOK_COUNT = 4
@@ -428,7 +428,6 @@ internal object SysUiCcSource {
                     resolvedFields.joinToString(",") { (name, resolved) ->
                         val value =
                             readOrNull { resolved.get(view) }
-                                
                                 ?.toString()
                                 ?: "unavailable"
                         name + "=" + value
@@ -674,7 +673,6 @@ internal object SysUiCcSource {
         fun resolveHeader(delegate: Any): Any? {
             val callbacks =
                 readOrNull { callbacksField.get(delegate) as? Iterable<*> }
-                    
                     ?: return null
             val callback =
                 callbacks.firstOrNull { candidate ->
@@ -685,7 +683,6 @@ internal object SysUiCcSource {
 
         fun realSystemIcons(header: Any): ViewGroup? =
             readOrNull { realSystemIconsField.get(header) as? ViewGroup }
-                
 
         fun fakePresentationRoot(header: Any): ViewGroup? =
             fakeStatusBar(header)
@@ -720,13 +717,11 @@ internal object SysUiCcSource {
             callback
                 ?.let { candidate ->
                     readOrNull { callbackOuterField.get(candidate) }
-                        
                 }
 
         private fun combinedHeader(header: Any): Any? {
             val lazy =
                 readOrNull { headerControllerField.get(header) }
-                    
                     ?: return null
             return readOrNull { lazyGetMethod.invoke(lazy) }
         }
