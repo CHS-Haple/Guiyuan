@@ -8,13 +8,19 @@ import android.os.Handler
 import android.os.Looper
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
+import java.lang.reflect.InvocationTargetException
 
 internal object SysUiConnectivitySource {
+    private fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
     private inline fun <T> readOrNull(block: () -> T): T? =
         try {
             block()
         } catch (error: Throwable) {
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            rethrowFatal(error)
             null
         }
 
@@ -60,7 +66,18 @@ internal object SysUiConnectivitySource {
                         ) == true,
                     mobileDataEnabled = mobileDataEnabled(context),
                 )
-            onState(state)
+            try {
+                onState(state)
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                readOrNull {
+                    onEvent?.invoke(
+                        "connectivity delivery-failed source=" + source +
+                            " type=" + error.javaClass.simpleName,
+                    )
+                }
+                return
+            }
             readOrNull {
                 onEvent?.invoke(
                     "connectivity source=" + source +
