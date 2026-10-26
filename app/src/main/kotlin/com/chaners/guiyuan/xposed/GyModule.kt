@@ -201,6 +201,7 @@ class GyModule : XposedModule() {
                 state = "ready",
             )
         }.onFailure { error ->
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.ERROR,
                 event = "hook.install",
@@ -543,6 +544,7 @@ class GyModule : XposedModule() {
                 "restartScope" to false,
             )
         }.onFailure { error ->
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.ERROR,
                 event = "hotReload.complete",
@@ -613,6 +615,7 @@ class GyModule : XposedModule() {
                         handoff.run()
                         "continuous"
                     }.getOrElse { error ->
+                        SysUiHotReload.rethrowFatal(error)
                         throw IllegalStateException(
                             "old-generation-handoff-failed",
                             error,
@@ -696,6 +699,7 @@ class GyModule : XposedModule() {
         }.onFailure { error ->
             retireFailedHostAttach(capture.host, error)
             SysUiHostRegistry.discardIfCurrent(capture.host)
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.ERROR,
                 event = "hotReload.complete",
