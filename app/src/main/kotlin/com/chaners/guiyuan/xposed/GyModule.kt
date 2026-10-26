@@ -568,6 +568,21 @@ class GyModule : XposedModule() {
         runCatching {
             var restoredSnapshot =
                 StatusStateStore.restoreHotReloadState(restored.state)
+            val transferredCharging = restoredSnapshot.battery?.charging
+            val liveBattery =
+                SysUiBatterySource.reconcileHostBatteryState(capture.host) { state ->
+                    StatusStateStore.updateBattery(state)?.let { restoredSnapshot = it }
+                }
+            logDiagnostic(
+                level = if (liveBattery != null) Log.INFO else Log.WARN,
+                event = "battery.reconcile",
+                component = "batteryState",
+                state = if (liveBattery != null) "ready" else "unavailable",
+                "source" to "hotReloadNativeIcon",
+                "transferredCharging" to transferredCharging,
+                "nativeCharging" to liveBattery?.charging,
+                "nativePercent" to liveBattery?.percent,
+            )
             val bindings =
                 SysUiNetworkSource.restoreHotReloadBindings(restored.bindings)
             SysUiNetworkSource.seedRestoredWifiState(
