@@ -36,7 +36,7 @@ glass components with published older UI modules and then conceal API drift
 using copied overlays, private API shadows, hand-written effects or geometry
 patches. A green experimental APK compile is not OS4 conformance.
 
-## Current experimental snapshot (B1405, not release-ready)
+## Current experimental snapshot (B1410, not release-ready)
 
 - GlassNavigationBar on the main three-page navigation and its preview.
 - GlassTopAppBar / GlassIconButton in hub/detail layouts, and OS4
@@ -49,12 +49,15 @@ patches. A green experimental APK compile is not OS4 conformance.
   recorder was a demonstrable source/consumer cycle. Shader-unavailable
   devices retain MIUIX TabRowWithContour. B1403's reported Sandbox crash
   is not yet proven to be solely caused by this cycle.
-- OS4 search keeps MIUIX's SearchBar/InputField focus and Back ownership,
-  replacing only the expanded outside-end cancel text with an official
-  GlassIconButton + MiuixIcons.Basic.Close. OS3 keeps text cancel.
+- OS4 search keeps MIUIX's SearchBar/InputField focus and Back ownership.
+  Expanded search uses native MIUIX IconButton + Basic.Close with its own
+  opaque circular surface, rather than a GlassIconButton that inherits the
+  top bar's resting transparent state. OS3 keeps text cancel.
 - OS4 appearance mini-preview sizes to intrinsic GlassNavigationBar height
   rather than the fixed OS3 preview viewport. App margins follow the
   upstream documented 24.dp horizontal and 12.dp vertical usage.
+- OS4 no-shader fail-native path selects MIUIX's standard NavigationBar in
+  both the main page and its mini-preview, not the saved OS3 floating style.
 - All independent page owners pass explicit list overlap to GlassTopAppBar.
 - Current OS3 routes, settings and SystemUI/Xposed functional controls
   remain separate.
@@ -89,3 +92,12 @@ wrong mini-preview height and Sandbox launch crash. The B1405 changes
 address the separate preview geometry and sampling ownership defects;
 full title-button clipping needs the matching unpublished upstream UI ABI.
 Source parity and physical acceptance remain unverified. See CONFORMANCE.md.
+
+B1410 tracks the full source-level audit in CONFORMANCE.md, syncs B1406–1409
+runtime safety fixes from dev and adjusts OS4 no-shader fallback/search.
+It does **not** patch the released MIUIX Blur binary. Upstream PR #423's
+continuous downscaled sample position and retained prefilter effect are
+relevant to the user-reported scrolling flash, but only a version-matched
+published Blur/UI/Preference/Glass module set can close that ABI gap.
+This snapshot needs fresh build and device acceptance. The upstream PR is
+still unmerged and the PR remains Draft.

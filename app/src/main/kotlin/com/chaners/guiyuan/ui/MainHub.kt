@@ -256,7 +256,9 @@ internal fun MainHub(
                             .padding(horizontal = 24.dp, vertical = 12.dp),
                     )
                 }
-                !appearance.navEnabled -> {
+                // OS4 without a usable shader must fall back to native MIUIX,
+                // not resurrect a previously saved OS3 floating-bar style.
+                (os4 && miuixBackdrop == null) || !appearance.navEnabled -> {
                     NavigationBar {
                         items.forEachIndexed { index, item ->
                             val selected = pagerState.currentPage == index

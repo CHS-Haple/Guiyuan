@@ -1,10 +1,26 @@
 package com.chaners.guiyuan.xposed
 
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SysUiKeyguardAodSourceTest {
+    @Test
+    fun wrappedFatalAodCallbackPropagatesOriginalCause() {
+        val fatal = OutOfMemoryError("aod-callback")
+        assertSame(
+            fatal,
+            runCatching {
+                SysUiKeyguardAodSource.rethrowFatal(InvocationTargetException(fatal))
+            }.exceptionOrNull(),
+        )
+        SysUiKeyguardAodSource.rethrowFatal(
+            InvocationTargetException(IllegalStateException("ordinary")),
+        )
+    }
+
     @Test
     fun pinnedToggleAodContractRequiresSingleBooleanParameter() {
         assertTrue(

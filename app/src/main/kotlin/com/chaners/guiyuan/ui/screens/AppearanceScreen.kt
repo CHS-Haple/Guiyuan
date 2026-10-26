@@ -745,7 +745,7 @@ private fun MiniNavigationPreview(
             }
         }
 
-        if (floating || uiStyle == UiStyle.OS4) {
+        if (floating && uiStyle == UiStyle.OS3) {
             MiniNavViewport(bottomPadding = liquidBottomSpace) {
                 if (liquidBackdrop != null) {
                     val labels =

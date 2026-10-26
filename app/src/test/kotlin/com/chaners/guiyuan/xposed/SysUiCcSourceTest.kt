@@ -34,6 +34,30 @@ class SysUiCcSourceTest {
     }
 
     @Test
+    fun wrappedFatalRuntimeCallbacksKeepOriginalCause() {
+        val ownerFatal = OutOfMemoryError("callback")
+        assertSame(
+            ownerFatal,
+            runCatching {
+                SysUiCcSource.dispatchRuntimeCallback(
+                    callback = { throw InvocationTargetException(ownerFatal) },
+                    onFailure = { error("fatal callback must not be reported as ordinary") },
+                )
+            }.exceptionOrNull(),
+        )
+        val handlerFatal = ThreadDeath()
+        assertSame(
+            handlerFatal,
+            runCatching {
+                SysUiCcSource.dispatchRuntimeCallback(
+                    callback = { error("ordinary callback") },
+                    onFailure = { throw InvocationTargetException(handlerFatal) },
+                )
+            }.exceptionOrNull(),
+        )
+    }
+
+    @Test
     fun optionalAnchorReadDoesNotSwallowNativeFatal() {
         val fatal = ThreadDeath()
         assertSame(

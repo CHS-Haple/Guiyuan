@@ -70,7 +70,7 @@ internal object SysUiPresentationOwner {
         try {
             block()
         } catch (error: Throwable) {
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            rethrowFatal(error)
         }
     }
 
@@ -83,7 +83,7 @@ internal object SysUiPresentationOwner {
         try {
             block()
         } catch (error: Throwable) {
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            rethrowFatal(error)
             null
         }
 
@@ -1017,7 +1017,7 @@ internal object SysUiPresentationOwner {
                         requestLayout = requestLayout,
                     )
                 } catch (error: Throwable) {
-                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    rethrowFatal(error)
                     failures.add(error)
                     0
                 }
@@ -1063,7 +1063,7 @@ internal object SysUiPresentationOwner {
             try {
                 action()
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 failures.add(error)
             }
         }
@@ -1073,7 +1073,7 @@ internal object SysUiPresentationOwner {
                 handle.unhook()
                 null
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 failures.add(error)
                 handle
             }
@@ -1284,7 +1284,7 @@ internal object SysUiPresentationOwner {
             try {
                 action()
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 failures.add(error)
             }
         }
@@ -1421,7 +1421,7 @@ internal object SysUiPresentationOwner {
                 handle.unhook()
                 false
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 true
             }
         }
@@ -1908,7 +1908,7 @@ internal object SysUiPresentationOwner {
                 try {
                     action()
                 } catch (error: Throwable) {
-                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    rethrowFatal(error)
                     failures.add(error)
                 }
             }
@@ -1949,10 +1949,22 @@ internal object SysUiPresentationOwner {
             if (!active || ignoreScope == IgnoreScope.SESSION) {
                 return block()
             }
+            fun failAndProceed(reason: String): T {
+                try {
+                    onFailNative(reason)
+                } catch (error: Throwable) {
+                    rethrowFatal(error)
+                    emitDiagnostic {
+                        onEvent(eventPrefix + " failNative callbackFailure=" + error.javaClass.name)
+                    }
+                }
+                // Failed cleanup must not replace the original SystemUI call.
+                return block()
+            }
+
             val container = statusIcons.get()
             if (container == null) {
-                onFailNative("status-icon-group-released")
-                return block()
+                return failAndProceed("status-icon-group-released")
             }
             @Suppress("UNCHECKED_CAST")
             val list =
@@ -1960,22 +1972,21 @@ internal object SysUiPresentationOwner {
                     ignoredSlotsField.get(container) as? MutableList<String>
                 }
             if (list == null) {
-                onFailNative("ignored-slots-list-unavailable")
-                return block()
+                return failAndProceed("ignored-slots-list-unavailable")
             }
 
             val owned =
                 try {
                     OwnedEntries.add(list, representedSlots)
                 } catch (error: Throwable) {
-                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    rethrowFatal(error)
                     try {
                         onFailNative(
                             "ignored-slots-add-" +
                                 (error.message ?: error.javaClass.simpleName),
                         )
                     } catch (failure: Throwable) {
-                        if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                        rethrowFatal(failure)
                         if (failure !== error) error.addSuppressed(failure)
                     }
                     return block()
@@ -1991,14 +2002,14 @@ internal object SysUiPresentationOwner {
                 try {
                     OwnedEntries.restore(list, owned)
                 } catch (error: Throwable) {
-                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    rethrowFatal(error)
                     try {
                         onFailNative(
                             "ignored-slots-restore-" +
                                 (error.message ?: error.javaClass.simpleName),
                         )
                     } catch (failure: Throwable) {
-                        if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                        rethrowFatal(failure)
                         if (failure !== error) error.addSuppressed(failure)
                     }
                     // A failed cleanup must not replace the native method's exception.
@@ -3014,7 +3025,7 @@ internal object SysUiPresentationOwner {
                 try {
                     if (restoreClipState(state)) restored += 1
                 } catch (error: Throwable) {
-                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    rethrowFatal(error)
                     failures.add(error)
                 }
             }

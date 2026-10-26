@@ -1347,9 +1347,10 @@ private fun HubPage(
                         if (os4) {
                             val label = stringResource(R.string.cancel)
                             TooltipBox(text = label) {
-                                GlassIconButton(
+                                IconButton(
                                     onClick = search::close,
                                     modifier = Modifier.padding(end = 12.dp),
+                                    backgroundColor = MiuixTheme.colorScheme.surfaceContainerHigh,
                                 ) {
                                     Icon(
                                         MiuixIcons.Basic.Close,
