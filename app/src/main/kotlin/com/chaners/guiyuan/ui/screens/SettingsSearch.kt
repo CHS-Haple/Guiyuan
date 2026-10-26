@@ -111,7 +111,7 @@ internal class SearchMatches(
     private val translated: (Int) -> Boolean,
     private val translatedInitials: (Int) -> Boolean,
 ) {
-    private val useForeignInitials = ids.none { current(it) || translated(it) }
+    private val useForeignInitials = ids.none { current(it) || aliases(it) || translated(it) }
 
     fun matches(id: Int): Boolean =
         current(id) || aliases(id) || translated(id) ||

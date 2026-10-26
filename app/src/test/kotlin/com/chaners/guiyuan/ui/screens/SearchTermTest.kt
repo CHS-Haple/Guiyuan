@@ -264,6 +264,24 @@ class SearchTermTest {
     }
 
     @Test
+    fun curatedAliasOutranksUnrelatedForeignInitials() {
+        val query = "wl"
+        val aliases = SearchTerm("网络", "wang luo")
+        val foreign = SearchTerm("未来", "wei lai", foreign = true)
+        val result = SearchMatches(
+            intArrayOf(1, 2),
+            { false },
+            { it == 1 && aliases.matches(query) },
+            { false },
+            { it == 2 && foreign.matchesInitials(query) },
+        )
+        assertTrue(aliases.matches(query))
+        assertTrue(foreign.matchesInitials(query))
+        assertTrue(result.matches(1))
+        assertFalse("An exact curated alias must suppress unrelated foreign initials", result.matches(2))
+    }
+
+    @Test
     fun bilingualWordSearchWorksInBothDirections() {
         val batteryZh = SearchTerm("电量颜色", "dian liang yan se")
         val batteryEn = SearchTerm("Battery colors", "Battery colors", foreign = true)
