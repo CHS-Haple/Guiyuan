@@ -878,7 +878,7 @@ class GyModule : XposedModule() {
                 )
             }
         }.onFailure { error ->
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            SysUiHotReload.rethrowFatal(error)
             SysUiNetworkRuntime.resetRuntimeState()
             logDiagnostic(
                 level = Log.ERROR,
@@ -924,7 +924,7 @@ class GyModule : XposedModule() {
                 "source" to source,
             )
         }.onFailure { error ->
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            SysUiHotReload.rethrowFatal(error)
             islandSourceInstalled = false
             logDiagnostic(
                 level = Log.ERROR,
@@ -983,7 +983,7 @@ class GyModule : XposedModule() {
                 "source" to source,
             )
         }.onFailure { error ->
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            SysUiHotReload.rethrowFatal(error)
             ccSourceInstalled = false
             HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
@@ -1680,7 +1680,7 @@ class GyModule : XposedModule() {
                     "BatteryController callbacks",
             )
         }.onFailure { error ->
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.ERROR,
                 event = "source.install",
@@ -1771,7 +1771,7 @@ class GyModule : XposedModule() {
                 }
             }
         }.onFailure { error ->
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.ERROR,
                 event = "source.install",
@@ -1932,7 +1932,10 @@ class GyModule : XposedModule() {
             reportedBatteryFontPath = batteryFont?.second
             reportedFontHost = host
             fontAxisReported = true
-        }.onFailure { Log.w(TAG, "Unable to report verified native font axes", it) }
+        }.onFailure { error ->
+            SysUiHotReload.rethrowFatal(error)
+            Log.w(TAG, "Unable to report verified native font axes", error)
+        }
     }
 
     private fun onCombinedStateChanged(
@@ -4268,6 +4271,7 @@ class GyModule : XposedModule() {
         }.onFailure { error ->
             DiagPrefsOwner.unbind()
             detailedDiagnosticsEnabled = BuildConfig.DEVELOPMENT_PROBES
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.WARN,
                 event = "diagnostics.bind",
@@ -4298,6 +4302,7 @@ class GyModule : XposedModule() {
             )
         }.onFailure { error ->
             FeaturePrefsOwner.unbind()
+            SysUiHotReload.rethrowFatal(error)
             onFeatureCfgChanged(
                 FeaturePrefsOwner.current(),
                 null,
@@ -4452,9 +4457,10 @@ class GyModule : XposedModule() {
                     "battery" to received?.batteryPercent,
                 )
             }
-        }.onFailure {
+        }.onFailure { error ->
             SandboxHost.unbind()
-            log(Log.WARN, TAG, "Steady sandbox unavailable", it)
+            SysUiHotReload.rethrowFatal(error)
+            log(Log.WARN, TAG, "Steady sandbox unavailable", error)
         }
     }
 
@@ -4483,6 +4489,7 @@ class GyModule : XposedModule() {
             )
         }.onFailure { error ->
             VisualPrefsOwner.unbind()
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.WARN,
                 event = "runtimePreferences.bind",
