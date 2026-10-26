@@ -296,8 +296,6 @@ internal object CcTransitionOwner {
         private var wifiTargetReady: Boolean? = null
         private var wifiRetarget: WifiRetarget? = null
         private var wifiAnchor: WifiAnchor? = null
-        // Probe-only snapshot: native progress, carried source, FINAL target, painted center X.
-        private val wifiDraw = FloatArray(4) { Float.NaN }
         private var frozenAirplaneTarget: TargetWitness? = null
         private var airplaneTargetResolved = false
         private var frozenNoSimTarget: TargetWitness? = null
@@ -591,8 +589,6 @@ internal object CcTransitionOwner {
                 " wifiReady=$wifiTargetReady retargetAt=${wifiRetarget?.progress}" +
                 " retargetDx=${wifiRetarget?.delta?.get(0)}" +
                 " chargeAt=${chargeRetarget?.progress} chargePeerShift=${chargeRetarget?.peerShift}" +
-                " paintP=${wifiDraw[0]} sourceX=${wifiDraw[1]}" +
-                " targetX=${wifiDraw[2]} paintedX=${wifiDraw[3]}" +
                 " fakeRoot=${viewPos(fakeRootRef.get())}" +
                 " finalRoot=${viewPos(finalRootRef.get())}" +
                 " fakeParent=${viewPos(fakeStatusIcons.parent as? View)}" +
@@ -698,12 +694,10 @@ internal object CcTransitionOwner {
                 wifiTargetReady = null
                 wifiRetarget = null
                 wifiAnchor = null
-                wifiDraw.fill(Float.NaN)
             } else if (model.centerIndicator !is CenterIndicator.Wifi) {
                 wifiTargetReady = null
                 wifiRetarget = null
                 wifiAnchor = null
-                wifiDraw.fill(Float.NaN)
             }
             currentSnapshot = next
         }
@@ -716,7 +710,6 @@ internal object CcTransitionOwner {
             if (!started) return
             started = false
             wifiAnchor = null
-            wifiDraw.fill(Float.NaN)
             nativeChildren.clear()
             val rootView = rootRef.get()
             val registered = registeredObserver
@@ -1367,13 +1360,6 @@ internal object CcTransitionOwner {
                     } else {
                         geometry
                     }
-                if (wifiCenter) {
-                    wifiDraw[0] = componentMotionProgress
-                    wifiDraw[1] = sourceGeometry[0] +
-                        (carrierFrames?.let { it.current[0] - it.source[0] } ?: 0f)
-                    wifiDraw[2] = matchedTargetGeometry?.get(0) ?: Float.NaN
-                    wifiDraw[3] = renderedGeometry[0]
-                }
                 val componentVisibleFraction =
                     if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
                         // The ring retracts independently of the final native battery target.
