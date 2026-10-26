@@ -1932,7 +1932,10 @@ class GyModule : XposedModule() {
             reportedBatteryFontPath = batteryFont?.second
             reportedFontHost = host
             fontAxisReported = true
-        }.onFailure { Log.w(TAG, "Unable to report verified native font axes", it) }
+        }.onFailure { error ->
+            SysUiHotReload.rethrowFatal(error)
+            Log.w(TAG, "Unable to report verified native font axes", error)
+        }
     }
 
     private fun onCombinedStateChanged(
@@ -4268,6 +4271,7 @@ class GyModule : XposedModule() {
         }.onFailure { error ->
             DiagPrefsOwner.unbind()
             detailedDiagnosticsEnabled = BuildConfig.DEVELOPMENT_PROBES
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.WARN,
                 event = "diagnostics.bind",
@@ -4298,6 +4302,7 @@ class GyModule : XposedModule() {
             )
         }.onFailure { error ->
             FeaturePrefsOwner.unbind()
+            SysUiHotReload.rethrowFatal(error)
             onFeatureCfgChanged(
                 FeaturePrefsOwner.current(),
                 null,
@@ -4452,9 +4457,10 @@ class GyModule : XposedModule() {
                     "battery" to received?.batteryPercent,
                 )
             }
-        }.onFailure {
+        }.onFailure { error ->
             SandboxHost.unbind()
-            log(Log.WARN, TAG, "Steady sandbox unavailable", it)
+            SysUiHotReload.rethrowFatal(error)
+            log(Log.WARN, TAG, "Steady sandbox unavailable", error)
         }
     }
 
@@ -4483,6 +4489,7 @@ class GyModule : XposedModule() {
             )
         }.onFailure { error ->
             VisualPrefsOwner.unbind()
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.WARN,
                 event = "runtimePreferences.bind",
