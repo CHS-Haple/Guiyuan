@@ -5,8 +5,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
@@ -257,12 +260,13 @@ internal fun PreviewSandboxScreen(
     val dock: @Composable () -> Unit = {
         AnimatedVisibility(
             visible = showDock,
-            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+            enter = if (os4) fadeIn() + slideInVertically { -it } else fadeIn() + expandVertically(expandFrom = Alignment.Top),
+            exit = if (os4) fadeOut() + slideOutVertically { -it } else fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .then(if (os4) Modifier.background(MiuixTheme.colorScheme.surface) else Modifier)
                     .padding(vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -316,7 +320,6 @@ internal fun PreviewSandboxScreen(
                         scrollBehavior = scrollBehavior,
                         navigationIcon = backAction,
                         actions = barActions,
-                        bottomContent = dock,
                     )
                 } else {
                     MiuixBlurredTopBar(
@@ -416,10 +419,7 @@ internal fun PreviewSandboxScreen(
                             },
                             modifier =
                                 Modifier
-                                    .widthIn(max = 300.dp)
                                     .fillMaxWidth()
-                                    .align(Alignment.CenterHorizontally)
-                                    .padding(horizontal = 6.dp)
                                     .padding(top = 8.dp, bottom = 6.dp),
                         )
 
@@ -667,7 +667,15 @@ internal fun PreviewSandboxScreen(
                     }
                 }
             }
-
+            if (os4) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = pinnedTop),
+                ) {
+                    dock()
+                }
+            }
         }
     }
     }

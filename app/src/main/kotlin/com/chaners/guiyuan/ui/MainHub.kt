@@ -46,6 +46,7 @@ import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.system.RestartTarget
@@ -169,11 +170,13 @@ internal fun MainHub(
         }
     }
     val os4 = appearance.uiStyle == UiStyle.OS4
+    val os4Glass = os4 && appearance.navEnabled && appearance.navStyle == NavStyle.Glass
     val miuixMaterialActive =
-        (os4 || (appearance.navEnabled && appearance.navStyle.requiresTextureBackdrop)) &&
+        appearance.navEnabled &&
+            appearance.navStyle.requiresTextureBackdrop &&
             isRuntimeShaderSupported()
     val liquidMaterialActive =
-        !os4 && appearance.navEnabled &&
+        appearance.navEnabled &&
             appearance.navStyle == NavStyle.Liquid &&
             liquidNavSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
@@ -225,7 +228,7 @@ internal fun MainHub(
     )
 
     val navigationBarModifier =
-        if (miuixBackdrop != null && !os4) {
+        if (miuixBackdrop != null && !os4Glass) {
             Modifier.floatingNavMaterial(
                 backdrop = miuixBackdrop,
                 dark = dark,
@@ -248,12 +251,12 @@ internal fun MainHub(
         snackbarHost = { SnackbarHost(state = featureSnackbarState) },
         bottomBar = {
             when {
-                os4 && miuixBackdrop != null -> {
+                os4Glass && miuixBackdrop != null -> {
                     GlassNavigationBar(
-                        items = items.map { item ->
+                        items = items.mapIndexed { index, item ->
                             GlassNavigationItem(
-                                icon = item.icon,
-                                label = item.label,
+                                icon = if (pagerState.currentPage == index) item.selectedIcon else item.icon,
+                                label = item.label.takeIf { appearance.activeNavContent == NavContent.IconAndText },
                             )
                         },
                         selectedIndex = pagerState.currentPage,
@@ -265,7 +268,7 @@ internal fun MainHub(
                 }
                 // OS4 without a usable shader must fall back to native MIUIX,
                 // not resurrect a previously saved OS3 floating-bar style.
-                (os4 && miuixBackdrop == null) || !appearance.navEnabled -> {
+                (os4Glass && miuixBackdrop == null) || !appearance.navEnabled -> {
                     NavigationBar {
                         items.forEachIndexed { index, item ->
                             val selected = pagerState.currentPage == index

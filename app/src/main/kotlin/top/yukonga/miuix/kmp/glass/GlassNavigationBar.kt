@@ -179,6 +179,8 @@ object GlassNavigationBarDefaults {
  * @param selectedColor Tint of the selected icon and label.
  * @param unselectedColor Tint of the others. They are not dimmed; the indicator alone says which
  *   one is current.
+ * @param interactive Whether destination gestures, keyboard actions and accessibility actions are enabled.
+ *   Noninteractive is for a visual preview, not for the real bottom navigation.
  * @param trailingAction Optional independent action outside the glass capsule. It owns its size
  *   and material, and shares the bar's show/hide transition. Use [GlassIconButton] for a round action.
  */
@@ -201,6 +203,7 @@ fun GlassNavigationBar(
     indicatorPressedColor: Color = GlassNavigationBarDefaults.indicatorPressedColor(),
     selectedColor: Color = MiuixTheme.colorScheme.onBackground,
     unselectedColor: Color = MiuixTheme.colorScheme.onBackground,
+    interactive: Boolean = true,
     trailingAction: (@Composable () -> Unit)? = null,
 ) {
     if (items.isEmpty()) return
@@ -230,6 +233,7 @@ fun GlassNavigationBar(
         }
     }
 
+    val inputEnabled = interactionEnabled && interactive
     val scope = rememberCoroutineScope()
     val left = remember { Animatable(0f) }
     val right = remember { Animatable(0f) }
@@ -298,11 +302,11 @@ fun GlassNavigationBar(
             {
                 Box(
                     modifier = Modifier
-                        .then(if (interactionEnabled) Modifier else Modifier.clearAndSetSemantics { })
+                        .then(if (inputEnabled) Modifier else Modifier.clearAndSetSemantics { })
                         .layout { measurable, constraints ->
                             val placeable = measurable.measure(constraints)
                             layout(placeable.width, placeable.height) {
-                                if (interactionEnabled) placeable.placeRelative(0, 0)
+                                if (inputEnabled) placeable.placeRelative(0, 0)
                             }
                         },
                 ) { action() }
@@ -325,7 +329,7 @@ fun GlassNavigationBar(
                 )
                 .onSizeChanged { barWidth = it.width }
                 .then(
-                    if (interactionEnabled) {
+                    if (inputEnabled) {
                         Modifier.pointerInput(items.size, contentInset, overhang, layoutDirection) {
                             awaitEachGesture {
                                 val down = awaitFirstDown(requireUnconsumed = false)
@@ -454,7 +458,7 @@ fun GlassNavigationBar(
                                     vertical = GlassNavigationBarDefaults.ContentPaddingVertical,
                                 )
                                 .then(
-                                    if (interactionEnabled) {
+                                    if (inputEnabled) {
                                         Modifier
                                             .semantics(mergeDescendants = true) {
                                                 this.role = Role.Tab

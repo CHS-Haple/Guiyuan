@@ -274,7 +274,6 @@ internal fun AppearanceScreen(
                 holdDownState = inputOpen,
                 onClick = { inputOpen = true },
             )
-            AnimatedPreferenceGroup(visible = appearance.uiStyle == UiStyle.OS3) {
             SwitchPreference(
                 title = stringResource(R.string.floating_navigation_bar),
                 summary = stringResource(R.string.floating_navigation_bar_summary),
@@ -346,7 +345,6 @@ internal fun AppearanceScreen(
                         }
                     },
                 )
-            }
             }
         }
     }
@@ -620,12 +618,11 @@ private fun MiniNavigationPreview(
     liquidMode: LiquidMode,
     dark: Boolean,
 ) {
+    val os4Glass = uiStyle == UiStyle.OS4 && floating && style == NavStyle.Glass
     val miuixMaterialActive =
-        (uiStyle == UiStyle.OS4 || (floating && style.requiresTextureBackdrop)) &&
-            isRuntimeShaderSupported()
+        floating && style.requiresTextureBackdrop && isRuntimeShaderSupported()
     val liquidMaterialActive =
-        floating && uiStyle == UiStyle.OS3 &&
-            style == NavStyle.Liquid &&
+        floating && style == NavStyle.Liquid &&
             liquidNavSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
     val miuixBackdrop =
@@ -650,7 +647,7 @@ private fun MiniNavigationPreview(
             0.dp
         }
     val floatingModifier =
-        if (miuixBackdrop != null && uiStyle == UiStyle.OS3) {
+        if (miuixBackdrop != null && !os4Glass) {
             Modifier.floatingNavMaterial(
                 backdrop = miuixBackdrop,
                 dark = dark,
@@ -660,7 +657,7 @@ private fun MiniNavigationPreview(
             Modifier
         }
 
-    if (uiStyle == UiStyle.OS4 && miuixBackdrop != null) {
+    if (os4Glass && miuixBackdrop != null) {
         // The glass bar can grow for captions. Let the preview measure its actual
         // height and keep its shadow inside the preview surface.
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -687,13 +684,14 @@ private fun MiniNavigationPreview(
                 Spacer(modifier = Modifier.height(20.dp))
                 GlassNavigationBar(
                     items = listOf(
-                        GlassNavigationItem(MiuixIcons.Normal.Home, stringResource(R.string.nav_home)),
-                        GlassNavigationItem(MiuixIcons.Normal.Tune, stringResource(R.string.nav_features)),
-                        GlassNavigationItem(MiuixIcons.Normal.Settings, stringResource(R.string.nav_settings)),
+                        GlassNavigationItem(MiuixIcons.Normal.Home, stringResource(R.string.nav_home).takeIf { content == NavContent.IconAndText }),
+                        GlassNavigationItem(MiuixIcons.Normal.Tune, stringResource(R.string.nav_features).takeIf { content == NavContent.IconAndText }),
+                        GlassNavigationItem(MiuixIcons.Normal.Settings, stringResource(R.string.nav_settings).takeIf { content == NavContent.IconAndText }),
                     ),
                     selectedIndex = 2,
                     onSelect = {},
                     backdrop = miuixBackdrop,
+                    interactive = false,
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
                         .padding(bottom = 24.dp),
@@ -745,7 +743,7 @@ private fun MiniNavigationPreview(
             }
         }
 
-        if (floating && uiStyle == UiStyle.OS3) {
+        if (floating) {
             MiniNavViewport(bottomPadding = liquidBottomSpace) {
                 if (liquidBackdrop != null) {
                     val labels =

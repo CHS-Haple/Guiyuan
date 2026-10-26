@@ -4,8 +4,8 @@ Source of truth: compose-miuix-ui/miuix [PR #423](https://github.com/compose-miu
 
 | Area | Upstream OS4 contract | Guiyuan status and required gate |
 | --- | --- | --- |
-| Bottom destinations | `GlassNavigationBar`: minimum 54dp, **content-driven height**, equal-width destinations, fills the **caller-bounded width**, optional trailing action; outer insets belong to caller | App follows PR #423 GlassPage's 24dp side, 20dp top and max(24dp, navigationBarInset+8dp) bottom spacing; preview preserves top/bottom rhythm with a narrower card. Review device bottom placement, touch/drag, fontScale, 80–110% scaling and wrapped captions; do not impose a fixed bar height/width. |
-| Appearance mini-preview | Preview must respect the **same intrinsic height** as the component and reserve room for shadows | OS4 path now measures the real bar and reserves surrounding space instead of treating the old 76dp preview as authoritative; OS3 preview unchanged. |
+| Bottom destinations | `GlassNavigationBar`: minimum 54dp, content-driven height, equal-width destinations, caller-bounded width and caller-owned Insets | OS4 + selected Glass uses upstream capsule; other selected styles and floating disabled preserve existing behavior across UI styles. Icon-only and icon+text remain user controlled. Upstream page 24dp/20dp/Inset spacing is retained. Device acceptance still open. |
+| Appearance mini-preview | Preserve intrinsic sizing, appearance selections and no input for display-only navigation | OS4 Glass preview is noninteractive at the component's gesture and accessibility boundaries, not just a no-op onSelect. Both UI styles preview the persisted navigation style and content mode. |
 | Top app bars | PR modifies core `TopAppBar` viewport clipping so floating action shadows extend past title region, and adds `BlurTopAppBar` with title blur and draw-phase opacity | Published `TopAppBar` still uses whole-region clipping. App uses a temporary native delegate and native top-bar IconButtons while incompatible. **Not compliant** until matching core UI revision is integrated. Avoid alpha, shadow clipping or padding patches. |
 | Scroll/overlap | Glass title bar supports an explicit `isContentScrolled` input based on actual list position; scroll behavior retains title collapse | All four screen owners should supply their own `LazyListState.canScrollBackward` rather than infer overlap solely from collapsing title; keep list ownership local. |
 | Search | PR #423 does not change `SearchBar` or `InputField`, but provides glass top-bar actions. The system screenshot uses a round graphical close affordance. | OS4 retains MIUIX SearchBar and round native actions while the published TopAppBar clips glass shadows. This is an explicit temporary fail-native boundary, not full GlassTopAppBar conformity; re-evaluate on the matched upstream UI revision. OS3 retains text cancel. Test search focus, Back, clear and layout. |
@@ -27,9 +27,10 @@ choosing a component. A renamed or glass-coated OS3 widget is not sufficient. Re
 container constraints, system/window insets, typography and fontScale, dynamic density,
 keyboard/Back, scrolling, overlay host ownership and shader-free fallback together.
 
-- **Sandbox title:** OS4 must use the Scaffold's actual top-bar measurement for
-  list content instead of the collapsed SmallTopAppBar height. OS3 retains its
-  dock-independent pinned inset.
+- **Sandbox title:** OS4 uses measured top-bar padding for resting content.
+  Its transient dock is a top-layer overlay, not a Scaffold top-bar child,
+  so enter/exit cannot recalculate the list's top inset. OS3 keeps its
+  existing dock-in-bar behavior.
 - **Sandbox choices:** segmented glass tabs remain for fitting short labels.
   Longer labels use the existing scaffold-hosted glass dropdown with full option
   text rather than squeezing equal-width segments or shrinking typography.
@@ -40,6 +41,10 @@ keyboard/Back, scrolling, overlay host ownership and shader-free fallback togeth
   upstream title-local clipping API is published. This is a fail-native
   compatibility boundary, not completed OS4 action styling.
   SearchBar, input, focus and Back remain MIUIX-owned.
+- **Navigation configuration:** UI era and chosen navigation style are independent.
+  OS4 honors floating enablement, Standard/Blur/Glass/Liquid, Liquid modes,
+  and icon-only/icon+text, instead of overriding persisted choices.
+  Preview selection is inert even for glass drag gestures.
 - **Bottom navigation:** 54dp is the upstream glass capsule's minimum
   content height, not the bottom placement. The upstream full GlassPage uses
   24dp horizontal and 20dp top margins, with bottom clearance
