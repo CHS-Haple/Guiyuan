@@ -1949,10 +1949,22 @@ internal object SysUiPresentationOwner {
             if (!active || ignoreScope == IgnoreScope.SESSION) {
                 return block()
             }
+            fun failAndProceed(reason: String): T {
+                try {
+                    onFailNative(reason)
+                } catch (error: Throwable) {
+                    rethrowFatal(error)
+                    emitDiagnostic {
+                        onEvent(eventPrefix + " failNative callbackFailure=" + error.javaClass.name)
+                    }
+                }
+                // Failed cleanup must not replace the original SystemUI call.
+                return block()
+            }
+
             val container = statusIcons.get()
             if (container == null) {
-                onFailNative("status-icon-group-released")
-                return block()
+                return failAndProceed("status-icon-group-released")
             }
             @Suppress("UNCHECKED_CAST")
             val list =
@@ -1960,8 +1972,7 @@ internal object SysUiPresentationOwner {
                     ignoredSlotsField.get(container) as? MutableList<String>
                 }
             if (list == null) {
-                onFailNative("ignored-slots-list-unavailable")
-                return block()
+                return failAndProceed("ignored-slots-list-unavailable")
             }
 
             val owned =
