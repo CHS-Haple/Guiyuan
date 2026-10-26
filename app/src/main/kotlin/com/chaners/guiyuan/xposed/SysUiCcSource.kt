@@ -7,10 +7,20 @@ import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
 internal object SysUiCcSource {
     const val HOOK_COUNT = 4
+
+    internal inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            val cause = (error as? InvocationTargetException)?.targetException ?: error
+            if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+            null
+        }
 
     private const val CONTROL_CENTER_CLASS =
         "com.miui.systemui.controlcenter.container.ControlCenterExpandControllerDelegate"
@@ -384,9 +394,9 @@ internal object SysUiCcSource {
         ): Field? =
             hierarchy(type)
                 .firstNotNullOfOrNull { owner ->
-                    runCatching {
+                    readOrNull {
                         owner.getDeclaredField(name).apply { isAccessible = true }
-                    }.getOrNull()
+                    }
                 }
 
         val contractViews =
@@ -417,8 +427,7 @@ internal object SysUiCcSource {
                 val values =
                     resolvedFields.joinToString(",") { (name, resolved) ->
                         val value =
-                            runCatching { resolved.get(view) }
-                                .getOrNull()
+                            readOrNull { resolved.get(view) }
                                 ?.toString()
                                 ?: "unavailable"
                         name + "=" + value
@@ -663,19 +672,17 @@ internal object SysUiCcSource {
     ) {
         fun resolveHeader(delegate: Any): Any? {
             val callbacks =
-                runCatching { callbacksField.get(delegate) as? Iterable<*> }
-                    .getOrNull()
+                readOrNull { callbacksField.get(delegate) as? Iterable<*> }
                     ?: return null
             val callback =
                 callbacks.firstOrNull { candidate ->
                     candidate != null && callbackClass.isInstance(candidate)
                 } ?: return null
-            return runCatching { callbackOuterField.get(callback) }.getOrNull()
+            return readOrNull { callbackOuterField.get(callback) }
         }
 
         fun realSystemIcons(header: Any): ViewGroup? =
-            runCatching { realSystemIconsField.get(header) as? ViewGroup }
-                .getOrNull()
+            readOrNull { realSystemIconsField.get(header) as? ViewGroup }
 
         fun fakePresentationRoot(header: Any): ViewGroup? =
             fakeStatusBar(header)
@@ -709,41 +716,39 @@ internal object SysUiCcSource {
         private fun headerFromCallback(callback: Any?): Any? =
             callback
                 ?.let { candidate ->
-                    runCatching { callbackOuterField.get(candidate) }
-                        .getOrNull()
+                    readOrNull { callbackOuterField.get(candidate) }
                 }
 
         private fun combinedHeader(header: Any): Any? {
             val lazy =
-                runCatching { headerControllerField.get(header) }
-                    .getOrNull()
+                readOrNull { headerControllerField.get(header) }
                     ?: return null
-            return runCatching { lazyGetMethod.invoke(lazy) }.getOrNull()
+            return readOrNull { lazyGetMethod.invoke(lazy) }
         }
 
         private fun fakeStatusBar(header: Any): ViewGroup? {
             val combinedHeader = combinedHeader(header) ?: return null
-            return runCatching {
+            return readOrNull {
                 fakeStatusBarField.get(combinedHeader) as? ViewGroup
-            }.getOrNull()
+            }
         }
 
         private fun finalStatusBar(header: Any): ViewGroup? {
             val combinedHeader = combinedHeader(header) ?: return null
-            return runCatching {
+            return readOrNull {
                 statusBarField.get(combinedHeader) as? ViewGroup
-            }.getOrNull()
+            }
         }
 
         private fun readBoolean(field: Field, target: Any): Boolean? =
-            runCatching { field.getBoolean(target) }.getOrNull()
+            readOrNull { field.getBoolean(target) }
 
         companion object {
             fun resolve(
                 classLoader: ClassLoader,
                 delegateClass: Class<*>,
             ): AnchorContract? =
-                runCatching {
+                readOrNull {
                     val callbackClass =
                         Class.forName(
                             CONTROL_CENTER_HEADER_CALLBACK_CLASS,
@@ -793,7 +798,7 @@ internal object SysUiCcSource {
                                 .getDeclaredField("controlCenterStatusBar")
                                 .accessible(),
                     )
-                }.getOrNull()
+                }
         }
     }
 
