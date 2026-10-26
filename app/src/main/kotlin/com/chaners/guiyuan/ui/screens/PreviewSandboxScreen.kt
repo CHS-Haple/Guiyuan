@@ -14,9 +14,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -205,18 +202,15 @@ internal fun PreviewSandboxScreen(
             else -> null
         }
 
-    // Keep the list's scroll geometry anchored to the native title row, not the optional dock.
-    val topInset = WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
-    val pinnedTop = topInset + TopAppBarDefaults.CollapsedHeight
-    val pinnedTopPx = with(LocalDensity.current) { pinnedTop.roundToPx() }
+    // The dock changes the top inset; compare against the list's own content origin.
     val listState = rememberLazyListState()
-    val showDock by remember(listState, pinnedTopPx) {
+    val showDock by remember(listState) {
         derivedStateOf {
             val info = listState.layoutInfo
             val preview = info.visibleItemsInfo.firstOrNull { it.key == "fullPreview" }
             when {
                 info.totalItemsCount == 0 -> false
-                preview != null -> preview.offset + preview.size <= pinnedTopPx
+                preview != null -> preview.offset + preview.size <= info.beforeContentPadding
                 else -> listState.firstVisibleItemIndex > 0
             }
         }
