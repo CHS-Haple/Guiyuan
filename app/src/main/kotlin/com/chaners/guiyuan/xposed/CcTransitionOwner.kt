@@ -1280,11 +1280,11 @@ internal object CcTransitionOwner {
                                 carrierFrames = carrierFrames,
                             )
                     }
-                var wifiRetargetOpacity = 1f
-                val renderedGeometry =
-                    if (spec.component == StatusPainter.TransitionComponent.CENTER &&
+                val wifiCenter =
+                    spec.component == StatusPainter.TransitionComponent.CENTER &&
                         model.centerIndicator is CenterIndicator.Wifi
-                    ) {
+                val renderedGeometry =
+                    if (wifiCenter) {
                         val ready = matchedTargetGeometry != null
                         if (ready && wifiTargetReady == false &&
                             componentMotionProgress > 0f && componentMotionProgress < 1f
@@ -1298,10 +1298,6 @@ internal object CcTransitionOwner {
                                     WifiRetarget(
                                         progress = componentMotionProgress,
                                         delta = delta,
-                                        sourceOpacity =
-                                            CcTransitionPolicy.unmatchedExitOpacity(
-                                                componentMotionProgress,
-                                            ),
                                     )
                                 } else null
                         } else if (!ready) {
@@ -1315,8 +1311,6 @@ internal object CcTransitionOwner {
                                     componentMotionProgress,
                                     retarget.progress,
                                 )
-                            wifiRetargetOpacity =
-                                1f - (1f - retarget.sourceOpacity) * weight
                             geometry.copyOf().apply {
                                 indices.forEach { index ->
                                     this[index] += retarget.delta[index] * weight
@@ -1341,7 +1335,8 @@ internal object CcTransitionOwner {
                                 progress = motionProgress,
                                 targetAvailable = targetGeometry != null,
                             )
-                    } else if (matchedTargetGeometry != null) {
+                    } else if (matchedTargetGeometry != null || wifiCenter) {
+                        // FINAL may bind after the source changes; FAKE alpha owns the handoff.
                         1f
                     } else {
                         CcTransitionPolicy.unmatchedExitOpacity(motionProgress)
@@ -1391,8 +1386,7 @@ internal object CcTransitionOwner {
                     hasTarget ||
                         spec.component == StatusPainter.TransitionComponent.CHARGING_ICON
                 val layerOpacity =
-                    opacity * (if (clipExit) 1f else componentVisibleFraction) *
-                        wifiRetargetOpacity
+                    opacity * (if (clipExit) 1f else componentVisibleFraction)
                 val save =
                     canvas.saveLayerAlpha(
                         null,
@@ -3912,7 +3906,6 @@ internal object CcTransitionOwner {
         private data class WifiRetarget(
             val progress: Float,
             val delta: FloatArray,
-            val sourceOpacity: Float,
         )
 
         private data class CarrierFrames(
