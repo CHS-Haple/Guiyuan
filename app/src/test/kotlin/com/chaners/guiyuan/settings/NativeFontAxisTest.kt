@@ -1,9 +1,9 @@
 package com.chaners.guiyuan.settings
 
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
-import java.lang.reflect.InvocationTargetException
 import org.junit.Test
 
 class NativeFontAxisTest {
