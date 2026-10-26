@@ -75,6 +75,30 @@ class NativeStatusObserverTest {
     }
 
     @Test
+    fun olderFailureCannotEraseNewerEqualValueDelivery() {
+        NativeStatusObserver.resetRuntimeState()
+        try {
+            val a = PresentationStore.StatusIconPresentation(appliedTint = 46)
+            val b = PresentationStore.StatusIconPresentation(appliedTint = 47)
+            val failure = IllegalStateException("outer-delivery")
+            assertSame(
+                failure,
+                runCatching {
+                    NativeStatusObserver.deliverPresentation(a) {
+                        assertTrue(NativeStatusObserver.deliverPresentation(b) { })
+                        assertTrue(NativeStatusObserver.deliverPresentation(a) { })
+                        throw failure
+                    }
+                }.exceptionOrNull(),
+            )
+            assertFalse(NativeStatusObserver.deliverPresentation(a) { })
+            assertTrue(NativeStatusObserver.deliverPresentation(b) { })
+        } finally {
+            NativeStatusObserver.resetRuntimeState()
+        }
+    }
+
+    @Test
     fun reflectedFatalReadDoesNotLookLikeMissingNativeState() {
         val fatal = OutOfMemoryError("native reflected cause")
         try {
