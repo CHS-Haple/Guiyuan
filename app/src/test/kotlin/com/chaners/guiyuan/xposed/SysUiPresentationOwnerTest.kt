@@ -30,6 +30,22 @@ class SysUiPresentationOwnerTest {
     }
 
     @Test
+    fun wrappedFatalDiagnosticCauseStillPropagates() {
+        val fatal = OutOfMemoryError("diagnostic")
+        assertSame(
+            fatal,
+            runCatching {
+                SysUiPresentationOwner.emitDiagnostic {
+                    throw InvocationTargetException(fatal)
+                }
+            }.exceptionOrNull(),
+        )
+        SysUiPresentationOwner.emitDiagnostic {
+            throw InvocationTargetException(IllegalStateException("ordinary"))
+        }
+    }
+
+    @Test
     fun fatalMutationFailurePreservesOriginalCause() {
         val threadDeath = ThreadDeath()
         assertSame(
