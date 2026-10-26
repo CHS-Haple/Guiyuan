@@ -2,11 +2,11 @@ package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.InternetState
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
-import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertTrue
 import org.junit.Test
 

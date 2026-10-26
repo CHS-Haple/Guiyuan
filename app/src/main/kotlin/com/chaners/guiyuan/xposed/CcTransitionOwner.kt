@@ -570,8 +570,7 @@ internal object CcTransitionOwner {
                     .joinToString(",") { index ->
                         val child = group.getChildAt(index)
                         val slot =
-                            readOrNull { NativeParticipantAccess.slotOf(child) }
-                                 ?: "-"
+                            readOrNull { NativeParticipantAccess.slotOf(child) } ?: "-"
                         val clip = child.clipBounds
                         val mask = clip?.let {
                             "${it.left}/${it.top}/${it.right}/${it.bottom}"
@@ -3462,9 +3461,7 @@ internal object CcTransitionOwner {
         }
 
         private fun batteryNumberTypefaceWeight(paint: Paint): Int? =
-            readOrNull { paint.typeface?.weight }
-                
-                ?.takeIf { it > 0 }
+            readOrNull { paint.typeface?.weight }?.takeIf { it > 0 }
 
         private fun captureTextStyle(
             paint: Paint,
@@ -3475,9 +3472,7 @@ internal object CcTransitionOwner {
                 fakeBoldText = paint.isFakeBoldText,
                 textScaleX = paint.textScaleX,
                 textSkewX = paint.textSkewX,
-                letterSpacing =
-                    readOrNull { paint.letterSpacing }
-                         ?: 0f,
+                letterSpacing = readOrNull { paint.letterSpacing } ?: 0f,
                 strokeWidth = paint.strokeWidth,
                 paintStyle = paint.style,
             )
@@ -3508,9 +3503,9 @@ internal object CcTransitionOwner {
         private fun resolveNativeTextWeight(view: View?): Int? {
             if (view == null) return null
             if (view is TextView) {
-                return readOrNull { view.paint.typeface?.weight ?: view.typeface?.weight }
-                    
-                    ?.takeIf { it > 0 }
+                return readOrNull {
+                    view.paint.typeface?.weight ?: view.typeface?.weight
+                }?.takeIf { it > 0 }
             }
             val descendant =
                 if (view is ViewGroup) {
@@ -3526,7 +3521,6 @@ internal object CcTransitionOwner {
             return descendant
                 ?.let { text ->
                     readOrNull { text.paint.typeface?.weight ?: text.typeface?.weight }
-                        
                 }
                 ?.takeIf { it > 0 }
         }
@@ -3616,10 +3610,7 @@ internal object CcTransitionOwner {
                         ":" + view.width + "x" + view.height +
                         ":v=" + view.visibility
                 return if (view is TextView) {
-                    val weight =
-                        readOrNull { view.typeface?.weight }
-                            
-                            ?: -1
+                    val weight = readOrNull { view.typeface?.weight } ?: -1
                     base +
                         ":text=" + view.text.toString().replace("|", "/") +
                         ":textSize=" + view.textSize +
