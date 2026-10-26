@@ -13,12 +13,16 @@ import java.lang.reflect.Method
 internal object SysUiCcSource {
     const val HOOK_COUNT = 4
 
+    internal fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
     internal inline fun <T> readOrNull(block: () -> T): T? =
         try {
             block()
         } catch (error: Throwable) {
-            val cause = (error as? InvocationTargetException)?.targetException ?: error
-            if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+            rethrowFatal(error)
             null
         }
 
@@ -318,13 +322,13 @@ internal object SysUiCcSource {
                     handle.unhook()
                     false
                 } catch (failure: Throwable) {
-                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                    rethrowFatal(failure)
                     true
                 }
             }
             failedInstallHandles = remaining
             homeEligible = false
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            rethrowFatal(error)
             if (remaining.isNotEmpty()) {
                 throw IllegalStateException("control-center-hook-cleanup-failed", error)
             }
@@ -459,16 +463,12 @@ internal object SysUiCcSource {
             callback()
             true
         } catch (error: Throwable) {
-            if (error is VirtualMachineError || error is ThreadDeath) {
-                throw error
-            }
+            rethrowFatal(error)
             if (onFailure != null) {
                 try {
                     onFailure(error)
                 } catch (failure: Throwable) {
-                    if (failure is VirtualMachineError || failure is ThreadDeath) {
-                        throw failure
-                    }
+                    rethrowFatal(failure)
                 }
             }
             false
