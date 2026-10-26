@@ -39,7 +39,8 @@ internal object SysUiTintSource {
     private const val INTERNAL_HOOK_ID = "combinedstatus.tint.battery.internal"
     private val lastStates = WeakHashMap<View, TintState>()
     // Native reads and successful owner delivery are independent facts.
-    private val deliveredStates = WeakHashMap<View, TintState>()
+    private class Delivery(val state: TintState)
+    private val deliveredStates = WeakHashMap<View, Delivery>()
     private val firstEventLogged = WeakHashMap<View, Unit>()
     private val batteryIconStructureLogged = WeakHashMap<View, Unit>()
     private val batteryIconClipFields = HashMap<Class<*>, List<Field>>()
@@ -231,20 +232,19 @@ internal object SysUiTintSource {
                 percentField = percentField,
             ) ?: return null
 
-        val changed =
+        val delivery =
             synchronized(this) {
                 lastStates[sourceView] = state
                 if (lastSourceView?.get() !== sourceView) {
                     lastSourceView = WeakReference(sourceView)
                 }
-                if (deliveredStates[sourceView] == state) {
-                    false
+                if (deliveredStates[sourceView]?.state == state) {
+                    null
                 } else {
-                    deliveredStates[sourceView] = state
-                    true
+                    Delivery(state).also { deliveredStates[sourceView] = it }
                 }
             }
-        if (changed) {
+        if (delivery != null) {
             try {
                 onTintState(TintUpdate(sourceView, state))
             } catch (error: Throwable) {
@@ -257,7 +257,7 @@ internal object SysUiTintSource {
                 } finally {
                     // Keep the failed delivery marked during native ownership cleanup.
                     synchronized(this) {
-                        if (deliveredStates[sourceView] == state) {
+                        if (deliveredStates[sourceView] === delivery) {
                             deliveredStates.remove(sourceView)
                         }
                     }
