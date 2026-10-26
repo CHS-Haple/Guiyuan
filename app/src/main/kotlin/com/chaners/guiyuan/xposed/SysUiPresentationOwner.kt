@@ -12,6 +12,7 @@ import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
+import java.lang.reflect.InvocationTargetException
 
 // Owns mutable native presentation; SysUiPresentationRuntime only wires source hooks.
 internal object SysUiPresentationOwner {
@@ -71,6 +72,11 @@ internal object SysUiPresentationOwner {
         } catch (error: Throwable) {
             if (error is VirtualMachineError || error is ThreadDeath) throw error
         }
+    }
+
+    private fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
     }
 
     private inline fun <T> readOrNull(block: () -> T): T? =
@@ -1116,7 +1122,10 @@ internal object SysUiPresentationOwner {
                 NativeParticipantAccess.clearBindableEntries(handles, LEGACY_SLOT)
                 NativeParticipantAccess.findSlotView(group, LEGACY_SLOT) == null &&
                     NativeParticipantAccess.iconHolder(handles, LEGACY_SLOT) == null
-            }.getOrDefault(false)
+            }.getOrElse { error ->
+                rethrowFatal(error)
+                false
+            }
         return if (removed) {
             LegacyCleanupResult.Removed
         } else {
@@ -2033,11 +2042,12 @@ internal object SysUiPresentationOwner {
                     }
                 }
             if (applied.isFailure) {
+                applied.exceptionOrNull()?.let(::rethrowFatal)
                 val rollback =
                     setIgnoredSlotsMethod?.let { setMethod ->
                         runCatching {
                             setMethod.invoke(group, ArrayList(before))
-                        }.isSuccess
+                        }.onFailure(::rethrowFatal).isSuccess
                     } ?: false
                 onFailNative(
                     "ignored-slots-session-add-" +
@@ -2109,7 +2119,10 @@ internal object SysUiPresentationOwner {
                         ignoredSlotsField.get(group) as? MutableList<String>
                             ?: return@runCatching false
                     after == target
-                }.getOrDefault(false)
+                }.getOrElse { error ->
+                    rethrowFatal(error)
+                    false
+                }
             if (restored) {
                 persistentIgnoredSlotsApplied = false
                 ownedPersistentIgnoredSlots = emptyList()
