@@ -71,8 +71,9 @@ internal object NativeStatusObserver {
     private var statusIconVisibleAccessor: Method? = null
     private var statusIconSourceAccessor: Method? = null
     private var statusIconStaticColorAccessor: Method? = null
-    private var lastStatusPresentation =
-        PresentationStore.StatusIconPresentation()
+    // Receipt identity prevents older failures from erasing newer equal-valued delivery.
+    private class Delivery(val presentation: PresentationStore.StatusIconPresentation)
+    private var lastDelivery = Delivery(PresentationStore.StatusIconPresentation())
 
     // The island peer mirror samples native icon state from onLayout. These
     // reflective contracts are stable for the SystemUI process lifetime, so
@@ -329,8 +330,7 @@ internal object NativeStatusObserver {
         transitionStateFieldCache.clear()
         tintFieldsByClass.clear()
         tintMethodByManagerClass.clear()
-        lastStatusPresentation =
-            PresentationStore.StatusIconPresentation()
+        lastDelivery = Delivery(PresentationStore.StatusIconPresentation())
     }
 
     // The native method has already run. Observation cannot replace its return
@@ -564,7 +564,7 @@ internal object NativeStatusObserver {
             locationAwareTint = locationAwareTint,
             peerAppliedTint = peerTint,
             managerFallbackTint = managerFallbackTint,
-            fallbackTint = lastStatusPresentation.appliedTint,
+            fallbackTint = lastDelivery.presentation.appliedTint,
         )
     }
 
@@ -604,7 +604,7 @@ internal object NativeStatusObserver {
                 locationAwareTint = locationAwareTint,
                 peerAppliedTint = peerTint,
                 managerFallbackTint = managerFallbackTint,
-                fallbackTint = lastStatusPresentation.appliedTint,
+                fallbackTint = lastDelivery.presentation.appliedTint,
             )
         val presentation =
             PresentationStore.StatusIconPresentation(
@@ -668,17 +668,15 @@ internal object NativeStatusObserver {
         presentation: PresentationStore.StatusIconPresentation,
         deliver: (PresentationStore.StatusIconPresentation) -> Unit,
     ): Boolean {
-        if (presentation == lastStatusPresentation) return false
+        if (presentation == lastDelivery.presentation) return false
 
-        val previous = lastStatusPresentation
-        lastStatusPresentation = presentation
+        val previous = lastDelivery
+        val pending = Delivery(presentation)
+        lastDelivery = pending
         try {
             deliver(presentation)
         } catch (error: Throwable) {
-            // Keep the provisional value during callbacks to avoid reentrant delivery.
-            if (lastStatusPresentation == presentation) {
-                lastStatusPresentation = previous
-            }
+            if (lastDelivery === pending) lastDelivery = previous
             throw error
         }
         return true
@@ -914,8 +912,7 @@ internal object NativeStatusObserver {
         failedObservations.clear()
         activeManager = null
         activeGroup = null
-        lastStatusPresentation =
-            PresentationStore.StatusIconPresentation()
+        lastDelivery = Delivery(PresentationStore.StatusIconPresentation())
     }
 
     internal sealed interface Result {
