@@ -29,7 +29,8 @@ internal object SysUiSceneSource {
     // Values must not retain the weak View keys.
     private val states = WeakHashMap<View, Int>()
     // A native state read is not proof that its owner callback completed.
-    private val deliveredStates = WeakHashMap<View, Int>()
+    private class Delivery(val state: Int)
+    private val deliveredStates = WeakHashMap<View, Delivery>()
 
     @Volatile
     private var statusBarStateField: Field? = null
@@ -164,17 +165,15 @@ internal object SysUiSceneSource {
         isDetailedDiagnosticsEnabled: () -> Boolean,
         warned: AtomicBoolean,
     ) {
-        val changed =
+        val delivery =
             synchronized(this) {
                 states[sourceView] = rawState
-                if (deliveredStates[sourceView] == rawState) {
-                    false
+                if (deliveredStates[sourceView]?.state == rawState) {
+                    null
                 } else {
-                    deliveredStates[sourceView] = rawState
-                    true
+                    Delivery(rawState).also { deliveredStates[sourceView] = it }
                 }
-            }
-        if (!changed) return
+            } ?: return
         val update =
             SceneUpdate(
                 sourceView = sourceView,
@@ -193,7 +192,7 @@ internal object SysUiSceneSource {
             } finally {
                 // Keep the failed delivery marked during owner cleanup to avoid reentrant retries.
                 synchronized(this) {
-                    if (deliveredStates[sourceView] == rawState) {
+                    if (deliveredStates[sourceView] === delivery) {
                         deliveredStates.remove(sourceView)
                     }
                 }
