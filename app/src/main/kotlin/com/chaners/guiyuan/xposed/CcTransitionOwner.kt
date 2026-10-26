@@ -433,7 +433,7 @@ internal object CcTransitionOwner {
                     )?.takeIf(::isReliableSemanticTarget)
                 }
             if (root === nativeWifiRoot && signal === nativeWifiSignal) return false
-            if (nativeWifiRoot !== root) wifiAnchor = null
+            if (nativeWifiRoot !== root || nativeWifiSignal !== signal) wifiAnchor = null
             nativeWifiRoot = root
             nativeWifiSignal = signal
             targetCache.keys.removeAll { key ->
