@@ -43,7 +43,8 @@ internal object SysUiBatterySource {
     @Volatile
     private var failedInstallHandles: List<HookHandle> = emptyList()
     @Volatile
-    private var lastState: StatusStateStore.BatteryState? = null
+    private class Delivery(val state: StatusStateStore.BatteryState)
+    private var lastDelivery: Delivery? = null
 
     @Volatile
 
@@ -207,27 +208,25 @@ internal object SysUiBatterySource {
             sourceMethod: String,
         ) {
             val state = readState(iconView) ?: return
-            val changed =
+            val delivery =
                 synchronized(this) {
                     if (!state.charging) {
                         lastChargingIconResId = null
                     } else if (state.chargingIconResId != null) {
                         lastChargingIconResId = state.chargingIconResId
                     }
-                    if (lastState == state) {
-                        false
+                    if (lastDelivery?.state == state) {
+                        null
                     } else {
-                        lastState = state
-                        true
+                        Delivery(state).also { lastDelivery = it }
                     }
-                }
-            if (!changed) return
+                } ?: return
             try {
                 onBatteryState(state)
             } catch (error: Throwable) {
                 fallback("state", error)
                 synchronized(this) {
-                    if (lastState == state) lastState = null
+                    if (lastDelivery === delivery) lastDelivery = null
                 }
                 return
             }
@@ -485,7 +484,7 @@ internal object SysUiBatterySource {
     fun resetRuntimeState() {
         failedInstallHandles = emptyList()
         hooksReady = false
-        lastState = null
+        lastDelivery = null
         lastChargingIconResId = null
         verifiedFont = null
     }
