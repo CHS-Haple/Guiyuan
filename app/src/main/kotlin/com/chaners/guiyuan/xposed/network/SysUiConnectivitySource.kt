@@ -26,6 +26,7 @@ internal object SysUiConnectivitySource {
     private var dataTelephony: TelephonyManager? = null
     private var dataCallback: TelephonyCallback? = null
     private var dataSubscriptionId = -1
+    @Volatile
     private var onDataChanged: (() -> Unit)? = null
 
     @Synchronized
@@ -44,6 +45,7 @@ internal object SysUiConnectivitySource {
             source: String,
             capabilities: NetworkCapabilities?,
         ) {
+            if (onDataChanged == null) return
             val state =
                 State(
                     known = true,
@@ -189,36 +191,49 @@ internal object SysUiConnectivitySource {
 
     @Synchronized
     fun detach() {
-        val failures = ArrayList<Throwable>(2)
-        dataTelephony?.let { telephony ->
-            dataCallback?.let { old ->
-                try {
-                    telephony.unregisterTelephonyCallback(old)
-                } catch (error: Throwable) {
-                    if (error is VirtualMachineError || error is ThreadDeath) throw error
-                    failures.add(error)
-                }
-            }
-        }
-        dataTelephony = null
-        dataCallback = null
-        dataContext = null
+        // Failed unregisters still own their handles, but cannot publish stale state.
         onDataChanged = null
+        dataContext = null
         dataSubscriptionId = -1
+
+        val failures = ArrayList<Throwable>(2)
+        val telephony = dataTelephony
+        val data = dataCallback
+        if (telephony != null && data != null) {
+            try {
+                telephony.unregisterTelephonyCallback(data)
+                dataTelephony = null
+                dataCallback = null
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                failures.add(error)
+            }
+        } else {
+            dataTelephony = null
+            dataCallback = null
+        }
 
         val currentManager = manager
         val currentCallback = callback
         if (currentManager != null && currentCallback != null) {
             try {
                 currentManager.unregisterNetworkCallback(currentCallback)
+                manager = null
+                callback = null
             } catch (error: Throwable) {
                 if (error is VirtualMachineError || error is ThreadDeath) throw error
-                // Android rejects a callback that was never registered.
-                if (error !is IllegalArgumentException) failures += error
+                if (error is IllegalArgumentException) {
+                    // Android rejects an unregistered callback; no owner remains.
+                    manager = null
+                    callback = null
+                } else {
+                    failures.add(error)
+                }
             }
+        } else {
+            manager = null
+            callback = null
         }
-        manager = null
-        callback = null
         if (failures.isNotEmpty()) {
             val error = IllegalStateException("connectivity-release-incomplete", failures.first())
             failures.drop(1).forEach(error::addSuppressed)
