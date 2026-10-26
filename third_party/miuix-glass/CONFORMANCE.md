@@ -14,7 +14,7 @@ Source of truth: compose-miuix-ui/miuix [PR #423](https://github.com/compose-miu
 | Segmented tabs | `GlassSegmentedTabRow` for connected segments; `GlassTabRow` for separate pills, both with defined material/sizing | Sandbox retains glass segments only when full text fits equal-width slots and routes longer choices to its existing glass dropdown. **B1403 Sandbox crash** remains unproven without an app-process stack and current target-device retest. |
 | Dialogs and input confirmations | `GlassDialog`, `GlassDialogButton`, `DialogSurfaceScope`, and modified `OverlayDialog` surface/animated scrim APIs; owner is Scaffold's `MiuixPopupHost` | Not integrated. Migrate input/settings, confirmation, reset and color dialogs only against the **same upstream UI revision**; preserve completion/dismiss/predictive Back and form focus. |
 | Bottom sheets | `GlassBottomSheet`, `BottomSheetSurfaceScope`, modified overlay surface API; scroll, overscroll, inset and Back behavior is host-owned | Not integrated. Color editing sheets require coordinated upstream UI + glass package; don't wrap an existing sheet in a duplicate project-owned glass host. |
-| Icon menus/popups | Modified `OverlayIconCascadingDropdownMenu`, cascading popup layout, official glass popup family | Not integrated. Battery-scheme icon menus need exact same-revision MIUIX preference/UI and anchoring/surface hierarchy; other menus are evaluated by semantic use. |
+| Icon menus/popups | Official `GlassPopupItem`, popup divider tokens, the GlassDropdown host and separate cascading-popup contracts | Battery custom scheme's flat action menu uses the existing Scaffold-rooted glass dropdown lifecycle, upstream row styles and 0.5dp/20dp-inset group divider; without a shader it keeps native MIUIX. Menu source is outside the pager's clipping box. Diagnose page's Window cascading menus still require same-revision upstream host APIs; no visual-only substitute. Test overflow, onClick, Back and nested sheet ownership on device. |
 | Iconography | Separate `miuix-glass-icons` catalog from PR #423 | Adopt applicable control/navigation semantics at an exact published revision. Keep Material Symbols for explanatory leading icons, not an unreviewed bulk swap. |
 | Full-screen UI scale | App modifies `LocalDensity` and `WindowInfo.containerDpSize` together; glass render samples must match the same geometry, with popup roots outside recorded content | Source architecture preserved; **device acceptance missing** for 80%, 100%, 110%, display cutouts, rotation, fontScale, IME, theme, and RTL. |
 | Fail native / lifetime | Shader and host failures must preserve MIUIX's accessible native state, not produce invisible controls or stale popup captures | Explicit OS4 no-shader branch in main navigation and its Appearance mini-preview selects standard MIUIX `NavigationBar`, not the user's previously persisted OS3 floating style. Verify Sandbox, dialog and menu host teardown. |
@@ -56,6 +56,18 @@ keyboard/Back, scrolling, overlay host ownership and shader-free fallback togeth
   is a source-conformant choice, not physical-device acceptance. Confirm
   icon/caption intrinsic sizing, theme, density/fontScale, and gesture areas
   before declaring the bottom bar finished.
+
+## Battery custom menu acceptance boundary
+
+The scheme menu is a flat list of actions; its OS4 route uses MIUIX's
+root-hosted `PopupLayout` and the vendored GlassDropdownPopupContent
+(which already models enter/exit and Back). Rename and copy form one group;
+destructive delete is separated using GlassPopupDefaults' official inset,
+spacing and 0.5dp line. This popup intentionally uses the upstream opaque
+fallback when a clean page Backdrop is unavailable inside the overlaid
+battery sheet; do not claim sampled translucent glass until host integration
+is proven. The old OverlayIconDropdownMenu stays for OS3/no-shader.
+The source-screen pager still owns only the trigger, not the popup.
 
 ## Current evidence and unresolved diagnostics
 

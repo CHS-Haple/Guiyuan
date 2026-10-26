@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,14 +27,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -41,6 +51,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_CUSTOM_MAX
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
@@ -58,6 +70,7 @@ import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.FloatingActionButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButtonDefaults
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.SnackbarDefaults
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
@@ -71,6 +84,12 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassDropdownPopupContent
+import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
+import top.yukonga.miuix.kmp.glass.GlassPopupItem
+import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PagerGestureNestedScrollConnection
@@ -631,56 +650,145 @@ private fun BatterySchemeManageMenu(
     onCopy: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val entry =
-        DropdownEntry(
-            items =
-                listOf(
-                    DropdownItem(
-                        text = stringResource(R.string.battery_custom_scheme_rename),
-                        icon = { modifier ->
-                            Icon(
-                                imageVector = MiuixIcons.Edit,
-                                contentDescription = null,
-                                modifier = modifier,
-                            )
-                        },
-                        onClick = onRename,
-                    ),
-                    DropdownItem(
-                        text = stringResource(R.string.battery_custom_scheme_copy),
-                        icon = { modifier ->
-                            Icon(
-                                imageVector = MiuixIcons.Copy,
-                                contentDescription = null,
-                                modifier = modifier,
-                            )
-                        },
-                        enabled = canCopy,
-                        onClick = onCopy,
-                    ),
-                    DropdownItem(
-                        text = stringResource(R.string.battery_custom_scheme_delete),
-                        icon = { modifier ->
-                            Icon(
-                                imageVector = MiuixIcons.Delete,
-                                contentDescription = null,
-                                modifier = modifier,
-                            )
-                        },
-                        onClick = onDelete,
-                    ),
-                ),
-        )
+    if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
+        val haptic = LocalHapticFeedback.current
+        var expanded by remember { mutableStateOf(false) }
+        val mounted = remember { mutableStateOf(false) }
+        var anchorBounds by remember { mutableStateOf(Rect.Zero) }
 
-    TooltipBox(text = stringResource(R.string.battery_custom_scheme_manage)) {
-        OverlayIconDropdownMenu(
-            entry = entry,
-            modifier = modifier,
-        ) {
-            Icon(
-                imageVector = MiuixIcons.More,
-                contentDescription = stringResource(R.string.battery_custom_scheme_manage),
+        TooltipBox(text = stringResource(R.string.battery_custom_scheme_manage)) {
+            GlassIconButton(
+                onClick = {
+                    expanded = !expanded
+                    if (expanded) {
+                        mounted.value = true
+                        haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
+                    }
+                },
+                modifier = modifier.onGloballyPositioned { anchorBounds = it.boundsInRoot() },
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.More,
+                    contentDescription = stringResource(R.string.battery_custom_scheme_manage),
+                )
+            }
+        }
+
+        if (mounted.value) {
+            // The sheet's pager clips children. Its root Scaffold owns the popup host.
+            PopupLayout(
+                visible = mounted,
+                enableWindowDim = false,
+                enableBackHandler = false,
+                enterTransition = EnterTransition.None,
+                exitTransition = ExitTransition.None,
+                renderInRootScaffold = true,
+            ) {
+                var hostOrigin by remember { mutableStateOf(Offset.Zero) }
+                Box(
+                    modifier = Modifier.fillMaxSize().onGloballyPositioned {
+                        hostOrigin = it.positionInRoot()
+                    },
+                ) {
+                    GlassDropdownPopupContent(
+                        show = expanded,
+                        onDismissRequest = { expanded = false },
+                        anchorBounds = anchorBounds,
+                        coordinateOrigin = hostOrigin,
+                        backdrop = null,
+                        onDismissFinished = { mounted.value = false },
+                    ) {
+                        GlassPopupItem(
+                            text = stringResource(R.string.battery_custom_scheme_rename),
+                            icon = MiuixIcons.Edit,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                expanded = false
+                                onRename()
+                            },
+                        )
+                        GlassPopupItem(
+                            text = stringResource(R.string.battery_custom_scheme_copy),
+                            icon = MiuixIcons.Copy,
+                            enabled = canCopy,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                expanded = false
+                                onCopy()
+                            },
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(
+                                horizontal = GlassPopupDefaults.DividerPaddingHorizontal,
+                                vertical = GlassPopupDefaults.DividerPaddingVertical,
+                            ),
+                            thickness = GlassPopupDefaults.DividerThickness,
+                        )
+                        GlassPopupItem(
+                            text = stringResource(R.string.battery_custom_scheme_delete),
+                            icon = MiuixIcons.Delete,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                expanded = false
+                                onDelete()
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    } else {
+        val entry =
+            DropdownEntry(
+                items =
+                    listOf(
+                        DropdownItem(
+                            text = stringResource(R.string.battery_custom_scheme_rename),
+                            icon = { modifier ->
+                                Icon(
+                                    imageVector = MiuixIcons.Edit,
+                                    contentDescription = null,
+                                    modifier = modifier,
+                                )
+                            },
+                            onClick = onRename,
+                        ),
+                        DropdownItem(
+                            text = stringResource(R.string.battery_custom_scheme_copy),
+                            icon = { modifier ->
+                                Icon(
+                                    imageVector = MiuixIcons.Copy,
+                                    contentDescription = null,
+                                    modifier = modifier,
+                                )
+                            },
+                            enabled = canCopy,
+                            onClick = onCopy,
+                        ),
+                        DropdownItem(
+                            text = stringResource(R.string.battery_custom_scheme_delete),
+                            icon = { modifier ->
+                                Icon(
+                                    imageVector = MiuixIcons.Delete,
+                                    contentDescription = null,
+                                    modifier = modifier,
+                                )
+                            },
+                            onClick = onDelete,
+                        ),
+                    ),
             )
+
+        TooltipBox(text = stringResource(R.string.battery_custom_scheme_manage)) {
+            OverlayIconDropdownMenu(
+                entry = entry,
+                modifier = modifier,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.More,
+                    contentDescription = stringResource(R.string.battery_custom_scheme_manage),
+                )
+            }
         }
     }
 }
