@@ -2,10 +2,38 @@ package com.chaners.guiyuan.xposed
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NativePresentationResolverTest {
+
+    @Test
+    fun optionalNativeProbeOnlyHidesOrdinaryFailures() {
+        val fatal = ThreadDeath()
+        assertSame(
+            fatal,
+            runCatching {
+                NativePresentationResolver.readOrNull<Unit> {
+                    throw InvocationTargetException(fatal)
+                }
+            }.exceptionOrNull(),
+        )
+        val direct = OutOfMemoryError("native-read")
+        assertSame(
+            direct,
+            runCatching {
+                NativePresentationResolver.readOrNull<Unit> { throw direct }
+            }.exceptionOrNull(),
+        )
+        assertNull(
+            NativePresentationResolver.readOrNull<Unit> {
+                throw InvocationTargetException(IllegalStateException("unavailable"))
+            },
+        )
+    }
 
     @Test
     fun platformAuthorityKeepsExistingDiagnosticLabels() {
