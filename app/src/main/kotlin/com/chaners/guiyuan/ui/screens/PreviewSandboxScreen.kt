@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -45,7 +46,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
@@ -80,6 +83,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
+import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRowDefaults
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -348,7 +352,7 @@ internal fun PreviewSandboxScreen(
                     pageContentPadding(
                         innerPadding = PaddingValues(
                             start = paddingValues.calculateStartPadding(layoutDirection),
-                            top = pinnedTop,
+                            top = if (os4) paddingValues.calculateTopPadding() else pinnedTop,
                             end = paddingValues.calculateEndPadding(layoutDirection),
                             bottom = paddingValues.calculateBottomPadding(),
                         ),
@@ -730,28 +734,70 @@ private fun SandboxSegmentedField(
     modifier: Modifier = Modifier,
     maxWidth: Dp = 300.dp,
 ) {
-    BasicComponent(
-        title = title,
-        startAction = { SemanticLeadingIcon(iconRes, detailRes = detailRes) },
-        modifier = modifier,
-        insideMargin = SandboxPreferenceInsideMargin,
-        bottomAction = {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                UiTabRow(
-                    tabs = options,
-                    selectedTabIndex = selectedIndex,
-                    onTabSelected = onSelected,
-                    modifier =
-                        Modifier
-                            .widthIn(max = maxWidth)
-                            .fillMaxWidth(),
-                )
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val glass = LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()
+        val requiredWidth = if (glass) {
+            val measurer = rememberTextMeasurer()
+            val density = LocalDensity.current
+            val layoutDirection = LocalLayoutDirection.current
+            val selectedStyle = MiuixTheme.textStyles.subtitle
+            val idleStyle = MiuixTheme.textStyles.body2
+            remember(options, measurer, density, layoutDirection, selectedStyle, idleStyle) {
+                val widest = options.maxOfOrNull { option ->
+                    val text = AnnotatedString(option)
+                    maxOf(
+                        measurer.measure(text, style = selectedStyle, softWrap = false, maxLines = 1).size.width,
+                        measurer.measure(text, style = idleStyle, softWrap = false, maxLines = 1).size.width,
+                    )
+                } ?: 0
+                val spacing = with(density) {
+                    (
+                        GlassSegmentedTabRowDefaults.TrackPadding * 2 +
+                            GlassSegmentedTabRowDefaults.TabPaddingHorizontal * (options.size * 2) +
+                            GlassSegmentedTabRowDefaults.TabGap * (options.size - 1).coerceAtLeast(0) +
+                            SandboxPreferenceInsideMargin.calculateStartPadding(layoutDirection) +
+                            SandboxPreferenceInsideMargin.calculateEndPadding(layoutDirection)
+                        ).roundToPx()
+                }
+                widest * options.size + spacing
             }
-        },
-    )
+        } else {
+            0
+        }
+
+        if (glass && requiredWidth > constraints.maxWidth) {
+            // Equal-width segments cannot fit these labels; show the full options in a popup.
+            UiDropdownPreference(
+                items = options,
+                selectedIndex = selectedIndex,
+                title = title,
+                startAction = { SemanticLeadingIcon(iconRes, detailRes = detailRes) },
+                onSelectedIndexChange = onSelected,
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = SandboxPreferenceInsideMargin,
+            )
+        } else {
+            BasicComponent(
+                title = title,
+                startAction = { SemanticLeadingIcon(iconRes, detailRes = detailRes) },
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = SandboxPreferenceInsideMargin,
+                bottomAction = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        UiTabRow(
+                            tabs = options,
+                            selectedTabIndex = selectedIndex,
+                            onTabSelected = onSelected,
+                            modifier = if (glass) Modifier.fillMaxWidth() else Modifier.widthIn(max = maxWidth).fillMaxWidth(),
+                        )
+                    }
+                },
+            )
+        }
+    }
 }
 
 private val SandboxPreviewWidth = 120.dp

@@ -8,16 +8,41 @@ Source of truth: compose-miuix-ui/miuix [PR #423](https://github.com/compose-miu
 | Appearance mini-preview | Preview must respect the **same intrinsic height** as the component and reserve room for shadows | OS4 path now measures the real bar and reserves surrounding space instead of treating the old 76dp preview as authoritative; OS3 preview unchanged. |
 | Top app bars | PR modifies core `TopAppBar` viewport clipping so floating action shadows extend past title region, and adds `BlurTopAppBar` with title blur and draw-phase opacity | Current published `TopAppBar` lacks these contracts; copied `GlassTopAppBar` uses a temporary native delegate. Device screenshot demonstrates clipped glass action edges. **Not compliant** until compatible core UI revision is published/integrated. Do not hide by local alpha, offsets or extra padding. |
 | Scroll/overlap | Glass title bar supports an explicit `isContentScrolled` input based on actual list position; scroll behavior retains title collapse | All four screen owners should supply their own `LazyListState.canScrollBackward` rather than infer overlap solely from collapsing title; keep list ownership local. |
-| Search | PR #423 does not change `SearchBar` or `InputField`, but provides glass top-bar actions. The system screenshot uses a round graphical close affordance. | OS4 preserves native input, focus, clear, keyboard and Back, uses native MIUIX `IconButton` with `Basic.Close` in `outsideEndAction` (ensures the button remains visible while the top bar is un-floated); OS3 retains text cancel. Test animation, labels and focus dismissal. |
+| Search | PR #423 does not change `SearchBar` or `InputField`, but provides glass top-bar actions. The system screenshot uses a round graphical close affordance. | OS4 retains MIUIX SearchBar and round native actions while the published TopAppBar clips glass shadows. This is an explicit temporary fail-native boundary, not full GlassTopAppBar conformity; re-evaluate on the matched upstream UI revision. OS3 retains text cancel. Test search focus, Back, clear and layout. |
 | Simple preferences | No PR-only replacements for the existing `SliderPreference`, `SwitchPreference`, or ordinary `BasicComponent` | Use native MIUIX, but review theme, state semantics, hit targets, row spacing, font size, dynamic type, animations and full UI density. |
 | Select preferences | Official `GlassDropdownPreference` owns popup placement and host; a clean page backdrop must exclude the popup and scrim | Adapted through one shared selector route. Check keyboard, dismiss, RTL, touch, 80–110% density and host origin in-app. |
-| Segmented tabs | `GlassSegmentedTabRow` for connected segments; `GlassTabRow` for separate pills, both with defined material/sizing | Sandbox test implementation exists. **Crash reported on entering Sandbox in B1403; root stack not available in supplied SystemUI-only diagnostic**. Must obtain app-process exception before declaring acceptance. |
+| Segmented tabs | `GlassSegmentedTabRow` for connected segments; `GlassTabRow` for separate pills, both with defined material/sizing | Sandbox retains glass segments only when full text fits equal-width slots and routes longer choices to its existing glass dropdown. **B1403 Sandbox crash** remains unproven without an app-process stack and current target-device retest. |
 | Dialogs and input confirmations | `GlassDialog`, `GlassDialogButton`, `DialogSurfaceScope`, and modified `OverlayDialog` surface/animated scrim APIs; owner is Scaffold's `MiuixPopupHost` | Not integrated. Migrate input/settings, confirmation, reset and color dialogs only against the **same upstream UI revision**; preserve completion/dismiss/predictive Back and form focus. |
 | Bottom sheets | `GlassBottomSheet`, `BottomSheetSurfaceScope`, modified overlay surface API; scroll, overscroll, inset and Back behavior is host-owned | Not integrated. Color editing sheets require coordinated upstream UI + glass package; don't wrap an existing sheet in a duplicate project-owned glass host. |
 | Icon menus/popups | Modified `OverlayIconCascadingDropdownMenu`, cascading popup layout, official glass popup family | Not integrated. Battery-scheme icon menus need exact same-revision MIUIX preference/UI and anchoring/surface hierarchy; other menus are evaluated by semantic use. |
 | Iconography | Separate `miuix-glass-icons` catalog from PR #423 | Adopt applicable control/navigation semantics at an exact published revision. Keep Material Symbols for explanatory leading icons, not an unreviewed bulk swap. |
 | Full-screen UI scale | App modifies `LocalDensity` and `WindowInfo.containerDpSize` together; glass render samples must match the same geometry, with popup roots outside recorded content | Source architecture preserved; **device acceptance missing** for 80%, 100%, 110%, display cutouts, rotation, fontScale, IME, theme, and RTL. |
 | Fail native / lifetime | Shader and host failures must preserve MIUIX's accessible native state, not produce invisible controls or stale popup captures | Explicit OS4 no-shader branch in main navigation and its Appearance mini-preview selects standard MIUIX `NavigationBar`, not the user's previously persisted OS3 floating style. Verify Sandbox, dialog and menu host teardown. |
+
+## Design-first OS4 adaptation
+
+For each UI surface, begin with the user task, semantic hierarchy, state and interaction;
+then verify upstream OS4 visual, geometry, motion and accessibility contracts before
+choosing a component. A renamed or glass-coated OS3 widget is not sufficient. Review
+container constraints, system/window insets, typography and fontScale, dynamic density,
+keyboard/Back, scrolling, overlay host ownership and shader-free fallback together.
+
+- **Sandbox title:** OS4 must use the Scaffold's actual top-bar measurement for
+  list content instead of the collapsed SmallTopAppBar height. OS3 retains its
+  dock-independent pinned inset.
+- **Sandbox choices:** segmented glass tabs remain for fitting short labels.
+  Longer labels use the existing scaffold-hosted glass dropdown with full option
+  text rather than squeezing equal-width segments or shrinking typography.
+  Layout fit is measured with the active MIUIX text styles and font scale.
+- **Search action:** the OS4 search field keeps native MIUIX search behavior.
+  Until the matching upstream TopAppBar title-region clipping fix is published,
+  its action uses the native IconButton to avoid a glass-shadow clipping defect.
+  Glass button styling there is deliberately not declared complete.
+- **Bottom navigation:** upstream 54dp is a minimum content height, not a
+  certification of on-screen placement. Confirm icon/caption sizing, intrinsic
+  height, status/navigation Insets, theme and 80–110% scale before modifying
+  the caller's outer margins. Never fix perceived low placement with a
+  screenshot-fitted translation.
 
 ## Current evidence and unresolved diagnostics
 
