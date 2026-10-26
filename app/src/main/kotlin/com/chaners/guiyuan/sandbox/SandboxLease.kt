@@ -8,6 +8,12 @@ import com.chaners.guiyuan.ui.screens.PreviewNetworkMode
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.PreviewSimCards
 import com.chaners.guiyuan.ui.screens.PreviewWifiState
+import java.lang.reflect.InvocationTargetException
+
+internal fun rethrowSandboxFatal(error: Throwable) {
+    val cause = (error as? InvocationTargetException)?.targetException ?: error
+    if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+}
 
 internal const val SANDBOX_PREFS = "guiyuan_sandbox"
 internal const val SANDBOX_DATA_KEY = "preview"
@@ -72,7 +78,10 @@ internal data class SandboxLease(
                     chargingState = enumValueOf<PreviewChargingState>(fields[18]),
                 )
                 SandboxLease(fields[1].toLong(), fields[2].toLong(), fields[3].toLong(), state)
-            }.getOrNull()
+            }.getOrElse { error ->
+                rethrowSandboxFatal(error)
+                null
+            }
         }
     }
 }

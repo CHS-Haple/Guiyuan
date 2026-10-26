@@ -59,7 +59,10 @@ internal class SandboxClient(
                             Update.Clear -> editor.remove(SANDBOX_DATA_KEY)
                         }
                         editor.commit()
-                    }.getOrDefault(false)
+                    }.getOrElse { error ->
+                        rethrowSandboxFatal(error)
+                        false
+                    }
 
                 if (update is Update.Show) {
                     synchronized(this@SandboxClient) {
