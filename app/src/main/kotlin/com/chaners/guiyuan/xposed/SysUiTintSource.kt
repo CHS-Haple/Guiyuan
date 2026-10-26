@@ -96,7 +96,7 @@ internal object SysUiTintSource {
             try {
                 block()
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 if (warned.compareAndSet(false, true)) {
                     readOrNull { Log.w("Guiyuan[Tint]", "Diagnostic failed", error) }
                 }
@@ -202,12 +202,12 @@ internal object SysUiTintSource {
                         updateHandle.unhook()
                         false
                     } catch (failure: Throwable) {
-                        if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                        rethrowFatal(failure)
                         true
                     }
                 if (cleanupFailed) failedInstallHandles = listOf(updateHandle)
                 clearSourceState()
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 if (cleanupFailed) {
                     throw IllegalStateException("tint-source-hook-cleanup-failed", error)
                 }
@@ -248,11 +248,11 @@ internal object SysUiTintSource {
             try {
                 onTintState(TintUpdate(sourceView, state))
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 try {
                     onRuntimeFailure(error)
                 } catch (failure: Throwable) {
-                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                    rethrowFatal(failure)
                     if (failure !== error) error.addSuppressed(failure)
                 } finally {
                     // Keep the failed delivery marked during native ownership cleanup.

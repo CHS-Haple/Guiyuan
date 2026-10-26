@@ -6,6 +6,7 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
+import java.lang.reflect.InvocationTargetException
 import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -27,7 +28,8 @@ internal object SysUiKeyguardAodSource {
         "combinedstatus.keyguardAod.toggleAodMode"
 
     internal fun rethrowFatal(error: Throwable) {
-        if (error is VirtualMachineError || error is ThreadDeath) throw error
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
     }
 
     private inline fun <T> readOrNull(block: () -> T): T? =
@@ -145,13 +147,13 @@ internal object SysUiKeyguardAodSource {
                     handle.unhook()
                     false
                 } catch (failure: Throwable) {
-                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                    rethrowFatal(failure)
                     true
                 }
             }
             failedInstallHandles = remaining
             clearSourceState()
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            rethrowFatal(error)
             if (remaining.isNotEmpty()) {
                 throw IllegalStateException("keyguard-aod-hook-cleanup-failed", error)
             }

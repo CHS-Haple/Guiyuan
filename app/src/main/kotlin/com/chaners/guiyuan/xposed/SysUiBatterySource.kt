@@ -366,12 +366,12 @@ internal object SysUiBatterySource {
                     handle.unhook()
                     false
                 } catch (failure: Throwable) {
-                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                    rethrowFatal(failure)
                     true
                 }
             }
             failedInstallHandles = remaining
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            rethrowFatal(error)
             if (remaining.isNotEmpty()) {
                 throw IllegalStateException("battery-source-hook-cleanup-failed", error)
             }
