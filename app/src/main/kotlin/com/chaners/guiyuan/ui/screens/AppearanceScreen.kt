@@ -248,7 +248,7 @@ internal fun AppearanceScreen(
                 selectedIndex = uiStyleMenuOrder.indexOf(appearance.uiStyle),
                 title = stringResource(R.string.ui_style_title),
                 summary = stringResource(R.string.ui_style_summary),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_style) },
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_layers) },
                 showValue = true,
                 onSelectedIndexChange = { index ->
                     uiStyleMenuOrder.getOrNull(index)?.let { style ->
