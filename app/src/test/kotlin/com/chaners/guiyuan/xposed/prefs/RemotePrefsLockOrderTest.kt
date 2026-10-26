@@ -129,6 +129,92 @@ class RemotePrefsLockOrderTest {
     }
 
     @Test
+    fun failedInitialFeatureDeliveryRetiresItsListener() {
+        val prefs = LockedPrefs()
+        val error = IllegalStateException("feature-initial")
+        assertSame(
+            error,
+            runCatching { FeaturePrefsOwner.bind(prefs) { _, _ -> throw error } }.exceptionOrNull(),
+        )
+        assertEquals(0, prefs.listenerCount)
+        assertFalse(FeaturePrefsOwner.current().enabled)
+    }
+
+    @Test
+    fun failedInitialVisualDeliveryRetiresItsListener() {
+        val prefs = LockedPrefs().apply { dual = true }
+        val error = IllegalStateException("visual-initial")
+        assertSame(
+            error,
+            runCatching { VisualPrefsOwner.bind(prefs) { throw error } }.exceptionOrNull(),
+        )
+        assertEquals(0, prefs.listenerCount)
+        assertFalse(VisualPrefsOwner.current().dualSignal)
+    }
+
+    @Test
+    fun failedOldFeatureDeliveryDoesNotRetireReentrantNewBinding() {
+        val old = LockedPrefs()
+        val next = LockedPrefs().apply { featureEnabled = false }
+        val error = IllegalStateException("feature-old")
+        assertSame(
+            error,
+            runCatching {
+                FeaturePrefsOwner.bind(old) { _, _ ->
+                    FeaturePrefsOwner.bind(next) { _, _ -> }
+                    throw error
+                }
+            }.exceptionOrNull(),
+        )
+        assertEquals(0, old.listenerCount)
+        assertEquals(1, next.listenerCount)
+        assertFalse(FeaturePrefsOwner.current().enabled)
+    }
+
+    @Test
+    fun failedOldVisualDeliveryDoesNotRetireReentrantNewBinding() {
+        val old = LockedPrefs()
+        val next = LockedPrefs().apply { dual = true }
+        val error = IllegalStateException("visual-old")
+        assertSame(
+            error,
+            runCatching {
+                VisualPrefsOwner.bind(old) {
+                    VisualPrefsOwner.bind(next) { }
+                    throw error
+                }
+            }.exceptionOrNull(),
+        )
+        assertEquals(0, old.listenerCount)
+        assertEquals(1, next.listenerCount)
+        assertTrue(VisualPrefsOwner.current().dualSignal)
+    }
+
+    @Test
+    fun failedOldDiagnosticsDeliveryDoesNotRetireReentrantNewBinding() {
+        val old = LockedPrefs()
+        val next = LockedPrefs().apply { detailed = true }
+        val error = IllegalStateException("diagnostics-old")
+        var delivered = 0
+        assertSame(
+            error,
+            runCatching {
+                DiagPrefsOwner.bind(old, forceDetailed = false) {
+                    DiagPrefsOwner.bind(next, forceDetailed = false) { delivered++ }
+                    throw error
+                }
+            }.exceptionOrNull(),
+        )
+        assertEquals(0, old.listenerCount)
+        assertEquals(1, next.listenerCount)
+        assertTrue(DiagPrefsOwner.isBound)
+        assertEquals(1, delivered)
+        next.detailed = false
+        next.notifyListeners(DIAG_LEVEL_KEY)
+        assertEquals(2, delivered)
+    }
+
+    @Test
     fun diagnosticsChangedBeforeListenerRegistrationIsRead() {
         val prefs = LockedPrefs().apply {
             onRegister = { detailed = true }

@@ -63,9 +63,17 @@ internal object DiagPrefsOwner {
             // A change before listener registration cannot produce a callback.
             latest = isDetailed(prefs, forceDetailed)
             if (latest != detailed) onChanged(latest)
-        }.onFailure {
-            unbindLocked()
-            throw it
+        }.onFailure { error ->
+            // An older callback must not retire a newer reentrant binding.
+            if (binding?.token === token) {
+                try {
+                    unbindLocked()
+                } catch (cleanup: Throwable) {
+                    if (cleanup is VirtualMachineError || cleanup is ThreadDeath) throw cleanup
+                    if (cleanup !== error) error.addSuppressed(cleanup)
+                }
+            }
+            throw error
         }
 
         return BindResult(
