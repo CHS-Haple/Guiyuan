@@ -6,6 +6,7 @@ import android.graphics.Typeface
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
+import com.chaners.guiyuan.sandbox.rethrowSandboxFatal
 import com.chaners.guiyuan.xposed.PresentationStore
 import com.chaners.guiyuan.xposed.DualMobileLevels
 import com.chaners.guiyuan.xposed.RenderModel
@@ -153,7 +154,7 @@ internal class PreviewSysUiResources(
             context
                 .createPackageContext(SYSTEM_UI_PACKAGE, 0)
                 .resources
-        }.getOrNull()
+        }.onFailure(::rethrowSandboxFatal).getOrNull()
 
     fun drawableId(vararg names: String): Int? =
         resources
@@ -187,7 +188,7 @@ internal class PreviewSysUiResources(
                     .mapNotNull { id ->
                         runCatching {
                             systemResources.getColor(id, null)
-                        }.getOrNull()
+                        }.onFailure(::rethrowSandboxFatal).getOrNull()
                     }
                     .firstOrNull()
             }
