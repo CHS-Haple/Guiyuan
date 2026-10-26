@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
+import java.lang.reflect.InvocationTargetException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -47,10 +48,15 @@ internal object NativeFontAxis {
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
+    internal fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
     private fun bootCount(context: Context): Int =
         runCatching {
             Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, -1)
-        }.getOrDefault(-1)
+        }.onFailure(::rethrowFatal).getOrDefault(-1)
 
     private fun read(
         context: Context,
@@ -69,7 +75,7 @@ internal object NativeFontAxis {
                 max = prefs.getFloat(max, Float.NaN),
             ),
         )
-    }.getOrDefault(State.Pending)
+    }.onFailure(::rethrowFatal).getOrDefault(State.Pending)
 
     fun observe(context: Context): Flow<State> =
         observe(context, MIN, DEFAULT, MAX)
