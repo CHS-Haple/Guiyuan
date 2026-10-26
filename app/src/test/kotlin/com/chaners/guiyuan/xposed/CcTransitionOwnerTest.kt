@@ -2,12 +2,36 @@ package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.InternetState
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CcTransitionOwnerTest {
+    @Test
+    fun nativeCcOptionalReadOnlyHidesOrdinaryFailure() {
+        val fatal = ThreadDeath()
+        assertSame(
+            fatal,
+            runCatching {
+                CcTransitionOwner.readOrNull<Unit> { throw InvocationTargetException(fatal) }
+            }.exceptionOrNull(),
+        )
+        val oom = OutOfMemoryError("cc-native-read")
+        assertSame(
+            oom,
+            runCatching { CcTransitionOwner.readOrNull<Unit> { throw oom } }.exceptionOrNull(),
+        )
+        assertNull(
+            CcTransitionOwner.readOrNull<Unit> {
+                throw InvocationTargetException(IllegalStateException("native-unavailable"))
+            },
+        )
+    }
+
     @Test
     fun liveSourceChangesInvalidateHeldReservation() {
         val airplane = RenderModel(
