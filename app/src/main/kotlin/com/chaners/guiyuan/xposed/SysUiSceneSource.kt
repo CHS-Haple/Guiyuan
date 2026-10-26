@@ -14,7 +14,7 @@ internal object SysUiSceneSource {
         try {
             block()
         } catch (error: Throwable) {
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            SysUiPresentationRuntime.throwIfFatal(error)
             null
         }
 
@@ -183,11 +183,11 @@ internal object SysUiSceneSource {
         try {
             onSceneState(update)
         } catch (error: Throwable) {
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            SysUiPresentationRuntime.throwIfFatal(error)
             try {
                 onRuntimeFailure(error)
             } catch (failure: Throwable) {
-                if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                SysUiPresentationRuntime.throwIfFatal(failure)
                 if (failure !== error) error.addSuppressed(failure)
             } finally {
                 // Keep the failed delivery marked during owner cleanup to avoid reentrant retries.
@@ -211,7 +211,7 @@ internal object SysUiSceneSource {
                     )
                 }
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                SysUiPresentationRuntime.throwIfFatal(error)
                 if (warned.compareAndSet(false, true)) {
                     readOrNull { Log.w("Guiyuan[Scene]", "Diagnostic failed", error) }
                 }

@@ -4,6 +4,7 @@ import android.util.Log
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
+import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object FullAodTransitionSource {
@@ -43,11 +44,11 @@ internal object FullAodTransitionSource {
 
         val warned = AtomicBoolean(false)
         fun fallback(stage: String, error: Throwable) {
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            SysUiPresentationRuntime.throwIfFatal(error)
             try {
                 onRuntimeFailure(stage, error)
             } catch (failure: Throwable) {
-                if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                SysUiPresentationRuntime.throwIfFatal(failure)
             }
         }
         val handle =
@@ -64,14 +65,16 @@ internal object FullAodTransitionSource {
                         try {
                             onTransitionStarted()
                         } catch (error: Throwable) {
-                            if (error is VirtualMachineError || error is ThreadDeath) throw error
+                            SysUiPresentationRuntime.throwIfFatal(error)
                             startFailure = error
                         }
                         val result =
                             try {
                                 chain.proceed()
                             } catch (error: Throwable) {
-                                if (error !is VirtualMachineError && error !is ThreadDeath) {
+                                // Keep the native exception unchanged even when reflection wraps it.
+                                val cause = (error as? InvocationTargetException)?.targetException ?: error
+                                if (cause !is VirtualMachineError && cause !is ThreadDeath) {
                                     fallback("full-aod-native", error)
                                 }
                                 throw error
@@ -99,12 +102,12 @@ internal object FullAodTransitionSource {
                                 )
                             }
                         } catch (error: Throwable) {
-                            if (error is VirtualMachineError || error is ThreadDeath) throw error
+                            SysUiPresentationRuntime.throwIfFatal(error)
                             if (warned.compareAndSet(false, true)) {
                                 try {
                                     Log.w("Guiyuan[FullAod]", "Diagnostic failed", error)
                                 } catch (failure: Throwable) {
-                                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                                    SysUiPresentationRuntime.throwIfFatal(failure)
                                 }
                             }
                         }
