@@ -14,7 +14,7 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 | AndroidX Activity Compose | 1.13.0 | Android/Compose activity integration | Apache-2.0 |
 | AndroidX Navigation Event Compose | 1.2.0 | Predictive/navigation event integration | Apache-2.0 |
 | AndroidX DataStore Preferences | 1.2.1 | Local application preferences | Apache-2.0 |
-| MIUIX UI / Preference / Icons / Nav / Blur | 0.9.4-8972f941-SNAPSHOT (`8972f941c194bd3c4e14c34543d5ebc7b39e40da`) | Xiaomi HyperOS-style companion-app UI; published snapshot from the MIUIX main branch | Apache-2.0 |
+| MIUIX UI / Preference / Icons / Nav / Blur | 0.9.4-b587aaf2-SNAPSHOT (`b587aaf2c907c77a8c3c02d8df0aede2937ef8f0`) | Xiaomi HyperOS-style companion-app UI; published snapshot from the MIUIX main branch | Apache-2.0 |
 | kotlinx.serialization core / JSON | 1.12.0 | Versioned configuration file serialization | Apache-2.0 |
 
 ## Adapted optical code
@@ -24,6 +24,15 @@ pinned [MIUIX Liquid Glass example](https://github.com/compose-miuix-ui/miuix/tr
 which credits AndroidLiquidGlass. Source copyright and license headers are
 retained in the adapted files. Neither Backdrop nor Kyant Shapes is a direct
 runtime dependency in this experimental implementation.
+
+## Experimental OS4 glass source
+
+`app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` contains an unmodified, pinned subset of the
+[MIUIX miuix-glass PR #423](https://github.com/compose-miuix-ui/miuix/pull/423),
+at upstream commit `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (Apache-2.0).
+These primitives are temporary until the official module is published; they must not be silently
+updated independently from the corresponding MIUIX UI/Blur contracts. See
+`third_party/miuix-glass/README.md` for source boundaries and removal instructions.
 
 ## Embedded icon assets
 

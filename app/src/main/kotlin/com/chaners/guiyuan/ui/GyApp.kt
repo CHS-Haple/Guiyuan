@@ -16,6 +16,7 @@ import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.ui.navigation.AppRoute
@@ -56,6 +57,7 @@ internal fun GyApp(
     lang: AppLang,
     iconHidden: Boolean,
     onHotReload: () -> Unit,
+    onUiStyleChange: (UiStyle) -> Unit,
     onThemeChange: (ThemeMode) -> Unit,
     onDynamicChange: (Boolean) -> Unit,
     onColorSpecChange: (ThemeColorSpec?) -> Unit,
@@ -229,6 +231,7 @@ internal fun GyApp(
                 AppearanceScreen(
                     appearance = appearance,
                     dark = dark,
+                    onUiStyleChange = onUiStyleChange,
                     onThemeChange = onThemeChange,
                     onDynamicChange = onDynamicChange,
                     onColorSpecChange = onColorSpecChange,

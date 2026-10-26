@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
@@ -45,6 +46,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.system.RestartTarget
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.ui.components.NavContentItem
@@ -65,6 +67,8 @@ import com.chaners.guiyuan.ui.screens.SettingsHubScreen
 import com.chaners.guiyuan.ui.screens.SemanticLeadingIcon
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.glass.GlassNavigationBar
+import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
@@ -163,12 +167,12 @@ internal fun MainHub(
             restartPickerOpen = true
         }
     }
+    val os4 = appearance.uiStyle == UiStyle.OS4
     val miuixMaterialActive =
-        appearance.navEnabled &&
-            appearance.navStyle.requiresTextureBackdrop &&
+        (os4 || (appearance.navEnabled && appearance.navStyle.requiresTextureBackdrop)) &&
             isRuntimeShaderSupported()
     val liquidMaterialActive =
-        appearance.navEnabled &&
+        !os4 && appearance.navEnabled &&
             appearance.navStyle == NavStyle.Liquid &&
             liquidNavSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
@@ -220,7 +224,7 @@ internal fun MainHub(
     )
 
     val navigationBarModifier =
-        if (miuixBackdrop != null) {
+        if (miuixBackdrop != null && !os4) {
             Modifier.floatingNavMaterial(
                 backdrop = miuixBackdrop,
                 dark = dark,
@@ -236,6 +240,22 @@ internal fun MainHub(
         snackbarHost = { SnackbarHost(state = featureSnackbarState) },
         bottomBar = {
             when {
+                os4 && miuixBackdrop != null -> {
+                    GlassNavigationBar(
+                        items = items.map { item ->
+                            GlassNavigationItem(
+                                icon = item.icon,
+                                label = item.label,
+                            )
+                        },
+                        selectedIndex = pagerState.currentPage,
+                        onSelect = ::selectPage,
+                        backdrop = miuixBackdrop,
+                        modifier = Modifier
+                            .navigationBarsPadding()
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                    )
+                }
                 !appearance.navEnabled -> {
                     NavigationBar {
                         items.forEachIndexed { index, item ->

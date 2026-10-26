@@ -473,4 +473,8 @@
     <string name="config_restore_confirm">Replace current feature settings with this backup?</string>
     <string name="feature_search">Search features</string>
     <string name="feature_search_empty">No matching features</string>
+    <string name="ui_style_title">Interface style</string>
+    <string name="ui_style_summary">Choose OS3 or try experimental OS4 glass components</string>
+    <string name="ui_style_os3">OS3 (default)</string>
+    <string name="ui_style_os4">OS4 (experimental)</string>
 </resources>

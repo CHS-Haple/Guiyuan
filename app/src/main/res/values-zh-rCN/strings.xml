@@ -472,4 +472,8 @@
     <string name="config_restore_confirm">将使用备份覆盖当前功能配置，是否继续？</string>
     <string name="feature_search">搜索功能项</string>
     <string name="feature_search_empty">没有找到相关功能项</string>
+    <string name="ui_style_title">界面规范</string>
+    <string name="ui_style_summary">保留 OS3 原有设计，或尝鲜实验性 OS4 玻璃组件</string>
+    <string name="ui_style_os3">OS3（默认）</string>
+    <string name="ui_style_os4">OS4（实验性）</string>
 </resources>

@@ -51,6 +51,8 @@ internal fun decodePalette(value: String?): ThemePaletteStyle =
 internal fun compatiblePalette(spec: ThemeColorSpec?, palette: ThemePaletteStyle): ThemePaletteStyle =
     if (spec != null && palette !in palettesFor(spec)) ThemePaletteStyle.TonalSpot else palette
 
+internal enum class UiStyle { OS3, OS4 }
+
 internal enum class NavStyle {
     Standard,
     Blur,
@@ -71,6 +73,7 @@ internal enum class LiquidMode(val stored: String) {
 
 internal data class Appearance(
     val theme: ThemeMode = ThemeMode.System,
+    val uiStyle: UiStyle = UiStyle.OS3,
     val dynamicColor: Boolean = false,
     val colorSpec: ThemeColorSpec? = null,
     val paletteStyle: ThemePaletteStyle = ThemePaletteStyle.TonalSpot,
@@ -174,6 +177,7 @@ internal class AppearanceRepo(context: Context) {
             val colorSpec = decodeColorSpec(prefs[colorSpecKey])
             Appearance(
                 theme = theme.mode,
+                uiStyle = UiStyle.entries.firstOrNull { it.name == prefs[uiStyleKey] } ?: UiStyle.OS3,
                 dynamicColor = theme.dynamicColor,
                 colorSpec = colorSpec,
                 paletteStyle = compatiblePalette(colorSpec, decodePalette(prefs[paletteStyleKey])),
@@ -191,6 +195,10 @@ internal class AppearanceRepo(context: Context) {
                 uiScalePercent = uiScalePercent(prefs[uiScaleKey]),
             )
         }
+
+    suspend fun setUiStyle(style: UiStyle) {
+        store.edit { prefs -> prefs[uiStyleKey] = style.name }
+    }
 
     suspend fun setTheme(mode: ThemeMode) {
         store.edit { prefs ->
@@ -276,6 +284,7 @@ internal class AppearanceRepo(context: Context) {
     }
 
     private companion object {
+        val uiStyleKey = stringPreferencesKey("ui_style")
         val themeKey = stringPreferencesKey("theme_mode")
         val dynamicKey = booleanPreferencesKey("dynamic_color_enabled")
         val colorSpecKey = stringPreferencesKey("theme_color_spec")

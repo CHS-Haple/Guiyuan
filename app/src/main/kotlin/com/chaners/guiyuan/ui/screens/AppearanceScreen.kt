@@ -37,6 +37,7 @@ import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.settings.palettesFor
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
@@ -50,6 +51,8 @@ import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.glass.GlassNavigationBar
+import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NavigationBar
@@ -77,6 +80,7 @@ import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 internal fun AppearanceScreen(
     appearance: Appearance,
     dark: Boolean,
+    onUiStyleChange: (UiStyle) -> Unit,
     onThemeChange: (ThemeMode) -> Unit,
     onDynamicChange: (Boolean) -> Unit,
     onColorSpecChange: (ThemeColorSpec?) -> Unit,
@@ -233,6 +237,22 @@ internal fun AppearanceScreen(
         }
 
         Section(R.string.section_visual_effects) {
+            OverlayDropdownPreference(
+                items = listOf(
+                    stringResource(R.string.ui_style_os3),
+                    stringResource(R.string.ui_style_os4),
+                ),
+                selectedIndex = appearance.uiStyle.ordinal,
+                title = stringResource(R.string.ui_style_title),
+                summary = stringResource(R.string.ui_style_summary),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_style) },
+                showValue = true,
+                onSelectedIndexChange = { index ->
+                    UiStyle.entries.getOrNull(index)?.let { style ->
+                        if (style != appearance.uiStyle) onUiStyleChange(style)
+                    }
+                },
+            )
             SliderPreference(
                 value = sliderPercent,
                 onValueChange = { sliderPercent = it.roundToInt().toFloat() },
@@ -255,6 +275,7 @@ internal fun AppearanceScreen(
                 holdDownState = inputOpen,
                 onClick = { inputOpen = true },
             )
+            AnimatedPreferenceGroup(visible = appearance.uiStyle == UiStyle.OS3) {
             SwitchPreference(
                 title = stringResource(R.string.floating_navigation_bar),
                 summary = stringResource(R.string.floating_navigation_bar_summary),
@@ -327,7 +348,7 @@ internal fun AppearanceScreen(
                     },
                 )
             }
-
+            }
         }
     }
 }
@@ -399,6 +420,7 @@ private fun AppearanceMiniPreview(
                 MiniSwitchSettingPreview()
                 MiniSliderSettingPreview()
                 MiniNavigationPreview(
+                    uiStyle = appearance.uiStyle,
                     floating = appearance.navEnabled,
                     style = appearance.navStyle,
                     content = appearance.activeNavContent,
@@ -592,6 +614,7 @@ private fun ScaledPreviewContent(
 
 @Composable
 private fun MiniNavigationPreview(
+    uiStyle: UiStyle,
     floating: Boolean,
     style: NavStyle,
     content: NavContent,
@@ -599,11 +622,10 @@ private fun MiniNavigationPreview(
     dark: Boolean,
 ) {
     val miuixMaterialActive =
-        floating &&
-            style.requiresTextureBackdrop &&
+        (uiStyle == UiStyle.OS4 || (floating && style.requiresTextureBackdrop)) &&
             isRuntimeShaderSupported()
     val liquidMaterialActive =
-        floating &&
+        floating && uiStyle == UiStyle.OS3 &&
             style == NavStyle.Liquid &&
             liquidNavSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
@@ -629,7 +651,7 @@ private fun MiniNavigationPreview(
             0.dp
         }
     val floatingModifier =
-        if (miuixBackdrop != null) {
+        if (miuixBackdrop != null && uiStyle == UiStyle.OS3) {
             Modifier.floatingNavMaterial(
                 backdrop = miuixBackdrop,
                 dark = dark,
@@ -681,9 +703,21 @@ private fun MiniNavigationPreview(
             }
         }
 
-        if (floating) {
+        if (floating || uiStyle == UiStyle.OS4) {
             MiniNavViewport(bottomPadding = liquidBottomSpace) {
-                if (liquidBackdrop != null) {
+                if (uiStyle == UiStyle.OS4 && miuixBackdrop != null) {
+                    GlassNavigationBar(
+                        items = listOf(
+                            GlassNavigationItem(MiuixIcons.Normal.Home, stringResource(R.string.nav_home)),
+                            GlassNavigationItem(MiuixIcons.Normal.Tune, stringResource(R.string.nav_features)),
+                            GlassNavigationItem(MiuixIcons.Normal.Settings, stringResource(R.string.nav_settings)),
+                        ),
+                        selectedIndex = 2,
+                        onSelect = {},
+                        backdrop = miuixBackdrop,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                } else if (liquidBackdrop != null) {
                     val labels =
                         listOf(
                             stringResource(R.string.nav_home),
