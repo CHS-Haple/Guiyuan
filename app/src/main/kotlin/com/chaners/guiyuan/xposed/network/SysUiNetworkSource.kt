@@ -94,7 +94,7 @@ internal object SysUiNetworkSource {
     private class WifiBinding(val viewModel: Any?)
     private val wifiRoots = WeakHashMap<ViewGroup, WifiBinding>()
     // A native rebinding can reuse the same SIM ID.
-    private class MobileBinding(val subscriptionId: Int)
+    private class MobileBinding(val subscriptionId: Int?)
 
     private val mobileRoots = WeakHashMap<ViewGroup, MobileBinding>()
     private val lastWifiEvents = WeakHashMap<ImageView, String>()
@@ -529,7 +529,7 @@ internal object SysUiNetworkSource {
 
         val mobile = ArrayList<Any>(mobileRoots.size)
         mobileRoots.forEach { (root, binding) ->
-            if (root.isAttachedToWindow) {
+            if (root.isAttachedToWindow && binding.subscriptionId != null) {
                 mobile.add(arrayOf(root, binding.subscriptionId))
             }
         }
@@ -541,6 +541,7 @@ internal object SysUiNetworkSource {
     fun restoreHotReloadBindings(raw: Any?): BindingRestoreResult {
         // A new hook can bind a reused root before the old generation hands it over.
         val newWifi = wifiRoots.filterKeys { it.isAttachedToWindow }
+        // Keep an in-flight invalid bind from restoring an older SIM during transfer.
         val newMobile = mobileRoots.filterKeys { it.isAttachedToWindow }
         wifiRoots.clear()
         mobileRoots.clear()
@@ -581,20 +582,22 @@ internal object SysUiNetworkSource {
         mobileRoots.putAll(newMobile)
         return BindingRestoreResult(
             wifiRoots = wifiRoots.size,
-            mobileRoots = mobileRoots.size,
+            mobileRoots = mobileRoots.values.count { it.subscriptionId != null },
         )
     }
 
     @Synchronized
     fun hotReloadBindingCounts(): Pair<Int, Int> =
         wifiRoots.keys.count { it.isAttachedToWindow } to
-            mobileRoots.keys.count { it.isAttachedToWindow }
+            mobileRoots.count { (root, binding) ->
+                root.isAttachedToWindow && binding.subscriptionId != null }
 
     @Synchronized
     fun mobilePresentationBindings(): List<MobilePresentationBinding> =
         mobileRoots.mapNotNull { (root, binding) ->
-            if (root.isAttachedToWindow) {
-                MobilePresentationBinding(root, binding.subscriptionId)
+            val subscriptionId = binding.subscriptionId
+            if (root.isAttachedToWindow && subscriptionId != null) {
+                MobilePresentationBinding(root, subscriptionId)
             } else {
                 null
             }
@@ -612,13 +615,15 @@ internal object SysUiNetworkSource {
                 )
             }
             mobileRoots.forEach { (root, binding) ->
-                add(
-                    "nativeSlot binding=mobile subId=" + binding.subscriptionId +
-                        " root=" + root.javaClass.simpleName +
-                        " rootId=" + resourceId(root) +
-                        " parentChain=" + parentChain(root) +
-                        " layout=" + layoutToken(root),
-                )
+                binding.subscriptionId?.let { subscriptionId ->
+                    add(
+                        "nativeSlot binding=mobile subId=" + subscriptionId +
+                            " root=" + root.javaClass.simpleName +
+                            " rootId=" + resourceId(root) +
+                            " parentChain=" + parentChain(root) +
+                            " layout=" + layoutToken(root),
+                    )
+                }
             }
         }
 
@@ -1177,12 +1182,10 @@ internal object SysUiNetworkSource {
                     (subscriptionIdMethod.invoke(locationViewModel) as Number).toInt()
                 } ?: -1
                 val nextId = subscriptionId.takeIf { it >= 0 }
-                val candidate = nextId?.let(::MobileBinding)
+                // An invalid ID still needs a receipt until the native bind completes.
+                val candidate = MobileBinding(nextId)
                 pending = candidate
-                previous = synchronized(this) {
-                    if (candidate == null) mobileRoots.remove(boundRoot)
-                    else mobileRoots.put(boundRoot, candidate)
-                }
+                previous = synchronized(this) { mobileRoots.put(boundRoot, candidate) }
                 bindingChanged = previous?.subscriptionId != nextId
                 if (bindingChanged && onEvent != null && isDetailedDiagnosticsEnabled()) {
                     bindingLog = readOrNull {
@@ -1220,6 +1223,11 @@ internal object SysUiNetworkSource {
                 }
                 throw error
             }
+        if (boundRoot != null && pending?.subscriptionId == null) {
+            synchronized(this) {
+                if (mobileRoots[boundRoot] === pending) mobileRoots.remove(boundRoot)
+            }
+        }
         if (bindingChanged) {
             readOrNull { bindingLog?.let { onEvent?.invoke(it) } }
         }
