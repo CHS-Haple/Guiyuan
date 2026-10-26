@@ -137,6 +137,33 @@ class NativeStatusObserverTest {
     }
 
     @Test
+    fun reflectedFatalObservationAndReporterKeepOriginalCause() {
+        val observerFatal = OutOfMemoryError("observer")
+        assertSame(
+            observerFatal,
+            runCatching {
+                NativeStatusObserver.observeAfterNative(
+                    result = 1,
+                    onFailure = { error("fatal observer must bypass reporter") },
+                    observe = { throw InvocationTargetException(observerFatal) },
+                )
+            }.exceptionOrNull(),
+        )
+
+        val reporterFatal = ThreadDeath()
+        assertSame(
+            reporterFatal,
+            runCatching {
+                NativeStatusObserver.observeAfterNative(
+                    result = 1,
+                    onFailure = { throw InvocationTargetException(reporterFatal) },
+                    observe = { error("ordinary observer") },
+                )
+            }.exceptionOrNull(),
+        )
+    }
+
+    @Test
     fun observationOrReportingFailureKeepsNativeResult() {
         val nativeResult = Any()
         val observationError = IllegalStateException("observer failed")
