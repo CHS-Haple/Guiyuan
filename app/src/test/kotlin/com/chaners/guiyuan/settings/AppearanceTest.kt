@@ -3,6 +3,9 @@ package com.chaners.guiyuan.settings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.mutablePreferencesOf
+import androidx.datastore.preferences.core.stringPreferencesKey
 import org.junit.Test
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
@@ -87,6 +90,42 @@ class AppearanceTest {
         assertEquals(NavContent.IconAndText, settings.liquidContent)
         assertEquals(NavContent.IconAndText, settings.activeNavContent)
         assertEquals(LiquidMode.Balanced, settings.liquidMode)
+    }
+
+    @Test
+    fun os4MigrationUpdatesExistingUserWithoutResettingNavigation() {
+        val uiStyle = stringPreferencesKey("ui_style")
+        val navStyle = stringPreferencesKey("floating_navigation_style")
+        val navContent = stringPreferencesKey("floating_navigation_content")
+        val navEnabled = booleanPreferencesKey("floating_navigation_bar_enabled")
+        val prefs = mutablePreferencesOf(
+            uiStyle to UiStyle.OS3.name,
+            navStyle to NavStyle.Liquid.name,
+            navContent to NavContent.IconOnly.name,
+            navEnabled to false,
+        )
+
+        migrateOs4Appearance(prefs)
+
+        assertEquals(UiStyle.OS4.name, prefs[uiStyle])
+        assertEquals(NavStyle.Liquid.name, prefs[navStyle])
+        assertEquals(NavContent.IconOnly.name, prefs[navContent])
+        assertEquals(false, prefs[navEnabled])
+
+        prefs[uiStyle] = UiStyle.OS3.name
+        migrateOs4Appearance(prefs)
+        assertEquals(UiStyle.OS3.name, prefs[uiStyle])
+    }
+
+    @Test
+    fun cleanInstallGetsOs4AndIconText() {
+        val prefs = mutablePreferencesOf()
+        migrateOs4Appearance(prefs)
+        assertEquals(UiStyle.OS4.name, prefs[stringPreferencesKey("ui_style")])
+        assertEquals(
+            NavContent.IconAndText.name,
+            prefs[stringPreferencesKey("floating_navigation_content")],
+        )
     }
 
     @Test

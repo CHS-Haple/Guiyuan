@@ -3,6 +3,7 @@ package com.chaners.guiyuan.settings
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
@@ -153,18 +154,24 @@ private val Context.appearanceStore: DataStore<Preferences> by preferencesDataSt
     name = "appearance",
 )
 
+private val uiStyleKey = stringPreferencesKey("ui_style")
+private val navContentKey = stringPreferencesKey("floating_navigation_content")
+private val os4UpgradeKey = booleanPreferencesKey("ui_style_os4_upgrade_done")
+
+internal fun migrateOs4Appearance(prefs: MutablePreferences) {
+    if (prefs[os4UpgradeKey] == true) return
+
+    val freshInstall = prefs.asMap().isEmpty()
+    prefs[uiStyleKey] = UiStyle.OS4.name
+    if (freshInstall) prefs[navContentKey] = NavContent.IconAndText.name
+    prefs[os4UpgradeKey] = true
+}
+
 internal class AppearanceRepo(context: Context) {
     private val store = context.applicationContext.appearanceStore
 
     val settings: Flow<Appearance> = store.data
-        .onStart {
-            store.edit { prefs ->
-                if (prefs.asMap().isEmpty()) {
-                    prefs[uiStyleKey] = UiStyle.OS4.name
-                    prefs[navContentKey] = NavContent.IconAndText.name
-                }
-            }
-        }
+        .onStart { store.edit { prefs -> migrateOs4Appearance(prefs) } }
         .catch { error ->
             if (error is IOException) {
                 emit(emptyPreferences())
@@ -208,7 +215,10 @@ internal class AppearanceRepo(context: Context) {
         }
 
     suspend fun setUiStyle(style: UiStyle) {
-        store.edit { prefs -> prefs[uiStyleKey] = style.name }
+        store.edit { prefs ->
+            prefs[uiStyleKey] = style.name
+            prefs[os4UpgradeKey] = true
+        }
     }
 
     suspend fun setTheme(mode: ThemeMode) {
@@ -295,7 +305,6 @@ internal class AppearanceRepo(context: Context) {
     }
 
     private companion object {
-        val uiStyleKey = stringPreferencesKey("ui_style")
         val themeKey = stringPreferencesKey("theme_mode")
         val dynamicKey = booleanPreferencesKey("dynamic_color_enabled")
         val colorSpecKey = stringPreferencesKey("theme_color_spec")
@@ -304,7 +313,6 @@ internal class AppearanceRepo(context: Context) {
         val legacyGlassKey = booleanPreferencesKey("glass_bottom_bar_enabled")
         val navEnabledKey = booleanPreferencesKey("floating_navigation_bar_enabled")
         val navStyleKey = stringPreferencesKey("floating_navigation_style")
-        val navContentKey = stringPreferencesKey("floating_navigation_content")
         val liquidContentKey = stringPreferencesKey("floating_navigation_liquid_content")
         val liquidModeKey = stringPreferencesKey("floating_navigation_liquid_mode")
         val legacyNavBlurKey = booleanPreferencesKey("floating_navigation_blur_enabled")

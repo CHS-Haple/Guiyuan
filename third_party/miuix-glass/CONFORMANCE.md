@@ -47,12 +47,14 @@ keyboard/Back, scrolling, overlay host ownership and shader-free fallback togeth
   so multi-button navigation rows cannot overlap the adjacent title. Remove this
   adapter after upgrading the complete upstream UI revision. Rounded button
   interaction/animation remains pending device acceptance.
-- **Navigation configuration:** UI era and chosen navigation style are independent.
-  On a fresh appearance store OS4 defaults to enabled Glass (shown as Soft Glass)
-  with icon+text, while nonempty legacy stores retain their existing implicit
-  OS3/icon-only defaults and explicit selections. Both UI eras still honor floating
-  enablement, Standard/Blur/Glass/Liquid, Liquid modes, and icon-only/icon+text.
-  Preview selection is inert even for glass drag gestures.
+- **Navigation configuration:** On the first B1464 appearance read, a one-time
+  DataStore migration selects OS4 for **all** existing users, including those with
+  a previously saved OS3 choice. A persisted migration marker prevents a later
+  restart or collection from overriding the user's subsequent OS3 choice.
+  Existing navigation enablement, material, content and liquid preferences remain
+  intact. A genuinely empty appearance store additionally seeds enabled Glass
+  (shown as Soft Glass) with icon+text. Both UI eras retain independently
+  selectable navigation modes. Preview selection is inert even for glass drag gestures.
 - **Bottom navigation:** 54dp is the upstream glass capsule's minimum
   content height, not the bottom placement. The upstream full GlassPage uses
   24dp horizontal and 20dp top margins, with bottom clearance
