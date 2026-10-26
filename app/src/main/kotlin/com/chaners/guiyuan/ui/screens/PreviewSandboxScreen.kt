@@ -24,9 +24,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -75,7 +77,9 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
-import top.yukonga.miuix.kmp.glass.GlassTabRow
+import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
@@ -214,98 +218,115 @@ internal fun PreviewSandboxScreen(
     val topBarBackdrop = rememberTopBarBackdrop()
     val layoutDirection = LocalLayoutDirection.current
 
-    Scaffold(
-        topBar = {
-            MiuixBlurredTopBar(
-                backdrop = topBarBackdrop,
-                scrollBehavior = scrollBehavior,
-            ) { barColor ->
-                SmallTopAppBar(
-                    title = stringResource(R.string.home_preview_sandbox_title),
-                    color = barColor,
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        TooltipBox(text = stringResource(R.string.back)) {
-                            IconButton(onClick = onBack) {
-                                Icon(
-                                    MiuixIcons.Back,
-                                    contentDescription = stringResource(R.string.back),
-                                )
-                            }
-                        }
-                    },
-                    actions = {
-                        val title = stringResource(
-                            if (dark) R.string.home_preview_switch_light
-                            else R.string.home_preview_switch_dark,
-                        )
-                        TooltipBox(text = title) {
-                            IconButton(onClick = onToggleTheme) {
-                                Image(
-                                    painter = painterResource(
-                                        if (dark) R.drawable.ic_material_symbol_light_mode
-                                        else R.drawable.ic_material_symbol_dark_mode,
-                                    ),
-                                    contentDescription = title,
-                                    modifier = Modifier.size(24.dp),
-                                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-                                )
-                            }
-                        }
-                    },
-                    bottomContent = {
-                        AnimatedVisibility(
-                            visible = showDock,
-                            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-                            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(start = TopAppBarDefaults.TitlePadding),
-                                    contentAlignment = Alignment.CenterStart,
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.home_preview_live_title),
-                                        style = MiuixTheme.textStyles.title4,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MiuixTheme.colorScheme.onSurface,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                                SandboxDockIcon(renderModel, visual)
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(end = TopAppBarDefaults.ActionIconPadding),
-                                    contentAlignment = Alignment.CenterEnd,
-                                ) {
-                                    val backTop = stringResource(R.string.diagnostics_scroll_top)
-                                    TooltipBox(text = backTop) {
-                                        IconButton(
-                                            onClick = { scope.launch { listState.animateScrollToItem(0) } },
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
-                                                contentDescription = backTop,
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
+    val os4 = LocalUiStyle.current == UiStyle.OS4
+    val backAction: @Composable () -> Unit = {
+        TooltipBox(text = stringResource(R.string.back)) {
+            SandboxIconButton(onClick = onBack) {
+                Icon(
+                    MiuixIcons.Back,
+                    contentDescription = stringResource(R.string.back),
                 )
             }
-        },
+        }
+    }
+    val barActions: @Composable RowScope.() -> Unit = {
+        val title = stringResource(
+            if (dark) R.string.home_preview_switch_light
+            else R.string.home_preview_switch_dark,
+        )
+        TooltipBox(text = title) {
+            SandboxIconButton(onClick = onToggleTheme) {
+                Image(
+                    painter = painterResource(
+                        if (dark) R.drawable.ic_material_symbol_light_mode
+                        else R.drawable.ic_material_symbol_dark_mode,
+                    ),
+                    contentDescription = title,
+                    modifier = Modifier.size(24.dp),
+                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
+                )
+            }
+        }
+    }
+    val dock: @Composable () -> Unit = {
+        AnimatedVisibility(
+            visible = showDock,
+            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = TopAppBarDefaults.TitlePadding),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_preview_live_title),
+                        style = MiuixTheme.textStyles.title4,
+                        fontWeight = FontWeight.Medium,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                SandboxDockIcon(renderModel, visual)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = TopAppBarDefaults.ActionIconPadding),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    val backTop = stringResource(R.string.diagnostics_scroll_top)
+                    TooltipBox(text = backTop) {
+                        SandboxIconButton(
+                            onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
+                                contentDescription = backTop,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
+        Scaffold(
+            topBar = {
+                if (os4) {
+                    GlassTopAppBar(
+                        title = stringResource(R.string.home_preview_sandbox_title),
+                        backdrop = topBarBackdrop,
+                        scrollBehavior = scrollBehavior,
+                        navigationIcon = backAction,
+                        actions = barActions,
+                        bottomContent = dock,
+                    )
+                } else {
+                    MiuixBlurredTopBar(
+                        backdrop = topBarBackdrop,
+                        scrollBehavior = scrollBehavior,
+                    ) { barColor ->
+                        SmallTopAppBar(
+                            title = stringResource(R.string.home_preview_sandbox_title),
+                            color = barColor,
+                            scrollBehavior = scrollBehavior,
+                            navigationIcon = backAction,
+                            actions = barActions,
+                            bottomContent = dock,
+                        )
+                    }
+                }
+            },
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -642,6 +663,7 @@ internal fun PreviewSandboxScreen(
 
         }
     }
+    }
 }
 
 @Composable
@@ -745,12 +767,13 @@ private fun UiTabRow(
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (LocalUiStyle.current == UiStyle.OS4) {
-        GlassTabRow(
+    val backdrop = LocalGlassBackdrop.current
+    if (LocalUiStyle.current == UiStyle.OS4 && backdrop != null) {
+        GlassSegmentedTabRow(
             tabs = tabs,
             selectedIndex = selectedTabIndex,
             onSelect = onTabSelected,
-            backdrop = LocalGlassBackdrop.current,
+            backdrop = backdrop,
             modifier = modifier,
         )
     } else {
@@ -760,5 +783,17 @@ private fun UiTabRow(
             onTabSelected = onTabSelected,
             modifier = modifier,
         )
+    }
+}
+
+@Composable
+private fun SandboxIconButton(
+    onClick: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    if (LocalUiStyle.current == UiStyle.OS4) {
+        GlassIconButton(onClick = onClick, content = content)
+    } else {
+        IconButton(onClick = onClick, content = content)
     }
 }

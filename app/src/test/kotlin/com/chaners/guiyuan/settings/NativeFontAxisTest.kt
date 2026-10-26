@@ -1,10 +1,24 @@
 package com.chaners.guiyuan.settings
 
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class NativeFontAxisTest {
+    @Test
+    fun fatalPreferenceReadErrorsPreserveOriginalCause() {
+        val vm = OutOfMemoryError("native-axis")
+        val wrapped = runCatching {
+            NativeFontAxis.rethrowFatal(InvocationTargetException(vm))
+        }.exceptionOrNull()
+        assertSame(vm, wrapped)
+        val thread = ThreadDeath()
+        assertSame(thread, runCatching { NativeFontAxis.rethrowFatal(thread) }.exceptionOrNull())
+        NativeFontAxis.rethrowFatal(IllegalStateException("ordinary-unavailable"))
+    }
+
     @Test
     fun acceptsActualVariableAxisRange() {
         val axis = FontWeightAxis(150f, 330f, 700f)

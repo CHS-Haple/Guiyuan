@@ -144,10 +144,13 @@ class GyModule : XposedModule() {
 
     private fun settingsEntry(): Pair<SettingsEntry, SettingsEntryIcon> {
         val prefs = runCatching { getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME) }
+            .onFailure(SettingsEntryHook::rethrowFatal)
             .getOrNull() ?: return SettingsEntry.Disabled to SettingsEntryIcon.Rounded
         val entry = runCatching { SettingsEntry.from(prefs.getInt(SETTINGS_ENTRY_KEY, 0)) }
+            .onFailure(SettingsEntryHook::rethrowFatal)
             .getOrDefault(SettingsEntry.Disabled)
         val icon = runCatching { SettingsEntryIcon.from(prefs.getInt(SETTINGS_ENTRY_ICON_KEY, 0)) }
+            .onFailure(SettingsEntryHook::rethrowFatal)
             .getOrDefault(SettingsEntryIcon.Rounded)
         return entry to icon
     }
@@ -1896,8 +1899,10 @@ class GyModule : XposedModule() {
                     else FileInputStream(file).channel.use { channel ->
                         FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
                     }
-                }.getOrNull()
-                    ?.let(NativeFontAxis::checked)
+                }.getOrElse { error ->
+                    SysUiHotReload.rethrowFatal(error)
+                    null
+                }?.let(NativeFontAxis::checked)
                     ?.takeIf { axis ->
                         kotlin.math.ceil(axis.min.toDouble()).toInt() <
                             kotlin.math.floor(axis.max.toDouble()).toInt()
@@ -4441,21 +4446,23 @@ class GyModule : XposedModule() {
             SandboxHost.bind(getRemotePreferences(SANDBOX_PREFS)) { received ->
                 // Steady HOME is the only consumer; never update CC/Keyguard/AOD scenes.
                 HomeRenderSession.onPresentationStateChanged()
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "sandbox.lease",
-                    component = "sandbox",
-                    state = if (received == null) "cleared" else "active",
-                    "network" to received?.networkMode,
-                    "airplane" to received?.airplaneMode,
-                    "wifiState" to received?.wifiState,
-                    "wifiBars" to received?.wifiSignalLevel,
-                    "dualEnabled" to received?.dualMobile,
-                    "dualEffective" to (received?.dualLevels != null),
-                    "sim1Bars" to received?.mobileSignalLevel,
-                    "sim2Bars" to received?.sim2SignalLevel,
-                    "battery" to received?.batteryPercent,
-                )
+                runCatching {
+                    logDiagnostic(
+                        level = Log.INFO,
+                        event = "sandbox.lease",
+                        component = "sandbox",
+                        state = if (received == null) "cleared" else "active",
+                        "network" to received?.networkMode,
+                        "airplane" to received?.airplaneMode,
+                        "wifiState" to received?.wifiState,
+                        "wifiBars" to received?.wifiSignalLevel,
+                        "dualEnabled" to received?.dualMobile,
+                        "dualEffective" to (received?.dualLevels != null),
+                        "sim1Bars" to received?.mobileSignalLevel,
+                        "sim2Bars" to received?.sim2SignalLevel,
+                        "battery" to received?.batteryPercent,
+                    )
+                }.onFailure(SysUiHotReload::rethrowFatal)
             }
         }.onFailure { error ->
             SandboxHost.unbind()

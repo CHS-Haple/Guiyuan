@@ -36,12 +36,17 @@ glass components with published older UI modules and then conceal API drift
 using copied overlays, private API shadows, hand-written effects or geometry
 patches. A green experimental APK compile is not OS4 conformance.
 
-## Current experimental snapshot (B1399, not release-ready)
+## Current experimental snapshot (B1403, not release-ready)
 
 - GlassNavigationBar on the main three-page navigation and its preview.
-- GlassTopAppBar / GlassIconButton in the main/detail layouts.
+- GlassTopAppBar / GlassIconButton in hub/detail layouts, and OS4
+  GlassTopAppBar on independent Home and Preview Sandbox scaffolds.
+  The Home hot-reload action stays native MIUIX while its disabled and
+  in-flight states lack exact parity in GlassIconButton.
 - GlassDropdownPreference / popup host for shared selector preferences.
-- GlassTabRow in the existing Sandbox mode selectors.
+- GlassSegmentedTabRow in existing Sandbox segmented choices. The Sandbox
+  now owns its page backdrop; shader-unavailable devices retain MIUIX
+  TabRowWithContour.
 - Current OS3 routes, settings and SystemUI/Xposed functional controls
   remain separate.
 
@@ -68,3 +73,7 @@ physical device acceptance.
 
 When matching upstream packages become available, prefer the published
 upstream components over maintaining these transient copied files.
+
+B1403 extends independent scaffolds and synchronizes the latest dev fixes.
+Its build, behavior, scale and device gates must be checked independently;
+the B1399 test does not validate this new code.
