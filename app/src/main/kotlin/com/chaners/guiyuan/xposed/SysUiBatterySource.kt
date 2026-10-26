@@ -417,10 +417,14 @@ internal object SysUiBatterySource {
         hollowFace to path
     }
 
-    // Reconcile the transferred snapshot once against the same native authority as the hooks.
-    fun readHostBatteryState(host: Any): StatusStateStore.BatteryState? {
+    // Reconcile the transferred snapshot with the same authority and delivery receipt as hooks.
+    fun reconcileHostBatteryState(
+        host: Any,
+        commit: (StatusStateStore.BatteryState) -> Unit,
+    ): StatusStateStore.BatteryState? {
         if (!hooksReady) return null
         val readState = nativeStateReader ?: return null
+        val priorDelivery = lastDelivery
         val root = host as? ViewGroup ?: return null
         val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
             ?: return null
@@ -444,7 +448,20 @@ internal object SysUiBatterySource {
                 }
             }
         }
-        return icon?.let(readState)
+        val state = icon?.let(readState) ?: return null
+        commit(state)
+        synchronized(this) {
+            // A reentrant hook delivery takes precedence over the initial native sample.
+            if (lastDelivery === priorDelivery) {
+                lastDelivery = Delivery(state)
+                if (!state.charging) {
+                    lastChargingIconResId = null
+                } else if (state.chargingIconResId != null) {
+                    lastChargingIconResId = state.chargingIconResId
+                }
+            }
+        }
+        return state
     }
 
     fun readHostChargingIconId(host: Any): Int? {

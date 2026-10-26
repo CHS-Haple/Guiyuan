@@ -569,10 +569,10 @@ class GyModule : XposedModule() {
             var restoredSnapshot =
                 StatusStateStore.restoreHotReloadState(restored.state)
             val transferredCharging = restoredSnapshot.battery?.charging
-            val liveBattery = SysUiBatterySource.readHostBatteryState(capture.host)
-            liveBattery?.let { state ->
-                StatusStateStore.updateBattery(state)?.let { restoredSnapshot = it }
-            }
+            val liveBattery =
+                SysUiBatterySource.reconcileHostBatteryState(capture.host) { state ->
+                    StatusStateStore.updateBattery(state)?.let { restoredSnapshot = it }
+                }
             logDiagnostic(
                 level = if (liveBattery != null) Log.INFO else Log.WARN,
                 event = "battery.reconcile",
