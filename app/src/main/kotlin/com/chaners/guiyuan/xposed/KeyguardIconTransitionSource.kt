@@ -51,11 +51,11 @@ internal object KeyguardIconTransitionSource {
                         try {
                             onTransition()
                         } catch (error: Throwable) {
-                            if (error is VirtualMachineError || error is ThreadDeath) throw error
+                            SysUiPresentationRuntime.throwIfFatal(error)
                             try {
                                 onRuntimeFailure(error)
                             } catch (failure: Throwable) {
-                                if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                                SysUiPresentationRuntime.throwIfFatal(failure)
                             }
                         }
                         try {
@@ -67,12 +67,12 @@ internal object KeyguardIconTransitionSource {
                                 )
                             }
                         } catch (error: Throwable) {
-                            if (error is VirtualMachineError || error is ThreadDeath) throw error
+                            SysUiPresentationRuntime.throwIfFatal(error)
                             if (warned.compareAndSet(false, true)) {
                                 try {
                                     Log.w("Guiyuan[Keyguard]", "Diagnostic failed", error)
                                 } catch (failure: Throwable) {
-                                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                                    SysUiPresentationRuntime.throwIfFatal(failure)
                                 }
                             }
                         }
