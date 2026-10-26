@@ -49,6 +49,7 @@ import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -192,8 +193,14 @@ internal fun SettingsPage(
     val navigationIcon: @Composable () -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TooltipBox(text = stringResource(R.string.back)) {
-                IconButton(onClick = onBack) {
-                    Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
+                if (os4) {
+                    GlassIconButton(onClick = onBack) {
+                        Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
+                    }
+                } else {
+                    IconButton(onClick = onBack) {
+                        Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
+                    }
                 }
             }
             navigationActions()
@@ -213,6 +220,7 @@ internal fun SettingsPage(
                     titleAlpha = { titleAlpha },
                     navigationIcon = navigationIcon,
                     actions = actions,
+                    unclippedNavigationIcon = true,
                 )
             } else {
                 MiuixBlurredTopBar(

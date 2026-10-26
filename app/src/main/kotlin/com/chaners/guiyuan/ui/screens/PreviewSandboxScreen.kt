@@ -84,6 +84,7 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRowDefaults
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
@@ -230,11 +231,14 @@ internal fun PreviewSandboxScreen(
     val os4 = LocalUiStyle.current == UiStyle.OS4
     val backAction: @Composable () -> Unit = {
         TooltipBox(text = stringResource(R.string.back)) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    MiuixIcons.Back,
-                    contentDescription = stringResource(R.string.back),
-                )
+            if (os4) {
+                GlassIconButton(onClick = onBack) {
+                    Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
+                }
+            } else {
+                IconButton(onClick = onBack) {
+                    Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
+                }
             }
         }
     }
@@ -244,7 +248,16 @@ internal fun PreviewSandboxScreen(
             else R.string.home_preview_switch_dark,
         )
         TooltipBox(text = title) {
-            IconButton(onClick = onToggleTheme) {
+            if (os4) {
+                GlassIconButton(onClick = onToggleTheme) {
+                    Image(
+                        painter = painterResource(if (dark) R.drawable.ic_material_symbol_light_mode else R.drawable.ic_material_symbol_dark_mode),
+                        contentDescription = title,
+                        modifier = Modifier.size(24.dp),
+                        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
+                    )
+                }
+            } else IconButton(onClick = onToggleTheme) {
                 Image(
                     painter = painterResource(
                         if (dark) R.drawable.ic_material_symbol_light_mode
@@ -295,7 +308,14 @@ internal fun PreviewSandboxScreen(
                 ) {
                     val backTop = stringResource(R.string.diagnostics_scroll_top)
                     TooltipBox(text = backTop) {
-                        IconButton(
+                        if (os4) {
+                            GlassIconButton(onClick = { scope.launch { listState.animateScrollToItem(0) } }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
+                                    contentDescription = backTop,
+                                )
+                            }
+                        } else IconButton(
                             onClick = { scope.launch { listState.animateScrollToItem(0) } },
                         ) {
                             Icon(
@@ -320,6 +340,8 @@ internal fun PreviewSandboxScreen(
                         scrollBehavior = scrollBehavior,
                         navigationIcon = backAction,
                         actions = barActions,
+                        unclippedNavigationIcon = true,
+                        unclippedActions = true,
                     )
                 } else {
                     MiuixBlurredTopBar(

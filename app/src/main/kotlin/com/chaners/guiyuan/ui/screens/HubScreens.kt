@@ -129,6 +129,7 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -1307,9 +1308,11 @@ private fun HubPage(
         if (search != null && !search.active) {
             val label = stringResource(R.string.feature_search)
             TooltipBox(text = label) {
-                // The published TopAppBar clips glass shadows; retain its native action
-                // until the matching upstream title-region clip contract is available.
-                IconButton(onClick = search::open) {
+                if (os4) {
+                    GlassIconButton(onClick = search::open) {
+                        Icon(MiuixIcons.Search, contentDescription = label)
+                    }
+                } else IconButton(onClick = search::open) {
                     Icon(MiuixIcons.Search, contentDescription = label)
                 }
             }
@@ -1385,6 +1388,7 @@ private fun HubPage(
                     scrollBehavior = scrollBehavior,
                     actions = searchAction,
                     bottomContent = searchContent,
+                    unclippedActions = search != null && !search.active,
                 )
             } else {
                 MiuixBlurredTopBar(

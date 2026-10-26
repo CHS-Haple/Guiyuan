@@ -10,6 +10,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -20,10 +22,18 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -37,6 +47,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -224,6 +235,8 @@ fun GlassTopAppBar(
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
     bottomContent: @Composable () -> Unit = {},
+    unclippedNavigationIcon: Boolean = false,
+    unclippedActions: Boolean = false,
 ) {
     val isContentScrolled by remember(scrollBehavior) {
         derivedStateOf { scrollBehavior?.state?.let { it.contentOffset < 0f } ?: true }
@@ -252,6 +265,8 @@ fun GlassTopAppBar(
         navigationIcon = navigationIcon,
         actions = actions,
         bottomContent = bottomContent,
+        unclippedNavigationIcon = unclippedNavigationIcon,
+        unclippedActions = unclippedActions,
     )
 }
 
@@ -289,6 +304,8 @@ fun GlassTopAppBar(
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
     bottomContent: @Composable () -> Unit = {},
+    unclippedNavigationIcon: Boolean = false,
+    unclippedActions: Boolean = false,
 ) {
     val ramp = GlassTopAppBarDefaults.collapseRamp(scrollBehavior)
     val floating = isContentScrolled
@@ -313,7 +330,10 @@ fun GlassTopAppBar(
     val underlayMaterial = GlassTopAppBarDefaults.actionBarUnderlayMaterial().takeIf { keepMaterial && backdrop != null }
     val buttonBackdrop = backdrop?.takeIf { isRuntimeShaderSupported() }
 
-    Box(modifier = modifier) {
+    var barOrigin by remember { mutableStateOf(Offset.Zero) }
+    var navigationBounds by remember { mutableStateOf<Rect?>(null) }
+    var actionBounds by remember { mutableStateOf<Rect?>(null) }
+    Box(modifier = modifier.onGloballyPositioned { barOrigin = it.positionInRoot() }) {
         val overhangPx = with(LocalDensity.current) { bandOverhang.toPx() }
         Box(
             modifier = Modifier
@@ -357,10 +377,44 @@ fun GlassTopAppBar(
                 defaultWindowInsetsPadding = defaultWindowInsetsPadding,
                 navigationIconPadding = GlassTopAppBarDefaults.HorizontalPadding,
                 actionIconPadding = GlassTopAppBarDefaults.HorizontalPadding,
-                navigationIcon = navigationIcon,
-                actions = actions,
+                navigationIcon = {
+                    if (unclippedNavigationIcon) {
+                        Box(Modifier.size(buttonSize).onGloballyPositioned { navigationBounds = it.boundsInRoot() })
+                    } else {
+                        navigationIcon()
+                    }
+                },
+                actions = {
+                    if (unclippedActions) {
+                        Box(Modifier.size(buttonSize).onGloballyPositioned { actionBounds = it.boundsInRoot() })
+                    } else {
+                        actions()
+                    }
+                },
                 bottomContent = bottomContent,
             )
+            // Published TopAppBar clips its whole layout. Retain native slot measurement,
+            // but draw each interactive glass button once above that outdated clip.
+            navigationBounds?.takeIf { unclippedNavigationIcon }?.let { bounds ->
+                Box(Modifier.offset {
+                    IntOffset(
+                        (bounds.left - barOrigin.x).roundToInt(),
+                        (bounds.top - barOrigin.y).roundToInt(),
+                    )
+                }) {
+                    navigationIcon()
+                }
+            }
+            actionBounds?.takeIf { unclippedActions }?.let { bounds ->
+                Row(Modifier.offset {
+                    IntOffset(
+                        (bounds.left - barOrigin.x).roundToInt(),
+                        (bounds.top - barOrigin.y).roundToInt(),
+                    )
+                }) {
+                    actions()
+                }
+            }
         }
     }
 }
