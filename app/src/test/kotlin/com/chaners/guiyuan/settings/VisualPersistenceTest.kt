@@ -14,7 +14,7 @@ class VisualPersistenceTest {
         prefs.edit()
             .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
             .putString(CONTENT_LAYOUT_KEY, ContentLayout.BATTERY_CENTER.persistedValue)
-            .putFloat(WIFI_SCALE_KEY, 1.4f)
+            .putFloat(WIFI_SIZE_SCALE_KEY, 1.4f)
             .apply()
         val custom = BatteryCustomColorScheme(
             id = 2,
@@ -43,7 +43,7 @@ class VisualPersistenceTest {
 
         assertFalse(prefs.contains(DUAL_SIGNAL_ENABLED_KEY))
         assertFalse(prefs.contains(CONTENT_LAYOUT_KEY))
-        assertFalse(prefs.contains(WIFI_SCALE_KEY))
+        assertFalse(prefs.contains(WIFI_SIZE_SCALE_KEY))
         assertEquals(ContentLayout.NETWORK_CENTER, prefs.readLayout())
         assertEquals(
             BATTERY_COLOR_SCHEME_HYPEROS_KEY,
