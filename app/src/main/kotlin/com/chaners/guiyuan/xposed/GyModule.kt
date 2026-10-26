@@ -1896,8 +1896,10 @@ class GyModule : XposedModule() {
                     else FileInputStream(file).channel.use { channel ->
                         FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
                     }
-                }.getOrNull()
-                    ?.let(NativeFontAxis::checked)
+                }.getOrElse { error ->
+                    SysUiHotReload.rethrowFatal(error)
+                    null
+                }?.let(NativeFontAxis::checked)
                     ?.takeIf { axis ->
                         kotlin.math.ceil(axis.min.toDouble()).toInt() <
                             kotlin.math.floor(axis.max.toDouble()).toInt()
