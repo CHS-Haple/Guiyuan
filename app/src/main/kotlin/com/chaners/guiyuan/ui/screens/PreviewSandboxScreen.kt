@@ -9,7 +9,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
@@ -279,7 +278,6 @@ internal fun PreviewSandboxScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .then(if (os4) Modifier.background(MiuixTheme.colorScheme.surface) else Modifier)
                     .padding(vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -342,6 +340,7 @@ internal fun PreviewSandboxScreen(
                         actions = barActions,
                         unclippedNavigationIcon = true,
                         unclippedActions = true,
+                        bottomContent = dock,
                     )
                 } else {
                     MiuixBlurredTopBar(
@@ -376,7 +375,7 @@ internal fun PreviewSandboxScreen(
                     pageContentPadding(
                         innerPadding = PaddingValues(
                             start = paddingValues.calculateStartPadding(layoutDirection),
-                            top = if (os4) paddingValues.calculateTopPadding() else pinnedTop,
+                            top = pinnedTop,
                             end = paddingValues.calculateEndPadding(layoutDirection),
                             bottom = paddingValues.calculateBottomPadding(),
                         ),
@@ -422,6 +421,19 @@ internal fun PreviewSandboxScreen(
 
                 item {
                     SmallTitle(stringResource(R.string.home_preview_section_network))
+                    UiTabRow(
+                        tabs = networkModeOptions,
+                        selectedTabIndex = previewNetworkTabs.indexOf(state.networkMode),
+                        onTabSelected = { index ->
+                            previewNetworkTabs.getOrNull(index)?.let { mode ->
+                                onNetworkModeChange(mode)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, top = 8.dp, bottom = 12.dp),
+                        inCard = false,
+                    )
                 }
 
                 item {
@@ -431,20 +443,6 @@ internal fun PreviewSandboxScreen(
                                 .padding(horizontal = 12.dp)
                                 .padding(bottom = 12.dp),
                     ) {
-                        UiTabRow(
-                            tabs = networkModeOptions,
-                            selectedTabIndex = previewNetworkTabs.indexOf(state.networkMode),
-                            onTabSelected = { index ->
-                                previewNetworkTabs.getOrNull(index)?.let { mode ->
-                                    onNetworkModeChange(mode)
-                                }
-                            },
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp, bottom = 6.dp),
-                        )
-
                         SwitchPreference(
                             title = stringResource(R.string.home_preview_dual_mobile_title),
                             summary = stringResource(R.string.home_preview_dual_mobile_summary),
@@ -689,16 +687,7 @@ internal fun PreviewSandboxScreen(
                     }
                 }
             }
-            if (os4) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = pinnedTop),
-                ) {
-                    dock()
-                }
-            }
-        }
+         }
     }
     }
 }
@@ -845,12 +834,13 @@ private fun UiTabRow(
     selectedTabIndex: Int,
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    inCard: Boolean = true,
 ) {
     if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
         // A tab inside the scrolling page must not sample the page's own
         // backdrop: that recorder also contains this tab. Record only its base.
-        val cardSurface = MiuixTheme.colorScheme.surfaceContainer
-        val backdrop = rememberLayerBackdrop { drawRect(cardSurface) }
+        val surface = if (inCard) MiuixTheme.colorScheme.surfaceContainer else MiuixTheme.colorScheme.background
+        val backdrop = rememberLayerBackdrop { drawRect(surface) }
         Box(modifier = modifier) {
             Box(Modifier.matchParentSize().layerBackdrop(backdrop))
             GlassSegmentedTabRow(

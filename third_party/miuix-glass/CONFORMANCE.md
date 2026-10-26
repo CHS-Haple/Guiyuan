@@ -27,10 +27,11 @@ choosing a component. A renamed or glass-coated OS3 widget is not sufficient. Re
 container constraints, system/window insets, typography and fontScale, dynamic density,
 keyboard/Back, scrolling, overlay host ownership and shader-free fallback together.
 
-- **Sandbox title:** OS4 uses measured top-bar padding for resting content.
-  Its transient dock is a top-layer overlay, not a Scaffold top-bar child,
-  so enter/exit cannot recalculate the list's top inset. OS3 keeps its
-  existing dock-in-bar behavior.
+- **Sandbox title:** Both OS3 and OS4 attach the transient preview dock through
+  their native top bar's `bottomContent` slot. The list uses MIUIX's collapsed-title
+  height and system-bar inset as a stable scroll anchor, rather than the animated
+  Scaffold top inset; opening and closing the dock must not move the list. The
+  matching upstream OS4 `BlurTopAppBar` title-clip contract is still unpublished.
 - **Sandbox choices:** segmented glass tabs remain for fitting short labels.
   Longer labels use the existing scaffold-hosted glass dropdown with full option
   text rather than squeezing equal-width segments or shrinking typography.
@@ -47,8 +48,10 @@ keyboard/Back, scrolling, overlay host ownership and shader-free fallback togeth
   adapter after upgrading the complete upstream UI revision. Rounded button
   interaction/animation remains pending device acceptance.
 - **Navigation configuration:** UI era and chosen navigation style are independent.
-  OS4 honors floating enablement, Standard/Blur/Glass/Liquid, Liquid modes,
-  and icon-only/icon+text, instead of overriding persisted choices.
+  On a fresh appearance store OS4 defaults to enabled Glass (shown as Soft Glass)
+  with icon+text, while nonempty legacy stores retain their existing implicit
+  OS3/icon-only defaults and explicit selections. Both UI eras still honor floating
+  enablement, Standard/Blur/Glass/Liquid, Liquid modes, and icon-only/icon+text.
   Preview selection is inert even for glass drag gestures.
 - **Bottom navigation:** 54dp is the upstream glass capsule's minimum
   content height, not the bottom placement. The upstream full GlassPage uses

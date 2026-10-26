@@ -136,6 +136,7 @@
     <string name="floating_navigation_style_standard">Standard</string>
     <string name="floating_navigation_style_blur">Blur</string>
     <string name="floating_navigation_style_glass">Glass</string>
+    <string name="floating_navigation_style_soft_glass">Soft Glass</string>
     <string name="floating_navigation_style_liquid">Liquid Glass</string>
     <string name="floating_navigation_liquid_mode">Liquid glass finish</string>
     <string name="floating_navigation_liquid_mode_summary">Choose how much the glass blurs the background</string>
@@ -474,7 +475,7 @@
     <string name="feature_search">Search features</string>
     <string name="feature_search_empty">No matching features</string>
     <string name="ui_style_title">Interface style</string>
-    <string name="ui_style_summary">Choose OS3 or try experimental OS4 glass components</string>
-    <string name="ui_style_os3">OS3 (default)</string>
-    <string name="ui_style_os4">OS4 (experimental)</string>
+    <string name="ui_style_summary">Choose the app's visual and interaction style; navigation appearance is configured separately</string>
+    <string name="ui_style_os3">OS3</string>
+    <string name="ui_style_os4">OS4 (default)</string>
 </resources>

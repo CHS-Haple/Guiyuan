@@ -76,21 +76,28 @@ class AppearanceTest {
     }
 
     @Test
-    fun defaultsPreserveExistingNavStyle() {
+    fun freshInstallUsesOs4GlassWithCaptions() {
         val settings = Appearance()
 
         assertTrue(settings.navEnabled)
-        assertEquals(UiStyle.OS3, settings.uiStyle)
+        assertEquals(UiStyle.OS4, settings.uiStyle)
+        assertEquals(listOf(UiStyle.OS4, UiStyle.OS3), uiStyleMenuOrder)
         assertEquals(NavStyle.Glass, settings.navStyle)
-        assertEquals(NavContent.IconOnly, settings.navContent)
+        assertEquals(NavContent.IconAndText, settings.navContent)
         assertEquals(NavContent.IconAndText, settings.liquidContent)
-        assertEquals(NavContent.IconOnly, settings.activeNavContent)
+        assertEquals(NavContent.IconAndText, settings.activeNavContent)
         assertEquals(LiquidMode.Balanced, settings.liquidMode)
     }
 
     @Test
+    fun missingLegacyNavigationContentStillDefaultsToIconOnly() {
+        assertEquals(NavContent.IconOnly, decodeNavContent(null))
+        assertEquals(NavContent.IconAndText, decodeNavContent(NavContent.IconAndText.name))
+    }
+
+    @Test
     fun os4SelectionDoesNotRewriteOs3NavigationPreferences() {
-        val old = Appearance(navStyle = NavStyle.Liquid, liquidMode = LiquidMode.Clear)
+        val old = Appearance(uiStyle = UiStyle.OS3, navStyle = NavStyle.Liquid, liquidMode = LiquidMode.Clear)
         val experimental = old.copy(uiStyle = UiStyle.OS4)
         assertEquals(NavStyle.Liquid, experimental.navStyle)
         assertEquals(NavContent.IconAndText, experimental.activeNavContent)

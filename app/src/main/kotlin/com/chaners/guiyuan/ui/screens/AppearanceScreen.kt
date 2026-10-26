@@ -38,6 +38,7 @@ import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.settings.uiStyleMenuOrder
 import com.chaners.guiyuan.settings.palettesFor
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
@@ -119,7 +120,10 @@ internal fun AppearanceScreen(
         listOf(
             stringResource(R.string.floating_navigation_style_standard),
             stringResource(R.string.floating_navigation_style_blur),
-            stringResource(R.string.floating_navigation_style_glass),
+            stringResource(
+                if (appearance.uiStyle == UiStyle.OS4) R.string.floating_navigation_style_soft_glass
+                else R.string.floating_navigation_style_glass,
+            ),
             stringResource(R.string.floating_navigation_style_liquid),
         )
     val floatingContentOptions =
@@ -238,16 +242,16 @@ internal fun AppearanceScreen(
         Section(R.string.section_visual_effects) {
             UiDropdownPreference(
                 items = listOf(
-                    stringResource(R.string.ui_style_os3),
                     stringResource(R.string.ui_style_os4),
+                    stringResource(R.string.ui_style_os3),
                 ),
-                selectedIndex = appearance.uiStyle.ordinal,
+                selectedIndex = uiStyleMenuOrder.indexOf(appearance.uiStyle),
                 title = stringResource(R.string.ui_style_title),
                 summary = stringResource(R.string.ui_style_summary),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_style) },
                 showValue = true,
                 onSelectedIndexChange = { index ->
-                    UiStyle.entries.getOrNull(index)?.let { style ->
+                    uiStyleMenuOrder.getOrNull(index)?.let { style ->
                         if (style != appearance.uiStyle) onUiStyleChange(style)
                     }
                 },

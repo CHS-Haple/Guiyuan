@@ -13,6 +13,7 @@ import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
@@ -53,6 +54,8 @@ internal fun compatiblePalette(spec: ThemeColorSpec?, palette: ThemePaletteStyle
 
 internal enum class UiStyle { OS3, OS4 }
 
+internal val uiStyleMenuOrder = listOf(UiStyle.OS4, UiStyle.OS3)
+
 internal enum class NavStyle {
     Standard,
     Blur,
@@ -73,13 +76,13 @@ internal enum class LiquidMode(val stored: String) {
 
 internal data class Appearance(
     val theme: ThemeMode = ThemeMode.System,
-    val uiStyle: UiStyle = UiStyle.OS3,
+    val uiStyle: UiStyle = UiStyle.OS4,
     val dynamicColor: Boolean = false,
     val colorSpec: ThemeColorSpec? = null,
     val paletteStyle: ThemePaletteStyle = ThemePaletteStyle.TonalSpot,
     val navEnabled: Boolean = true,
     val navStyle: NavStyle = NavStyle.Glass,
-    val navContent: NavContent = NavContent.IconOnly,
+    val navContent: NavContent = NavContent.IconAndText,
     val liquidContent: NavContent = NavContent.IconAndText,
     val liquidMode: LiquidMode = LiquidMode.Balanced,
     val swipeBack: Boolean = true,
@@ -154,6 +157,14 @@ internal class AppearanceRepo(context: Context) {
     private val store = context.applicationContext.appearanceStore
 
     val settings: Flow<Appearance> = store.data
+        .onStart {
+            store.edit { prefs ->
+                if (prefs.asMap().isEmpty()) {
+                    prefs[uiStyleKey] = UiStyle.OS4.name
+                    prefs[navContentKey] = NavContent.IconAndText.name
+                }
+            }
+        }
         .catch { error ->
             if (error is IOException) {
                 emit(emptyPreferences())
