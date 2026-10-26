@@ -191,6 +191,30 @@ class RemotePrefsLockOrderTest {
     }
 
     @Test
+    fun failedOldDiagnosticsDeliveryDoesNotRetireReentrantNewBinding() {
+        val old = LockedPrefs()
+        val next = LockedPrefs().apply { detailed = true }
+        val error = IllegalStateException("diagnostics-old")
+        var delivered = 0
+        assertSame(
+            error,
+            runCatching {
+                DiagPrefsOwner.bind(old, forceDetailed = false) {
+                    DiagPrefsOwner.bind(next, forceDetailed = false) { delivered++ }
+                    throw error
+                }
+            }.exceptionOrNull(),
+        )
+        assertEquals(0, old.listenerCount)
+        assertEquals(1, next.listenerCount)
+        assertTrue(DiagPrefsOwner.isBound)
+        assertEquals(1, delivered)
+        next.detailed = false
+        next.notifyListeners(DIAG_LEVEL_KEY)
+        assertEquals(2, delivered)
+    }
+
+    @Test
     fun diagnosticsChangedBeforeListenerRegistrationIsRead() {
         val prefs = LockedPrefs().apply {
             onRegister = { detailed = true }
