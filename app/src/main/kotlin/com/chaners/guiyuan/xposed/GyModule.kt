@@ -3868,12 +3868,11 @@ class GyModule : XposedModule() {
                     context = context,
                     onAirplaneMode = { enabled ->
                         val trace = beginRenderTrace("airplaneObserver")
-                        StatusStateStore.updateAirplaneMode(enabled)?.let { snapshot ->
-                            onCombinedStateChanged(
-                                snapshot = snapshot,
-                                trace = markStateCommitted(trace),
-                            )
-                        }
+                        val changed = StatusStateStore.updateAirplaneMode(enabled)
+                        onCombinedStateChanged(
+                            snapshot = changed ?: StatusStateStore.snapshot(),
+                            trace = if (changed != null) markStateCommitted(trace) else trace,
+                        )
                         refreshStatusIconObservation("airplane")
                     },
                     onDefaultDataSubscriptionChanged = {

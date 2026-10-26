@@ -3,10 +3,65 @@ package com.chaners.guiyuan.xposed
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.InternetState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CcTransitionOwnerTest {
+    @Test
+    fun liveSourceChangesInvalidateHeldReservation() {
+        val airplane = RenderModel(
+            batteryPercent = 63,
+            charging = false,
+            centerIndicator = CenterIndicator.Airplane,
+            mobileLevel = null,
+            effectiveDataSubscriptionId = 4,
+        )
+        val wifi = airplane.copy(
+            centerIndicator = CenterIndicator.Wifi(3, InternetState.VALIDATED),
+        )
+        fun changed(model: RenderModel, visualChanged: Boolean = false) =
+            CcTransitionPolicy.reservationSourceChanged(airplane, model, visualChanged)
+
+        assertTrue(changed(wifi))
+        assertTrue(CcTransitionPolicy.reservationSourceChanged(wifi, airplane, false))
+        assertTrue(
+            CcTransitionPolicy.reservationSourceChanged(
+                wifi,
+                wifi.copy(centerIndicator = CenterIndicator.Wifi(1, InternetState.NO_INTERNET)),
+                false,
+            ),
+        )
+        assertTrue(changed(airplane.copy(centerIndicator = CenterIndicator.Empty)))
+        assertTrue(changed(airplane.copy(mobileLevel = 2)))
+        assertTrue(changed(airplane.copy(mobileUnavailableMark = true)))
+        assertTrue(changed(airplane.copy(effectiveDataSubscriptionId = 1)))
+        assertTrue(changed(airplane.copy(dualMobileLevels = DualMobileLevels(3, 4))))
+        assertTrue(changed(airplane.copy(batteryPercent = 64)))
+        assertTrue(changed(airplane.copy(charging = true, chargingIconResId = 123)))
+        assertTrue(changed(airplane, visualChanged = true))
+        assertFalse(changed(airplane))
+        assertFalse(changed(airplane.copy(batterySystemSemanticColor = 0xff00ff00.toInt())))
+    }
+
+    @Test
+    fun sourceRetargetKeepsHeldReservationContinuous() {
+        val compact = 100
+        val previous = listOf(CcTransitionPolicy.ReservationSpan(-20f, -10f, -150f, -130f))
+        val current = listOf(CcTransitionPolicy.ReservationSpan(-20f, -10f, -210f, -190f))
+        val held = 0.5f
+        val before = CcTransitionPolicy.resolveTransitionReservationWidth(compact, previous, held)
+        val after = CcTransitionPolicy.resolveTransitionReservationWidth(compact, current, held)
+        val shift = CcTransitionPolicy.retargetShift(0f, null, held, (after - before).toFloat())
+
+        assertEquals(
+            before.toFloat(),
+            after + shift * CcTransitionPolicy.retargetWeight(held, held),
+            0.001f,
+        )
+        assertEquals(0f, shift * CcTransitionPolicy.retargetWeight(1f, held), 0.001f)
+    }
+
     @Test
     fun dualSignalTargetNeedsVerifiedAggregateOrTwoMatchingSubscriptions() {
         val policy = CcTransitionPolicy
