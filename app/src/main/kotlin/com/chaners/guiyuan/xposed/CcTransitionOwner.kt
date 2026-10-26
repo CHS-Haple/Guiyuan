@@ -684,8 +684,9 @@ internal object CcTransitionOwner {
             if (previous.centerIndicator !is CenterIndicator.Wifi &&
                 model.centerIndicator is CenterIndicator.Wifi
             ) {
-                // The source can switch to Wi-Fi before its native FINAL slot exists.
-                wifiTargetReady = false
+                // New Wi-Fi content has no prior painted Wi-Fi endpoint to preserve.
+                // Only an observed missing FINAL target may start a retarget.
+                wifiTargetReady = null
                 wifiRetarget = null
             } else if (model.centerIndicator !is CenterIndicator.Wifi) {
                 wifiTargetReady = null
