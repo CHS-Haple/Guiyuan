@@ -5,6 +5,8 @@ import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import com.chaners.guiyuan.xposed.NativeParticipantAccess
+import com.chaners.guiyuan.xposed.SysUiHostRegistry
 import com.chaners.guiyuan.xposed.StatusStateStore
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -1363,14 +1365,31 @@ internal object SysUiNetworkSource {
     @Synchronized
     private fun findWifiBinding(view: View): Boolean {
         var current: View? = view
+        var nativeRoot: ViewGroup? = null
         while (current != null) {
             val group = current as? ViewGroup
             if (group != null && wifiRoots.containsKey(group)) {
                 return true
             }
+            if (
+                group != null &&
+                group.javaClass.simpleName == "ModernStatusBarWifiView" &&
+                NativeParticipantAccess.resourceEntryName(group) == "wifi_combo"
+            ) {
+                nativeRoot = group
+            }
             current = current.parent as? View
         }
-        return false
+
+        // Existing native collectors may emit after Hot Reload without replaying bind().
+        val wifi = nativeRoot ?: return false
+        val icons = wifi.parent as? ViewGroup ?: return false
+        val battery = icons.parent as? ViewGroup ?: return false
+        return view.isAttachedToWindow &&
+            wifi.isAttachedToWindow &&
+            icons.javaClass.name == "com.android.systemui.statusbar.views.MiuiStatusIconContainer" &&
+            battery.javaClass.name == "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer" &&
+            battery.parent === SysUiHostRegistry.current()
     }
 
     @Synchronized
