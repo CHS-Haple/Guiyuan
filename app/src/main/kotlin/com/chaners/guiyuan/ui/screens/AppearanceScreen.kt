@@ -657,6 +657,8 @@ private fun MiniNavigationPreview(
             Modifier
         }
 
+    val standardNav = !floating || (os4Glass && miuixBackdrop == null)
+
     if (os4Glass && miuixBackdrop != null) {
         // The glass bar can grow for captions. Let the preview measure its actual
         // height and keep its shadow inside the preview surface.
@@ -686,7 +688,7 @@ private fun MiniNavigationPreview(
                     items = listOf(
                         GlassNavigationItem(MiuixIcons.Normal.Home, stringResource(R.string.nav_home).takeIf { content == NavContent.IconAndText }),
                         GlassNavigationItem(MiuixIcons.Normal.Tune, stringResource(R.string.nav_features).takeIf { content == NavContent.IconAndText }),
-                        GlassNavigationItem(MiuixIcons.Normal.Settings, stringResource(R.string.nav_settings).takeIf { content == NavContent.IconAndText }),
+                        GlassNavigationItem(MiuixIcons.Medium.Settings, stringResource(R.string.nav_settings).takeIf { content == NavContent.IconAndText }),
                     ),
                     selectedIndex = 2,
                     onSelect = {},
@@ -743,7 +745,7 @@ private fun MiniNavigationPreview(
             }
         }
 
-        if (floating) {
+        if (!standardNav) {
             MiniNavViewport(bottomPadding = liquidBottomSpace) {
                 if (liquidBackdrop != null) {
                     val labels =
