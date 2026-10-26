@@ -431,7 +431,7 @@ internal fun PreviewSandboxScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, top = 8.dp, bottom = 12.dp),
+                            .padding(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 12.dp),
                         inCard = false,
                     )
                 }

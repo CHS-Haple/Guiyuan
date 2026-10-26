@@ -475,7 +475,7 @@
     <string name="feature_search">Search features</string>
     <string name="feature_search_empty">No matching features</string>
     <string name="ui_style_title">Interface style</string>
-    <string name="ui_style_summary">Choose the app's visual and interaction style; navigation appearance is configured separately</string>
+    <string name="ui_style_summary">Choose the app interface style; navigation appearance is configured separately</string>
     <string name="ui_style_os3">OS3</string>
     <string name="ui_style_os4">OS4 (default)</string>
 </resources>
