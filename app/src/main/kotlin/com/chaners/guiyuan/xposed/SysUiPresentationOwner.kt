@@ -2434,8 +2434,10 @@ internal object SysUiPresentationOwner {
                     }
                 }
             }.exceptionOrNull()
+            paddingFailure?.let(::rethrowFatal)
             appliedPadding = null
             val carrier = runCatching { restoreFakeCarrierCapacityLease() }
+            carrier.exceptionOrNull()?.let(::rethrowFatal)
             if (paddingFailure != null) {
                 carrier.exceptionOrNull()?.let(paddingFailure::addSuppressed)
                 throw paddingFailure
