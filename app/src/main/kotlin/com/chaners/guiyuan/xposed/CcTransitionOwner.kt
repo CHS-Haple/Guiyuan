@@ -2023,20 +2023,21 @@ internal object CcTransitionOwner {
                 chargeRetarget = null
                 return
             }
+            if (previous == null) return
+            val batteryResized = previous.batteryWidth != next.batteryWidth
             if (
-                previous == null ||
+                !batteryResized &&
                 (
-                    previous.batteryWidth == next.batteryWidth &&
-                        chargeRetarget == null
-                ) ||
-                (
-                    previous.peerX == next.peerX &&
-                        previous.batteryX == next.batteryX
+                    chargeRetarget == null ||
+                        (
+                            previous.peerX == next.peerX &&
+                                previous.batteryX == next.batteryX
+                        )
                 )
             ) return
 
-            // Only a battery-width change can start charge reflow. Once started,
-            // retain the native row's later layout passes in the same handoff.
+            // Battery-width changes start reflow, even if peers move on a later pass.
+            // Other native icon-row changes cannot start charge retarget.
             val old = chargeRetarget
             val peerShift = CcTransitionPolicy.retargetShift(
                 priorShift = old?.peerShift ?: 0f,
