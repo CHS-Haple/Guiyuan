@@ -300,7 +300,6 @@ internal object NativePresentationResolver {
             drawableFields.computeIfAbsent(drawable.javaClass) { clazz ->
                 fun field(name: String): Field? =
                     readOrNull { clazz.getDeclaredField(name).apply { isAccessible = true } }
-                        
                 DrawableFields(
                     type = field(MOBILE_TYPE_FIELD),
                     enhanced = field(MOBILE_TYPE_ENHANCED_FIELD),
