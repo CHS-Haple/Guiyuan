@@ -9,6 +9,66 @@ import org.junit.Test
 class VisualPersistenceTest {
 
     @Test
+    fun resettingVisualDefaultsPreservesSavedBatterySchemes() {
+        val prefs = MemoryPreferences()
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putString(CONTENT_LAYOUT_KEY, ContentLayout.BATTERY_CENTER.persistedValue)
+            .putFloat(WIFI_SCALE_KEY, 1.4f)
+            .apply()
+        val custom = BatteryCustomColorScheme(
+            id = 2,
+            name = "Saved colors",
+            baseTemplate = BatteryBuiltInColorScheme.IOS,
+            entries = entriesFromBuiltIn(BatteryBuiltInColorScheme.IOS).withEntry(
+                BatteryColorSlot.CHARGING,
+                BatteryColorSchemeEntry(
+                    source = BatteryColorSchemeSource.CUSTOM,
+                    customColor = 0xFF2468AC.toInt(),
+                ),
+            ),
+        )
+        val second = BatteryCustomColorScheme(
+            id = 4,
+            name = "Another scheme",
+            baseTemplate = BatteryBuiltInColorScheme.LOW_SATURATION,
+            entries = entriesFromBuiltIn(BatteryBuiltInColorScheme.LOW_SATURATION),
+        )
+        val library = BatteryColorSchemeLibrary(
+            activeSchemeKey = custom.key,
+            customSchemes = listOf(custom, second),
+        )
+
+        resetVisualPreferences(prefs, library)
+
+        assertFalse(prefs.contains(DUAL_SIGNAL_ENABLED_KEY))
+        assertFalse(prefs.contains(CONTENT_LAYOUT_KEY))
+        assertFalse(prefs.contains(WIFI_SCALE_KEY))
+        assertEquals(ContentLayout.NETWORK_CENTER, prefs.readLayout())
+        assertEquals(
+            BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+            prefs.getString("battery_color_scheme_library.active", null),
+        )
+        assertEquals("2,4", prefs.getString("battery_color_scheme_library.custom_order", null))
+        assertEquals("Saved colors", prefs.getString("battery_color_scheme_library.custom.2.name", null))
+        assertEquals(
+            BatteryBuiltInColorScheme.IOS.key,
+            prefs.getString("battery_color_scheme_library.custom.2.base", null),
+        )
+        assertEquals(
+            BatteryColorSchemeSource.CUSTOM.persistedValue,
+            prefs.getString("battery_color_scheme_library.custom.2.source.charging", null),
+        )
+        assertEquals(
+            0xFF2468AC.toInt(),
+            prefs.getInt("battery_color_scheme_library.custom.2.color.charging", 0),
+        )
+        assertEquals("Another scheme", prefs.getString("battery_color_scheme_library.custom.4.name", null))
+        assertEquals(BatteryColorPreset.HYPEROS, prefs.readVisualCfg().batteryColorPreset)
+        assertEquals(1, prefs.getInt("battery_color_scheme_library.schema", 0))
+    }
+
+    @Test
     fun firstRuntimeSnapshotUsesMigratedVisualPreferences() {
         val prefs = MemoryPreferences()
         val layout = ContentLayout.BATTERY_CENTER

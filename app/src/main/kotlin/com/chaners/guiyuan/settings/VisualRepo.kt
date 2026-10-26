@@ -137,6 +137,19 @@ internal fun migrateVisualPrefsIfNeeded(preferences: SharedPreferences) {
     migrateTextWeightRanges(preferences)
 }
 
+// Reset visual choices without deleting user-created battery schemes.
+internal fun resetVisualPreferences(
+    preferences: SharedPreferences,
+    schemes: BatteryColorSchemeLibrary,
+) {
+    val editor = preferences.edit().clear()
+    writeBatterySchemeLibrary(
+        editor,
+        schemes.copy(activeSchemeKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY),
+    )
+    editor.apply()
+}
+
 internal class VisualRepo(context: Context) {
     private val context = context.applicationContext
     private val preferences =
@@ -529,7 +542,7 @@ internal class VisualRepo(context: Context) {
         editor.putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, active.fillFollowsRetract)
             .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, active.ccTintTransition)
             .putInt(SHARED_TRANSITIONS_SCHEMA_KEY, 1)
-        BatterySchemeRepo(context).putBackup(editor, library)
+        writeBatterySchemeLibrary(editor, library)
         val activeLayout = if (backup.dualEnabled) backup.dualLayout else backup.singleLayout
         editor.putString(CONTENT_LAYOUT_KEY, activeLayout.persistedValue)
         if (backup.dualInitialized) {
@@ -542,7 +555,7 @@ internal class VisualRepo(context: Context) {
     }
 
     fun resetToDefaults() {
-        preferences.edit().clear().apply()
+        resetVisualPreferences(preferences, BatterySchemeRepo(context).current())
     }
 
     fun setTopChargingIconScale(scale: Float) {
