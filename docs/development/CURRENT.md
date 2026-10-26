@@ -44,6 +44,8 @@ This file records **accepted behavior, current constraints and next work**, not 
 
 - **Bilingual feature-search result priority:** [#857](https://github.com/CHS-Haple/Guiyuan/pull/857) prevents lower-confidence foreign pinyin initials from adding unrelated results after a curated semantic alias has already matched. Current-language matches, official translated names, normal aliases, SearchBar, focus, Back and scroll behavior remain unchanged. The focused decision test and exact-head Runtime CI passed; this is not evidence of every MIUIX navigation timing or localization variant.
 
+- **Battery Hot Reload live-state handoff:** [#878](https://github.com/CHS-Haple/Guiyuan/pull/878) reconciles the transferred historical battery snapshot against one verified native battery icon before the new generation reattaches Home rendering. The installed battery hook owns the native reader and its delivery receipt; unknown or ambiguous native topology retains the saved snapshot rather than inventing charging state. On the pinned device the maintainer accepted rapid repeated Hot Reload while charging, unplugging and replugging. Exact-head Runtime CI, signed Canary and postmerge `dev` CI passed. This acceptance does not certify modified SystemUI icon trees, fault-injected callbacks or other ROMs. The separate exceptional CC release cleanup [#877](https://github.com/CHS-Haple/Guiyuan/pull/877) remains unaccepted and is not integrated.
+
 These changes belong to `dev` only until separately promoted to `main`. Relevant physical search/dock behavior, competing SystemUI writers and exceptional lifecycle paths remain device-specific validation limits; passing CI alone does not close those limits.
 
 ## Presentation ownership and lifecycle
