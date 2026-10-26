@@ -42,8 +42,8 @@ internal object SysUiBatterySource {
     private var hooksReady = false
     @Volatile
     private var failedInstallHandles: List<HookHandle> = emptyList()
-    @Volatile
     private class Delivery(val state: StatusStateStore.BatteryState)
+    @Volatile
     private var lastDelivery: Delivery? = null
 
     @Volatile
