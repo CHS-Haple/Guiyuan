@@ -982,10 +982,14 @@ internal object CcTransitionOwner {
                             if (native != null && battery != null &&
                                 coherentWifiLayout(rootView, witness.slotView)
                             ) {
-                                wifiAnchor = WifiAnchor(witness.slotView, native.copyOf(), battery)
+                                wifiAnchor = WifiAnchor(witness.slotView, witness.opticalView, native.copyOf(), battery)
                                 native
                             } else {
-                                wifiAnchor?.takeIf { it.slot === witness.slotView && battery != null }
+                                wifiAnchor?.takeIf {
+                                        it.slot === witness.slotView &&
+                                            it.optical === witness.opticalView &&
+                                            battery != null
+                                    }
                                     ?.let { anchor ->
                                         CcTransitionPolicy.followBatteryAnchor(
                                             target = anchor.target,
@@ -3981,6 +3985,7 @@ internal object CcTransitionOwner {
 
         private data class WifiAnchor(
             val slot: View,
+            val optical: View?,
             val target: FloatArray,
             val battery: FloatArray,
         )
