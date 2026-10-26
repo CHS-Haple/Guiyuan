@@ -541,7 +541,7 @@ internal object SysUiNetworkSource {
     fun restoreHotReloadBindings(raw: Any?): BindingRestoreResult {
         // A new hook can bind a reused root before the old generation hands it over.
         val newWifi = wifiRoots.filterKeys { it.isAttachedToWindow }
-        // Keep an in-flight invalid bind from restoring an older SIM during transfer.
+        // A newer invalid binding must also override an older transferred SIM.
         val newMobile = mobileRoots.filterKeys { it.isAttachedToWindow }
         wifiRoots.clear()
         mobileRoots.clear()
@@ -1182,7 +1182,7 @@ internal object SysUiNetworkSource {
                     (subscriptionIdMethod.invoke(locationViewModel) as Number).toInt()
                 } ?: -1
                 val nextId = subscriptionId.takeIf { it >= 0 }
-                // An invalid ID still needs a receipt until the native bind completes.
+                // An invalid ID must mask older binds, including across Hot Reload.
                 val candidate = MobileBinding(nextId)
                 pending = candidate
                 previous = synchronized(this) { mobileRoots.put(boundRoot, candidate) }
@@ -1223,11 +1223,6 @@ internal object SysUiNetworkSource {
                 }
                 throw error
             }
-        if (boundRoot != null && pending?.subscriptionId == null) {
-            synchronized(this) {
-                if (mobileRoots[boundRoot] === pending) mobileRoots.remove(boundRoot)
-            }
-        }
         if (bindingChanged) {
             readOrNull { bindingLog?.let { onEvent?.invoke(it) } }
         }
