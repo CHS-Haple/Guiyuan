@@ -90,7 +90,9 @@ internal object SysUiNetworkSource {
         }
     }
 
-    private val wifiRoots = WeakHashMap<ViewGroup, Any?>()
+    // Each bind owns its rollback even when the native ViewModel is reused.
+    private class WifiBinding(val viewModel: Any?)
+    private val wifiRoots = WeakHashMap<ViewGroup, WifiBinding>()
     // A native rebinding can reuse the same SIM ID.
     private class MobileBinding(val subscriptionId: Int)
 
@@ -519,9 +521,9 @@ internal object SysUiNetworkSource {
     @Synchronized
     fun exportHotReloadBindings(): Array<Any?> {
         val wifi = ArrayList<Any>(wifiRoots.size)
-        wifiRoots.forEach { (root, viewModel) ->
+        wifiRoots.forEach { (root, binding) ->
             if (root.isAttachedToWindow) {
-                wifi.add(arrayOf(root, viewModel))
+                wifi.add(arrayOf(root, binding.viewModel))
             }
         }
 
@@ -561,7 +563,7 @@ internal object SysUiNetworkSource {
                         candidate.javaClass.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
                     }
             if (root.isAttachedToWindow) {
-                wifiRoots[root] = viewModel
+                wifiRoots[root] = WifiBinding(viewModel)
             }
         }
 
@@ -697,10 +699,13 @@ internal object SysUiNetworkSource {
         val boundRoot =
             root?.takeIf { viewModel?.javaClass?.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME }
         // Native bind may emit the icon before returning.
+        val pending = boundRoot?.let { WifiBinding(viewModel) }
         val previous =
-            boundRoot?.let { synchronized(this) { wifiRoots.put(it, viewModel) } }
+            if (boundRoot != null && pending != null) {
+                synchronized(this) { wifiRoots.put(boundRoot, pending) }
+            } else null
         var seedFailure: Throwable? = null
-        if (boundRoot != null && previous !== viewModel) {
+        if (boundRoot != null && previous?.viewModel !== viewModel) {
             try {
                 val diagnosticEvent = onEvent?.takeIf { isDetailedDiagnosticsEnabled() }
                 readOrNull {
@@ -732,9 +737,9 @@ internal object SysUiNetworkSource {
                 chain.proceed()
             } catch (error: Throwable) {
                 // Revert only our unfinished bind, not a nested newer bind.
-                if (boundRoot != null) {
+                if (boundRoot != null && pending != null) {
                     synchronized(this) {
-                        if (wifiRoots[boundRoot] === viewModel) {
+                        if (wifiRoots[boundRoot] === pending) {
                             if (previous == null) wifiRoots.remove(boundRoot)
                             else wifiRoots[boundRoot] = previous
                         }
@@ -754,9 +759,9 @@ internal object SysUiNetworkSource {
     ): StatusStateStore.WifiState? {
         val contract = wifiSeedContract ?: return null
         val binding =
-            wifiRoots.entries.firstOrNull { (root, viewModel) ->
+            wifiRoots.entries.firstOrNull { (root, binding) ->
                 root.isAttachedToWindow &&
-                    viewModel?.javaClass?.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
+                    binding.viewModel?.javaClass?.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
             } ?: run {
                 reportSeed(onEvent,
                     "networkPipeline wifi seed source=hotReloadRestore " +
@@ -765,7 +770,7 @@ internal object SysUiNetworkSource {
                 return null
             }
 
-        val viewModel = binding.value ?: return null
+        val viewModel = binding.value.viewModel ?: return null
         return readWifiSeed(
             root = binding.key,
             viewModel = viewModel,
