@@ -104,6 +104,7 @@ internal fun BoxScope.GlassDropdownPopupContent(
     cornerRadius: Dp = GlassDropdownDefaults.CornerRadius,
     contentPadding: PaddingValues = PaddingValues(vertical = GlassPopupDefaults.ContentPaddingVertical),
     coordinateOrigin: Offset = Offset.Zero,
+    handleBack: Boolean = true,
     onDismissFinished: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -142,7 +143,7 @@ internal fun BoxScope.GlassDropdownPopupContent(
     val backProgress = rememberGlassPopupBackProgress(
         show = show,
         active = active,
-        enabled = show,
+        enabled = show && handleBack,
         retainWhenInactive = true,
         resetSpec = GlassMotion.arcBounds(true),
         onDismissRequest = onDismissRequest,

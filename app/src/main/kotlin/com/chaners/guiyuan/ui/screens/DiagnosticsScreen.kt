@@ -53,6 +53,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.DiagSettings
 import com.chaners.guiyuan.settings.DiagRepo
@@ -89,6 +91,7 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
 import top.yukonga.miuix.kmp.nav.transition.NavRole
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -637,29 +640,31 @@ private fun LogFilterMenu(
             ),
         )
 
-    TooltipBox(text = title) {
-        WindowIconCascadingDropdownMenu(
-            entries = entries,
-            collapseOnSelection = false,
+    val icon: @Composable () -> Unit = {
+        BadgedBox(
+            badge = {
+                AnimatedVisibility(
+                    visible = filterActive,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                ) {
+                    Badge(containerColor = MiuixTheme.colorScheme.primary)
+                }
+            },
         ) {
-            BadgedBox(
-                badge = {
-                    AnimatedVisibility(
-                        visible = filterActive,
-                        enter = fadeIn(),
-                        exit = fadeOut(),
-                    ) {
-                        Badge(
-                            containerColor = MiuixTheme.colorScheme.primary,
-                        )
-                    }
-                },
-            ) {
-                Icon(
-                    MiuixIcons.Filter,
-                    contentDescription = title,
-                )
-            }
+            Icon(MiuixIcons.Filter, contentDescription = title)
+        }
+    }
+
+    TooltipBox(text = title) {
+        if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
+            Os4CascadingMenu(entries = entries, collapseOnSelection = false, content = icon)
+        } else {
+            WindowIconCascadingDropdownMenu(
+                entries = entries,
+                collapseOnSelection = false,
+                content = icon,
+            )
         }
     }
 }
@@ -739,8 +744,14 @@ private fun DiagMenu(
         )
 
     TooltipBox(text = title) {
-        WindowIconCascadingDropdownMenu(entries = entries) {
-            Icon(MiuixIcons.More, contentDescription = title)
+        if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
+            Os4CascadingMenu(entries = entries) {
+                Icon(MiuixIcons.More, contentDescription = title)
+            }
+        } else {
+            WindowIconCascadingDropdownMenu(entries = entries) {
+                Icon(MiuixIcons.More, contentDescription = title)
+            }
         }
     }
 }

@@ -14,7 +14,7 @@ Source of truth: compose-miuix-ui/miuix [PR #423](https://github.com/compose-miu
 | Segmented tabs | `GlassSegmentedTabRow` for connected segments; `GlassTabRow` for separate pills, both with defined material/sizing | Sandbox retains glass segments only when full text fits equal-width slots and routes longer choices to its existing glass dropdown. **B1403 Sandbox crash** remains unproven without an app-process stack and current target-device retest. |
 | Dialogs and input confirmations | `GlassDialog`, `GlassDialogButton`, `DialogSurfaceScope`, and modified `OverlayDialog` surface/animated scrim APIs; owner is Scaffold's `MiuixPopupHost` | Not integrated. Migrate input/settings, confirmation, reset and color dialogs only against the **same upstream UI revision**; preserve completion/dismiss/predictive Back and form focus. |
 | Bottom sheets | `GlassBottomSheet`, `BottomSheetSurfaceScope`, modified overlay surface API; scroll, overscroll, inset and Back behavior is host-owned | Not integrated. Color editing sheets require coordinated upstream UI + glass package; don't wrap an existing sheet in a duplicate project-owned glass host. |
-| Icon menus/popups | Official `GlassPopupItem`, popup divider tokens, the GlassDropdown host and separate cascading-popup contracts | Battery custom scheme's flat action menu uses the existing Scaffold-rooted glass dropdown lifecycle, upstream row styles and 0.5dp/20dp-inset group divider; without a shader it keeps native MIUIX. Menu source is outside the pager's clipping box. Diagnose page's Window cascading menus still require same-revision upstream host APIs; no visual-only substitute. Test overflow, onClick, Back and nested sheet ownership on device. |
+| Icon menus/popups | Official `GlassPopupItem`, group dividers and secondary cascading panels, with a root popup host | Battery flat actions keep their root-hosted glass popup; diagnostics uses a shared root-hosted OS4 two-level glass menu, existing `DropdownEntry` selection/callback data and official 0.5dp group lines. OS3/no-shader retains native MIUIX. Because matched PR #423 UI is unpublished, both implementations remain experimental pending tap, Back, nested layer, RTL and device checks. |
 | Iconography | Separate `miuix-glass-icons` catalog from PR #423 | Adopt applicable control/navigation semantics at an exact published revision. Keep Material Symbols for explanatory leading icons, not an unreviewed bulk swap. |
 | Full-screen UI scale | App modifies `LocalDensity` and `WindowInfo.containerDpSize` together; glass render samples must match the same geometry, with popup roots outside recorded content | Source architecture preserved; **device acceptance missing** for 80%, 100%, 110%, display cutouts, rotation, fontScale, IME, theme, and RTL. |
 | Fail native / lifetime | Shader and host failures must preserve MIUIX's accessible native state, not produce invisible controls or stale popup captures | OS4 Glass with no shader renders the native MIUIX `NavigationBar` in both MainHub and Appearance preview; other user-selected floating styles keep their original renderer. Verify device failure path and modal host teardown. |
@@ -71,6 +71,20 @@ fallback when a clean page Backdrop is unavailable inside the overlaid
 battery sheet; do not claim sampled translucent glass until host integration
 is proven. The old OverlayIconDropdownMenu stays for OS3/no-shader.
 The source-screen pager still owns only the trigger, not the popup.
+
+## Diagnostic glass menu acceptance boundary
+
+The Diagnostics filter menu keeps its existing level/category toggle callbacks and does not
+collapse when a selection changes. The other menu retains mode, scrolling and clear
+callbacks and closes after an action. OS4 uses the official glass dropdown primary
+and secondary popup presentation inside one Scaffold-owned popup host; OS3 and
+devices without a usable shader still use the original Window cascading menu.
+All group boundaries use GlassPopupDefaults' 20dp inset, 7.75dp spacing and
+0.5dp divider rather than reusing OS3 separator styling. The host survives both closing animations and frees its anchor state on
+disposal. Primary Back handling is disabled while the secondary panel owns Back,
+so the same gesture cannot dismiss both levels. This is source-only adaptation:
+real-device gesture/Back dispatch, window overlap, 80–110% density, RTL, focus
+and themes still require confirmation.
 
 ## Current evidence and unresolved diagnostics
 
