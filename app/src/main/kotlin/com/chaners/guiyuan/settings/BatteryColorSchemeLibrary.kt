@@ -218,7 +218,7 @@ internal class BatterySchemeRepo(context: Context) {
             if (library.containsKey(key)) key else BATTERY_COLOR_SCHEME_HYPEROS_KEY
         val updated = library.copy(activeSchemeKey = target)
         val editor = preferences.edit()
-        writeLibrary(editor, updated)
+        writeBatterySchemeLibrary(editor, updated)
         applyProjection(editor, updated, target)
         editor.apply()
     }
@@ -249,7 +249,7 @@ internal class BatterySchemeRepo(context: Context) {
                 customSchemes = library.customSchemes + custom,
             )
         val editor = preferences.edit()
-        writeLibrary(editor, updated)
+        writeBatterySchemeLibrary(editor, updated)
         editor.apply()
         return id
     }
@@ -282,7 +282,7 @@ internal class BatterySchemeRepo(context: Context) {
         preferences.all.keys
             .filter { it.startsWith(customPrefix(id)) }
             .forEach(editor::remove)
-        writeLibrary(editor, updated)
+        writeBatterySchemeLibrary(editor, updated)
         applyProjection(editor, updated, active)
         editor.apply()
     }
@@ -358,7 +358,7 @@ internal class BatterySchemeRepo(context: Context) {
                     },
             )
         val editor = preferences.edit()
-        writeLibrary(editor, updated)
+        writeBatterySchemeLibrary(editor, updated)
         if (updated.activeSchemeKey == changed.key) {
             applyProjection(editor, updated, changed.key)
         }
@@ -404,7 +404,7 @@ internal class BatterySchemeRepo(context: Context) {
             )
 
         val editor = preferences.edit()
-        writeLibrary(editor, initial)
+        writeBatterySchemeLibrary(editor, initial)
         applyProjection(editor, initial, initial.activeSchemeKey)
         editor.apply()
     }
@@ -469,40 +469,6 @@ internal class BatterySchemeRepo(context: Context) {
             baseTemplate = base,
             entries = entries,
         )
-    }
-
-    // Share the existing scheme writer with the one-shot visual restore transaction.
-    fun putBackup(editor: SharedPreferences.Editor, library: BatteryColorSchemeLibrary) {
-        writeLibrary(editor, library)
-    }
-
-    private fun writeLibrary(
-        editor: SharedPreferences.Editor,
-        library: BatteryColorSchemeLibrary,
-    ) {
-        editor
-            .putInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, BATTERY_COLOR_SCHEME_SCHEMA_CURRENT)
-            .putString(BATTERY_COLOR_SCHEME_ACTIVE_KEY, library.activeSchemeKey)
-            .putString(
-                BATTERY_COLOR_SCHEME_ORDER_KEY,
-                library.customSchemes.joinToString(",") { it.id.toString() },
-            )
-        library.customSchemes.forEach { scheme ->
-            val prefix = customPrefix(scheme.id)
-            editor
-                .putString(prefix + "name", scheme.name)
-                .putString(prefix + "base", scheme.baseTemplate.key)
-            BatteryColorSlot.entries.forEach { slot ->
-                val entry = scheme.entries.entryFor(slot)
-                editor.putString(customSourceKey(scheme.id, slot), entry.source.persistedValue)
-                val colorKey = customColorKey(scheme.id, slot)
-                if (entry.customColor == null) {
-                    editor.remove(colorKey)
-                } else {
-                    editor.putInt(colorKey, entry.customColor.or(0xFF000000.toInt()))
-                }
-            }
-        }
     }
 
     private fun applyProjection(
@@ -582,6 +548,35 @@ internal class BatterySchemeRepo(context: Context) {
                 )
         }
         return entries
+    }
+}
+
+internal fun writeBatterySchemeLibrary(
+    editor: SharedPreferences.Editor,
+    library: BatteryColorSchemeLibrary,
+) {
+    editor
+        .putInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, BATTERY_COLOR_SCHEME_SCHEMA_CURRENT)
+        .putString(BATTERY_COLOR_SCHEME_ACTIVE_KEY, library.activeSchemeKey)
+        .putString(
+            BATTERY_COLOR_SCHEME_ORDER_KEY,
+            library.customSchemes.joinToString(",") { it.id.toString() },
+        )
+    library.customSchemes.forEach { scheme ->
+        val prefix = customPrefix(scheme.id)
+        editor
+            .putString(prefix + "name", scheme.name)
+            .putString(prefix + "base", scheme.baseTemplate.key)
+        BatteryColorSlot.entries.forEach { slot ->
+            val entry = scheme.entries.entryFor(slot)
+            editor.putString(customSourceKey(scheme.id, slot), entry.source.persistedValue)
+            val colorKey = customColorKey(scheme.id, slot)
+            if (entry.customColor == null) {
+                editor.remove(colorKey)
+            } else {
+                editor.putInt(colorKey, entry.customColor.or(0xFF000000.toInt()))
+            }
+        }
     }
 }
 
