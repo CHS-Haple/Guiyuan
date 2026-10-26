@@ -48,11 +48,18 @@ internal object FeaturePrefsOwner {
                 val next = resolve(changed)
                 var latest = state.get()
                 while (latest.source === changed && latest.token === token && latest.cfg != next) {
-                    if (state.compareAndSet(latest, latest.copy(cfg = next))) {
-                        val changedAtNs = changed.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L)
-                        val receivedAtNs =
-                            if (changedAtNs > 0L) SystemClock.elapsedRealtimeNanos() else 0L
-                        onChanged(next, transportLatencyNs(changedAtNs, receivedAtNs))
+                    val pending = latest.copy(cfg = next)
+                    if (state.compareAndSet(latest, pending)) {
+                        try {
+                            val changedAtNs = changed.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L)
+                            val receivedAtNs =
+                                if (changedAtNs > 0L) SystemClock.elapsedRealtimeNanos() else 0L
+                            onChanged(next, transportLatencyNs(changedAtNs, receivedAtNs))
+                        } catch (error: Throwable) {
+                            // A failed older callback cannot undo a newer reentrant update.
+                            state.compareAndSet(pending, latest)
+                            throw error
+                        }
                         break
                     }
                     latest = state.get()

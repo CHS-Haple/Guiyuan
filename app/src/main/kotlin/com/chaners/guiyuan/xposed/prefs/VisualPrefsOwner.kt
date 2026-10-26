@@ -57,8 +57,14 @@ internal object VisualPrefsOwner {
                 val next = resolve(changed)
                 var latest = state.get()
                 while (latest.source === changed && latest.token === token && latest.cfg != next) {
-                    if (state.compareAndSet(latest, latest.copy(cfg = next))) {
-                        onChanged(next)
+                    val pending = latest.copy(cfg = next)
+                    if (state.compareAndSet(latest, pending)) {
+                        try {
+                            onChanged(next)
+                        } catch (error: Throwable) {
+                            state.compareAndSet(pending, latest)
+                            throw error
+                        }
                         break
                     }
                     latest = state.get()
