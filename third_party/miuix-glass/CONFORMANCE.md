@@ -6,7 +6,7 @@ Source of truth: compose-miuix-ui/miuix [PR #423](https://github.com/compose-miu
 | --- | --- | --- |
 | Bottom destinations | `GlassNavigationBar`: minimum 54dp, content-driven height, equal-width destinations, caller-bounded width and caller-owned Insets | OS4 + selected Glass uses upstream capsule; other selected styles and floating disabled preserve existing behavior across UI styles. Icon-only and icon+text remain user controlled. Upstream page 24dp/20dp/Inset spacing is retained. Device acceptance still open. |
 | Appearance mini-preview | Preserve intrinsic sizing, appearance selections and no input for display-only navigation | OS4 Glass preview is noninteractive at the component's gesture and accessibility boundaries, not just a no-op onSelect. Both UI styles preview the persisted navigation style and content mode. |
-| Top app bars | PR changes `TopAppBar` to title-local clipping and adds `BlurTopAppBar` | Published core still clips all children. Temporary adapter preserves native measurement but paints each glass action once above the legacy clipped child using its measured slot bounds. Full title-blur conformance still blocked on matched upstream UI. |
+| Top app bars | PR changes `TopAppBar` to title-local clipping and adds `BlurTopAppBar` | Published core still clips all children. Temporary adapter measures each real action group, reserves that group’s actual width/height in the native slot, then paints the interactive controls once above the legacy clip. Verify multi-action navigation rows, dynamic search entry and fontScale on device. Full title-blur conformance still blocked on matched upstream UI. |
 | Scroll/overlap | Glass title bar supports an explicit `isContentScrolled` input based on actual list position; scroll behavior retains title collapse | All four screen owners should supply their own `LazyListState.canScrollBackward` rather than infer overlap solely from collapsing title; keep list ownership local. |
 | Search | MIUIX SearchBar/InputField remain native; glass top-bar icon actions are OS4 | Restores floating OS4 glass search circle in parent top-bar action layer while native measured action slot and search/Back/focus behavior remain unchanged. OS3 retains text cancel. Test no clipping and expand/collapse transitions. |
 | Simple preferences | No PR-only replacements for the existing `SliderPreference`, `SwitchPreference`, or ordinary `BasicComponent` | Use native MIUIX, but review theme, state semantics, hit targets, row spacing, font size, dynamic type, animations and full UI density. |
@@ -39,7 +39,8 @@ keyboard/Back, scrolling, overlay host ownership and shader-free fallback togeth
   #423's title-only clip. Native TopAppBar owns slot measurement, scrolling
   and title geometry; its action slots are noninteractive size placeholders.
   The real OS4 glass controls are composed once above the legacy clip in the
-  parent glass bar, positioned from the measured slot bounds. Remove this
+  parent glass bar; their measured size also determines the native inert slot
+  so multi-button navigation rows cannot overlap the adjacent title. Remove this
   adapter after upgrading the complete upstream UI revision. Rounded button
   interaction/animation remains pending device acceptance.
 - **Navigation configuration:** UI era and chosen navigation style are independent.

@@ -10,6 +10,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.RowScope
@@ -32,8 +34,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -333,6 +337,14 @@ fun GlassTopAppBar(
     var barOrigin by remember { mutableStateOf(Offset.Zero) }
     var navigationBounds by remember { mutableStateOf<Rect?>(null) }
     var actionBounds by remember { mutableStateOf<Rect?>(null) }
+    var navigationSize by remember { mutableStateOf(IntSize.Zero) }
+    var actionSize by remember { mutableStateOf(IntSize.Zero) }
+    val density = LocalDensity.current
+    val navigationWidth = if (navigationSize.width > 0) with(density) { navigationSize.width.toDp() } else buttonSize
+    val navigationHeight = if (navigationSize.height > 0) with(density) { navigationSize.height.toDp() } else buttonSize
+    val actionWidth = if (actionSize.width > 0) with(density) { actionSize.width.toDp() } else buttonSize
+    val actionHeight = if (actionSize.height > 0) with(density) { actionSize.height.toDp() } else buttonSize
+
     Box(modifier = modifier.onGloballyPositioned { barOrigin = it.positionInRoot() }) {
         val overhangPx = with(LocalDensity.current) { bandOverhang.toPx() }
         Box(
@@ -379,14 +391,14 @@ fun GlassTopAppBar(
                 actionIconPadding = GlassTopAppBarDefaults.HorizontalPadding,
                 navigationIcon = {
                     if (unclippedNavigationIcon) {
-                        Box(Modifier.size(buttonSize).onGloballyPositioned { navigationBounds = it.boundsInRoot() })
+                        Box(Modifier.width(navigationWidth).height(navigationHeight).onGloballyPositioned { navigationBounds = it.boundsInRoot() })
                     } else {
                         navigationIcon()
                     }
                 },
                 actions = {
                     if (unclippedActions) {
-                        Box(Modifier.size(buttonSize).onGloballyPositioned { actionBounds = it.boundsInRoot() })
+                        Box(Modifier.width(actionWidth).height(actionHeight).onGloballyPositioned { actionBounds = it.boundsInRoot() })
                     } else {
                         actions()
                     }
@@ -396,7 +408,7 @@ fun GlassTopAppBar(
             // Published TopAppBar clips its whole layout. Retain native slot measurement,
             // but draw each interactive glass button once above that outdated clip.
             navigationBounds?.takeIf { unclippedNavigationIcon }?.let { bounds ->
-                Box(Modifier.offset {
+                Box(Modifier.onSizeChanged { navigationSize = it }.offset {
                     IntOffset(
                         (bounds.left - barOrigin.x).roundToInt(),
                         (bounds.top - barOrigin.y).roundToInt(),
@@ -406,7 +418,7 @@ fun GlassTopAppBar(
                 }
             }
             actionBounds?.takeIf { unclippedActions }?.let { bounds ->
-                Row(Modifier.offset {
+                Row(Modifier.onSizeChanged { actionSize = it }.offset {
                     IntOffset(
                         (bounds.left - barOrigin.x).roundToInt(),
                         (bounds.top - barOrigin.y).roundToInt(),
