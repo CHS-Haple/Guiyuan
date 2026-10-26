@@ -78,11 +78,29 @@ internal object VisualPrefsOwner {
         source.registerOnSharedPreferenceChangeListener(listener)
         state.set(State(source, token, initial))
         this.listener = listener
-        onChanged(initial)
-        deliverAxisRequest(source.getLong(NativeFontAxis.REQUEST_KEY, 0L))
-        // Recheck writes that arrived before the listener was registered.
-        listener.onSharedPreferenceChanged(source, null)
-        return current()
+        return try {
+            onChanged(initial)
+            deliverAxisRequest(source.getLong(NativeFontAxis.REQUEST_KEY, 0L))
+            // Recheck writes that arrived before the listener was registered.
+            listener.onSharedPreferenceChanged(source, null)
+            current()
+        } catch (error: Throwable) {
+            if (state.get().token === token) {
+                try {
+                    unbindLocked()
+                } catch (cleanup: Throwable) {
+                    if (cleanup is VirtualMachineError || cleanup is ThreadDeath) throw cleanup
+                    if (cleanup !== error) error.addSuppressed(cleanup)
+                } finally {
+                    // A reentrant new binding must not be cleared by the failed old callback.
+                    val retired = state.get()
+                    if (retired.source == null && retired.token == null) {
+                        state.compareAndSet(retired, State(null, null, VisualCfg()))
+                    }
+                }
+            }
+            throw error
+        }
     }
 
     @Synchronized
