@@ -12,6 +12,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -81,6 +82,50 @@ class RemotePrefsLockOrderTest {
         assertTrue(bound.dualSignal)
         assertTrue(VisualPrefsOwner.current().dualSignal)
         assertEquals(true, delivered.last())
+    }
+
+    @Test
+    fun failedFeatureDeliveryCanRetryTheSameValue() {
+        val prefs = LockedPrefs()
+        val failure = IllegalStateException("feature-receiver")
+        var attempts = 0
+        FeaturePrefsOwner.bind(prefs) { cfg, _ ->
+            if (!cfg.enabled) {
+                attempts++
+                if (attempts == 1) throw failure
+            }
+        }
+        prefs.featureEnabled = false
+        assertSame(
+            failure,
+            runCatching { prefs.notifyListeners(FEATURE_ENABLED_KEY) }.exceptionOrNull(),
+        )
+        assertTrue(FeaturePrefsOwner.current().enabled)
+        prefs.notifyListeners(FEATURE_ENABLED_KEY)
+        assertEquals(2, attempts)
+        assertFalse(FeaturePrefsOwner.current().enabled)
+    }
+
+    @Test
+    fun failedVisualDeliveryCanRetryTheSameValue() {
+        val prefs = LockedPrefs()
+        val failure = IllegalArgumentException("visual-receiver")
+        var attempts = 0
+        VisualPrefsOwner.bind(prefs) { cfg ->
+            if (cfg.dualSignal) {
+                attempts++
+                if (attempts == 1) throw failure
+            }
+        }
+        prefs.dual = true
+        assertSame(
+            failure,
+            runCatching { prefs.notifyListeners(DUAL_SIGNAL_ENABLED_KEY) }.exceptionOrNull(),
+        )
+        assertFalse(VisualPrefsOwner.current().dualSignal)
+        prefs.notifyListeners(DUAL_SIGNAL_ENABLED_KEY)
+        assertEquals(2, attempts)
+        assertTrue(VisualPrefsOwner.current().dualSignal)
     }
 
     @Test
