@@ -8,6 +8,7 @@ import android.os.SystemClock
 import com.chaners.guiyuan.sandbox.SANDBOX_DATA_KEY
 import com.chaners.guiyuan.sandbox.SANDBOX_LEASE_MS
 import com.chaners.guiyuan.sandbox.SandboxLease
+import com.chaners.guiyuan.sandbox.rethrowSandboxFatal
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.PreviewSysUiResources
 import com.chaners.guiyuan.ui.screens.toRenderModel
@@ -105,7 +106,10 @@ internal object SandboxHost {
                 lowBatteryThreshold = FeaturePrefsOwner.current().lowBatteryThreshold,
                 nativeLowColor = StatusStateStore.snapshot().battery?.lowSystemColor,
             )
-        }.getOrNull()
+        }.getOrElse { error ->
+            rethrowSandboxFatal(error)
+            null
+        }
     }
 
     private fun staticMobileFace(context: Context): android.graphics.Typeface? {
@@ -122,7 +126,10 @@ internal object SandboxHost {
             source
                 ?.let { prefs ->
                     runCatching { SandboxLease.decode(prefs.getString(SANDBOX_DATA_KEY, null)) }
-                        .getOrNull()
+                        .getOrElse { error ->
+                            rethrowSandboxFatal(error)
+                            null
+                        }
                 }
                 ?.takeIf { it.valid(SystemClock.elapsedRealtime(), System.currentTimeMillis()) }
         val previous = current

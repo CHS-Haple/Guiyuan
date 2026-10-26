@@ -8,6 +8,7 @@ import com.chaners.guiyuan.ui.screens.PreviewNetworkMode
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.PreviewSimCards
 import com.chaners.guiyuan.ui.screens.PreviewWifiState
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -30,6 +31,17 @@ class SandboxLeaseTest {
         chargingState = PreviewChargingState.SUPER_FAST_CHARGING,
     )
     private val lease = SandboxLease(13, 10_000, 1_000_000, state)
+
+    @Test fun fatalSandboxReadPreservesOriginalException() {
+        val fatal = ThreadDeath()
+        assertSame(
+            fatal,
+            runCatching { rethrowSandboxFatal(InvocationTargetException(fatal)) }.exceptionOrNull(),
+        )
+        val vm = OutOfMemoryError("sandbox")
+        assertSame(vm, runCatching { rethrowSandboxFatal(vm) }.exceptionOrNull())
+        rethrowSandboxFatal(InvocationTargetException(IllegalArgumentException("invalid lease")))
+    }
 
     @Test fun fullStateRoundTrips() {
         assertEquals(lease, SandboxLease.decode(lease.encode()))

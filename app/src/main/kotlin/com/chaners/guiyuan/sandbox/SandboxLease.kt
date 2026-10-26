@@ -1,5 +1,12 @@
 package com.chaners.guiyuan.sandbox
 
+import java.lang.reflect.InvocationTargetException
+
+internal fun rethrowSandboxFatal(error: Throwable) {
+    val cause = (error as? InvocationTargetException)?.targetException ?: error
+    if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+}
+
 import com.chaners.guiyuan.ui.screens.PreviewBatteryMode
 import com.chaners.guiyuan.ui.screens.PreviewChargingState
 import com.chaners.guiyuan.ui.screens.PreviewDataSim
@@ -72,7 +79,10 @@ internal data class SandboxLease(
                     chargingState = enumValueOf<PreviewChargingState>(fields[18]),
                 )
                 SandboxLease(fields[1].toLong(), fields[2].toLong(), fields[3].toLong(), state)
-            }.getOrNull()
+            }.getOrElse { error ->
+                rethrowSandboxFatal(error)
+                null
+            }
         }
     }
 }
