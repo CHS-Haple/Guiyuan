@@ -4,13 +4,15 @@ import android.graphics.drawable.Drawable
 import android.util.Log
 import com.chaners.guiyuan.xposed.network.SysUiMobileTypeSource
 import io.github.libxposed.api.XposedModule
+import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiPresentationRuntime {
     private var current: AttachResult? = null
 
     internal fun throwIfFatal(error: Throwable) {
-        if (error is VirtualMachineError || error is ThreadDeath) throw error
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
     }
 
     val installedHookCount: Int

@@ -74,7 +74,7 @@ internal object SysUiPresentationOwner {
         }
     }
 
-    private fun rethrowFatal(error: Throwable) {
+    internal fun rethrowFatal(error: Throwable) {
         val cause = (error as? InvocationTargetException)?.targetException ?: error
         if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
     }
@@ -362,6 +362,7 @@ internal object SysUiPresentationOwner {
                     .intercept(layoutHooker(refreshMasksAfter = false))
             }.getOrElse { error ->
                 clearInstallState()
+                rethrowFatal(error)
                 return "measure-hook-" + (error.message ?: error.javaClass.simpleName)
             }
         val second =
@@ -371,10 +372,12 @@ internal object SysUiPresentationOwner {
                     .setId(LAYOUT_HOOK_ID)
                     .intercept(layoutHooker(refreshMasksAfter = true))
             }.getOrElse { error ->
-                return rollbackInstall(
+                val failure = rollbackInstall(
                     "layout-hook-" + (error.message ?: error.javaClass.simpleName),
                     listOf(first),
                 )
+                rethrowFatal(error)
+                return failure
             }
         val third =
             runCatching {
@@ -383,10 +386,12 @@ internal object SysUiPresentationOwner {
                     .setId(BATTERY_HIDE_HOOK_ID)
                     .intercept(batteryHideStateHooker())
             }.getOrElse { error ->
-                return rollbackInstall(
+                val failure = rollbackInstall(
                     "battery-hide-hook-" + (error.message ?: error.javaClass.simpleName),
                     listOf(first, second),
                 )
+                rethrowFatal(error)
+                return failure
             }
 
         val fourth =
@@ -396,10 +401,12 @@ internal object SysUiPresentationOwner {
                     .setId(ISLAND_SHOWING_HOOK_ID)
                     .intercept(islandShowingHooker())
             }.getOrElse { error ->
-                return rollbackInstall(
+                val failure = rollbackInstall(
                     "island-showing-hook-" + (error.message ?: error.javaClass.simpleName),
                     listOf(first, second, third),
                 )
+                rethrowFatal(error)
+                return failure
             }
 
         measureHook = first
