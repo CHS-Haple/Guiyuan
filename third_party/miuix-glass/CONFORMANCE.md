@@ -28,10 +28,13 @@ container constraints, system/window insets, typography and fontScale, dynamic d
 keyboard/Back, scrolling, overlay host ownership and shader-free fallback together.
 
 - **Sandbox title:** Both OS3 and OS4 attach the transient preview dock through
-  their native top bar's `bottomContent` slot. The list uses MIUIX's collapsed-title
-  height and system-bar inset as a stable scroll anchor, rather than the animated
-  Scaffold top inset; opening and closing the dock must not move the list. The
-  matching upstream OS4 `BlurTopAppBar` title-clip contract is still unpublished.
+  their native top bar's `bottomContent` slot. The list consumes Scaffold's
+  measured content inset so the expanded native title cannot overlap the first
+  preview card. The dock appears during scrolling and can change the measured
+  inset; verify scroll position when it enters/exits on device. OS4's dock action
+  uses the same 12dp end inset as GlassTopAppBar's action slot; OS3 retains its
+  native 16dp inset. The upstream OS4 `BlurTopAppBar` title-clip contract is
+  still unpublished.
 - **Sandbox choices:** segmented glass tabs remain for fitting short labels.
   Longer labels use the existing scaffold-hosted glass dropdown with full option
   text rather than squeezing equal-width segments or shrinking typography.

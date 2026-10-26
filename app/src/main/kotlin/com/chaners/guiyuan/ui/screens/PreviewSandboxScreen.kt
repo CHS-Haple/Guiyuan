@@ -83,6 +83,7 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRowDefaults
@@ -225,8 +226,6 @@ internal fun PreviewSandboxScreen(
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
-    val layoutDirection = LocalLayoutDirection.current
-
     val os4 = LocalUiStyle.current == UiStyle.OS4
     val backAction: @Composable () -> Unit = {
         TooltipBox(text = stringResource(R.string.back)) {
@@ -301,7 +300,7 @@ internal fun PreviewSandboxScreen(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(end = TopAppBarDefaults.ActionIconPadding),
+                        .padding(end = if (os4) GlassTopAppBarDefaults.HorizontalPadding else TopAppBarDefaults.ActionIconPadding),
                     contentAlignment = Alignment.CenterEnd,
                 ) {
                     val backTop = stringResource(R.string.diagnostics_scroll_top)
@@ -373,12 +372,7 @@ internal fun PreviewSandboxScreen(
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     pageContentPadding(
-                        innerPadding = PaddingValues(
-                            start = paddingValues.calculateStartPadding(layoutDirection),
-                            top = pinnedTop,
-                            end = paddingValues.calculateEndPadding(layoutDirection),
-                            bottom = paddingValues.calculateBottomPadding(),
-                        ),
+                        innerPadding = paddingValues,
                         extraBottom = 12.dp,
                     ),
             ) {
