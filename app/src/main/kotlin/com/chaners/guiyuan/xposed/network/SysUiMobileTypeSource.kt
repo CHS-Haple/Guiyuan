@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed.network
 
 import android.graphics.drawable.Drawable
 import android.util.Log
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -33,12 +34,12 @@ internal object SysUiMobileTypeSource {
                         try {
                             (chain.thisObject as? Drawable)?.let(onChanged)
                         } catch (error: Throwable) {
-                            if (error is VirtualMachineError || error is ThreadDeath) throw error
+                            SysUiPresentationRuntime.throwIfFatal(error)
                             if (warned.compareAndSet(false, true)) {
                                 try {
                                     Log.w("Guiyuan[MobileType]", "Observation failed", error)
                                 } catch (failure: Throwable) {
-                                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                                    SysUiPresentationRuntime.throwIfFatal(failure)
                                 }
                             }
                         }

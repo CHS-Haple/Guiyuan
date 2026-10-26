@@ -343,11 +343,11 @@ internal object NativeStatusObserver {
         try {
             observe()
         } catch (error: Throwable) {
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            rethrowFatal(error)
             try {
                 onFailure(error)
             } catch (failure: Throwable) {
-                if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                rethrowFatal(failure)
             }
         }
         return result
