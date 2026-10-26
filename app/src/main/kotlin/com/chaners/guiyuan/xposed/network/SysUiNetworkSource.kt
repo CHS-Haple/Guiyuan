@@ -518,18 +518,17 @@ internal object SysUiNetworkSource {
         wifiSeedContract = null
     }
 
+    // Keep verified bindings across transient detach; presentation still requires attachment.
     @Synchronized
     fun exportHotReloadBindings(): Array<Any?> {
         val wifi = ArrayList<Any>(wifiRoots.size)
         wifiRoots.forEach { (root, binding) ->
-            if (root.isAttachedToWindow) {
-                wifi.add(arrayOf(root, binding.viewModel))
-            }
+            wifi.add(arrayOf(root, binding.viewModel))
         }
 
         val mobile = ArrayList<Any>(mobileRoots.size)
         mobileRoots.forEach { (root, binding) ->
-            if (root.isAttachedToWindow && binding.subscriptionId != null) {
+            if (binding.subscriptionId != null) {
                 mobile.add(arrayOf(root, binding.subscriptionId))
             }
         }
@@ -540,9 +539,9 @@ internal object SysUiNetworkSource {
     @Synchronized
     fun restoreHotReloadBindings(raw: Any?): BindingRestoreResult {
         // A new hook can bind a reused root before the old generation hands it over.
-        val newWifi = wifiRoots.filterKeys { it.isAttachedToWindow }
+        val newWifi = wifiRoots.toMap()
         // A newer invalid binding must also override an older transferred SIM.
-        val newMobile = mobileRoots.filterKeys { it.isAttachedToWindow }
+        val newMobile = mobileRoots.toMap()
         wifiRoots.clear()
         mobileRoots.clear()
         lastWifiEvents.clear()
@@ -563,9 +562,7 @@ internal object SysUiNetworkSource {
                     ?.takeIf { candidate ->
                         candidate.javaClass.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
                     }
-            if (root.isAttachedToWindow) {
-                wifiRoots[root] = WifiBinding(viewModel)
-            }
+            wifiRoots[root] = WifiBinding(viewModel)
         }
 
         val mobile = payload?.getOrNull(1) as? List<*>
@@ -573,7 +570,7 @@ internal object SysUiNetworkSource {
             val pair = value as? Array<*> ?: return@forEach
             val root = pair.getOrNull(0) as? ViewGroup ?: return@forEach
             val subscriptionId = (pair.getOrNull(1) as? Number)?.toInt() ?: return@forEach
-            if (root.isAttachedToWindow && subscriptionId >= 0) {
+            if (subscriptionId >= 0) {
                 mobileRoots[root] = MobileBinding(subscriptionId)
             }
         }
@@ -581,8 +578,10 @@ internal object SysUiNetworkSource {
         wifiRoots.putAll(newWifi)
         mobileRoots.putAll(newMobile)
         return BindingRestoreResult(
-            wifiRoots = wifiRoots.size,
-            mobileRoots = mobileRoots.values.count { it.subscriptionId != null },
+            wifiRoots = wifiRoots.keys.count { it.isAttachedToWindow },
+            mobileRoots = mobileRoots.count { (root, binding) ->
+                root.isAttachedToWindow && binding.subscriptionId != null
+            },
         )
     }
 

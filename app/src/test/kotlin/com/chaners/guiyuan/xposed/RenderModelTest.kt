@@ -6,6 +6,7 @@ import com.chaners.guiyuan.xposed.network.SysUiConnectivitySource
 import com.chaners.guiyuan.xposed.network.SignalStrength
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -47,6 +48,33 @@ class RenderModelTest {
         val retained = model(nativeLow, 20)
         assertEquals(BatterySemanticState.LOW, retained?.batterySemanticState)
         assertEquals(nativeLow.lowSystemColor, retained?.batterySystemSemanticColor)
+    }
+
+    @Test
+    fun unboundNativeMobileTypeRendersWithoutClaimingSubscriptionOrSignal() {
+        val native = NativePresentationResolver.Snapshot(
+            mode = NativePresentationResolver.Mode.UNKNOWN,
+            boundRoots = 0,
+            visibleRoots = 0,
+            activeSubscriptionIds = emptyList(),
+            presentationRootSubscriptionId = null,
+            effectiveDataSubscriptionId = 4,
+            networkTypeSubscriptionId = null,
+            networkType = mobileType("5G"),
+        )
+        val model = RenderModel.from(
+            snapshot = snapshot(StatusStateStore.WifiState.Hidden, emptyMap()),
+            presentation = PresentationStore.Snapshot(
+                connectivity = connectivity(SysUiConnectivitySource.Transport.CELLULAR, true),
+                mobilePresentation = native,
+            ),
+            defaultDataSubscriptionId = 4,
+        )
+
+        assertEquals("5G", (model?.centerIndicator as? CenterIndicator.MobileType)?.label)
+        assertNull(model?.mobileLevel)
+        assertFalse(native.nativeMobileReplacementReady)
+        assertNull(native.networkTypeSubscriptionId)
     }
 
     @Test
