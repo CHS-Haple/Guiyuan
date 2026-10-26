@@ -36,7 +36,7 @@ glass components with published older UI modules and then conceal API drift
 using copied overlays, private API shadows, hand-written effects or geometry
 patches. A green experimental APK compile is not OS4 conformance.
 
-## Current experimental snapshot (B1403, not release-ready)
+## Current experimental snapshot (B1405, not release-ready)
 
 - GlassNavigationBar on the main three-page navigation and its preview.
 - GlassTopAppBar / GlassIconButton in hub/detail layouts, and OS4
@@ -44,9 +44,18 @@ patches. A green experimental APK compile is not OS4 conformance.
   The Home hot-reload action stays native MIUIX while its disabled and
   in-flight states lack exact parity in GlassIconButton.
 - GlassDropdownPreference / popup host for shared selector preferences.
-- GlassSegmentedTabRow in existing Sandbox segmented choices. The Sandbox
-  now owns its page backdrop; shader-unavailable devices retain MIUIX
-  TabRowWithContour.
+- GlassSegmentedTabRow in existing Sandbox segmented choices uses a separate
+  backdrop recording the opaque card base: sampling the scrolling page's
+  recorder was a demonstrable source/consumer cycle. Shader-unavailable
+  devices retain MIUIX TabRowWithContour. B1403's reported Sandbox crash
+  is not yet proven to be solely caused by this cycle.
+- OS4 search keeps MIUIX's SearchBar/InputField focus and Back ownership,
+  replacing only the expanded outside-end cancel text with an official
+  GlassIconButton + MiuixIcons.Basic.Close. OS3 keeps text cancel.
+- OS4 appearance mini-preview sizes to intrinsic GlassNavigationBar height
+  rather than the fixed OS3 preview viewport. App margins follow the
+  upstream documented 24.dp horizontal and 12.dp vertical usage.
+- All independent page owners pass explicit list overlap to GlassTopAppBar.
 - Current OS3 routes, settings and SystemUI/Xposed functional controls
   remain separate.
 
@@ -74,6 +83,9 @@ physical device acceptance.
 When matching upstream packages become available, prefer the published
 upstream components over maintaining these transient copied files.
 
-B1403 extends independent scaffolds and synchronizes the latest dev fixes.
-Its build, behavior, scale and device gates must be checked independently;
-the B1399 test does not validate this new code.
+B1403 Canary passed configured CI but device evidence found missing OS4
+conformance: cropped title-action edges (published MIUIX TopAppBar clips),
+wrong mini-preview height and Sandbox launch crash. The B1405 changes
+address the separate preview geometry and sampling ownership defects;
+full title-button clipping needs the matching unpublished upstream UI ABI.
+Source parity and physical acceptance remain unverified. See CONFORMANCE.md.

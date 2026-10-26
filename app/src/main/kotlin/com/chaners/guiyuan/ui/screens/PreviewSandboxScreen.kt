@@ -80,6 +80,9 @@ import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
@@ -304,6 +307,7 @@ internal fun PreviewSandboxScreen(
             topBar = {
                 if (os4) {
                     GlassTopAppBar(
+                        isContentScrolled = listState.canScrollBackward,
                         title = stringResource(R.string.home_preview_sandbox_title),
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
@@ -767,15 +771,21 @@ private fun UiTabRow(
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val backdrop = LocalGlassBackdrop.current
-    if (LocalUiStyle.current == UiStyle.OS4 && backdrop != null) {
-        GlassSegmentedTabRow(
-            tabs = tabs,
-            selectedIndex = selectedTabIndex,
-            onSelect = onTabSelected,
-            backdrop = backdrop,
-            modifier = modifier,
-        )
+    if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
+        // A tab inside the scrolling page must not sample the page's own
+        // backdrop: that recorder also contains this tab. Record only its base.
+        val cardSurface = MiuixTheme.colorScheme.surfaceContainer
+        val backdrop = rememberLayerBackdrop { drawRect(cardSurface) }
+        Box(modifier = modifier) {
+            Box(Modifier.matchParentSize().layerBackdrop(backdrop))
+            GlassSegmentedTabRow(
+                tabs = tabs,
+                selectedIndex = selectedTabIndex,
+                onSelect = onTabSelected,
+                backdrop = backdrop,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     } else {
         TabRowWithContour(
             tabs = tabs,

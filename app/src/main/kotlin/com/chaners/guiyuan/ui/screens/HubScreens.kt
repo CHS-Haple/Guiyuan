@@ -17,6 +17,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Search
+import top.yukonga.miuix.kmp.icon.basic.Close
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -1343,18 +1344,33 @@ private fun HubPage(
                     expanded = search.active,
                     onExpandedChange = { if (!it) search.close() },
                     outsideEndAction = {
-                        Text(
-                            modifier = Modifier
-                                .padding(start = 4.dp, end = 16.dp)
-                                .clickable(
-                                    interactionSource = null,
-                                    indication = null,
+                        if (os4) {
+                            val label = stringResource(R.string.cancel)
+                            TooltipBox(text = label) {
+                                GlassIconButton(
                                     onClick = search::close,
-                                ),
-                            text = stringResource(R.string.cancel),
-                            fontWeight = FontWeight.Bold,
-                            color = MiuixTheme.colorScheme.primary,
-                        )
+                                    modifier = Modifier.padding(end = 12.dp),
+                                ) {
+                                    Icon(
+                                        MiuixIcons.Basic.Close,
+                                        contentDescription = label,
+                                    )
+                                }
+                            }
+                        } else {
+                            Text(
+                                modifier = Modifier
+                                    .padding(start = 4.dp, end = 16.dp)
+                                    .clickable(
+                                        interactionSource = null,
+                                        indication = null,
+                                        onClick = search::close,
+                                    ),
+                                text = stringResource(R.string.cancel),
+                                fontWeight = FontWeight.Bold,
+                                color = MiuixTheme.colorScheme.primary,
+                            )
+                        }
                     },
                     content = {},
                 )
@@ -1368,6 +1384,7 @@ private fun HubPage(
             if (os4) {
                 GlassTopAppBar(
                     title = title,
+                    isContentScrolled = listState.canScrollBackward,
                     backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
                     actions = searchAction,

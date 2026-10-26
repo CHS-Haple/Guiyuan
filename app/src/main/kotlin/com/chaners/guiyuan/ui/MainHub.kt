@@ -253,7 +253,7 @@ internal fun MainHub(
                         backdrop = miuixBackdrop,
                         modifier = Modifier
                             .navigationBarsPadding()
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                            .padding(horizontal = 24.dp, vertical = 12.dp),
                     )
                 }
                 !appearance.navEnabled -> {

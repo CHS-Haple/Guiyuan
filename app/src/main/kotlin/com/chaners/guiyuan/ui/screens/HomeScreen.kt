@@ -177,6 +177,7 @@ internal fun HomeScreen(
         topBar = {
             if (os4) {
                 GlassTopAppBar(
+                    isContentScrolled = listState.canScrollBackward,
                     title = stringResource(R.string.home_title),
                     backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,

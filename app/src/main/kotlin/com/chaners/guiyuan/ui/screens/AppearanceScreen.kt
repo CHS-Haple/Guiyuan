@@ -660,6 +660,49 @@ private fun MiniNavigationPreview(
             Modifier
         }
 
+    if (uiStyle == UiStyle.OS4 && miuixBackdrop != null) {
+        // The glass bar can grow for captions. Let the preview measure its actual
+        // height and keep its shadow inside the preview surface.
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .layerBackdrop(miuixBackdrop),
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MiuixTheme.colorScheme.surface,
+                ) {}
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 22.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(5.dp),
+                ) {
+                    MiniTextBar(width = 92.dp, role = MiniTextRole.Body1)
+                    MiniTextBar(width = 58.dp, role = MiniTextRole.Body2)
+                }
+            }
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.height(18.dp))
+                GlassNavigationBar(
+                    items = listOf(
+                        GlassNavigationItem(MiuixIcons.Normal.Home, stringResource(R.string.nav_home)),
+                        GlassNavigationItem(MiuixIcons.Normal.Tune, stringResource(R.string.nav_features)),
+                        GlassNavigationItem(MiuixIcons.Normal.Settings, stringResource(R.string.nav_settings)),
+                    ),
+                    selectedIndex = 2,
+                    onSelect = {},
+                    backdrop = miuixBackdrop,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 12.dp),
+                )
+            }
+        }
+        return
+    }
+
     Box(
         modifier =
             Modifier
@@ -704,19 +747,7 @@ private fun MiniNavigationPreview(
 
         if (floating || uiStyle == UiStyle.OS4) {
             MiniNavViewport(bottomPadding = liquidBottomSpace) {
-                if (uiStyle == UiStyle.OS4 && miuixBackdrop != null) {
-                    GlassNavigationBar(
-                        items = listOf(
-                            GlassNavigationItem(MiuixIcons.Normal.Home, stringResource(R.string.nav_home)),
-                            GlassNavigationItem(MiuixIcons.Normal.Tune, stringResource(R.string.nav_features)),
-                            GlassNavigationItem(MiuixIcons.Normal.Settings, stringResource(R.string.nav_settings)),
-                        ),
-                        selectedIndex = 2,
-                        onSelect = {},
-                        backdrop = miuixBackdrop,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                } else if (liquidBackdrop != null) {
+                if (liquidBackdrop != null) {
                     val labels =
                         listOf(
                             stringResource(R.string.nav_home),

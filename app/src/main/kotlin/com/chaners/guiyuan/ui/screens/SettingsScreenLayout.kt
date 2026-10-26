@@ -213,6 +213,7 @@ internal fun SettingsPage(
         topBar = {
             if (os4) {
                 GlassTopAppBar(
+                    isContentScrolled = resolvedListState.canScrollBackward,
                     title = title,
                     backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
