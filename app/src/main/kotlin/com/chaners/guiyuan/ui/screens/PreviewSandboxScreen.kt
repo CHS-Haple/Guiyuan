@@ -81,7 +81,6 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
-import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRowDefaults
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
@@ -228,7 +227,7 @@ internal fun PreviewSandboxScreen(
     val os4 = LocalUiStyle.current == UiStyle.OS4
     val backAction: @Composable () -> Unit = {
         TooltipBox(text = stringResource(R.string.back)) {
-            SandboxIconButton(onClick = onBack) {
+            IconButton(onClick = onBack) {
                 Icon(
                     MiuixIcons.Back,
                     contentDescription = stringResource(R.string.back),
@@ -242,7 +241,7 @@ internal fun PreviewSandboxScreen(
             else R.string.home_preview_switch_dark,
         )
         TooltipBox(text = title) {
-            SandboxIconButton(onClick = onToggleTheme) {
+            IconButton(onClick = onToggleTheme) {
                 Image(
                     painter = painterResource(
                         if (dark) R.drawable.ic_material_symbol_light_mode
@@ -292,7 +291,7 @@ internal fun PreviewSandboxScreen(
                 ) {
                     val backTop = stringResource(R.string.diagnostics_scroll_top)
                     TooltipBox(text = backTop) {
-                        SandboxIconButton(
+                        IconButton(
                             onClick = { scope.launch { listState.animateScrollToItem(0) } },
                         ) {
                             Icon(
@@ -842,14 +841,3 @@ private fun UiTabRow(
     }
 }
 
-@Composable
-private fun SandboxIconButton(
-    onClick: () -> Unit,
-    content: @Composable () -> Unit,
-) {
-    if (LocalUiStyle.current == UiStyle.OS4) {
-        GlassIconButton(onClick = onClick, content = content)
-    } else {
-        IconButton(onClick = onClick, content = content)
-    }
-}

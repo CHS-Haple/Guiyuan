@@ -6,7 +6,7 @@ Source of truth: compose-miuix-ui/miuix [PR #423](https://github.com/compose-miu
 | --- | --- | --- |
 | Bottom destinations | `GlassNavigationBar`: minimum 54dp, **content-driven height**, equal-width destinations, fills the **caller-bounded width**, optional trailing action; outer insets belong to caller | App uses actual upstream component with documented 24dp horizontal and 12dp vertical margins. Review touch/drag, fontScale, 80–110% density and two-line labels; do not impose a fixed height/width. |
 | Appearance mini-preview | Preview must respect the **same intrinsic height** as the component and reserve room for shadows | OS4 path now measures the real bar and reserves surrounding space instead of treating the old 76dp preview as authoritative; OS3 preview unchanged. |
-| Top app bars | PR modifies core `TopAppBar` viewport clipping so floating action shadows extend past title region, and adds `BlurTopAppBar` with title blur and draw-phase opacity | Current published `TopAppBar` lacks these contracts; copied `GlassTopAppBar` uses a temporary native delegate. Device screenshot demonstrates clipped glass action edges. **Not compliant** until compatible core UI revision is published/integrated. Do not hide by local alpha, offsets or extra padding. |
+| Top app bars | PR modifies core `TopAppBar` viewport clipping so floating action shadows extend past title region, and adds `BlurTopAppBar` with title blur and draw-phase opacity | Published `TopAppBar` still uses whole-region clipping. App uses a temporary native delegate and native top-bar IconButtons while incompatible. **Not compliant** until matching core UI revision is integrated. Avoid alpha, shadow clipping or padding patches. |
 | Scroll/overlap | Glass title bar supports an explicit `isContentScrolled` input based on actual list position; scroll behavior retains title collapse | All four screen owners should supply their own `LazyListState.canScrollBackward` rather than infer overlap solely from collapsing title; keep list ownership local. |
 | Search | PR #423 does not change `SearchBar` or `InputField`, but provides glass top-bar actions. The system screenshot uses a round graphical close affordance. | OS4 retains MIUIX SearchBar and round native actions while the published TopAppBar clips glass shadows. This is an explicit temporary fail-native boundary, not full GlassTopAppBar conformity; re-evaluate on the matched upstream UI revision. OS3 retains text cancel. Test search focus, Back, clear and layout. |
 | Simple preferences | No PR-only replacements for the existing `SliderPreference`, `SwitchPreference`, or ordinary `BasicComponent` | Use native MIUIX, but review theme, state semantics, hit targets, row spacing, font size, dynamic type, animations and full UI density. |
@@ -34,10 +34,12 @@ keyboard/Back, scrolling, overlay host ownership and shader-free fallback togeth
   Longer labels use the existing scaffold-hosted glass dropdown with full option
   text rather than squeezing equal-width segments or shrinking typography.
   Layout fit is measured with the active MIUIX text styles and font scale.
-- **Search action:** the OS4 search field keeps native MIUIX search behavior.
-  Until the matching upstream TopAppBar title-region clipping fix is published,
-  its action uses the native IconButton to avoid a glass-shadow clipping defect.
-  Glass button styling there is deliberately not declared complete.
+- **Top-bar actions:** old published TopAppBar clips the glass action-shadow
+  drawing region. Feature search, detail back and Sandbox back/theme/scroll-top
+  therefore retain native MIUIX IconButton surfaces until the matching
+  upstream title-local clipping API is published. This is a fail-native
+  compatibility boundary, not completed OS4 action styling.
+  SearchBar, input, focus and Back remain MIUIX-owned.
 - **Bottom navigation:** upstream 54dp is a minimum content height, not a
   certification of on-screen placement. Confirm icon/caption sizing, intrinsic
   height, status/navigation Insets, theme and 80–110% scale before modifying
