@@ -18,7 +18,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Search
-import top.yukonga.miuix.kmp.icon.extended.Close
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -62,6 +61,8 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
+import com.chaners.guiyuan.ui.icons.Os4GlassClose
+import com.chaners.guiyuan.ui.icons.Os4GlassSearch
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.settings.SettingsEntry
 import com.chaners.guiyuan.settings.SettingsEntryCfg
@@ -1322,7 +1323,7 @@ private fun HubPage(
             TooltipBox(text = label) {
                 if (os4) {
                     GlassIconButton(onClick = search::open) {
-                        Icon(MiuixIcons.Search, contentDescription = label)
+                        Icon(Os4GlassSearch, contentDescription = label)
                     }
                 } else IconButton(onClick = search::open) {
                     Icon(MiuixIcons.Search, contentDescription = label)
@@ -1366,6 +1367,48 @@ private fun HubPage(
                                     } else Modifier
                                 ),
                             color = if (os4) Color.Transparent else MiuixTheme.colorScheme.surfaceContainerHigh,
+                            leadingIcon = if (os4) {
+                                {
+                                    Icon(
+                                        Os4GlassSearch,
+                                        modifier = Modifier.padding(
+                                            start = SearchBarDefaults.LeadingIconStartPadding,
+                                            end = SearchBarDefaults.LeadingIconEndPadding,
+                                        ),
+                                        tint = MiuixTheme.colorScheme.onSurfaceContainerHigh,
+                                        contentDescription = null,
+                                    )
+                                }
+                            } else null,
+                            trailingIcon = if (os4) {
+                                {
+                                    AnimatedVisibility(
+                                        visible = search.query.isNotEmpty(),
+                                        enter = fadeIn(),
+                                        exit = fadeOut(),
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.padding(
+                                                start = SearchBarDefaults.TrailingIconStartPadding,
+                                                end = SearchBarDefaults.TrailingIconEndPadding,
+                                            ),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            IconButton(
+                                                onClick = { search.update("") },
+                                                modifier = Modifier.size(24.dp),
+                                            ) {
+                                                Icon(
+                                                    Os4GlassClose,
+                                                    modifier = Modifier.size(16.dp),
+                                                    tint = MiuixTheme.colorScheme.onSurfaceContainerHighest,
+                                                    contentDescription = stringResource(R.string.feature_search_clear),
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            } else null,
                             expanded = search.active,
                             onExpandedChange = { if (!it) search.close() },
                             label = stringResource(R.string.feature_search),
@@ -1385,7 +1428,7 @@ private fun HubPage(
                                         .background(MiuixTheme.colorScheme.surfaceContainerHigh, CircleShape),
                                 ) {
                                     Icon(
-                                        MiuixIcons.Normal.Close,
+                                        Os4GlassClose,
                                         contentDescription = label,
                                         modifier = Modifier.size(24.dp),
                                         tint = MiuixTheme.colorScheme.onSurface,
