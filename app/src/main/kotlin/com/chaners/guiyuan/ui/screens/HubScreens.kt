@@ -3,6 +3,8 @@ package com.chaners.guiyuan.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -26,6 +28,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -1316,6 +1321,11 @@ private fun HubPage(
     }
 
     val os4 = LocalUiStyle.current == UiStyle.OS4
+    val searchTitleAlpha = animateFloatAsState(
+        targetValue = if (os4 && search?.active == true) 0f else 1f,
+        animationSpec = tween(durationMillis = 150),
+        label = "os4SearchTitle",
+    )
     val searchHeight = SearchBarDefaults.InputFieldMinHeight
     // Match the solid native search capsule until scrolled content needs glass.
     val searchFloat = os4 && listState.canScrollBackward
@@ -1460,15 +1470,29 @@ private fun HubPage(
     Scaffold(
         topBar = {
             if (os4) {
-                GlassTopAppBar(
-                    title = title,
-                    isContentScrolled = listState.canScrollBackward,
-                    backdrop = topBarBackdrop,
-                    scrollBehavior = scrollBehavior,
-                    actions = searchAction,
-                    bottomContent = searchContent,
-                    unclippedActions = search != null && !search.active,
-                )
+                Box(Modifier.fillMaxWidth()) {
+                    GlassTopAppBar(
+                        title = title,
+                        isContentScrolled = listState.canScrollBackward,
+                        backdrop = topBarBackdrop,
+                        scrollBehavior = scrollBehavior,
+                        titleAlpha = { searchTitleAlpha.value },
+                        actions = searchAction,
+                        unclippedActions = search != null && !search.active,
+                    )
+                    if (search != null) {
+                        // An overlaid search row keeps the bar's measured height stable.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
+                                .windowInsetsPadding(WindowInsets.statusBars)
+                                .padding(top = 4.dp),
+                        ) {
+                            searchContent()
+                        }
+                    }
+                }
             } else {
                 MiuixBlurredTopBar(
                     backdrop = topBarBackdrop,
