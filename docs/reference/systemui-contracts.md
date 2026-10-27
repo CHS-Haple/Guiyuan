@@ -148,6 +148,14 @@ Carrier-capacity leasing and per-progress reservation are separate. Width leased
 
 Prefer a genuinely visible non-represented peer or verified native tint manager/global authority. Do not force a refresh or invent a color when no valid authority exists.
 
+## Native Wi-Fi binding across Hot Reload
+
+**Observed — exact target DEX and device diagnostics.** `ModernStatusBarWifiView` inherits `ModernStatusBarView.binding`. After `MiuiWifiViewBinder.bind`, that native binding retains a `LocationBasedWifiViewModel`; the Home implementation is `HomeWifiViewModel`. Its `getWifiIcon(): StateFlow` exposes the current `WifiIcon.Visible` or `WifiIcon.Hidden` semantic value. The native binding's visibility query reads this same state. An existing View may survive an Xposed generation change without invoking its binder again.
+
+**Guiyuan rule:** an attached, uniquely identified Wi-Fi View under the current verified Home host may be used as a **read-only** bridge to the existing native ViewModel during the main-thread Hot Reload restore. Verify the root, binding and model identities before reading the current Wi-Fi state. Preserve `Hidden` as a semantic fact: a visible ImageView or retained drawable tag does not establish current Wi-Fi visibility. Do not reuse a detached or ambiguous root, create simulated binder registrations, mutate the native binding, or infer signal level from connectivity transport alone.
+
+**Not established:** exact binding shape on other SystemUI builds, an API 102 frame-atomic handoff, and universal recovery of a `Visible` Wi-Fi snapshot when no authentic transferable binding exists during reload preparation. A missing source must fail native rather than transfer an unverified live presentation.
+
 ## Native resource rendering
 
 **Observed.** The target exposes semantic status-icon resource identity before final presentation transformation. Hidden semantic state remains authoritative even if a bound ImageView still retains old drawable/tag state.
