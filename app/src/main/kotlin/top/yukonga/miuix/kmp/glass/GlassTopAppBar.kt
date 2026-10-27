@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
@@ -209,6 +210,7 @@ internal val LocalGlassTopAppBarContext = staticCompositionLocalOf<GlassTopAppBa
  *   small action-button stroke.
  * @param defaultWindowInsetsPadding Whether to inset the bar for the status bar.
  * @param contentModifier Applied to the foreground bar, leaving its background band stationary.
+ * @param titlePadding Native compact and large title padding, forwarded without geometry overrides.
  * @param titleAlpha Draw-phase opacity of the compact and large title containers.
  * @param navigationIcon The leading control. Use [GlassIconButton] for the same glass surface and
  *   press feedback as trailing controls; the slot adds no surface of its own.
@@ -235,6 +237,7 @@ fun GlassTopAppBar(
     stroke: GlassStroke? = GlassTopAppBarDefaults.buttonStroke(),
     buttonShadow: GlassShadow? = GlassShadows.Regular,
     defaultWindowInsetsPadding: Boolean = true,
+    titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     titleAlpha: () -> Float = { 1f },
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
@@ -264,6 +267,7 @@ fun GlassTopAppBar(
         stroke = stroke,
         buttonShadow = buttonShadow,
         defaultWindowInsetsPadding = defaultWindowInsetsPadding,
+        titlePadding = titlePadding,
         contentModifier = contentModifier,
         titleAlpha = titleAlpha,
         navigationIcon = navigationIcon,
@@ -304,6 +308,7 @@ fun GlassTopAppBar(
     stroke: GlassStroke? = GlassTopAppBarDefaults.buttonStroke(),
     buttonShadow: GlassShadow? = GlassShadows.Regular,
     defaultWindowInsetsPadding: Boolean = true,
+    titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     titleAlpha: () -> Float = { 1f },
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
@@ -387,6 +392,7 @@ fun GlassTopAppBar(
                 color = Color.Transparent,
                 scrollBehavior = scrollBehavior,
                 defaultWindowInsetsPadding = defaultWindowInsetsPadding,
+                titlePadding = titlePadding,
                 navigationIconPadding = GlassTopAppBarDefaults.HorizontalPadding,
                 actionIconPadding = GlassTopAppBarDefaults.HorizontalPadding,
                 navigationIcon = {

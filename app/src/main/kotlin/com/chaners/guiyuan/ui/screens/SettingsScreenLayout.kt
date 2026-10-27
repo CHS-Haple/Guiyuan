@@ -219,6 +219,7 @@ internal fun SettingsPage(
                     backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
                     titleAlpha = { titleAlpha },
+                    titlePadding = titlePadding,
                     navigationIcon = navigationIcon,
                     actions = actions,
                     unclippedNavigationIcon = true,
