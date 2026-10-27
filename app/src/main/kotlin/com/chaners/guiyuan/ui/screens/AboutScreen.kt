@@ -375,16 +375,16 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
                 ),
                 AboutDependency(
-                    name = "libxposed API",
-                    version = BuildConfig.LIBXPOSED_VERSION,
-                    license = "Apache-2.0",
-                    upstreamUrl = "https://github.com/libxposed/api",
-                ),
-                AboutDependency(
                     name = "libxposed service",
                     version = BuildConfig.LIBXPOSED_VERSION,
                     license = "Apache-2.0",
                     upstreamUrl = "https://github.com/libxposed/service",
+                ),
+                AboutDependency(
+                    name = "AndroidX Core",
+                    version = BuildConfig.ANDROIDX_CORE_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/androidx/androidx",
                 ),
                 AboutDependency(
                     name = "AndroidX Activity Compose",
@@ -405,7 +405,7 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     upstreamUrl = "https://github.com/androidx/androidx",
                 ),
                 AboutDependency(
-                    name = "kotlinx.serialization core",
+                    name = "kotlinx.serialization core / JSON",
                     version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
                     license = "Apache-2.0",
                     upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
@@ -415,6 +415,12 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
     val developmentDependencies =
         remember {
             listOf(
+                AboutDependency(
+                    name = "libxposed API (compileOnly)",
+                    version = BuildConfig.LIBXPOSED_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/libxposed/api",
+                ),
                 AboutDependency(
                     name = "Gradle Wrapper",
                     version = BuildConfig.GRADLE_VERSION,
@@ -443,6 +449,24 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
             }
         }
         Section(R.string.section_embedded_assets) {
+            AboutDependencyPreference(
+                dependency = AboutDependency(
+                    name = "MIUIX Glass (adapted source)",
+                    version = "PR #423 · b9f70838",
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/compose-miuix-ui/miuix/pull/423",
+                ),
+                onClick = { uriHandler.openUri("https://github.com/compose-miuix-ui/miuix/pull/423") },
+            )
+            AboutDependencyPreference(
+                dependency = AboutDependency(
+                    name = "MIUIX Glass (embedded icon vectors)",
+                    version = "PR #423 · b9f70838",
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/compose-miuix-ui/miuix/pull/423",
+                ),
+                onClick = { uriHandler.openUri("https://github.com/compose-miuix-ui/miuix/pull/423") },
+            )
             ArrowPreference(
                 title = "Material Symbols",
                 summary = stringResource(R.string.about_embedded_asset_summary),

@@ -6,7 +6,7 @@ License: Apache-2.0 (retain source headers and LICENSE).
 
 ## Temporarily embedded OS4 glyphs
 
-`app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4SearchIcons.kt` preserves only the `Regular` path data for official Glass.Close and Glass.Search from `miuix-glass-icons`, pinned to PR #423 at `b9f70838509fbc3f63f1a972777a7e6ce07f578f`. Their Apache-2.0 copyright/SPDX is retained. The pinned published MIUIX core has no `MiuixIcons.Glass` namespace, so directly importing the unpublished module would break the consistent five-module snapshot. The scoped vectors must be deleted and call sites switched back to `MiuixIcons.Glass.*` after the matched module is published; do not expand this approach to full unpublished composable classes.
+`app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4SearchIcons.kt` preserves only the `Regular` paths for official Glass.Close and Glass.Search (now used for outer Cancel and search, while the in-field clear button uses published MIUIX `Basic.SearchCleanup`) from `miuix-glass-icons`, pinned to PR #423 at `b9f70838509fbc3f63f1a972777a7e6ce07f578f`. Their Apache-2.0 copyright/SPDX is retained. The pinned published MIUIX core has no `MiuixIcons.Glass` namespace, so directly importing the unpublished module would break the consistent five-module snapshot. The scoped vectors must be deleted and call sites switched back to `MiuixIcons.Glass.*` after the matched module is published; do not expand this approach to full unpublished composable classes.
 
 The separate `Os4BackIcon.kt` likewise preserves the exact Apache-2.0 PR #423 `Regular.Back` vector for OS4 top-bar glass buttons, including its RTL `autoMirror`. OS3 keeps the published Back icon. No behavior, action target or popup owner is duplicated.
 
@@ -105,7 +105,7 @@ upstream Android module compilation and the Guiyuan joint compilation check.
 These are **compile facts**, not physical proof of Blur text-flicker repair,
 search-edge quality, or native dialog surface parity.
 
-Plain Gradle builds without the source opt-in retain published MIUIX modules for compatibility.
+Plain Gradle builds without the source opt-in retain published MIUIX modules for compatibility. The About page must label a source-built candidate with its verified source revision, not the published artifact version; the signed CI provides `gy.os4.miuixRevision` only after verifying the source checkout SHA.
 The canonical OS4 device Canary uses the matched PR423 source graph. To build it locally, check out the exact upstream revision beside Guiyuan and run
 Gradle with `-Pgy.os4.miuixDir=../miuix`. The opt-in substitutes the same-source
 Core, UI, Shader, Squircle, Blur, Preference, Icons and Navigation Android

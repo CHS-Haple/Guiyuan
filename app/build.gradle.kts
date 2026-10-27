@@ -9,7 +9,20 @@ val appVersionCode = providers.gradleProperty("combinedStatus.versionCode").get(
 val buildId = providers.gradleProperty("combinedStatus.buildId").get()
 val miuixVersion = providers.gradleProperty("miuix.version").get()
 val miuixRevision = providers.gradleProperty("miuix.revision").get()
+val miuixSourceDir = providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)
+val miuixSourceRevision = providers.gradleProperty("gy.os4.miuixRevision").orNull?.takeIf(String::isNotBlank)
+require(miuixSourceRevision == null || (miuixSourceDir != null && Regex("[0-9a-f]{40}").matches(miuixSourceRevision))) {
+    "MIUIX source revision must be a full lowercase commit SHA paired with a source directory"
+}
+// Do not report the published dependency baseline as the version of a source-built candidate.
+val miuixDisplayVersion =
+    if (miuixSourceDir == null) miuixVersion
+    else "source ${miuixSourceRevision?.take(8) ?: "(revision unspecified)"}"
+val miuixDisplayRevision =
+    if (miuixSourceDir == null) miuixRevision
+    else miuixSourceRevision ?: "unverified local source"
 val libxposedVersion = "102.0.0"
+val coreVersion = "1.19.1"
 val activityComposeVersion = "1.13.0"
 val navigationEventComposeVersion = "1.2.0"
 val dataStorePreferencesVersion = "1.2.1"
@@ -52,9 +65,10 @@ android {
         versionName = appVersionName
 
         buildConfigField("String", "BUILD_ID", "\"$buildId\"")
-        buildConfigField("String", "MIUIX_VERSION", "\"$miuixVersion\"")
-        buildConfigField("String", "MIUIX_REVISION", "\"$miuixRevision\"")
+        buildConfigField("String", "MIUIX_VERSION", "\"$miuixDisplayVersion\"")
+        buildConfigField("String", "MIUIX_REVISION", "\"$miuixDisplayRevision\"")
         buildConfigField("String", "LIBXPOSED_VERSION", "\"$libxposedVersion\"")
+        buildConfigField("String", "ANDROIDX_CORE_VERSION", "\"$coreVersion\"")
         buildConfigField("String", "ACTIVITY_COMPOSE_VERSION", "\"$activityComposeVersion\"")
         buildConfigField("String", "NAVIGATION_EVENT_COMPOSE_VERSION", "\"$navigationEventComposeVersion\"")
         buildConfigField("String", "DATASTORE_PREFERENCES_VERSION", "\"$dataStorePreferencesVersion\"")
@@ -161,7 +175,7 @@ dependencies {
 
     testImplementation("junit:junit:$junitVersion")
 
-    implementation("androidx.core:core:1.19.1")
+    implementation("androidx.core:core:$coreVersion")
     implementation("androidx.activity:activity-compose:$activityComposeVersion")
     implementation("androidx.navigationevent:navigationevent-compose:$navigationEventComposeVersion")
     implementation("androidx.datastore:datastore-preferences:$dataStorePreferencesVersion")

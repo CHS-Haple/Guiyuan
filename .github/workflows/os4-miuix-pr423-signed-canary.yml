@@ -87,6 +87,7 @@ jobs:
         run: |
           ./gradlew \
             -Pgy.os4.miuixDir=../upstream \
+            -Pgy.os4.miuixRevision=b9f70838509fbc3f63f1a972777a7e6ce07f578f \
             -Pgy.os4.dialogSurfaces=true \
             :app:testDebugUnitTest :app:assembleDebug :app:assembleCanary \
             --no-daemon --max-workers=2 --stacktrace
