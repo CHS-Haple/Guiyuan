@@ -25,7 +25,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ### Engineering
 - Strengthened native Hook installation, cleanup and diagnostic exception handling without adding persistent status writers or polling.
-- Retained Modern Xposed API 102 and pinned MIUIX `0.9.4-8972f941-SNAPSHOT`; no dependency update is claimed in this checkpoint.
+- Updated AndroidX DataStore Preferences from 1.2.1 to 1.3.0 for companion-app settings; retained Modern Xposed API 102 and pinned MIUIX `0.9.4-8972f941-SNAPSHOT`.
 - Compatibility checks remain specific to the tested SystemUI target; real third-party variable-font rendering and exceptional callback failure injection are not certified.
 
 ## [0.9.0] - 2026-10-23
