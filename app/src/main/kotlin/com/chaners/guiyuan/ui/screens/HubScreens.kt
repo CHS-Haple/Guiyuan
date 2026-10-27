@@ -17,7 +17,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Search
-import top.yukonga.miuix.kmp.icon.basic.Close
+import top.yukonga.miuix.kmp.icon.extended.Close
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -1345,13 +1345,13 @@ private fun HubPage(
                         if (os4) {
                             val label = stringResource(R.string.cancel)
                             TooltipBox(text = label) {
-                                IconButton(
+                                GlassIconButton(
                                     onClick = search::close,
                                     modifier = Modifier.padding(end = 12.dp),
-                                    backgroundColor = MiuixTheme.colorScheme.surfaceContainerHigh,
+                                    backdrop = topBarBackdrop,
                                 ) {
                                     Icon(
-                                        MiuixIcons.Basic.Close,
+                                        MiuixIcons.Normal.Close,
                                         contentDescription = label,
                                     )
                                 }
