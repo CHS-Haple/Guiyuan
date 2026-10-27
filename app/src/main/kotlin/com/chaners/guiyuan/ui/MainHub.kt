@@ -79,6 +79,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import com.chaners.guiyuan.ui.components.UiDialogButton
+import com.chaners.guiyuan.ui.components.dialogActionGap
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
@@ -509,7 +510,7 @@ internal fun MainHub(
                                     else availableTargets
                             },
                         )
-                        Spacer(Modifier.width(20.dp))
+                        Spacer(Modifier.width(dialogActionGap()))
                         UiDialogButton(
                             text = stringResource(R.string.restart),
                             modifier = Modifier.weight(1f),

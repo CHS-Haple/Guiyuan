@@ -1,10 +1,16 @@
 # OS4 UI conformance and upstream adoption audit
 
-Source baseline: Guiyuan `feat/os4-glass-experimental` B1527 (PR #861 Draft; B1527 exact-source CI passed, device acceptance pending). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
+Source baseline: Guiyuan `feat/os4-glass-experimental` B1528 (PR #861 Draft; B1528 checks/device acceptance pending; B1527 exact-source CI passed). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
 MIUIX pinned published: `b587aaf2c907c77a8c3c02d8df0aede2937ef8f0` (`0.9.4-b587aaf2-SNAPSHOT`).
 MIUIX reviewed prerelease: [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (not yet merged).
 The upstream sample may illustrate a visual contract without shipping a public component. Production source and experimental
 source ABI are separate; source-level implementation does **not** imply device conformance.
+
+## Dialog action-row spacing (B1528 source review)
+
+- **Upstream contract:** MIUIX PR #423 `docs/demo/src/commonMain/kotlin/GlassDialogDemo.kt` uses a 12dp gap between equal-weight Normal/Primary actions. This is an example layout, not a default enforced by `GlassDialogButton`; the maintainer elected to follow it for OS4.
+- **Prior mismatch and correction:** Eight dual-action dialog rows used 20dp in both UI eras (battery create/rename/delete, backup/default reset, settings-entry confirmation, scope restart and numeric input). One style-aware `dialogActionGap()` returns 12dp on OS4, retains the original 20dp on OS3, and is used by all eight rows. Single-action dialogs, 50dp button minimum height, roles, TextFields, IME validation, Back/dismiss, popup/Sheet backdrop and source capture are unchanged.
+- **Scope review:** `UiDialogButton.kt`, `BatteryColorEditor.kt`, `BatteryColorControls.kt`, `HubScreens.kt`, `MainHub.kt`, `IntegerInputDialog.kt`. Exactly eight action-row gaps were located and migrated. No runtime SystemUI Hook or persistence change. Review of both variants and focused layout/IME checks remains necessary; source review does not prove device geometry or animation.
 
 ## App-wide component and interaction audit (2026-10-28)
 

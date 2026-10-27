@@ -137,6 +137,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SliderDefaults
 import com.chaners.guiyuan.ui.components.UiDialogButton
+import com.chaners.guiyuan.ui.components.dialogActionGap
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassMotion
@@ -297,7 +298,7 @@ internal fun FeaturesScreen(
                             enabled = !ioBusy,
                             onClick = { pendingImport = null },
                         )
-                        Spacer(Modifier.width(20.dp))
+                        Spacer(Modifier.width(dialogActionGap()))
                         UiDialogButton(
                             text = stringResource(R.string.restore),
                             modifier = Modifier.weight(1f),
@@ -376,7 +377,7 @@ internal fun FeaturesScreen(
                         modifier = Modifier.weight(1f),
                         onClick = { showResetDialog = false },
                     )
-                    Spacer(Modifier.width(20.dp))
+                    Spacer(Modifier.width(dialogActionGap()))
                     UiDialogButton(
                         text = stringResource(R.string.restore),
                         modifier = Modifier.weight(1f),
@@ -1102,7 +1103,7 @@ internal fun SettingsHubScreen(
                         modifier = Modifier.weight(1f),
                         onClick = { pending = null },
                     )
-                    Spacer(Modifier.width(20.dp))
+                    Spacer(Modifier.width(dialogActionGap()))
                     UiDialogButton(
                         text = stringResource(R.string.confirm),
                         modifier = Modifier.weight(1f),

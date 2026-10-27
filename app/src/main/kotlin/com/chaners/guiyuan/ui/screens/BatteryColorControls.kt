@@ -33,6 +33,7 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.IconButtonDefaults
 import com.chaners.guiyuan.ui.components.UiDialogButton
+import com.chaners.guiyuan.ui.components.dialogActionGap
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
@@ -348,7 +349,7 @@ internal fun BatteryColorBottomSheet(
                     modifier = Modifier.weight(1f),
                     onClick = { deleteCustomId = null },
                 )
-                Spacer(Modifier.width(20.dp))
+                Spacer(Modifier.width(dialogActionGap()))
                 UiDialogButton(
                     text = stringResource(R.string.battery_custom_scheme_delete),
                     modifier = Modifier.weight(1f),

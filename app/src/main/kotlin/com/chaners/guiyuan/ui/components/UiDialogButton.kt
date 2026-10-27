@@ -2,6 +2,8 @@ package com.chaners.guiyuan.ui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -46,3 +48,6 @@ internal fun UiDialogButton(
         )
     }
 }
+
+@Composable
+internal fun dialogActionGap(): Dp = if (LocalUiStyle.current == UiStyle.OS4) 12.dp else 20.dp

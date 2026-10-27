@@ -18,6 +18,7 @@ import com.chaners.guiyuan.R
 import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.Text
 import com.chaners.guiyuan.ui.components.UiDialogButton
+import com.chaners.guiyuan.ui.components.dialogActionGap
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.basic.TextField
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
@@ -67,7 +68,7 @@ internal fun IntegerInputDialog(
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                horizontalArrangement = Arrangement.spacedBy(dialogActionGap()),
             ) {
                 UiDialogButton(
                     text = stringResource(R.string.cancel),

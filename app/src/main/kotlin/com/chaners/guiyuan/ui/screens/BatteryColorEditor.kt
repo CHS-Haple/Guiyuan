@@ -43,6 +43,7 @@ import top.yukonga.miuix.kmp.basic.HsvSaturationSlider
 import top.yukonga.miuix.kmp.basic.HsvValueSlider
 import top.yukonga.miuix.kmp.basic.Text
 import com.chaners.guiyuan.ui.components.UiDialogButton
+import com.chaners.guiyuan.ui.components.dialogActionGap
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TextFieldDefaults
@@ -441,7 +442,7 @@ internal fun BatteryCreateSchemeDialog(
                     modifier = Modifier.weight(1f),
                     onClick = onDismiss,
                 )
-                Spacer(Modifier.width(20.dp))
+                Spacer(Modifier.width(dialogActionGap()))
                 UiDialogButton(
                     text = stringResource(R.string.battery_custom_scheme_create),
                     modifier = Modifier.weight(1f),
@@ -494,7 +495,7 @@ internal fun BatteryRenameSchemeDialog(
                         modifier = Modifier.weight(1f),
                         onClick = onDismiss,
                     )
-                    Spacer(Modifier.width(20.dp))
+                    Spacer(Modifier.width(dialogActionGap()))
                     UiDialogButton(
                         text = stringResource(R.string.confirm),
                         modifier = Modifier.weight(1f),
