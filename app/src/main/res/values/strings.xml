@@ -478,5 +478,5 @@
     <string name="ui_style_title">MIUIX interface standard</string>
     <string name="ui_style_summary">Switch the app interface and interaction style</string>
     <string name="ui_style_os3">OS3</string>
-    <string name="ui_style_os4">OS4 (default)</string>
+    <string name="ui_style_os4">OS4 (Experimental)</string>
 </resources>

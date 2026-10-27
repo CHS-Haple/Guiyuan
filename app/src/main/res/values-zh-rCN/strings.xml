@@ -477,5 +477,5 @@
     <string name="ui_style_title">MIUIX界面规范</string>
     <string name="ui_style_summary">切换应用的界面与交互风格</string>
     <string name="ui_style_os3">OS3</string>
-    <string name="ui_style_os4">OS4（默认）</string>
+    <string name="ui_style_os4">OS4（实验性）</string>
 </resources>

@@ -105,8 +105,8 @@ upstream Android module compilation and the Guiyuan joint compilation check.
 These are **compile facts**, not physical proof of Blur text-flicker repair,
 search-edge quality, or native dialog surface parity.
 
-Default Guiyuan builds retain their published MIUIX packages. For a deliberate
-OS4 experiment, check out the exact upstream revision beside Guiyuan and run
+Plain Gradle builds without the source opt-in retain published MIUIX modules for compatibility.
+The canonical OS4 device Canary uses the matched PR423 source graph. To build it locally, check out the exact upstream revision beside Guiyuan and run
 Gradle with `-Pgy.os4.miuixDir=../miuix`. The opt-in substitutes the same-source
 Core, UI, Shader, Squircle, Blur, Preference, Icons and Navigation Android
 modules. No build action downloads source implicitly or alters a default APK.
@@ -188,23 +188,24 @@ not alongside the published UI. Both paths retain one MiuixPopupHost and the
 native onDismissFinished contract. Do not include the upstream Glass artifact
 as a second copy of Guiyuan's existing vendored Glass classes.
 
-## Source-only signed OS4 candidate
+## Canonical signed OS4 Canary (matched source)
 
 The independent `.github/workflows/os4-miuix-pr423-signed-canary.yml` builds a fixed
 PR #423 (SHA `b9f70838509fbc3f63f1a972777a7e6ce07f578f`) **unsigned**
 APK in a runner with no Haple signing credentials. A second isolated job fetches
 that APK as data, checks out only the trusted signer from fixed `main` SHA
 `f9ff55056e3baa21c219440394af9225104493f1`, verifies the expected signing certificate, signs it and checks that
-it is non-debuggable. The published MIUIX Canary and PR423 source-built Canary
-must be labeled distinctly. This enables a real-device A/B with the original
-package identity without executing upstream Gradle under private signing secrets.
+it is non-debuggable. From B1496 this matched-source Canary is the single
+user-facing OS4 test package. Published-module builds remain internal compatibility
+controls; their presence in Gradle does not make them alternative OS4 releases.
+The signing job still never executes upstream Gradle with private signing secrets.
 This is **not** evidence that moving-text flicker or glass popup behavior is fixed;
 that still requires physical confirmation. PR423 build must first pass.
 
 ## Full OS4 UI audit
 
 See [UI_AUDIT.md](UI_AUDIT.md) for the 16-family source-backed, per-state
-checklist. It distinguishes B1492 source-gated native dialogs/sheets from
+checklist. It distinguishes source-gated native dialogs/sheets from
 published MIUIX fallback, unported upstream `BlurTopAppBar`/icon-catalog
 opportunities and the remaining physical visual checks. Do not close PR #861
 solely because the signed PR423 APK built successfully.
