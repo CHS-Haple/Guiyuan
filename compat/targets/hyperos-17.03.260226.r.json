@@ -48,7 +48,10 @@
     "com.android.systemui.controlcenter.shade.NotificationHeaderExpandController$notificationCallback$1",
     "com.android.systemui.controlcenter.shade.NotificationShadeWrapper",
     "com.android.systemui.statusbar.phone.KeyguardStatusBarViewControllerInject",
-    "com.android.systemui.controlcenter.shade.ControlCenterHeaderExpandController$controlCenterCallback$1"
+    "com.android.systemui.controlcenter.shade.ControlCenterHeaderExpandController$controlCenterCallback$1",
+    "com.android.systemui.statusbar.phone.ui.DarkIconManager",
+    "com.android.systemui.statusbar.phone.ui.StatusBarIconControllerImpl",
+    "com.android.systemui.statusbar.StatusBarIconView"
   ],
   "hookPoints": {
     "statusHostInflated": {
@@ -158,6 +161,24 @@
       "className": "com.android.systemui.controlcenter.shade.ControlCenterHeaderExpandController$controlCenterCallback$1",
       "methodName": "onAppearanceChanged",
       "descriptor": "(ZZ)V"
+    },
+    "homeIconAdded": {
+      "sourceArtifact": "systemUi",
+      "className": "com.android.systemui.statusbar.phone.ui.DarkIconManager",
+      "methodName": "onIconAdded",
+      "descriptor": "(ILjava/lang/String;ZLcom/android/systemui/statusbar/phone/StatusBarIconHolder;)V"
+    },
+    "homeManagerRegistered": {
+      "sourceArtifact": "systemUi",
+      "className": "com.android.systemui.statusbar.phone.ui.StatusBarIconControllerImpl",
+      "methodName": "addIconGroup",
+      "descriptor": "(Lcom/android/systemui/statusbar/phone/ui/IconManager;)V"
+    },
+    "statusIconVisibility": {
+      "sourceArtifact": "systemUi",
+      "className": "com.android.systemui.statusbar.StatusBarIconView",
+      "methodName": "isIconVisible",
+      "descriptor": "()Z"
     }
   },
   "verifiedSystemUiMethods": {
@@ -209,6 +230,15 @@
     "com.android.systemui.controlcenter.shade.ControlCenterHeaderExpandController$controlCenterCallback$1": [
       "onExpansionChanged(F)V",
       "onAppearanceChanged(ZZ)V"
+    ],
+    "com.android.systemui.statusbar.phone.ui.DarkIconManager": [
+      "onIconAdded(ILjava/lang/String;ZLcom/android/systemui/statusbar/phone/StatusBarIconHolder;)V"
+    ],
+    "com.android.systemui.statusbar.phone.ui.StatusBarIconControllerImpl": [
+      "addIconGroup(Lcom/android/systemui/statusbar/phone/ui/IconManager;)V"
+    ],
+    "com.android.systemui.statusbar.StatusBarIconView": [
+      "isIconVisible()Z"
     ]
   },
   "nativeStatusViews": {
