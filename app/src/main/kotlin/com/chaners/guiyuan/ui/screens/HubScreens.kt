@@ -1308,10 +1308,12 @@ private fun HubPage(
     val filtering = search?.filtering == true
     val listState = if (filtering) resultsState else browsingState
     val canScroll = listState.canScrollBackward || listState.canScrollForward
-    val scrollBehavior = MiuixScrollBehavior()
+    val os4 = LocalUiStyle.current == UiStyle.OS4
+    val browsingScroll = MiuixScrollBehavior()
+    val resultsScroll = if (os4) MiuixScrollBehavior() else browsingScroll
+    val scrollBehavior = if (filtering) resultsScroll else browsingScroll
     val topBarBackdrop = rememberTopBarBackdrop()
     val keyboardController = LocalSoftwareKeyboardController.current
-    val os4 = LocalUiStyle.current == UiStyle.OS4
     LaunchedEffect(filtering, search?.query) {
         if (filtering) {
             if (os4) resultsState.requestScrollToItem(0)
@@ -1425,7 +1427,7 @@ private fun HubPage(
             if (os4) {
                 Box(Modifier.fillMaxWidth()) {
                     GlassTopAppBar(
-                        title = if (searchExpanded) "" else title,
+                        title = if (searchMotion.mounted) "" else title,
                         largeTitle = title,
                         compact = filtering,
                         alpha = barAlpha.value,
