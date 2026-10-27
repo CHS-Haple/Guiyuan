@@ -17,6 +17,8 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 - Reconciled feature and visual settings after initial remote-listener registration, preventing changes in the startup binding window from being missed.
 - Rejected non-finite visual inputs before saving and retained existing settings and backup compatibility.
 - Corrected native scene-state delivery when a prior SystemUI state read would otherwise suppress a pending Home/Keyguard update.
+- Recovered Home Wi-Fi and mobile network-type presentation after rapid Hot Reload, including cases where existing native bindings do not replay.
+- Restoring visual defaults now keeps user-created battery color schemes and returns the active selection to the built-in HyperOS scheme.
 - Improved native icon restoration and callback isolation around Control Center, AOD, Hot Reload and network/battery observation; normal SystemUI behavior remains the fallback when a feature cannot safely take ownership.
 
 ### Changed
@@ -25,6 +27,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ### Engineering
 - Strengthened native Hook installation, cleanup and diagnostic exception handling without adding persistent status writers or polling.
+- Limited failed native ignored-slot rollback to Guiyuan-owned additions, preserving unrelated system entries.
 - Updated AndroidX DataStore Preferences from 1.2.1 to 1.3.0 for companion-app settings; retained Modern Xposed API 102 and pinned MIUIX `0.9.4-8972f941-SNAPSHOT`.
 - Compatibility checks remain specific to the tested SystemUI target; real third-party variable-font rendering and exceptional callback failure injection are not certified.
 
