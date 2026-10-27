@@ -27,19 +27,21 @@ choosing a component. A renamed or glass-coated OS3 widget is not sufficient. Re
 container constraints, system/window insets, typography and fontScale, dynamic density,
 keyboard/Back, scrolling, overlay host ownership and shader-free fallback together.
 
-- **Sandbox title and transient dock:** Both OS3 and OS4 use their native
-  TopAppBar without transient `bottomContent`. Upstream measures `bottomContent`
-  into the top-bar height, which Scaffold uses as the list's top inset: animating
-  that slot causes page displacement. The list consumes Scaffold's measured inset
-  for correct expanded-title clearance; a sibling overlay is positioned at that
-  same measured boundary without contributing to the header's height. Keep the
-  overlay outside the page's `LayerBackdrop` recording to avoid glass
-  self-sampling; its OS4 action samples that page-only backdrop explicitly. The
-  dock visibility threshold remains relative to the list's `beforeContentPadding`
-  and its animation never changes list geometry. Verify scroll continuity and
-  input/hit regions on device. OS4 uses the same 12dp end inset as the glass
-  top-bar action; OS3 retains native 16dp. The upstream OS4 `BlurTopAppBar`
-  title-clip contract is still unpublished.
+- **Sandbox title, fade and transient dock:** Both OS3 and OS4 retain MIUIX's
+  native TopAppBar measurements and avoid transient `bottomContent` height in
+  Scaffold padding. The interactive dock belongs to Scaffold's native
+  above-top-bar popup-host slot, positioned at the measured native bar bottom;
+  retain exactly one native `MiuixPopupHost()` after the dock so dialogs/menus
+  remain higher in drawing order. No duplicated dock or backdrop capture cycle.
+  Dock animation height feeds only the visual continuation: OS3 extends its
+  existing progressiveTextureBlur draw region with the native no-layout-growth
+  technique demonstrated in upstream GlassPage; OS4 extends the same
+  GlassTopAppBar band via its public `bandOverhang`, without creating a second
+  gradient writer. Header/scroll measurement remains stable; the popup slot
+  keeps the dock touchable even below the measured header. Verify popup layering,
+  input, scroll continuity and fade in both UI eras on device. OS4 still uses
+  12dp action insets; OS3 retains native 16dp. Unpublished `BlurTopAppBar`
+  and matched MIUIX Blur source remain separate acceptance requirements.
 - **Sandbox OS3 network selector:** The network selector lives outside its Card; the published MIUIX `TabRowWithContour` defaults its track to `surface`, the same as the page background, so its outer silhouette disappears. Only the outside-Card OS3 track now uses the official `TabRowDefaults.tabRowColors(backgroundColor = surfaceContainerHighest)` color slot; the selected surface, native contour geometry, motion and semantics remain untouched. OS3 selectors inside cards and all OS4 segmented glass tabs are unchanged. Confirm light/dark device contrast.
 - **Sandbox choices:** segmented glass tabs remain for fitting short labels.
   Longer labels use the existing scaffold-hosted glass dropdown with full option

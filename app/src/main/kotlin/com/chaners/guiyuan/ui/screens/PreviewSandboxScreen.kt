@@ -32,9 +32,12 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -95,6 +98,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -222,6 +226,10 @@ internal fun PreviewSandboxScreen(
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
     val os4 = LocalUiStyle.current == UiStyle.OS4
+    var dockHeightPx by remember { mutableIntStateOf(0) }
+    var nativeBarHeightPx by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    val dockHeight = with(density) { dockHeightPx.toDp() }
     val backAction: @Composable () -> Unit = {
         TooltipBox(text = stringResource(R.string.back)) {
             if (os4) {
@@ -266,6 +274,7 @@ internal fun PreviewSandboxScreen(
     val dock: @Composable () -> Unit = {
         AnimatedVisibility(
             visible = showDock,
+            modifier = Modifier.onSizeChanged { dockHeightPx = it.height },
             enter = if (os4) fadeIn() + slideInVertically { -it } else fadeIn() + expandVertically(expandFrom = Alignment.Top),
             exit = if (os4) fadeOut() + slideOutVertically { -it } else fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
         ) {
@@ -327,12 +336,14 @@ internal fun PreviewSandboxScreen(
     CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
         Scaffold(
             topBar = {
+              Box(Modifier.onSizeChanged { nativeBarHeightPx = it.height }) {
                 if (os4) {
                     GlassTopAppBar(
                         isContentScrolled = listState.canScrollBackward,
                         title = stringResource(R.string.home_preview_sandbox_title),
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
+                        bandOverhang = GlassTopAppBarDefaults.BandOverhang + dockHeight,
                         navigationIcon = backAction,
                         actions = barActions,
                         unclippedNavigationIcon = true,
@@ -342,6 +353,7 @@ internal fun PreviewSandboxScreen(
                     MiuixBlurredTopBar(
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
+                        fadeExtension = dockHeight,
                     ) { barColor ->
                         SmallTopAppBar(
                             title = stringResource(R.string.home_preview_sandbox_title),
@@ -351,6 +363,20 @@ internal fun PreviewSandboxScreen(
                             actions = barActions,
                         )
                     }
+                }
+              }
+            },
+            // Retain MIUIX's one native popup host; it draws above this dock.
+            popupHost = {
+                Box(Modifier.fillMaxSize()) {
+                    Box(
+                        Modifier.fillMaxWidth().padding(
+                            top = with(density) { nativeBarHeightPx.toDp() },
+                        ),
+                    ) {
+                        dock()
+                    }
+                    MiuixPopupHost()
                 }
             },
     ) { paddingValues ->
@@ -673,15 +699,6 @@ internal fun PreviewSandboxScreen(
                         )
                     }
                 }
-            }
-            // A transient dock must not resize the native TopAppBar or enter its backdrop recording.
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .padding(top = paddingValues.calculateTopPadding()),
-            ) {
-                dock()
             }
          }
     }
