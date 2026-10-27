@@ -35,19 +35,21 @@ internal fun IntegerInputDialog(
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit,
 ) {
-    var input by remember(show) { mutableStateOf(value.toString()) }
+    var editedInput by remember { mutableStateOf<String?>(null) }
+    val input = editedInput ?: value.toString()
     UiOverlayDialog(
         title = title,
         summary = summary,
         show = show,
         onDismissRequest = onDismiss,
+        onDismissFinished = { editedInput = null },
     ) {
         Column {
             TextField(
                 value = input,
                 onValueChange = { text ->
                     if (text.length <= range.last.toString().length && text.all(Char::isDigit)) {
-                        input = text
+                        editedInput = text
                     }
                 },
                 singleLine = true,

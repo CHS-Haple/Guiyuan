@@ -23,6 +23,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -154,7 +155,11 @@ internal fun MainHub(
     var availableTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
     var selectedTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
     var queuedRestart by remember { mutableStateOf(emptySet<RestartTarget>()) }
-    val failedTargets = (restartState as? ScopeRestart.State.Failed)?.targets.orEmpty()
+    val failedTargets = (restartState as? ScopeRestart.State.Failed)?.targets
+    var failedTargetsForExit by remember { mutableStateOf(emptySet<RestartTarget>()) }
+    if (failedTargets != null) {
+        SideEffect { failedTargetsForExit = failedTargets }
+    }
     val app = context.applicationContext as GyApplication
     val scopeBusy by app.scopeRequestInFlight.collectAsState(initial = app.scopeRequestActive)
     val hotReloadInProgress by app.hotReloadInFlight.collectAsState(initial = app.hotReloadActive)
@@ -544,7 +549,7 @@ internal fun MainHub(
             title = stringResource(R.string.restart_scope_failed),
             summary = stringResource(
                 R.string.restart_scope_failed_summary,
-                failedTargets
+                (failedTargets ?: failedTargetsForExit)
                     .map {
                         when (it) {
                             RestartTarget.SYS_UI -> context.getString(R.string.restart_scope_sysui)
@@ -555,6 +560,7 @@ internal fun MainHub(
             ),
             show = restartState is ScopeRestart.State.Failed,
             onDismissRequest = ScopeRestart::clearFailure,
+            onDismissFinished = { failedTargetsForExit = emptySet() },
         ) {
             UiDialogButton(
                 text = stringResource(R.string.confirm),
