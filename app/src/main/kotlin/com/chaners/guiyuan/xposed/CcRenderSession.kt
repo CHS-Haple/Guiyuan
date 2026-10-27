@@ -115,8 +115,11 @@ internal object CcRenderSession {
         }
 
         if (existing != null) {
-            SysUiPresentationOwner.deactivateCc("host-replaced")
-            existing.stop("host-replaced")
+            CcTransitionOwner.releaseAll(
+                { SysUiPresentationOwner.deactivateCc("host-replaced") },
+                { existing.stop("host-replaced") },
+            )
+            if (current !== existing) return AttachFailure("host-replaced-during-release")
         }
 
         val session =
@@ -132,8 +135,23 @@ internal object CcRenderSession {
                 initialSceneEligible = sceneEligible,
             )
         current = session
-        session.start()
-        return session.prepareNativePresentation(reused = false)
+        return try {
+            session.start()
+            session.prepareNativePresentation(reused = false)
+        } catch (error: Throwable) {
+            SysUiPresentationRuntime.throwIfFatal(error)
+            try {
+                CcTransitionOwner.releaseAll(
+                    { if (current === session) SysUiPresentationOwner.deactivateCc("attach-failed") },
+                    { session.stop("attach-failed") },
+                )
+                if (current === session) current = null
+            } catch (cleanup: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(cleanup)
+                if (cleanup !== error) error.addSuppressed(cleanup)
+            }
+            throw error
+        }
     }
 
     @Synchronized
@@ -280,13 +298,17 @@ internal object CcRenderSession {
         source: String = "detach",
         releaseNativePresentation: Boolean = true,
     ) {
-        pendingPrearm?.cancel()
-        pendingPrearm = null
-        if (releaseNativePresentation) {
-            SysUiPresentationOwner.deactivateCc(source)
-        }
-        current?.stop(source)
-        current = null
+        val pending = pendingPrearm
+        val session = current
+        CcTransitionOwner.releaseAll(
+            {
+                pending?.cancel()
+                if (pendingPrearm === pending) pendingPrearm = null
+            },
+            { if (releaseNativePresentation) SysUiPresentationOwner.deactivateCc(source) },
+            { session?.stop(source) },
+        )
+        if (current === session) current = null
     }
 
     @Synchronized
@@ -386,11 +408,12 @@ internal object CcRenderSession {
 
         fun cancel() {
             if (!started) return
+            val root = host.get()
+            CcTransitionOwner.releaseAll(
+                { root?.removeOnLayoutChangeListener(this) },
+                { root?.removeOnAttachStateChangeListener(this) },
+            )
             started = false
-            host.get()?.let { root ->
-                root.removeOnLayoutChangeListener(this)
-                root.removeOnAttachStateChangeListener(this)
-            }
         }
 
         fun emit(message: String) {
@@ -495,6 +518,7 @@ internal object CcRenderSession {
         private var layoutReady = false
         private var nativePresentationReady = false
         private var lastProjectionReady: Boolean? = null
+        private var retired = false
 
         private val hostLayoutListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
@@ -503,7 +527,7 @@ internal object CcRenderSession {
         private val statusAreaLayoutListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                 layoutProjection()
-                if (sceneEligible && featureEnabled && !nativePresentationReady && !requestedVisible) {
+                if (!retired && sceneEligible && featureEnabled && !nativePresentationReady && !requestedVisible) {
                     // A Keyguard scene may become ready before the fake carrier's own layout.
                     prepareNativePresentation(reused = true)
                 }
@@ -520,14 +544,15 @@ internal object CcRenderSession {
             battery: ViewGroup,
             carrier: View,
         ): Boolean =
-            this.host.get() === host &&
+            !retired &&
+                this.host.get() === host &&
                 this.statusBarArea.get() === statusBarArea &&
                 this.statusIcons.get() === statusIcons &&
                 this.battery.get() === battery &&
                 this.carrier.get() === carrier
 
         fun attachedHost(): ViewGroup? =
-            host.get()?.takeIf { candidate -> candidate.isAttachedToWindow }
+            host.get()?.takeIf { candidate -> !retired && candidate.isAttachedToWindow }
 
         fun nativeReadyForHotReload(): Boolean =
             nativePresentationReady && attachedHost() != null
@@ -585,21 +610,27 @@ internal object CcRenderSession {
         }
 
         fun stop(source: String) {
-            val hostView = host.get()
-            hostView?.removeOnAttachStateChangeListener(this)
-            hostView?.removeOnLayoutChangeListener(hostLayoutListener)
-            statusBarArea.get()?.removeOnLayoutChangeListener(statusAreaLayoutListener)
-            carrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener)
-            hostView?.overlay?.remove(renderView)
+            // A partially released projection cannot be reused by a later attach.
+            retired = true
             requestedVisible = false
             layoutReady = false
             nativePresentationReady = false
-            if (lastProjectionReady == true) {
-                lastProjectionReady = false
-                onProjectionReadinessChanged(false)
-            }
-            emitEvent {
-                "controlCenterProjection cleanup source=" + source
+            val notify = lastProjectionReady == true
+            lastProjectionReady = false
+            val hostView = host.get()
+            CcTransitionOwner.releaseAll(
+                { renderView.visibility = View.GONE },
+                { hostView?.removeOnAttachStateChangeListener(this) },
+                { hostView?.removeOnLayoutChangeListener(hostLayoutListener) },
+                { statusBarArea.get()?.removeOnLayoutChangeListener(statusAreaLayoutListener) },
+                { carrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) },
+                { hostView?.overlay?.remove(renderView) },
+                { if (notify) onProjectionReadinessChanged(false) },
+            )
+            try {
+                emitEvent { "controlCenterProjection cleanup source=" + source }
+            } catch (error: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(error)
             }
         }
 
@@ -612,6 +643,7 @@ internal object CcRenderSession {
                 ":hostAlpha=" + (host.get()?.alpha ?: "unavailable")
 
         fun setRequestedVisible(visible: Boolean): Boolean {
+            if (retired) return false
             if (
                 !requestedVisible &&
                 visible &&
@@ -629,6 +661,7 @@ internal object CcRenderSession {
         }
 
         fun prepareNativePresentation(reused: Boolean): AttachFailure? {
+            if (retired) return AttachFailure("projection-retired")
             if (!featureEnabled || !sceneEligible) {
                 nativePresentationReady = false
                 syncPresentation(
@@ -807,6 +840,7 @@ internal object CcRenderSession {
         }
 
         private fun layoutProjection() {
+            if (retired) return
             val hostView = host.get() ?: return markLayoutUnavailable()
             val statusArea = statusBarArea.get() ?: return markLayoutUnavailable()
             val carrierView = carrier.get() ?: return markLayoutUnavailable()
@@ -893,7 +927,7 @@ internal object CcRenderSession {
         }
 
         private fun projectionReady(): Boolean =
-            resolveProjectionReady(
+            !retired && resolveProjectionReady(
                 featureEnabled = featureEnabled,
                 sceneEligible = sceneEligible,
                 modelReady = modelReady,
@@ -904,6 +938,7 @@ internal object CcRenderSession {
             )
 
         private fun syncPresentation(source: String) {
+            if (retired) return
             applyVisibility()
             dispatchReadiness(source)
         }
@@ -936,12 +971,14 @@ internal object CcRenderSession {
         }
 
         override fun onViewAttachedToWindow(view: View) {
+            if (retired) return
             layoutProjection()
             refreshTint()
             syncPresentation("attach")
         }
 
         override fun onViewDetachedFromWindow(view: View) {
+            if (retired) return
             requestedVisible = false
             layoutReady = false
             nativePresentationReady = false
