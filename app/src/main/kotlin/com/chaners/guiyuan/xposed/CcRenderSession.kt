@@ -156,8 +156,9 @@ internal object CcRenderSession {
             } catch (cleanup: Throwable) {
                 SysUiPresentationRuntime.throwIfFatal(cleanup)
                 if (cleanup !== error) error.addSuppressed(cleanup)
+                throw error
             }
-            throw error
+            AttachFailure("projection-start-failed:" + error.javaClass.simpleName)
         }
     }
 
@@ -354,13 +355,8 @@ internal object CcRenderSession {
                 )
             } catch (error: Throwable) {
                 abortPrearm(pending, error)
-                pending.emit(
-                    "controlCenterProjection prearm state=failed " +
-                        "source=fake-root-first-layout attempt=" + attempt +
-                        " reason=attach-failed type=" + error.javaClass.simpleName +
-                        " fallback=native-qs-fake",
-                )
-                return
+                // The attach owner could not confirm cleanup; do not report native fallback.
+                throw error
             }
         if (pendingPrearm !== pending) return
         if (failure == null) {
