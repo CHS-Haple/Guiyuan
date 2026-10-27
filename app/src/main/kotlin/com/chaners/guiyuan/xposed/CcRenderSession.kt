@@ -318,6 +318,20 @@ internal object CcRenderSession {
         if (current === session) current = null
     }
 
+    // Release a failed prearm only once, retaining its receipt if cancellation fails.
+    @Synchronized
+    private fun abortPrearm(pending: PendingPrearm, error: Throwable) {
+        SysUiPresentationRuntime.throwIfFatal(error)
+        try {
+            pending.cancel()
+            if (pendingPrearm === pending) pendingPrearm = null
+        } catch (cleanup: Throwable) {
+            SysUiPresentationRuntime.throwIfFatal(cleanup)
+            if (cleanup !== error) error.addSuppressed(cleanup)
+            throw error
+        }
+    }
+
     @Synchronized
     private fun onPendingPrearmLayout(pending: PendingPrearm) {
         if (pendingPrearm !== pending) return
@@ -331,12 +345,23 @@ internal object CcRenderSession {
         if (!pending.matches(host)) return
         val attempt = pending.nextAttempt()
         val failure =
-            attach(
-                host = host,
-                onEvent = pending.onEvent,
-                isDetailedDiagnosticsEnabled = pending.isDetailedDiagnosticsEnabled,
-                onProjectionReadinessChanged = pending.onProjectionReadinessChanged,
-            )
+            try {
+                attach(
+                    host = host,
+                    onEvent = pending.onEvent,
+                    isDetailedDiagnosticsEnabled = pending.isDetailedDiagnosticsEnabled,
+                    onProjectionReadinessChanged = pending.onProjectionReadinessChanged,
+                )
+            } catch (error: Throwable) {
+                abortPrearm(pending, error)
+                pending.emit(
+                    "controlCenterProjection prearm state=failed " +
+                        "source=fake-root-first-layout attempt=" + attempt +
+                        " reason=attach-failed type=" + error.javaClass.simpleName +
+                        " fallback=native-qs-fake",
+                )
+                return
+            }
         if (pendingPrearm !== pending) return
         if (failure == null) {
             pending.cancel()
@@ -361,15 +386,7 @@ internal object CcRenderSession {
             try {
                 host.requestLayout()
             } catch (error: Throwable) {
-                SysUiPresentationRuntime.throwIfFatal(error)
-                try {
-                    pending.cancel()
-                    if (pendingPrearm === pending) pendingPrearm = null
-                } catch (cleanup: Throwable) {
-                    SysUiPresentationRuntime.throwIfFatal(cleanup)
-                    if (cleanup !== error) error.addSuppressed(cleanup)
-                    throw error
-                }
+                abortPrearm(pending, error)
                 pending.emit(
                     "controlCenterProjection prearm state=failed " +
                         "source=fake-root-first-layout attempt=" + attempt +
@@ -429,14 +446,7 @@ internal object CcRenderSession {
                 // Cold attach follows native layout; Hot Reload needs one fresh layout.
                 root.requestLayout()
             } catch (error: Throwable) {
-                SysUiPresentationRuntime.throwIfFatal(error)
-                try {
-                    cancel()
-                } catch (cleanup: Throwable) {
-                    SysUiPresentationRuntime.throwIfFatal(cleanup)
-                    if (cleanup !== error) error.addSuppressed(cleanup)
-                    throw error
-                }
+                CcRenderSession.abortPrearm(this, error)
                 return false
             }
             emit(
