@@ -1411,10 +1411,8 @@ private fun HubPage(
                                 .fillMaxWidth()
                                 .align(Alignment.TopCenter)
                                 .windowInsetsPadding(WindowInsets.statusBars)
-                                .padding(
-                                    horizontal = GlassTopAppBarDefaults.HorizontalPadding,
-                                    top = 4.dp,
-                                ),
+                                .padding(horizontal = GlassTopAppBarDefaults.HorizontalPadding)
+                                .padding(top = 4.dp),
                         ) {
                             searchContent()
                         }

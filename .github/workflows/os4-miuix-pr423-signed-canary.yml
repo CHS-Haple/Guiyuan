@@ -7,7 +7,9 @@ on:
       - '.github/workflows/os4-miuix-pr423-signed-canary.yml'
       - 'app/src/os4Upstream/**'
       - 'app/src/os4Published/**'
-      - 'app/src/main/kotlin/com/chaners/guiyuan/ui/screens/BatteryColorControls.kt'
+      - 'app/src/main/kotlin/com/chaners/guiyuan/ui/**'
+      - 'app/src/main/kotlin/top/yukonga/miuix/kmp/glass/**'
+      - 'app/src/main/res/**'
       - 'gradle.properties'
   workflow_dispatch:
 
