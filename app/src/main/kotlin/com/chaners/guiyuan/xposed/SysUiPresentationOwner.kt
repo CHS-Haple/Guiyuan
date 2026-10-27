@@ -3059,19 +3059,33 @@ internal object SysUiPresentationOwner {
                 val state = iterator.next()
                 val view = state.view.get()
                 if (view == null || view !in targets) {
-                    if (view != null) {
-                        restoreClipState(state)
+                    if (view != null && view.clipBounds == state.appliedClip) {
+                        val restored = runCatching { restoreClipState(state) }
+                            .onFailure(::rethrowFatal)
+                            .getOrDefault(false)
+                        if (!restored) {
+                            onFailNative("native-clip-release-unverified")
+                            return
+                        }
                     }
                     iterator.remove()
                 }
             }
 
-            targets.forEach { view ->
+            for (view in targets) {
                 if (states.none { state -> state.view.get() === view }) {
                     val nativeClip = view.clipBounds?.let(::Rect)
                     val applied = Rect(0, 0, 0, 0)
-                    view.clipBounds = applied
+                    // Own the rollback receipt before a setter can partially write.
                     states += ClipState(WeakReference(view), nativeClip, applied)
+                    val appliedOk = runCatching {
+                        view.clipBounds = applied
+                        view.clipBounds == applied
+                    }.onFailure(::rethrowFatal).getOrDefault(false)
+                    if (!appliedOk) {
+                        onFailNative("native-clip-apply-unverified")
+                        return
+                    }
                 }
             }
         }
