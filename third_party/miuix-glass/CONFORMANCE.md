@@ -128,8 +128,8 @@ target-device verification. The app's pinned published snapshot is
 
 | Producer / contract | PR #423 source evidence | App consumer and consequence |
 | --- | --- | --- |
-| `miuix-blur/LayerBackdrop.kt` | With a downscale factor, PR now uses continuous `translate(-scaledX, -scaledY)`; published snapshot rounds coordinates to a two-texel grid and writes residuals. PR comment explicitly identifies discontinuous motion at boundaries. | `MainHub`'s `rememberLayerBackdrop` and `layerBackdrop` feed `GlassNavigationBar` while its `HorizontalPager` contains moving/scrolling pages. **High-confidence plausible contributor** to reported bottom glass flash; no frame trace yet. |
-| `miuix-blur/DrawBackdropModifier.kt` | PR leaves the downsampling source `renderEffect` attached until the destination layer is rendered; published snapshot clears it immediately after recording a drawLayer reference. | Glass bar blur under scrolling may skip prefilter work. The PR correction must be adopted **in the module**, not by setting alpha on the app bar. |
+| `miuix-blur/LayerBackdrop.kt` | With a downscale factor, PR now uses continuous `translate(-scaledX, -scaledY)`; published snapshot rounds coordinates to a two-texel grid and writes residuals. PR comment explicitly identifies discontinuous motion at boundaries. | This is a **secondary** hypothesis for the reported title-text flicker: MainHub's glass navigation bar and layer recorder stay in place while the text scrolls *inside* the recorded page, so their relative sampling origin may stay fixed. Re-evaluate if a trace proves coordinate movement. |
+| `miuix-blur/DrawBackdropModifier.kt` | PR leaves the downsampling source `renderEffect` attached until the destination layer is rendered; published snapshot clears it immediately after recording a `drawLayer` reference. | **Primary source-backed hypothesis** for moving dark title glyphs flashing through the fixed Soft Glass bottom bar: skipping the expected downsampling prefilter can amplify edge aliasing as glyphs move. The stock 20dp material selects a downscaled blur path on ordinary-density screens; causality still needs an exact-version physical A/B. Fix upstream in the matched Blur module, not with glass opacity or text-specific offsets. |
 | `miuix-ui/basic/TopAppBar.kt` | PR removes whole-large-title bar `clipToBounds()`, adds title-local clipping, and provides `BlurTopAppBar`. `SmallTopAppBar` retains its existing clip: the contract is **component-specific**. | App `GlassTopAppBar` currently delegates to a published old `TopAppBar`. Floating action shadow clipping and title blur cannot satisfy PR design until the UI ABI moves in lockstep. |
 | `miuix-ui/layout/DialogContentLayout.kt`, `DialogSurfaceScope.kt`, `overlay/OverlayDialog.kt` | Adds a drawable surface slot, animated scrim/scale state and host-controlled geometry. | `MainHub`, `HubScreens`, `BatteryColorEditor`, `BatteryColorControls`, `IntegerInputDialog`, `AboutScreen`. Do not replace dismissed/queued action semantics with a separate overlay. |
 | `miuix-ui/layout/BottomSheetContentLayout.kt`, `BottomSheetSurfaceScope.kt`, `overlay/OverlayBottomSheet.kt` | Adds replacement surface slot synchronized to nested scroll, drag, back progress and overscroll surface. | `BatteryColorControls` (two sheets). Require same-revision host API and background sampling excluding sheet/scrim. |
@@ -162,9 +162,11 @@ shadows are not a valid single-owner solution.
   merge/release them). Stop using the temporary top-bar compatibility delegate.
 - [ ] Re-run the 4 independent page hosts with glass action shadows, search,
   tab state and color-scheme changes at fontScale/density 80% / 100% / 110%.
-- [ ] Reproduce bottom-bar scroll flashing with screen capture / frame
-  evidence and compare old versus revised **actual** Blur dependency; do not
-  declare success from a cosmetic UI change.
+- [ ] Reproduce dark section-title glyph flicker while those glyphs scroll
+  behind the fixed Soft Glass navigation bar. Compare the pinned and matched
+  revised **actual** Blur implementations on device; distinguish missing
+  downsample prefiltering from moving sampling origin. Ignore normal slider
+  hue changes and do not declare success from cosmetic UI changes.
 - [ ] Collect the **app process** crash stack for Sandbox; the supplied
   SystemUI/LSPosed diagnostic is not the app exception. The sampling cycle
   was fixed on B1405 source, but that alone is not crash proof.
@@ -174,6 +176,6 @@ shadows are not a valid single-owner solution.
 - [ ] Verify OS3 unchanged on the target, shader absence fail-native, RTL,
   typography, IME, density, dynamic theme, accessibility, and performance.
 
-B1405 completed signed Canary unit/build checks; user-reported scrolling flash
-and the B1403 Sandbox launch crash remain **device-open**. This matrix is
-source-audited, not physical acceptance.
+B1470 passed exact-source signed Canary tests and APK checks; the reported
+bottom-bar glyph flicker, Sandbox motion and any app-process crash reproduction
+remain **device-open**. This matrix is source-audited, not physical acceptance.
