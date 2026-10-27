@@ -416,12 +416,6 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
         remember {
             listOf(
                 AboutDependency(
-                    name = "libxposed API (compileOnly)",
-                    version = BuildConfig.LIBXPOSED_VERSION,
-                    license = "Apache-2.0",
-                    upstreamUrl = "https://github.com/libxposed/api",
-                ),
-                AboutDependency(
                     name = "Gradle Wrapper",
                     version = BuildConfig.GRADLE_VERSION,
                     license = "Apache-2.0",
@@ -473,6 +467,17 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                 onClick = {
                     uriHandler.openUri("https://github.com/google/material-design-icons")
                 },
+            )
+        }
+        Section(R.string.section_compile_only_dependencies) {
+            AboutDependencyPreference(
+                dependency = AboutDependency(
+                    name = "libxposed API (compileOnly)",
+                    version = BuildConfig.LIBXPOSED_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/libxposed/api",
+                ),
+                onClick = { uriHandler.openUri("https://github.com/libxposed/api") },
             )
         }
         Section(R.string.section_development_dependencies) {
