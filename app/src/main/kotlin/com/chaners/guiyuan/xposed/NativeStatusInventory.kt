@@ -81,8 +81,9 @@ internal object NativeStatusInventory {
                     oldBottom: Int,
                 ) {
                     if (pending?.second !== this) return
-                    pending = null
+                    // Keep the receipt if framework listener removal fails.
                     view.removeOnLayoutChangeListener(this)
+                    if (pending?.second === this) pending = null
                     onSnapshot(inspect(hostView))
                 }
             }
