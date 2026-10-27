@@ -2260,8 +2260,15 @@ internal object SysUiPresentationOwner {
             if (!clearTransitionReservation("visible-cycle-hidden")) {
                 return false
             }
+            // Suppress reentrant leasing until the native width receipt is released.
             leasePhase = LeasePhase.SUPPRESSED
-            return releaseCapacityLeaseAtHidden()
+            return try {
+                releaseCapacityLeaseAtHidden()
+            } finally {
+                if (active && appliedFakeCarrierWidthPx != null) {
+                    leasePhase = LeasePhase.VISIBLE
+                }
+            }
         }
 
         fun updateTransitionReservation(
@@ -2725,6 +2732,7 @@ internal object SysUiPresentationOwner {
                         true
                     }
                 }
+            if (!restored) return false
             clearCapacityLeaseSnapshot()
             pendingNativeCarrierWidth =
                 nextNativeBaselineWidthPx.takeIf { width -> width > 0 }
