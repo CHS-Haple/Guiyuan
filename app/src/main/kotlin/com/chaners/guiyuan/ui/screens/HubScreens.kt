@@ -1317,6 +1317,23 @@ private fun HubPage(
 
     val os4 = LocalUiStyle.current == UiStyle.OS4
     val searchHeight = SearchBarDefaults.InputFieldMinHeight
+    // Match the solid native search capsule until scrolled content needs glass.
+    val searchFloat = os4 && listState.canScrollBackward
+    val searchSurface = if (os4) {
+        Modifier.glassPanel(
+            backdrop = topBarBackdrop.takeIf { searchFloat },
+            shape = GlassShape(searchHeight / 2),
+            material = GlassMaterials.puredThinGlass(
+                MiuixTheme.colorScheme.background.luminance() < 0.5f,
+            ),
+            stroke = if (searchFloat) top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults.buttonStroke() else null,
+            shadow = null,
+            shading = false,
+            fallback = Modifier
+                .clip(CircleShape)
+                .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+        )
+    } else Modifier
     val searchAction: @Composable RowScope.() -> Unit = {
         if (search != null && !search.active) {
             val label = stringResource(R.string.feature_search)
@@ -1348,24 +1365,7 @@ private fun HubPage(
                             onSearch = { keyboardController?.hide() },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .then(
-                                    if (os4) {
-                                        Modifier
-                                            .height(searchHeight)
-                                            .glassPanel(
-                                                backdrop = topBarBackdrop,
-                                                shape = GlassShape(searchHeight / 2),
-                                                material = GlassMaterials.puredThinGlass(
-                                                    MiuixTheme.colorScheme.background.luminance() < 0.5f,
-                                                ),
-                                                shadow = null,
-                                                shading = false,
-                                                fallback = Modifier
-                                                    .clip(CircleShape)
-                                                    .background(MiuixTheme.colorScheme.surfaceContainerHigh),
-                                            )
-                                    } else Modifier
-                                ),
+                                .then(if (os4) Modifier.height(searchHeight).then(searchSurface) else Modifier),
                             color = if (os4) Color.Transparent else MiuixTheme.colorScheme.surfaceContainerHigh,
                             leadingIcon = if (os4) {
                                 {
@@ -1425,7 +1425,7 @@ private fun HubPage(
                                     modifier = Modifier
                                         .padding(end = 12.dp)
                                         .size(searchHeight)
-                                        .background(MiuixTheme.colorScheme.surfaceContainerHigh, CircleShape),
+                                        .then(searchSurface),
                                 ) {
                                     Icon(
                                         Os4GlassClose,
