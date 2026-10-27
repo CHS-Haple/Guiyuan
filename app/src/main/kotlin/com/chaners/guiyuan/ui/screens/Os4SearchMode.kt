@@ -8,6 +8,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,9 +21,12 @@ import androidx.compose.runtime.State
 import top.yukonga.miuix.kmp.blur.Backdrop
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
@@ -98,6 +102,7 @@ internal fun Os4SearchMode(
 
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
+    val keyboard = LocalSoftwareKeyboardController.current
     val statusInset = WindowInsets.statusBars.getTop(density)
     Box(
         modifier = Modifier
@@ -107,6 +112,12 @@ internal fun Os4SearchMode(
                 translationY = -statusInset * (1f - motion.progress)
             },
     ) {
+        // A fading search row must still consume clicks until its exit animation finishes.
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clickable(interactionSource = null, indication = null) { keyboard?.hide() },
+        )
         // One progress controls the native PR423 54dp end reservation and the cancel surface.
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -133,6 +144,10 @@ internal fun Os4SearchMode(
                     scaleX = scale
                     scaleY = scale
                     alpha = motion.cancelAlpha
+                    val blur = 50f * (1f - motion.cancelAlpha.coerceIn(0f, 1f))
+                    renderEffect = if (blur > 0.5f) {
+                        BlurEffect(blur, blur, TileMode.Decal)
+                    } else null
                     translationX = 66.dp.toPx() * (1f - scale) *
                         (if (direction == LayoutDirection.Ltr) 1f else -1f)
                 },
