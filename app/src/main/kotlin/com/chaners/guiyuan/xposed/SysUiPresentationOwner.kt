@@ -2645,6 +2645,8 @@ internal object SysUiPresentationOwner {
             fakeCarrierParentWidth = parentContentWidthPx
             fakeCarrierCapacityDeltaPx = capacityDeltaPx
             pendingNativeCarrierWidth = null
+            // LayoutParams may mutate in place before the framework setter returns.
+            appliedFakeCarrierWidthPx = parentContentWidthPx
 
             if (params.width != parentContentWidthPx) {
                 params.width = parentContentWidthPx
@@ -2652,11 +2654,9 @@ internal object SysUiPresentationOwner {
                 capacityLeaseAwaitingLayout = true
             }
             if (hostView.layoutParams?.width != parentContentWidthPx) {
-                clearCapacityLeaseSnapshot()
                 onFailNative("fake-carrier-capacity-lease-apply-failed")
                 return null
             }
-            appliedFakeCarrierWidthPx = parentContentWidthPx
             onEvent(
                 eventPrefix +
                     " fakeCarrierCapacity lease=active" +
