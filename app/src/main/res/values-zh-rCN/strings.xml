@@ -160,6 +160,7 @@
     <string name="section_runtime_dependencies">运行与界面</string>
     <string name="section_embedded_assets">嵌入资源</string>
     <string name="about_embedded_asset_summary">本地嵌入资源\nApache-2.0</string>
+    <string name="about_miuix_glass_summary">包含基于 PR #423（b9f70838）适配的 OS4 玻璃组件与图标</string>
     <string name="section_compile_only_dependencies">编译期接口</string>
     <string name="section_development_dependencies">测试与构建</string>
     <string name="about_value_unavailable">不可用</string>

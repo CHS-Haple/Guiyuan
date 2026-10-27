@@ -2,7 +2,7 @@
 
 Guiyuan uses third-party libraries and build tooling. This file provides a human-readable summary of the project's direct dependencies and does not replace the license text or notices distributed by each upstream project.
 
-The exact resolved dependency graph is defined by Gradle and may include additional transitive dependencies.
+The exact resolved dependency graph is defined by Gradle and may include additional transitive dependencies. The in-app third-party screen groups modules by upstream project to avoid duplicate entries; individual module identities and versions remain listed here.
 
 ## Runtime / application dependencies
 

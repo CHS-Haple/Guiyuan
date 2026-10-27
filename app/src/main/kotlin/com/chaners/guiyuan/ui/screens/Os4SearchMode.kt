@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.State
+import top.yukonga.miuix.kmp.blur.Backdrop
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -82,7 +84,8 @@ internal fun Os4SearchMode(
     motion: Os4SearchMotion,
     expanded: Boolean,
     query: String,
-    surface: Modifier,
+    backdrop: Backdrop?,
+    materialProgress: State<Float>,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
     onClose: () -> Unit,
@@ -115,7 +118,8 @@ internal fun Os4SearchMode(
                     onQueryChange = onQueryChange,
                     onSearch = onSearch,
                     active = expanded,
-                    surface = surface,
+                    backdrop = backdrop,
+                    materialProgress = materialProgress,
                 )
             }
             Spacer(Modifier.width(54.dp * motion.progress.coerceIn(0f, 1f)))
@@ -134,17 +138,23 @@ internal fun Os4SearchMode(
                 },
         ) {
             TooltipBox(text = label) {
-                IconButton(
-                    onClick = onClose,
-                    enabled = expanded,
-                    modifier = Modifier.size(44.dp).then(surface),
+                Os4SearchSurface(
+                    modifier = Modifier.size(44.dp),
+                    backdrop = backdrop,
+                    materialProgress = materialProgress,
                 ) {
-                    Icon(
-                        Os4GlassClose,
-                        contentDescription = label,
-                        modifier = Modifier.size(24.dp),
-                        tint = MiuixTheme.colorScheme.onSurface,
-                    )
+                    IconButton(
+                        onClick = onClose,
+                        enabled = expanded,
+                        modifier = Modifier.matchParentSize(),
+                    ) {
+                        Icon(
+                            Os4GlassClose,
+                            contentDescription = label,
+                            modifier = Modifier.size(24.dp),
+                            tint = MiuixTheme.colorScheme.onSurface,
+                        )
+                    }
                 }
             }
         }

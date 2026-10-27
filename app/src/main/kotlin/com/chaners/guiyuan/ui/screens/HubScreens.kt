@@ -3,6 +3,7 @@ package com.chaners.guiyuan.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -18,7 +19,6 @@ import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Search
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,10 +46,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -139,11 +136,9 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
-import top.yukonga.miuix.kmp.glass.GlassShape
-import top.yukonga.miuix.kmp.glass.GlassMaterials
-import top.yukonga.miuix.kmp.glass.glassPanel
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -1319,22 +1314,12 @@ private fun HubPage(
 
     val os4 = LocalUiStyle.current == UiStyle.OS4
     val searchMotion = rememberOs4SearchMotion(os4 && search?.active == true)
-    // Keep one backdrop/material for the full search session, including scroll transitions.
-    val searchSurface = if (os4) {
-        Modifier.glassPanel(
-            backdrop = topBarBackdrop,
-            shape = GlassShape(22.dp),
-            material = GlassMaterials.puredThinGlass(
-                MiuixTheme.colorScheme.background.luminance() < 0.5f,
-            ),
-            stroke = GlassTopAppBarDefaults.buttonStroke(),
-            shadow = null,
-            shading = false,
-            fallback = Modifier
-                .clip(CircleShape)
-                .background(MiuixTheme.colorScheme.surfaceContainerHigh),
-        )
-    } else Modifier
+    // Only actual content overlap changes the surface; search geometry has its own clock.
+    val searchMaterial = animateFloatAsState(
+        targetValue = if (os4 && listState.canScrollBackward) 1f else 0f,
+        animationSpec = GlassMotion.topBarButtonFloat(),
+        label = "os4SearchMaterial",
+    )
     val searchAction: @Composable RowScope.() -> Unit = {
         if (search != null && (!os4 || !searchMotion.mounted)) {
             val label = stringResource(R.string.feature_search)
@@ -1357,7 +1342,8 @@ private fun HubPage(
                         motion = searchMotion,
                         expanded = search.active,
                         query = search.query,
-                        surface = searchSurface,
+                        backdrop = topBarBackdrop,
+                        materialProgress = searchMaterial,
                         onQueryChange = search::update,
                         onSearch = { keyboardController?.hide() },
                         onClose = search::close,
@@ -1425,7 +1411,10 @@ private fun HubPage(
                                 .fillMaxWidth()
                                 .align(Alignment.TopCenter)
                                 .windowInsetsPadding(WindowInsets.statusBars)
-                                .padding(top = 4.dp),
+                                .padding(
+                                    horizontal = GlassTopAppBarDefaults.HorizontalPadding,
+                                    top = 4.dp,
+                                ),
                         ) {
                             searchContent()
                         }

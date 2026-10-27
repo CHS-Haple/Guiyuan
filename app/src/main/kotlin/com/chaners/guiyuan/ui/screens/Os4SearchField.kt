@@ -14,6 +14,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.State
+import top.yukonga.miuix.kmp.blur.Backdrop
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -41,7 +43,8 @@ internal fun Os4SearchField(
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
     active: Boolean,
-    surface: Modifier,
+    backdrop: Backdrop?,
+    materialProgress: State<Float>,
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
@@ -70,48 +73,53 @@ internal fun Os4SearchField(
         modifier = Modifier
             .fillMaxWidth()
             .height(44.dp)
-            .then(surface)
             .focusRequester(focusRequester),
         decorationBox = { field ->
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            Os4SearchSurface(
+                modifier = Modifier.fillMaxSize(),
+                backdrop = backdrop,
+                materialProgress = materialProgress,
             ) {
-                Icon(
-                    Os4GlassSearch,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = colors.disabledOnSurface,
-                )
-                Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                    if (query.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.feature_search),
-                            style = MiuixTheme.textStyles.body1,
-                            color = colors.disabledOnSurface,
-                        )
-                    }
-                    field()
-                }
-                if (query.isNotEmpty()) {
-                    TooltipBox(text = stringResource(R.string.feature_search_clear)) {
-                        IconButton(
-                            onClick = {
-                                onQueryChange("")
-                                focusRequester.requestFocus()
-                            },
-                            modifier = Modifier.size(24.dp),
-                            minHeight = 24.dp,
-                            minWidth = 24.dp,
-                        ) {
-                            Icon(
-                                MiuixIcons.Basic.SearchCleanup,
-                                contentDescription = stringResource(R.string.feature_search_clear),
-                                tint = colors.onSurfaceContainerHighest,
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        Os4GlassSearch,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = colors.disabledOnSurface,
+                    )
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                        if (query.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.feature_search),
+                                style = MiuixTheme.textStyles.body1,
+                                color = colors.disabledOnSurface,
                             )
+                        }
+                        field()
+                    }
+                    if (query.isNotEmpty()) {
+                        TooltipBox(text = stringResource(R.string.feature_search_clear)) {
+                            IconButton(
+                                onClick = {
+                                    onQueryChange("")
+                                    focusRequester.requestFocus()
+                                },
+                                modifier = Modifier.size(24.dp),
+                                minHeight = 24.dp,
+                                minWidth = 24.dp,
+                            ) {
+                                Icon(
+                                    MiuixIcons.Basic.SearchCleanup,
+                                    contentDescription = stringResource(R.string.feature_search_clear),
+                                    tint = colors.onSurfaceContainerHighest,
+                                )
+                            }
                         }
                     }
                 }

@@ -79,7 +79,7 @@ OS4 conformance.
   recorder was a demonstrable source/consumer cycle. Shader-unavailable
   devices retain MIUIX TabRowWithContour. B1403's reported Sandbox crash
   is not yet proven to be solely caused by this cycle.
-- B1498 OS4 search uses one PR423-inspired 400ms transition to coordinate the 44dp input, 54dp end reservation, external 44dp Cancel, title fade and exit composition. A single NavigationBackHandler owns OS4 dismissal; PageSearch remains sole query writer and Os4SearchField retains focus/IME. The input's clear glyph uses published MIUIX SearchCleanup. Both search surfaces share a page backdrop across scroll to avoid changing shader ownership mid-motion. OS3 keeps its original MIUIX SearchBar/InputField/cancel route. Visual motion, focus, RTL and shader flicker are still device-open.
+- B1500 keeps one PR423-inspired 400ms OS4 search transition for title/width/Cancel, 12dp side insets, 44dp capsules and 10dp gap. Search's visual material separately follows the active page overlap with upstream `GlassMotion.topBarButtonFloat()` (350ms linear): the native `surfaceContainerHigh` base remains, and input/Cancel share a progressively composited glass/rim layer over the same existing clean page Backdrop. Returning to the top reverses the same ramp; missing shader/backdrop is solid. Search state, Back and OS3's native SearchBar are unchanged. PR423's search example itself is solid-only; the scroll transition is a Guiyuan adaptation of its GlassTopAppBar contract. Visual movement, IME, RTL and flicker remain device-open.
 - OS4 appearance mini-preview sizes to intrinsic GlassNavigationBar height
   rather than the fixed OS3 preview viewport. App margins follow the
   upstream documented 24.dp horizontal and 12.dp vertical usage.

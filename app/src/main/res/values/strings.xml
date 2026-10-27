@@ -161,6 +161,7 @@
     <string name="section_runtime_dependencies">Runtime and interface</string>
     <string name="section_embedded_assets">Embedded assets</string>
     <string name="about_embedded_asset_summary">Local embedded assets\nApache-2.0</string>
+    <string name="about_miuix_glass_summary">Includes adapted OS4 Glass and icon vectors from PR #423 (b9f70838)</string>
     <string name="section_compile_only_dependencies">Compile-time APIs</string>
     <string name="section_development_dependencies">Test and build</string>
     <string name="about_value_unavailable">Unavailable</string>
