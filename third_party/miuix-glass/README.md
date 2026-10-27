@@ -117,8 +117,8 @@ The CI-only joint compile probe verifies the upstream SHA and calls the same
 Gradle opt-in, without signing keys or publishing an APK. Full upstream-Glass
 replacement and dialog/sheet surface migration are separate acceptance gates.
 
-GlassDialog and GlassBottomSheet are not yet integrated: the published
-MIUIX main snapshot lacks PR #423's `DialogSurfaceScope`,
+GlassDialog and GlassBottomSheet cannot be compiled by default: the published
+MIUIX snapshot lacks PR #423's `DialogSurfaceScope`,
 `BottomSheetSurfaceScope`, overlay `surface` slots and matching host
 APIs. Popup subtypes and the OS4 glass icon family also remain to be
 integrated where appropriate.
@@ -200,3 +200,11 @@ must be labeled distinctly. This enables a real-device A/B with the original
 package identity without executing upstream Gradle under private signing secrets.
 This is **not** evidence that moving-text flicker or glass popup behavior is fixed;
 that still requires physical confirmation. PR423 build must first pass.
+
+## Full OS4 UI audit
+
+See [UI_AUDIT.md](UI_AUDIT.md) for the 16-family source-backed, per-state
+checklist. It distinguishes B1492 source-gated native dialogs/sheets from
+published MIUIX fallback, unported upstream `BlurTopAppBar`/icon-catalog
+opportunities and the remaining physical visual checks. Do not close PR #861
+solely because the signed PR423 APK built successfully.

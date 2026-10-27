@@ -2,6 +2,12 @@
 
 This file records **accepted behavior, current constraints and next work**, not a Build-by-Build history. For the exact live branch, version and CI results, check GitHub and `gradle.properties` first. Historical experiments and rejection evidence remain in PRs, issues, commits and the reference documents.
 
+## Active experimental UI work (not merged / not device-accepted)
+
+- **OS4 Draft [PR #861](https://github.com/CHS-Haple/Guiyuan/pull/861):** independent `feat/os4-glass-experimental` branch, latest source B1492; `dev`/OS3 are not overwritten. The UI audit and untested gates live in [third_party/miuix-glass/UI_AUDIT.md](../../third_party/miuix-glass/UI_AUDIT.md), rather than duplicating changing per-Build implementation details here. Published MIUIX builds retain native overlay/dialog/sheet hosts. The pinned same-revision PR423 `miuix-blur`/UI source graph and Dialog/BottomSheet surface slots are **explicitly opt-in**.
+- **Evidence boundary:** The B1491 published Canary and signed PR423 source-built Canary each passed independent full CI, with upstream Gradle never receiving the Haple signing key. No screenshot or real-device comparison yet proves the moving-text Blur flicker, native dialog dim/scale, search input, preview dock, or nested sheet behavior fixed. B1492 color-sheet source work still requires complete CI and device tests; do not merge Draft or describe as accepted.
+- **Diagnostics OS3 and OS4:** B1490 consolidated the duplicate Share button: tap Export saves a report, long press shares via the original chooser. Native compact/expanded title measurement and 44dp/24dp/8dp OS4 button geometry require target-device recheck after removing the action.
+
 ## Stable 0.9.0 checkpoint
 
 - **Version and branches:** 0.9.0 / B1239 is the accepted pre-1.0 development checkpoint. It retains the B1236 release baseline and incorporates the device-accepted liquid-glass orientation refinement from [#733](https://github.com/CHS-Haple/Guiyuan/pull/733). The prior stable baseline was 0.8.0 / B1110 ([#619](https://github.com/CHS-Haple/Guiyuan/pull/619)). Exact branch SHAs and latest Full/Release CI evidence are authoritative in GitHub; 1.0.0 remains the planned first formal stable release.

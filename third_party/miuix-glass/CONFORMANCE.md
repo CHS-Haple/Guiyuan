@@ -192,7 +192,7 @@ physical-device comparison; see README.md.
 - [ ] Collect the **app process** crash stack for Sandbox; the supplied
   SystemUI/LSPosed diagnostic is not the app exception. The sampling cycle
   was fixed on B1405 source, but that alone is not crash proof.
-- [ ] Integrate matched `GlassDialog`, `GlassBottomSheet`, glass popups/menus,
+- [ ] **Device-accept** the now source-gated `GlassDialog` and `GlassBottomSheet` and remaining sheet-local glass popups/menus,
   and suitable native icon family. Verify animated backdrop geometry and
   single popup host across overlay dismissal, nested scroll and predictive Back.
 - [ ] Verify OS3 unchanged on the target, shader absence fail-native, RTL,
