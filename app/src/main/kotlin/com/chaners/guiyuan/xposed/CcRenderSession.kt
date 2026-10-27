@@ -318,7 +318,7 @@ internal object CcRenderSession {
         if (current === session) current = null
     }
 
-    // Release a failed prearm only once, retaining its receipt if cancellation fails.
+    // Keep the old listener receipt if cancellation cannot complete.
     @Synchronized
     private fun abortPrearm(pending: PendingPrearm, error: Throwable) {
         SysUiPresentationRuntime.throwIfFatal(error)
