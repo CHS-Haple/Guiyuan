@@ -1,6 +1,6 @@
 # OS4 UI conformance and upstream adoption audit
 
-Source baseline: Guiyuan `feat/os4-glass-experimental` B1522 (PR #861 Draft; exact-source CI passed, device acceptance pending). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
+Source baseline: Guiyuan `feat/os4-glass-experimental` B1522 (PR #861 Draft; B1522 exact-source CI and device acceptance pending). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
 MIUIX pinned published: `b587aaf2c907c77a8c3c02d8df0aede2937ef8f0` (`0.9.4-b587aaf2-SNAPSHOT`).
 MIUIX reviewed prerelease: [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (not yet merged).
 The upstream sample may illustrate a visual contract without shipping a public component. Production source and experimental
