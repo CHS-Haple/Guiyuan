@@ -1,6 +1,6 @@
 # OS4 UI conformance and upstream adoption audit
 
-Source baseline: Guiyuan `feat/os4-glass-experimental` B1528 (PR #861 Draft; B1528 checks/device acceptance pending; B1527 exact-source CI passed). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
+Source baseline: Guiyuan `feat/os4-glass-experimental` B1529 (PR #861 Draft; B1529 checks/device acceptance pending; B1527 exact-source CI passed). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
 MIUIX pinned published: `b587aaf2c907c77a8c3c02d8df0aede2937ef8f0` (`0.9.4-b587aaf2-SNAPSHOT`).
 MIUIX reviewed prerelease: [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (not yet merged).
 The upstream sample may illustrate a visual contract without shipping a public component. Production source and experimental
@@ -11,6 +11,12 @@ source ABI are separate; source-level implementation does **not** imply device c
 - **Upstream contract:** MIUIX PR #423 `docs/demo/src/commonMain/kotlin/GlassDialogDemo.kt` uses a 12dp gap between equal-weight Normal/Primary actions. This is an example layout, not a default enforced by `GlassDialogButton`; the maintainer elected to follow it for OS4.
 - **Prior mismatch and correction:** Eight dual-action dialog rows used 20dp in both UI eras (battery create/rename/delete, backup/default reset, settings-entry confirmation, scope restart and numeric input). One style-aware `dialogActionGap()` returns 12dp on OS4, retains the original 20dp on OS3, and is used by all eight rows. Single-action dialogs, 50dp button minimum height, roles, TextFields, IME validation, Back/dismiss, popup/Sheet backdrop and source capture are unchanged.
 - **Scope review:** `UiDialogButton.kt`, `BatteryColorEditor.kt`, `BatteryColorControls.kt`, `HubScreens.kt`, `MainHub.kt`, `IntegerInputDialog.kt`. Exactly eight action-row gaps were located and migrated. No runtime SystemUI Hook or persistence change. Review of both variants and focused layout/IME checks remains necessary; source review does not prove device geometry or animation.
+
+## Restore-confirmation dialog lifetime (B1529 source review)
+
+- **Verified source defect:** `FeaturesScreen` wrapped `UiOverlayDialog(show = true)` in `pendingImport?.let`; cancellation or completion set the sole pending import to null, removing the entire dialog call before MIUIX could run its 260ms dismissal transition. Upstream PR423 `GlassDialog` and native `OverlayDialog` require the host to remain composed while `show=false`.
+- **Correction:** Mount the existing dialog unconditionally in the Feature overlay and derive `show` from `pendingImport != null`. Capture the currently selected import for the action; guard against an absent selection or in-flight restore. Keep cancellation, UI roles, 12dp OS4/20dp OS3 spacing, exception handling, repository writes and snackbar outcomes unchanged. This fixes dialog host lifetime, not storage semantics.
+- **Boundary:** Source-call-path review proves the prior abrupt unmount and the new single `show` owner. Exit/reopen, Back and IME visuals still need focused device verification; no measured frame results are claimed.
 
 ## App-wide component and interaction audit (2026-10-28)
 

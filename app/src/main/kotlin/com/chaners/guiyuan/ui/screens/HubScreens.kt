@@ -284,27 +284,29 @@ internal fun FeaturesScreen(
         bottomContentPadding = bottomContentPadding,
         search = search,
         overlay = {
-            pendingImport?.let { selected ->
-                UiOverlayDialog(
-                    title = stringResource(R.string.config_restore_title),
-                    summary = stringResource(R.string.config_restore_confirm),
-                    show = true,
-                    onDismissRequest = { if (!ioBusy) pendingImport = null },
-                ) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        UiDialogButton(
-                            text = stringResource(R.string.cancel),
-                            modifier = Modifier.weight(1f),
-                            enabled = !ioBusy,
-                            onClick = { pendingImport = null },
-                        )
-                        Spacer(Modifier.width(dialogActionGap()))
-                        UiDialogButton(
-                            text = stringResource(R.string.restore),
-                            modifier = Modifier.weight(1f),
-                            enabled = !ioBusy,
-                            role = GlassDialogButtonRole.Primary,
-                            onClick = {
+            val selectedImport = pendingImport
+            UiOverlayDialog(
+                title = stringResource(R.string.config_restore_title),
+                summary = stringResource(R.string.config_restore_confirm),
+                show = selectedImport != null,
+                onDismissRequest = { if (!ioBusy) pendingImport = null },
+            ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    UiDialogButton(
+                        text = stringResource(R.string.cancel),
+                        modifier = Modifier.weight(1f),
+                        enabled = !ioBusy,
+                        onClick = { pendingImport = null },
+                    )
+                    Spacer(Modifier.width(dialogActionGap()))
+                    UiDialogButton(
+                        text = stringResource(R.string.restore),
+                        modifier = Modifier.weight(1f),
+                        enabled = !ioBusy,
+                        role = GlassDialogButtonRole.Primary,
+                        onClick = {
+                            val selected = selectedImport
+                            if (selected != null && !ioBusy) {
                                 ioBusy = true
                                 scope.launch {
                                     val result = runCatching { backupFiles.restore(selected) }
@@ -315,9 +317,9 @@ internal fun FeaturesScreen(
                                         else restoreError,
                                     )
                                 }
-                            },
-                        )
-                    }
+                            }
+                        },
+                    )
                 }
             }
             BatteryColorBottomSheet(
