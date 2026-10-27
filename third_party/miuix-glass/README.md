@@ -147,3 +147,25 @@ still unmerged and the PR remains Draft.
 The OS4 experimental Build identifier is intentionally separated from rapidly
 advancing dev/runtime Builds; B1410 is also used by a concurrent runtime PR
 and must not be treated as the OS4 distribution identity.
+
+## Parallel Blur visual A/B builds
+
+The opt-in compatibility CI can now produce two **debug-only, different
+application-ID** Android packages from the same Guiyuan source. The first
+uses all published-snapshot source modules at `b587aaf2`, the second uses
+PR #423's source modules at `b9f70838`. Both use Guiyuan's same existing
+vendored Glass implementation, intentionally holding that part constant.
+The comparison is meant to isolate the Blur/UI module revision as a group,
+not assert that a single method is the only changed cause.
+
+The jobs never load the Haple production signing key. Android's ordinary
+debug signing allows these test applications to coexist with the signed
+Guiyuan package. Their application IDs are
+`com.chaners.guiyuan.os4published` and
+`com.chaners.guiyuan.os4pr423`. They are **visual-only probes**: do not
+enable either in LSPosed or assume their module runtime/configuration
+behaves like the installed production identity. They do not overwrite the
+production package or import its settings. On each test app, select the
+OS4 appearance before comparing content scrolling under the bottom bar
+and search capsule. If the build or app entry route prevents a valid
+comparison, record the blocker rather than claim a glass repair.

@@ -16,6 +16,7 @@ val dataStorePreferencesVersion = "1.2.1"
 val kotlinxSerializationCoreVersion = "1.12.0"
 val junitVersion = "4.13.2"
 val gradleVersion = gradle.gradleVersion
+val os4DebugSuffix = providers.gradleProperty("gy.os4.debugSuffix").orNull
 
 val hapleKeystorePath = providers.environmentVariable("HAPLE_KEYSTORE_PATH").orNull
 val hapleKeystorePassword = providers.environmentVariable("HAPLE_KEYSTORE_PASSWORD").orNull
@@ -79,6 +80,12 @@ android {
 
     buildTypes {
         debug {
+            if (os4DebugSuffix != null) {
+                require(Regex("""\.[a-z][a-z0-9_]*""").matches(os4DebugSuffix)) {
+                    "gy.os4.debugSuffix must be one simple lowercase application ID segment"
+                }
+                applicationIdSuffix = os4DebugSuffix
+            }
             buildConfigField("String", "BUILD_CHANNEL", "\"debug\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "true")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
