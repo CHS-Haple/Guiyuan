@@ -1,6 +1,6 @@
 # OS4 UI conformance and upstream adoption audit
 
-Source baseline: Guiyuan `feat/os4-glass-experimental` B1508 (PR #861 Draft; source verification pending). B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
+Source baseline: Guiyuan `feat/os4-glass-experimental` B1509 (PR #861 Draft; validation pending). B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
 MIUIX pinned published: `b587aaf2c907c77a8c3c02d8df0aede2937ef8f0` (`0.9.4-b587aaf2-SNAPSHOT`).
 MIUIX reviewed prerelease: [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (not yet merged).
 The upstream sample may illustrate a visual contract without shipping a public component. Production source and experimental
@@ -29,6 +29,17 @@ source ABI are separate; source-level implementation does **not** imply device c
 | Tooltips, menus, icon language | Native MIUIX TooltipBox is legitimate for descriptions; input/press gestures must be single-owner | Report Export deliberately cannot use TooltipBox hold; other top actions retain tooltip. Upstream Glass Regular icon paths are scoped to required actions only | Audit all role/action icons, variants, a11y labels and bubble placement after adopting final upstream glass-icons artifact |
 | Global fallback / release hygiene | Same-source PR423 UI/Blur graph pinned to `b9f7083`; exact upstream popup leaf primitives at `8d52b45`; one recorder/owner for each glass source; fail native when unsupported | B1506 exact-head Canary passed configured Debug/unit/metadata and isolated signing CI on `38ffc46` (run 40489310659). OS4 remains Draft and dev/main are unchanged. B1504/1505 search performance improvements and B1506 sheet lifetime have source/CI evidence but no frame/gesture measurement yet | Device check: first search keystroke, scroll glass and typography shimmer, nested modal/menus, repeated sheet close/open, preview, RTL/fontScale, and dark theme |
 
+## OS4 native search handoff conformance (B1509)
+
+- **Root:** B1507/B1508 put an animated `graphicsLayer(alpha)` around only the 44dp original search action, so offscreen layer bounds could clip its glass shadow during exit; the original search-field glyph and returning action overlapped.
+- **Upstream authority:** `compose-miuix-ui/miuix` PR #423 `GlassSearchOverlay.kt` at `8d52b45`: fade (150ms, native bezier), scale (400ms with search spring), blur (150/120ms), and fixed `LayerOutsets` over the *entire* original bar. Native `BlurTopAppBar` clips title-only, not action shadows. Keep the example's separate title reveal phase. Do not add an independent 44dp button alpha.
+- **Implementation:** `HubPage` now passes the native-level whole-bar transition modifier and title alpha to `GlassTopAppBar`; `Os4SearchMode.kt` owns the upstream-derived timing. The original search action stays in its native slot and keeps its material at full strength; its click and tooltip are gated until the search overlay exits, and transitional accessibility semantics are cleared. `SearchCleanup` is retained unchanged.
+- **Acceptance:** Code structure and upstream contract reviewed, but animation/cropping and rapid reversal on device are unverified until the signed exact-graph build is tested. OS3 SearchBar remains separate.
+
+## Search result presentation
+
+The B1507 experiment that flattened and ranked all native Preference rows was rolled back in B1509 at the maintainer's request. Both OS3 and OS4 again display results inside their original MIUIX Section/Card groups in browse order, reusing existing matching, empty-state, parent enablement, and each native setting callback. OS3 SearchBar and OS4 field geometry stay unchanged; the separate OS4 title-bar return transition is corrected above. The MIUIX dependency summary and Diagnostics submenu gating are unaffected. Do not reactivate the ranked/flattened result renderer without a new UI decision.
+
 ## B1508 follow-up review
 
 - **OS3 search action:** Keep the existing MIUIX SearchBar and its own expand/collapse animation; fade only the original title-bar search action while search is active and return it without unmounting the measured slot. Its click is disabled during search. This is a Guiyuan caller fix, not a claim that upstream mandates a particular toolbar animation.
@@ -37,9 +48,9 @@ source ABI are separate; source-level implementation does **not** imply device c
 
 ## B1507 review scope
 
-MIUIX `SearchBarDemo` renders direct `BasicComponent` suggestions without mandatory Cards; `IconPage` separately demonstrates Card-based navigational search results. Neither prescribes a shared ranking algorithm. Guiyuan uses the direct preference-list composition to let a user operate the setting in place.
+MIUIX `SearchBarDemo` renders direct `BasicComponent` suggestions without mandatory Cards; `IconPage` separately demonstrates Card-based navigational search results. Neither prescribes a shared ranking algorithm. Guiyuan returned to its original grouped MIUIX Preference presentation in B1509 after the flattened results were not accepted.
 
-- Shared search displays all 34 native MIUIX preference controls as stable-key flat rows, ranked by current/translated titles then pinyin and curated aliases, preserving stable browse order for ties. Browse retains native Cards; search has no Cards. Dependencies are surfaced alongside matched settings and gate disabled controls. OS3 keeps its native SearchBar; OS4 retains its PR423 search surface and shared-progress title/action fade. CI and device gates remain.
+- Historical B1507 experiment (reverted in B1509): flat sorted results are no longer active. Native MIUIX Section/Card groups and original order returned in both UI modes; query matching, OS3 SearchBar, and OS4 PR423 search surface remain.
 - Third-party dependency rows return to the accepted main layout. Missing AndroidX Core and kotlinx.serialization JSON are listed with the actual pinned BuildConfig versions and appropriate project links; MIUIX version includes a concise PR #423 label.
 - OS4 diagnostics nested popup follows upstream group/parent enabled semantics, selected-state header and keyed row geometry; no additional blur layer.
 

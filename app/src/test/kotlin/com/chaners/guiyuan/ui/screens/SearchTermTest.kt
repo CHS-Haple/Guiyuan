@@ -21,16 +21,6 @@ class SearchTermTest {
     }
 
     @Test
-    fun ranksExactTitlesAheadOfPartialAndPinyinMatches() {
-        val title = SearchTerm("电量颜色", "dian liang yan se")
-        val related = SearchTerm("电量数字颜色", "dian liang shu zi yan se")
-        assertTrue(title.rank("电量颜色") > related.rank("电量颜色"))
-        assertTrue(title.rank("电量") > title.rank("dly"))
-        assertTrue(title.rank("dlys") > 0)
-        assertFalse(title.rank("字重") > 0)
-    }
-
-    @Test
     fun chineseAndPinyinPrefixes() {
         val term = SearchTerm("电量数字", "dian liang shu zi")
         assertTrue(term.matches("电量"))

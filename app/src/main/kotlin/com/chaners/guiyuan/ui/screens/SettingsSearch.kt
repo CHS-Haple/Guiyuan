@@ -39,22 +39,6 @@ internal class SearchTerm(
             (term in plain || term in full || (includeInitials && allowInitials && term in initials))
     }
 
-    fun rank(input: String, includeInitials: Boolean = true): Int {
-        val term = fold(input)
-        if (term.isEmpty()) return 0
-        return when {
-            plain == term -> 120
-            plain.startsWith(term) -> 100
-            term in plain -> 80
-            full == term -> 65
-            full.startsWith(term) -> 55
-            term in full -> 45
-            includeInitials && allowInitials && initials == term -> 35
-            includeInitials && allowInitials && term in initials -> 25
-            else -> 0
-        }
-    }
-
     fun matchesInitials(input: String): Boolean {
         val term = fold(input)
         return term.isNotEmpty() && allowInitials && term in initials
@@ -192,43 +176,6 @@ internal class PageSearch(private val context: Context) {
 
     fun any(vararg ids: Int): Boolean =
         !filtering || ids.any(::matches)
-
-    private val rankedResults by derivedStateOf {
-        if (!filtering) {
-            emptyList()
-        } else {
-            val terms = index
-            val term = fold(query)
-            fun quickRank(value: String): Int {
-                val plain = fold(value)
-                return when {
-                    plain == term -> 120
-                    plain.startsWith(term) -> 100
-                    term in plain -> 80
-                    else -> 0
-                }
-            }
-            FeatureSearchIds.all.withIndex()
-                .filter { matches(it.value) }
-                .sortedWith(compareByDescending<IndexedValue<Int>> { (_, id) ->
-                val title = terms?.titles?.get(id)
-                val titleRank = title?.current?.rank(query)
-                    ?: quickRank(context.getString(id))
-                val aliasRank = terms?.aliases?.get(id)?.maxOfOrNull { it.rank(query) }
-                    ?: (searchAliases(id).maxOfOrNull { quickRank(it) } ?: 0)
-                val translatedRank = title?.other?.maxOfOrNull {
-                    it.rank(query, includeInitials = false)
-                } ?: 0
-                val fallbackRank = if (titleRank == 0 && aliasRank == 0 && translatedRank == 0) {
-                    title?.other?.maxOfOrNull { it.rank(query) } ?: 0
-                } else 0
-                maxOf(titleRank, translatedRank * 9 / 10, aliasRank * 3 / 4, fallbackRank / 2)
-                }.thenBy { it.index })
-                .map { it.value }
-        }
-    }
-
-    fun results(): List<Int> = rankedResults
 
     // The index may still be preparing when the user types immediately after opening the page.
     // Use only cheap current-language and curated-name checks until the complete index arrives.
