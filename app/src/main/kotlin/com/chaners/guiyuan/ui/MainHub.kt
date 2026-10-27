@@ -73,6 +73,7 @@ import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
+import top.yukonga.miuix.kmp.basic.NavigationBarDisplayMode
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
@@ -257,6 +258,7 @@ internal fun MainHub(
                             GlassNavigationItem(
                                 icon = if (pagerState.currentPage == index) item.selectedIcon else item.icon,
                                 label = item.label.takeIf { appearance.activeNavContent == NavContent.IconAndText },
+                                contentDescription = item.label,
                             )
                         },
                         selectedIndex = pagerState.currentPage,
@@ -269,7 +271,13 @@ internal fun MainHub(
                 // OS4 without a usable shader must fall back to native MIUIX,
                 // not resurrect a previously saved OS3 floating-bar style.
                 (os4Glass && miuixBackdrop == null) || !appearance.navEnabled -> {
-                    NavigationBar {
+                    NavigationBar(
+                        mode = if (os4Glass && appearance.activeNavContent == NavContent.IconOnly) {
+                            NavigationBarDisplayMode.IconOnly
+                        } else {
+                            NavigationBarDisplayMode.IconAndText
+                        },
+                    ) {
                         items.forEachIndexed { index, item ->
                             val selected = pagerState.currentPage == index
                             NavigationBarItem(
