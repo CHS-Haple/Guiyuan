@@ -26,6 +26,7 @@ import top.yukonga.miuix.kmp.glass.popupShadowOutsets
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.LayerOutsets
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -50,6 +51,8 @@ import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.sin
 import kotlin.math.sqrt
+
+private const val CANCEL_BLUR_PX = 50f
 
 // PR423 GlassSearchOverlay uses the nested EaseManager spring, not Compose's default spring.
 private val SearchEasing = run {
@@ -94,6 +97,7 @@ internal fun Os4SearchMode(
     query: String,
     backdrop: Backdrop?,
     materialProgress: State<Float>,
+    shadowProgress: State<Float>,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
     onClose: () -> Unit,
@@ -109,6 +113,16 @@ internal fun Os4SearchMode(
     val keyboard = LocalSoftwareKeyboardController.current
     val statusInset = WindowInsets.statusBars.getTop(density)
     val shadowOutsets = remember(density) { with(density) { popupShadowOutsets(GlassShadows.Regular) } }
+    val cancelOutsets = remember(density, shadowOutsets) {
+        // Match PR423's three-radius allowance for its Cancel blur.
+        val halo = with(density) { (CANCEL_BLUR_PX * 3f).toDp() }
+        LayerOutsets(
+            left = shadowOutsets.left + halo,
+            top = shadowOutsets.top + halo,
+            right = shadowOutsets.right + halo,
+            bottom = shadowOutsets.bottom + halo,
+        )
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -137,6 +151,7 @@ internal fun Os4SearchMode(
                     active = expanded,
                     backdrop = backdrop,
                     materialProgress = materialProgress,
+                    shadowProgress = shadowProgress,
                 )
             }
             Spacer(Modifier.width(54.dp * motion.progress.coerceIn(0f, 1f)))
@@ -146,12 +161,12 @@ internal fun Os4SearchMode(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .graphicsLayer {
-                    outsets = shadowOutsets
+                    outsets = cancelOutsets
                     val scale = motion.progress.coerceIn(0f, 1f)
                     scaleX = scale
                     scaleY = scale
                     alpha = motion.cancelAlpha
-                    val blur = 50f * (1f - motion.cancelAlpha.coerceIn(0f, 1f))
+                    val blur = CANCEL_BLUR_PX * (1f - motion.cancelAlpha.coerceIn(0f, 1f))
                     renderEffect = if (blur > 0.5f) {
                         BlurEffect(blur, blur, TileMode.Decal)
                     } else null
@@ -164,6 +179,7 @@ internal fun Os4SearchMode(
                     modifier = Modifier.size(44.dp),
                     backdrop = backdrop,
                     materialProgress = materialProgress,
+                    shadowProgress = shadowProgress,
                 ) {
                     IconButton(
                         onClick = onClose,

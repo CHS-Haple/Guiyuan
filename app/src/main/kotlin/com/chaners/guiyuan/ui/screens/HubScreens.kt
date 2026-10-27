@@ -1329,6 +1329,7 @@ private fun HubPage(
         label = "os3SearchAction",
     )
     // Only actual content overlap changes the surface; search geometry has its own clock.
+    val searchShadow = GlassTopAppBarDefaults.collapseRamp(scrollBehavior)
     val searchMaterial = animateFloatAsState(
         targetValue = if (os4 && listState.canScrollBackward) 1f else 0f,
         animationSpec = GlassMotion.topBarButtonFloat(),
@@ -1375,6 +1376,7 @@ private fun HubPage(
                         query = search.query,
                         backdrop = topBarBackdrop,
                         materialProgress = searchMaterial,
+                        shadowProgress = searchShadow,
                         onQueryChange = search::update,
                         onSearch = { keyboardController?.hide() },
                         onClose = search::close,

@@ -45,6 +45,7 @@ internal fun Os4SearchField(
     active: Boolean,
     backdrop: Backdrop?,
     materialProgress: State<Float>,
+    shadowProgress: State<Float>,
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
@@ -79,6 +80,7 @@ internal fun Os4SearchField(
                 modifier = Modifier.fillMaxSize(),
                 backdrop = backdrop,
                 materialProgress = materialProgress,
+                shadowProgress = shadowProgress,
             ) {
                 Row(
                     modifier = Modifier

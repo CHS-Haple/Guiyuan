@@ -15,32 +15,43 @@ import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.glass.GlassShape
 import top.yukonga.miuix.kmp.glass.GlassShadows
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
-import top.yukonga.miuix.kmp.glass.glassPanel
+import top.yukonga.miuix.kmp.glass.GlassDefaults
+import top.yukonga.miuix.kmp.glass.glassOnActionBar
 import top.yukonga.miuix.kmp.glass.glassShadow
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** The search geometry stays fixed while only the surface transitions with page overlap. */
 @Composable
 internal fun Os4SearchSurface(
     backdrop: Backdrop?,
     materialProgress: State<Float>,
+    shadowProgress: State<Float>,
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val shape = GlassShape(22.dp)
-    Box(modifier = modifier.glassShadow(shape, GlassShadows.Regular).clip(CircleShape)) {
-        Box(Modifier.matchParentSize().background(GlassTopAppBarDefaults.buttonFill()))
+    val material = GlassTopAppBarDefaults.buttonMaterial().copy(
+        blurRadius = GlassTopAppBarDefaults.nestedMaterialBlurRadius(),
+    )
+    Box(
+        modifier = modifier
+            .glassShadow(shape, GlassShadows.Regular) { shadowProgress.value }
+            .clip(CircleShape),
+    ) {
+        Box(Modifier.matchParentSize().background(MiuixTheme.colorScheme.surfaceContainerHigh))
         if (backdrop != null && isRuntimeShaderSupported()) {
             Box(
                 Modifier
                     .matchParentSize()
                     .graphicsLayer { alpha = materialProgress.value.coerceIn(0f, 1f) }
-                    .glassPanel(
+                    .glassOnActionBar(
                         backdrop = backdrop,
                         shape = shape,
-                        material = GlassTopAppBarDefaults.buttonMaterial(),
+                        style = GlassDefaults.Style,
+                        alpha = 1f,
+                        material = material,
+                        underlayMaterial = GlassTopAppBarDefaults.actionBarUnderlayMaterial(),
                         stroke = GlassTopAppBarDefaults.buttonStroke(),
-                        shadow = null,
-                        shading = true,
                     ),
             )
         }
