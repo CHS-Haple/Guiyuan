@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -144,6 +145,7 @@ internal fun BatteryColorBottomSheet(
     repository: BatterySchemeRepo,
     onDismiss: () -> Unit,
 ) {
+    val context = LocalContext.current
     var detailRequest by remember(show) { mutableStateOf<DetailRequest?>(null) }
     var showDetail by remember(show) { mutableStateOf(false) }
     var requestedSchemeKey by remember(show) { mutableStateOf<String?>(null) }
@@ -227,7 +229,7 @@ internal fun BatteryColorBottomSheet(
                 },
                 onRenameCustom = { id ->
                     library.customById(id)?.let { custom ->
-                        renameRequest = RenameRequest(custom.id, customSchemeName(custom))
+                        renameRequest = RenameRequest(custom.id, custom.name.ifBlank { context.getString(R.string.battery_custom_scheme_default_name, custom.id) })
                     }
                 },
                 onCopyCustom = { custom ->
@@ -240,7 +242,7 @@ internal fun BatteryColorBottomSheet(
                 },
                 onDeleteCustom = { id ->
                     library.customById(id)?.let { custom ->
-                        deleteRequest = DeleteRequest(custom.id, customSchemeName(custom))
+                        deleteRequest = DeleteRequest(custom.id, custom.name.ifBlank { context.getString(R.string.battery_custom_scheme_default_name, custom.id) })
                     }
                 },
             )

@@ -38,6 +38,12 @@ source ABI are separate; source-level implementation does **not** imply device c
 - **Restart failure summary:** `ScopeRestart.clearFailure()` synchronously changes `Failed(targets)` to `Idle`; the dismissing dialog previously recomputed its summary from an empty target set. `MainHub` retains only the last displayed failure targets in local UI state via Compose `SideEffect`, clears that snapshot in `onDismissFinished`, and leaves the authoritative `ScopeRestart` transition and restart side effects untouched.
 - **Review:** Audited dialog callsites and source→UI flow including `ScopeRestart.State`, `clearFailure`, rendering and native exit. No new Hook, retry, repository writer, persistence, backdrop or material changes. Dynamic close/reopen, input and focus remain device gates.
 
+## B1532 CI compile correction
+
+- **Observed failure:** [OS4 matched MIUIX run 40563572718](https://github.com/CHS-Haple/Guiyuan/actions/runs/40563572718) failed `:app:compileDebugKotlin` and `:app:compileCanaryKotlin` at `BatteryColorControls.kt:230,243` with `COMPOSABLE_INVOCATION`. Event lambdas invoked `customSchemeName(custom)`, whose implementation is `@Composable` because the blank-name fallback uses `stringResource`.
+- **Minimal correction:** Get `LocalContext.current` once inside `BatteryColorBottomSheet` composition and resolve names at both ordinary click callbacks using `custom.name.ifBlank { context.getString(R.string.battery_custom_scheme_default_name, custom.id) }`. This preserves exactly the old nonblank and localized fallback names and request snapshot ownership. No dialog lifecycle, repository, external key, render ownership or OS3/OS4 style change.
+- **Build identity:** Retain B1532: the preceding B1532 build failed to compile and did not produce an installable APK. Await a successful exact-source CI and signed artifact before distributing. Source review alone does not prove compilation/device behavior.
+
 ## App-wide component and interaction audit (2026-10-28)
 
 Source compared: Guiyuan B1523 against matched MIUIX PR423 `b9f7083` and current experimental source `8d52b45`; verified against Home, Features, Settings, Appearance, Preview Sandbox, Diagnostics, Static Scope, About, the battery scheme/editor flows, and each OS4/published overlay wrapper. Findings are source-only except the maintainer's limited B1520 Cancel acceptance.
