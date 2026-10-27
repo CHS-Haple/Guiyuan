@@ -120,12 +120,21 @@ private data class DetailRequest(
 
 private data class RenameRequest(
     val id: Int,
+    val originalName: String,
     val visible: Boolean = true,
 )
 
 private data class CreateRequest(
     val sourceKey: String,
     val targetSlot: BatteryColorSlot?,
+    val nextId: Int?,
+    val visible: Boolean = true,
+)
+
+private data class DeleteRequest(
+    val id: Int,
+    val name: String,
+    val visible: Boolean = true,
 )
 
 @Composable
@@ -140,7 +149,7 @@ internal fun BatteryColorBottomSheet(
     var requestedSchemeKey by remember(show) { mutableStateOf<String?>(null) }
     var createRequest by remember(show) { mutableStateOf<CreateRequest?>(null) }
     var renameRequest by remember(show) { mutableStateOf<RenameRequest?>(null) }
-    var deleteCustomId by remember(show) { mutableStateOf<Int?>(null) }
+    var deleteRequest by remember(show) { mutableStateOf<DeleteRequest?>(null) }
 
     val nextCustomId = repository.nextAvailableCustomId(library)
     val nextCustomName =
@@ -201,6 +210,7 @@ internal fun BatteryColorBottomSheet(
                         CreateRequest(
                             sourceKey = scheme.key,
                             targetSlot = slot,
+                            nextId = nextCustomId,
                         )
                 },
                 onOpenCustomSlot = { id, slot ->
@@ -212,9 +222,14 @@ internal fun BatteryColorBottomSheet(
                         CreateRequest(
                             sourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
                             targetSlot = null,
+                            nextId = nextCustomId,
                         )
                 },
-                onRenameCustom = { renameRequest = RenameRequest(it) },
+                onRenameCustom = { id ->
+                    library.customById(id)?.let { custom ->
+                        renameRequest = RenameRequest(custom.id, customSchemeName(custom))
+                    }
+                },
                 onCopyCustom = { custom ->
                     val name = nextCustomName
                     if (name != null) {
@@ -223,7 +238,11 @@ internal fun BatteryColorBottomSheet(
                         }
                     }
                 },
-                onDeleteCustom = { deleteCustomId = it },
+                onDeleteCustom = { id ->
+                    library.customById(id)?.let { custom ->
+                        deleteRequest = DeleteRequest(custom.id, customSchemeName(custom))
+                    }
+                },
             )
         }
     }
@@ -300,14 +319,15 @@ internal fun BatteryColorBottomSheet(
         }
 
         BatteryCreateSchemeDialog(
-            show = createRequest != null,
-            nextId = nextCustomId,
-            onDismiss = {
-                createRequest = null
+            show = createRequest?.visible == true,
+            nextId = createRequest?.nextId,
+            onDismiss = { createRequest = createRequest?.copy(visible = false) },
+            onDismissFinished = {
+                if (createRequest?.visible == false) createRequest = null
             },
             onCreate = { name ->
-                val request = createRequest
-                createRequest = null
+                val request = createRequest?.takeIf { it.visible }
+                createRequest = createRequest?.copy(visible = false)
                 if (request != null) {
                     repository.createCustom(
                         name = name,
@@ -325,6 +345,7 @@ internal fun BatteryColorBottomSheet(
 
         BatteryRenameSchemeDialog(
             scheme = renameRequest?.id?.let(library::customById),
+            originalName = renameRequest?.originalName.orEmpty(),
             show = renameRequest?.visible == true,
             onDismiss = { renameRequest = renameRequest?.copy(visible = false) },
             onDismissFinished = {
@@ -336,18 +357,21 @@ internal fun BatteryColorBottomSheet(
             },
         )
 
-        val deleting = deleteCustomId?.let(library::customById)
+        val deleting = deleteRequest
         UiOverlayDialog(
             title = stringResource(R.string.battery_custom_scheme_delete),
             summary =
                 deleting?.let {
                     stringResource(
                         R.string.battery_custom_scheme_delete_summary,
-                        customSchemeName(it),
+                        it.name,
                     )
                 },
-            show = deleting != null,
-            onDismissRequest = { deleteCustomId = null },
+            show = deleting?.visible == true,
+            onDismissRequest = { deleteRequest = deleteRequest?.copy(visible = false) },
+            onDismissFinished = {
+                if (deleteRequest?.visible == false) deleteRequest = null
+            },
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -356,16 +380,18 @@ internal fun BatteryColorBottomSheet(
                 UiDialogButton(
                     text = stringResource(R.string.cancel),
                     modifier = Modifier.weight(1f),
-                    onClick = { deleteCustomId = null },
+                    onClick = { deleteRequest = deleteRequest?.copy(visible = false) },
                 )
                 Spacer(Modifier.width(dialogActionGap()))
                 UiDialogButton(
                     text = stringResource(R.string.battery_custom_scheme_delete),
                     modifier = Modifier.weight(1f),
+                    enabled = deleting?.visible == true,
                     role = GlassDialogButtonRole.Destructive,
                     onClick = {
-                        deleting?.let { repository.deleteCustom(it.id) }
-                        deleteCustomId = null
+                        val request = deleteRequest?.takeIf { it.visible }
+                        deleteRequest = deleteRequest?.copy(visible = false)
+                        request?.let { repository.deleteCustom(it.id) }
                     },
                 )
             }

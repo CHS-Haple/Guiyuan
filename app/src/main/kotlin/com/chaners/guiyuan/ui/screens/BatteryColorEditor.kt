@@ -405,18 +405,20 @@ internal fun BatteryCreateSchemeDialog(
     show: Boolean,
     nextId: Int?,
     onDismiss: () -> Unit,
+    onDismissFinished: () -> Unit,
     onCreate: (String) -> Unit,
 ) {
     val defaultName =
         nextId?.let {
             stringResource(R.string.battery_custom_scheme_default_name, it)
         }.orEmpty()
-    var name by remember(show, nextId) { mutableStateOf(defaultName) }
+    var name by remember(nextId) { mutableStateOf(defaultName) }
 
     UiOverlayDialog(
         title = stringResource(R.string.battery_custom_scheme_new),
         show = show && nextId != null,
         onDismissRequest = onDismiss,
+        onDismissFinished = onDismissFinished,
     ) {
         Column {
             TextField(
@@ -427,7 +429,7 @@ internal fun BatteryCreateSchemeDialog(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = {
                     val next = name.trim()
-                    if (next.isNotEmpty()) onCreate(next)
+                    if (show && next.isNotEmpty()) onCreate(next)
                 }),
             )
             Row(
@@ -446,10 +448,10 @@ internal fun BatteryCreateSchemeDialog(
                 UiDialogButton(
                     text = stringResource(R.string.battery_custom_scheme_create),
                     modifier = Modifier.weight(1f),
-                    enabled = name.trim().isNotEmpty(),
+                    enabled = show && name.trim().isNotEmpty(),
                     role = GlassDialogButtonRole.Primary,
                     onClick = {
-                        onCreate(name.trim())
+                        if (show) onCreate(name.trim())
                     },
                 )
             }
@@ -460,12 +462,13 @@ internal fun BatteryCreateSchemeDialog(
 @Composable
 internal fun BatteryRenameSchemeDialog(
     scheme: BatteryCustomColorScheme?,
+    originalName: String,
     show: Boolean,
     onDismissFinished: () -> Unit,
     onDismiss: () -> Unit,
     onRename: (Int, String) -> Unit,
 ) {
-    val currentName = scheme?.let { customSchemeName(it) }.orEmpty()
+    val currentName = originalName
     var name by remember(scheme?.id, currentName) { mutableStateOf(currentName) }
     UiOverlayDialog(
         title = stringResource(R.string.battery_custom_scheme_rename),
