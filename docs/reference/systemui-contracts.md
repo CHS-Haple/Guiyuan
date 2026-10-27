@@ -23,6 +23,15 @@ Current target evidence is scoped to Xiaomi HyperOS SystemUI `17.03.260226.r`. T
 
 **Verified target DEX boundary.** `MiuiStatusIconContainer` extends `AlphaOptimizedLinearLayout`, which extends Android `LinearLayout`; neither target class declares a `setPaddingRelative` override. The target `MiuiStatusIconContainer.onLayout(ZIIII)V` invokes inherited `getPaddingStart()` and `getPaddingEnd()`; native `addIgnoredSlots(List)` calls `List.add` and `requestLayout`, while `setIgnoredSlots(List)` calls `List.clear` before `addIgnoredSlots`. These are verified method definitions/invocations, **not** proof of the inherited Android setter's internal exception ordering, synchronous reentry, other modules' writers or actual runtime failure. Inspect the matching Android framework binary when that behavior becomes decision-critical; AOSP is secondary context.
 
+**Observed native Padding consumers (DEX call-site offsets).** Re-reading the same SHA-256-verified APK's `classes3.dex` gives the following method invocation positions, measured in DEX *16-bit code units* from the enclosing method's first instruction:
+
+- `MiuiStatusIconContainer.onLayout(ZIIII)V`: inherited `getPaddingEnd()` at offset **108**, `getPaddingStart()` at **114**.
+- `MiuiNotificationStatusContainer.onLayout(ZIIII)V`: `getPaddingStart()` at **13** and **20**; its `onMeasure(II)V` reads `getPaddingStart()` at **195** and `getPaddingEnd()` at **200** and **210**.
+- `MiuiStatusBatteryContainer.onLayout(ZIIII)V`: `getPaddingEnd()` at **33**, **56**, **109**, **132**, **163** and **177**; `getPaddingStart()` at **167** and **173**.
+- `MiuiStatusIconContainer.addIgnoredSlots(Ljava/util/List;)V`: `List.contains` at **18**, `List.add` at **26**, and `requestLayout` at **30**. `setIgnoredSlots(Ljava/util/List;)V`: `List.clear` at **2**, then `addIgnoredSlots` at **5**.
+
+These are invocation references in the target bytecode, not a full path-condition or runtime callback trace. In particular, none establishes the actual inherited Android `setPaddingRelative()` exception/reentry order. Native padding influences more than the Guiyuan glyph bounds, so any session-owned padding acquisition/rollback must account for the native measure/layout consumers and preserve single-writer and foreign-change boundaries.
+
 A contract verified here must not be assumed valid on another SystemUI build without revalidation.
 
 ## Existing native host
