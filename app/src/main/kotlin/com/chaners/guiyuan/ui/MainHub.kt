@@ -22,6 +22,7 @@ import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -78,6 +79,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import com.chaners.guiyuan.ui.components.UiDialogButton
+import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
@@ -181,8 +183,9 @@ internal fun MainHub(
             appearance.navStyle == NavStyle.Liquid &&
             liquidNavSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
+    // The root dialog needs a clean page source even with native/hidden navigation.
     val miuixBackdrop =
-        if (miuixMaterialActive) {
+        if (miuixMaterialActive || (os4 && isRuntimeShaderSupported())) {
             rememberLayerBackdrop {
                 drawRect(surfaceColor)
                 drawContent()
@@ -190,6 +193,7 @@ internal fun MainHub(
         } else {
             null
         }
+    val navBackdrop = miuixBackdrop.takeIf { miuixMaterialActive }
     val liquidBackdrop =
         if (liquidMaterialActive) {
             rememberLiquidNavBackdrop(surfaceColor)
@@ -229,9 +233,9 @@ internal fun MainHub(
     )
 
     val navigationBarModifier =
-        if (miuixBackdrop != null && !os4Glass) {
+        if (navBackdrop != null && !os4Glass) {
             Modifier.floatingNavMaterial(
-                backdrop = miuixBackdrop,
+                backdrop = navBackdrop,
                 dark = dark,
                 style = appearance.navStyle,
             )
@@ -252,7 +256,7 @@ internal fun MainHub(
         snackbarHost = { SnackbarHost(state = featureSnackbarState) },
         bottomBar = {
             when {
-                os4Glass && miuixBackdrop != null -> {
+                os4Glass && navBackdrop != null -> {
                     GlassNavigationBar(
                         items = items.mapIndexed { index, item ->
                             GlassNavigationItem(
@@ -263,14 +267,14 @@ internal fun MainHub(
                         },
                         selectedIndex = pagerState.currentPage,
                         onSelect = ::selectPage,
-                        backdrop = miuixBackdrop,
+                        backdrop = navBackdrop,
                         modifier = Modifier
                             .padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = os4BottomMargin),
                     )
                 }
                 // OS4 without a usable shader must fall back to native MIUIX,
                 // not resurrect a previously saved OS3 floating-bar style.
-                (os4Glass && miuixBackdrop == null) || !appearance.navEnabled -> {
+                (os4Glass && navBackdrop == null) || !appearance.navEnabled -> {
                     NavigationBar(
                         mode = if (os4Glass && appearance.activeNavContent == NavContent.IconOnly) {
                             NavigationBarDisplayMode.IconOnly
@@ -322,7 +326,7 @@ internal fun MainHub(
                     FloatingNavigationBar(
                         modifier = navigationBarModifier,
                         color =
-                            if (miuixBackdrop != null) {
+                            if (navBackdrop != null) {
                                 Color.Transparent
                             } else {
                                 MiuixTheme.colorScheme.surfaceContainer
@@ -404,6 +408,8 @@ internal fun MainHub(
             )
         }
 
+        // Popups are hosted outside this page's backdrop recording.
+        CompositionLocalProvider(LocalGlassBackdrop provides if (os4) miuixBackdrop else null) {
         UiOverlayDialog(
             title = stringResource(R.string.restart_scope),
             summary = stringResource(
@@ -555,6 +561,7 @@ internal fun MainHub(
                 role = GlassDialogButtonRole.Primary,
                 onClick = ScopeRestart::clearFailure,
             )
+        }
         }
     }
 }
