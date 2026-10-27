@@ -7,6 +7,7 @@ import android.graphics.Paint
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -193,7 +194,10 @@ internal fun SettingsPage(
     val topBarBackdrop = rememberTopBarBackdrop()
     val os4 = LocalUiStyle.current == UiStyle.OS4
     val navigationIcon: @Composable () -> Unit = {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = if (os4) Arrangement.spacedBy(8.dp) else Arrangement.Start,
+        ) {
             TooltipBox(text = stringResource(R.string.back)) {
                 if (os4) {
                     GlassIconButton(onClick = onBack) {
@@ -222,7 +226,18 @@ internal fun SettingsPage(
                     titleAlpha = { titleAlpha },
                     titlePadding = titlePadding,
                     navigationIcon = navigationIcon,
-                    actions = actions,
+                    actions = {
+                        if (glassActions) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                actions()
+                            }
+                        } else {
+                            actions()
+                        }
+                    },
                     unclippedNavigationIcon = true,
                     unclippedActions = glassActions,
                 )
