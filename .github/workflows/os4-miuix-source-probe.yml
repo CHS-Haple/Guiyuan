@@ -72,10 +72,10 @@ jobs:
           GRADLE_USER_HOME: ${{ runner.temp }}/miuix-pr423-gradle
         run: |
           ./gradlew \
-            :miuix-glass:compileKotlinAndroid \
-            :miuix-glass-icons:compileKotlinAndroid \
-            :miuix-preference:compileKotlinAndroid \
-            :miuix-nav:compileKotlinAndroid \
+            :miuix-glass:compileAndroidMain \
+            :miuix-glass-icons:compileAndroidMain \
+            :miuix-preference:compileAndroidMain \
+            :miuix-nav:compileAndroidMain \
             --no-daemon --stacktrace
 
       - name: State evidence boundary
