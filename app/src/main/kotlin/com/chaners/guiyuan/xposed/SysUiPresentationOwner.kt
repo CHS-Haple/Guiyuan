@@ -1140,6 +1140,33 @@ internal object SysUiPresentationOwner {
         }
     }
 
+    // A post-native owner failure must not replace the framework method's result.
+    private fun afterNativeCallback(
+        session: Session?,
+        source: String,
+        action: () -> Unit,
+    ) {
+        if (session == null) return
+        try {
+            action()
+        } catch (error: Throwable) {
+            rethrowFatal(error)
+            session.reportCallbackFailure(source, error)
+            try {
+                synchronized(this) {
+                    when {
+                        current === session -> onSessionFailure(source)
+                        controlCenterCurrent === session -> onCcSessionFailure(source)
+                        keyguardFamilyCurrent === session -> onKeyguardFamilySessionFailure(source)
+                    }
+                }
+            } catch (cleanup: Throwable) {
+                rethrowFatal(cleanup)
+                session.reportCallbackFailure(source, error, cleanup)
+            }
+        }
+    }
+
     private fun layoutHooker(refreshMasksAfter: Boolean): Hooker =
         Hooker { chain ->
             val target = readOrNull { chain.thisObject as? ViewGroup }
@@ -1151,22 +1178,31 @@ internal object SysUiPresentationOwner {
                         ?: keyguardFamilyCurrent?.takeIf { candidate -> candidate.owns(target) }
                 } ?: return@Hooker chain.proceed()
 
-            session.traceFakeCarrierWidth(
-                if (refreshMasksAfter) "layout-before" else "measure-before",
-            )
-            val result = session.withRepresentedSlotsIgnored { chain.proceed() }
-            session.traceFakeCarrierWidth(
-                if (refreshMasksAfter) "layout-after" else "measure-after",
-            )
-            if (refreshMasksAfter) {
-                syncPeerMirrorAfterLayout(session)
+            emitDiagnostic {
+                session.traceFakeCarrierWidth(
+                    if (refreshMasksAfter) "layout-before" else "measure-before",
+                )
             }
-            if (
-                refreshMasksAfter &&
-                session.validateNativeLayoutBeforeVisualMask()
+            val result = session.withRepresentedSlotsIgnored { chain.proceed() }
+            emitDiagnostic {
+                session.traceFakeCarrierWidth(
+                    if (refreshMasksAfter) "layout-after" else "measure-after",
+                )
+            }
+            afterNativeCallback(
+                session,
+                if (refreshMasksAfter) "layout-post-native" else "measure-post-native",
             ) {
-                val masked = session.refreshClipMasks()
-                session.onNativeLayoutCompleted(masked)
+                if (refreshMasksAfter) {
+                    syncPeerMirrorAfterLayout(session)
+                }
+                if (
+                    refreshMasksAfter &&
+                    session.validateNativeLayoutBeforeVisualMask()
+                ) {
+                    val masked = session.refreshClipMasks()
+                    session.onNativeLayoutCompleted(masked)
+                }
             }
             result
         }
@@ -1273,7 +1309,9 @@ internal object SysUiPresentationOwner {
                         ?: keyguardFamilyCurrent
                             ?.takeIf { candidate -> candidate.ownsBatteryContainer(target) }
                 }
-            session?.syncEndReservation()
+            afterNativeCallback(session, "battery-hide-post-native") {
+                session?.syncEndReservation()
+            }
             result
         }
 
@@ -1591,6 +1629,18 @@ internal object SysUiPresentationOwner {
 
         fun ownsBatteryContainer(candidate: ViewGroup): Boolean =
             active && batteryContainer.get() === candidate
+
+        fun reportCallbackFailure(source: String, error: Throwable, cleanup: Throwable? = null) {
+            emitDiagnostic {
+                onEvent(
+                    eventPrefix + " callback source=" + source +
+                        " state=" +
+                        (if (cleanup == null) "callback-failed" else "cleanup-incomplete") +
+                        " errorType=" + error.javaClass.name +
+                        (cleanup?.let { " cleanupErrorType=" + it.javaClass.name } ?: ""),
+                )
+            }
+        }
 
         fun retargetPresentation(
             surfaceName: String,
