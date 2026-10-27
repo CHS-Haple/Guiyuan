@@ -122,7 +122,7 @@ internal object CcRenderSession {
         }
 
         if (existing != null) {
-            CcTransitionOwner.releaseAll(
+            releaseAll(
                 { SysUiPresentationOwner.deactivateCc("host-replaced") },
                 { existing.stop("host-replaced") },
             )
@@ -148,7 +148,7 @@ internal object CcRenderSession {
         } catch (error: Throwable) {
             SysUiPresentationRuntime.throwIfFatal(error)
             try {
-                CcTransitionOwner.releaseAll(
+                releaseAll(
                     { if (current === session) SysUiPresentationOwner.deactivateCc("attach-failed") },
                     { session.stop("attach-failed") },
                 )
@@ -308,7 +308,7 @@ internal object CcRenderSession {
     ) {
         val pending = pendingPrearm
         val session = current
-        CcTransitionOwner.releaseAll(
+        releaseAll(
             {
                 pending?.cancel()
                 if (pendingPrearm === pending) pendingPrearm = null
@@ -456,7 +456,7 @@ internal object CcRenderSession {
             if (phase == Phase.Idle) return
             phase = Phase.Releasing
             val root = host.get()
-            CcTransitionOwner.releaseAll(
+            releaseAll(
                 { root?.removeOnLayoutChangeListener(this) },
                 { root?.removeOnAttachStateChangeListener(this) },
             )
@@ -669,7 +669,7 @@ internal object CcRenderSession {
             val notify = lastProjectionReady == true
             lastProjectionReady = false
             val hostView = host.get()
-            CcTransitionOwner.releaseAll(
+            releaseAll(
                 { renderView.visibility = View.GONE },
                 { hostView?.removeOnAttachStateChangeListener(this) },
                 { hostView?.removeOnLayoutChangeListener(hostLayoutListener) },
@@ -707,7 +707,7 @@ internal object CcRenderSession {
                 !SysUiPresentationOwner.onCcVisibilityChanged(false)
             ) {
                 requestedVisible = false
-                CcTransitionOwner.releaseAll(
+                releaseAll(
                     { syncPresentation("visibility-hidden-release-failed") },
                     { SysUiPresentationOwner.failCcPresentation("fake-carrier-hidden-release-unverified") },
                 )
