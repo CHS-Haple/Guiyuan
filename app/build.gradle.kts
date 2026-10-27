@@ -85,7 +85,7 @@ android {
     }
 
     // Match the dialog implementation to MIUIX's compiled DialogSurfaceScope ABI.
-    sourceSets.getByName("main").java.srcDir(
+    sourceSets.getByName("main").kotlin.directories.add(
         if (os4DialogSurfaces) "src/os4Upstream/kotlin" else "src/os4Published/kotlin",
     )
 
