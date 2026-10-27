@@ -52,8 +52,11 @@ keyboard/Back, scrolling, overlay host ownership and shader-free fallback togeth
   and title geometry; its action slots are noninteractive size placeholders.
   The real OS4 glass controls are composed once above the legacy clip in the
   parent glass bar; their measured size also determines the native inert slot
-  so multi-button navigation rows cannot overlap the adjacent title. Remove this
-  adapter after upgrading the complete upstream UI revision. Rounded button
+  so multi-button navigation rows cannot overlap the adjacent title. Its
+  `boundsInRoot` / `positionInRoot` coordinates are physical, so both unclipped
+  overlay positions use `absoluteOffset` instead of layout-direction-relative
+  `offset`; otherwise RTL mirrors the x displacement twice. Remove this adapter
+  after upgrading the complete upstream UI revision. Rounded button
   interaction/animation remains pending device acceptance.
 - **Navigation configuration:** On the first B1464 appearance read, a one-time
   DataStore migration selects OS4 for **all** existing users, including those with

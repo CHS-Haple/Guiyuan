@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -408,7 +408,7 @@ fun GlassTopAppBar(
             // Published TopAppBar clips its whole layout. Retain native slot measurement,
             // but draw each interactive glass button once above that outdated clip.
             navigationBounds?.takeIf { unclippedNavigationIcon }?.let { bounds ->
-                Box(Modifier.onSizeChanged { navigationSize = it }.offset {
+                Box(Modifier.onSizeChanged { navigationSize = it }.absoluteOffset {
                     IntOffset(
                         (bounds.left - barOrigin.x).roundToInt(),
                         (bounds.top - barOrigin.y).roundToInt(),
@@ -418,7 +418,7 @@ fun GlassTopAppBar(
                 }
             }
             actionBounds?.takeIf { unclippedActions }?.let { bounds ->
-                Row(Modifier.onSizeChanged { actionSize = it }.offset {
+                Row(Modifier.onSizeChanged { actionSize = it }.absoluteOffset {
                     IntOffset(
                         (bounds.left - barOrigin.x).roundToInt(),
                         (bounds.top - barOrigin.y).roundToInt(),
