@@ -48,6 +48,8 @@ For defects, investigate root cause before adding a workaround. Do not add geome
 
 When several explanations remain plausible, prefer a bounded single-variable diagnostic.
 
+Before each MIUIX-facing UI adaptation, report to the maintainer **before editing**: whether upstream provides a released API, an experimental PR/sample, or no corresponding implementation; the exact upstream source/revision and its layout, motion, state, and lifecycle contract; the current Guiyuan mismatch; the minimal adaptation and its verification boundary. An upstream sample is evidence, not a mandatory public API. Do not replace an accepted control merely to match an illustrative demo.
+
 ## Runtime safety
 
 ### Ownership and lifecycle
