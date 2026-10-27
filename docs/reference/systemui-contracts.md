@@ -32,6 +32,16 @@ Current target evidence is scoped to Xiaomi HyperOS SystemUI `17.03.260226.r`. T
 
 These are invocation references in the target bytecode, not a full path-condition or runtime callback trace. In particular, none establishes the actual inherited Android `setPaddingRelative()` exception/reentry order. Native padding influences more than the Guiyuan glyph bounds, so any session-owned padding acquisition/rollback must account for the native measure/layout consumers and preserve single-writer and foreign-change boundaries.
 
+**Observed native Padding writers (DEX and resource table).** On the same SHA-256-verified target, `MiuiPhoneStatusBarView.updatePaddings()V` in `classes2.dex` invokes inherited `setPaddingRelative(IIII)V` on three recipients:
+
+- `findViewById(0x7f0b0b53)`, named `status_bar_contents` in the packaged `resources.arsc`: call at instruction offset **97**.
+- `findViewById(0x7f0b0be6)`, named `system_icons`: call at offset **107**.
+- Its `mPrivacyArea: LinearLayout` field: call at offset **139**.
+
+These recipients were checked using DEX invoke registers/field references and APK resource-entry names, not screenshots or the generic AOSP layout. They establish that the native phone status-bar hierarchy updates Padding independently, including during its own layout/insets configuration flow. **Not established:** whether the `system_icons` View identified by that resource is precisely the `DarkIconManager.mGroup` resolved by Guiyuan on every live host, whether its write synchronously reenters Guiyuan, or how inherited Android `View.setPaddingRelative` behaves on a faulting setter. Do not treat a same-resource-name or equal Padding value as proof of exclusive writer ownership; resolve the actual View identity and generation before implementing session-retirement recovery.
+
+
+
 A contract verified here must not be assumed valid on another SystemUI build without revalidation.
 
 ## Existing native host
