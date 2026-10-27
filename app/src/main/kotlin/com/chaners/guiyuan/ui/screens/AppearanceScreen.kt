@@ -820,15 +820,16 @@ private fun MiniNavigationPreview(
                 }
             }
         } else {
+            val showLabel = !os4Glass || content == NavContent.IconAndText
             MiniNavViewport {
                 NavigationBar(
                     color = MiuixTheme.colorScheme.surface,
                     showDivider = true,
                     defaultWindowInsetsPadding = false,
                 ) {
-                    MiniStandardNavigationItem(selected = false, icon = MiuixIcons.Normal.Home)
-                    MiniStandardNavigationItem(selected = false, icon = MiuixIcons.Normal.Tune)
-                    MiniStandardNavigationItem(selected = true, icon = MiuixIcons.Medium.Settings)
+                    MiniStandardNavigationItem(selected = false, icon = MiuixIcons.Normal.Home, showLabel = showLabel)
+                    MiniStandardNavigationItem(selected = false, icon = MiuixIcons.Normal.Tune, showLabel = showLabel)
+                    MiniStandardNavigationItem(selected = true, icon = MiuixIcons.Medium.Settings, showLabel = showLabel)
                 }
             }
         }
@@ -867,6 +868,7 @@ private fun MiniNavViewport(
 private fun RowScope.MiniStandardNavigationItem(
     selected: Boolean,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    showLabel: Boolean,
 ) {
     val contentColor =
         MiuixTheme.colorScheme.onSurface.copy(
@@ -879,18 +881,21 @@ private fun RowScope.MiniStandardNavigationItem(
                 .height(NavigationBarDefaults.ItemHeight)
                 .weight(1f),
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = if (showLabel) Arrangement.Top else Arrangement.Center,
     ) {
-        Spacer(modifier = Modifier.height(NavigationBarDefaults.IconTopPadding))
+        if (showLabel) Spacer(modifier = Modifier.height(NavigationBarDefaults.IconTopPadding))
         Icon(
             modifier = Modifier.size(NavigationBarDefaults.IconSize),
             imageVector = icon,
             contentDescription = null,
             tint = contentColor,
         )
-        Spacer(modifier = Modifier.height(3.dp))
-        MiniTextBar(
-            width = if (selected) 30.dp else 26.dp,
-            role = MiniTextRole.Body2,
-        )
+        if (showLabel) {
+            Spacer(modifier = Modifier.height(3.dp))
+            MiniTextBar(
+                width = if (selected) 30.dp else 26.dp,
+                role = MiniTextRole.Body2,
+            )
+        }
     }
 }
