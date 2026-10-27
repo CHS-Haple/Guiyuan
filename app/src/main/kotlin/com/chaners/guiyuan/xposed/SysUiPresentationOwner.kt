@@ -53,10 +53,10 @@ internal object SysUiPresentationOwner {
     private var keyguardFamilyCurrent: Session? = null
     private var keyguardFamilySurface: KeyguardFamilySurface? = null
     private var controlCenterCurrent: Session? = null
-    // An incomplete native release must remain reachable and block the same surface.
-    private var retiringHome: Session? = null
-    private var retiringFamily: Session? = null
-    private var retiringCc: Session? = null
+    // Retired receipts stay reachable; only a successful release admits a new owner.
+    private val homeRetirement = RetirementGate<Session>()
+    private val familyRetirement = RetirementGate<Session>()
+    private val ccRetirement = RetirementGate<Session>()
     private var controlCenterEventSink: ((String) -> Unit)? = null
     private var controlCenterFailNativeSink: ((String) -> Unit)? = null
     private var controlCenterReadySink: ((Result.Active) -> Unit)? = null
@@ -69,29 +69,14 @@ internal object SysUiPresentationOwner {
     private var steadyPeerMirrorActive = false
     private var steadyPeerMirrorHiddenSlots: Set<String> = emptySet()
 
-    private fun stopHome(session: Session, source: String, requestLayout: Boolean = true): Int {
-        check(retiringHome == null || retiringHome === session) { "home-release-incomplete" }
-        retiringHome = session
-        val restored = session.stop(source, requestLayout)
-        if (retiringHome === session) retiringHome = null
-        return restored
-    }
+    private fun stopHome(session: Session, source: String, requestLayout: Boolean = true): Int =
+        homeRetirement.release(session) { session.stop(source, requestLayout) }
 
-    private fun stopFamily(session: Session, source: String, requestLayout: Boolean = true): Int {
-        check(retiringFamily == null || retiringFamily === session) { "family-release-incomplete" }
-        retiringFamily = session
-        val restored = session.stop(source, requestLayout)
-        if (retiringFamily === session) retiringFamily = null
-        return restored
-    }
+    private fun stopFamily(session: Session, source: String, requestLayout: Boolean = true): Int =
+        familyRetirement.release(session) { session.stop(source, requestLayout) }
 
-    private fun stopCc(session: Session, source: String, requestLayout: Boolean = true): Int {
-        check(retiringCc == null || retiringCc === session) { "cc-release-incomplete" }
-        retiringCc = session
-        val restored = session.stop(source, requestLayout)
-        if (retiringCc === session) retiringCc = null
-        return restored
-    }
+    private fun stopCc(session: Session, source: String, requestLayout: Boolean = true): Int =
+        ccRetirement.release(session) { session.stop(source, requestLayout) }
 
     // Diagnostic sinks must not interrupt native layout or its readiness callbacks.
     internal inline fun emitDiagnostic(block: () -> Unit) {
@@ -449,7 +434,7 @@ internal object SysUiPresentationOwner {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             return Result.Failure("main-thread-required")
         }
-        if (retiringHome != null) return Result.Failure("home-release-incomplete")
+        if (homeRetirement.pending != null) return Result.Failure("home-release-incomplete")
         if (installedHookCount != HOOK_COUNT) {
             return Result.Failure("hooks-not-ready")
         }
@@ -637,7 +622,7 @@ internal object SysUiPresentationOwner {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             return Result.Failure("main-thread-required")
         }
-        if (retiringFamily != null) return Result.Failure(surface.surfaceName + "-release-incomplete")
+        if (familyRetirement.pending != null) return Result.Failure(surface.surfaceName + "-release-incomplete")
         if (installedHookCount != HOOK_COUNT) {
             return Result.Failure("hooks-not-ready")
         }
@@ -810,7 +795,7 @@ internal object SysUiPresentationOwner {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             return Result.Failure("main-thread-required")
         }
-        if (retiringCc != null) return Result.Failure("control-center-release-incomplete")
+        if (ccRetirement.pending != null) return Result.Failure("control-center-release-incomplete")
         if (installedHookCount != HOOK_COUNT) {
             return Result.Failure("hooks-not-ready", retryAfterLayout = true)
         }
@@ -1049,19 +1034,19 @@ internal object SysUiPresentationOwner {
                 0
             }
 
-        val cc = controlCenterCurrent ?: retiringCc
+        val cc = controlCenterCurrent ?: ccRetirement.pending
         controlCenterCurrent = null
         val controlCenterRestored = stop {
             cc?.let { stopCc(it, "hotReload-oldGeneration", requestLayout) } ?: 0
         }
 
-        val home = current ?: retiringHome
+        val home = current ?: homeRetirement.pending
         current = null
         val homeRestored = stop {
             home?.let { stopHome(it, "hotReload-oldGeneration", requestLayout) } ?: 0
         }
 
-        val keyguard = keyguardFamilyCurrent ?: retiringFamily
+        val keyguard = keyguardFamilyCurrent ?: familyRetirement.pending
         keyguardFamilyCurrent = null
         keyguardFamilySurface = null
         val keyguardFamilyRestored = stop {
@@ -1111,9 +1096,9 @@ internal object SysUiPresentationOwner {
             }
         }
         // Retry only receipts retired before this reset, not a second time on the same event.
-        val priorCc = retiringCc?.takeIf { it !== controlCenterCurrent }
-        val priorFamily = retiringFamily?.takeIf { it !== keyguardFamilyCurrent }
-        val priorHome = retiringHome?.takeIf { it !== current }
+        val priorCc = ccRetirement.pending?.takeIf { it !== controlCenterCurrent }
+        val priorFamily = familyRetirement.pending?.takeIf { it !== keyguardFamilyCurrent }
+        val priorHome = homeRetirement.pending?.takeIf { it !== current }
         release { deactivateCc(source) }
         release { deactivateAod(source) }
         release { deactivateKeyguard(source) }
