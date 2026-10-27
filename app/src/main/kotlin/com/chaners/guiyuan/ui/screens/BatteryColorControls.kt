@@ -18,6 +18,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.icons.Os4GlassBack
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_HYPEROS_KEY
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
@@ -227,8 +230,9 @@ internal fun BatteryColorBottomSheet(
                     onClick = { showDetail = false },
                 ) {
                     Icon(
-                        imageVector = MiuixIcons.Back,
+                        imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassBack else MiuixIcons.Back,
                         contentDescription = stringResource(R.string.back),
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             }
