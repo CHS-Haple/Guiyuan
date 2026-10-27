@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -18,6 +19,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.icons.Os4GlassBack
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_HYPEROS_KEY
@@ -250,71 +252,74 @@ internal fun BatteryColorBottomSheet(
         }
     }
 
-    BatteryCreateSchemeDialog(
-        show = createRequest != null,
-        nextId = nextCustomId,
-        onDismiss = {
-            createRequest = null
-        },
-        onCreate = { name ->
-            val request = createRequest
-            createRequest = null
-            if (request != null) {
-                repository.createCustom(
-                    name = name,
-                    fromSchemeKey = request.sourceKey,
-                )?.let { id ->
-                    requestedSchemeKey = customSchemeKey(id)
-                    request.targetSlot?.let { slot ->
-                        detailRequest = DetailRequest(customId = id, slot = slot)
-                        showDetail = true
+    // These dialogs sit above sheets that the page backdrop does not record.
+    CompositionLocalProvider(LocalGlassBackdrop provides null) {
+        BatteryCreateSchemeDialog(
+            show = createRequest != null,
+            nextId = nextCustomId,
+            onDismiss = {
+                createRequest = null
+            },
+            onCreate = { name ->
+                val request = createRequest
+                createRequest = null
+                if (request != null) {
+                    repository.createCustom(
+                        name = name,
+                        fromSchemeKey = request.sourceKey,
+                    )?.let { id ->
+                        requestedSchemeKey = customSchemeKey(id)
+                        request.targetSlot?.let { slot ->
+                            detailRequest = DetailRequest(customId = id, slot = slot)
+                            showDetail = true
+                        }
                     }
                 }
-            }
-        },
-    )
-
-    BatteryRenameSchemeDialog(
-        scheme = renameCustomId?.let(library::customById),
-        onDismiss = { renameCustomId = null },
-        onRename = { id, name ->
-            renameCustomId = null
-            repository.renameCustom(id, name)
-        },
-    )
-
-    val deleting = deleteCustomId?.let(library::customById)
-    UiOverlayDialog(
-        title = stringResource(R.string.battery_custom_scheme_delete),
-        summary =
-            deleting?.let {
-                stringResource(
-                    R.string.battery_custom_scheme_delete_summary,
-                    customSchemeName(it),
-                )
             },
-        show = deleting != null,
-        onDismissRequest = { deleteCustomId = null },
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            UiDialogButton(
-                text = stringResource(R.string.cancel),
-                modifier = Modifier.weight(1f),
-                onClick = { deleteCustomId = null },
-            )
-            Spacer(Modifier.width(20.dp))
-            UiDialogButton(
-                text = stringResource(R.string.battery_custom_scheme_delete),
-                modifier = Modifier.weight(1f),
-                role = GlassDialogButtonRole.Destructive,
-                onClick = {
-                    deleting?.let { repository.deleteCustom(it.id) }
-                    deleteCustomId = null
+        )
+
+        BatteryRenameSchemeDialog(
+            scheme = renameCustomId?.let(library::customById),
+            onDismiss = { renameCustomId = null },
+            onRename = { id, name ->
+                renameCustomId = null
+                repository.renameCustom(id, name)
+            },
+        )
+
+        val deleting = deleteCustomId?.let(library::customById)
+        UiOverlayDialog(
+            title = stringResource(R.string.battery_custom_scheme_delete),
+            summary =
+                deleting?.let {
+                    stringResource(
+                        R.string.battery_custom_scheme_delete_summary,
+                        customSchemeName(it),
+                    )
                 },
-            )
+            show = deleting != null,
+            onDismissRequest = { deleteCustomId = null },
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                UiDialogButton(
+                    text = stringResource(R.string.cancel),
+                    modifier = Modifier.weight(1f),
+                    onClick = { deleteCustomId = null },
+                )
+                Spacer(Modifier.width(20.dp))
+                UiDialogButton(
+                    text = stringResource(R.string.battery_custom_scheme_delete),
+                    modifier = Modifier.weight(1f),
+                    role = GlassDialogButtonRole.Destructive,
+                    onClick = {
+                        deleting?.let { repository.deleteCustom(it.id) }
+                        deleteCustomId = null
+                    },
+                )
+            }
         }
     }
 }
