@@ -13,6 +13,7 @@ import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.PreviewSysUiResources
 import com.chaners.guiyuan.ui.screens.toRenderModel
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
+import com.chaners.guiyuan.xposed.prefs.PrefListenerRetirement
 import com.chaners.guiyuan.ui.screens.previewCenterSource
 
 // Temporary Home presentation only. Native state continues updating underneath.
@@ -20,6 +21,7 @@ internal object SandboxHost {
     private val handler = Handler(Looper.getMainLooper())
     private var source: SharedPreferences? = null
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+    private val listenerRetirement = PrefListenerRetirement()
     private var onChanged: ((PreviewSandboxUiState?) -> Unit)? = null
     @Volatile private var current: SandboxLease? = null
     private var resources: PreviewSysUiResources? = null
@@ -66,9 +68,7 @@ internal object SandboxHost {
         staticMobileFace = null
         staticMobileFaceChecked = false
         try {
-            if (prefs != null && observer != null) {
-                prefs.unregisterOnSharedPreferenceChangeListener(observer)
-            }
+            listenerRetirement.unregister(prefs, observer)
         } finally {
             notify?.invoke(null)
         }
