@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -124,12 +123,12 @@ internal fun BatteryColorBottomSheet(
     repository: BatterySchemeRepo,
     onDismiss: () -> Unit,
 ) {
-    var detailRequest by remember { mutableStateOf<DetailRequest?>(null) }
-    var showDetail by remember { mutableStateOf(false) }
-    var requestedSchemeKey by remember { mutableStateOf<String?>(null) }
-    var createRequest by remember { mutableStateOf<CreateRequest?>(null) }
-    var renameCustomId by remember { mutableStateOf<Int?>(null) }
-    var deleteCustomId by remember { mutableStateOf<Int?>(null) }
+    var detailRequest by remember(show) { mutableStateOf<DetailRequest?>(null) }
+    var showDetail by remember(show) { mutableStateOf(false) }
+    var requestedSchemeKey by remember(show) { mutableStateOf<String?>(null) }
+    var createRequest by remember(show) { mutableStateOf<CreateRequest?>(null) }
+    var renameCustomId by remember(show) { mutableStateOf<Int?>(null) }
+    var deleteCustomId by remember(show) { mutableStateOf<Int?>(null) }
 
     val nextCustomId = repository.nextAvailableCustomId(library)
     val nextCustomName =
@@ -143,13 +142,6 @@ internal fun BatteryColorBottomSheet(
             showDetail &&
             detailCustom != null &&
             detailSlot != null
-
-    LaunchedEffect(show) {
-        if (!show) {
-            showDetail = false
-            detailRequest = null
-        }
-    }
 
     UiOverlayBottomSheet(
         show = show,
