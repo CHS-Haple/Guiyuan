@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -1379,6 +1380,11 @@ private fun HubPage(
     }
     val searchMotion = rememberOs4SearchMotion(os4 && search?.active == true)
     val searchReturn = 1f - searchMotion.progress.coerceIn(0f, 1f)
+    val os3SearchActionAlpha by animateFloatAsState(
+        targetValue = if (!os4 && search?.active == true) 0f else 1f,
+        animationSpec = tween(150),
+        label = "os3SearchAction",
+    )
     // Only actual content overlap changes the surface; search geometry has its own clock.
     val searchMaterial = animateFloatAsState(
         targetValue = if (os4 && listState.canScrollBackward) 1f else 0f,
@@ -1389,17 +1395,22 @@ private fun HubPage(
         if (search != null) {
             val label = stringResource(R.string.feature_search)
             TooltipBox(text = label) {
-                if (os4) {
-                    Box(Modifier.graphicsLayer { alpha = searchReturn }) {
+                Box(Modifier.graphicsLayer {
+                    alpha = if (os4) searchReturn else os3SearchActionAlpha
+                }) {
+                    if (os4) {
                         GlassIconButton(
                             onClick = search::open,
                             enabled = !search.active,
                         ) {
                             Icon(Os4GlassSearch, contentDescription = label)
                         }
+                    } else IconButton(
+                        onClick = search::open,
+                        enabled = !search.active,
+                    ) {
+                        Icon(MiuixIcons.Search, contentDescription = label)
                     }
-                } else IconButton(onClick = search::open) {
-                    Icon(MiuixIcons.Search, contentDescription = label)
                 }
             }
         }

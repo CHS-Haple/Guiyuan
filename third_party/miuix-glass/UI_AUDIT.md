@@ -1,6 +1,6 @@
 # OS4 UI conformance and upstream adoption audit
 
-Source baseline: Guiyuan `feat/os4-glass-experimental` B1507 (PR #861 Draft; validation pending). B1506 signed CI passed at `38ffc46`; B1507 is not yet device-accepted.
+Source baseline: Guiyuan `feat/os4-glass-experimental` B1508 (PR #861 Draft; source verification pending). B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
 MIUIX pinned published: `b587aaf2c907c77a8c3c02d8df0aede2937ef8f0` (`0.9.4-b587aaf2-SNAPSHOT`).
 MIUIX reviewed prerelease: [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (not yet merged).
 The upstream sample may illustrate a visual contract without shipping a public component. Production source and experimental
@@ -28,6 +28,12 @@ source ABI are separate; source-level implementation does **not** imply device c
 | Preview top dock & appearance mock | No direct upstream owner for Guiyuan's dock; should reuse native layout/inset and Glass scene capture contracts | `PreviewSandboxScreen.kt` uses top-bar backdrop and a separate root PopupLayout for compact preview, appearance mini preview models GlassNavigationBar | Known risks: dock opening scroll jump / glass band mismatch, nav mock unwanted swiping; validate before closure |
 | Tooltips, menus, icon language | Native MIUIX TooltipBox is legitimate for descriptions; input/press gestures must be single-owner | Report Export deliberately cannot use TooltipBox hold; other top actions retain tooltip. Upstream Glass Regular icon paths are scoped to required actions only | Audit all role/action icons, variants, a11y labels and bubble placement after adopting final upstream glass-icons artifact |
 | Global fallback / release hygiene | Same-source PR423 UI/Blur graph pinned to `b9f7083`; exact upstream popup leaf primitives at `8d52b45`; one recorder/owner for each glass source; fail native when unsupported | B1506 exact-head Canary passed configured Debug/unit/metadata and isolated signing CI on `38ffc46` (run 40489310659). OS4 remains Draft and dev/main are unchanged. B1504/1505 search performance improvements and B1506 sheet lifetime have source/CI evidence but no frame/gesture measurement yet | Device check: first search keystroke, scroll glass and typography shimmer, nested modal/menus, repeated sheet close/open, preview, RTL/fontScale, and dark theme |
+
+## B1508 follow-up review
+
+- **OS3 search action:** Keep the existing MIUIX SearchBar and its own expand/collapse animation; fade only the original title-bar search action while search is active and return it without unmounting the measured slot. Its click is disabled during search. This is a Guiyuan caller fix, not a claim that upstream mandates a particular toolbar animation.
+- **OS4 clear icon:** Preserve the accepted `MiuixIcons.Basic.SearchCleanup` inside the search field. PR423's demo `Glass.Close` is illustrative, not a mandatory icon replacement; OS4 search geometry, external Cancel and native Glass action remain unchanged from B1507.
+- Removed obsolete MIUIX dependency-note strings after the accepted compact library list replaced their only caller. CI and device tests must still cover rapid open/cancel, IME, RTL/font scale and visual contrast.
 
 ## B1507 review scope
 
