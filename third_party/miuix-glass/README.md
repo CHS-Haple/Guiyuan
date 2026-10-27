@@ -187,3 +187,16 @@ GlassDialogSurface and ScrimBackdrop are vendored only in that candidate,
 not alongside the published UI. Both paths retain one MiuixPopupHost and the
 native onDismissFinished contract. Do not include the upstream Glass artifact
 as a second copy of Guiyuan's existing vendored Glass classes.
+
+## Source-only signed OS4 candidate
+
+The independent `.github/workflows/os4-miuix-pr423-signed-canary.yml` builds a fixed
+PR #423 (SHA `b9f70838509fbc3f63f1a972777a7e6ce07f578f`) **unsigned**
+APK in a runner with no Haple signing credentials. A second isolated job fetches
+that APK as data, checks out only the trusted signer from fixed `main` SHA
+`f9ff55056e3baa21c219440394af9225104493f1`, verifies the expected signing certificate, signs it and checks that
+it is non-debuggable. The published MIUIX Canary and PR423 source-built Canary
+must be labeled distinctly. This enables a real-device A/B with the original
+package identity without executing upstream Gradle under private signing secrets.
+This is **not** evidence that moving-text flicker or glass popup behavior is fixed;
+that still requires physical confirmation. PR423 build must first pass.
