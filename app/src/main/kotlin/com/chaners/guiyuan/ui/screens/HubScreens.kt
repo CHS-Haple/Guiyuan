@@ -10,6 +10,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import top.yukonga.miuix.kmp.basic.SearchBar
+import top.yukonga.miuix.kmp.basic.SearchBarDefaults
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -19,6 +20,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.icon.extended.Close
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +30,8 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -41,6 +45,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -130,6 +138,9 @@ import com.chaners.guiyuan.ui.components.UiDialogButton
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassShape
+import top.yukonga.miuix.kmp.glass.GlassMaterials
+import top.yukonga.miuix.kmp.glass.glassPanel
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -1304,6 +1315,7 @@ private fun HubPage(
     }
 
     val os4 = LocalUiStyle.current == UiStyle.OS4
+    val searchHeight = SearchBarDefaults.InputFieldMinHeight
     val searchAction: @Composable RowScope.() -> Unit = {
         if (search != null && !search.active) {
             val label = stringResource(R.string.feature_search)
@@ -1333,7 +1345,27 @@ private fun HubPage(
                             query = search.query,
                             onQueryChange = search::update,
                             onSearch = { keyboardController?.hide() },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .then(
+                                    if (os4) {
+                                        Modifier
+                                            .height(searchHeight)
+                                            .glassPanel(
+                                                backdrop = topBarBackdrop,
+                                                shape = GlassShape(searchHeight / 2),
+                                                material = GlassMaterials.puredThinGlass(
+                                                    MiuixTheme.colorScheme.background.luminance() < 0.5f,
+                                                ),
+                                                shadow = null,
+                                                shading = false,
+                                                fallback = Modifier
+                                                    .clip(CircleShape)
+                                                    .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                                            )
+                                    } else Modifier
+                                ),
+                            color = if (os4) Color.Transparent else MiuixTheme.colorScheme.surfaceContainerHigh,
                             expanded = search.active,
                             onExpandedChange = { if (!it) search.close() },
                             label = stringResource(R.string.feature_search),
@@ -1345,14 +1377,18 @@ private fun HubPage(
                         if (os4) {
                             val label = stringResource(R.string.cancel)
                             TooltipBox(text = label) {
-                                GlassIconButton(
+                                IconButton(
                                     onClick = search::close,
-                                    modifier = Modifier.padding(end = 12.dp),
-                                    backdrop = topBarBackdrop,
+                                    modifier = Modifier
+                                        .padding(end = 12.dp)
+                                        .size(searchHeight)
+                                        .background(MiuixTheme.colorScheme.surfaceContainerHigh, CircleShape),
                                 ) {
                                     Icon(
                                         MiuixIcons.Normal.Close,
                                         contentDescription = label,
+                                        modifier = Modifier.size(24.dp),
+                                        tint = MiuixTheme.colorScheme.onSurface,
                                     )
                                 }
                             }
