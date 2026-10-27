@@ -135,6 +135,35 @@ class VisualPrefsOwnerTest {
         assertEquals(2, deliveries)
     }
 
+    @Test
+    fun failedUnregisterBlocksRebindUntilOldListenerLeaves() {
+        val old = FakePreferences(dual = false)
+        val next = FakePreferences(dual = true)
+        val delivered = mutableListOf<Boolean>()
+        VisualPrefsOwner.bind(old, onChanged = { delivered += it.dualSignal })
+
+        val failure = IllegalStateException("unregister-visual")
+        old.unregisterFailure = failure
+        assertSame(failure, runCatching { VisualPrefsOwner.unbind() }.exceptionOrNull())
+        assertEquals(1, old.listenerCount)
+        old.setDual(true)
+        assertEquals(listOf(false), delivered)
+
+        assertSame(
+            failure,
+            runCatching {
+                VisualPrefsOwner.bind(next, onChanged = { delivered += it.dualSignal })
+            }.exceptionOrNull(),
+        )
+        assertEquals(0, next.listenerCount)
+
+        old.unregisterFailure = null
+        VisualPrefsOwner.bind(next, onChanged = { delivered += it.dualSignal })
+        assertEquals(0, old.listenerCount)
+        assertEquals(1, next.listenerCount)
+        assertEquals(listOf(false, true), delivered)
+    }
+
     private class FakePreferences(private var dual: Boolean) : SharedPreferences {
         private val listeners =
             linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
@@ -142,6 +171,7 @@ class VisualPrefsOwnerTest {
         var lastListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
             private set
 
+        var unregisterFailure: RuntimeException? = null
         private var requestId = 0L
 
         fun requestAxis(id: Long) {
@@ -173,6 +203,7 @@ class VisualPrefsOwnerTest {
         override fun unregisterOnSharedPreferenceChangeListener(
             listener: SharedPreferences.OnSharedPreferenceChangeListener?,
         ) {
+            unregisterFailure?.let { throw it }
             if (listener != null) listeners -= listener
         }
 
