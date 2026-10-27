@@ -39,7 +39,9 @@ Home uses the existing native end-side carrier. Keyguard/AOD use their own verif
 
 ## Represented-slot suppression
 
-**Observed.** The target status-icon container exposes an ignored-slot contract consumed by native measure/layout.
+**Observed.** The target status-icon container exposes an ignored-slot contract consumed by native measure/layout. On the verified `MiuiStatusIconContainer`, `addIgnoredSlots` inserts missing entries one by one and requests layout, while `setIgnoredSlots` first clears the entire native list before calling that add method. The setter is therefore a whole-list replacement, not an atomic delta rollback.
+
+**Guiyuan rule:** if a native add fails, derive any rollback target from the current native list minus only the session-owned additions. A pre-call whole-list snapshot can discard unrelated SystemUI entries added in reentrant callbacks. Recheck the native result and fail native if restoration cannot be verified; do not claim protection against concurrent writers of the same slot name.
 
 Safe mutation:
 - preserves existing platform ignored slots;
