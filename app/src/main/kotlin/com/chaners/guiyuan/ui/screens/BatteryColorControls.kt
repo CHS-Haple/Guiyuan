@@ -35,6 +35,9 @@ import top.yukonga.miuix.kmp.basic.IconButtonDefaults
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -146,9 +149,20 @@ internal fun BatteryColorBottomSheet(
             detailCustom != null &&
             detailSlot != null
 
+    // Capture only the first sheet, not the glass surfaces above it.
+    val sheetColor = MiuixTheme.colorScheme.background
+    val sheetBackdrop = if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
+        rememberLayerBackdrop {
+            drawRect(sheetColor)
+            drawContent()
+        }
+    } else null
+
     UiOverlayBottomSheet(
         show = show,
-        modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
+        modifier = Modifier
+            .fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION)
+            .then(if (sheetBackdrop != null) Modifier.layerBackdrop(sheetBackdrop) else Modifier),
         title = stringResource(R.string.battery_colors),
         backgroundColor = MiuixTheme.colorScheme.background,
         insideMargin = DpSize(0.dp, 0.dp),
@@ -206,8 +220,8 @@ internal fun BatteryColorBottomSheet(
         )
     }
 
-    // The page recording excludes the first sheet beneath these overlays.
-    CompositionLocalProvider(LocalGlassBackdrop provides null) {
+    // The nested sheet and dialogs sample the first sheet, never themselves.
+    CompositionLocalProvider(LocalGlassBackdrop provides sheetBackdrop) {
         UiOverlayBottomSheet(
             show = detailVisible,
             modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
@@ -224,7 +238,10 @@ internal fun BatteryColorBottomSheet(
             startAction = {
                 TooltipBox(text = stringResource(R.string.back)) {
                     if (LocalUiStyle.current == UiStyle.OS4) {
-                        GlassIconButton(onClick = { showDetail = false }) {
+                        GlassIconButton(
+                            onClick = { showDetail = false },
+                            backdrop = sheetBackdrop,
+                        ) {
                             Icon(
                                 imageVector = Os4GlassBack,
                                 contentDescription = stringResource(R.string.back),
