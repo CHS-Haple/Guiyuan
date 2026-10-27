@@ -5,8 +5,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -208,7 +206,7 @@ internal fun PreviewSandboxScreen(
             else -> null
         }
 
-    // The dock changes the top inset; compare against the list's own content origin.
+    // The dock is an overlay; compare the preview against the list's native content inset.
     val listState = rememberLazyListState()
     val showDock by remember(listState) {
         derivedStateOf {
@@ -276,8 +274,8 @@ internal fun PreviewSandboxScreen(
         AnimatedVisibility(
             visible = showDock,
             modifier = Modifier.onSizeChanged { dockHeightPx = it.height },
-            enter = if (os4) fadeIn() + slideInVertically { -it } else fadeIn() + expandVertically(expandFrom = Alignment.Top),
-            exit = if (os4) fadeOut() + slideOutVertically { -it } else fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
         ) {
             Row(
                 modifier = Modifier

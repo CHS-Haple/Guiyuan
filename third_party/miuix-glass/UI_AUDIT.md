@@ -1,6 +1,6 @@
 # OS4 UI conformance and upstream adoption audit
 
-Source baseline: Guiyuan `feat/os4-glass-experimental` B1515 (PR #861 Draft; exact-source CI and device acceptance pending). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
+Source baseline: Guiyuan `feat/os4-glass-experimental` B1518 (PR #861 Draft; exact-source CI and device acceptance pending). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
 MIUIX pinned published: `b587aaf2c907c77a8c3c02d8df0aede2937ef8f0` (`0.9.4-b587aaf2-SNAPSHOT`).
 MIUIX reviewed prerelease: [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (not yet merged).
 The upstream sample may illustrate a visual contract without shipping a public component. Production source and experimental
@@ -28,6 +28,13 @@ source ABI are separate; source-level implementation does **not** imply device c
 | Preview top dock & appearance mock | No direct upstream owner for Guiyuan's dock; should reuse native layout/inset and Glass scene capture contracts | `PreviewSandboxScreen.kt` uses top-bar backdrop and a separate root PopupLayout for compact preview, appearance mini preview models GlassNavigationBar | Known risks: dock opening scroll jump / glass band mismatch, nav mock unwanted swiping; validate before closure |
 | Tooltips, menus, icon language | Native MIUIX TooltipBox is legitimate for descriptions; input/press gestures must be single-owner | Report Export deliberately cannot use TooltipBox hold; other top actions retain tooltip. Upstream Glass Regular icon paths are scoped to required actions only | Audit all role/action icons, variants, a11y labels and bubble placement after adopting final upstream glass-icons artifact |
 | Global fallback / release hygiene | Same-source PR423 UI/Blur graph pinned to `b9f7083`; exact upstream popup leaf primitives at `8d52b45`; one recorder/owner for each glass source; fail native when unsupported | B1506 exact-head Canary passed configured Debug/unit/metadata and isolated signing CI on `38ffc46` (run 40489310659). OS4 remains Draft and dev/main are unchanged. B1504/1505 search performance improvements and B1506 sheet lifetime have source/CI evidence but no frame/gesture measurement yet | Device check: first search keystroke, scroll glass and typography shimmer, nested modal/menus, repeated sheet close/open, preview, RTL/fontScale, and dark theme |
+
+## OS4 Sandbox dock height and glass band (B1518)
+
+- **Source:** Compose `AnimatedVisibility` distinguishes slide-only offset animation from expand/shrink height animation. PR423 `GlassTopAppBar.bandOverhang` extends the background's draw region without changing native bar measurement.
+- **Cause:** The OS4 dock's `slideInVertically/slideOutVertically` kept its measured height at full size while moving content. `onSizeChanged` therefore could not supply a gradually changing height to the existing `bandOverhang = BandOverhang + dockHeight` draw chain. The dock remains outside the native top bar in the popup host; list inset and `showDock` ownership do not change.
+- **Adaptation:** Use Compose `expandVertically/shrinkVertically` with the existing fade so the dock's one measured size feeds its visual extension continuously. OS3 already used these transitions and retains identical behavior. No duplicated progress state, hardcoded geometry, new backdrop or native layout writer.
+- **Verification:** Source contract and branch diff reviewed; require device scroll/reversal tests for the OS4 dock, gradient continuity, tap targeting, popup stacking and shader fallback. A measured-height fix does not certify the absence of GPU sampling flicker.
 
 ## OS4 title return without empty-search regression (B1515)
 
