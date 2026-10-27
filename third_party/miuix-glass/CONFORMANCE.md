@@ -138,9 +138,8 @@ and themes still require confirmation.
 ## Proven upstream API and source chain
 
 The following is a **revision-to-revision source comparison**, not a claim of
-target-device verification. The app's pinned published snapshot is
-`0.9.4-b587aaf2-SNAPSHOT` (not PR #423). The stable `dev` snapshot is
-`0.9.4-8972f941-SNAPSHOT`, also missing the PR-only glass contracts.
+target-device verification. The app and `dev` pinned published snapshot is
+`0.9.4-8972f941-SNAPSHOT` (not PR #423), which still lacks the PR-only glass contracts.
 
 | Producer / contract | PR #423 source evidence | App consumer and consequence |
 | --- | --- | --- |

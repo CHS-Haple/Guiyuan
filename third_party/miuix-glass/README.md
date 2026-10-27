@@ -160,7 +160,7 @@ and must not be treated as the OS4 distribution identity.
 
 The opt-in compatibility CI can now produce two **debug-only, different
 application-ID** Android packages from the same Guiyuan source. The first
-uses all published-snapshot source modules at `b587aaf2`, the second uses
+uses all published-snapshot source modules at `8972f941`, the second uses
 PR #423's source modules at `b9f70838`. Both use Guiyuan's same existing
 vendored Glass implementation, intentionally holding that part constant.
 The comparison is meant to isolate the Blur/UI module revision as a group,

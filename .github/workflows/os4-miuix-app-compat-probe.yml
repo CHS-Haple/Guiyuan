@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: compose-miuix-ui/miuix
-          ref: b587aaf2c907c77a8c3c02d8df0aede2937ef8f0
+          ref: 8972f941c194bd3c4e14c34543d5ebc7b39e40da
           path: upstream-published
           persist-credentials: false
 
@@ -53,7 +53,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git -C upstream rev-parse HEAD)" = "b9f70838509fbc3f63f1a972777a7e6ce07f578f"
-          test "$(git -C upstream-published rev-parse HEAD)" = "b587aaf2c907c77a8c3c02d8df0aede2937ef8f0"
+          test "$(git -C upstream-published rev-parse HEAD)" = "8972f941c194bd3c4e14c34543d5ebc7b39e40da"
           test -f gui/app/src/main/kotlin/top/yukonga/miuix/kmp/glass/GlassTopAppBar.kt
           test -f upstream/miuix-blur/build.gradle.kts
           test -f upstream/miuix-ui/build.gradle.kts

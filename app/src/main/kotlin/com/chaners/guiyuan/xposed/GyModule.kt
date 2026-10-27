@@ -3964,45 +3964,40 @@ class GyModule : XposedModule() {
         refreshMobilePresentation()
 
         val stableFailure =
-            StatusBarStableSession.attach(
-                host = host,
-                onEvent = ::logRuntimeEvent,
-            )
-        if (stableFailure == null) {
+            try {
+                StatusBarStableSession.attach(
+                    host = host,
+                    onEvent = ::logRuntimeEvent,
+                )
+            } catch (error: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(error)
+                "stable-status-attach-failed:" + error.javaClass.simpleName
+            }
+        logDiagnostic(
+            level = if (stableFailure == null) Log.INFO else Log.WARN,
+            event = "session.attach",
+            component = "stableStatus",
+            state = if (stableFailure == null) "ready" else "unavailable",
+            "source" to source,
+            "reason" to stableFailure,
+        )
+        // Native charging identity is independent of the diagnostic anchor observer.
+        if (StatusStateStore.snapshot().battery?.charging == true) {
+            val iconId = SysUiBatterySource.readHostChargingIconId(host)
+            if (iconId != null) {
+                StatusStateStore.updateBatteryChargingIcon(iconId)?.let { snapshot ->
+                    onCombinedStateChanged(snapshot)
+                }
+            }
             logDiagnostic(
                 level = Log.INFO,
-                event = "session.attach",
-                component = "stableStatus",
-                state = "ready",
+                event = "glyph.seed",
+                component = "batteryState",
+                state = if (iconId != null) "ready" else "unavailable",
                 "source" to source,
-            )
-            // Hot Reload may not be followed by another battery callback.
-            if (StatusStateStore.snapshot().battery?.charging == true) {
-                val iconId = SysUiBatterySource.readHostChargingIconId(host)
-                if (iconId != null) {
-                    StatusStateStore.updateBatteryChargingIcon(iconId)?.let { snapshot ->
-                        onCombinedStateChanged(snapshot)
-                    }
-                }
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "glyph.seed",
-                    component = "batteryState",
-                    state = if (iconId != null) "ready" else "unavailable",
-                    "source" to source,
-                    "chargingIconId" to (iconId ?: "unavailable"),
-                    "storedIconId" to
-                        (StatusStateStore.snapshot().battery?.chargingIconResId ?: "unavailable"),
-                )
-            }
-        } else {
-            logDiagnostic(
-                level = Log.WARN,
-                event = "session.attach",
-                component = "stableStatus",
-                state = "unavailable",
-                "reason" to stableFailure,
-                "source" to source,
+                "chargingIconId" to (iconId ?: "unavailable"),
+                "storedIconId" to
+                    (StatusStateStore.snapshot().battery?.chargingIconResId ?: "unavailable"),
             )
         }
 

@@ -152,7 +152,7 @@ internal fun Os4CascadingMenu(
                             }
                         }
                     }
-    
+
                 }
 
                 val groups = entries.filter { it.items.isNotEmpty() }

@@ -1,7 +1,7 @@
 # OS4 UI conformance and upstream adoption audit
 
-Source baseline: Guiyuan `feat/os4-glass-experimental` B1533 (PR #861 Draft; B1532 checks/device acceptance pending; B1527 exact-source CI passed). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
-MIUIX pinned published: `b587aaf2c907c77a8c3c02d8df0aede2937ef8f0` (`0.9.4-b587aaf2-SNAPSHOT`).
+Source baseline: Guiyuan `feat/os4-glass-experimental` B1534 (PR #861 Draft; B1532 checks/device acceptance pending; B1527 exact-source CI passed). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
+MIUIX pinned published: `8972f941c194bd3c4e14c34543d5ebc7b39e40da` (`0.9.4-8972f941-SNAPSHOT`).
 MIUIX reviewed prerelease: [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (not yet merged).
 The upstream sample may illustrate a visual contract without shipping a public component. Production source and experimental
 source ABI are separate; source-level implementation does **not** imply device conformance.
@@ -49,6 +49,13 @@ source ABI are separate; source-level implementation does **not** imply device c
 - **Base and ownership:** Three-way source review used common ancestor `e777941f`, B1532 OS4 `15e5cbca`, and current `dev` `f565f4b7`. The 31 dev-only paths (runtime session/ownership/cleanup fixes, SystemUI target profile and tests) are kept byte-for-byte from dev; the 82 OS4-only paths (UI/resources/MIUIX glass adapters and experiments) are retained from the accepted B1532 source tree.
 - **Five shared paths:** `CONTRIBUTING.md` retains all dev governance plus OS4's upstream-first reporting clause; `CURRENT.md` retains the latest accepted dev state until PR approval; `THIRD_PARTY_NOTICES.md`, `app/build.gradle.kts`, and `gradle.properties` keep the OS4 build/compatibility graph while adopting dev DataStore Preferences 1.3.0 and the published MIUIX `8972f941` snapshot. The matched PR423 source graph remains pinned to `b9f70838` for OS4 Canary; it is not conflated with the published fallback path.
 - **Acceptance boundary:** Combined runtime + dependency graph differs from B1532 and uses unique Build B1533. B1532 physical observations and its signed CI are not substitutes for this exact merged tree. Require compiled source and published-compatibility CI, exact integrated APK evidence and focused device acceptance before the final PR #861 merge. No direct change to SystemUI Hook ownership was authored in the OS4 part of the integration.
+
+## B1534 final-dev reconciliation and published-source probe
+
+- **Runtime update:** Adopt the latest accepted `dev` commits `c450e79c` (PR #939) and `01f3a21b` (PR #940) without rewriting their Home/Keyguard/CC teardown and charging-state recovery code. Preserve `Release.kt`, `GyModule.kt`, `StatusBarStableSession.kt`, target metadata and relevant tests byte-for-byte from `dev`. Keep PR #861's OS4 UI independent of SystemUI session ownership.
+- **Required whitespace gate:** Remove only the four trailing spaces on line 155 of `Os4CascadingMenu.kt`, confirmed by PR CI 40567871923 `git diff --check`. This has no runtime or pixel effect.
+- **Source control correction:** Previous A/B compatibility workflow still checked out `b587aaf2` after the merged app pinned published MIUIX to `8972f941`. Use the existing, exact `8972f941c194bd3c4e14c34543d5ebc7b39e40da` published-source revision for the compatibility comparison; keep the separate PR423 source pinned at `b9f70838`. This corrects source evidence rather than changing the runtime graph.
+- **Build:** B1534 is the new combined runtime+UI candidate. Verify both MIUIX source paths, native metadata, signing and physical integration before marking #861 merge-ready. The compatibility pair remains debug-only and must never be used as the Xposed production module.
 
 ## App-wide component and interaction audit (2026-10-28)
 
