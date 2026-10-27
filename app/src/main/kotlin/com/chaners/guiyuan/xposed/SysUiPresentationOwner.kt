@@ -1967,16 +1967,7 @@ internal object SysUiPresentationOwner {
             source: String,
             requestLayout: Boolean = true,
         ): Int {
-            if (
-                !active &&
-                clipStates.isEmpty() &&
-                mirroredPeerClipStates.isEmpty() &&
-                appliedPadding == null &&
-                !persistentIgnoredSlotsApplied &&
-                appliedFakeCarrierWidthPx == null
-            ) {
-                return 0
-            }
+            // A previous stop may have failed to unregister a listener after receipts cleared.
             lifecycle = Lifecycle.STOPPED
             aodPeersReleased = false
             aodBatteryReleased = false
