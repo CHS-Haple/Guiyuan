@@ -220,11 +220,20 @@ internal fun BatteryColorBottomSheet(
         )
     }
 
-    // The nested sheet and dialogs sample the first sheet, never themselves.
+    val detailBackdrop = if (sheetBackdrop != null) {
+        val surface = MiuixTheme.colorScheme.surface
+        rememberLayerBackdrop {
+            drawRect(surface)
+            drawContent()
+        }
+    } else null
+
+    // The nested sheet samples the first; its popup samples the second.
     CompositionLocalProvider(LocalGlassBackdrop provides sheetBackdrop) {
         UiOverlayBottomSheet(
             show = detailVisible,
-            modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
+            modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION)
+                .then(if (detailBackdrop != null) Modifier.layerBackdrop(detailBackdrop) else Modifier),
             title =
                 detailSlot?.let { slot ->
                     stringResource(
@@ -267,7 +276,8 @@ internal fun BatteryColorBottomSheet(
             },
         ) {
             if (detailCustom != null && detailSlot != null) {
-                BatteryCustomModeEditor(
+                CompositionLocalProvider(LocalGlassBackdrop provides detailBackdrop) {
+                    BatteryCustomModeEditor(
                     custom = detailCustom,
                     slot = detailSlot,
                     onSourceChange = { source ->
@@ -276,7 +286,8 @@ internal fun BatteryColorBottomSheet(
                     onColorChange = { color ->
                         repository.setCustomColor(detailCustom.id, detailSlot, color)
                     },
-                )
+                    )
+                }
             }
         }
 
