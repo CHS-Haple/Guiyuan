@@ -34,6 +34,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.IconButtonDefaults
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
+import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -222,14 +223,22 @@ internal fun BatteryColorBottomSheet(
             enableWindowDim = false,
             startAction = {
                 TooltipBox(text = stringResource(R.string.back)) {
-                    IconButton(
-                        onClick = { showDetail = false },
-                    ) {
-                        Icon(
-                            imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassBack else MiuixIcons.Back,
-                            contentDescription = stringResource(R.string.back),
-                            modifier = Modifier.size(24.dp),
-                        )
+                    if (LocalUiStyle.current == UiStyle.OS4) {
+                        GlassIconButton(onClick = { showDetail = false }) {
+                            Icon(
+                                imageVector = Os4GlassBack,
+                                contentDescription = stringResource(R.string.back),
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = { showDetail = false }) {
+                            Icon(
+                                imageVector = MiuixIcons.Back,
+                                contentDescription = stringResource(R.string.back),
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
                     }
                 }
             },
