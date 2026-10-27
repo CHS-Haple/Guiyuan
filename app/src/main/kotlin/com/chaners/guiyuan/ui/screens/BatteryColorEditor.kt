@@ -460,6 +460,8 @@ internal fun BatteryCreateSchemeDialog(
 @Composable
 internal fun BatteryRenameSchemeDialog(
     scheme: BatteryCustomColorScheme?,
+    show: Boolean,
+    onDismissFinished: () -> Unit,
     onDismiss: () -> Unit,
     onRename: (Int, String) -> Unit,
 ) {
@@ -467,8 +469,9 @@ internal fun BatteryRenameSchemeDialog(
     var name by remember(scheme?.id, currentName) { mutableStateOf(currentName) }
     UiOverlayDialog(
         title = stringResource(R.string.battery_custom_scheme_rename),
-        show = scheme != null,
+        show = show && scheme != null,
         onDismissRequest = onDismiss,
+        onDismissFinished = onDismissFinished,
     ) {
         if (scheme != null) {
             Column {
@@ -480,7 +483,7 @@ internal fun BatteryRenameSchemeDialog(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
                         val next = name.trim()
-                        if (next.isNotEmpty() && next != currentName) onRename(scheme.id, next)
+                        if (show && next.isNotEmpty() && next != currentName) onRename(scheme.id, next)
                     }),
                 )
                 Row(
@@ -500,7 +503,7 @@ internal fun BatteryRenameSchemeDialog(
                         text = stringResource(R.string.confirm),
                         modifier = Modifier.weight(1f),
                         enabled =
-                            name.trim().isNotEmpty() &&
+                            show && name.trim().isNotEmpty() &&
                                 name.trim() != currentName,
                         role = GlassDialogButtonRole.Primary,
                         onClick = {

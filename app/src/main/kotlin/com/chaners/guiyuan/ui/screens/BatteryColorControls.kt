@@ -118,6 +118,11 @@ private data class DetailRequest(
     val slot: BatteryColorSlot,
 )
 
+private data class RenameRequest(
+    val id: Int,
+    val visible: Boolean = true,
+)
+
 private data class CreateRequest(
     val sourceKey: String,
     val targetSlot: BatteryColorSlot?,
@@ -134,7 +139,7 @@ internal fun BatteryColorBottomSheet(
     var showDetail by remember(show) { mutableStateOf(false) }
     var requestedSchemeKey by remember(show) { mutableStateOf<String?>(null) }
     var createRequest by remember(show) { mutableStateOf<CreateRequest?>(null) }
-    var renameCustomId by remember(show) { mutableStateOf<Int?>(null) }
+    var renameRequest by remember(show) { mutableStateOf<RenameRequest?>(null) }
     var deleteCustomId by remember(show) { mutableStateOf<Int?>(null) }
 
     val nextCustomId = repository.nextAvailableCustomId(library)
@@ -209,7 +214,7 @@ internal fun BatteryColorBottomSheet(
                             targetSlot = null,
                         )
                 },
-                onRenameCustom = { renameCustomId = it },
+                onRenameCustom = { renameRequest = RenameRequest(it) },
                 onCopyCustom = { custom ->
                     val name = nextCustomName
                     if (name != null) {
@@ -319,10 +324,14 @@ internal fun BatteryColorBottomSheet(
         )
 
         BatteryRenameSchemeDialog(
-            scheme = renameCustomId?.let(library::customById),
-            onDismiss = { renameCustomId = null },
+            scheme = renameRequest?.id?.let(library::customById),
+            show = renameRequest?.visible == true,
+            onDismiss = { renameRequest = renameRequest?.copy(visible = false) },
+            onDismissFinished = {
+                if (renameRequest?.visible == false) renameRequest = null
+            },
             onRename = { id, name ->
-                renameCustomId = null
+                renameRequest = renameRequest?.copy(visible = false)
                 repository.renameCustom(id, name)
             },
         )

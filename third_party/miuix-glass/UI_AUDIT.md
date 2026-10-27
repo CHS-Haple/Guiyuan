@@ -1,6 +1,6 @@
 # OS4 UI conformance and upstream adoption audit
 
-Source baseline: Guiyuan `feat/os4-glass-experimental` B1529 (PR #861 Draft; B1529 checks/device acceptance pending; B1527 exact-source CI passed). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
+Source baseline: Guiyuan `feat/os4-glass-experimental` B1530 (PR #861 Draft; B1530 checks/device acceptance pending; B1527 exact-source CI passed). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
 MIUIX pinned published: `b587aaf2c907c77a8c3c02d8df0aede2937ef8f0` (`0.9.4-b587aaf2-SNAPSHOT`).
 MIUIX reviewed prerelease: [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (not yet merged).
 The upstream sample may illustrate a visual contract without shipping a public component. Production source and experimental
@@ -17,6 +17,12 @@ source ABI are separate; source-level implementation does **not** imply device c
 - **Verified source defect:** `FeaturesScreen` wrapped `UiOverlayDialog(show = true)` in `pendingImport?.let`; cancellation or completion set the sole pending import to null, removing the entire dialog call before MIUIX could run its 260ms dismissal transition. Upstream PR423 `GlassDialog` and native `OverlayDialog` require the host to remain composed while `show=false`.
 - **Correction:** Mount the existing dialog unconditionally in the Feature overlay and derive `show` from `pendingImport != null`. Capture the currently selected import for the action; guard against an absent selection or in-flight restore. Keep cancellation, UI roles, 12dp OS4/20dp OS3 spacing, exception handling, repository writes and snackbar outcomes unchanged. This fixes dialog host lifetime, not storage semantics.
 - **Boundary:** Source-call-path review proves the prior abrupt unmount and the new single `show` owner. Exit/reopen, Back and IME visuals still need focused device verification; no measured frame results are claimed.
+
+## Battery rename-dialog exit ownership (B1530 source review)
+
+- **Source-proven mismatch:** The parent set `renameCustomId = null` synchronously on Cancel, Back and Rename; `BatteryRenameSchemeDialog` remained composed with `show=false` but its `if (scheme != null)` body disappeared before native dialog exit. This can shorten the panel during the MIUIX hide animation.
+- **Fix:** Keep one parent-owned `RenameRequest(id, visible)` until `UiOverlayDialog.onDismissFinished`. Hide immediately by marking `visible=false`, retain the selected scheme and TextField content through exit, and retire the request only when the native host finishes. Native OS3/Glass OS4 use their existing identical callback boundary; IME Done and confirmation reject input after hiding. Parent Sheet closure still retires the entire request through the preexisting `remember(show)` lifecycle. No repository/store or glass sampler changes.
+- **Review boundary:** Audited the parent request writer, the dialog content guard, confirm/dismiss, fast reopen and onDismissFinished forwarding at source level. Physical exit, keyboard and rapid reverse still need device acceptance; no dynamic proof is claimed.
 
 ## App-wide component and interaction audit (2026-10-28)
 
