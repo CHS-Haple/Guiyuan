@@ -100,8 +100,10 @@ internal object StatusBarStableSession {
         }
 
         fun stop() {
-            host.get()?.removeOnAttachStateChangeListener(this)
-            clearAnchorLayoutListener()
+            releaseAll(
+                { host.get()?.removeOnAttachStateChangeListener(this) },
+                { clearAnchorLayoutListener() },
+            )
         }
 
         override fun onViewAttachedToWindow(view: View) {
