@@ -75,7 +75,7 @@ OS4 conformance.
   recorder was a demonstrable source/consumer cycle. Shader-unavailable
   devices retain MIUIX TabRowWithContour. B1403's reported Sandbox crash
   is not yet proven to be solely caused by this cycle.
-- OS4 search retains the released MIUIX SearchBar/InputField focus, query-clear and Back ownership. The search capsule uses the available upstream `glassPanel` with stock pured-thin material, with native surface fallback; its circular cancel action remains a standard MIUIX IconButton per the upstream OS4 GlassSearchOverlay example, not a top-bar GlassIconButton. Both input and cancel use the pinned native InputField 45dp minimum (upstream OS4 sample uses 44dp). Two unmodified Regular icon vector paths from the pinned PR #423 Glass.Close and Glass.Search are temporarily embedded for this search scene only. OS3 retains native SearchBar input/clear icons, text Cancel and motion. Device action/IME/animation validation remains open.
+- OS4 search retains the native MIUIX SearchBar host/Back behavior; a 44dp PR-shaped BasicTextField input is used for OS4, with 24dp clear target, shared capsule surface, and a stable overlaid top-bar position. OS3 continues to use native MIUIX InputField and text Cancel. Search focus/IME, clear, overlay clipping, RTL and flicker remain to be device-verified.
 - OS4 appearance mini-preview sizes to intrinsic GlassNavigationBar height
   rather than the fixed OS3 preview viewport. App margins follow the
   upstream documented 24.dp horizontal and 12.dp vertical usage.
@@ -93,6 +93,25 @@ upstream build, this copy currently uses two temporary compatibility edits:
 - `GlassTopAppBar.kt` temporarily delegates title rendering to the
   published MIUIX `TopAppBar` instead of the unpublished
   `BlurTopAppBar`. This omits PR #423's full large-title blur behavior.
+
+## Experimental exact-revision MIUIX source graph
+
+PR #423 (SHA `b9f70838509fbc3f63f1a972777a7e6ce07f578f`) passes the
+upstream Android module compilation and the Guiyuan joint compilation check.
+These are **compile facts**, not physical proof of Blur text-flicker repair,
+search-edge quality, or native dialog surface parity.
+
+Default Guiyuan builds retain their published MIUIX packages. For a deliberate
+OS4 experiment, check out the exact upstream revision beside Guiyuan and run
+Gradle with `-Pgy.os4.miuixDir=../miuix`. The opt-in substitutes the same-source
+Core, UI, Shader, Squircle, Blur, Preference, Icons and Navigation Android
+modules. No build action downloads source implicitly or alters a default APK.
+
+**Do not include upstream Glass in this mixed experiment:** Guiyuan currently
+vendors same-package Glass sources, so loading both would duplicate classes.
+The CI-only joint compile probe verifies the upstream SHA and calls the same
+Gradle opt-in, without signing keys or publishing an APK. Full upstream-Glass
+replacement and dialog/sheet surface migration are separate acceptance gates.
 
 GlassDialog and GlassBottomSheet are not yet integrated: the published
 MIUIX main snapshot lacks PR #423's `DialogSurfaceScope`,

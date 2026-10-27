@@ -6,6 +6,7 @@ on:
     branches: [ feat/os4-glass-experimental ]
     paths:
       - '.github/workflows/os4-miuix-app-compat-probe.yml'
+      - 'settings.gradle.kts'
   workflow_dispatch:
 
 permissions:
@@ -66,33 +67,10 @@ jobs:
         with:
           cache-disabled: true
 
-      - name: Substitute same-revision upstream source only for this job
-        shell: bash
-        run: |
-          set -euo pipefail
-          cat >> gui/settings.gradle.kts <<'EOF'
-          // CI-only: replace the published five-module MIUIX graph with a source-matched build.
-          // The upstream Glass module is intentionally NOT included to avoid duplicate classes
-          // with Guiyuan's experimental vendored Glass implementation.
-          includeBuild("../upstream") {
-              dependencySubstitution {
-                  substitute(module("top.yukonga.miuix.kmp:miuix-core-android")).using(project(":miuix-core"))
-                  substitute(module("top.yukonga.miuix.kmp:miuix-shader-android")).using(project(":miuix-shader"))
-                  substitute(module("top.yukonga.miuix.kmp:miuix-squircle-android")).using(project(":miuix-squircle"))
-                  substitute(module("top.yukonga.miuix.kmp:miuix-ui-android")).using(project(":miuix-ui"))
-                  substitute(module("top.yukonga.miuix.kmp:miuix-blur-android")).using(project(":miuix-blur"))
-                  substitute(module("top.yukonga.miuix.kmp:miuix-preference-android")).using(project(":miuix-preference"))
-                  substitute(module("top.yukonga.miuix.kmp:miuix-icons-android")).using(project(":miuix-icons"))
-                  substitute(module("top.yukonga.miuix.kmp:miuix-nav-android")).using(project(":miuix-nav"))
-              }
-          }
-          EOF
-          git -C gui diff --check
-
       - name: Compile Guiyuan with upstream matching core UI and Blur
         working-directory: gui
         shell: bash
-        run: ./gradlew :app:compileDebugKotlin --no-daemon --max-workers=2 --stacktrace
+        run: ./gradlew -Pgy.os4.miuixDir=../upstream :app:compileDebugKotlin --no-daemon --max-workers=2 --stacktrace
 
       - name: Explain the compatibility boundary
         if: always()
