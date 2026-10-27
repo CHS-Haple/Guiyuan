@@ -1977,6 +1977,9 @@ internal object SysUiPresentationOwner {
             var ignoredSlotsRestored = false
             var restored = 0
             release { reservationRestored = restoreEndReservation() }
+            if (appliedFakeCarrierWidthPx != null) {
+                failures += IllegalStateException("native-capacity-restore-incomplete")
+            }
             release { ignoredSlotsRestored = restorePersistentIgnoredSlots(requestLayout) }
             release { restored += restoreClipMasks(clipStates, failures) }
             release { restored += restoreClipMasks(mirroredPeerClipStates, failures) }
@@ -2757,15 +2760,8 @@ internal object SysUiPresentationOwner {
             }
             val hostView = host.get()
             val baselineLayoutWidthPx = nativeFakeCarrierLayoutWidthPx
-            if (hostView == null || baselineLayoutWidthPx == null) {
-                clearCapacityLeaseSnapshot()
-                return false
-            }
-            val params = hostView.layoutParams
-            if (params == null) {
-                clearCapacityLeaseSnapshot()
-                return false
-            }
+            if (hostView == null || baselineLayoutWidthPx == null) return false
+            val params = hostView.layoutParams ?: return false
             if (params.width != appliedWidthPx) {
                 try {
                     onEvent(
@@ -2780,14 +2776,14 @@ internal object SysUiPresentationOwner {
                 return false
             }
 
-            return try {
-                params.width = baselineLayoutWidthPx
-                hostView.layoutParams = params
-                hostView.layoutParams?.width == baselineLayoutWidthPx
-            } finally {
+            params.width = baselineLayoutWidthPx
+            hostView.layoutParams = params
+            val restored = hostView.layoutParams?.width == baselineLayoutWidthPx
+            if (restored) {
                 clearCapacityLeaseSnapshot()
                 pendingNativeCarrierWidth = null
             }
+            return restored
         }
 
         private fun clearCapacityLeaseSnapshot() {
