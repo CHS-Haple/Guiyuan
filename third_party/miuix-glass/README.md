@@ -208,3 +208,18 @@ checklist. It distinguishes B1492 source-gated native dialogs/sheets from
 published MIUIX fallback, unported upstream `BlurTopAppBar`/icon-catalog
 opportunities and the remaining physical visual checks. Do not close PR #861
 solely because the signed PR423 APK built successfully.
+
+## Native OS4 collapsing-title blur gate (B1494)
+
+The published MIUIX TopAppBar clips glass controls together with title contents.
+The local GlassTopAppBar originally had to measure an empty slot and draw the
+real action above the native bar clip. PR #423's reviewed `BlurTopAppBar` provides
+large-title blur, native draw-phase `titleAlpha` and **title-local** clipping,
+so glass actions can stay in their original measured slots instead of being
+redrawn. `UiNativeTitleBar` is an ABI-selected source-set bridge: published
+MIUIX retains the original TopAppBar and its legacy clip workaround; only
+fixed-source PR423 builds use BlurTopAppBar and bypass the duplicate action
+positioning. The same titlePadding, nav/action inset and button sizes are passed
+through. Real-device collapse/search/RTL/IME and popup overlap still require
+acceptance, particularly Diagnostics' 26dp large-title inset and compact title
+alignment after removing its Share button.

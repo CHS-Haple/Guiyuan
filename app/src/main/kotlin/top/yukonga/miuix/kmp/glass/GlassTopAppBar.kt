@@ -54,7 +54,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -351,6 +350,8 @@ fun GlassTopAppBar(
     val navigationHeight = if (navigationSize.height > 0) with(density) { navigationSize.height.toDp() } else buttonSize
     val actionWidth = if (actionSize.width > 0) with(density) { actionSize.width.toDp() } else buttonSize
     val actionHeight = if (actionSize.height > 0) with(density) { actionSize.height.toDp() } else buttonSize
+    val overlayNavigation = unclippedNavigationIcon && !NativeTitleLocalClip
+    val overlayActions = unclippedActions && !NativeTitleLocalClip
 
     Box(modifier = modifier.onGloballyPositioned { barOrigin = it.positionInRoot() }) {
         val overhangPx = with(LocalDensity.current) { bandOverhang.toPx() }
@@ -382,30 +383,28 @@ fun GlassTopAppBar(
                 shadow = buttonShadow,
             ),
         ) {
-            // PR #423's title-blur API is not published in the pinned MIUIX UI snapshot.
-            // Keep native title layout/scroll handling rather than fork TopAppBarLayout.
-            TopAppBar(
+            // The published/native API keeps its legacy clip; PR423 provides native title blur.
+            UiNativeTitleBar(
                 title = title,
                 modifier = contentModifier,
-                titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = titleAlpha()),
-                largeTitleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = titleAlpha()),
                 largeTitle = largeTitle,
+                largeTitleBlurRadius = largeTitleBlurRadius,
+                titleAlpha = titleAlpha,
                 subtitle = subtitle,
-                color = Color.Transparent,
                 scrollBehavior = scrollBehavior,
                 defaultWindowInsetsPadding = defaultWindowInsetsPadding,
                 titlePadding = titlePadding,
                 navigationIconPadding = GlassTopAppBarDefaults.HorizontalPadding,
                 actionIconPadding = GlassTopAppBarDefaults.HorizontalPadding,
                 navigationIcon = {
-                    if (unclippedNavigationIcon) {
+                    if (overlayNavigation) {
                         Box(Modifier.width(navigationWidth).height(navigationHeight).onGloballyPositioned { navigationBounds = it.boundsInRoot() })
                     } else {
                         navigationIcon()
                     }
                 },
                 actions = {
-                    if (unclippedActions) {
+                    if (overlayActions) {
                         Box(Modifier.width(actionWidth).height(actionHeight).onGloballyPositioned { actionBounds = it.boundsInRoot() })
                     } else {
                         actions()
@@ -415,7 +414,7 @@ fun GlassTopAppBar(
             )
             // Published TopAppBar clips its whole layout. Retain native slot measurement,
             // but draw each interactive glass button once above that outdated clip.
-            navigationBounds?.takeIf { unclippedNavigationIcon }?.let { bounds ->
+            navigationBounds?.takeIf { overlayNavigation }?.let { bounds ->
                 Box(Modifier.onSizeChanged { navigationSize = it }.absoluteOffset {
                     IntOffset(
                         (bounds.left - barOrigin.x).roundToInt(),
@@ -425,7 +424,7 @@ fun GlassTopAppBar(
                     navigationIcon()
                 }
             }
-            actionBounds?.takeIf { unclippedActions }?.let { bounds ->
+            actionBounds?.takeIf { overlayActions }?.let { bounds ->
                 Row(Modifier.onSizeChanged { actionSize = it }.absoluteOffset {
                     IntOffset(
                         (bounds.left - barOrigin.x).roundToInt(),
