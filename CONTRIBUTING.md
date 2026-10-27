@@ -58,6 +58,8 @@ Every long-lived runtime object needs a clear owner, invalidation point and clea
 
 Prefer host-scoped sessions over unrelated global mutable state.
 
+For SystemUI call chains, hooks, state/lifecycle and Hot Reload changes, inspect the decompiled SystemUI of the corresponding version first. Verify native classes/methods, ownership and cleanup; cite the evidence and explain deviations. Mark inaccessible references as unverified.
+
 ### State and writers
 
 Prefer:
@@ -89,6 +91,8 @@ Keep separate:
 A sizing issue does not automatically justify native layout mutation. A transition issue does not automatically justify changing steady geometry. Prefer verified native progress/endpoints and motion ownership.
 
 ### Compatibility
+
+For SystemUI-owned behavior, inspect the exact pinned target APK's DEX/resources and native method call sites before inferring from AOSP or third-party implementations. Verify the input binary, and distinguish SystemUI overrides from inherited Android framework behavior; neither static disassembly nor generic source proves exceptional device timing.
 
 The pinned SystemUI profile proves only the current target. Live topology is authoritative when system versions or other modules alter the View tree.
 
@@ -167,6 +171,8 @@ A metric, readiness field, or health signal must come from a real runtime observ
 Build-channel diagnostic flags are observation gates only. They must not control functional hook installation, state authority, ownership, acquisition/release or fail-native fallback. Canary and Release share functional control flow.
 
 For app UI, prefer current MIUIX components and conventions. Persist real user preferences only; Preview/Sandbox state must not become runtime module state.
+
+Before UI changes, inspect applicable MIUIX upstream code, examples and PRs/issues. Explain **before editing** whether an upstream solution exists, its source, rules, applicable scenarios, current differences and intended approach. Adapt the full affected UI chain (layout, states, interactions, motion/glass, navigation, lifecycle and relevant OS3/OS4 behavior), not just controls. Recheck after editing, resolve deterministic issues and record evidence.
 
 ### Semantic leading icons
 
