@@ -78,7 +78,9 @@ internal fun Os4SearchSurface(
             )
         }
         Box(
-            modifier = Modifier.graphicsLayer { alpha = iconAlpha?.value?.coerceIn(0f, 1f) ?: 1f },
+            modifier = Modifier
+                .matchParentSize()
+                .graphicsLayer { alpha = iconAlpha?.value?.coerceIn(0f, 1f) ?: 1f },
             content = content,
         )
     }
