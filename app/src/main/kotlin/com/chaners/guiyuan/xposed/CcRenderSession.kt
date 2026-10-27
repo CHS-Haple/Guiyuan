@@ -358,7 +358,25 @@ internal object CcRenderSession {
                     " reason=" + failure.reason +
                     " next=native-root-layout",
             )
-            host.requestLayout()
+            try {
+                host.requestLayout()
+            } catch (error: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(error)
+                try {
+                    pending.cancel()
+                    if (pendingPrearm === pending) pendingPrearm = null
+                } catch (cleanup: Throwable) {
+                    SysUiPresentationRuntime.throwIfFatal(cleanup)
+                    if (cleanup !== error) error.addSuppressed(cleanup)
+                    throw error
+                }
+                pending.emit(
+                    "controlCenterProjection prearm state=failed " +
+                        "source=fake-root-first-layout attempt=" + attempt +
+                        " reason=layout-request-failed type=" + error.javaClass.simpleName +
+                        " fallback=native-qs-fake",
+                )
+            }
         } else {
             pending.cancel()
             if (pendingPrearm === pending) pendingPrearm = null
@@ -421,14 +439,10 @@ internal object CcRenderSession {
                 }
                 return false
             }
-            try {
-                emit(
-                    "controlCenterProjection prearm state=scheduled " +
-                        "source=fake-root-attached next=native-root-layout",
-                )
-            } catch (error: Throwable) {
-                SysUiPresentationRuntime.throwIfFatal(error)
-            }
+            emit(
+                "controlCenterProjection prearm state=scheduled " +
+                    "source=fake-root-attached next=native-root-layout",
+            )
             return true
         }
 
