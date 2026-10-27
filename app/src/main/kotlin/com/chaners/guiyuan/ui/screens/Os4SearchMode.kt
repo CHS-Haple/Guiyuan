@@ -35,6 +35,11 @@ import androidx.compose.ui.graphics.LayerOutsets
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -157,6 +162,12 @@ internal fun Os4SearchMode(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .onPreviewKeyEvent { event ->
+                if (expanded && event.key == Key.Escape && event.type == KeyEventType.KeyUp) {
+                    onClose()
+                    true
+                } else false
+            }
             .graphicsLayer {
                 outsets = shadowOutsets
                 alpha = motion.progress
