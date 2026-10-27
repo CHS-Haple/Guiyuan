@@ -65,6 +65,10 @@ Do not hide ABI drift with private API shadows, new blur engines, extra popup
 hosts or screenshot-fitted rendering patches. A green APK is not proof of
 OS4 conformance.
 
+## Upstream popup convergence
+
+PR423 `8d52b45`'s `GlassPopupSurface.kt` and `GlassPopupColumn.kt` are vendored as exact Apache-2.0 source to restore upstream bounded intrinsic measurement, internal scroll and outside gesture policy. `GlassDropdownPopupContent` and `GlassSecondaryPopup` still use the one Guiyuan root `PopupLayout` because their real anchors lie in a clipped top bar or sheet pager. The new `GlassIconDropdownMenu` requires its anchor inside the same `BoxScope`; substituting it directly would change ownership and introduce clipping/backdrop risk. Keep that migration gated by actual host relocation and source/device evidence. The source-matched MIUIX UI/Blur build remains pinned to `b9f7083`; the above Glass leaf-source fixes do not imply upgrading the entire graph.
+
 ## Experimental source scope (Draft; check `gradle.properties` for current Build)
 
 - GlassNavigationBar on the main three-page navigation and its preview.

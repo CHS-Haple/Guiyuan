@@ -34,7 +34,11 @@ runtime dependency in this experimental implementation.
 
 `app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` contains a pinned, adapted subset of the
 [MIUIX miuix-glass PR #423](https://github.com/compose-miuix-ui/miuix/pull/423),
-at upstream commit `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (Apache-2.0).
+at baseline commit `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (Apache-2.0).
+`GlassPopupSurface.kt` and `GlassPopupColumn.kt` are now taken unmodified from PR #423
+commit `8d52b45f223d4bec9a719d3d6ca52972cc7ea5fb` to use upstream popup
+measurement, scroll and outside-gesture ownership. The remaining compatibility
+bridge is not claimed to be the latest complete `miuix-glass` module.
 The adapted source includes documented compatibility bridges (including title rendering), so it is not a byte-for-byte copy of the entire upstream module. The signed OS4 Canary uses the matching PR423 UI/Blur source modules; plain Gradle builds retain published-module compatibility paths.
 These primitives are temporary until the official module is published; they must not be silently
 updated independently from the corresponding MIUIX UI/Blur contracts. See
