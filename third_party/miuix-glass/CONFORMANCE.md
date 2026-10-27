@@ -123,7 +123,7 @@ and themes still require confirmation.
 - The supplied `Guiyuan-Diagnostic-20261026-1403-20261026-182500.txt` is a **SystemUI/LSPosed** report: it cannot establish the app-process crash stack or exonerate the Compose glass route.
 - Current `main` published MIUIX snapshots don't provide PR #423's modified basic UI/overlay host contract. A green APK using copied glass source and older basic UI does **not** constitute OS4 conformance.
 - Read app crash stack from `com.chaners.guiyuan` first; then isolate the corresponding component in the Sandbox Composable and apply a root-cause fix with proper ownership rather than catching UI rendering exceptions.
-- Require a single exact published upstream MIUIX core/UI/blur/nav/preference/glass/icons revision and proper release review before removing vendor shims or claiming full OS4 support. This PR remains Draft.
+- Require a single ABI-compatible MIUIX core/UI/blur/nav/preference/glass/icons module graph before removing vendor shims or claiming full OS4 support. An exact-revision source-built graph is permissible for an independently reviewed OS4 experiment; publication remains the preferred distribution path. A green source build or an isolated copied base-module class cannot close this gate. This PR remains Draft.
 
 ## Proven upstream API and source chain
 
@@ -145,7 +145,10 @@ target-device verification. The app's pinned published snapshot is
 None of these unpublished base-module changes can be installed merely by
 copying `miuix-glass` Kotlin files into an app that still links against the
 older binary UI and Blur modules. Same-package duplicates or private API
-shadows are not a valid single-owner solution.
+shadows are not a valid single-owner solution. Their early adoption is
+permitted only through an isolated, source-audited replacement of a complete
+compatible module graph, with exact source provenance, CI and focused
+physical-device comparison; see README.md.
 
 ## Application-wide screen and control inventory
 
@@ -163,9 +166,12 @@ shadows are not a valid single-owner solution.
 
 ## Required next conformance checkpoint
 
-- [ ] Obtain and review an exactly versioned published **whole MIUIX module graph**
-  with PR #423's UI, Blur, Preference and Glass interfaces (or have upstream
-  merge/release them). Stop using the temporary top-bar compatibility delegate.
+- [ ] Review a whole, exactly revision-matched **MIUIX module graph** with
+  PR #423's UI, Blur, Preference and Glass contracts: either official
+  published binaries or a thoroughly reviewed source-built set from an
+  uncredentialed environment. Do not mix PR-only base classes with the
+  existing binary snapshot. Remove the temporary top-bar delegate only
+  when API, lifecycle and visual parity are verified.
 - [ ] Re-run the 4 independent page hosts with glass action shadows, search,
   tab state and color-scheme changes at fontScale/density 80% / 100% / 110%.
 - [ ] Reproduce dark section-title glyph flicker while those glyphs scroll

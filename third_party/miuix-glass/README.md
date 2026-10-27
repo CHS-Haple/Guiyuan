@@ -8,45 +8,67 @@ License: Apache-2.0 (retain source headers and LICENSE).
 
 `app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4SearchIcons.kt` preserves only the `Regular` path data for official Glass.Close and Glass.Search from `miuix-glass-icons`, pinned to PR #423 at `b9f70838509fbc3f63f1a972777a7e6ce07f578f`. Their Apache-2.0 copyright/SPDX is retained. The pinned published MIUIX core has no `MiuixIcons.Glass` namespace, so directly importing the unpublished module would break the consistent five-module snapshot. The scoped vectors must be deleted and call sites switched back to `MiuixIcons.Glass.*` after the matched module is published; do not expand this approach to full unpublished composable classes.
 
-## Adoption gate (hold this Draft PR)
+## Experimental upstream adoption gate (hold this Draft PR)
 
-PR #423 was open and unmerged at the 2026-10-26 review. The source
-contains its own `miuix-core`, `miuix-ui`, `miuix-blur`,
-`miuix-preference`, `miuix-glass` and `miuix-glass-icons` changes.
-Its latest Android CI and other upstream test jobs were green, but upstream
-review and official publication are separate gates. There is no matching
-official main-canary or released Maven artifact for this PR revision.
+PR #423 remains open at the 2026-10-27 review, pinned to
+`b9f70838509fbc3f63f1a972777a7e6ce07f578f`. It changes
+`miuix-core`, `miuix-ui`, `miuix-blur`, `miuix-preference`,
+`miuix-glass`, and `miuix-glass-icons`. There is no matching published
+artifact set at this revision. **Publication is preferred, not a prerequisite
+for a separately reviewed OS4 experiment.** Do not promote the Draft merely
+because an unpublished component builds.
+
+An upstream fix may be integrated ahead of publication when its exact source
+revision, license, changed interfaces, consumers, lifetime, fallbacks and
+removal/reconciliation path are recorded. For a pure resource or application
+component with no binary/ABI dependency, a narrowly attributed compatibility
+copy may be acceptable. For an existing published MIUIX module, never add a
+second definition of the same class or mix a changed binary contract with
+unmodified sibling artifacts: validate a **complete, matching, source-built
+module graph** in an isolated, uncredentialed build first, or defer the
+integration. Source-level compatibility alone is not binary compatibility.
+Review full source→consumer diffs, configured CI and focused device A/B before
+accepting a rendering or motion fix. When upstream finalizes different code,
+compare its behavior, API and lifecycle and replace the experiment rather than
+perpetuating a local fork.
+
+**Current decision — Blur text-glyph flicker:** The PR #423
+`DrawBackdropModifier.kt` prefilter lifetime fix and
+`LayerBackdrop.kt` continuous coordinates are credible upstream improvements.
+But `miuix-blur` is linked as a pinned AAR in Guiyuan. Copying either class
+alongside the AAR would duplicate owners, and swapping a module without a
+complete ABI-checked dependency build would be unreviewed. **Not imported**;
+prioritize an isolated matched-graph Blur build and direct pinned-vs-revised
+device comparison before changing the shipped dependency. This is not an
+assertion that the flicker is fixed.
 
 **Next development order:**
-1. Follow PR #423 through code review, merge and the official publisher.
-   Check that *all* affected MIUIX module artifacts resolve from one exact
-   published revision, including `miuix-glass-android` and
-   `miuix-glass-icons-android`.
-2. Replace all temporary `top.yukonga.miuix.kmp.glass` copies and the
-   documented published-snapshot shims with that one consistent upstream
-   version. Remove the copied-code notice only after the sources are gone.
-3. Expand Guiyuan OS4 mode with upstream-native components where the
-   semantics match: home navigation, hub/detail top bars, icon actions,
-   selectors/tabs, dropdowns/menus, dialogs, sheets and available OS4
-   controls. OS3 remains unchanged, including persisted preferences.
-4. Review all page structures, menu/overlay host ownership, scaling
-   (80%-110%), layout direction, insets, themes, accessibility, animation,
-   shader fallback and lifecycles. Validate Gradle CI and focused device
-   behavior before marking #861 ready or merging to dev.
+1. Review PR #423 and its affected module graph at one exact source revision;
+   prefer the publisher when a full matching artifact set becomes available.
+2. For early source adoption, validate the complete compatible graph without
+   third-party signing access, then substitute it coherently. Retire temporary
+   glass sources, icon vectors and title-bar compatibility delegates only
+   after API/behavior equivalence is proven.
+3. Review OS4 page design, navigation, top bars, search, menus, dialogs,
+   sheets and suitable icons against current upstream contracts; preserve
+   OS3 and stored user preferences.
+4. Test geometry/insets, 80–110% density, font scale, RTL, Back/IME, popup
+   ownership, fallback and visual motion. Keep #861 Draft pending configured
+   CI and necessary focused device acceptance.
 
-Do **not** run build scripts from an unmerged third-party fork as an included
-build in Guiyuan's credentialed signing workflows. Do not mix PR-only
-glass components with published older UI modules and then conceal API drift
-using copied overlays, private API shadows, hand-written effects or geometry
-patches. A green experimental APK compile is not OS4 conformance.
+Never run unreviewed third-party build scripts in credentialed signing jobs.
+Do not hide ABI drift with private API shadows, new blur engines, extra popup
+hosts or screenshot-fitted rendering patches. A green APK is not proof of
+OS4 conformance.
 
 ## Experimental source scope (Draft; check `gradle.properties` for current Build)
 
 - GlassNavigationBar on the main three-page navigation and its preview.
 - GlassTopAppBar / GlassIconButton in hub/detail layouts, and OS4
   GlassTopAppBar on independent Home and Preview Sandbox scaffolds.
-  The Home hot-reload action stays native MIUIX while its disabled and
-  in-flight states lack exact parity in GlassIconButton.
+  The Home hot-reload action uses the vendored GlassIconButton compatibility
+  parameters for disabled and in-flight hold state; confirm press and action
+  ownership on device.
 - GlassDropdownPreference / popup host for shared selector preferences.
 - GlassSegmentedTabRow in existing Sandbox segmented choices uses a separate
   backdrop recording the opaque card base: sampling the scrolling page's
