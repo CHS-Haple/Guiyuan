@@ -585,11 +585,10 @@ internal object SysUiNetworkSource {
 
         wifiRoots.putAll(newWifi)
         mobileRoots.putAll(newMobile)
+        val (wifiCount, mobileCount) = hotReloadBindingCounts()
         return BindingRestoreResult(
-            wifiRoots = wifiRoots.keys.count { it.isAttachedToWindow },
-            mobileRoots = mobileRoots.count { (root, binding) ->
-                root.isAttachedToWindow && binding.subscriptionId != null
-            },
+            wifiRoots = wifiCount,
+            mobileRoots = mobileCount,
         )
     }
 
@@ -1427,6 +1426,10 @@ internal object SysUiNetworkSource {
         while (current != null) {
             val group = current as? ViewGroup
             if (group != null && wifiRoots.containsKey(group)) {
+                // A transferred root can carry no VM; the native binding remains its owner.
+                if (wifiRoots[group]?.viewModel?.javaClass?.name != HOME_WIFI_VIEW_MODEL_CLASS_NAME) {
+                    nativeWifiViewModel(group)?.let { wifiRoots[group] = WifiBinding(it) }
+                }
                 return true
             }
             if (
