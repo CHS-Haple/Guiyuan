@@ -385,7 +385,7 @@ internal object CcRenderSession {
     ) : View.OnLayoutChangeListener,
         View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
-        private enum class Phase { Idle, Armed, Releasing }
+        private enum class Phase { Idle, Registering, Armed, Releasing }
         private var phase = Phase.Idle
         private var attempts = 0
 
@@ -402,10 +402,11 @@ internal object CcRenderSession {
         fun start(): Boolean {
             if (phase != Phase.Idle) return phase == Phase.Armed
             val root = host.get() ?: return false
-            phase = Phase.Armed
+            phase = Phase.Registering
             try {
                 root.addOnLayoutChangeListener(this)
                 root.addOnAttachStateChangeListener(this)
+                phase = Phase.Armed
                 // Cold attach follows native layout; Hot Reload needs one fresh layout.
                 root.requestLayout()
             } catch (error: Throwable) {
