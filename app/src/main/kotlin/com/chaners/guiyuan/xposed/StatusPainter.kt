@@ -2179,7 +2179,7 @@ internal class StatusPainter(
                 // A rejected variation keeps the captured source face unchanged.
                 if (sample != null) {
                     runCatching { setWeightAxis(sample) }
-                        .onFailure { SysUiPresentationRuntime.throwIfFatal(it) }
+                        .onFailure { rethrowRenderFatal(it) }
                 }
             }
         }
@@ -2451,7 +2451,7 @@ internal class StatusPainter(
                         "drawable",
                         resource.packageName,
                     )
-                }.onFailure { SysUiPresentationRuntime.throwIfFatal(it) }.getOrDefault(0)
+                }.onFailure { rethrowRenderFatal(it) }.getOrDefault(0)
             }
         return referenceId
             .takeIf { it != 0 }
@@ -2480,7 +2480,7 @@ internal class StatusPainter(
                         "drawable",
                         resource.packageName,
                     )
-                }.onFailure { SysUiPresentationRuntime.throwIfFatal(it) }.getOrDefault(0)
+                }.onFailure { rethrowRenderFatal(it) }.getOrDefault(0)
             }
         return tintResourceId
             .takeIf { it != 0 }
@@ -2521,7 +2521,7 @@ internal class StatusPainter(
                     opticalComponents = visualProbe.opticalComponents,
                     inkCenterY = visualProbe.inkCenterY,
                 )
-            }.onFailure { SysUiPresentationRuntime.throwIfFatal(it) }.getOrNull()
+            }.onFailure { rethrowRenderFatal(it) }.getOrNull()
                 ?: return null
 
         nativeCenterAssets[resource] = asset
@@ -2826,7 +2826,7 @@ internal class StatusPainter(
                     runCatching {
                         if (actual.packageName == context.packageName) context.resources
                         else context.createPackageContext(actual.packageName, 0).resources
-                    }.onFailure { SysUiPresentationRuntime.throwIfFatal(it) }.getOrNull()
+                    }.onFailure { rethrowRenderFatal(it) }.getOrNull()
                 val loaded = resources?.let { NativeVectorStroke.load(it, actual.resourceId) }
                 nativeStrokeSources[actual] = loaded
                 if (nativeStrokeSources.size > 8) {
@@ -2878,7 +2878,7 @@ internal class StatusPainter(
                     "drawable",
                     SYSTEM_UI_PACKAGE,
                 )
-            }.onFailure { SysUiPresentationRuntime.throwIfFatal(it) }.getOrDefault(0)
+            }.onFailure { rethrowRenderFatal(it) }.getOrDefault(0)
         return cachedAirplaneResourceId.takeIf { it != 0 }
     }
 
