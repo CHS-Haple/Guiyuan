@@ -489,7 +489,7 @@ internal object SysUiPresentationOwner {
                 eventPrefix = "homePresentation",
                 retainReservationOnWidthLoss = false,
                 onEvent = { event -> eventSink?.invoke(event) },
-                onFailNative = ::onSessionFailure,
+                onFailure = ::onSessionFailure,
             )
         current = session
         val masked = session.start()
@@ -698,7 +698,7 @@ internal object SysUiPresentationOwner {
                 eventPrefix = surface.eventPrefix,
                 retainReservationOnWidthLoss = false,
                 onEvent = { event -> keyguardFamilyEventSink?.invoke(event) },
-                onFailNative = ::onKeyguardFamilySessionFailure,
+                onFailure = ::onKeyguardFamilySessionFailure,
             )
         keyguardFamilyCurrent = session
         keyguardFamilySurface = surface
@@ -884,7 +884,7 @@ internal object SysUiPresentationOwner {
                 eventPrefix = "controlCenterPresentation",
                 retainReservationOnWidthLoss = true,
                 onEvent = { event -> controlCenterEventSink?.invoke(event) },
-                onFailNative = ::onCcSessionFailure,
+                onFailure = ::onCcSessionFailure,
                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
             )
         controlCenterCurrent = session
@@ -984,8 +984,8 @@ internal object SysUiPresentationOwner {
 
     @Synchronized
     fun failCcPresentation(reason: String): Boolean {
-        if (controlCenterCurrent == null) return false
-        onCcSessionFailure(reason)
+        val session = controlCenterCurrent ?: return false
+        onCcSessionFailure(session, reason)
         return true
     }
 
@@ -1155,9 +1155,9 @@ internal object SysUiPresentationOwner {
             try {
                 synchronized(this) {
                     when {
-                        current === session -> onSessionFailure(source)
-                        controlCenterCurrent === session -> onCcSessionFailure(source)
-                        keyguardFamilyCurrent === session -> onKeyguardFamilySessionFailure(source)
+                        current === session -> onSessionFailure(session, source)
+                        controlCenterCurrent === session -> onCcSessionFailure(session, source)
+                        keyguardFamilyCurrent === session -> onKeyguardFamilySessionFailure(session, source)
                     }
                 }
             } catch (cleanup: Throwable) {
@@ -1333,8 +1333,8 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
-    private fun onSessionFailure(reason: String) {
-        val session = current ?: return
+    private fun onSessionFailure(session: Session, reason: String) {
+        if (current !== session) return
         current = null
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
@@ -1347,8 +1347,8 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
-    private fun onKeyguardFamilySessionFailure(reason: String) {
-        val session = keyguardFamilyCurrent ?: return
+    private fun onKeyguardFamilySessionFailure(session: Session, reason: String) {
+        if (keyguardFamilyCurrent !== session) return
         val surface = keyguardFamilySurface ?: return
         keyguardFamilyCurrent = null
         keyguardFamilySurface = null
@@ -1434,8 +1434,8 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
-    private fun onCcSessionFailure(reason: String) {
-        val session = controlCenterCurrent ?: return
+    private fun onCcSessionFailure(session: Session, reason: String) {
+        if (controlCenterCurrent !== session) return
         controlCenterCurrent = null
         try {
             finishFailure(
@@ -1511,7 +1511,7 @@ internal object SysUiPresentationOwner {
         private var eventPrefix: String,
         private val retainReservationOnWidthLoss: Boolean,
         private val onEvent: (String) -> Unit,
-        private val onFailNative: (String) -> Unit,
+        private val onFailure: (Session, String) -> Unit,
         private val isDetailedDiagnosticsEnabled: () -> Boolean = { true },
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
@@ -1519,6 +1519,8 @@ internal object SysUiPresentationOwner {
         private val batteryContainer = WeakReference(batteryContainer)
         private val battery = WeakReference(battery)
         private val batteryCarrier = WeakReference(batteryCarrier)
+        private fun onFailNative(reason: String) = onFailure(this, reason)
+
         private enum class Lifecycle {
             CREATED,
             RUNNING,
