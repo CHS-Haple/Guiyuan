@@ -145,14 +145,14 @@ for hook_name, (class_constant, method_constant) in network_source_hook_constant
 
 observer_text = OBSERVER_PATH.read_text(encoding="utf-8")
 observer_hook_contracts = {
-    "homeIconAdded": ("HOME_MANAGER_CLASS", 'method.name == "onIconAdded"'),
+    "homeIconAdded": ("HOME_MANAGER_CLASS", 'method.name == "'),
     "homeManagerRegistered": (
         "STATUS_BAR_ICON_CONTROLLER_IMPL_CLASS",
-        'method.name == "addIconGroup"',
+        'method.name == "',
     ),
     "statusIconVisibility": (
         "STATUS_BAR_ICON_VIEW_CLASS",
-        '.getDeclaredMethod("isIconVisible")',
+        '.getDeclaredMethod("',
     ),
 }
 for hook_name, (class_constant, method_access) in observer_hook_contracts.items():
@@ -164,7 +164,7 @@ for hook_name, (class_constant, method_access) in observer_hook_contracts.items(
     )
     if source_class != hook.get("className"):
         fail(f"native observer class drifted from profile: {hook_name}")
-    if method_access not in observer_text:
+    if method_access + hook.get("methodName", "") + '"' not in observer_text:
         fail(f"native observer method lookup drifted from profile: {hook_name}")
 
 
