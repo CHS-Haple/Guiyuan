@@ -1141,7 +1141,7 @@ internal object SysUiPresentationOwner {
     }
 
     // A post-native owner failure must not replace the framework method's result.
-    private fun afterNativeCallback(
+    private inline fun afterNativeCallback(
         session: Session?,
         source: String,
         action: () -> Unit,
