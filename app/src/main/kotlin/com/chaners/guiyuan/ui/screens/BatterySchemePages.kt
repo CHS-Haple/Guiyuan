@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.icons.Os4GlassMore
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_CUSTOM_MAX
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
@@ -668,7 +669,7 @@ private fun BatterySchemeManageMenu(
                 modifier = modifier.onGloballyPositioned { anchorBounds = it.boundsInRoot() },
             ) {
                 Icon(
-                    imageVector = MiuixIcons.More,
+                    imageVector = Os4GlassMore,
                     contentDescription = stringResource(R.string.battery_custom_scheme_manage),
                 )
             }
@@ -785,7 +786,7 @@ private fun BatterySchemeManageMenu(
                 modifier = modifier,
             ) {
                 Icon(
-                    imageVector = MiuixIcons.More,
+                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassMore else MiuixIcons.More,
                     contentDescription = stringResource(R.string.battery_custom_scheme_manage),
                 )
             }

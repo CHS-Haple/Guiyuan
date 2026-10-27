@@ -1,6 +1,6 @@
 # OS4 UI conformance and upstream adoption audit
 
-Source baseline: Guiyuan `feat/os4-glass-experimental` B1520 (PR #861 Draft; exact-source CI passed, device acceptance pending). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
+Source baseline: Guiyuan `feat/os4-glass-experimental` B1521 (PR #861 Draft; exact-source CI passed, device acceptance pending). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
 MIUIX pinned published: `b587aaf2c907c77a8c3c02d8df0aede2937ef8f0` (`0.9.4-b587aaf2-SNAPSHOT`).
 MIUIX reviewed prerelease: [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (not yet merged).
 The upstream sample may illustrate a visual contract without shipping a public component. Production source and experimental
@@ -28,6 +28,13 @@ source ABI are separate; source-level implementation does **not** imply device c
 | Preview top dock & appearance mock | No direct upstream owner for Guiyuan's dock; should reuse native layout/inset and Glass scene capture contracts | `PreviewSandboxScreen.kt` uses top-bar backdrop and a separate root PopupLayout for compact preview, appearance mini preview models GlassNavigationBar | Known risks: dock opening scroll jump / glass band mismatch, nav mock unwanted swiping; validate before closure |
 | Tooltips, menus, icon language | Native MIUIX TooltipBox is legitimate for descriptions; input/press gestures must be single-owner | Report Export deliberately cannot use TooltipBox hold; other top actions retain tooltip. Upstream Glass Regular icon paths are scoped to required actions only | Audit all role/action icons, variants, a11y labels and bubble placement after adopting final upstream glass-icons artifact |
 | Global fallback / release hygiene | Same-source PR423 UI/Blur graph pinned to `b9f7083`; exact upstream popup leaf primitives at `8d52b45`; one recorder/owner for each glass source; fail native when unsupported | B1506 exact-head Canary passed configured Debug/unit/metadata and isolated signing CI on `38ffc46` (run 40489310659). OS4 remains Draft and dev/main are unchanged. B1504/1505 search performance improvements and B1506 sheet lifetime have source/CI evidence but no frame/gesture measurement yet | Device check: first search keystroke, scroll glass and typography shimmer, nested modal/menus, repeated sheet close/open, preview, RTL/fontScale, and dark theme |
+
+## OS4 battery-scheme More action icon (B1521)
+
+- **Upstream:** PR #423 `miuix-glass-icons/.../glass/More.kt` @ `8d52b45` exposes `MiuixIcons.Glass.Regular.More`; its exact Apache-2.0 vector is already present as `Os4GlassMore` for Diagnostics, while published MIUIX lacks the matched icon module.
+- **Mismatch:** `BatterySchemeManageMenu` uses the OS4 `GlassIconButton` / `GlassDropdownPopupContent` but still drew the old `MiuixIcons.More`, unlike Diagnostics' same semantic action. Its shader-unavailable OS4 fallback also used the old glyph. Other menu row icons (Edit/Copy/Delete) and the Add action do not have matching verified replacements and stay native.
+- **Fix:** Reuse `Os4GlassMore` for this control in OS4, including its native-popup fallback; leave OS3's icon unchanged. No click/expanded writer, haptics, popup backdrop, press/morph timing, hit target, or lifecycle change.
+- **Review:** The exact on-repo vector provenance, both render branches and OS3 condition were checked against the up-to-date PR diff. Physical comparison of action glyph weight/placement against Diagnostics is still pending; this Build is a visible asset-choice change, not proof of broader OS4 visual conformance.
 
 ## OS4 search Cancel hit target (B1520)
 
