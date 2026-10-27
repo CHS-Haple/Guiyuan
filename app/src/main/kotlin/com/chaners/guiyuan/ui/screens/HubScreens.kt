@@ -1326,7 +1326,7 @@ private fun HubPage(
         animationSpec = tween(durationMillis = 150),
         label = "os4SearchTitle",
     )
-    val searchHeight = SearchBarDefaults.InputFieldMinHeight
+    val searchHeight = if (os4) 44.dp else SearchBarDefaults.InputFieldMinHeight
     // Match the solid native search capsule until scrolled content needs glass.
     val searchFloat = os4 && listState.canScrollBackward
     val searchSurface = if (os4) {
@@ -1369,60 +1369,24 @@ private fun HubPage(
                 SearchBar(
                     modifier = Modifier.fillMaxWidth(),
                     inputField = {
-                        InputField(
-                            query = search.query,
-                            onQueryChange = search::update,
-                            onSearch = { keyboardController?.hide() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .then(if (os4) Modifier.height(searchHeight).then(searchSurface) else Modifier),
-                            color = if (os4) Color.Transparent else MiuixTheme.colorScheme.surfaceContainerHigh,
-                            leadingIcon = if (os4) {
-                                {
-                                    Icon(
-                                        Os4GlassSearch,
-                                        modifier = Modifier.padding(
-                                            start = SearchBarDefaults.LeadingIconStartPadding,
-                                            end = SearchBarDefaults.LeadingIconEndPadding,
-                                        ),
-                                        tint = MiuixTheme.colorScheme.onSurfaceContainerHigh,
-                                        contentDescription = null,
-                                    )
-                                }
-                            } else null,
-                            trailingIcon = if (os4) {
-                                {
-                                    AnimatedVisibility(
-                                        visible = search.query.isNotEmpty(),
-                                        enter = fadeIn(),
-                                        exit = fadeOut(),
-                                    ) {
-                                        Box(
-                                            modifier = Modifier.padding(
-                                                start = SearchBarDefaults.TrailingIconStartPadding,
-                                                end = SearchBarDefaults.TrailingIconEndPadding,
-                                            ),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            IconButton(
-                                                onClick = { search.update("") },
-                                                modifier = Modifier.size(24.dp),
-                                            ) {
-                                                Icon(
-                                                    Os4GlassClose,
-                                                    modifier = Modifier.size(16.dp),
-                                                    tint = MiuixTheme.colorScheme.onSurfaceContainerHighest,
-                                                    contentDescription = stringResource(R.string.feature_search_clear),
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            } else null,
-                            expanded = search.active,
-                            onExpandedChange = { if (!it) search.close() },
-                            label = stringResource(R.string.feature_search),
-                        )
+                        if (os4) {
+                            Os4SearchField(
+                                query = search.query,
+                                onQueryChange = search::update,
+                                onSearch = { keyboardController?.hide() },
+                                active = search.active,
+                                surface = searchSurface,
+                            )
+                        } else {
+                            InputField(
+                                query = search.query,
+                                onQueryChange = search::update,
+                                onSearch = { keyboardController?.hide() },
+                                expanded = search.active,
+                                onExpandedChange = { if (!it) search.close() },
+                                label = stringResource(R.string.feature_search),
+                            )
+                        }
                     },
                     expanded = search.active,
                     onExpandedChange = { if (!it) search.close() },
