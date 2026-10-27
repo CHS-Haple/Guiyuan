@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -785,8 +786,9 @@ private fun MiniNavigationPreview(
                         }
                     }
                 } else {
+                    val previewInteractive = uiStyle != UiStyle.OS4
                     FloatingNavigationBar(
-                        modifier = floatingModifier,
+                        modifier = if (previewInteractive) floatingModifier else floatingModifier.clearAndSetSemantics {},
                         color =
                             if (miuixBackdrop != null) {
                                 Color.Transparent
@@ -801,6 +803,7 @@ private fun MiniNavigationPreview(
                             onClick = {},
                             icon = MiuixIcons.Normal.Home,
                             label = stringResource(R.string.nav_home),
+                            interactive = previewInteractive,
                         )
                         NavContentItem(
                             content = content,
@@ -808,6 +811,7 @@ private fun MiniNavigationPreview(
                             onClick = {},
                             icon = MiuixIcons.Normal.Tune,
                             label = stringResource(R.string.nav_features),
+                            interactive = previewInteractive,
                         )
                         NavContentItem(
                             content = content,
@@ -815,6 +819,7 @@ private fun MiniNavigationPreview(
                             onClick = {},
                             icon = MiuixIcons.Medium.Settings,
                             label = stringResource(R.string.nav_settings),
+                            interactive = previewInteractive,
                         )
                     }
                 }
