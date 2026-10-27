@@ -60,7 +60,6 @@ private data class AboutDependency(
     val version: String?,
     val license: String,
     val upstreamUrl: String,
-    val note: String? = null,
 )
 
 @Composable
@@ -365,17 +364,21 @@ internal fun AboutScreen(
 @Composable
 internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
     val uriHandler = LocalUriHandler.current
-    val miuixVersion = BuildConfig.MIUIX_VERSION
-    val miuixNote = stringResource(R.string.about_miuix_glass_summary)
+    val miuixVersion = "${BuildConfig.MIUIX_VERSION}｜PR #423"
     val runtimeDependencies =
-        remember(miuixVersion, miuixNote) {
+        remember(miuixVersion) {
             listOf(
                 AboutDependency(
                     name = "MIUIX",
                     version = miuixVersion,
                     license = "Apache-2.0",
                     upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
-                    note = miuixNote,
+                ),
+                AboutDependency(
+                    name = "libxposed API",
+                    version = BuildConfig.LIBXPOSED_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/libxposed/api",
                 ),
                 AboutDependency(
                     name = "libxposed service",
@@ -384,19 +387,37 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     upstreamUrl = "https://github.com/libxposed/service",
                 ),
                 AboutDependency(
-                    name = "AndroidX",
-                    version = null,
+                    name = "AndroidX Core",
+                    version = BuildConfig.ANDROIDX_CORE_VERSION,
                     license = "Apache-2.0",
                     upstreamUrl = "https://github.com/androidx/androidx",
-                    note = listOf(
-                        "Core ${BuildConfig.ANDROIDX_CORE_VERSION}",
-                        "Activity Compose ${BuildConfig.ACTIVITY_COMPOSE_VERSION}",
-                        "Navigation Event Compose ${BuildConfig.NAVIGATION_EVENT_COMPOSE_VERSION}",
-                        "DataStore Preferences ${BuildConfig.DATASTORE_PREFERENCES_VERSION}",
-                    ).joinToString("\n"),
                 ),
                 AboutDependency(
-                    name = "kotlinx.serialization core / JSON",
+                    name = "AndroidX Activity Compose",
+                    version = BuildConfig.ACTIVITY_COMPOSE_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/androidx/androidx",
+                ),
+                AboutDependency(
+                    name = "AndroidX Navigation Event Compose",
+                    version = BuildConfig.NAVIGATION_EVENT_COMPOSE_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/androidx/androidx",
+                ),
+                AboutDependency(
+                    name = "AndroidX DataStore Preferences",
+                    version = BuildConfig.DATASTORE_PREFERENCES_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/androidx/androidx",
+                ),
+                AboutDependency(
+                    name = "kotlinx.serialization core",
+                    version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
+                ),
+                AboutDependency(
+                    name = "kotlinx.serialization JSON",
                     version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
                     license = "Apache-2.0",
                     upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
@@ -442,17 +463,6 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                 },
             )
         }
-        Section(R.string.section_compile_only_dependencies) {
-            AboutDependencyPreference(
-                dependency = AboutDependency(
-                    name = "libxposed API (compileOnly)",
-                    version = BuildConfig.LIBXPOSED_VERSION,
-                    license = "Apache-2.0",
-                    upstreamUrl = "https://github.com/libxposed/api",
-                ),
-                onClick = { uriHandler.openUri("https://github.com/libxposed/api") },
-            )
-        }
         Section(R.string.section_development_dependencies) {
             developmentDependencies.forEach { dependency ->
                 AboutDependencyPreference(
@@ -472,10 +482,6 @@ private fun AboutDependencyPreference(
     val summary =
         buildString {
             dependency.version?.let {
-                append(it)
-                append('\n')
-            }
-            dependency.note?.let {
                 append(it)
                 append('\n')
             }

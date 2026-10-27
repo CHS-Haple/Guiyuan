@@ -126,7 +126,7 @@ internal fun Os4CascadingMenu(
                             if (groupIndex > 0) GlassMenuDivider()
                             group.items.forEachIndexed { itemIndex, item ->
                                 val hasChildren = !item.children.isNullOrEmpty()
-                                var rowBounds by remember { mutableStateOf(Rect.Zero) }
+                                var rowBounds by remember(groupIndex, itemIndex) { mutableStateOf(Rect.Zero) }
                                 GlassPopupItem(
                                     text = item.text,
                                     summary = item.summary,
@@ -135,7 +135,7 @@ internal fun Os4CascadingMenu(
                                     showArrow = hasChildren,
                                     modifier = if (hasChildren) {
                                         Modifier.onGloballyPositioned {
-                                            if (submenu == null) rowBounds = it.boundsInRoot()
+                                            if (renderedSubmenu == null) rowBounds = it.boundsInRoot()
                                         }
                                     } else Modifier,
                                     onClick = {
@@ -156,7 +156,8 @@ internal fun Os4CascadingMenu(
                 }
 
                 val groups = entries.filter { it.items.isNotEmpty() }
-                val parent = renderedSubmenu?.let { (g, i) -> groups.getOrNull(g)?.items?.getOrNull(i) }
+                val parentGroup = renderedSubmenu?.let { (g, _) -> groups.getOrNull(g) }
+                val parent = renderedSubmenu?.let { (_, i) -> parentGroup?.items?.getOrNull(i) }
                 if (parent != null) {
                     GlassSecondaryPopup(
                         show = expanded && submenu != null,
@@ -171,6 +172,7 @@ internal fun Os4CascadingMenu(
                         GlassPopupItem(
                             text = parent.text,
                             summary = parent.summary,
+                            selected = parent.selected,
                             showArrow = true,
                             arrowRotation = { 180f },
                             onClick = { submenu = null },
@@ -180,7 +182,7 @@ internal fun Os4CascadingMenu(
                             GlassPopupItem(
                                 text = item.text,
                                 summary = item.summary,
-                                enabled = item.enabled,
+                                enabled = parentGroup?.enabled == true && parent.enabled && item.enabled,
                                 selected = item.selected,
                                 onClick = {
                                     item.onClick?.invoke()

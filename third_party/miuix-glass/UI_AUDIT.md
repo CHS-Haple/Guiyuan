@@ -1,6 +1,6 @@
 # OS4 UI conformance and upstream adoption audit
 
-Source baseline: Guiyuan `feat/os4-glass-experimental` B1506 (PR #861 Draft; same-source signed CI passed at `38ffc46`, device acceptance pending).
+Source baseline: Guiyuan `feat/os4-glass-experimental` B1507 (PR #861 Draft; validation pending). B1506 signed CI passed at `38ffc46`; B1507 is not yet device-accepted.
 MIUIX pinned published: `b587aaf2c907c77a8c3c02d8df0aede2937ef8f0` (`0.9.4-b587aaf2-SNAPSHOT`).
 MIUIX reviewed prerelease: [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (not yet merged).
 The upstream sample may illustrate a visual contract without shipping a public component. Production source and experimental
@@ -28,6 +28,14 @@ source ABI are separate; source-level implementation does **not** imply device c
 | Preview top dock & appearance mock | No direct upstream owner for Guiyuan's dock; should reuse native layout/inset and Glass scene capture contracts | `PreviewSandboxScreen.kt` uses top-bar backdrop and a separate root PopupLayout for compact preview, appearance mini preview models GlassNavigationBar | Known risks: dock opening scroll jump / glass band mismatch, nav mock unwanted swiping; validate before closure |
 | Tooltips, menus, icon language | Native MIUIX TooltipBox is legitimate for descriptions; input/press gestures must be single-owner | Report Export deliberately cannot use TooltipBox hold; other top actions retain tooltip. Upstream Glass Regular icon paths are scoped to required actions only | Audit all role/action icons, variants, a11y labels and bubble placement after adopting final upstream glass-icons artifact |
 | Global fallback / release hygiene | Same-source PR423 UI/Blur graph pinned to `b9f7083`; exact upstream popup leaf primitives at `8d52b45`; one recorder/owner for each glass source; fail native when unsupported | B1506 exact-head Canary passed configured Debug/unit/metadata and isolated signing CI on `38ffc46` (run 40489310659). OS4 remains Draft and dev/main are unchanged. B1504/1505 search performance improvements and B1506 sheet lifetime have source/CI evidence but no frame/gesture measurement yet | Device check: first search keystroke, scroll glass and typography shimmer, nested modal/menus, repeated sheet close/open, preview, RTL/fontScale, and dark theme |
+
+## B1507 review scope
+
+MIUIX `SearchBarDemo` renders direct `BasicComponent` suggestions without mandatory Cards; `IconPage` separately demonstrates Card-based navigational search results. Neither prescribes a shared ranking algorithm. Guiyuan uses the direct preference-list composition to let a user operate the setting in place.
+
+- Shared search displays all 34 native MIUIX preference controls as stable-key flat rows, ranked by current/translated titles then pinyin and curated aliases, preserving stable browse order for ties. Browse retains native Cards; search has no Cards. Dependencies are surfaced alongside matched settings and gate disabled controls. OS3 keeps its native SearchBar; OS4 retains its PR423 search surface and shared-progress title/action fade. CI and device gates remain.
+- Third-party dependency rows return to the accepted main layout. Missing AndroidX Core and kotlinx.serialization JSON are listed with the actual pinned BuildConfig versions and appropriate project links; MIUIX version includes a concise PR #423 label.
+- OS4 diagnostics nested popup follows upstream group/parent enabled semantics, selected-state header and keyed row geometry; no additional blur layer.
 
 ## Upstream implementation opportunities, ordered
 
