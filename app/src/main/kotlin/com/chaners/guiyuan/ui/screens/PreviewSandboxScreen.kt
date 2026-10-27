@@ -88,6 +88,7 @@ import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
+import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -852,6 +853,9 @@ private fun UiTabRow(
             selectedTabIndex = selectedTabIndex,
             onTabSelected = onTabSelected,
             modifier = modifier,
+            colors = TabRowDefaults.tabRowColors(
+                backgroundColor = if (inCard) MiuixTheme.colorScheme.surface else MiuixTheme.colorScheme.surfaceContainerHighest,
+            ),
         )
     }
 }

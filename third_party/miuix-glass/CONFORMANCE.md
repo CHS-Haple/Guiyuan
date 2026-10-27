@@ -40,6 +40,7 @@ keyboard/Back, scrolling, overlay host ownership and shader-free fallback togeth
   input/hit regions on device. OS4 uses the same 12dp end inset as the glass
   top-bar action; OS3 retains native 16dp. The upstream OS4 `BlurTopAppBar`
   title-clip contract is still unpublished.
+- **Sandbox OS3 network selector:** The network selector lives outside its Card; the published MIUIX `TabRowWithContour` defaults its track to `surface`, the same as the page background, so its outer silhouette disappears. Only the outside-Card OS3 track now uses the official `TabRowDefaults.tabRowColors(backgroundColor = surfaceContainerHighest)` color slot; the selected surface, native contour geometry, motion and semantics remain untouched. OS3 selectors inside cards and all OS4 segmented glass tabs are unchanged. Confirm light/dark device contrast.
 - **Sandbox choices:** segmented glass tabs remain for fitting short labels.
   Longer labels use the existing scaffold-hosted glass dropdown with full option
   text rather than squeezing equal-width segments or shrinking typography.
