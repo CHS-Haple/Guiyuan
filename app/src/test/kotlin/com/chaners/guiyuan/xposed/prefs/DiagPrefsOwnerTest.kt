@@ -7,6 +7,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class DiagPrefsOwnerTest {
@@ -139,6 +140,37 @@ class DiagPrefsOwnerTest {
         assertEquals(listOf(true, true), observed)
     }
 
+    @Test
+    fun failedUnregisterKeepsOldListenerUntilNewBindingCanStart() {
+        val old = FakePreferences()
+        val next = FakePreferences()
+        next.setRaw(DiagLevel.Detailed.name)
+        val delivered = mutableListOf<Boolean>()
+        DiagPrefsOwner.bind(old, forceDetailed = false, onChanged = delivered::add)
+
+        val failure = IllegalStateException("unregister-diagnostic")
+        old.unregisterFailure = failure
+        assertSame(failure, runCatching { DiagPrefsOwner.unbind() }.exceptionOrNull())
+        assertFalse(DiagPrefsOwner.isBound)
+        assertEquals(1, old.listenerCount)
+        old.setLevel(DiagLevel.Detailed.name)
+        assertEquals(listOf(false), delivered)
+
+        assertSame(
+            failure,
+            runCatching {
+                DiagPrefsOwner.bind(next, forceDetailed = false, onChanged = delivered::add)
+            }.exceptionOrNull(),
+        )
+        assertEquals(0, next.listenerCount)
+
+        old.unregisterFailure = null
+        DiagPrefsOwner.bind(next, forceDetailed = false, onChanged = delivered::add)
+        assertEquals(0, old.listenerCount)
+        assertEquals(1, next.listenerCount)
+        assertEquals(listOf(false, true), delivered)
+    }
+
     private class FakePreferences : SharedPreferences {
         private var level: String = DiagLevel.General.name
         private val listeners =
@@ -146,6 +178,8 @@ class DiagPrefsOwnerTest {
 
         var lastListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
             private set
+
+        var unregisterFailure: RuntimeException? = null
 
         val listenerCount: Int
             get() = listeners.size
@@ -191,6 +225,7 @@ class DiagPrefsOwnerTest {
         override fun unregisterOnSharedPreferenceChangeListener(
             listener: SharedPreferences.OnSharedPreferenceChangeListener?,
         ) {
+            unregisterFailure?.let { throw it }
             if (listener != null) {
                 listeners -= listener
             }
