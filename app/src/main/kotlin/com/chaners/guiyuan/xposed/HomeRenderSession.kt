@@ -68,7 +68,7 @@ internal object HomeRenderSession {
             return null
         }
 
-        existing?.let(::stop)
+        existing?.let { stop(it) }
         val session = Session(
             host = hostView,
             batteryContainer = batteryContainer,
