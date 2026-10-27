@@ -65,6 +65,23 @@ internal object CcTransitionOwner {
     private var endpoints: SysUiCcSource.TransitionEndpoints? = null
     private var current: Session? = null
 
+    // An ordinary release failure must not prevent sibling resources from returning native.
+    internal fun releaseAll(vararg actions: () -> Unit) {
+        val failures = ArrayList<Throwable>(1)
+        actions.forEach { action ->
+            try {
+                action()
+            } catch (error: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(error)
+                failures.add(error)
+            }
+        }
+        failures.firstOrNull()?.let { error ->
+            failures.drop(1).filter { it !== error }.forEach(error::addSuppressed)
+            throw error
+        }
+    }
+
     @Synchronized
     fun onSourceUpdate(update: SysUiCcSource.Update) {
         update.visible?.let { nextVisible ->
@@ -193,7 +210,13 @@ internal object CcTransitionOwner {
                     null
             }
 
-        val existing = current
+        var existing = current
+        if (existing != null && !existing.isStarted()) {
+            // Retain the old owner until a real lifecycle event can finish release.
+            existing.stop("finish-incomplete-release")
+            current = null
+            existing = null
+        }
         if (
             existing == null ||
             !existing.matches(
@@ -217,7 +240,10 @@ internal object CcTransitionOwner {
                     return
                 }
             current = created
-            created.start()
+            if (!created.start()) {
+                current = null
+                return
+            }
         }
 
         current?.update(
@@ -316,7 +342,10 @@ internal object CcTransitionOwner {
         private var nativeAppearance = false
         private var nativeAppearanceAnimated = false
         private var started = false
+        private var stopping = false
         private var registeredObserver: ViewTreeObserver? = null
+        private var overlayAdded = false
+        private var sourceMaskApplied = false
         private var cachedNativePeerTint: Int? = null
         private var frozenReservationSpans: List<CcTransitionPolicy.ReservationSpan>? = null
         private var reservationLayout: ChargeLayout? = null
@@ -342,6 +371,7 @@ internal object CcTransitionOwner {
 
         private val preDrawListener =
             ViewTreeObserver.OnPreDrawListener {
+                if (!started) return@OnPreDrawListener true
                 val rootView = rootRef.get()
                 val fake = fakeRootRef.get()
                 val final = finalRootRef.get()
@@ -607,22 +637,39 @@ internal object CcTransitionOwner {
                 " finalPeers=[${peers(finalStatusIcons)}]"
         }
 
-        fun start() {
-            if (started) return
-            val rootView = rootRef.get() ?: return
-            val source = sourceViewRef.get() ?: return
+        fun isStarted(): Boolean = started
+
+        fun start(): Boolean {
+            if (started) return true
+            val rootView = rootRef.get() ?: return false
+            val source = sourceViewRef.get() ?: return false
             started = true
-            captureNativeChildren()
-            val observer = rootView.viewTreeObserver
-            registeredObserver = observer
-            observer.addOnGlobalLayoutListener(nativeMembershipListener)
-            source.clipBounds = sourceMask.appliedClip
-            refreshNativePeerTint()
-            syncTransitionReservation()
-            rootView.overlay.add(drawable)
-            observer.addOnPreDrawListener(preDrawListener)
-            drawable.setBounds(0, 0, rootView.width, rootView.height)
-            drawable.invalidateSelf()
+            try {
+                captureNativeChildren()
+                val observer = rootView.viewTreeObserver
+                registeredObserver = observer
+                observer.addOnGlobalLayoutListener(nativeMembershipListener)
+                sourceMaskApplied = true
+                source.clipBounds = sourceMask.appliedClip
+                refreshNativePeerTint()
+                syncTransitionReservation()
+                if (!started) return false
+                overlayAdded = true
+                rootView.overlay.add(drawable)
+                observer.addOnPreDrawListener(preDrawListener)
+                drawable.setBounds(0, 0, rootView.width, rootView.height)
+                drawable.invalidateSelf()
+                return true
+            } catch (error: Throwable) {
+                try {
+                    stop("start-failed")
+                } catch (cleanup: Throwable) {
+                    SysUiPresentationRuntime.throwIfFatal(cleanup)
+                    if (cleanup !== error) error.addSuppressed(cleanup)
+                }
+                SysUiPresentationRuntime.throwIfFatal(error)
+                throw error
+            }
         }
 
         fun update(
@@ -633,6 +680,7 @@ internal object CcTransitionOwner {
             transitionReservationEnabled: Boolean,
             nativeBatteryIslandActive: Boolean?,
         ) {
+            if (!started) return
             val appearanceChanged =
                 this.nativeAppearance != nativeAppearance ||
                     this.nativeAppearanceAnimated != nativeAppearanceAnimated
@@ -706,36 +754,65 @@ internal object CcTransitionOwner {
         }
 
         fun stop(source: String) {
-            SysUiPresentationOwner.clearCcTransitionReservation(
-                "transition-" + source,
-            )
-            nativeBatteryIslandActive = false
-            if (!started) return
-            started = false
-            wifiAnchor = null
-            nativeChildren.clear()
-            val rootView = rootRef.get()
-            val registered = registeredObserver
-            registeredObserver = null
-            if (registered?.isAlive == true) {
-                registered.removeOnGlobalLayoutListener(nativeMembershipListener)
-                registered.removeOnPreDrawListener(preDrawListener)
-            }
-            // A detached View may expose a different observer; a floating one may also merge.
-            val live = rootView?.viewTreeObserver
-            if (live != null && live !== registered && live.isAlive) {
-                live.removeOnGlobalLayoutListener(nativeMembershipListener)
-                live.removeOnPreDrawListener(preDrawListener)
-            }
-            rootView?.overlay?.remove(drawable)
-            sourceViewRef.get()?.let { sourceView ->
-                if (sourceView.clipBounds == sourceMask.appliedClip) {
-                    sourceView.clipBounds = sourceMask.nativeClip?.let(::Rect)
-                }
+            check(!stopping) { "cc-transition-release-in-progress" }
+            stopping = true
+            try {
+                started = false
+                nativeBatteryIslandActive = false
+                wifiAnchor = null
+                nativeChildren.clear()
+                val registered = registeredObserver
+                val rootView = rootRef.get()
+                releaseAll(
+                    {
+                        SysUiPresentationOwner.clearCcTransitionReservation(
+                            "transition-" + source,
+                        )
+                    },
+                    {
+                        // Detached views can expose a different live observer.
+                        releaseAll(
+                            { if (registered?.isAlive == true) registered.removeOnGlobalLayoutListener(nativeMembershipListener) },
+                            { if (registered?.isAlive == true) registered.removeOnPreDrawListener(preDrawListener) },
+                            {
+                                val live = rootView?.viewTreeObserver
+                                if (live != null && live !== registered && live.isAlive) {
+                                    live.removeOnGlobalLayoutListener(nativeMembershipListener)
+                                }
+                            },
+                            {
+                                val live = rootView?.viewTreeObserver
+                                if (live != null && live !== registered && live.isAlive) {
+                                    live.removeOnPreDrawListener(preDrawListener)
+                                }
+                            },
+                        )
+                        registeredObserver = null
+                    },
+                    {
+                        if (overlayAdded) {
+                            rootView?.overlay?.remove(drawable)
+                            overlayAdded = false
+                        }
+                    },
+                    {
+                        if (sourceMaskApplied) {
+                            sourceViewRef.get()?.let { sourceView ->
+                                if (sourceView.clipBounds == sourceMask.appliedClip) {
+                                    sourceView.clipBounds = sourceMask.nativeClip?.let(::Rect)
+                                }
+                            }
+                            sourceMaskApplied = false
+                        }
+                    },
+                )
+            } finally {
+                stopping = false
             }
         }
 
         fun draw(canvas: Canvas) {
+            if (!started) return
             val rootView = rootRef.get() ?: return
             val fake = fakeRootRef.get() ?: return
             val sourceView = sourceViewRef.get() ?: return
