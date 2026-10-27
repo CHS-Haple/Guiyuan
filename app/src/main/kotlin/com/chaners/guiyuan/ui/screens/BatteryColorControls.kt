@@ -182,42 +182,44 @@ internal fun BatteryColorBottomSheet(
             }
         },
     ) {
-        BatterySchemeOverview(
-            library = library,
-            requestedSchemeKey = requestedSchemeKey,
-            onRequestedSchemeHandled = { requestedSchemeKey = null },
-            canCreateCustom = nextCustomId != null,
-            nextCustomName = nextCustomName,
-            onApplyScheme = repository::activateScheme,
-            onOpenBuiltInSlot = { scheme, slot ->
-                createRequest =
-                    CreateRequest(
-                        sourceKey = scheme.key,
-                        targetSlot = slot,
-                    )
-            },
-            onOpenCustomSlot = { id, slot ->
-                detailRequest = DetailRequest(customId = id, slot = slot)
-                showDetail = true
-            },
-            onAdd = {
-                createRequest =
-                    CreateRequest(
-                        sourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
-                        targetSlot = null,
-                    )
-            },
-            onRenameCustom = { renameCustomId = it },
-            onCopyCustom = { custom ->
-                val name = nextCustomName
-                if (name != null) {
-                    repository.createCustom(name, custom.key)?.let { id ->
-                        requestedSchemeKey = customSchemeKey(id)
+        CompositionLocalProvider(LocalGlassBackdrop provides sheetBackdrop) {
+            BatterySchemeOverview(
+                library = library,
+                requestedSchemeKey = requestedSchemeKey,
+                onRequestedSchemeHandled = { requestedSchemeKey = null },
+                canCreateCustom = nextCustomId != null,
+                nextCustomName = nextCustomName,
+                onApplyScheme = repository::activateScheme,
+                onOpenBuiltInSlot = { scheme, slot ->
+                    createRequest =
+                        CreateRequest(
+                            sourceKey = scheme.key,
+                            targetSlot = slot,
+                        )
+                },
+                onOpenCustomSlot = { id, slot ->
+                    detailRequest = DetailRequest(customId = id, slot = slot)
+                    showDetail = true
+                },
+                onAdd = {
+                    createRequest =
+                        CreateRequest(
+                            sourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+                            targetSlot = null,
+                        )
+                },
+                onRenameCustom = { renameCustomId = it },
+                onCopyCustom = { custom ->
+                    val name = nextCustomName
+                    if (name != null) {
+                        repository.createCustom(name, custom.key)?.let { id ->
+                            requestedSchemeKey = customSchemeKey(id)
+                        }
                     }
-                }
-            },
-            onDeleteCustom = { deleteCustomId = it },
-        )
+                },
+                onDeleteCustom = { deleteCustomId = it },
+            )
+        }
     }
 
     val detailBackdrop = if (sheetBackdrop != null) {

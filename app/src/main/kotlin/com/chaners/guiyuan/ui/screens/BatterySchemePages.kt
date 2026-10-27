@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.icons.Os4GlassMore
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_CUSTOM_MAX
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
@@ -652,6 +653,8 @@ private fun BatterySchemeManageMenu(
     onDelete: () -> Unit,
 ) {
     if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
+        // Capture at the sheet caller: the root PopupLayout may not inherit this local.
+        val backdrop = LocalGlassBackdrop.current
         val haptic = LocalHapticFeedback.current
         var expanded by remember { mutableStateOf(false) }
         val mounted = remember { mutableStateOf(false) }
@@ -696,7 +699,7 @@ private fun BatterySchemeManageMenu(
                         onDismissRequest = { expanded = false },
                         anchorBounds = anchorBounds,
                         coordinateOrigin = hostOrigin,
-                        backdrop = null,
+                        backdrop = backdrop,
                         onDismissFinished = { mounted.value = false },
                     ) {
                         GlassPopupItem(
