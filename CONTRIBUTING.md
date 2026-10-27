@@ -56,6 +56,8 @@ Every long-lived runtime object needs a clear owner, invalidation point and clea
 
 Prefer host-scoped sessions over unrelated global mutable state.
 
+For SystemUI call chains, hooks, state/lifecycle and Hot Reload changes, inspect the decompiled SystemUI of the corresponding version first. Verify native classes/methods, ownership and cleanup; cite the evidence and explain deviations. Mark inaccessible references as unverified.
+
 ### State and writers
 
 Prefer:
@@ -165,6 +167,8 @@ A metric, readiness field, or health signal must come from a real runtime observ
 Build-channel diagnostic flags are observation gates only. They must not control functional hook installation, state authority, ownership, acquisition/release or fail-native fallback. Canary and Release share functional control flow.
 
 For app UI, prefer current MIUIX components and conventions. Persist real user preferences only; Preview/Sandbox state must not become runtime module state.
+
+Before UI changes, inspect applicable MIUIX upstream code, examples and PRs/issues. Explain **before editing** whether an upstream solution exists, its source, rules, applicable scenarios, current differences and intended approach. Adapt the full affected UI chain (layout, states, interactions, motion/glass, navigation, lifecycle and relevant OS3/OS4 behavior), not just controls. Recheck after editing, resolve deterministic issues and record evidence.
 
 ### Semantic leading icons
 
