@@ -2064,8 +2064,21 @@ internal object SysUiPresentationOwner {
                 val rollback =
                     setIgnoredSlotsMethod?.let { setMethod ->
                         runCatching {
-                            setMethod.invoke(group, ArrayList(before))
-                        }.onFailure(::rethrowFatal).isSuccess
+                            @Suppress("UNCHECKED_CAST")
+                            val current =
+                                ignoredSlotsField.get(group) as? MutableList<String>
+                                    ?: error("ignored-slots-list-unavailable-during-rollback")
+                            // Native callbacks may add unrelated slots before the failed add returns.
+                            val target = OwnedEntries.restoreTarget(current, owned)
+                            if (target != current) {
+                                setMethod.invoke(group, ArrayList(target))
+                            }
+                            @Suppress("UNCHECKED_CAST")
+                            val restored =
+                                ignoredSlotsField.get(group) as? MutableList<String>
+                                    ?: error("ignored-slots-list-unavailable-after-rollback")
+                            restored == target
+                        }.onFailure(::rethrowFatal).getOrDefault(false)
                     } ?: false
                 onFailNative(
                     "ignored-slots-session-add-" +
