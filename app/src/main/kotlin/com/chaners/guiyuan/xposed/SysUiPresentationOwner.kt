@@ -1946,6 +1946,7 @@ internal object SysUiPresentationOwner {
                 clipStates.isEmpty() &&
                 mirroredPeerClipStates.isEmpty() &&
                 appliedPadding == null &&
+                !persistentIgnoredSlotsApplied &&
                 appliedFakeCarrierWidthPx == null
             ) {
                 return 0
@@ -1977,10 +1978,16 @@ internal object SysUiPresentationOwner {
             var ignoredSlotsRestored = false
             var restored = 0
             release { reservationRestored = restoreEndReservation() }
+            if (appliedPadding != null) {
+                failures += IllegalStateException("native-padding-restore-incomplete")
+            }
             if (appliedFakeCarrierWidthPx != null) {
                 failures += IllegalStateException("native-capacity-restore-incomplete")
             }
             release { ignoredSlotsRestored = restorePersistentIgnoredSlots(requestLayout) }
+            if (persistentIgnoredSlotsApplied) {
+                failures += IllegalStateException("native-ignored-slots-restore-incomplete")
+            }
             release { restored += restoreClipMasks(clipStates, failures) }
             release { restored += restoreClipMasks(mirroredPeerClipStates, failures) }
 
@@ -2498,6 +2505,7 @@ internal object SysUiPresentationOwner {
         private fun restoreEndReservation(): Boolean {
             var paddingRestored = appliedPadding == null
             val applied = appliedPadding
+            var keepPadding = applied != null
             val paddingFailure = runCatching {
                 if (applied != null) {
                     val group = statusIcons.get()
@@ -2508,6 +2516,7 @@ internal object SysUiPresentationOwner {
                         val live = PaddingState.from(group)
                         if (live != applied) {
                             paddingRestored = false
+                            keepPadding = false
                             onEvent(
                                 eventPrefix + " endReservation restore=skipped reason=writer-changed " +
                                     "livePaddingEnd=" + live.end +
@@ -2521,12 +2530,14 @@ internal object SysUiPresentationOwner {
                                 baseline.bottom,
                             )
                             paddingRestored = PaddingState.from(group) == baseline
+                            if (paddingRestored) keepPadding = false
                         }
                     }
                 }
             }.exceptionOrNull()
             paddingFailure?.let(::rethrowFatal)
-            appliedPadding = null
+            // A native callback can reenter and acquire a newer padding receipt.
+            if (!keepPadding && appliedPadding === applied) appliedPadding = null
             val carrier = runCatching { restoreFakeCarrierCapacityLease() }
             carrier.exceptionOrNull()?.let(::rethrowFatal)
             if (paddingFailure != null) {
