@@ -46,7 +46,7 @@ import top.yukonga.miuix.kmp.blur.BlurBlendMode
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -190,7 +190,7 @@ internal fun AboutScreen(
             )
         },
         overlay = {
-            OverlayDialog(
+            UiOverlayDialog(
                 title = stringResource(R.string.about_repo_unavailable_title),
                 summary = stringResource(R.string.about_repo_unavailable_summary),
                 show = showRepoUnavailable,

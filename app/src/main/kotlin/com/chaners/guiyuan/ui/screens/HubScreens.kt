@@ -150,7 +150,7 @@ import top.yukonga.miuix.kmp.glass.GlassShape
 import top.yukonga.miuix.kmp.glass.GlassMaterials
 import top.yukonga.miuix.kmp.glass.glassPanel
 import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -291,7 +291,7 @@ internal fun FeaturesScreen(
         search = search,
         overlay = {
             pendingImport?.let { selected ->
-                OverlayDialog(
+                UiOverlayDialog(
                     title = stringResource(R.string.config_restore_title),
                     summary = stringResource(R.string.config_restore_confirm),
                     show = true,
@@ -368,7 +368,7 @@ internal fun FeaturesScreen(
                     }
                 },
             )
-            OverlayDialog(
+            UiOverlayDialog(
                 title = stringResource(R.string.restore_feature_defaults),
                 summary = stringResource(R.string.restore_feature_defaults_dialog_summary),
                 show = showResetDialog,
@@ -1094,7 +1094,7 @@ internal fun SettingsHubScreen(
         title = stringResource(R.string.settings_title),
         bottomContentPadding = bottomContentPadding,
         overlay = {
-            OverlayDialog(
+            UiOverlayDialog(
                 title = stringResource(R.string.settings_entry_scope_title),
                 summary = stringResource(R.string.settings_entry_scope_summary),
                 show = pending != null,
@@ -1141,7 +1141,7 @@ internal fun SettingsHubScreen(
                     )
                 }
             }
-            OverlayDialog(
+            UiOverlayDialog(
                 title = stringResource(R.string.settings_entry_failed_title),
                 summary = stringResource(R.string.settings_entry_failed_summary),
                 show = requestFailed,

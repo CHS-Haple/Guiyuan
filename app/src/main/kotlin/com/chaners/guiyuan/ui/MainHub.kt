@@ -81,7 +81,7 @@ import com.chaners.guiyuan.ui.components.UiDialogButton
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -404,7 +404,7 @@ internal fun MainHub(
             )
         }
 
-        OverlayDialog(
+        UiOverlayDialog(
             title = stringResource(R.string.restart_scope),
             summary = stringResource(
                 if (availableTargets.isEmpty()) R.string.restart_scope_no_targets
@@ -519,7 +519,7 @@ internal fun MainHub(
             }
         }
 
-        OverlayDialog(
+        UiOverlayDialog(
             title = stringResource(R.string.home_scope_request_failed),
             summary = stringResource(R.string.home_scope_request_failed_summary),
             show = scopeRequestFailed,
@@ -533,7 +533,7 @@ internal fun MainHub(
             )
         }
 
-        OverlayDialog(
+        UiOverlayDialog(
             title = stringResource(R.string.restart_scope_failed),
             summary = stringResource(
                 R.string.restart_scope_failed_summary,

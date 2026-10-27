@@ -35,7 +35,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -288,7 +288,7 @@ internal fun BatteryColorBottomSheet(
     )
 
     val deleting = deleteCustomId?.let(library::customById)
-    OverlayDialog(
+    UiOverlayDialog(
         title = stringResource(R.string.battery_custom_scheme_delete),
         summary =
             deleting?.let {
