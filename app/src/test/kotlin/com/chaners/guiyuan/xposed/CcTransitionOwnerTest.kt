@@ -18,7 +18,7 @@ class CcTransitionOwnerTest {
         val second = IllegalArgumentException("observer")
         val failure =
             runCatching {
-                CcTransitionOwner.releaseAll(
+                releaseAll(
                     { visited += "reservation"; throw first },
                     { visited += "observer"; throw second },
                     { visited += "overlay" },
@@ -37,9 +37,9 @@ class CcTransitionOwnerTest {
         val visited = mutableListOf<String>()
         val failure =
             runCatching {
-                CcTransitionOwner.releaseAll(
+                releaseAll(
                     {
-                        CcTransitionOwner.releaseAll(
+                        releaseAll(
                             { visited += "global"; error("global-unregister") },
                             { visited += "pre-draw" },
                             { visited += "live-global" },
@@ -64,7 +64,7 @@ class CcTransitionOwnerTest {
         var laterReleaseRan = false
         val failure =
             runCatching {
-                CcTransitionOwner.releaseAll(
+                releaseAll(
                     { throw InvocationTargetException(fatal) },
                     { laterReleaseRan = true },
                 )

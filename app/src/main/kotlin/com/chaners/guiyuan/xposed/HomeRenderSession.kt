@@ -377,13 +377,13 @@ internal object HomeRenderSession {
 
         fun stop(removeVisual: Boolean = true) {
             layoutReady = false
-            dispatchPresentationReadiness("stop")
-            batteryContainer.get()?.removeOnAttachStateChangeListener(this)
-            batteryContainer.get()?.removeOnLayoutChangeListener(overlayHostLayoutListener)
-            batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener)
-            if (removeVisual) {
-                (probeView.parent as? ViewGroup)?.removeView(probeView)
-            }
+            releaseAll(
+                { dispatchPresentationReadiness("stop") },
+                { batteryContainer.get()?.removeOnAttachStateChangeListener(this) },
+                { batteryContainer.get()?.removeOnLayoutChangeListener(overlayHostLayoutListener) },
+                { batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) },
+                { if (removeVisual) (probeView.parent as? ViewGroup)?.removeView(probeView) },
+            )
         }
 
         fun updateControlCenterHomeEligibility(
@@ -642,8 +642,10 @@ internal object HomeRenderSession {
         }
 
         private inline fun emitEvent(message: () -> String) {
-            if (isDetailedDiagnosticsEnabled()) {
-                onEvent(message())
+            try {
+                if (isDetailedDiagnosticsEnabled()) onEvent(message())
+            } catch (error: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(error)
             }
         }
 

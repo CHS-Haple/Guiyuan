@@ -471,22 +471,28 @@ internal object KeyguardRenderSession {
         }
 
         fun stop() {
-            stopFollowingIconAlpha()
-            if (aodDraw != AodDraw.IDLE) {
-                emitEvent {
-                    "keyguardAodWitness source=session-stop" +
-                        " shownDuringAod=" + aodShown +
-                        " freshVisibleDraw=" + (aodDraw == AodDraw.DRAWN) +
-                        " nativeCc=" + SysUiCcSource.nativeVisualState()
-                }
-                aodDraw = AodDraw.IDLE
-            }
+            val hadAod = aodDraw != AodDraw.IDLE
+            val drewAod = aodDraw == AodDraw.DRAWN
+            aodDraw = AodDraw.IDLE
             layoutReady = false
-            dispatchPresentationReadiness("stop")
-            systemIcons.get()?.removeOnAttachStateChangeListener(this)
-            systemIcons.get()?.removeOnLayoutChangeListener(overlayHostLayoutListener)
-            batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener)
-            (renderView.parent as? ViewGroup)?.removeView(renderView)
+            releaseAll(
+                { stopFollowingIconAlpha() },
+                {
+                    if (hadAod) {
+                        emitEvent {
+                            "keyguardAodWitness source=session-stop" +
+                                " shownDuringAod=" + aodShown +
+                                " freshVisibleDraw=" + drewAod +
+                                " nativeCc=" + SysUiCcSource.nativeVisualState()
+                        }
+                    }
+                },
+                { dispatchPresentationReadiness("stop") },
+                { systemIcons.get()?.removeOnAttachStateChangeListener(this) },
+                { systemIcons.get()?.removeOnLayoutChangeListener(overlayHostLayoutListener) },
+                { batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) },
+                { (renderView.parent as? ViewGroup)?.removeView(renderView) },
+            )
         }
 
         fun setFeatureCfg(cfg: FeatureCfg) {
@@ -892,8 +898,10 @@ internal object KeyguardRenderSession {
         }
 
         private inline fun emitEvent(message: () -> String) {
-            if (isDetailedDiagnosticsEnabled()) {
-                onEvent(message())
+            try {
+                if (isDetailedDiagnosticsEnabled()) onEvent(message())
+            } catch (error: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(error)
             }
         }
     }
