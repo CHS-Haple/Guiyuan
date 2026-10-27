@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.icons.Os4GlassBack
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.settings.VisualCfg
@@ -234,7 +235,7 @@ internal fun PreviewSandboxScreen(
         TooltipBox(text = stringResource(R.string.back)) {
             if (os4) {
                 GlassIconButton(onClick = onBack) {
-                    Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
+                    Icon(Os4GlassBack, contentDescription = stringResource(R.string.back))
                 }
             } else {
                 IconButton(onClick = onBack) {
