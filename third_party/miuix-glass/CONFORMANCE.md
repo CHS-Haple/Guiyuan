@@ -27,17 +27,19 @@ choosing a component. A renamed or glass-coated OS3 widget is not sufficient. Re
 container constraints, system/window insets, typography and fontScale, dynamic density,
 keyboard/Back, scrolling, overlay host ownership and shader-free fallback together.
 
-- **Sandbox title:** Both OS3 and OS4 attach the transient preview dock through
-  their native top bar's `bottomContent` slot. The list consumes Scaffold's
-  measured content inset so the expanded native title cannot overlap the first
-  preview card. The dock appears during scrolling and can change the measured
-  inset; its visibility threshold is relative to `LazyListLayoutInfo.beforeContentPadding`,
-  not a fixed viewport inset, so the dock's own layout height cannot reverse
-  its trigger condition. Verify scroll continuity during entry/exit on device.
-  OS4's dock action
-  uses the same 12dp end inset as GlassTopAppBar's action slot; OS3 retains its
-  native 16dp inset. The upstream OS4 `BlurTopAppBar` title-clip contract is
-  still unpublished.
+- **Sandbox title and transient dock:** Both OS3 and OS4 use their native
+  TopAppBar without transient `bottomContent`. Upstream measures `bottomContent`
+  into the top-bar height, which Scaffold uses as the list's top inset: animating
+  that slot causes page displacement. The list consumes Scaffold's measured inset
+  for correct expanded-title clearance; a sibling overlay is positioned at that
+  same measured boundary without contributing to the header's height. Keep the
+  overlay outside the page's `LayerBackdrop` recording to avoid glass
+  self-sampling; its OS4 action samples that page-only backdrop explicitly. The
+  dock visibility threshold remains relative to the list's `beforeContentPadding`
+  and its animation never changes list geometry. Verify scroll continuity and
+  input/hit regions on device. OS4 uses the same 12dp end inset as the glass
+  top-bar action; OS3 retains native 16dp. The upstream OS4 `BlurTopAppBar`
+  title-clip contract is still unpublished.
 - **Sandbox choices:** segmented glass tabs remain for fitting short labels.
   Longer labels use the existing scaffold-hosted glass dropdown with full option
   text rather than squeezing equal-width segments or shrinking typography.

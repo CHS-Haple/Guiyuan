@@ -300,7 +300,10 @@ internal fun PreviewSandboxScreen(
                     val backTop = stringResource(R.string.diagnostics_scroll_top)
                     TooltipBox(text = backTop) {
                         if (os4) {
-                            GlassIconButton(onClick = { scope.launch { listState.animateScrollToItem(0) } }) {
+                            GlassIconButton(
+                                onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                                backdrop = topBarBackdrop,
+                            ) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
                                     contentDescription = backTop,
@@ -333,7 +336,6 @@ internal fun PreviewSandboxScreen(
                         actions = barActions,
                         unclippedNavigationIcon = true,
                         unclippedActions = true,
-                        bottomContent = dock,
                     )
                 } else {
                     MiuixBlurredTopBar(
@@ -346,22 +348,18 @@ internal fun PreviewSandboxScreen(
                             scrollBehavior = scrollBehavior,
                             navigationIcon = backAction,
                             actions = barActions,
-                            bottomContent = dock,
                         )
                     }
                 }
             },
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .topBarBackdropSource(topBarBackdrop),
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 state = listState,
                 modifier =
                     Modifier
                         .fillMaxSize()
+                        .topBarBackdropSource(topBarBackdrop)
                         .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
@@ -674,6 +672,15 @@ internal fun PreviewSandboxScreen(
                         )
                     }
                 }
+            }
+            // A transient dock must not resize the native TopAppBar or enter its backdrop recording.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .padding(top = paddingValues.calculateTopPadding()),
+            ) {
+                dock()
             }
          }
     }
