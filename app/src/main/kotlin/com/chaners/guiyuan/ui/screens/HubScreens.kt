@@ -1365,8 +1365,8 @@ private fun HubPage(
             AnimatedVisibility(
                 visible = search.active,
                 modifier = Modifier.fillMaxWidth(),
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut(),
+                enter = if (os4) fadeIn(tween(durationMillis = 150)) else expandVertically() + fadeIn(),
+                exit = if (os4) fadeOut(tween(durationMillis = 120)) else shrinkVertically() + fadeOut(),
             ) {
                 SearchBar(
                     modifier = Modifier
