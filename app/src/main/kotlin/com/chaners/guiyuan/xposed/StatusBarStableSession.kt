@@ -136,6 +136,8 @@ internal object StatusBarStableSession {
 
         private fun captureAnchorIfReady(source: String): Boolean {
             if (anchorCaptured) {
+                // Successful capture does not imply that listener removal succeeded.
+                clearAnchorLayoutListener()
                 return true
             }
 
