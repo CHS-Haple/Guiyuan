@@ -32,6 +32,16 @@ Current target evidence is scoped to Xiaomi HyperOS SystemUI `17.03.260226.r`. T
 
 These are invocation references in the target bytecode, not a full path-condition or runtime callback trace. In particular, none establishes the actual inherited Android `setPaddingRelative()` exception/reentry order. Native padding influences more than the Guiyuan glyph bounds, so any session-owned padding acquisition/rollback must account for the native measure/layout consumers and preserve single-writer and foreign-change boundaries.
 
+**Observed native Padding writers (DEX and resource table).** On the same SHA-256-verified target, `MiuiPhoneStatusBarView.updatePaddings()V` in `classes2.dex` invokes inherited `setPaddingRelative(IIII)V` on three recipients:
+
+- `findViewById(0x7f0b0b53)`, named `status_bar_contents` in the packaged `resources.arsc`: call at instruction offset **97**.
+- `findViewById(0x7f0b0be6)`, named `system_icons`: call at offset **107**.
+- Its `mPrivacyArea: LinearLayout` field: call at offset **139**.
+
+These calls and resource names were verified from DEX invoke registers, field references and APK resource-entry names. The same target's `MiuiPhoneStatusBarView.onFinishInflate()V` loads `statusIcons` (`0x7f0b0b4e`) as `MiuiStatusIconContainer` into `mStatusBarStatusIcons`, while `system_icons` (`0x7f0b0be6`) is cast to the distinct `MiuiStatusBatteryContainer` class and stored as `mStatusBatteryContainer`; `system_icon_area` (`0x7f0b0be5`) is another native View. Thus the observed `system_icons` Padding setter is **not itself proof of a same-View write conflict** with Guiyuan's checked `MiuiStatusIconContainer` group. Native parent/peer Padding can still influence measured layout. **Not established:** the actual `DarkIconManager.mGroup` identity in every live host, synchronous setter reentry, or inherited Android `View.setPaddingRelative` fault behavior. Do not infer write ownership from an ancestor, a resource name or an equal numeric Padding value; verify the concrete View and generation before changing rollback.
+
+
+
 A contract verified here must not be assumed valid on another SystemUI build without revalidation.
 
 ## Existing native host
