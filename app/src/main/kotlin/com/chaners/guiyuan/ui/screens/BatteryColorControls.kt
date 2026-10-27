@@ -205,55 +205,55 @@ internal fun BatteryColorBottomSheet(
         )
     }
 
-    UiOverlayBottomSheet(
-        show = detailVisible,
-        modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
-        title =
-            detailSlot?.let { slot ->
-                stringResource(
-                    R.string.battery_mode_editor_title,
-                    stringResource(batteryColorSlotLabel(slot)),
-                )
-            },
-        backgroundColor = MiuixTheme.colorScheme.surface,
-        insideMargin = BottomSheetDefaults.insideMargin,
-        enableWindowDim = false,
-        startAction = {
-            TooltipBox(text = stringResource(R.string.back)) {
-                IconButton(
-                    onClick = { showDetail = false },
-                ) {
-                    Icon(
-                        imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassBack else MiuixIcons.Back,
-                        contentDescription = stringResource(R.string.back),
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
-            }
-        },
-        onDismissRequest = { showDetail = false },
-        onDismissFinished = {
-            if (!showDetail) {
-                detailRequest = null
-            }
-        },
-    ) {
-        if (detailCustom != null && detailSlot != null) {
-            BatteryCustomModeEditor(
-                custom = detailCustom,
-                slot = detailSlot,
-                onSourceChange = { source ->
-                    repository.setCustomSource(detailCustom.id, detailSlot, source)
-                },
-                onColorChange = { color ->
-                    repository.setCustomColor(detailCustom.id, detailSlot, color)
-                },
-            )
-        }
-    }
-
-    // These dialogs sit above sheets that the page backdrop does not record.
+    // The page recording excludes the first sheet beneath these overlays.
     CompositionLocalProvider(LocalGlassBackdrop provides null) {
+        UiOverlayBottomSheet(
+            show = detailVisible,
+            modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
+            title =
+                detailSlot?.let { slot ->
+                    stringResource(
+                        R.string.battery_mode_editor_title,
+                        stringResource(batteryColorSlotLabel(slot)),
+                    )
+                },
+            backgroundColor = MiuixTheme.colorScheme.surface,
+            insideMargin = BottomSheetDefaults.insideMargin,
+            enableWindowDim = false,
+            startAction = {
+                TooltipBox(text = stringResource(R.string.back)) {
+                    IconButton(
+                        onClick = { showDetail = false },
+                    ) {
+                        Icon(
+                            imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassBack else MiuixIcons.Back,
+                            contentDescription = stringResource(R.string.back),
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
+            },
+            onDismissRequest = { showDetail = false },
+            onDismissFinished = {
+                if (!showDetail) {
+                    detailRequest = null
+                }
+            },
+        ) {
+            if (detailCustom != null && detailSlot != null) {
+                BatteryCustomModeEditor(
+                    custom = detailCustom,
+                    slot = detailSlot,
+                    onSourceChange = { source ->
+                        repository.setCustomSource(detailCustom.id, detailSlot, source)
+                    },
+                    onColorChange = { color ->
+                        repository.setCustomColor(detailCustom.id, detailSlot, color)
+                    },
+                )
+            }
+        }
+
         BatteryCreateSchemeDialog(
             show = createRequest != null,
             nextId = nextCustomId,
