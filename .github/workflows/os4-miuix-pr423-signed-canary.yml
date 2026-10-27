@@ -3,7 +3,12 @@ name: OS4 PR423 signed source candidate
 on:
   push:
     branches: [ feat/os4-glass-experimental ]
-    paths: [ '.github/workflows/os4-miuix-pr423-signed-canary.yml' ]
+    paths:
+      - '.github/workflows/os4-miuix-pr423-signed-canary.yml'
+      - 'app/src/os4Upstream/**'
+      - 'app/src/os4Published/**'
+      - 'app/src/main/kotlin/com/chaners/guiyuan/ui/screens/BatteryColorControls.kt'
+      - 'gradle.properties'
   workflow_dispatch:
 
 permissions:

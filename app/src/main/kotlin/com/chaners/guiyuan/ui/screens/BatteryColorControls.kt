@@ -34,7 +34,7 @@ import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
+import com.chaners.guiyuan.ui.components.UiOverlayBottomSheet
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -148,7 +148,7 @@ internal fun BatteryColorBottomSheet(
         }
     }
 
-    OverlayBottomSheet(
+    UiOverlayBottomSheet(
         show = show,
         modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
         title = stringResource(R.string.battery_colors),
@@ -208,7 +208,7 @@ internal fun BatteryColorBottomSheet(
         )
     }
 
-    OverlayBottomSheet(
+    UiOverlayBottomSheet(
         show = detailVisible,
         modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
         title =
