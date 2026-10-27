@@ -61,6 +61,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
@@ -143,6 +144,7 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassShape
 import top.yukonga.miuix.kmp.glass.GlassMaterials
@@ -1367,7 +1369,14 @@ private fun HubPage(
                 exit = shrinkVertically() + fadeOut(),
             ) {
                 SearchBar(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (os4) Modifier.padding(horizontal = GlassTopAppBarDefaults.HorizontalPadding)
+                            else Modifier,
+                        ),
+                    // PR #423 reserves 54dp for its 44dp cancel and the 10dp gap.
+                    insideMargin = if (os4) DpSize(0.dp, 0.dp) else SearchBarDefaults.InsideMargin,
                     inputField = {
                         if (os4) {
                             Os4SearchField(
@@ -1397,7 +1406,7 @@ private fun HubPage(
                                 IconButton(
                                     onClick = search::close,
                                     modifier = Modifier
-                                        .padding(end = 12.dp)
+                                        .padding(start = 10.dp)
                                         .size(searchHeight)
                                         .then(searchSurface),
                                 ) {
