@@ -19,7 +19,9 @@ Evidence language:
 
 ## Target scope
 
-Current target evidence is scoped to Xiaomi HyperOS SystemUI `17.03.260226.r`.
+Current target evidence is scoped to Xiaomi HyperOS SystemUI `17.03.260226.r`. The previously supplied `系统界面_17.03.260226.r(6).apk` was byte-verified (SHA-256 `a0e738e41fe599b97950cbf52a9e2ddc6ae2ceff986efbacb1c9840bea78768d`, three DEX files).
+
+**Verified target DEX boundary.** `MiuiStatusIconContainer` extends `AlphaOptimizedLinearLayout`, which extends Android `LinearLayout`; neither target class declares a `setPaddingRelative` override. The target `MiuiStatusIconContainer.onLayout(ZIIII)V` invokes inherited `getPaddingStart()` and `getPaddingEnd()`; native `addIgnoredSlots(List)` calls `List.add` and `requestLayout`, while `setIgnoredSlots(List)` calls `List.clear` before `addIgnoredSlots`. These are verified method definitions/invocations, **not** proof of the inherited Android setter's internal exception ordering, synchronous reentry, other modules' writers or actual runtime failure. Inspect the matching Android framework binary when that behavior becomes decision-critical; AOSP is secondary context.
 
 A contract verified here must not be assumed valid on another SystemUI build without revalidation.
 
