@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +32,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.settings.BatteryColorSchemeSource
 import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
@@ -150,37 +152,40 @@ internal fun BatteryCustomModeEditor(
                 .padding(bottom = 24.dp),
     ) {
         Card(modifier = Modifier.fillMaxWidth()) {
-            UiDropdownPreference(
-                items = sourceLabels,
-                selectedIndex = selectedSourceIndex,
-                title = stringResource(R.string.battery_color_source),
-                summary = currentValueText,
-                startAction = {
-                    // Remembered custom colors must not appear as active for other sources.
-                    val shown =
-                        if (entry.source == BatteryColorSchemeSource.CUSTOM || editingColor != seed) {
-                            editingColor ?: resolved
+            // The page backdrop omits this sheet; do not sample it from the popup.
+            CompositionLocalProvider(LocalGlassBackdrop provides null) {
+                UiDropdownPreference(
+                    items = sourceLabels,
+                    selectedIndex = selectedSourceIndex,
+                    title = stringResource(R.string.battery_color_source),
+                    summary = currentValueText,
+                    startAction = {
+                        // Remembered custom colors must not appear as active for other sources.
+                        val shown =
+                            if (entry.source == BatteryColorSchemeSource.CUSTOM || editingColor != seed) {
+                                editingColor ?: resolved
+                            } else {
+                                resolved
+                            }
+                        if (shown == null) {
+                            BatteryColorMosaic(size = 24.dp)
                         } else {
-                            resolved
+                            BatteryColorDot(color = shown, size = 24.dp)
                         }
-                    if (shown == null) {
-                        BatteryColorMosaic(size = 24.dp)
-                    } else {
-                        BatteryColorDot(color = shown, size = 24.dp)
-                    }
-                },
-                onSelectedIndexChange = { index ->
-                    sourceOptions.getOrNull(index)?.let { source ->
-                        val nextColor = batteryColorEditorSeed(entry.copy(source = source), slot)
-                        if (nextColor == null) {
-                            editingColor = null
-                        } else {
-                            showColor(nextColor)
+                    },
+                    onSelectedIndexChange = { index ->
+                        sourceOptions.getOrNull(index)?.let { source ->
+                            val nextColor = batteryColorEditorSeed(entry.copy(source = source), slot)
+                            if (nextColor == null) {
+                                editingColor = null
+                            } else {
+                                showColor(nextColor)
+                            }
+                            onSourceChange(source)
                         }
-                        onSourceChange(source)
-                    }
-                },
-            )
+                    },
+                )
+            }
         }
 
         BatterySheetSmallTitle(
