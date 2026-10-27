@@ -3107,9 +3107,18 @@ internal object SysUiPresentationOwner {
             var restored = 0
             snapshot.forEach { state ->
                 try {
-                    if (restoreClipState(state)) restored += 1
+                    val view = state.view.get()
+                    if (view != null && view.clipBounds == state.appliedClip) {
+                        if (restoreClipState(state)) {
+                            restored += 1
+                        } else if (view.clipBounds == state.appliedClip) {
+                            states += state
+                            failures += IllegalStateException("native-clip-restore-incomplete")
+                        }
+                    }
                 } catch (error: Throwable) {
                     rethrowFatal(error)
+                    states += state
                     failures.add(error)
                 }
             }
