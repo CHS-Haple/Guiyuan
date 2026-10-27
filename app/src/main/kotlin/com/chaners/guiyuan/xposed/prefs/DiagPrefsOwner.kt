@@ -13,6 +13,7 @@ internal object DiagPrefsOwner {
 
     @Volatile private var binding: Binding? = null
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+    private val listenerRetirement = PrefListenerRetirement()
 
     val isBound: Boolean
         get() = binding != null
@@ -92,9 +93,7 @@ internal object DiagPrefsOwner {
         binding = null
         listener = null
         // Retire the generation before entering the framework's listener monitor.
-        if (old != null && oldListener != null) {
-            old.prefs.unregisterOnSharedPreferenceChangeListener(oldListener)
-        }
+        listenerRetirement.unregister(old?.prefs, oldListener)
     }
 
     private fun isCurrent(
