@@ -1,6 +1,6 @@
 # OS4 UI conformance and upstream adoption audit
 
-Source baseline: Guiyuan `feat/os4-glass-experimental` B1520 (PR #861 Draft; exact-source CI and device acceptance pending). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
+Source baseline: Guiyuan `feat/os4-glass-experimental` B1520 (PR #861 Draft; exact-source CI passed, device acceptance pending). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
 MIUIX pinned published: `b587aaf2c907c77a8c3c02d8df0aede2937ef8f0` (`0.9.4-b587aaf2-SNAPSHOT`).
 MIUIX reviewed prerelease: [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (not yet merged).
 The upstream sample may illustrate a visual contract without shipping a public component. Production source and experimental
@@ -35,7 +35,7 @@ source ABI are separate; source-level implementation does **not** imply device c
 - **Root cause:** `Os4SearchSurface` painted its fixed 44dp capsule while placing its content in a wrap-content Box. For Cancel, the Box's only child has `Modifier.matchParentSize()`; Compose excludes such children from measuring the parent, so that content host collapsed, taking the Close glyph and clickable hit target with it. `Os4SearchField` supplied an intrinsic full-size Row and did not collapse.
 - **Change:** Size the one existing content host with `Modifier.matchParentSize()` against the capsule. Keep the 44dp area, Glass.Close glyph, semantic click, single `MutableInteractionSource`, upstream pressDown/pressUp alpha/overlay, geometry/visibility clocks, keyboard focus, native Back/Escape, and the accepted in-field Basic.SearchCleanup icon. No new state writer or OS3 change.
 - **Call path:** `HubPage` → `Os4SearchMode` → `Os4SearchSurface` → `clickable(onClose)` → `PageSearch.close()`. `NavigationBackHandler` / Escape share `onClose`.
-- **Validation boundary:** Source and entire PR diff reviewed; CI/build/signature and focused on-device press/close, glyph contrast, alpha/blur, rapid reversal, input/clear, Back/Escape, RTL/fontScale and scrolling-glass checks remain necessary. Source alone does not certify physical gesture or animation quality.
+- **Validation:** Exact source `c42ddbd` passed matched-source Android tests, APK verification and isolated signing (both CI jobs succeeded; [run 40538872808](https://github.com/CHS-Haple/Guiyuan/actions/runs/40538872808)). Focused on-device press/close, glyph contrast, alpha/blur, rapid reversal, input/clear, Back/Escape, RTL/fontScale and scrolling-glass acceptance remains open. Source/CI do not certify physical gesture or animation quality.
 
 ## In-sheet battery source dropdown sampling (B1519)
 
