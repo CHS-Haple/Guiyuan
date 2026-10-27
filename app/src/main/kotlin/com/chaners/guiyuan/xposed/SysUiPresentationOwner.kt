@@ -1886,7 +1886,7 @@ internal object SysUiPresentationOwner {
                 if (aodPeersReleased) return
                 aodPeersReleased = true
                 if (!restoreAodPeerClips()) {
-                    onFailNative("aod-peer-battery-unavailable")
+                    onFailNative("aod-peer-clip-restore-incomplete")
                     return
                 }
                 // Restore native peer layout with its visibility, not at session cleanup.
@@ -1923,7 +1923,14 @@ internal object SysUiPresentationOwner {
                 val state = iterator.next()
                 val view = state.view.get()
                 if (view !== batteryView) {
-                    restoreClipState(state)
+                    // A changed native clip is no longer ours; keep a failed restore receipt.
+                    if (
+                        view != null &&
+                        view.clipBounds == state.appliedClip &&
+                        !restoreClipState(state)
+                    ) {
+                        return false
+                    }
                     iterator.remove()
                 }
             }
