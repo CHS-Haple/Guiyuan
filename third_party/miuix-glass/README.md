@@ -4,11 +4,13 @@ Source PR: https://github.com/compose-miuix-ui/miuix/pull/423
 Investigated PR revision: `b9f70838509fbc3f63f1a972777a7e6ce07f578f`
 License: Apache-2.0 (retain source headers and LICENSE).
 
-## Temporarily embedded OS4 search glyphs
+## Temporarily embedded OS4 glyphs
 
 `app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4SearchIcons.kt` preserves only the `Regular` path data for official Glass.Close and Glass.Search from `miuix-glass-icons`, pinned to PR #423 at `b9f70838509fbc3f63f1a972777a7e6ce07f578f`. Their Apache-2.0 copyright/SPDX is retained. The pinned published MIUIX core has no `MiuixIcons.Glass` namespace, so directly importing the unpublished module would break the consistent five-module snapshot. The scoped vectors must be deleted and call sites switched back to `MiuixIcons.Glass.*` after the matched module is published; do not expand this approach to full unpublished composable classes.
 
 The separate `Os4BackIcon.kt` likewise preserves the exact Apache-2.0 PR #423 `Regular.Back` vector for OS4 top-bar glass buttons, including its RTL `autoMirror`. OS3 keeps the published Back icon. No behavior, action target or popup owner is duplicated.
+
+`app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4DiagnosticIcons.kt` likewise retains only the `Regular` paths for Filter, Share, Download and More at the same pinned PR #423 revision. OS4 Diagnostics uses those four vectors; OS3 keeps published MIUIX symbols. Remove these temporary files when the matching upstream glass-icons module is integrated.
 
 ## Experimental upstream adoption gate (hold this Draft PR)
 

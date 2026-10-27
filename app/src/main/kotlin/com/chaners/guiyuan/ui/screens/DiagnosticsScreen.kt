@@ -55,6 +55,10 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.icons.Os4GlassDownload
+import com.chaners.guiyuan.ui.icons.Os4GlassFilter
+import com.chaners.guiyuan.ui.icons.Os4GlassMore
+import com.chaners.guiyuan.ui.icons.Os4GlassShare
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.DiagSettings
 import com.chaners.guiyuan.settings.DiagRepo
@@ -319,7 +323,11 @@ internal fun DiagnosticsScreen(
                     },
                     enabled = reportEnabled,
                 ) {
-                    Icon(MiuixIcons.Share, contentDescription = shareTitle, modifier = Modifier.size(24.dp))
+                    Icon(
+                        imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassShare else MiuixIcons.Share,
+                        contentDescription = shareTitle,
+                        modifier = Modifier.size(24.dp),
+                    )
                 }
             }
             TooltipBox(text = exportTitle) {
@@ -330,7 +338,11 @@ internal fun DiagnosticsScreen(
                     },
                     enabled = reportEnabled,
                 ) {
-                    Icon(MiuixIcons.Download, contentDescription = exportTitle, modifier = Modifier.size(24.dp))
+                    Icon(
+                        imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassDownload else MiuixIcons.Download,
+                        contentDescription = exportTitle,
+                        modifier = Modifier.size(24.dp),
+                    )
                 }
             }
             DiagMenu(
@@ -668,7 +680,11 @@ private fun LogFilterMenu(
                 }
             },
         ) {
-            Icon(MiuixIcons.Filter, contentDescription = title, modifier = Modifier.size(24.dp))
+            Icon(
+                        imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassFilter else MiuixIcons.Filter,
+                        contentDescription = title,
+                        modifier = Modifier.size(24.dp),
+                    )
         }
     }
 
@@ -762,11 +778,19 @@ private fun DiagMenu(
     TooltipBox(text = title) {
         if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
             Os4CascadingMenu(entries = entries) {
-                Icon(MiuixIcons.More, contentDescription = title, modifier = Modifier.size(24.dp))
+                Icon(
+                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassMore else MiuixIcons.More,
+                    contentDescription = title,
+                    modifier = Modifier.size(24.dp),
+                )
             }
         } else {
             WindowIconCascadingDropdownMenu(entries = entries) {
-                Icon(MiuixIcons.More, contentDescription = title, modifier = Modifier.size(24.dp))
+                Icon(
+                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassMore else MiuixIcons.More,
+                    contentDescription = title,
+                    modifier = Modifier.size(24.dp),
+                )
             }
         }
     }
