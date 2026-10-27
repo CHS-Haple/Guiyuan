@@ -140,7 +140,7 @@ runtime safety fixes from dev and adjusts OS4 no-shader fallback/search.
 It does **not** patch the released MIUIX Blur binary. Upstream PR #423's
 continuous downscaled sample position and retained prefilter effect are
 relevant to the user-reported scrolling flash, but only a version-matched
-published Blur/UI/Preference/Glass module set can close that ABI gap.
+verified same-revision source-built or published Blur/UI/Preference/Glass graph can close that ABI gap.
 This snapshot needs fresh build and device acceptance. The upstream PR is
 still unmerged and the PR remains Draft.
 
