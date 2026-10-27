@@ -56,6 +56,9 @@ internal object CcRenderSession {
         }
 
         existing?.cancel()
+        if (existing != null && pendingPrearm !== existing) {
+            return PrearmResult.Failure("prearm-replaced-during-release")
+        }
         val pending =
             PendingPrearm(
                 host = host,
@@ -64,8 +67,12 @@ internal object CcRenderSession {
                 onProjectionReadinessChanged = onProjectionReadinessChanged,
             )
         pendingPrearm = pending
-        pending.start()
-        return PrearmResult.Scheduled(reused = false)
+        return if (pending.start()) {
+            PrearmResult.Scheduled(reused = false)
+        } else {
+            if (pendingPrearm === pending) pendingPrearm = null
+            PrearmResult.Failure("prearm-registration-failed")
+        }
     }
 
     @Synchronized
@@ -149,8 +156,9 @@ internal object CcRenderSession {
             } catch (cleanup: Throwable) {
                 SysUiPresentationRuntime.throwIfFatal(cleanup)
                 if (cleanup !== error) error.addSuppressed(cleanup)
+                throw error
             }
-            throw error
+            AttachFailure("projection-start-failed:" + error.javaClass.simpleName)
         }
     }
 
@@ -311,27 +319,49 @@ internal object CcRenderSession {
         if (current === session) current = null
     }
 
+    // Keep the old listener receipt if cancellation cannot complete.
+    @Synchronized
+    private fun abortPrearm(pending: PendingPrearm, error: Throwable) {
+        SysUiPresentationRuntime.throwIfFatal(error)
+        try {
+            pending.cancel()
+            if (pendingPrearm === pending) pendingPrearm = null
+        } catch (cleanup: Throwable) {
+            SysUiPresentationRuntime.throwIfFatal(cleanup)
+            if (cleanup !== error) error.addSuppressed(cleanup)
+            throw error
+        }
+    }
+
     @Synchronized
     private fun onPendingPrearmLayout(pending: PendingPrearm) {
         if (pendingPrearm !== pending) return
         val host = pending.host()
         if (host == null || !host.isAttachedToWindow) {
             pending.cancel()
-            pendingPrearm = null
+            if (pendingPrearm === pending) pendingPrearm = null
             return
         }
 
+        if (!pending.matches(host)) return
         val attempt = pending.nextAttempt()
         val failure =
-            attach(
-                host = host,
-                onEvent = pending.onEvent,
-                isDetailedDiagnosticsEnabled = pending.isDetailedDiagnosticsEnabled,
-                onProjectionReadinessChanged = pending.onProjectionReadinessChanged,
-            )
+            try {
+                attach(
+                    host = host,
+                    onEvent = pending.onEvent,
+                    isDetailedDiagnosticsEnabled = pending.isDetailedDiagnosticsEnabled,
+                    onProjectionReadinessChanged = pending.onProjectionReadinessChanged,
+                )
+            } catch (error: Throwable) {
+                abortPrearm(pending, error)
+                // The attach owner could not confirm cleanup; do not report native fallback.
+                throw error
+            }
+        if (pendingPrearm !== pending) return
         if (failure == null) {
             pending.cancel()
-            pendingPrearm = null
+            if (pendingPrearm === pending) pendingPrearm = null
             pending.emit(
                 "controlCenterProjection prearm state=armed " +
                     "source=fake-root-first-layout attempt=" + attempt,
@@ -349,10 +379,20 @@ internal object CcRenderSession {
                     " reason=" + failure.reason +
                     " next=native-root-layout",
             )
-            host.requestLayout()
+            try {
+                host.requestLayout()
+            } catch (error: Throwable) {
+                abortPrearm(pending, error)
+                pending.emit(
+                    "controlCenterProjection prearm state=failed " +
+                        "source=fake-root-first-layout attempt=" + attempt +
+                        " reason=layout-request-failed type=" + error.javaClass.simpleName +
+                        " fallback=native-qs-fake",
+                )
+            }
         } else {
             pending.cancel()
-            pendingPrearm = null
+            if (pendingPrearm === pending) pendingPrearm = null
             pending.emit(
                 "controlCenterProjection prearm state=failed " +
                     "source=fake-root-first-layout attempt=" + attempt +
@@ -366,7 +406,7 @@ internal object CcRenderSession {
     private fun onPendingPrearmDetached(pending: PendingPrearm) {
         if (pendingPrearm !== pending) return
         pending.cancel()
-        pendingPrearm = null
+        if (pendingPrearm === pending) pendingPrearm = null
     }
 
     private class PendingPrearm(
@@ -377,7 +417,8 @@ internal object CcRenderSession {
     ) : View.OnLayoutChangeListener,
         View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
-        private var started = false
+        private enum class Phase { Idle, Registering, Armed, Releasing }
+        private var phase = Phase.Idle
         private var attempts = 0
 
         fun host(): ViewGroup? = host.get()
@@ -388,36 +429,46 @@ internal object CcRenderSession {
         }
 
         fun matches(candidate: ViewGroup): Boolean =
-            host.get() === candidate
+            phase == Phase.Armed && host.get() === candidate
 
-        fun start() {
-            if (started) return
-            started = true
-            val root = host.get() ?: return
-            root.addOnLayoutChangeListener(this)
-            root.addOnAttachStateChangeListener(this)
-            // Cold start will normally hit the initial native layout naturally.
-            // Hot Reload may restore an already-laid-out root, so request exactly
-            // one native layout cycle through the same lifecycle boundary.
-            root.requestLayout()
+        fun start(): Boolean {
+            if (phase != Phase.Idle) return phase == Phase.Armed
+            val root = host.get() ?: return false
+            phase = Phase.Registering
+            try {
+                root.addOnLayoutChangeListener(this)
+                root.addOnAttachStateChangeListener(this)
+                phase = Phase.Armed
+                // Cold attach follows native layout; Hot Reload needs one fresh layout.
+                root.requestLayout()
+            } catch (error: Throwable) {
+                CcRenderSession.abortPrearm(this, error)
+                return false
+            }
             emit(
                 "controlCenterProjection prearm state=scheduled " +
                     "source=fake-root-attached next=native-root-layout",
             )
+            return true
         }
 
         fun cancel() {
-            if (!started) return
+            if (phase == Phase.Idle) return
+            phase = Phase.Releasing
             val root = host.get()
             CcTransitionOwner.releaseAll(
                 { root?.removeOnLayoutChangeListener(this) },
                 { root?.removeOnAttachStateChangeListener(this) },
             )
-            started = false
+            phase = Phase.Idle
         }
 
         fun emit(message: String) {
-            if (isDetailedDiagnosticsEnabled()) onEvent(message)
+            try {
+                if (isDetailedDiagnosticsEnabled()) onEvent(message)
+            } catch (error: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(error)
+            }
         }
 
         override fun onLayoutChange(
