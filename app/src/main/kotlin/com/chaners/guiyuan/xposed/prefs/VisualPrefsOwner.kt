@@ -106,8 +106,14 @@ internal object VisualPrefsOwner {
 
     @Synchronized
     fun unbind() {
-        unbindLocked()
-        state.set(State(null, null, VisualCfg()))
+        try {
+            unbindLocked()
+        } finally {
+            val retired = state.get()
+            if (retired.source == null && retired.token == null) {
+                state.compareAndSet(retired, State(null, null, VisualCfg()))
+            }
+        }
     }
 
     private fun unbindLocked() {

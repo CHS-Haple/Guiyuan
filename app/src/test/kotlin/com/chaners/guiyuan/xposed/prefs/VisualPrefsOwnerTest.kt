@@ -164,6 +164,23 @@ class VisualPrefsOwnerTest {
         assertEquals(listOf(false, true), delivered)
     }
 
+    @Test
+    fun failedExplicitUnbindDropsStaleVisualSettings() {
+        val prefs = FakePreferences(dual = true)
+        VisualPrefsOwner.bind(prefs, onChanged = {})
+        assertEquals(true, VisualPrefsOwner.current().dualSignal)
+
+        val failure = IllegalStateException("unregister-stale-visual")
+        prefs.unregisterFailure = failure
+        assertSame(failure, runCatching { VisualPrefsOwner.unbind() }.exceptionOrNull())
+        assertEquals(VisualCfg(), VisualPrefsOwner.current())
+        assertEquals(1, prefs.listenerCount)
+
+        prefs.unregisterFailure = null
+        VisualPrefsOwner.unbind()
+        assertEquals(0, prefs.listenerCount)
+    }
+
     private class FakePreferences(private var dual: Boolean) : SharedPreferences {
         private val listeners =
             linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()

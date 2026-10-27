@@ -96,8 +96,14 @@ internal object FeaturePrefsOwner {
 
     @Synchronized
     fun unbind() {
-        unbindLocked()
-        state.set(State(null, null, disabled))
+        try {
+            unbindLocked()
+        } finally {
+            val retired = state.get()
+            if (retired.source == null && retired.token == null) {
+                state.compareAndSet(retired, State(null, null, disabled))
+            }
+        }
     }
 
     private fun unbindLocked() {
