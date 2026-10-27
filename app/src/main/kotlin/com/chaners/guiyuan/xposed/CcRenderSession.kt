@@ -703,8 +703,15 @@ internal object CcRenderSession {
                 syncPresentation("visibility-visible-cycle-failed")
                 return false
             }
-            if (requestedVisible && !visible) {
-                SysUiPresentationOwner.onCcVisibilityChanged(false)
+            if (requestedVisible && !visible &&
+                !SysUiPresentationOwner.onCcVisibilityChanged(false)
+            ) {
+                requestedVisible = false
+                CcTransitionOwner.releaseAll(
+                    { syncPresentation("visibility-hidden-release-failed") },
+                    { SysUiPresentationOwner.failCcPresentation("fake-carrier-hidden-release-unverified") },
+                )
+                return false
             }
             requestedVisible = visible
             syncPresentation("visibility")
