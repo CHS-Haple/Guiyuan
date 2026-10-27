@@ -1,0 +1,102 @@
+name: OS4 MIUIX-to-Guiyuan source compatibility
+
+# Experimental CI-only Android compile. No signing, no package publication.
+on:
+  push:
+    branches: [ feat/os4-glass-experimental ]
+    paths:
+      - '.github/workflows/os4-miuix-app-compat-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: os4-miuix-app-compat-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Guiyuan OS4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: gui
+          persist-credentials: false
+
+      - name: Checkout exact upstream revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: compose-miuix-ui/miuix
+          ref: b9f70838509fbc3f63f1a972777a7e6ce07f578f
+          path: upstream
+          persist-credentials: false
+
+      - name: Validate source and no duplicate Glass module
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C upstream rev-parse HEAD)" = "b9f70838509fbc3f63f1a972777a7e6ce07f578f"
+          test -f gui/app/src/main/kotlin/top/yukonga/miuix/kmp/glass/GlassTopAppBar.kt
+          test -f upstream/miuix-blur/build.gradle.kts
+          test -f upstream/miuix-ui/build.gradle.kts
+          test -f upstream/miuix-core/build.gradle.kts
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android API 37
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --channel=3 "platforms;android-37.0" "build-tools;37.0.0"
+
+      - name: Setup Gradle without persistent cache
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-disabled: true
+
+      - name: Substitute same-revision upstream source only for this job
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat >> gui/settings.gradle.kts <<'EOF'
+          // CI-only: replace the published five-module MIUIX graph with a source-matched build.
+          // The upstream Glass module is intentionally NOT included to avoid duplicate classes
+          // with Guiyuan's experimental vendored Glass implementation.
+          includeBuild("../upstream") {
+              dependencySubstitution {
+                  substitute(module("top.yukonga.miuix.kmp:miuix-core-android")).using(project(":miuix-core"))
+                  substitute(module("top.yukonga.miuix.kmp:miuix-shader-android")).using(project(":miuix-shader"))
+                  substitute(module("top.yukonga.miuix.kmp:miuix-squircle-android")).using(project(":miuix-squircle"))
+                  substitute(module("top.yukonga.miuix.kmp:miuix-ui-android")).using(project(":miuix-ui"))
+                  substitute(module("top.yukonga.miuix.kmp:miuix-blur-android")).using(project(":miuix-blur"))
+                  substitute(module("top.yukonga.miuix.kmp:miuix-preference-android")).using(project(":miuix-preference"))
+                  substitute(module("top.yukonga.miuix.kmp:miuix-icons-android")).using(project(":miuix-icons"))
+                  substitute(module("top.yukonga.miuix.kmp:miuix-nav-android")).using(project(":miuix-nav"))
+              }
+          }
+          EOF
+          git -C gui diff --check
+
+      - name: Compile Guiyuan with upstream matching core UI and Blur
+        working-directory: gui
+        shell: bash
+        run: ./gradlew :app:compileDebugKotlin --no-daemon --max-workers=2 --stacktrace
+
+      - name: Explain the compatibility boundary
+        if: always()
+        run: |
+          echo 'This checks Guiyuan compile-time compatibility with the fixed upstream source graph.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The upstream Glass module is excluded, no APK is published, and no signing or device/visual rendering is tested.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Any failure needs root-cause classification before runtime dependencies are changed.' >> "$GITHUB_STEP_SUMMARY"
