@@ -18,6 +18,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalHapticFeedback
+import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.glass.GlassDropdownPopupContent
@@ -38,6 +39,8 @@ internal fun Os4CascadingMenu(
     content: @Composable () -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
+    // Resolve in the page composition before the root popup host renders the menu.
+    val backdrop = LocalGlassBackdrop.current
     var expanded by remember { mutableStateOf(false) }
     val mounted = remember { mutableStateOf(false) }
     var primaryClosed by remember { mutableStateOf(false) }
@@ -81,7 +84,7 @@ internal fun Os4CascadingMenu(
                     },
                     anchorBounds = anchor,
                     coordinateOrigin = origin,
-                    backdrop = null,
+                    backdrop = backdrop,
                     handleBack = submenu == null,
                     onDismissFinished = {
                         primaryClosed = true
@@ -132,7 +135,7 @@ internal fun Os4CascadingMenu(
                             if (primaryClosed) mounted.value = false
                         },
                         anchorBounds = submenuAnchor.translate(-origin),
-                        backdrop = null,
+                        backdrop = backdrop,
                     ) {
                         GlassPopupItem(
                             text = parent.text,
