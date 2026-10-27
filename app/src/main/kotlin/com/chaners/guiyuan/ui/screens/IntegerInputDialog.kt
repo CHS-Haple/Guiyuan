@@ -20,7 +20,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -35,7 +35,7 @@ internal fun IntegerInputDialog(
     onConfirm: (Int) -> Unit,
 ) {
     var input by remember(show) { mutableStateOf(value.toString()) }
-    OverlayDialog(
+    UiOverlayDialog(
         title = title,
         summary = summary,
         show = show,

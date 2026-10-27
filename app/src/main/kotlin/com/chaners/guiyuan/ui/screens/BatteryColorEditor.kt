@@ -46,7 +46,7 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TextFieldDefaults
 import top.yukonga.miuix.kmp.color.api.toHsv
 import top.yukonga.miuix.kmp.color.space.Hsv
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 
@@ -410,7 +410,7 @@ internal fun BatteryCreateSchemeDialog(
         }.orEmpty()
     var name by remember(show, nextId) { mutableStateOf(defaultName) }
 
-    OverlayDialog(
+    UiOverlayDialog(
         title = stringResource(R.string.battery_custom_scheme_new),
         show = show && nextId != null,
         onDismissRequest = onDismiss,
@@ -457,7 +457,7 @@ internal fun BatteryRenameSchemeDialog(
 ) {
     val currentName = scheme?.let { customSchemeName(it) }.orEmpty()
     var name by remember(scheme?.id, currentName) { mutableStateOf(currentName) }
-    OverlayDialog(
+    UiOverlayDialog(
         title = stringResource(R.string.battery_custom_scheme_rename),
         show = scheme != null,
         onDismissRequest = onDismiss,
