@@ -10,13 +10,16 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.State
@@ -30,6 +33,7 @@ import androidx.compose.ui.graphics.LayerOutsets
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.LayoutDirection
@@ -43,7 +47,6 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.icons.Os4GlassClose
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.PI
@@ -111,6 +114,8 @@ internal fun Os4SearchMode(
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
     val keyboard = LocalSoftwareKeyboardController.current
+    val cancelInteraction = remember { MutableInteractionSource() }
+    val cancelPressed = cancelInteraction.collectIsPressedAsState()
     val statusInset = WindowInsets.statusBars.getTop(density)
     val shadowOutsets = remember(density) { with(density) { popupShadowOutsets(GlassShadows.Regular) } }
     val cancelOutsets = remember(density, shadowOutsets) {
@@ -180,11 +185,19 @@ internal fun Os4SearchMode(
                     backdrop = backdrop,
                     materialProgress = materialProgress,
                     shadowProgress = shadowProgress,
+                    pressed = cancelPressed,
                 ) {
-                    IconButton(
-                        onClick = onClose,
-                        enabled = expanded,
-                        modifier = Modifier.matchParentSize(),
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable(
+                                enabled = expanded,
+                                role = Role.Button,
+                                interactionSource = cancelInteraction,
+                                indication = null,
+                                onClick = onClose,
+                            ),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             Os4GlassClose,

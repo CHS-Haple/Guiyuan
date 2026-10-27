@@ -3,12 +3,15 @@ package com.chaners.guiyuan.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.graphicsLayer
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
@@ -16,6 +19,7 @@ import top.yukonga.miuix.kmp.glass.GlassShape
 import top.yukonga.miuix.kmp.glass.GlassShadows
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassDefaults
+import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.glassOnActionBar
 import top.yukonga.miuix.kmp.glass.glassShadow
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -26,9 +30,20 @@ internal fun Os4SearchSurface(
     backdrop: Backdrop?,
     materialProgress: State<Float>,
     shadowProgress: State<Float>,
+    pressed: State<Boolean>? = null,
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    val pressTransition = pressed?.let { updateTransition(it.value, label = "os4SearchPress") }
+    val iconAlpha = pressTransition?.animateFloat(
+        transitionSpec = { if (targetState) GlassMotion.pressDown() else GlassMotion.pressUp() },
+        label = "os4SearchPressContent",
+    ) { if (it) GlassTopAppBarDefaults.PressedContentAlpha else 1f }
+    val overlayAlpha = pressTransition?.animateFloat(
+        transitionSpec = { if (targetState) GlassMotion.pressDown() else GlassMotion.pressUp() },
+        label = "os4SearchPressOverlay",
+    ) { if (it) 1f else 0f }
+    val pressedOverlay = GlassTopAppBarDefaults.buttonPressedOverlay()
     val shape = GlassShape(22.dp)
     val material = GlassTopAppBarDefaults.buttonMaterial().copy(
         blurRadius = GlassTopAppBarDefaults.nestedMaterialBlurRadius(),
@@ -55,6 +70,16 @@ internal fun Os4SearchSurface(
                     ),
             )
         }
-        content()
+        if (overlayAlpha != null) {
+            Box(
+                Modifier.matchParentSize().clip(CircleShape).drawBehind {
+                    drawRect(pressedOverlay.copy(alpha = pressedOverlay.alpha * overlayAlpha.value.coerceIn(0f, 1f)))
+                },
+            )
+        }
+        Box(
+            modifier = Modifier.graphicsLayer { alpha = iconAlpha?.value?.coerceIn(0f, 1f) ?: 1f },
+            content = content,
+        )
     }
 }
