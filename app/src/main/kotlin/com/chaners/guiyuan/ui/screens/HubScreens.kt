@@ -40,7 +40,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -1322,13 +1321,6 @@ private fun HubPage(
     val searchExpanded = os4 && search?.active == true
     val searchMotion = rememberOs4SearchMotion(searchExpanded)
     val barAlpha = rememberOs4BarAlpha(searchExpanded)
-    val titleCollapsed by remember(scrollBehavior) {
-        derivedStateOf { scrollBehavior.state.collapsedFraction > 0.5f }
-    }
-    val titleAlpha = rememberOs4TitleAlpha(
-        expanded = searchExpanded,
-        collapsed = titleCollapsed,
-    )
     val os3SearchActionAlpha by animateFloatAsState(
         targetValue = if (!os4 && search?.active == true) 0f else 1f,
         animationSpec = tween(150),
@@ -1355,7 +1347,11 @@ private fun HubPage(
                 ) {
                     if (os4) {
                         GlassIconButton(onClick = { if (ready) search.open() }) {
-                            Icon(Os4GlassSearch, contentDescription = label)
+                            Icon(
+                                Os4GlassSearch,
+                                contentDescription = label,
+                                modifier = Modifier.graphicsLayer { alpha = barAlpha.value },
+                            )
                         }
                     } else IconButton(
                         onClick = search::open,
@@ -1429,12 +1425,13 @@ private fun HubPage(
             if (os4) {
                 Box(Modifier.fillMaxWidth()) {
                     GlassTopAppBar(
-                        title = title,
-                        modifier = Modifier.os4BarTransition(searchExpanded) { barAlpha.value },
+                        title = if (searchExpanded) "" else title,
+                        largeTitle = title,
+                        compact = filtering,
+                        alpha = barAlpha.value,
                         isContentScrolled = listState.canScrollBackward,
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
-                        titleAlpha = titleAlpha,
                         actions = searchAction,
                         unclippedActions = search != null,
                     )

@@ -5,9 +5,6 @@ package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
@@ -20,15 +17,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.State
 import top.yukonga.miuix.kmp.blur.Backdrop
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.BlurEffect
-import androidx.compose.ui.graphics.LayerOutsets
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -44,14 +38,11 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.icons.Os4GlassClose
-import top.yukonga.miuix.kmp.glass.GlassDefaults
-import top.yukonga.miuix.kmp.glass.GlassShadows
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.PI
-import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.sin
@@ -186,9 +177,7 @@ internal fun Os4SearchMode(
     }
 }
 
-private const val SearchBarBlur = 50f
-
-/** PR #423: the original entire bar, not its 44dp search button, owns this transition. */
+/** Keep the native bar mounted; search only fades its overlapping action. */
 @Composable
 internal fun rememberOs4BarAlpha(expanded: Boolean): State<Float> {
     val transition = updateTransition(expanded, label = "os4SearchBarOpacity")
@@ -202,61 +191,4 @@ internal fun rememberOs4BarAlpha(expanded: Boolean): State<Float> {
         },
         label = "os4SearchBarAlpha",
     ) { if (it) 0f else 1f }
-}
-
-/** PR #423 uses layer outsets so the full bar blur and button shadows cannot clip. */
-@Composable
-internal fun Modifier.os4BarTransition(expanded: Boolean, alpha: () -> Float): Modifier {
-    val density = LocalDensity.current
-    val outsets = remember(density) {
-        val shadow = GlassShadows.Regular
-        val shadowOutset = ((shadow.radius + maxOf(abs(shadow.offsetX), abs(shadow.offsetY))) /
-            GlassDefaults.SourceDensity).dp
-        val outset = shadowOutset + with(density) { (SearchBarBlur * 3f).toDp() }
-        LayerOutsets(left = outset, top = outset, right = outset, bottom = outset)
-    }
-    val transition = updateTransition(expanded, label = "os4SearchBar")
-    val scale = transition.animateFloat(
-        transitionSpec = { tween(400, easing = SearchEasing) },
-        label = "os4SearchBarScale",
-    ) { if (it) 0.9f else 1f }
-    val blur = transition.animateFloat(
-        transitionSpec = { tween(if (targetState) 150 else 120, easing = LinearEasing) },
-        label = "os4SearchBarBlur",
-    ) { if (it) SearchBarBlur else 0f }
-    return graphicsLayer {
-        this.outsets = outsets
-        scaleX = scale.value
-        scaleY = scale.value
-        this.alpha = alpha()
-        renderEffect = if (blur.value > 0.5f) {
-            BlurEffect(blur.value, blur.value, TileMode.Decal)
-        } else null
-    }
-}
-
-/** PR #423 returns the native title only after the search-exit title phase. */
-@Composable
-internal fun rememberOs4TitleAlpha(expanded: Boolean, collapsed: Boolean): () -> Float {
-    val transition = updateTransition(expanded, label = "os4SearchTitlePhase")
-    val progress = transition.animateFloat(
-        transitionSpec = { tween(400, easing = SearchEasing) },
-        label = "os4SearchTitleProgress",
-    ) { if (it) 0f else 1f }
-    val reveal by remember(expanded, progress) {
-        derivedStateOf { expanded || progress.value > 0.8f }
-    }
-    val response = if (collapsed) 0.15f else 0.6f
-    val titleAlpha = animateFloatAsState(
-        targetValue = if (reveal) 1f else 0f,
-        animationSpec = if (reveal && !expanded) {
-            spring(
-                dampingRatio = 1f,
-                stiffness = (2 * PI / response).let { (it * it).toFloat() },
-                visibilityThreshold = 0.001f,
-            )
-        } else snap(),
-        label = "os4SearchTitleAlpha",
-    )
-    return remember(titleAlpha) { { titleAlpha.value } }
 }
