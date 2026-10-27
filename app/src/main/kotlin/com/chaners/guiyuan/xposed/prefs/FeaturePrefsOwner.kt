@@ -25,6 +25,7 @@ internal object FeaturePrefsOwner {
 
     private val state = AtomicReference(State(null, null, disabled))
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+    private val listenerRetirement = PrefListenerRetirement()
 
     fun current(): FeatureCfg = state.get().cfg
 
@@ -104,9 +105,7 @@ internal object FeaturePrefsOwner {
         val oldListener = listener
         listener = null
         // Retire the generation before entering the framework's listener monitor.
-        if (old.source != null && oldListener != null) {
-            old.source.unregisterOnSharedPreferenceChangeListener(oldListener)
-        }
+        listenerRetirement.unregister(old.source, oldListener)
     }
 
     internal fun transportLatencyNs(

@@ -17,6 +17,7 @@ internal object VisualPrefsOwner {
 
     private val state = AtomicReference(State(null, null, VisualCfg()))
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+    private val listenerRetirement = PrefListenerRetirement()
 
     fun current(): VisualCfg = state.get().cfg
 
@@ -114,9 +115,7 @@ internal object VisualPrefsOwner {
         val oldListener = listener
         listener = null
         // Retire the generation before entering the framework's listener monitor.
-        if (old.source != null && oldListener != null) {
-            old.source.unregisterOnSharedPreferenceChangeListener(oldListener)
-        }
+        listenerRetirement.unregister(old.source, oldListener)
     }
 
     private fun resolve(source: SharedPreferences): VisualCfg =
