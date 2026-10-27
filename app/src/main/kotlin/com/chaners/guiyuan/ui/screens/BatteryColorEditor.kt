@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
@@ -421,6 +423,11 @@ internal fun BatteryCreateSchemeDialog(
                 onValueChange = { name = limitCustomSchemeName(it) },
                 label = stringResource(R.string.battery_custom_scheme_name),
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
+                    val next = name.trim()
+                    if (next.isNotEmpty()) onCreate(next)
+                }),
             )
             Row(
                 modifier =
@@ -469,6 +476,11 @@ internal fun BatteryRenameSchemeDialog(
                     onValueChange = { name = limitCustomSchemeName(it) },
                     label = stringResource(R.string.battery_custom_scheme_name),
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        val next = name.trim()
+                        if (next.isNotEmpty() && next != currentName) onRename(scheme.id, next)
+                    }),
                 )
                 Row(
                     modifier =
