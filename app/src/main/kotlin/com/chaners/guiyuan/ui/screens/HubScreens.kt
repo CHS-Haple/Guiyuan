@@ -1322,6 +1322,13 @@ private fun HubPage(
     }
     val searchExpanded = os4 && search?.active == true
     val searchMotion = rememberOs4SearchMotion(searchExpanded)
+    var revealTitleOnExit by remember { mutableStateOf(false) }
+    val titleReveal = rememberOs4TitleReveal(
+        expanded = searchExpanded,
+        exitNeedsReveal = revealTitleOnExit,
+        motion = searchMotion,
+        collapsed = browsingScroll.state.collapsedFraction >= 1f,
+    )
     val barAlpha = rememberOs4BarAlpha(searchExpanded)
     val os3SearchActionAlpha by animateFloatAsState(
         targetValue = if (!os4 && search?.active == true) 0f else 1f,
@@ -1349,7 +1356,7 @@ private fun HubPage(
                         ),
                 ) {
                     if (os4) {
-                        GlassIconButton(onClick = { if (ready) search.open() }) {
+                        GlassIconButton(onClick = { if (ready) { revealTitleOnExit = false; search.open() } }) {
                             Icon(
                                 Os4GlassSearch,
                                 contentDescription = label,
@@ -1379,7 +1386,11 @@ private fun HubPage(
                         shadowProgress = searchShadow,
                         onQueryChange = search::update,
                         onSearch = { keyboardController?.hide() },
-                        onClose = search::close,
+                        onClose = {
+                            // close() clears the query immediately; record which title was covered.
+                            revealTitleOnExit = search.filtering || browsingScroll.state.collapsedFraction >= 1f
+                            search.close()
+                        },
                     )
                 }
             } else {
@@ -1429,7 +1440,8 @@ private fun HubPage(
             if (os4) {
                 Box(Modifier.fillMaxWidth()) {
                     GlassTopAppBar(
-                        title = if (searchMotion.mounted) "" else title,
+                        title = if (searchMotion.mounted && searchExpanded) "" else title,
+                        titleAlpha = { titleReveal.value },
                         largeTitle = title,
                         compact = filtering,
                         alpha = barAlpha.value,

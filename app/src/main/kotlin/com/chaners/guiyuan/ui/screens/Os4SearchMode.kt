@@ -7,6 +7,9 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.clickable
@@ -90,6 +93,30 @@ internal fun rememberOs4SearchMotion(expanded: Boolean): Os4SearchMotion {
         label = "cancelMaterial",
     ) { if (it) 1f else 0f }
     return Os4SearchMotion(progress, cancelAlpha, expanded || transition.currentState || transition.isRunning)
+}
+
+/** Reveal only a title hidden by search; keep an already visible large title intact. */
+@Composable
+internal fun rememberOs4TitleReveal(
+    expanded: Boolean,
+    exitNeedsReveal: Boolean,
+    motion: Os4SearchMotion,
+    collapsed: Boolean,
+): State<Float> {
+    val fadeIn = exitNeedsReveal && !expanded && motion.progress < 0.2f
+    val visible = !exitNeedsReveal || fadeIn
+    val response = if (collapsed) 0.15f else 0.6f
+    return animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = if (fadeIn) {
+            spring(
+                dampingRatio = 1f,
+                stiffness = (2 * PI / response).let { (it * it).toFloat() },
+                visibilityThreshold = 0.001f,
+            )
+        } else snap(),
+        label = "os4SearchTitleReveal",
+    )
 }
 
 @Composable
