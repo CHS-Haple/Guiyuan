@@ -28,12 +28,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.icons.Os4GlassSearch
+import com.chaners.guiyuan.ui.icons.Os4GlassClose
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** Search field geometry follows PR #423's GlassSearchOverlay; surface belongs to the parent bar. */
@@ -117,9 +116,10 @@ internal fun Os4SearchField(
                                 minWidth = 24.dp,
                             ) {
                                 Icon(
-                                    MiuixIcons.Basic.SearchCleanup,
+                                    Os4GlassClose,
                                     contentDescription = stringResource(R.string.feature_search_clear),
-                                    tint = colors.onSurfaceContainerHighest,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = colors.disabledOnSurface,
                                 )
                             }
                         }
