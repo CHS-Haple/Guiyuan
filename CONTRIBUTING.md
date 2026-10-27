@@ -90,6 +90,8 @@ A sizing issue does not automatically justify native layout mutation. A transiti
 
 ### Compatibility
 
+For SystemUI-owned behavior, inspect the exact pinned target APK's DEX/resources and native method call sites before inferring from AOSP or third-party implementations. Verify the input binary, and distinguish SystemUI overrides from inherited Android framework behavior; neither static disassembly nor generic source proves exceptional device timing.
+
 The pinned SystemUI profile proves only the current target. Live topology is authoritative when system versions or other modules alter the View tree.
 
 A compatibility failure should fail native for the smallest affected surface.
