@@ -18,8 +18,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.State
 import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.glass.GlassShadows
+import top.yukonga.miuix.kmp.glass.popupShadowOutsets
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.BlurEffect
@@ -105,10 +108,12 @@ internal fun Os4SearchMode(
     val direction = LocalLayoutDirection.current
     val keyboard = LocalSoftwareKeyboardController.current
     val statusInset = WindowInsets.statusBars.getTop(density)
+    val shadowOutsets = remember(density) { with(density) { popupShadowOutsets(GlassShadows.Regular) } }
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .graphicsLayer {
+                outsets = shadowOutsets
                 alpha = motion.progress
                 translationY = -statusInset * (1f - motion.progress)
             },
@@ -141,6 +146,7 @@ internal fun Os4SearchMode(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .graphicsLayer {
+                    outsets = shadowOutsets
                     val scale = motion.progress.coerceIn(0f, 1f)
                     scaleX = scale
                     scaleY = scale
