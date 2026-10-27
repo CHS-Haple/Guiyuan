@@ -2261,7 +2261,9 @@ internal object SysUiPresentationOwner {
                 return false
             }
             leasePhase = LeasePhase.SUPPRESSED
-            return releaseCapacityLeaseAtHidden()
+            val released = releaseCapacityLeaseAtHidden()
+            if (!released && active) leasePhase = LeasePhase.VISIBLE
+            return released
         }
 
         fun updateTransitionReservation(
@@ -2725,6 +2727,7 @@ internal object SysUiPresentationOwner {
                         true
                     }
                 }
+            if (!restored) return false
             clearCapacityLeaseSnapshot()
             pendingNativeCarrierWidth =
                 nextNativeBaselineWidthPx.takeIf { width -> width > 0 }
