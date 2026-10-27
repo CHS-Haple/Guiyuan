@@ -1308,11 +1308,13 @@ private fun HubPage(
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
     val keyboardController = LocalSoftwareKeyboardController.current
-    LaunchedEffect(filtering, search?.query) {
-        if (filtering) resultsState.scrollToItem(0)
-    }
-
     val os4 = LocalUiStyle.current == UiStyle.OS4
+    LaunchedEffect(filtering, search?.query) {
+        if (filtering) {
+            if (os4) resultsState.requestScrollToItem(0)
+            else resultsState.scrollToItem(0)
+        }
+    }
     val searchMotion = rememberOs4SearchMotion(os4 && search?.active == true)
     // Only actual content overlap changes the surface; search geometry has its own clock.
     val searchMaterial = animateFloatAsState(
