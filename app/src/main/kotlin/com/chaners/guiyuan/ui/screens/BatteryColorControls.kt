@@ -278,14 +278,14 @@ internal fun BatteryColorBottomSheet(
             if (detailCustom != null && detailSlot != null) {
                 CompositionLocalProvider(LocalGlassBackdrop provides detailBackdrop) {
                     BatteryCustomModeEditor(
-                    custom = detailCustom,
-                    slot = detailSlot,
-                    onSourceChange = { source ->
-                        repository.setCustomSource(detailCustom.id, detailSlot, source)
-                    },
-                    onColorChange = { color ->
-                        repository.setCustomColor(detailCustom.id, detailSlot, color)
-                    },
+                        custom = detailCustom,
+                        slot = detailSlot,
+                        onSourceChange = { source ->
+                            repository.setCustomSource(detailCustom.id, detailSlot, source)
+                        },
+                        onColorChange = { color ->
+                            repository.setCustomColor(detailCustom.id, detailSlot, color)
+                        },
                     )
                 }
             }
