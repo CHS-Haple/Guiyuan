@@ -8,6 +8,8 @@ on:
       - '.github/workflows/os4-miuix-app-compat-probe.yml'
       - 'settings.gradle.kts'
       - 'app/build.gradle.kts'
+      - 'app/src/os4Upstream/**'
+      - 'app/src/os4Published/**'
   workflow_dispatch:
 
 permissions:
@@ -80,7 +82,7 @@ jobs:
       - name: Compile Guiyuan with upstream matching core UI and Blur
         working-directory: gui
         shell: bash
-        run: ./gradlew -Pgy.os4.miuixDir=../upstream :app:compileDebugKotlin --no-daemon --max-workers=2 --stacktrace
+        run: ./gradlew -Pgy.os4.miuixDir=../upstream -Pgy.os4.dialogSurfaces=true :app:compileDebugKotlin --no-daemon --max-workers=2 --stacktrace
 
       - name: Assemble published-source control APK
         working-directory: gui
@@ -94,7 +96,7 @@ jobs:
         working-directory: gui
         shell: bash
         run: |
-          ./gradlew -Pgy.os4.miuixDir=../upstream -Pgy.os4.debugSuffix=.os4pr423 :app:assembleDebug --no-daemon --max-workers=2 --stacktrace
+          ./gradlew -Pgy.os4.miuixDir=../upstream -Pgy.os4.dialogSurfaces=true -Pgy.os4.debugSuffix=.os4pr423 :app:assembleDebug --no-daemon --max-workers=2 --stacktrace
           cp app/build/outputs/apk/debug/app-debug.apk ../dist/Guiyuan-OS4-PR423-Blur-debug.apk
 
       - name: Verify isolated APK identities and debug signatures

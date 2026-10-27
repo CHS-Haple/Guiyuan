@@ -173,3 +173,17 @@ production package or import its settings. On each test app, select the
 OS4 appearance before comparing content scrolling under the bottom bar
 and search capsule. If the build or app entry route prevents a valid
 comparison, record the blocker rather than claim a glass repair.
+
+## Native OS4 DialogSurface ABI gate
+
+The published MIUIX snapshot has no `DialogSurfaceScope`. A single
+`UiOverlayDialog` caller API has two build-time implementations. Standard
+published builds compile `app/src/os4Published/kotlin` with the native
+`OverlayDialog`. The exact-source PR #423 candidate additionally uses
+`-Pgy.os4.dialogSurfaces=true -Pgy.os4.miuixDir=<pinned-upstream-checkout>`,
+which substitutes the same-source UI/Blur graph and compiles only
+`app/src/os4Upstream/kotlin`. Its exact Apache-2.0 GlassDialog,
+GlassDialogSurface and ScrimBackdrop are vendored only in that candidate,
+not alongside the published UI. Both paths retain one MiuixPopupHost and the
+native onDismissFinished contract. Do not include the upstream Glass artifact
+as a second copy of Guiyuan's existing vendored Glass classes.
