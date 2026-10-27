@@ -681,10 +681,10 @@ private fun LogFilterMenu(
             },
         ) {
             Icon(
-                        imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassFilter else MiuixIcons.Filter,
-                        contentDescription = title,
-                        modifier = Modifier.size(24.dp),
-                    )
+                imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassFilter else MiuixIcons.Filter,
+                contentDescription = title,
+                modifier = Modifier.size(24.dp),
+            )
         }
     }
 
