@@ -3,8 +3,6 @@ package com.chaners.guiyuan.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,7 +10,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import top.yukonga.miuix.kmp.basic.SearchBar
-import top.yukonga.miuix.kmp.basic.SearchBarDefaults
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -61,13 +58,11 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
-import com.chaners.guiyuan.ui.icons.Os4GlassClose
 import com.chaners.guiyuan.ui.icons.Os4GlassSearch
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.settings.SettingsEntry
@@ -1323,22 +1318,16 @@ private fun HubPage(
     }
 
     val os4 = LocalUiStyle.current == UiStyle.OS4
-    val searchTitleAlpha = animateFloatAsState(
-        targetValue = if (os4 && search?.active == true) 0f else 1f,
-        animationSpec = tween(durationMillis = 150),
-        label = "os4SearchTitle",
-    )
-    val searchHeight = if (os4) 44.dp else SearchBarDefaults.InputFieldMinHeight
-    // Match the solid native search capsule until scrolled content needs glass.
-    val searchFloat = os4 && listState.canScrollBackward
+    val searchMotion = rememberOs4SearchMotion(os4 && search?.active == true)
+    // Keep one backdrop/material for the full search session, including scroll transitions.
     val searchSurface = if (os4) {
         Modifier.glassPanel(
-            backdrop = topBarBackdrop.takeIf { searchFloat },
-            shape = GlassShape(searchHeight / 2),
+            backdrop = topBarBackdrop,
+            shape = GlassShape(22.dp),
             material = GlassMaterials.puredThinGlass(
                 MiuixTheme.colorScheme.background.luminance() < 0.5f,
             ),
-            stroke = if (searchFloat) top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults.buttonStroke() else null,
+            stroke = GlassTopAppBarDefaults.buttonStroke(),
             shadow = null,
             shading = false,
             fallback = Modifier
@@ -1347,7 +1336,7 @@ private fun HubPage(
         )
     } else Modifier
     val searchAction: @Composable RowScope.() -> Unit = {
-        if (search != null && !search.active) {
+        if (search != null && (!os4 || !searchMotion.mounted)) {
             val label = stringResource(R.string.feature_search)
             TooltipBox(text = label) {
                 if (os4) {
@@ -1362,31 +1351,28 @@ private fun HubPage(
     }
     val searchContent: @Composable () -> Unit = {
         if (search != null) {
-            AnimatedVisibility(
-                visible = search.active,
-                modifier = Modifier.fillMaxWidth(),
-                enter = if (os4) fadeIn(tween(durationMillis = 150)) else expandVertically() + fadeIn(),
-                exit = if (os4) fadeOut(tween(durationMillis = 120)) else shrinkVertically() + fadeOut(),
-            ) {
-                SearchBar(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .then(
-                            if (os4) Modifier.padding(horizontal = GlassTopAppBarDefaults.HorizontalPadding)
-                            else Modifier,
-                        ),
-                    // PR #423 reserves 54dp for its 44dp cancel and the 10dp gap.
-                    insideMargin = if (os4) DpSize(0.dp, 0.dp) else SearchBarDefaults.InsideMargin,
-                    inputField = {
-                        if (os4) {
-                            Os4SearchField(
-                                query = search.query,
-                                onQueryChange = search::update,
-                                onSearch = { keyboardController?.hide() },
-                                active = search.active,
-                                surface = searchSurface,
-                            )
-                        } else {
+            if (os4) {
+                if (searchMotion.mounted) {
+                    Os4SearchMode(
+                        motion = searchMotion,
+                        expanded = search.active,
+                        query = search.query,
+                        surface = searchSurface,
+                        onQueryChange = search::update,
+                        onSearch = { keyboardController?.hide() },
+                        onClose = search::close,
+                    )
+                }
+            } else {
+                AnimatedVisibility(
+                    visible = search.active,
+                    modifier = Modifier.fillMaxWidth(),
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut(),
+                ) {
+                    SearchBar(
+                        modifier = Modifier.fillMaxWidth(),
+                        inputField = {
                             InputField(
                                 query = search.query,
                                 onQueryChange = search::update,
@@ -1395,30 +1381,10 @@ private fun HubPage(
                                 onExpandedChange = { if (!it) search.close() },
                                 label = stringResource(R.string.feature_search),
                             )
-                        }
-                    },
-                    expanded = search.active,
-                    onExpandedChange = { if (!it) search.close() },
-                    outsideEndAction = {
-                        if (os4) {
-                            val label = stringResource(R.string.cancel)
-                            TooltipBox(text = label) {
-                                IconButton(
-                                    onClick = search::close,
-                                    modifier = Modifier
-                                        .padding(start = 10.dp)
-                                        .size(searchHeight)
-                                        .then(searchSurface),
-                                ) {
-                                    Icon(
-                                        Os4GlassClose,
-                                        contentDescription = label,
-                                        modifier = Modifier.size(24.dp),
-                                        tint = MiuixTheme.colorScheme.onSurface,
-                                    )
-                                }
-                            }
-                        } else {
+                        },
+                        expanded = search.active,
+                        onExpandedChange = { if (!it) search.close() },
+                        outsideEndAction = {
                             Text(
                                 modifier = Modifier
                                     .padding(start = 4.dp, end = 16.dp)
@@ -1431,14 +1397,13 @@ private fun HubPage(
                                 fontWeight = FontWeight.Bold,
                                 color = MiuixTheme.colorScheme.primary,
                             )
-                        }
-                    },
-                    content = {},
-                )
+                        },
+                        content = {},
+                    )
+                }
             }
         }
     }
-
     CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
     Scaffold(
         topBar = {
@@ -1449,9 +1414,9 @@ private fun HubPage(
                         isContentScrolled = listState.canScrollBackward,
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
-                        titleAlpha = { searchTitleAlpha.value },
+                        titleAlpha = { 1f - searchMotion.progress.coerceIn(0f, 1f) },
                         actions = searchAction,
-                        unclippedActions = search != null && !search.active,
+                        unclippedActions = search != null && !searchMotion.mounted,
                     )
                     if (search != null) {
                         // An overlaid search row keeps the bar's measured height stable.
