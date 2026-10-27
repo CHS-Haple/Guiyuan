@@ -36,11 +36,11 @@ import com.chaners.guiyuan.system.RuntimeEnv
 import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.chaners.guiyuan.ui.components.UiDialogButton
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurBlendMode
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
@@ -196,10 +196,10 @@ internal fun AboutScreen(
                 show = showRepoUnavailable,
                 onDismissRequest = { showRepoUnavailable = false },
             ) {
-                TextButton(
+                UiDialogButton(
                     text = stringResource(R.string.confirm),
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    role = GlassDialogButtonRole.Primary,
                     onClick = { showRepoUnavailable = false },
                 )
             }

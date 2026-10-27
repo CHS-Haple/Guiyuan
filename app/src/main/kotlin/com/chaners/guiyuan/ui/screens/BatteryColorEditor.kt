@@ -35,13 +35,13 @@ import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
 import com.chaners.guiyuan.settings.limitCustomSchemeName
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HsvHueSlider
 import top.yukonga.miuix.kmp.basic.HsvSaturationSlider
 import top.yukonga.miuix.kmp.basic.HsvValueSlider
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.chaners.guiyuan.ui.components.UiDialogButton
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TextFieldDefaults
 import top.yukonga.miuix.kmp.color.api.toHsv
@@ -429,17 +429,17 @@ internal fun BatteryCreateSchemeDialog(
                         .padding(top = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                TextButton(
+                UiDialogButton(
                     text = stringResource(R.string.cancel),
                     modifier = Modifier.weight(1f),
                     onClick = onDismiss,
                 )
                 Spacer(Modifier.width(20.dp))
-                TextButton(
+                UiDialogButton(
                     text = stringResource(R.string.battery_custom_scheme_create),
                     modifier = Modifier.weight(1f),
                     enabled = name.trim().isNotEmpty(),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    role = GlassDialogButtonRole.Primary,
                     onClick = {
                         onCreate(name.trim())
                     },
@@ -477,19 +477,19 @@ internal fun BatteryRenameSchemeDialog(
                             .padding(top = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    TextButton(
+                    UiDialogButton(
                         text = stringResource(R.string.cancel),
                         modifier = Modifier.weight(1f),
                         onClick = onDismiss,
                     )
                     Spacer(Modifier.width(20.dp))
-                    TextButton(
+                    UiDialogButton(
                         text = stringResource(R.string.confirm),
                         modifier = Modifier.weight(1f),
                         enabled =
                             name.trim().isNotEmpty() &&
                                 name.trim() != currentName,
-                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        role = GlassDialogButtonRole.Primary,
                         onClick = {
                             onRename(scheme.id, name.trim())
                         },

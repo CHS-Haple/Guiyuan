@@ -121,13 +121,13 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.chaners.guiyuan.ui.components.UiDialogButton
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -279,18 +279,18 @@ internal fun FeaturesScreen(
                     onDismissRequest = { if (!ioBusy) pendingImport = null },
                 ) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        TextButton(
+                        UiDialogButton(
                             text = stringResource(R.string.cancel),
                             modifier = Modifier.weight(1f),
                             enabled = !ioBusy,
                             onClick = { pendingImport = null },
                         )
                         Spacer(Modifier.width(20.dp))
-                        TextButton(
+                        UiDialogButton(
                             text = stringResource(R.string.restore),
                             modifier = Modifier.weight(1f),
                             enabled = !ioBusy,
-                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                            role = GlassDialogButtonRole.Primary,
                             onClick = {
                                 ioBusy = true
                                 scope.launch {
@@ -359,16 +359,16 @@ internal fun FeaturesScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    TextButton(
+                    UiDialogButton(
                         text = stringResource(R.string.cancel),
                         modifier = Modifier.weight(1f),
                         onClick = { showResetDialog = false },
                     )
                     Spacer(Modifier.width(20.dp))
-                    TextButton(
+                    UiDialogButton(
                         text = stringResource(R.string.restore),
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        role = GlassDialogButtonRole.Primary,
                         onClick = {
                             showResetDialog = false
                             featureRepo.reset()
@@ -1085,16 +1085,16 @@ internal fun SettingsHubScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    TextButton(
+                    UiDialogButton(
                         text = stringResource(R.string.cancel),
                         modifier = Modifier.weight(1f),
                         onClick = { pending = null },
                     )
                     Spacer(Modifier.width(20.dp))
-                    TextButton(
+                    UiDialogButton(
                         text = stringResource(R.string.confirm),
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        role = GlassDialogButtonRole.Primary,
                         enabled = !runtimeBusy && scopeApplying == null,
                         onClick = {
                             val target = pending
@@ -1128,7 +1128,7 @@ internal fun SettingsHubScreen(
                 show = requestFailed,
                 onDismissRequest = { requestFailed = false },
             ) {
-                TextButton(
+                UiDialogButton(
                     text = stringResource(R.string.confirm),
                     modifier = Modifier.fillMaxWidth(),
                     onClick = { requestFailed = false },

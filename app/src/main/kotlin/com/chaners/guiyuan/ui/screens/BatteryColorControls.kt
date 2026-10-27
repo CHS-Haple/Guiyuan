@@ -25,11 +25,11 @@ import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.customSchemeKey
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.IconButtonDefaults
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.chaners.guiyuan.ui.components.UiDialogButton
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -304,19 +304,16 @@ internal fun BatteryColorBottomSheet(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            TextButton(
+            UiDialogButton(
                 text = stringResource(R.string.cancel),
                 modifier = Modifier.weight(1f),
                 onClick = { deleteCustomId = null },
             )
             Spacer(Modifier.width(20.dp))
-            TextButton(
+            UiDialogButton(
                 text = stringResource(R.string.battery_custom_scheme_delete),
                 modifier = Modifier.weight(1f),
-                colors =
-                    ButtonDefaults.textButtonColors(
-                        textColor = MiuixTheme.colorScheme.error,
-                    ),
+                role = GlassDialogButtonRole.Destructive,
                 onClick = {
                     deleting?.let { repository.deleteCustom(it.id) }
                     deleteCustomId = null

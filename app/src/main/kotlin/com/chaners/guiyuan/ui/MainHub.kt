@@ -68,7 +68,6 @@ import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
 import com.chaners.guiyuan.ui.screens.SemanticLeadingIcon
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationBar
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
@@ -77,7 +76,8 @@ import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.chaners.guiyuan.ui.components.UiDialogButton
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -470,7 +470,7 @@ internal fun MainHub(
                     Spacer(Modifier.height(12.dp))
                 }
                 if (availableTargets.isEmpty()) {
-                    TextButton(
+                    UiDialogButton(
                         text = stringResource(R.string.confirm),
                         modifier = Modifier.fillMaxWidth(),
                         onClick = { restartPickerOpen = false },
@@ -480,7 +480,7 @@ internal fun MainHub(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        TextButton(
+                        UiDialogButton(
                             text = stringResource(
                                 if (selectedTargets == availableTargets) {
                                     R.string.restart_scope_clear_all
@@ -496,11 +496,11 @@ internal fun MainHub(
                             },
                         )
                         Spacer(Modifier.width(20.dp))
-                        TextButton(
+                        UiDialogButton(
                             text = stringResource(R.string.restart),
                             modifier = Modifier.weight(1f),
                             enabled = selectedTargets.isNotEmpty(),
-                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                            role = GlassDialogButtonRole.Primary,
                             onClick = {
                                 queuedRestart = selectedTargets intersect availableTargets
                                 restartPickerOpen = false
@@ -517,10 +517,10 @@ internal fun MainHub(
             show = scopeRequestFailed,
             onDismissRequest = { scopeRequestFailed = false },
         ) {
-            TextButton(
+            UiDialogButton(
                 text = stringResource(R.string.confirm),
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColorsPrimary(),
+                role = GlassDialogButtonRole.Primary,
                 onClick = { scopeRequestFailed = false },
             )
         }
@@ -541,10 +541,10 @@ internal fun MainHub(
             show = restartState is ScopeRestart.State.Failed,
             onDismissRequest = ScopeRestart::clearFailure,
         ) {
-            TextButton(
+            UiDialogButton(
                 text = stringResource(R.string.confirm),
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColorsPrimary(),
+                role = GlassDialogButtonRole.Primary,
                 onClick = ScopeRestart::clearFailure,
             )
         }

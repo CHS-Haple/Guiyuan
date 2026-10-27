@@ -16,9 +16,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import androidx.compose.ui.res.stringResource
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.chaners.guiyuan.ui.components.UiDialogButton
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -69,15 +69,15 @@ internal fun IntegerInputDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                TextButton(
+                UiDialogButton(
                     text = stringResource(R.string.cancel),
                     modifier = Modifier.weight(1f),
                     onClick = onDismiss,
                 )
-                TextButton(
+                UiDialogButton(
                     text = stringResource(R.string.confirm),
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    role = GlassDialogButtonRole.Primary,
                     onClick = {
                         onConfirm((input.toIntOrNull() ?: value).coerceIn(range))
                     },
