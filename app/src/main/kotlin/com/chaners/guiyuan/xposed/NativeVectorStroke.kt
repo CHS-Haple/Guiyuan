@@ -98,7 +98,7 @@ internal object NativeVectorStroke {
                 if (depth != 0 || layers.isEmpty()) null
                 else Source(viewportWidth, viewportHeight, layers)
             }
-        }.getOrNull()
+        }.onFailure { rethrowRenderFatal(it) }.getOrNull()
 
     fun style(source: Source, weight: Int): Styled? =
         runCatching {
@@ -148,7 +148,7 @@ internal object NativeVectorStroke {
                 ),
                 offset.coerceAtLeast(0f) * 2f,
             )
-        }.getOrNull()
+        }.onFailure { rethrowRenderFatal(it) }.getOrNull()
 
     private fun onlyKeys(xml: android.content.res.XmlResourceParser, allowed: Set<String>): Boolean =
         (0 until xml.attributeCount).all { xml.getAttributeName(it) in allowed }

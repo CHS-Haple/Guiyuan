@@ -6,6 +6,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.telephony.SubscriptionManager
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import java.lang.reflect.Field
@@ -127,9 +128,13 @@ internal object NativePresentationResolver {
         val networkType =
             networkTypeTarget?.let { binding ->
                 resolveNetworkType(
-                    binding = binding,
+                    root = binding.root,
                     pendingMobileTypeDrawable = pendingMobileTypeDrawable,
                 )
+            } ?: if (bindings.isEmpty()) {
+                resolveUnboundNativeType(pendingMobileTypeDrawable)
+            } else {
+                null
             }
 
         return Snapshot(
@@ -188,11 +193,35 @@ internal object NativePresentationResolver {
             else -> Mode.UNKNOWN
         }
 
+    // Binder callbacks are not replayed for an existing SystemUI icon after Hot Reload.
+    // A sole visible native mobile view supplies its label, not an invented SIM binding.
+    private fun resolveUnboundNativeType(pendingMobileTypeDrawable: Drawable?): NetworkType? {
+        val host = SysUiHostRegistry.current() ?: return null
+        val group = NativeParticipantAccess.groupFor(host) ?: return null
+        if (group.childCount > 64) return null
+
+        var candidate: ViewGroup? = null
+        for (index in 0 until group.childCount) {
+            val root = group.getChildAt(index)
+            if (
+                root.javaClass.simpleName != "ModernStatusBarMobileView" ||
+                NativeParticipantAccess.resourceEntryName(root) != "mobile_combo" ||
+                root !is ViewGroup ||
+                !root.isAttachedToWindow ||
+                root.visibility != View.VISIBLE
+            ) {
+                continue
+            }
+            if (candidate != null) return null
+            candidate = root
+        }
+        return candidate?.let { resolveNetworkType(it, pendingMobileTypeDrawable) }
+    }
+
     private fun resolveNetworkType(
-        binding: SysUiNetworkSource.MobilePresentationBinding,
+        root: ViewGroup,
         pendingMobileTypeDrawable: Drawable?,
     ): NetworkType? {
-        val root = binding.root
 
         NativeParticipantAccess.findResourceView(root, MOBILE_TYPE_RESOURCE_ENTRY)
             ?.let { view ->

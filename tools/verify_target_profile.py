@@ -17,6 +17,7 @@ KEYGUARD_AOD_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "c
 FULL_AOD_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "FullAodTransitionSource.kt"
 KEYGUARD_ICON_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "KeyguardIconTransitionSource.kt"
 CC_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiCcSource.kt"
+OBSERVER_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "network" / "NativeStatusObserver.kt"
 
 HEX_LENGTHS = {"md5": 32, "sha1": 40, "sha256": 64}
 
@@ -141,6 +142,31 @@ for hook_name, (class_constant, method_constant) in network_source_hook_constant
         fail(f"network state source class drifted from profile: {hook_name}")
     if probe_method_name != hook_point.get("methodName"):
         fail(f"network state source method drifted from profile: {hook_name}")
+
+observer_text = OBSERVER_PATH.read_text(encoding="utf-8")
+observer_hook_contracts = {
+    "homeIconAdded": ("HOME_MANAGER_CLASS", 'method.name == "'),
+    "homeManagerRegistered": (
+        "STATUS_BAR_ICON_CONTROLLER_IMPL_CLASS",
+        'method.name == "',
+    ),
+    "statusIconVisibility": (
+        "STATUS_BAR_ICON_VIEW_CLASS",
+        '.getDeclaredMethod("',
+    ),
+}
+for hook_name, (class_constant, method_access) in observer_hook_contracts.items():
+    hook = hook_points.get(hook_name)
+    if not isinstance(hook, dict):
+        fail(f"missing native observation hook point: {hook_name}")
+    source_class = source_string_constant(
+        observer_text, class_constant, f"native observer {hook_name}"
+    )
+    if source_class != hook.get("className"):
+        fail(f"native observer class drifted from profile: {hook_name}")
+    if method_access + hook.get("methodName", "") + '"' not in observer_text:
+        fail(f"native observer method lookup drifted from profile: {hook_name}")
+
 
 scene_hook = hook_points.get("batteryStatusBarState")
 if not isinstance(scene_hook, dict):

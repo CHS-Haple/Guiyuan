@@ -12,8 +12,8 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 | AndroidX Core | 1.19.1 | Android compatibility and core APIs | Apache-2.0 |
 | AndroidX Activity Compose | 1.13.0 | Android/Compose activity integration | Apache-2.0 |
 | AndroidX Navigation Event Compose | 1.2.0 | Predictive/navigation event integration | Apache-2.0 |
-| AndroidX DataStore Preferences | 1.2.1 | Local application preferences | Apache-2.0 |
-| MIUIX UI / Preference / Icons / Nav / Blur | Published baseline `0.9.4-b587aaf2-SNAPSHOT` (`b587aaf2`); OS4 signed Canary uses PR423 source (`b9f70838`) | Xiaomi HyperOS-style UI; the signed OS4 Canary substitutes a verified same-revision MIUIX source graph rather than the published baseline binaries | Apache-2.0 |
+| AndroidX DataStore Preferences | 1.3.0 | Local application preferences | Apache-2.0 |
+| MIUIX UI / Preference / Icons / Nav / Blur | Published baseline `0.9.4-8972f941-SNAPSHOT` (`8972f941`); OS4 matched-source Canary uses PR423 source (`b9f70838`) | Xiaomi HyperOS-style UI; the signed OS4 Canary substitutes a verified same-revision MIUIX source graph rather than the published baseline binaries | Apache-2.0 |
 | kotlinx.serialization core / JSON | 1.12.0 | Versioned configuration file serialization | Apache-2.0 |
 
 ## Compile-only API

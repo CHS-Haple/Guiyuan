@@ -1,6 +1,6 @@
 # OS4 UI conformance and upstream adoption audit
 
-Source baseline: Guiyuan `feat/os4-glass-experimental` B1532 (PR #861 Draft; B1532 checks/device acceptance pending; B1527 exact-source CI passed). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
+Source baseline: Guiyuan `feat/os4-glass-experimental` B1533 (PR #861 Draft; B1532 checks/device acceptance pending; B1527 exact-source CI passed). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
 MIUIX pinned published: `b587aaf2c907c77a8c3c02d8df0aede2937ef8f0` (`0.9.4-b587aaf2-SNAPSHOT`).
 MIUIX reviewed prerelease: [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (not yet merged).
 The upstream sample may illustrate a visual contract without shipping a public component. Production source and experimental
@@ -43,6 +43,12 @@ source ABI are separate; source-level implementation does **not** imply device c
 - **Observed failure:** [OS4 matched MIUIX run 40563572718](https://github.com/CHS-Haple/Guiyuan/actions/runs/40563572718) failed `:app:compileDebugKotlin` and `:app:compileCanaryKotlin` at `BatteryColorControls.kt:230,243` with `COMPOSABLE_INVOCATION`. Event lambdas invoked `customSchemeName(custom)`, whose implementation is `@Composable` because the blank-name fallback uses `stringResource`.
 - **Minimal correction:** Get `LocalContext.current` once inside `BatteryColorBottomSheet` composition and resolve names at both ordinary click callbacks using `custom.name.ifBlank { context.getString(R.string.battery_custom_scheme_default_name, custom.id) }`. This preserves exactly the old nonblank and localized fallback names and request snapshot ownership. No dialog lifecycle, repository, external key, render ownership or OS3/OS4 style change.
 - **Build identity:** Retain B1532: the preceding B1532 build failed to compile and did not produce an installable APK. Await a successful exact-source CI and signed artifact before distributing. Source review alone does not prove compilation/device behavior.
+
+## Integration reconciliation with dev (B1533 candidate)
+
+- **Base and ownership:** Three-way source review used common ancestor `e777941f`, B1532 OS4 `15e5cbca`, and current `dev` `f565f4b7`. The 31 dev-only paths (runtime session/ownership/cleanup fixes, SystemUI target profile and tests) are kept byte-for-byte from dev; the 82 OS4-only paths (UI/resources/MIUIX glass adapters and experiments) are retained from the accepted B1532 source tree.
+- **Five shared paths:** `CONTRIBUTING.md` retains all dev governance plus OS4's upstream-first reporting clause; `CURRENT.md` retains the latest accepted dev state until PR approval; `THIRD_PARTY_NOTICES.md`, `app/build.gradle.kts`, and `gradle.properties` keep the OS4 build/compatibility graph while adopting dev DataStore Preferences 1.3.0 and the published MIUIX `8972f941` snapshot. The matched PR423 source graph remains pinned to `b9f70838` for OS4 Canary; it is not conflated with the published fallback path.
+- **Acceptance boundary:** Combined runtime + dependency graph differs from B1532 and uses unique Build B1533. B1532 physical observations and its signed CI are not substitutes for this exact merged tree. Require compiled source and published-compatibility CI, exact integrated APK evidence and focused device acceptance before the final PR #861 merge. No direct change to SystemUI Hook ownership was authored in the OS4 part of the integration.
 
 ## App-wide component and interaction audit (2026-10-28)
 

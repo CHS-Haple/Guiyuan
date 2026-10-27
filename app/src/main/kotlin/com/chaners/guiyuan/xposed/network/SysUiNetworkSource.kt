@@ -5,6 +5,8 @@ import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import com.chaners.guiyuan.xposed.NativeParticipantAccess
+import com.chaners.guiyuan.xposed.SysUiHostRegistry
 import com.chaners.guiyuan.xposed.StatusStateStore
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -32,6 +34,12 @@ internal object SysUiNetworkSource {
         "com.android.systemui.statusbar.pipeline.wifi.ui.model.WifiIcon\$Hidden"
     const val HOME_WIFI_VIEW_MODEL_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.wifi.ui.viewmodel.HomeWifiViewModel"
+    private const val HOME_WIFI_VIEW_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.wifi.ui.view.ModernStatusBarWifiView"
+    private const val WIFI_VIEW_BINDING_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder\$bind\$2"
+    private const val MODERN_STATUS_BAR_VIEW_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.shared.ui.view.ModernStatusBarView"
 
     const val MOBILE_BINDER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder"
@@ -518,18 +526,17 @@ internal object SysUiNetworkSource {
         wifiSeedContract = null
     }
 
+    // Keep verified bindings across transient detach; presentation still requires attachment.
     @Synchronized
     fun exportHotReloadBindings(): Array<Any?> {
         val wifi = ArrayList<Any>(wifiRoots.size)
         wifiRoots.forEach { (root, binding) ->
-            if (root.isAttachedToWindow) {
-                wifi.add(arrayOf(root, binding.viewModel))
-            }
+            wifi.add(arrayOf(root, binding.viewModel))
         }
 
         val mobile = ArrayList<Any>(mobileRoots.size)
         mobileRoots.forEach { (root, binding) ->
-            if (root.isAttachedToWindow && binding.subscriptionId != null) {
+            if (binding.subscriptionId != null) {
                 mobile.add(arrayOf(root, binding.subscriptionId))
             }
         }
@@ -540,9 +547,9 @@ internal object SysUiNetworkSource {
     @Synchronized
     fun restoreHotReloadBindings(raw: Any?): BindingRestoreResult {
         // A new hook can bind a reused root before the old generation hands it over.
-        val newWifi = wifiRoots.filterKeys { it.isAttachedToWindow }
+        val newWifi = wifiRoots.toMap()
         // A newer invalid binding must also override an older transferred SIM.
-        val newMobile = mobileRoots.filterKeys { it.isAttachedToWindow }
+        val newMobile = mobileRoots.toMap()
         wifiRoots.clear()
         mobileRoots.clear()
         lastWifiEvents.clear()
@@ -563,9 +570,7 @@ internal object SysUiNetworkSource {
                     ?.takeIf { candidate ->
                         candidate.javaClass.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
                     }
-            if (root.isAttachedToWindow) {
-                wifiRoots[root] = WifiBinding(viewModel)
-            }
+            wifiRoots[root] = WifiBinding(viewModel)
         }
 
         val mobile = payload?.getOrNull(1) as? List<*>
@@ -573,22 +578,26 @@ internal object SysUiNetworkSource {
             val pair = value as? Array<*> ?: return@forEach
             val root = pair.getOrNull(0) as? ViewGroup ?: return@forEach
             val subscriptionId = (pair.getOrNull(1) as? Number)?.toInt() ?: return@forEach
-            if (root.isAttachedToWindow && subscriptionId >= 0) {
+            if (subscriptionId >= 0) {
                 mobileRoots[root] = MobileBinding(subscriptionId)
             }
         }
 
         wifiRoots.putAll(newWifi)
         mobileRoots.putAll(newMobile)
+        val (wifiCount, mobileCount) = hotReloadBindingCounts()
         return BindingRestoreResult(
-            wifiRoots = wifiRoots.size,
-            mobileRoots = mobileRoots.values.count { it.subscriptionId != null },
+            wifiRoots = wifiCount,
+            mobileRoots = mobileCount,
         )
     }
 
     @Synchronized
     fun hotReloadBindingCounts(): Pair<Int, Int> =
-        wifiRoots.keys.count { it.isAttachedToWindow } to
+        wifiRoots.count { (root, binding) ->
+            root.isAttachedToWindow &&
+                binding.viewModel?.javaClass?.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
+        } to
             mobileRoots.count { (root, binding) ->
                 root.isAttachedToWindow && binding.subscriptionId != null }
 
@@ -758,15 +767,64 @@ internal object SysUiNetworkSource {
         result
     }
 
+    // SystemUI keeps its binding on the native View even when bind() is not replayed.
+    private fun nativeWifiViewModel(root: ViewGroup): Any? =
+        readOrNull {
+            val parentClass = root.javaClass.superclass
+            if (parentClass.name != MODERN_STATUS_BAR_VIEW_CLASS_NAME) return@readOrNull null
+            val binding =
+                parentClass.getDeclaredField("binding")
+                    .apply { isAccessible = true }
+                    .get(root)
+                    ?: return@readOrNull null
+            if (binding.javaClass.name != WIFI_VIEW_BINDING_CLASS_NAME) return@readOrNull null
+            binding.javaClass.getDeclaredField("\$viewModel")
+                .apply { isAccessible = true }
+                .get(binding)
+                ?.takeIf { it.javaClass.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME }
+        }
+
+    private fun nativeHomeWifiBinding(): Pair<ViewGroup, Any>? {
+        val host = SysUiHostRegistry.current() ?: return null
+        val icons = NativeParticipantAccess.groupFor(host) ?: return null
+        val battery = icons.parent as? ViewGroup ?: return null
+        if (
+            icons.javaClass.name != "com.android.systemui.statusbar.views.MiuiStatusIconContainer" ||
+            battery.javaClass.name != "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer" ||
+            battery.parent !== host ||
+            icons.childCount > 64
+        ) return null
+
+        var wifi: ViewGroup? = null
+        for (index in 0 until icons.childCount) {
+            val root = icons.getChildAt(index) as? ViewGroup ?: continue
+            if (
+                root.javaClass.name != HOME_WIFI_VIEW_CLASS_NAME ||
+                NativeParticipantAccess.resourceEntryName(root) != "wifi_combo" ||
+                !root.isAttachedToWindow
+            ) continue
+            if (wifi != null) return null
+            wifi = root
+        }
+        val root = wifi ?: return null
+        val viewModel = nativeWifiViewModel(root) ?: return null
+        return root to viewModel
+    }
+
     @Synchronized
     fun seedRestoredWifiState(
         onEvent: ((String) -> Unit)?,
     ): StatusStateStore.WifiState? {
         val contract = wifiSeedContract ?: return null
+        val native = nativeHomeWifiBinding()
         val binding =
-            wifiRoots.entries.firstOrNull { (root, binding) ->
-                root.isAttachedToWindow &&
-                    binding.viewModel?.javaClass?.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
+            native ?: wifiRoots.entries.firstNotNullOfOrNull { (root, receipt) ->
+                receipt.viewModel
+                    ?.takeIf {
+                        root.isAttachedToWindow &&
+                            it.javaClass.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
+                    }
+                    ?.let { root to it }
             } ?: run {
                 reportSeed(onEvent,
                     "networkPipeline wifi seed source=hotReloadRestore " +
@@ -775,12 +833,12 @@ internal object SysUiNetworkSource {
                 return null
             }
 
-        val viewModel = binding.value.viewModel ?: return null
+        if (native != null) wifiRoots[native.first] = WifiBinding(native.second)
         return readWifiSeed(
-            root = binding.key,
-            viewModel = viewModel,
+            root = binding.first,
+            viewModel = binding.second,
             contract = contract,
-            source = "hotReloadRestore",
+            source = if (native != null) "hotReloadNativeBinding" else "hotReloadRestore",
             onEvent = onEvent,
         )
     }
@@ -1364,14 +1422,40 @@ internal object SysUiNetworkSource {
     @Synchronized
     private fun findWifiBinding(view: View): Boolean {
         var current: View? = view
+        var nativeRoot: ViewGroup? = null
         while (current != null) {
             val group = current as? ViewGroup
             if (group != null && wifiRoots.containsKey(group)) {
+                // A transferred root can carry no VM; the native binding remains its owner.
+                if (wifiRoots[group]?.viewModel?.javaClass?.name != HOME_WIFI_VIEW_MODEL_CLASS_NAME) {
+                    nativeWifiViewModel(group)?.let { wifiRoots[group] = WifiBinding(it) }
+                }
                 return true
+            }
+            if (
+                group != null &&
+                group.javaClass.simpleName == "ModernStatusBarWifiView" &&
+                NativeParticipantAccess.resourceEntryName(group) == "wifi_combo"
+            ) {
+                nativeRoot = group
             }
             current = current.parent as? View
         }
-        return false
+
+        // Existing native collectors may emit after Hot Reload without replaying bind().
+        val wifi = nativeRoot ?: return false
+        val icons = wifi.parent as? ViewGroup ?: return false
+        val battery = icons.parent as? ViewGroup ?: return false
+        val nativeHome =
+            view.isAttachedToWindow &&
+                wifi.isAttachedToWindow &&
+                icons.javaClass.name == "com.android.systemui.statusbar.views.MiuiStatusIconContainer" &&
+                battery.javaClass.name == "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer" &&
+                battery.parent === SysUiHostRegistry.current()
+        if (nativeHome) {
+            nativeWifiViewModel(wifi)?.let { wifiRoots[wifi] = WifiBinding(it) }
+        }
+        return nativeHome
     }
 
     @Synchronized
