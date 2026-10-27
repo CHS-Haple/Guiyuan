@@ -324,7 +324,7 @@ internal object CcRenderSession {
         val host = pending.host()
         if (host == null || !host.isAttachedToWindow) {
             pending.cancel()
-            pendingPrearm = null
+            if (pendingPrearm === pending) pendingPrearm = null
             return
         }
 
@@ -337,9 +337,10 @@ internal object CcRenderSession {
                 isDetailedDiagnosticsEnabled = pending.isDetailedDiagnosticsEnabled,
                 onProjectionReadinessChanged = pending.onProjectionReadinessChanged,
             )
+        if (pendingPrearm !== pending) return
         if (failure == null) {
             pending.cancel()
-            pendingPrearm = null
+            if (pendingPrearm === pending) pendingPrearm = null
             pending.emit(
                 "controlCenterProjection prearm state=armed " +
                     "source=fake-root-first-layout attempt=" + attempt,
@@ -360,7 +361,7 @@ internal object CcRenderSession {
             host.requestLayout()
         } else {
             pending.cancel()
-            pendingPrearm = null
+            if (pendingPrearm === pending) pendingPrearm = null
             pending.emit(
                 "controlCenterProjection prearm state=failed " +
                     "source=fake-root-first-layout attempt=" + attempt +
@@ -374,7 +375,7 @@ internal object CcRenderSession {
     private fun onPendingPrearmDetached(pending: PendingPrearm) {
         if (pendingPrearm !== pending) return
         pending.cancel()
-        pendingPrearm = null
+        if (pendingPrearm === pending) pendingPrearm = null
     }
 
     private class PendingPrearm(
@@ -443,7 +444,11 @@ internal object CcRenderSession {
         }
 
         fun emit(message: String) {
-            if (isDetailedDiagnosticsEnabled()) onEvent(message)
+            try {
+                if (isDetailedDiagnosticsEnabled()) onEvent(message)
+            } catch (error: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(error)
+            }
         }
 
         override fun onLayoutChange(
