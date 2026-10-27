@@ -34,6 +34,12 @@ internal object SysUiNetworkSource {
         "com.android.systemui.statusbar.pipeline.wifi.ui.model.WifiIcon\$Hidden"
     const val HOME_WIFI_VIEW_MODEL_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.wifi.ui.viewmodel.HomeWifiViewModel"
+    private const val HOME_WIFI_VIEW_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.wifi.ui.view.ModernStatusBarWifiView"
+    private const val WIFI_VIEW_BINDING_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder\$bind\$2"
+    private const val MODERN_STATUS_BAR_VIEW_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.shared.ui.view.ModernStatusBarView"
 
     const val MOBILE_BINDER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder"
@@ -589,7 +595,10 @@ internal object SysUiNetworkSource {
 
     @Synchronized
     fun hotReloadBindingCounts(): Pair<Int, Int> =
-        wifiRoots.keys.count { it.isAttachedToWindow } to
+        wifiRoots.count { (root, binding) ->
+            root.isAttachedToWindow &&
+                binding.viewModel?.javaClass?.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
+        } to
             mobileRoots.count { (root, binding) ->
                 root.isAttachedToWindow && binding.subscriptionId != null }
 
@@ -759,15 +768,64 @@ internal object SysUiNetworkSource {
         result
     }
 
+    // SystemUI keeps its binding on the native View even when bind() is not replayed.
+    private fun nativeWifiViewModel(root: ViewGroup): Any? =
+        readOrNull {
+            val parentClass = root.javaClass.superclass
+            if (parentClass.name != MODERN_STATUS_BAR_VIEW_CLASS_NAME) return@readOrNull null
+            val binding =
+                parentClass.getDeclaredField("binding")
+                    .apply { isAccessible = true }
+                    .get(root)
+                    ?: return@readOrNull null
+            if (binding.javaClass.name != WIFI_VIEW_BINDING_CLASS_NAME) return@readOrNull null
+            binding.javaClass.getDeclaredField("\$viewModel")
+                .apply { isAccessible = true }
+                .get(binding)
+                ?.takeIf { it.javaClass.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME }
+        }
+
+    private fun nativeHomeWifiBinding(): Pair<ViewGroup, Any>? {
+        val host = SysUiHostRegistry.current() ?: return null
+        val icons = NativeParticipantAccess.groupFor(host) ?: return null
+        val battery = icons.parent as? ViewGroup ?: return null
+        if (
+            icons.javaClass.name != "com.android.systemui.statusbar.views.MiuiStatusIconContainer" ||
+            battery.javaClass.name != "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer" ||
+            battery.parent !== host ||
+            icons.childCount > 64
+        ) return null
+
+        var wifi: ViewGroup? = null
+        for (index in 0 until icons.childCount) {
+            val root = icons.getChildAt(index) as? ViewGroup ?: continue
+            if (
+                root.javaClass.name != HOME_WIFI_VIEW_CLASS_NAME ||
+                NativeParticipantAccess.resourceEntryName(root) != "wifi_combo" ||
+                !root.isAttachedToWindow
+            ) continue
+            if (wifi != null) return null
+            wifi = root
+        }
+        val root = wifi ?: return null
+        val viewModel = nativeWifiViewModel(root) ?: return null
+        return root to viewModel
+    }
+
     @Synchronized
     fun seedRestoredWifiState(
         onEvent: ((String) -> Unit)?,
     ): StatusStateStore.WifiState? {
         val contract = wifiSeedContract ?: return null
+        val native = nativeHomeWifiBinding()
         val binding =
-            wifiRoots.entries.firstOrNull { (root, binding) ->
-                root.isAttachedToWindow &&
-                    binding.viewModel?.javaClass?.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
+            native ?: wifiRoots.entries.firstNotNullOfOrNull { (root, receipt) ->
+                receipt.viewModel
+                    ?.takeIf {
+                        root.isAttachedToWindow &&
+                            it.javaClass.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME
+                    }
+                    ?.let { root to it }
             } ?: run {
                 reportSeed(onEvent,
                     "networkPipeline wifi seed source=hotReloadRestore " +
@@ -776,12 +834,12 @@ internal object SysUiNetworkSource {
                 return null
             }
 
-        val viewModel = binding.value.viewModel ?: return null
+        if (native != null) wifiRoots[native.first] = WifiBinding(native.second)
         return readWifiSeed(
-            root = binding.key,
-            viewModel = viewModel,
+            root = binding.first,
+            viewModel = binding.second,
             contract = contract,
-            source = "hotReloadRestore",
+            source = if (native != null) "hotReloadNativeBinding" else "hotReloadRestore",
             onEvent = onEvent,
         )
     }
@@ -1385,11 +1443,16 @@ internal object SysUiNetworkSource {
         val wifi = nativeRoot ?: return false
         val icons = wifi.parent as? ViewGroup ?: return false
         val battery = icons.parent as? ViewGroup ?: return false
-        return view.isAttachedToWindow &&
-            wifi.isAttachedToWindow &&
-            icons.javaClass.name == "com.android.systemui.statusbar.views.MiuiStatusIconContainer" &&
-            battery.javaClass.name == "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer" &&
-            battery.parent === SysUiHostRegistry.current()
+        val nativeHome =
+            view.isAttachedToWindow &&
+                wifi.isAttachedToWindow &&
+                icons.javaClass.name == "com.android.systemui.statusbar.views.MiuiStatusIconContainer" &&
+                battery.javaClass.name == "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer" &&
+                battery.parent === SysUiHostRegistry.current()
+        if (nativeHome) {
+            nativeWifiViewModel(wifi)?.let { wifiRoots[wifi] = WifiBinding(it) }
+        }
+        return nativeHome
     }
 
     @Synchronized
