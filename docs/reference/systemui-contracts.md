@@ -70,6 +70,14 @@ Home uses the existing native end-side carrier. Keyguard/AOD use their own verif
 
 **Observed.** The target status-icon container exposes an ignored-slot contract consumed by native measure/layout. On the verified `MiuiStatusIconContainer`, `addIgnoredSlots` inserts missing entries one by one and requests layout, while `setIgnoredSlots` first clears the entire native list before calling that add method. The setter is therefore a whole-list replacement, not an atomic delta rollback.
 
+**Observed native ignored-slot callers (same target DEX).** Other SystemUI components also write native ignored lists; method ownership must be traced to the actual container:
+
+- Home `MiuiPhoneStatusBarView.updateCutoutLocation()V` invokes `mStatusBarStatusIcons.setIgnoredSlots(MiuiIconManagerUtils.RIGHT_BLOCK_LIST)` at `classes2.dex` code-unit offset **9**. This is the Home icon container, and the call replaces its list when the native cutout-space check permits the method to proceed.
+- `MiuiQSHeaderView.onAttachedToWindow()V` invokes `mStatusIconContainer.setIgnoredSlots(CONTROL_CENTER_BLOCK_LIST)` at `classes2.dex` offset **144**. `ControlCenterStatusBarIcon.onAttachedToWindow()V` invokes `delegate.statusIcons.addIgnoredSlots(CONTROL_CENTER_BLOCK_LIST)` at `classes.dex` offset **73**, after the native icon manager registration. Both use their respective QS/CC container fields, not the Home `mStatusBarStatusIcons` field.
+- The target `MiuiIconManagerUtils` static `RIGHT_BLOCK_LIST` and `CONTROL_CENTER_BLOCK_LIST` contain none of Guiyuan's five represented slot names (`wifi`, `mobile`, `stacked_mobile`, `airplane`, `no_sim`). This verifies those *static inputs*, not live list contents after callbacks, same-View writer overlap, or execution timing.
+
+**Not established:** whether a native list replacement can interleave an active Guiyuan mutation on the same live View. Retain identity-scoped delta restoration and the shortest justified ownership lifetime; do not infer that separate callers share a View or that disjoint static inputs prove exceptional-path safety.
+
 **Guiyuan rule:** if a native add fails, derive any rollback target from the current native list minus only the session-owned additions. A pre-call whole-list snapshot can discard unrelated SystemUI entries added in reentrant callbacks. Recheck the native result and fail native if restoration cannot be verified; do not claim protection against concurrent writers of the same slot name.
 
 Safe mutation:
