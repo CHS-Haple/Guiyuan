@@ -4,6 +4,10 @@ Source PR: https://github.com/compose-miuix-ui/miuix/pull/423
 Investigated PR revision: `b9f70838509fbc3f63f1a972777a7e6ce07f578f`
 License: Apache-2.0 (retain source headers and LICENSE).
 
+## Temporarily embedded OS4 search glyphs
+
+`app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4SearchIcons.kt` preserves only the `Regular` path data for official Glass.Close and Glass.Search from `miuix-glass-icons`, pinned to PR #423 at `b9f70838509fbc3f63f1a972777a7e6ce07f578f`. Their Apache-2.0 copyright/SPDX is retained. The pinned published MIUIX core has no `MiuixIcons.Glass` namespace, so directly importing the unpublished module would break the consistent five-module snapshot. The scoped vectors must be deleted and call sites switched back to `MiuixIcons.Glass.*` after the matched module is published; do not expand this approach to full unpublished composable classes.
+
 ## Adoption gate (hold this Draft PR)
 
 PR #423 was open and unmerged at the 2026-10-26 review. The source
@@ -36,7 +40,7 @@ glass components with published older UI modules and then conceal API drift
 using copied overlays, private API shadows, hand-written effects or geometry
 patches. A green experimental APK compile is not OS4 conformance.
 
-## Current experimental snapshot (B1450, not release-ready)
+## Experimental source scope (Draft; check `gradle.properties` for current Build)
 
 - GlassNavigationBar on the main three-page navigation and its preview.
 - GlassTopAppBar / GlassIconButton in hub/detail layouts, and OS4
@@ -49,10 +53,7 @@ patches. A green experimental APK compile is not OS4 conformance.
   recorder was a demonstrable source/consumer cycle. Shader-unavailable
   devices retain MIUIX TabRowWithContour. B1403's reported Sandbox crash
   is not yet proven to be solely caused by this cycle.
-- OS4 search keeps MIUIX's SearchBar/InputField focus and Back ownership.
-  Expanded search uses native MIUIX IconButton + Basic.Close with its own
-  opaque circular surface, rather than a GlassIconButton that inherits the
-  top bar's resting transparent state. OS3 keeps text cancel.
+- OS4 search retains the released MIUIX SearchBar/InputField focus, query-clear and Back ownership. The search capsule uses the available upstream `glassPanel` with stock pured-thin material, with native surface fallback; its circular cancel action remains a standard MIUIX IconButton per the upstream OS4 GlassSearchOverlay example, not a top-bar GlassIconButton. Both input and cancel use the pinned native InputField 45dp minimum (upstream OS4 sample uses 44dp). Two unmodified Regular icon vector paths from the pinned PR #423 Glass.Close and Glass.Search are temporarily embedded for this search scene only. OS3 retains native SearchBar input/clear icons, text Cancel and motion. Device action/IME/animation validation remains open.
 - OS4 appearance mini-preview sizes to intrinsic GlassNavigationBar height
   rather than the fixed OS3 preview viewport. App margins follow the
   upstream documented 24.dp horizontal and 12.dp vertical usage.

@@ -39,8 +39,11 @@ updated independently from the corresponding MIUIX UI/Blur contracts. See
 | Component | Variant | Purpose | Upstream license |
 | --- | --- | --- | --- |
 | Google Material Symbols | Local embedded vectors; no library version | Semantic leading glyphs for companion-app information surfaces | Apache-2.0 |
+| MIUIX OS4 glass search glyphs | Exact `Glass.Regular.Close` / `Glass.Regular.Search` vectors from [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423), `b9f70838509fbc3f63f1a972777a7e6ce07f578f` | Temporary OS4 search-only icon compatibility pending matched `miuix-glass-icons` release | Apache-2.0 |
 
 The selected Material Symbols are stored as local Android vector drawables sourced from Google's `google/material-design-icons` repository. They are app resources, not a runtime library dependency.
+
+The two upstream MIUIX OS4 search glyphs are preserved as exact Regular `ImageVector` paths in `app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4SearchIcons.kt` with upstream copyright and SPDX; neither `miuix-glass-icons` nor an independently assembled replacement module is an added runtime dependency. Remove this local source when the matching official MIUIX icon artifact can be consumed.
 
 ## Test dependencies
 
