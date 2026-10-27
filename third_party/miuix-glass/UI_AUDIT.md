@@ -1,6 +1,6 @@
 # OS4 UI conformance and upstream adoption audit
 
-Source baseline: Guiyuan `feat/os4-glass-experimental` B1527 (PR #861 Draft; B1527 exact-source CI and device acceptance pending). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
+Source baseline: Guiyuan `feat/os4-glass-experimental` B1527 (PR #861 Draft; B1527 exact-source CI passed, device acceptance pending). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
 MIUIX pinned published: `b587aaf2c907c77a8c3c02d8df0aede2937ef8f0` (`0.9.4-b587aaf2-SNAPSHOT`).
 MIUIX reviewed prerelease: [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (not yet merged).
 The upstream sample may illustrate a visual contract without shipping a public component. Production source and experimental
@@ -51,7 +51,7 @@ The source review found and corrected concrete UI ownership and glyph issues thr
 - **Missing integration:** The root-hosted custom scheme More dropdown was still forced opaque with `backdrop=null` even after B1525 introduced a real primary-sheet recorder. This was not an absence of upstream glass support; the popup had a valid scene available at its callsite.
 - **Native contract:** The same source-graph PR423 `GlassDropdownPopupContent` consumes a clean lower-layer `Backdrop`. `PopupLayout(renderInRootScaffold=true)` lives in the root Scaffold and its content must not discover the sheet-specific composition local after portal routing; capture the value in `BatterySchemeManageMenu` before creating the popup.
 - **Correction:** Scope `LocalGlassBackdrop provides sheetBackdrop` to the first Sheet's BatterySchemeOverview content and read it in the menu caller. Pass that saved scene through to its root-hosted GlassDropdownPopupContent. It contains the first-sheet panel but never the popup itself. OS3, menu click selection, haptics, popup geometry and native transitions are unchanged. No second writer, timer or duplicate observer.
-- **Review:** Full PR diff and scene/dismissal path reviewed; matched-source CI and physical menu glass/anchoring/scroll/backdrop flicker tests pending. The preceding first/second Sheet recording requires device acceptance.
+- **Review:** Full PR diff and scene/dismissal path reviewed. Matched-source [CI #40552048429](https://github.com/CHS-Haple/Guiyuan/actions/runs/40552048429) compiled/tested and signed runtime `4c22c87` successfully; extracted B1527 APK SHA-256 `f6797c25b6ad74be798932526e0ba5b4f48d7db9c5fc9190709b0eda2fb23375`. Physical menu glass/anchoring/scroll/backdrop flicker tests and both nested Sheets remain pending.
 
 ## OS4 second-sheet source dropdown glass (B1526)
 
