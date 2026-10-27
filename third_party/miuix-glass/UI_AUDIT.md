@@ -102,6 +102,12 @@ MIUIX `SearchBarDemo` renders direct `BasicComponent` suggestions without mandat
 - Third-party dependency rows return to the accepted main layout. Missing AndroidX Core and kotlinx.serialization JSON are listed with the actual pinned BuildConfig versions and appropriate project links; MIUIX version includes a concise PR #423 label.
 - OS4 diagnostics nested popup follows upstream group/parent enabled semantics, selected-state header and keyed row geometry; no additional blur layer.
 
+## PR423 navigation inset revision — source gate
+
+- Upstream `b9f7083` → `8d52b45` adds `GlassNavigationBar.defaultWindowInsetsPadding` (default `true`) with its own Android navigation-bar/caption-bar bottom margins. The base MIUIX `NavigationBar` also changes its Android bottom spacing. The reviewed `GlassMotion`, `GlassPanel`, `GlassShadow` and `GlassTopAppBar` implementations are unchanged after excluding comments/whitespace; MIUIX Blur is not changed in this two-commit range.
+- Guiyuan `MainHub.kt` still supplies OS4 bottom spacing as `max(24.dp, navigationInset + 8.dp)`, whereas `AppearanceScreen.kt` mounts a display-only bar without real window Insets. Copying just the new component would double-count the main margin or insert system space into the miniature preview. Adopting the new API requires one inset owner: migrate the real bar to upstream-managed padding or explicitly disable it; preview must set `defaultWindowInsetsPadding = false`. The existing OS3/native navigation behavior is a separate regression gate.
+- **Decision:** no partial upstream leaf import and no layout tweak without matched source/build and visual acceptance. Verify icon-only and icon+text, display scale, gesture/caption Insets, hidden/floating options, no-shader fallback and OS3 against the corresponding native version before changing the installed bar. This is a source conformance finding, not a device-proven spacing defect.
+
 ## Upstream implementation opportunities, ordered
 
 1. **Accept native PR423 `BlurTopAppBar` and retire published-only clip workaround after device testing.**
