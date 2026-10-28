@@ -284,6 +284,9 @@ jobs:
           if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
             TASKS+=(":app:assembleCanary")
           fi
+          if [[ "${{ steps.scope.outputs.scope }}" == "full" && "${{ github.event_name }}" == "pull_request" ]]; then
+            TASKS+=(":app:assembleInternal" ":app:assembleRelease")
+          fi
           test -n "$MIUIX_SOURCE_REVISION" && test -n "$MIUIX_SOURCE_DIR"
           ./gradlew \
             -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
@@ -324,6 +327,9 @@ jobs:
           fi
           if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
             APKS+=("$CANARY_APK_PATH")
+          fi
+          if [[ "${{ steps.scope.outputs.scope }}" == "full" && "${{ github.event_name }}" == "pull_request" ]]; then
+            APKS+=("app/build/outputs/apk/internal/app-internal-unsigned.apk" "app/build/outputs/apk/release/app-release-unsigned.apk")
           fi
           bash tools/verify_xposed_metadata.sh "${APKS[@]}"
 
@@ -457,6 +463,10 @@ jobs:
           test "$cert" = "$HAPLE_CERT_SHA256"
           package="$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk" | sed -n "s/.*package: name='\([^']*\)'.*/\1/p" | head -n 1)"
           test "$package" = com.chaners.guiyuan
+          version_in_apk="$(sed -n "s/.*versionName='\\([^']*\\)'.*/\\1/p" <<< "$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk")" | head -n 1)"
+          test "$version_in_apk" = "$version"
+          APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
+          test "$("$APKANALYZER" manifest debuggable "$apk")" = false
           echo "APK_NAME=$(basename "$apk")" >> "$GITHUB_ENV"
           sha256sum "$apk" >> "$GITHUB_STEP_SUMMARY"
 
