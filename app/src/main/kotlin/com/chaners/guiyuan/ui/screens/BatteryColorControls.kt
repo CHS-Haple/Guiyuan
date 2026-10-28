@@ -81,25 +81,30 @@ internal sealed interface BatterySchemePage {
 @Composable
 internal fun BatteryColorPreference(
     library: BatteryColorSchemeLibrary,
+    dual: Boolean,
     enabled: Boolean,
     holdDownState: Boolean,
     onClick: () -> Unit,
 ) {
+    val appliedKey = library.activeKey(dual)
     ArrowPreference(
         title = stringResource(R.string.battery_colors),
         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_palette, enabled) },
         summary =
             stringResource(
                 R.string.battery_color_scheme_summary,
-                batterySchemeDisplayName(library, library.activeSchemeKey),
+                appliedKey?.let { batterySchemeDisplayName(library, it) }
+                    ?: stringResource(R.string.battery_color_scheme_unlinked),
             ),
         enabled = enabled,
         holdDownState = holdDownState,
         onClick = onClick,
         endActions = {
-            BatterySchemePreviewStrip(
-                page = schemePageForKey(library, library.activeSchemeKey),
-            )
+            if (appliedKey != null) {
+                BatterySchemePreviewStrip(
+                    page = schemePageForKey(library, appliedKey),
+                )
+            }
         },
     )
 }
@@ -118,6 +123,7 @@ private data class CreateRequest(
 internal fun BatteryColorBottomSheet(
     show: Boolean,
     library: BatteryColorSchemeLibrary,
+    dual: Boolean,
     repository: BatterySchemeRepo,
     onDismiss: () -> Unit,
 ) {
@@ -172,6 +178,7 @@ internal fun BatteryColorBottomSheet(
     ) {
         BatterySchemeOverview(
             library = library,
+            dual = dual,
             requestedSchemeKey = requestedSchemeKey,
             onRequestedSchemeHandled = { requestedSchemeKey = null },
             canCreateCustom = nextCustomId != null,
