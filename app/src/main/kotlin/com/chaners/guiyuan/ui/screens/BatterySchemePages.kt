@@ -164,7 +164,7 @@ internal fun BatterySchemeOverview(
             pages = pages,
             currentPage = pagerState.currentPage,
             onPageClick = { target ->
-                if (target != pagerState.currentPage) {
+                if (target != pagerState.currentPage || pagerState.isScrollInProgress) {
                     scope.launch { pagerState.springAnimateToPage(target) }
                 }
             },
