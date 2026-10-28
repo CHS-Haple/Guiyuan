@@ -177,6 +177,10 @@ internal object ConfigBackupFormat {
         require(schemes.activeSchemeKey in validSchemeKeys) {
             "Unknown or noncanonical active color scheme"
         }
+        require(
+            schemes.dualActiveSchemeKey == null ||
+                schemes.dualActiveSchemeKey in validSchemeKeys
+        ) { "Unknown or noncanonical dual-SIM color scheme" }
         schemes.customSchemes.forEach { scheme ->
             require(scheme.name == normalizeCustomSchemeName(scheme.name) && safeText(scheme.name)) {
                 "Invalid custom scheme name: " + scheme.id
