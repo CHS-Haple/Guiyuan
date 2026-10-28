@@ -131,7 +131,7 @@
     <string name="floating_navigation_bar">悬浮导航栏</string>
     <string name="floating_navigation_bar_summary">使用悬浮样式的底部导航栏</string>
     <string name="floating_navigation_touch_extension">悬浮导航栏触控扩展</string>
-    <string name="floating_navigation_touch_extension_summary">扩大导航栏下方的点击范围，防止点击导航栏时误触系统手势。</string>
+    <string name="floating_navigation_touch_extension_summary">扩大导航栏下方的触控范围，以减少误触</string>
     <string name="floating_navigation_style">悬浮导航栏样式</string>
     <string name="floating_navigation_style_summary">选择悬浮底部导航栏的材质效果</string>
     <string name="floating_navigation_style_standard">标准</string>
