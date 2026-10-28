@@ -40,7 +40,8 @@ internal object DiagLogReader {
             )
         val lspLines = filterModuleLines(lspResult.output)
 
-        if (lspLines.isNotEmpty()) {
+        // Only a successful empty LSP read warrants a second Root command.
+        if (lspLines.isNotEmpty() || !lspResult.isSuccess) {
             return@withContext Snapshot(
                 source = Source.LspModules,
                 result = lspResult,
