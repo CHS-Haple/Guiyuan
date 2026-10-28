@@ -141,9 +141,6 @@ internal data class BatteryColorSchemeLibrary(
     fun activeKey(dual: Boolean): String? =
         if (dual) dualActiveSchemeKey else activeSchemeKey
 
-    fun withActiveKey(dual: Boolean, key: String): BatteryColorSchemeLibrary =
-        if (dual) copy(dualActiveSchemeKey = key) else copy(activeSchemeKey = key)
-
     fun customById(id: Int): BatteryCustomColorScheme? =
         customSchemes.firstOrNull { it.id == id }
 
@@ -256,7 +253,9 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
         val target =
             if (library.containsKey(key)) key else BATTERY_COLOR_SCHEME_HYPEROS_KEY
         val dual = preferences.dualSignalEnabled()
-        val updated = library.withActiveKey(dual, target)
+        val updated =
+            if (dual) library.copy(dualActiveSchemeKey = target)
+            else library.copy(activeSchemeKey = target)
         val editor = preferences.edit()
         writeBatterySchemeLibrary(editor, updated)
         applyProjection(editor, updated, target, dual)
@@ -413,8 +412,8 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
     private fun migrateIfNeeded() {
         if (preferences.getInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, 0) >= 1) return
 
-        val singles = preferences.readVisualCfg(dual = false)
-        val doubles = preferences.readVisualCfg(dual = true)
+        val single = preferences.readVisualCfg(dual = false)
+        val dual = preferences.readVisualCfg(dual = true)
         val customs = mutableListOf<BatteryCustomColorScheme>()
 
         fun keyFor(visual: VisualCfg): String {
@@ -440,8 +439,8 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
             return custom.key
         }
 
-        val singleKey = keyFor(singles)
-        val dualKey = keyFor(doubles)
+        val singleKey = keyFor(single)
+        val dualKey = keyFor(dual)
         val initial = BatteryColorSchemeLibrary(
             activeSchemeKey = singleKey,
             customSchemes = customs,
@@ -604,9 +603,7 @@ internal fun writeBatterySchemeLibrary(
     editor
         .putInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, BATTERY_COLOR_SCHEME_SCHEMA_CURRENT)
         .putString(BATTERY_COLOR_SCHEME_ACTIVE_KEY, library.activeSchemeKey)
-        .putString(
-            BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY, library.dualActiveSchemeKey,
-        )
+        .putString(BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY, library.dualActiveSchemeKey)
         .putString(
             BATTERY_COLOR_SCHEME_ORDER_KEY,
             library.customSchemes.joinToString(",") { it.id.toString() },
