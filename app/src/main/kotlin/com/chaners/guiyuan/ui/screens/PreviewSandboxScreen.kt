@@ -3,9 +3,7 @@ package com.chaners.guiyuan.ui.screens
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterExitState
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -90,6 +88,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRowDefaults
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
@@ -288,14 +287,25 @@ internal fun PreviewSandboxScreen(
             visible = showDock,
             modifier = Modifier.onSizeChanged { dockHeightPx = it.height },
             enter = (if (os4) androidx.compose.animation.EnterTransition.None else fadeIn()) +
-                expandVertically(expandFrom = Alignment.Top, clip = !os4),
+                expandVertically(
+                    animationSpec = if (os4) GlassMotion.barExpand() else androidx.compose.animation.core.spring(),
+                    expandFrom = Alignment.Top,
+                    clip = !os4,
+                ),
             exit = (if (os4) androidx.compose.animation.ExitTransition.None else fadeOut()) +
-                shrinkVertically(shrinkTowards = Alignment.Top, clip = !os4),
+                shrinkVertically(
+                    animationSpec = if (os4) GlassMotion.barCollapse() else androidx.compose.animation.core.spring(),
+                    shrinkTowards = Alignment.Top,
+                    clip = !os4,
+                ),
         ) {
             // Fade the OS4 glass row without an offscreen layer clipping its button shadows.
             val opacityModifier = if (os4) {
                 val opacity by transition.animateFloat(
-                    transitionSpec = { spring(stiffness = Spring.StiffnessMediumLow) },
+                    transitionSpec = {
+                        if (targetState == EnterExitState.Visible) GlassMotion.fadeIn()
+                        else GlassMotion.fadeOut()
+                    },
                     label = "dockOpacity",
                 ) { state ->
                     if (state == EnterExitState.Visible) 1f else 0f
