@@ -22,7 +22,7 @@ on:
         default: true
         type: boolean
       os4_source_run_id:
-        description: Successful OS4 source-matched signed candidate run ID (required for dev test releases)
+        description: Successful OS4 source-matched signed candidate run ID (required for dev/main test releases)
         required: false
         default: ''
         type: string
@@ -32,7 +32,7 @@ permissions:
 
 jobs:
   release:
-    if: github.event_name != 'workflow_dispatch' || github.ref != 'refs/heads/dev'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.channel == 'stable'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: release
@@ -273,7 +273,7 @@ jobs:
             --notes-file release-notes.md
 
   os4-test:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
+    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && inputs.channel == 'test'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: release
@@ -305,11 +305,11 @@ jobs:
           conclusion="$(jq -r '.conclusion' <<< "$run")"
           event="$(jq -r '.event' <<< "$run")"
           if [[ "$source_sha" != "$GITHUB_SHA" ||
-                "$source_branch" != "dev" ||
+                "$source_branch" != "$GITHUB_REF_NAME" ||
                 "$workflow_path" != ".github/workflows/os4-miuix-pr423-signed-canary.yml" ||
                 "$conclusion" != "success" ||
                 ( "$event" != "push" && "$event" != "workflow_dispatch" ) ]]; then
-            echo "OS4 signed candidate provenance does not match the current dev commit."
+            echo "OS4 signed candidate provenance does not match the selected branch commit."
             exit 1
           fi
           echo "SOURCE_SHA=$source_sha" >> "$GITHUB_ENV"
