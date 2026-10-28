@@ -3,7 +3,9 @@ package com.chaners.guiyuan.ui.screens
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -292,7 +294,10 @@ internal fun PreviewSandboxScreen(
         ) {
             // Fade the OS4 glass row without an offscreen layer clipping its button shadows.
             val opacityModifier = if (os4) {
-                val opacity by transition.animateFloat(label = "dockOpacity") { state ->
+                val opacity by transition.animateFloat(
+                    transitionSpec = { spring(stiffness = Spring.StiffnessMediumLow) },
+                    label = "dockOpacity",
+                ) { state ->
                     if (state == EnterExitState.Visible) 1f else 0f
                 }
                 Modifier.graphicsLayer {
