@@ -37,6 +37,7 @@ class VisualPersistenceTest {
         val library = BatteryColorSchemeLibrary(
             activeSchemeKey = custom.key,
             customSchemes = listOf(custom, second),
+            dualActiveSchemeKey = custom.key,
         )
 
         resetVisualPreferences(prefs, library)
@@ -48,6 +49,10 @@ class VisualPersistenceTest {
         assertEquals(
             BATTERY_COLOR_SCHEME_HYPEROS_KEY,
             prefs.getString("battery_color_scheme_library.active", null),
+        )
+        assertEquals(
+            BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+            prefs.getString("battery_color_scheme_library.dual_active", null),
         )
         assertEquals("2,4", prefs.getString("battery_color_scheme_library.custom_order", null))
         assertEquals("Saved colors", prefs.getString("battery_color_scheme_library.custom.2.name", null))
@@ -512,7 +517,8 @@ class VisualPersistenceTest {
         val schemes = BatterySchemeRepo(prefs)
         schemes.activateScheme(BATTERY_COLOR_SCHEME_IOS_KEY)
 
-        assertEquals(BATTERY_COLOR_SCHEME_IOS_KEY, schemes.current().activeSchemeKey)
+        assertEquals(BATTERY_COLOR_SCHEME_IOS_KEY, schemes.current().activeKey(true))
+        assertEquals(BATTERY_COLOR_SCHEME_HYPEROS_KEY, schemes.current().activeKey(false))
         assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg(dual = true).batteryColorPreset)
         assertEquals(BatteryColorMode.PRESET, prefs.readVisualCfg(dual = true).batteryColorModes.charging)
         assertFalse(prefs.contains(visualModeKey(true, batteryColorOverrideKey(BatteryColorSlot.CHARGING))))
@@ -524,6 +530,8 @@ class VisualPersistenceTest {
         schemes.activateScheme(BATTERY_COLOR_SCHEME_HYPEROS_KEY)
         assertEquals(BatteryColorPreset.HYPEROS, prefs.readVisualCfg(dual = false).batteryColorPreset)
         assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg(dual = true).batteryColorPreset)
+        assertEquals(BATTERY_COLOR_SCHEME_HYPEROS_KEY, schemes.current().activeKey(false))
+        assertEquals(BATTERY_COLOR_SCHEME_IOS_KEY, schemes.current().activeKey(true))
     }
 
     @Test
@@ -556,7 +564,8 @@ class VisualPersistenceTest {
 
         val schemes = BatterySchemeRepo(prefs)
 
-        assertEquals(BATTERY_COLOR_SCHEME_IOS_KEY, schemes.current().activeSchemeKey)
+        assertEquals(BATTERY_COLOR_SCHEME_IOS_KEY, schemes.current().activeKey(true))
+        assertEquals(BATTERY_COLOR_SCHEME_LOW_SATURATION_KEY, schemes.current().activeKey(false))
         assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg(dual = true).batteryColorPreset)
         assertEquals(BatteryColorPreset.RECOMMENDED, prefs.readVisualCfg(dual = false).batteryColorPreset)
     }
