@@ -3,6 +3,8 @@ package com.chaners.guiyuan.ui.screens
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -168,7 +170,7 @@ internal fun BatterySchemeOverview(
         val target = dotTarget
         if (target < 0) return@LaunchedEffect
         try {
-            pagerState.springAnimateToPage(target)
+            pagerState.scrollToPage(target)
         } finally {
             if (dotTarget == target) dotTarget = -1
         }
@@ -655,6 +657,7 @@ private fun BatteryPagerIndicator(
     var pressedPage by remember { mutableIntStateOf(-1) }
     val gap by animateDpAsState(
         targetValue = if (pressedPage >= 0) 8.dp else 6.dp,
+        animationSpec = if (pressedPage >= 0) spring() else snap(),
         label = "battery-scheme-gap",
     )
     val switchMargin = with(LocalDensity.current) { 2.dp.toPx() }
@@ -717,6 +720,7 @@ private fun BatteryPagerIndicator(
                     isHighlighted -> 16.dp
                     else -> 6.dp
                 },
+                animationSpec = if (pressedPage >= 0) spring() else snap(),
                 label = "battery-scheme-indicator",
             )
             Box(
