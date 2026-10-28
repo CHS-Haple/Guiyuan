@@ -5,6 +5,7 @@ on:
     branches: [ dev ]
     paths:
       - '.github/workflows/os4-miuix-pr423-signed-canary.yml'
+      - '.github/workflows/release.yml'
       - 'app/src/os4Upstream/**'
       - 'app/src/os4Published/**'
       - 'app/src/main/kotlin/com/chaners/guiyuan/ui/**'
