@@ -13,7 +13,7 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 | AndroidX Activity Compose | 1.13.0 | Android/Compose activity integration | Apache-2.0 |
 | AndroidX Navigation Event Compose | 1.2.0 | Predictive/navigation event integration | Apache-2.0 |
 | AndroidX DataStore Preferences | 1.3.0 | Local application preferences | Apache-2.0 |
-| MIUIX UI / Preference / Icons / Nav / Blur | Published baseline `0.9.4-8972f941-SNAPSHOT` (`8972f941`); OS4 matched-source Canary uses PR423 source (`b9f70838`) | Xiaomi HyperOS-style UI; the signed OS4 Canary substitutes a verified same-revision MIUIX source graph rather than the published baseline binaries | Apache-2.0 |
+| MIUIX UI / Preference / Icons / Nav / Blur | Published baseline `0.9.4-8972f941-SNAPSHOT` (`8972f941`); OS4 matched-source Canary and Release candidates use PR423 source (`b9f70838`) | Xiaomi HyperOS-style UI; signed OS4 Canary and Release candidates substitute a verified same-revision MIUIX source graph rather than the published baseline binaries | Apache-2.0 |
 | kotlinx.serialization core / JSON | 1.12.0 | Versioned configuration file serialization | Apache-2.0 |
 
 ## Compile-only API
@@ -39,7 +39,7 @@ at baseline commit `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (Apache-2.0).
 commit `8d52b45f223d4bec9a719d3d6ca52972cc7ea5fb` to use upstream popup
 measurement, scroll and outside-gesture ownership. The remaining compatibility
 bridge is not claimed to be the latest complete `miuix-glass` module.
-The adapted source includes documented compatibility bridges (including title rendering), so it is not a byte-for-byte copy of the entire upstream module. The signed OS4 Canary uses the matching PR423 UI/Blur source modules; plain Gradle builds retain published-module compatibility paths.
+The adapted source includes documented compatibility bridges (including title rendering), so it is not a byte-for-byte copy of the entire upstream module. The signed OS4 Canary and Release candidates use the matching PR423 UI/Blur source modules; plain Gradle builds retain published-module compatibility paths.
 These primitives are temporary until the official module is published; they must not be silently
 updated independently from the corresponding MIUIX UI/Blur contracts. See
 `third_party/miuix-glass/README.md` for source boundaries and removal instructions.
