@@ -704,6 +704,28 @@ class VisualPersistenceTest {
         assertEquals(0xFF2468AC.toInt(), prefs.readVisualCfg(dual = true).batteryColorOverrides.charging)
     }
 
+    @Test
+    fun uninitializedLegacyDualBankDoesNotConsumeSharedCustomSlots() {
+        val prefs = MemoryPreferences()
+        prefs.edit()
+            .putString(
+                visualModeKey(true, batteryColorModeKey(BatteryColorSlot.CHARGING)),
+                BatteryColorMode.CUSTOM.persistedValue,
+            )
+            .putInt(
+                visualModeKey(true, batteryColorOverrideKey(BatteryColorSlot.CHARGING)),
+                0xFF2468AC.toInt(),
+            )
+            .apply()
+
+        val library = BatterySchemeRepo(prefs).current()
+        assertTrue(library.customSchemes.isEmpty())
+        assertEquals(BATTERY_COLOR_SCHEME_HYPEROS_KEY, library.activeKey(false))
+        assertEquals(BATTERY_COLOR_SCHEME_HYPEROS_KEY, library.activeKey(true))
+        // First dual enable replaces this uninitialized bank, not the shared catalog.
+        assertEquals(0xFF2468AC.toInt(), prefs.readVisualCfg(dual = true).batteryColorOverrides.charging)
+    }
+
     private class MemoryPreferences : SharedPreferences {
         private val values = mutableMapOf<String, Any>()
 
