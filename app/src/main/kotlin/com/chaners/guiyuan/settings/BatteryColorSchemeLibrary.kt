@@ -410,10 +410,12 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
     }
 
     private fun migrateIfNeeded() {
-        if (preferences.getInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, 0) >= 1) return
+        if (
+            preferences.getInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, 0) >=
+                BATTERY_COLOR_SCHEME_SCHEMA_CURRENT
+        ) return
 
         val single = preferences.readVisualCfg(dual = false)
-        val dual = preferences.readVisualCfg(dual = true)
         val customs = mutableListOf<BatteryCustomColorScheme>()
 
         fun keyFor(visual: VisualCfg): String {
@@ -440,7 +442,14 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
         }
 
         val singleKey = keyFor(single)
-        val dualKey = keyFor(dual)
+        val dualKey =
+            if (preferences.dualSignalEnabled() ||
+                preferences.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false)
+            ) {
+                keyFor(preferences.readVisualCfg(dual = true))
+            } else {
+                singleKey
+            }
         val initial = BatteryColorSchemeLibrary(
             activeSchemeKey = singleKey,
             customSchemes = customs,
