@@ -2,6 +2,8 @@ package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -37,7 +39,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -237,23 +240,6 @@ internal fun PreviewSandboxScreen(
     var nativeBarHeightPx by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val dockHeight = with(density) { dockHeightPx.toDp() }
-    val surface = MiuixTheme.colorScheme.surface
-    val os4Band = if (os4 && dockHeightPx > 0 && nativeBarHeightPx > 0) {
-        val overhangPx = with(density) { GlassTopAppBarDefaults.BandOverhang.toPx() }
-        val bodyEnd = (nativeBarHeightPx + dockHeightPx) /
-            (nativeBarHeightPx + dockHeightPx + overhangPx)
-        fun fadeStop(fraction: Float) = bodyEnd + (1f - bodyEnd) * fraction
-        Brush.verticalGradient(
-            0f to surface,
-            fadeStop(0.45f) to surface,
-            fadeStop(0.58f) to surface.copy(alpha = 0.82f),
-            fadeStop(0.72f) to surface.copy(alpha = 0.58f),
-            fadeStop(0.86f) to surface.copy(alpha = 0.34f),
-            1f to surface.copy(alpha = 0f),
-        )
-    } else {
-        GlassTopAppBarDefaults.bandBrush(surface)
-    }
     val backAction: @Composable () -> Unit = {
         TooltipBox(text = stringResource(R.string.back)) {
             if (os4) {
@@ -299,12 +285,25 @@ internal fun PreviewSandboxScreen(
         AnimatedVisibility(
             visible = showDock,
             modifier = Modifier.onSizeChanged { dockHeightPx = it.height },
-            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top, clip = !os4),
-            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top, clip = !os4),
+            enter = (if (os4) androidx.compose.animation.EnterTransition.None else fadeIn()) +
+                expandVertically(expandFrom = Alignment.Top, clip = !os4),
+            exit = (if (os4) androidx.compose.animation.ExitTransition.None else fadeOut()) +
+                shrinkVertically(shrinkTowards = Alignment.Top, clip = !os4),
         ) {
+            // Fade the OS4 glass row without an offscreen layer clipping its button shadows.
+            val opacityModifier = if (os4) {
+                val opacity by transition.animateFloat(label = "dockOpacity") { state ->
+                    if (state == EnterExitState.Visible) 1f else 0f
+                }
+                Modifier.graphicsLayer {
+                    alpha = opacity
+                    compositingStrategy = CompositingStrategy.ModulateAlpha
+                }
+            } else Modifier
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .then(opacityModifier)
                     .padding(dockPadding),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -367,7 +366,6 @@ internal fun PreviewSandboxScreen(
                         title = stringResource(R.string.home_preview_sandbox_title),
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
-                        bandBrush = os4Band,
                         bandOverhang = GlassTopAppBarDefaults.BandOverhang + dockHeight,
                         navigationIcon = backAction,
                         actions = barActions,
