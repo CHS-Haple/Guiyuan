@@ -44,7 +44,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -170,9 +169,9 @@ internal fun BatterySchemeOverview(
     ) {
         BatterySchemeIndicatorRail(
             pages = pages,
-            currentPage = pagerState.currentPage,
-            onPageClick = { target ->
-                if (target != pagerState.currentPage || pagerState.isScrollInProgress) {
+            currentPage = pagerState.targetPage,
+            onPageSelect = { target ->
+                if (target != pagerState.targetPage) {
                     scope.launch { pagerState.springAnimateToPage(target) }
                 }
             },
@@ -615,7 +614,7 @@ private fun BatteryAddSchemePage(
 private fun BatterySchemeIndicatorRail(
     pages: List<BatterySchemePage>,
     currentPage: Int,
-    onPageClick: (Int) -> Unit,
+    onPageSelect: (Int) -> Unit,
 ) {
     Box(
         modifier = Modifier.fillMaxWidth().height(20.dp),
@@ -624,7 +623,7 @@ private fun BatterySchemeIndicatorRail(
         BatteryPagerIndicator(
             pages = pages,
             currentPage = currentPage,
-            onPageClick = onPageClick,
+            onPageSelect = onPageSelect,
         )
     }
 }
@@ -633,10 +632,10 @@ private fun BatterySchemeIndicatorRail(
 private fun BatteryPagerIndicator(
     pages: List<BatterySchemePage>,
     currentPage: Int,
-    onPageClick: (Int) -> Unit,
+    onPageSelect: (Int) -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
-    val navigate by rememberUpdatedState(onPageClick)
+    val navigate by rememberUpdatedState(onPageSelect)
     val centers = remember(pages.size) { FloatArray(pages.size) }
     var pressedPage by remember { mutableIntStateOf(-1) }
     val gap by animateDpAsState(
@@ -660,7 +659,7 @@ private fun BatteryPagerIndicator(
                 pressedPage = selected
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 down.consume()
-                var released = false
+                navigate(selected)
                 try {
                     while (true) {
                         val event = awaitPointerEvent(PointerEventPass.Initial)
@@ -673,15 +672,14 @@ private fun BatteryPagerIndicator(
                             selected = next
                             pressedPage = next
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            navigate(next)
                         }
-                        released = change.changedToUpIgnoreConsumed()
                         event.changes.forEach { it.consume() }
                         if (!change.pressed) break
                     }
                 } finally {
                     pressedPage = -1
                 }
-                if (released) navigate(selected)
             }
         },
         verticalAlignment = Alignment.CenterVertically,
@@ -711,7 +709,7 @@ private fun BatteryPagerIndicator(
                         indication = null,
                         role = Role.Tab,
                         onClickLabel = stringResource(R.string.battery_scheme_go_to, name),
-                        onClick = { onPageClick(index) },
+                        onClick = { onPageSelect(index) },
                     )
                     .semantics {
                         contentDescription = name
