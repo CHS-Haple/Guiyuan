@@ -64,6 +64,7 @@ internal fun GyApp(
     onPaletteStyleChange: (ThemePaletteStyle) -> Unit,
     onNavEnabledChange: (Boolean) -> Unit,
     onNavStyleChange: (NavStyle) -> Unit,
+    onNavTouchExtensionChange: (Boolean) -> Unit,
     onNavContentChange: (NavContent) -> Unit,
     onLiquidModeChange: (LiquidMode) -> Unit,
     onSwipeBackChange: (Boolean) -> Unit,
@@ -240,6 +241,7 @@ internal fun GyApp(
                         onNavEnabledChange,
                     onNavStyleChange =
                         onNavStyleChange,
+                    onNavTouchExtensionChange = onNavTouchExtensionChange,
                     onNavContentChange =
                         onNavContentChange,
                     onLiquidModeChange =

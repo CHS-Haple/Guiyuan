@@ -82,6 +82,7 @@ internal data class Appearance(
     val colorSpec: ThemeColorSpec? = null,
     val paletteStyle: ThemePaletteStyle = ThemePaletteStyle.TonalSpot,
     val navEnabled: Boolean = true,
+    val navTouchExtension: Boolean = true,
     val navStyle: NavStyle = NavStyle.Glass,
     val navContent: NavContent = NavContent.IconAndText,
     val liquidContent: NavContent = NavContent.IconAndText,
@@ -200,6 +201,7 @@ internal class AppearanceRepo(context: Context) {
                 colorSpec = colorSpec,
                 paletteStyle = compatiblePalette(colorSpec, decodePalette(prefs[paletteStyleKey])),
                 navEnabled = prefs[navEnabledKey] ?: true,
+                navTouchExtension = prefs[navTouchExtensionKey] ?: true,
                 navStyle = style,
                 navContent = decodeNavContent(prefs[navContentKey]),
                 liquidContent =
@@ -259,6 +261,10 @@ internal class AppearanceRepo(context: Context) {
         }
     }
 
+    suspend fun setNavTouchExtension(enabled: Boolean) {
+        store.edit { prefs -> prefs[navTouchExtensionKey] = enabled }
+    }
+
     suspend fun setNavStyle(style: NavStyle) {
         store.edit { prefs ->
             // The old key also held Liquid's choice; save it before switching away.
@@ -312,6 +318,7 @@ internal class AppearanceRepo(context: Context) {
         val legacyBlurKey = booleanPreferencesKey("blur_enabled")
         val legacyGlassKey = booleanPreferencesKey("glass_bottom_bar_enabled")
         val navEnabledKey = booleanPreferencesKey("floating_navigation_bar_enabled")
+        val navTouchExtensionKey = booleanPreferencesKey("floating_navigation_touch_extension")
         val navStyleKey = stringPreferencesKey("floating_navigation_style")
         val liquidContentKey = stringPreferencesKey("floating_navigation_liquid_content")
         val liquidModeKey = stringPreferencesKey("floating_navigation_liquid_mode")
