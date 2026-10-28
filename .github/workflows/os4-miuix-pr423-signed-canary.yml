@@ -2,7 +2,7 @@ name: OS4 Canary (matched MIUIX)
 
 on:
   push:
-    branches: [ feat/os4-glass-experimental ]
+    branches: [ feat/os4-glass-experimental, dev ]
     paths:
       - '.github/workflows/os4-miuix-pr423-signed-canary.yml'
       - 'app/src/os4Upstream/**'
@@ -11,6 +11,7 @@ on:
       - 'app/src/main/kotlin/top/yukonga/miuix/kmp/glass/**'
       - 'app/src/main/res/**'
       - 'gradle.properties'
+      - 'app/build.gradle.kts'
   workflow_dispatch:
 
 permissions:
@@ -31,7 +32,7 @@ jobs:
       version_name: ${{ steps.identity.outputs.version_name }}
       source_sha: ${{ steps.identity.outputs.source_sha }}
     steps:
-      - name: Checkout Guiyuan experiment without credentials
+      - name: Checkout Guiyuan source without credentials
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: gui

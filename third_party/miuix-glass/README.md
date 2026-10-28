@@ -12,7 +12,7 @@ The separate `Os4BackIcon.kt` likewise preserves the exact Apache-2.0 PR #423 `R
 
 `app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4DiagnosticIcons.kt` likewise retains only the `Regular` paths for Filter, Share and More at the same pinned PR #423 revision. OS4 Diagnostics uses those three vectors; OS3 uses the published MIUIX Share icon for the combined export/share action. Remove these temporary files when the matching upstream glass-icons module is integrated.
 
-## Experimental upstream adoption gate (hold this Draft PR)
+## Experimental upstream adoption gate (matched-source distribution)
 
 PR #423 remains open at the 2026-10-27 review, pinned to
 `b9f70838509fbc3f63f1a972777a7e6ce07f578f`. It changes
@@ -57,8 +57,9 @@ assertion that the flicker is fixed.
    sheets and suitable icons against current upstream contracts; preserve
    OS3 and stored user preferences.
 4. Test geometry/insets, 80–110% density, font scale, RTL, Back/IME, popup
-   ownership, fallback and visual motion. Keep #861 Draft pending configured
-   CI and necessary focused device acceptance.
+   ownership, fallback and visual motion. Require focused device acceptance
+   and configured CI before merging experimental #861 into `dev`; do not
+   infer published-build parity from matched-source testing.
 
 Never run unreviewed third-party build scripts in credentialed signing jobs.
 Do not hide ABI drift with private API shadows, new blur engines, extra popup
@@ -200,7 +201,11 @@ APK in a runner with no Haple signing credentials. A second isolated job fetches
 that APK as data, checks out only the trusted signer from fixed `main` SHA
 `f9ff55056e3baa21c219440394af9225104493f1`, verifies the expected signing certificate, signs it and checks that
 it is non-debuggable. From B1496 this matched-source Canary is the single
-user-facing OS4 test package. Published-module builds remain internal compatibility
+user-facing OS4 test package. B1536 was accepted on the target device and its
+exact-source build, tests and isolated signing succeeded; this does not certify
+unexamined screen sizes, runtime failure injection or the published fallback.
+After integration, UI-affecting pushes to `dev` also trigger this trusted two-job
+workflow, retaining reproducible distribution of the accepted dependency graph. Published-module builds remain internal compatibility
 controls; their presence in Gradle does not make them alternative OS4 releases.
 The signing job still never executes upstream Gradle with private signing secrets.
 This is **not** evidence that moving-text flicker or glass popup behavior is fixed;
@@ -211,8 +216,8 @@ that still requires physical confirmation. PR423 build must first pass.
 See [UI_AUDIT.md](UI_AUDIT.md) for the 16-family source-backed, per-state
 checklist. It distinguishes source-gated native dialogs/sheets from
 published MIUIX fallback, unported upstream `BlurTopAppBar`/icon-catalog
-opportunities and the remaining physical visual checks. Do not close PR #861
-solely because the signed PR423 APK built successfully.
+opportunities and the remaining physical visual checks. Do not treat a successful signed PR423 APK as a substitute for focused device
+acceptance, nor publish an ordinary-Gradle APK as the same rendering variant.
 
 ## Native OS4 collapsing-title blur gate (B1494)
 
