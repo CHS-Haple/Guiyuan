@@ -362,6 +362,7 @@
     <string name="low_battery_threshold_summary">电量低于设定值时使用低电量颜色</string>
     <string name="battery_colors">电量颜色</string>
     <string name="battery_color_scheme_summary">当前方案：%1$s</string>
+    <string name="battery_color_scheme_unlinked">原有配色（未关联方案）</string>
     <string name="battery_color_scheme">配色方案</string>
     <string name="battery_color_scheme_apply">应用</string>
     <string name="battery_color_scheme_applied">已应用</string>
