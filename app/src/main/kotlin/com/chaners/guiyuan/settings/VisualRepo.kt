@@ -208,6 +208,14 @@ internal class VisualRepo(context: Context) {
                 )
             }
             editor.putString(CONTENT_LAYOUT_KEY, layout.persistedValue)
+            // On first dual enable, the copied colors start from the single mode's selection.
+            editor.putString(
+                BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY,
+                preferences.getString(
+                    BATTERY_COLOR_SCHEME_ACTIVE_KEY,
+                    BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+                ),
+            )
             editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
         }
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, enabled).apply()
@@ -550,7 +558,9 @@ internal class VisualRepo(context: Context) {
             editor,
             library.copy(
                 dualActiveSchemeKey =
-                    library.dualActiveSchemeKey ?: matchingSchemeKey(library, dualVisual),
+                    library.dualActiveSchemeKey
+                        ?: if (backup.dualInitialized) matchingSchemeKey(library, dualVisual)
+                        else null,
             ),
         )
         val activeLayout = if (backup.dualEnabled) backup.dualLayout else backup.singleLayout
