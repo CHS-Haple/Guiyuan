@@ -174,7 +174,7 @@ internal fun BatterySchemeOverview(
         val target = dotTarget
         if (target < 0) return@LaunchedEffect
         try {
-            pagerState.scrollToPage(target)
+            pagerState.springAnimateToPage(target)
         } finally {
             if (dotTarget == target) dotTarget = -1
         }
