@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -37,9 +38,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -289,20 +290,24 @@ internal fun PreviewSandboxScreen(
             enter = if (os4) fadeIn() else fadeIn() + expandVertically(expandFrom = Alignment.Top),
             exit = if (os4) fadeOut() else fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .then(
                         if (os4) Modifier.drawBehind {
-                            drawRect(dockSurface)
-                            drawRect(
-                                brush = dockBand,
-                                topLeft = Offset(0f, size.height),
-                                size = Size(size.width, GlassTopAppBarDefaults.BandOverhang.toPx()),
-                            )
+                            val overhang = GlassTopAppBarDefaults.BandOverhang.toPx()
+                            val dockBottom = (size.height - overhang).coerceAtLeast(0f)
+                            drawRect(dockSurface, size = Size(size.width, dockBottom))
+                            translate(top = dockBottom) {
+                                drawRect(dockBand, size = Size(size.width, overhang))
+                            }
                         } else Modifier,
-                    )
-                    .padding(dockPadding),
+                    ),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(dockPadding),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -350,6 +355,7 @@ internal fun PreviewSandboxScreen(
                         }
                     }
                 }
+                if (os4) Spacer(Modifier.height(GlassTopAppBarDefaults.BandOverhang))
             }
         }
     }
