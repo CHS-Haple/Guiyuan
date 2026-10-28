@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
@@ -249,14 +247,6 @@ internal fun MainHub(
             Modifier
         }
     val liquidBottomPadding = liquidNavBottomPadding()
-    // Follow the upstream OS4 page's bottom clearances, measured from the window inset.
-    val os4BottomMargin = if (os4) {
-        val navInset = with(LocalDensity.current) { WindowInsets.navigationBars.getBottom(this).toDp() }
-        maxOf(24.dp, navInset + 8.dp)
-    } else {
-        0.dp
-    }
-
     Scaffold(
         // This Scaffold owns the bottom bar, so it must also position the snackbar.
         snackbarHost = { SnackbarHost(state = featureSnackbarState) },
@@ -275,7 +265,7 @@ internal fun MainHub(
                         onSelect = ::selectPage,
                         backdrop = navBackdrop,
                         modifier = Modifier
-                            .padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = os4BottomMargin),
+                            .padding(start = 24.dp, end = 24.dp, top = 20.dp),
                     )
                 }
                 // OS4 without a usable shader must fall back to native MIUIX,
