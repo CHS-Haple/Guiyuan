@@ -82,6 +82,7 @@ import top.yukonga.miuix.kmp.utils.springAnimateToPage
 @Composable
 internal fun BatterySchemeOverview(
     library: BatteryColorSchemeLibrary,
+    dual: Boolean,
     requestedSchemeKey: String?,
     onRequestedSchemeHandled: () -> Unit,
     canCreateCustom: Boolean,
@@ -102,8 +103,9 @@ internal fun BatterySchemeOverview(
             library.customSchemes.forEach { add(BatterySchemePage.Custom(it)) }
             add(BatterySchemePage.Add)
         }
+    val appliedKey = library.activeKey(dual)
     val initial =
-        pages.indexOfFirst { it.key == library.activeSchemeKey }
+        pages.indexOfFirst { it.key == appliedKey }
             .takeIf { it >= 0 }
             ?: 0
     val pagerState =
@@ -118,6 +120,13 @@ internal fun BatterySchemeOverview(
             state = pagerState,
             snapAnimationSpec = PagerNavigationSpringSpec,
         )
+
+    LaunchedEffect(dual) {
+        val selected = pages.indexOfFirst { it.key == appliedKey }
+        if (selected >= 0 && selected != pagerState.currentPage) {
+            pagerState.scrollToPage(selected)
+        }
+    }
 
     LaunchedEffect(requestedSchemeKey, pages.map { it.key }) {
         val requested = requestedSchemeKey ?: return@LaunchedEffect
@@ -165,7 +174,7 @@ internal fun BatterySchemeOverview(
                         name = batteryBuiltInName(page.scheme),
                         builtIn = page.scheme,
                         custom = null,
-                        isActive = library.activeSchemeKey == page.key,
+                        isActive = appliedKey == page.key,
                         canCreateCustom = canCreateCustom,
                         onApply = { onApplyScheme(page.key) },
                         onSlotClick = { slot ->
@@ -189,7 +198,7 @@ internal fun BatterySchemeOverview(
                         name = customSchemeName(page.scheme),
                         builtIn = null,
                         custom = page.scheme,
-                        isActive = library.activeSchemeKey == page.key,
+                        isActive = appliedKey == page.key,
                         canCreateCustom = canCreateCustom,
                         onApply = { onApplyScheme(page.key) },
                         onSlotClick = { slot ->
