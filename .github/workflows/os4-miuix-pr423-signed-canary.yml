@@ -2,7 +2,7 @@ name: OS4 Canary (matched MIUIX)
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ dev, main ]
     paths:
       - '.github/workflows/os4-miuix-pr423-signed-canary.yml'
       - '.github/workflows/release.yml'
