@@ -40,7 +40,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
@@ -88,6 +90,7 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.sin
+import kotlin.math.sqrt
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -665,7 +668,7 @@ private fun BatteryPagerIndicator(
     val navigate by rememberUpdatedState(onPageSelect)
     val centers = remember(pages.size) { FloatArray(pages.size) }
     val inkWidths = remember(pages.size) { FloatArray(pages.size) }
-    val bridge = remember { Path() }
+    val liquid = remember { Path() }
     val density = LocalDensity.current
     var pressedPage by remember { mutableIntStateOf(-1) }
     val dotSpring = remember {
@@ -688,52 +691,97 @@ private fun BatteryPagerIndicator(
     Row(
         modifier = Modifier
             .drawBehind {
-                if (pages.size < 2 || pressedPage >= 0 || targetPage >= 0) return@drawBehind
-                val from = floor(pagePosition).toInt()
-                if (from !in 0 until pages.lastIndex) return@drawBehind
-                val t = pagePosition - from
-                val blend = ((t - 0.12f) / 0.76f).coerceIn(0f, 1f)
-                val adhesion = sin((blend * PI).toFloat())
-                if (adhesion <= 0.01f) return@drawBehind
-
-                val left = if (centers[from] < centers[from + 1]) from else from + 1
-                val right = if (left == from) from + 1 else from
-                if (inkWidths[left] <= 0f || inkWidths[right] <= 0f) return@drawBehind
-                val start = centers[left] + inkWidths[left] / 2f
-                val end = centers[right] - inkWidths[right] / 2f
-                if (end <= start) return@drawBehind
-
-                val overlap = 2.dp.toPx()
-                val shoulder = 3.2.dp.toPx() * adhesion
-                val neck = 1.8.dp.toPx() * adhesion
+                val radius = 4.dp.toPx()
                 val y = size.height / 2f
-                bridge.reset()
-                bridge.moveTo(start - overlap, y - shoulder)
-                bridge.cubicTo(
-                    start + (end - start) * 0.4f, y - neck,
-                    end - (end - start) * 0.4f, y - neck, end + overlap, y - shoulder,
-                )
-                bridge.lineTo(end + overlap, y + shoulder)
-                bridge.cubicTo(
-                    end - (end - start) * 0.4f, y + neck,
-                    start + (end - start) * 0.4f, y + neck, start - overlap, y + shoulder,
-                )
-                bridge.close()
+                val from = floor(pagePosition).toInt()
+                val t = pagePosition - from
+                val active = pressedPage < 0 && targetPage < 0 && from in 0 until pages.lastIndex
+                val enter = (t / 0.25f).coerceIn(0f, 1f)
+                val exit = ((1f - t) / 0.25f).coerceIn(0f, 1f)
+                val contact = if (t < 0.5f) enter else exit
+                val pull = if (active) 4.dp.toPx() * contact * contact * (3f - 2f * contact) else 0f
+                val joined = active && t > 0.25f && t < 0.75f
 
-                val leftProgress = if (left == from) 1f - t else t
-                val rightProgress = 1f - leftProgress
-                drawPath(
-                    path = bridge,
-                    brush =
-                        Brush.horizontalGradient(
-                            colors = listOf(
-                                lerp(idle, primary, leftProgress),
-                                lerp(idle, primary, rightProgress),
+                val left = if (active && centers[from] > centers[from + 1]) from + 1 else from
+                val right = if (active && left == from) from + 1 else from
+                val valid = active && inkWidths[left] > 0f && inkWidths[right] > 0f
+                val fusion =
+                    if (valid && joined) {
+                        val phase = ((t - 0.25f) / 0.5f).coerceIn(0f, 1f)
+                        val blend = sin((phase * PI).toFloat())
+                        blend * blend
+                    } else 0f
+                val stretch = if (valid) pull + 1.3.dp.toPx() * fusion else 0f
+
+                pages.indices.forEach { index ->
+                    val width = inkWidths[index]
+                    if (width <= 0f || (fusion > 0f && (index == left || index == right))) {
+                        return@forEach
+                    }
+                    val weight =
+                        if (highlightedPage != null) {
+                            if (index == highlightedPage) 1f else 0f
+                        } else {
+                            (1f - abs(index - pagePosition)).coerceIn(0f, 1f)
+                        }
+                    val extraLeft = if (valid && index == right) stretch else 0f
+                    val extraRight = if (valid && index == left) stretch else 0f
+                    val start = centers[index] - width / 2f - extraLeft
+                    drawRoundRect(
+                        color = lerp(idle, primary, weight),
+                        topLeft = Offset(start, y - radius),
+                        size = Size(width + extraLeft + extraRight, radius * 2f),
+                        cornerRadius = CornerRadius(radius),
+                    )
+                }
+
+                if (fusion > 0f) {
+                    val a = centers[left] - inkWidths[left] / 2f
+                    val b = centers[left] + inkWidths[left] / 2f + stretch
+                    val c = centers[right] - inkWidths[right] / 2f - stretch
+                    val d = centers[right] + inkWidths[right] / 2f
+                    val x1 = b - radius
+                    val x2 = c + radius
+                    val mid = (x1 + x2) / 2f
+                    val span = x2 - x1
+                    val neck =
+                        sqrt((radius * radius - span * span / 4f).coerceAtLeast(0f)) * 0.75f
+                    val guide = span * 0.28f
+                    val pinch = span * 0.16f * fusion
+                    val arc = radius * 0.55228475f
+
+                    liquid.reset()
+                    liquid.moveTo(a + radius, y - radius)
+                    liquid.lineTo(x1, y - radius)
+                    liquid.cubicTo(x1 + guide, y - radius, mid - pinch, y - neck, mid, y - neck)
+                    liquid.cubicTo(mid + pinch, y - neck, x2 - guide, y - radius, x2, y - radius)
+                    liquid.lineTo(d - radius, y - radius)
+                    liquid.cubicTo(d - radius + arc, y - radius, d, y - arc, d, y)
+                    liquid.cubicTo(d, y + arc, d - radius + arc, y + radius, d - radius, y + radius)
+                    liquid.lineTo(x2, y + radius)
+                    liquid.cubicTo(x2 - guide, y + radius, mid + pinch, y + neck, mid, y + neck)
+                    liquid.cubicTo(mid - pinch, y + neck, x1 + guide, y + radius, x1, y + radius)
+                    liquid.lineTo(a + radius, y + radius)
+                    liquid.cubicTo(a + radius - arc, y + radius, a, y + arc, a, y)
+                    liquid.cubicTo(a, y - arc, a + radius - arc, y - radius, a + radius, y - radius)
+                    liquid.close()
+
+                    val leftWeight = (1f - abs(left - pagePosition)).coerceIn(0f, 1f)
+                    val rightWeight = (1f - abs(right - pagePosition)).coerceIn(0f, 1f)
+                    val gradientHalfWidth = 0.1.dp.toPx() + 2.5.dp.toPx() * fusion
+                    drawPath(
+                        path = liquid,
+                        brush =
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    lerp(idle, primary, leftWeight),
+                                    lerp(idle, primary, rightWeight),
+                                ),
+                                startX = mid - gradientHalfWidth,
+                                endX = mid + gradientHalfWidth,
                             ),
-                            startX = start - overlap,
-                            endX = end + overlap,
-                        ),
-                )
+                    )
+                }
             }
             .pointerInput(pages.size, haptic) {
                 awaitEachGesture {
@@ -812,18 +860,7 @@ private fun BatteryPagerIndicator(
                         selected = isCurrent
                     },
                 contentAlignment = Alignment.Center,
-            ) {
-                Surface(
-                    modifier = Modifier.width(width).height(8.dp),
-                    shape = CircleShape,
-                    color =
-                        lerp(
-                            idle,
-                            primary,
-                            progress,
-                        ),
-                ) {}
-            }
+            ) {}
         }
     }
 }
