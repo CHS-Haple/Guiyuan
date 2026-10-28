@@ -349,7 +349,7 @@ internal fun PreviewSandboxScreen(
                         title = stringResource(R.string.home_preview_sandbox_title),
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
-                        bandOverhang = GlassTopAppBarDefaults.BandOverhang + dockHeight,
+                        bandOverhang = maxOf(GlassTopAppBarDefaults.BandOverhang, dockHeight),
                         navigationIcon = backAction,
                         actions = barActions,
                         unclippedNavigationIcon = true,
