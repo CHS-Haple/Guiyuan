@@ -223,6 +223,8 @@ A PR may remain Draft while implementation is moving. Mark it ready at the final
 
 Use squash merge for ordinary work branches.
 
+All CI-built app variants use the same accepted, pinned MIUIX source graph. Work branches distribute only Canary; main owns Internal IT and Release candidates. Before deleting an obsolete workflow, migrate its pinned source, signing, metadata and release boundaries into shared workflows and validate the replacement with Full CI. Never substitute the published MIUIX fallback for a source-matched accepted OS4 build.
+
 ### Stable promotion
 
 The dev-to-main PR is the stable promotion boundary.

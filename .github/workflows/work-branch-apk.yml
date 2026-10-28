@@ -5,10 +5,8 @@ run-name: >-
       || (github.event.issue.pull_request != null
           && github.actor == github.repository_owner
           && (github.event.comment.body == '/canary'
-              || github.event.comment.body == '/internal'
               || (startsWith(github.event.comment.body, 'B')
-                  && (endsWith(github.event.comment.body, ' Canary')
-                      || endsWith(github.event.comment.body, ' Internal'))))
+                  && endsWith(github.event.comment.body, ' Canary')))
           && format('{0} | {1} #{2}', github.event.issue.title,
               github.event.comment.body, github.event.issue.number))
       || format('Skipped comment | #{0}', github.event.issue.number) }}
@@ -27,7 +25,6 @@ on:
         type: choice
         options:
           - canary
-          - internal
       build_number:
         description: 'Build suffix (for example 850); checked against the source Gradle Build'
         required: true
@@ -54,18 +51,15 @@ jobs:
       (github.event_name == 'issue_comment' &&
        github.event.issue.pull_request != null &&
        (github.event.comment.body == '/canary' ||
-        github.event.comment.body == '/internal' ||
         (startsWith(github.event.comment.body, 'B') &&
-         (endsWith(github.event.comment.body, ' Canary') ||
-          endsWith(github.event.comment.body, ' Internal')))) &&
+         endsWith(github.event.comment.body, ' Canary'))) &&
        github.actor == github.repository_owner)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      MIUIX_GITHUB_ACTOR: ${{ secrets.MIUIX_GITHUB_ACTOR || github.repository_owner }}
-      MIUIX_GITHUB_TOKEN: ${{ secrets.MIUIX_GITHUB_TOKEN }}
-      GITHUB_ACTOR: ${{ github.actor }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    timeout-minutes: 90
+    outputs:
+      source_sha: ${{ steps.source.outputs.sha }}
+      version_name: ${{ steps.identity.outputs.version_name }}
+      build_id: ${{ steps.identity.outputs.build_id }}
 
     steps:
       - name: Resolve trusted source
@@ -92,7 +86,7 @@ jobs:
                 echo "::error::Manual APK source must be a feat/*, fix/*, refactor/* or hotfix/* branch, got: $branch"
                 exit 1
               fi
-              if [[ "$variant" != "canary" && "$variant" != "internal" ]]; then
+              if [[ "$variant" != "canary" ]]; then
                 echo "::error::Unsupported APK variant: $variant"
                 exit 1
               fi
@@ -113,11 +107,10 @@ jobs:
               source_sha="$(jq -r '.head.sha // empty' <<<"$pr_json")"
               case "$COMMENT_BODY" in
                 /canary) variant="canary"; expected_build="" ;;
-                /internal) variant="internal"; expected_build="" ;;
                 *)
-                  if [[ "$COMMENT_BODY" =~ ^B([0-9]+)[[:space:]](Canary|Internal)$ ]]; then
+                  if [[ "$COMMENT_BODY" =~ ^B([0-9]+)[[:space:]]Canary$ ]]; then
                     expected_build="${BASH_REMATCH[1]}"
-                    variant="${BASH_REMATCH[2],,}"
+                    variant="canary"
                   else
                     echo "::error::Unsupported PR build command."
                     exit 1
@@ -201,6 +194,9 @@ jobs:
           echo "TRUSTED_SOURCE_BRANCH=$EXPECTED_SOURCE_BRANCH" >> "$GITHUB_ENV"
           echo "APK_VARIANT=$EXPECTED_VARIANT" >> "$GITHUB_ENV"
 
+      - name: Checkout accepted MIUIX source
+        uses: ./.github/actions/miuix-source
+
       - name: Validate Gradle Wrapper
         uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
@@ -223,41 +219,31 @@ jobs:
         with:
           cache-provider: basic
 
-      - name: Restore and verify Haple signing
-        shell: bash
-        env:
-          HAPLE_KEYSTORE_BASE64: ${{ secrets.HAPLE_KEYSTORE_BASE64 }}
-          HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
-          HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
-          HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
-        run: bash tools/setup_haple_signing.sh
-
       - name: Verify pinned HyperOS target profile
         run: python3 tools/verify_target_profile.py
 
       - name: Test and build requested APK
-        env:
-          HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
-          HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
         shell: bash
         run: |
           case "$APK_VARIANT" in
             canary) ASSEMBLE_TASK=":app:assembleCanary" ;;
-            internal) ASSEMBLE_TASK=":app:assembleInternal" ;;
             *)
               echo "::error::Unsupported APK variant: $APK_VARIANT"
               exit 1
               ;;
           esac
-          ./gradlew :app:testDebugUnitTest "$ASSEMBLE_TASK" --stacktrace
+          test -n "$MIUIX_SOURCE_REVISION" && test -n "$MIUIX_SOURCE_DIR"
+          ./gradlew \
+            -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
+            -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
+            -Pgy.os4.dialogSurfaces=true \
+            :app:testDebugUnitTest "$ASSEMBLE_TASK" --no-daemon --max-workers=2 --stacktrace
 
       - name: Resolve built APK
         shell: bash
         run: |
           APK_DIR="app/build/outputs/apk/$APK_VARIANT"
-          if [[ -f "$APK_DIR/app-$APK_VARIANT.apk" ]]; then
-            APK_PATH="$APK_DIR/app-$APK_VARIANT.apk"
-          elif [[ -f "$APK_DIR/app-$APK_VARIANT-unsigned.apk" ]]; then
+          if [[ -f "$APK_DIR/app-$APK_VARIANT-unsigned.apk" ]]; then
             APK_PATH="$APK_DIR/app-$APK_VARIANT-unsigned.apk"
           else
             echo "$APK_VARIANT APK output was not found."
@@ -268,24 +254,6 @@ jobs:
       - name: Verify modern Xposed metadata
         shell: bash
         run: bash tools/verify_xposed_metadata.sh "$APK_PATH"
-      - name: Verify Haple APK signature
-        shell: bash
-        env:
-          HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
-        run: |
-          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          "$SDK_ROOT/build-tools/37.0.0/apksigner" verify --verbose --print-certs "$APK_PATH"
-
-          ACTUAL_CERT_SHA256="$(
-            "$SDK_ROOT/build-tools/37.0.0/apksigner" verify --print-certs "$APK_PATH" |
-              awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' |
-              tr '[:upper:]' '[:lower:]'
-          )"
-
-          if [[ "$ACTUAL_CERT_SHA256" != "$HAPLE_CERT_SHA256" ]]; then
-            echo "Built APK is not signed by the Haple certificate."
-            exit 1
-          fi
 
       - name: Verify APK is non-debuggable
         shell: bash
@@ -302,22 +270,20 @@ jobs:
             exit 1
           fi
 
-      - name: Prepare APK artifact
+      - name: Record exact source Build identity
+        id: identity
         shell: bash
         run: |
-          VERSION_NAME="$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)"
-          BUILD_ID="$(sed -n 's/^combinedStatus.buildId=//p' gradle.properties)"
-          APK_NAME="Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-${APK_VARIANT}.apk"
-          mkdir -p dist
-          cp "$APK_PATH" "dist/$APK_NAME"
-          echo "APK_NAME=$APK_NAME" >> "$GITHUB_ENV"
+          echo "version_name=$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)" >> "$GITHUB_OUTPUT"
+          echo "build_id=$(sed -n 's/^combinedStatus.buildId=//p' gradle.properties)" >> "$GITHUB_OUTPUT"
 
-      - name: Upload APK
+      - name: Pass unsigned Canary to isolated signer
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: ${{ env.APK_NAME }}
-          path: dist/${{ env.APK_NAME }}
+          name: unsigned-work-${{ steps.source.outputs.sha }}
+          path: app/build/outputs/apk/canary/app-canary-unsigned.apk
           if-no-files-found: error
+          retention-days: 1
 
       - name: Validation summary
         if: always()
@@ -328,4 +294,88 @@ jobs:
           echo "- Source SHA: $TRUSTED_SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
           echo "- Variant: $APK_VARIANT" >> "$GITHUB_STEP_SUMMARY"
           echo "- Trigger: ${{ github.event_name }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Validation: independent exact-SHA APK validation" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Validation: independent exact-SHA APK validation; MIUIX source $MIUIX_SOURCE_REVISION" >> "$GITHUB_STEP_SUMMARY"
+
+  sign:
+    name: Signed work-branch Canary
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout trusted main signing script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: |
+            tools/setup_haple_signing.sh
+
+      - name: Fetch unsigned candidate only as data
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: unsigned-work-${{ needs.build.outputs.source_sha }}
+          path: candidate
+
+      - name: Set up JDK
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install signing build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --channel=3 "build-tools;37.0.0"
+
+      - name: Restore and verify signing identity
+        env:
+          HAPLE_KEYSTORE_BASE64: ${{ secrets.HAPLE_KEYSTORE_BASE64 }}
+          HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
+          HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
+          HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
+        run: bash tools/setup_haple_signing.sh
+
+      - name: Sign exact reviewed Canary bytes and verify identity
+        shell: bash
+        env:
+          HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
+          HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
+          HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
+          VERSION_NAME: ${{ needs.build.outputs.version_name }}
+          BUILD_ID: ${{ needs.build.outputs.build_id }}
+          SOURCE_SHA: ${{ needs.build.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          source="candidate/app-canary-unsigned.apk"
+          test -s "$source" && test -n "$SOURCE_SHA" && test -n "$VERSION_NAME" && test -n "$BUILD_ID"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          signer="$SDK_ROOT/build-tools/37.0.0/apksigner"
+          mkdir -p dist
+          apk="dist/Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-canary.apk"
+          "$signer" sign --ks "$HAPLE_KEYSTORE_PATH" --ks-key-alias "$HAPLE_KEY_ALIAS" \
+            --ks-pass env:HAPLE_KEYSTORE_PASSWORD --key-pass env:HAPLE_KEYSTORE_PASSWORD \
+            --out "$apk" "$source"
+          "$signer" verify --verbose --print-certs "$apk"
+          cert="$("$signer" verify --print-certs "$apk" | awk -F': ' '/certificate SHA-256 digest:/ {print $NF; exit}' | tr '[:upper:]' '[:lower:]')"
+          test "$cert" = "$HAPLE_CERT_SHA256"
+          badging="$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk")"
+          test "$(sed -n "s/.*package: name='\([^']*\)'.*/\1/p" <<< "$badging" | head -n 1)" = com.chaners.guiyuan
+          test "$(sed -n "s/.*versionName='\([^']*\)'.*/\1/p" <<< "$badging" | head -n 1)" = "$VERSION_NAME"
+          APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
+          test "$("$APKANALYZER" manifest debuggable "$apk")" = false
+          echo "APK_NAME=$(basename "$apk")" >> "$GITHUB_ENV"
+          echo "Source SHA: $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum "$apk" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload signed Canary
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ env.APK_NAME }}
+          path: dist/${{ env.APK_NAME }}
+          if-no-files-found: error
