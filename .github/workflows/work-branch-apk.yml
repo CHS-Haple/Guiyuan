@@ -5,10 +5,8 @@ run-name: >-
       || (github.event.issue.pull_request != null
           && github.actor == github.repository_owner
           && (github.event.comment.body == '/canary'
-              || github.event.comment.body == '/internal'
               || (startsWith(github.event.comment.body, 'B')
-                  && (endsWith(github.event.comment.body, ' Canary')
-                      || endsWith(github.event.comment.body, ' Internal'))))
+                  && endsWith(github.event.comment.body, ' Canary')))
           && format('{0} | {1} #{2}', github.event.issue.title,
               github.event.comment.body, github.event.issue.number))
       || format('Skipped comment | #{0}', github.event.issue.number) }}
@@ -27,7 +25,6 @@ on:
         type: choice
         options:
           - canary
-          - internal
       build_number:
         description: 'Build suffix (for example 850); checked against the source Gradle Build'
         required: true
@@ -54,18 +51,16 @@ jobs:
       (github.event_name == 'issue_comment' &&
        github.event.issue.pull_request != null &&
        (github.event.comment.body == '/canary' ||
-        github.event.comment.body == '/internal' ||
         (startsWith(github.event.comment.body, 'B') &&
-         (endsWith(github.event.comment.body, ' Canary') ||
-          endsWith(github.event.comment.body, ' Internal')))) &&
+         endsWith(github.event.comment.body, ' Canary'))) &&
        github.actor == github.repository_owner)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      MIUIX_GITHUB_ACTOR: ${{ secrets.MIUIX_GITHUB_ACTOR || github.repository_owner }}
-      MIUIX_GITHUB_TOKEN: ${{ secrets.MIUIX_GITHUB_TOKEN }}
-      GITHUB_ACTOR: ${{ github.actor }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    timeout-minutes: 90
+    outputs:
+      source_sha: ${{ steps.source.outputs.sha }}
+      version_name: ${{ steps.identity.outputs.version_name }}
+      build_id: ${{ steps.identity.outputs.build_id }}
+      candidate_run_id: ${{ steps.identity.outputs.candidate_run_id }}
 
     steps:
       - name: Resolve trusted source
@@ -92,7 +87,7 @@ jobs:
                 echo "::error::Manual APK source must be a feat/*, fix/*, refactor/* or hotfix/* branch, got: $branch"
                 exit 1
               fi
-              if [[ "$variant" != "canary" && "$variant" != "internal" ]]; then
+              if [[ "$variant" != "canary" ]]; then
                 echo "::error::Unsupported APK variant: $variant"
                 exit 1
               fi
@@ -113,11 +108,10 @@ jobs:
               source_sha="$(jq -r '.head.sha // empty' <<<"$pr_json")"
               case "$COMMENT_BODY" in
                 /canary) variant="canary"; expected_build="" ;;
-                /internal) variant="internal"; expected_build="" ;;
                 *)
-                  if [[ "$COMMENT_BODY" =~ ^B([0-9]+)[[:space:]](Canary|Internal)$ ]]; then
+                  if [[ "$COMMENT_BODY" =~ ^B([0-9]+)[[:space:]]Canary$ ]]; then
                     expected_build="${BASH_REMATCH[1]}"
-                    variant="${BASH_REMATCH[2],,}"
+                    variant="canary"
                   else
                     echo "::error::Unsupported PR build command."
                     exit 1
@@ -166,65 +160,115 @@ jobs:
             printf '%s\n' "- Source branch: \`$branch\`"
             printf '%s\n' "- Resolved SHA: \`$source_sha\`"
             printf '%s\n' "- APK variant: \`$variant\`"
-            printf '%s\n' "- Validation: this workflow independently tests and builds the exact resolved source SHA"
+            printf '%s\n' "- Validation: this workflow signs only a successful exact-SHA PR Build artifact; no PR code executes here"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Checkout tested work-branch SHA
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ steps.source.outputs.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Verify checked-out source
+      - name: Require an accepted matching PR and a successful exact-SHA Build
+        id: identity
         shell: bash
         env:
-          EXPECTED_SOURCE_SHA: ${{ steps.source.outputs.sha }}
-          EXPECTED_SOURCE_BRANCH: ${{ steps.source.outputs.branch }}
-          EXPECTED_VARIANT: ${{ steps.source.outputs.variant }}
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          SOURCE_BRANCH: ${{ steps.source.outputs.branch }}
           EXPECTED_BUILD: ${{ steps.source.outputs.expected_build }}
         run: |
           set -euo pipefail
-          resolved_sha="$(git rev-parse HEAD)"
-          if [[ "$resolved_sha" != "$EXPECTED_SOURCE_SHA" ]]; then
-            echo "::error::Checked-out SHA does not match the resolved trusted source."
+          # Never check out or execute the selected PR's source on this default-branch runner.
+          test "$SOURCE_SHA" != "" && [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          prs="$(gh api -X GET "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100")"
+          pr_number="$(jq -r \
+            --arg repo "$GITHUB_REPOSITORY" --arg branch "$SOURCE_BRANCH" --arg sha "$SOURCE_SHA" \
+            '.[] | select(.head.repo.full_name == $repo and .head.ref == $branch and .head.sha == $sha) | .number' \
+            <<< "$prs" | head -n 1)"
+          if [[ -z "$pr_number" ]]; then
+            echo "::error::Canary requires an open same-repository PR at the requested exact SHA."
             exit 1
           fi
-          if [[ -n "$EXPECTED_BUILD" ]]; then
-            build_id="$(sed -n 's/^combinedStatus.buildId=//p' gradle.properties)"
-            if [[ "$build_id" != *-"$EXPECTED_BUILD" ]]; then
-              echo "::error::Requested B$EXPECTED_BUILD does not match source Build $build_id."
-              exit 1
-            fi
+
+          # Gradle properties are read as inert GitHub API data, never sourced or executed.
+          props="$(gh api "repos/$GITHUB_REPOSITORY/contents/gradle.properties?ref=$SOURCE_SHA" \
+            --jq '.content' | base64 -d)"
+          version="$(sed -n 's/^combinedStatus.versionName=//p' <<< "$props")"
+          build="$(sed -n 's/^combinedStatus.buildId=//p' <<< "$props")"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([._-][A-Za-z0-9]+)*$ ]] &&
+            [[ "$build" =~ ^[0-9]{8}-[0-9]+$ ]]
+          if [[ -n "$EXPECTED_BUILD" && "$build" != *-"$EXPECTED_BUILD" ]]; then
+            echo "::error::Requested B$EXPECTED_BUILD does not match source Build $build."
+            exit 1
           fi
-          echo "TRUSTED_SOURCE_SHA=$resolved_sha" >> "$GITHUB_ENV"
-          echo "TRUSTED_SOURCE_BRANCH=$EXPECTED_SOURCE_BRANCH" >> "$GITHUB_ENV"
-          echo "APK_VARIANT=$EXPECTED_VARIANT" >> "$GITHUB_ENV"
 
-      - name: Validate Gradle Wrapper
-        uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+          runs="$(gh api -X GET \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/build.yml/runs?event=pull_request&head_sha=$SOURCE_SHA&per_page=100")"
+          run_id="$(jq -r --arg sha "$SOURCE_SHA" --arg branch "$SOURCE_BRANCH" \
+            '.workflow_runs | map(select(.head_sha == $sha and .head_branch == $branch and .event == "pull_request" and .status == "completed" and .conclusion == "success")) | max_by(.run_number) | .id // empty' \
+            <<< "$runs")"
+          if [[ -z "$run_id" ]]; then
+            echo "::error::No successful exact-SHA pull_request Build was found. Complete PR CI before requesting Canary."
+            exit 1
+          fi
+          artifact="unsigned-pr-canary-$SOURCE_SHA"
+          list="$(gh api -X GET "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100")"
+          if ! jq -e --arg name "$artifact" '.artifacts | any(.name == $name and .expired == false)' \
+            <<< "$list" >/dev/null; then
+            echo "::error::Verified PR Build $run_id has no nonexpired exact-SHA unsigned Canary. Rerun PR Build."
+            exit 1
+          fi
+          {
+            echo "version_name=$version"
+            echo "build_id=$build"
+            echo "candidate_run_id=$run_id"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "### Signed Canary admission"
+            echo "- PR: #$pr_number"
+            echo "- Source SHA: $SOURCE_SHA"
+            echo "- Trusted successful PR Build: $run_id"
+            echo "- Build: $build"
+            echo "- Selected artifact: $artifact"
+            echo "- No PR source was executed in the default-branch workflow."
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Set up Java
+  sign:
+    name: Signed work-branch Canary
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout trusted main signing script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: |
+            tools/setup_haple_signing.sh
+
+      - name: Fetch unsigned candidate only as data
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: unsigned-pr-canary-${{ needs.build.outputs.source_sha }}
+          path: candidate
+          run-id: ${{ needs.build.outputs.candidate_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Set up JDK
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: '21'
 
-      - name: Install Android API 37
+      - name: Install signing build tools
         shell: bash
         run: |
+          set -euo pipefail
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" --channel=3 "platforms;android-37.0" "build-tools;37.0.0"
+          "$SDKMANAGER" --channel=3 "build-tools;37.0.0"
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
-        with:
-          cache-provider: basic
-
-      - name: Restore and verify Haple signing
-        shell: bash
+      - name: Restore and verify signing identity
         env:
           HAPLE_KEYSTORE_BASE64: ${{ secrets.HAPLE_KEYSTORE_BASE64 }}
           HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
@@ -232,100 +276,41 @@ jobs:
           HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
         run: bash tools/setup_haple_signing.sh
 
-      - name: Verify pinned HyperOS target profile
-        run: python3 tools/verify_target_profile.py
-
-      - name: Test and build requested APK
+      - name: Sign exact reviewed Canary bytes and verify identity
+        shell: bash
         env:
           HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
           HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
-        shell: bash
-        run: |
-          case "$APK_VARIANT" in
-            canary) ASSEMBLE_TASK=":app:assembleCanary" ;;
-            internal) ASSEMBLE_TASK=":app:assembleInternal" ;;
-            *)
-              echo "::error::Unsupported APK variant: $APK_VARIANT"
-              exit 1
-              ;;
-          esac
-          ./gradlew :app:testDebugUnitTest "$ASSEMBLE_TASK" --stacktrace
-
-      - name: Resolve built APK
-        shell: bash
-        run: |
-          APK_DIR="app/build/outputs/apk/$APK_VARIANT"
-          if [[ -f "$APK_DIR/app-$APK_VARIANT.apk" ]]; then
-            APK_PATH="$APK_DIR/app-$APK_VARIANT.apk"
-          elif [[ -f "$APK_DIR/app-$APK_VARIANT-unsigned.apk" ]]; then
-            APK_PATH="$APK_DIR/app-$APK_VARIANT-unsigned.apk"
-          else
-            echo "$APK_VARIANT APK output was not found."
-            exit 1
-          fi
-          echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
-
-      - name: Verify modern Xposed metadata
-        shell: bash
-        run: bash tools/verify_xposed_metadata.sh "$APK_PATH"
-      - name: Verify Haple APK signature
-        shell: bash
-        env:
           HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
+          VERSION_NAME: ${{ needs.build.outputs.version_name }}
+          BUILD_ID: ${{ needs.build.outputs.build_id }}
+          SOURCE_SHA: ${{ needs.build.outputs.source_sha }}
         run: |
+          set -euo pipefail
+          source="candidate/app-canary-unsigned.apk"
+          test -s "$source" && test -n "$SOURCE_SHA" && test -n "$VERSION_NAME" && test -n "$BUILD_ID"
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          "$SDK_ROOT/build-tools/37.0.0/apksigner" verify --verbose --print-certs "$APK_PATH"
-
-          ACTUAL_CERT_SHA256="$(
-            "$SDK_ROOT/build-tools/37.0.0/apksigner" verify --print-certs "$APK_PATH" |
-              awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' |
-              tr '[:upper:]' '[:lower:]'
-          )"
-
-          if [[ "$ACTUAL_CERT_SHA256" != "$HAPLE_CERT_SHA256" ]]; then
-            echo "Built APK is not signed by the Haple certificate."
-            exit 1
-          fi
-
-      - name: Verify APK is non-debuggable
-        shell: bash
-        run: |
-          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
-          if [[ -z "$APKANALYZER" ]]; then
-            echo "apkanalyzer was not found."
-            exit 1
-          fi
-
-          if [[ "$("$APKANALYZER" manifest debuggable "$APK_PATH")" != "false" ]]; then
-            echo "$APK_VARIANT APK must be non-debuggable."
-            exit 1
-          fi
-
-      - name: Prepare APK artifact
-        shell: bash
-        run: |
-          VERSION_NAME="$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)"
-          BUILD_ID="$(sed -n 's/^combinedStatus.buildId=//p' gradle.properties)"
-          APK_NAME="Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-${APK_VARIANT}.apk"
+          signer="$SDK_ROOT/build-tools/37.0.0/apksigner"
           mkdir -p dist
-          cp "$APK_PATH" "dist/$APK_NAME"
-          echo "APK_NAME=$APK_NAME" >> "$GITHUB_ENV"
+          apk="dist/Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-canary.apk"
+          "$signer" sign --ks "$HAPLE_KEYSTORE_PATH" --ks-key-alias "$HAPLE_KEY_ALIAS" \
+            --ks-pass env:HAPLE_KEYSTORE_PASSWORD --key-pass env:HAPLE_KEYSTORE_PASSWORD \
+            --out "$apk" "$source"
+          "$signer" verify --verbose --print-certs "$apk"
+          cert="$("$signer" verify --print-certs "$apk" | awk -F': ' '/certificate SHA-256 digest:/ {print $NF; exit}' | tr '[:upper:]' '[:lower:]')"
+          test "$cert" = "$HAPLE_CERT_SHA256"
+          badging="$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk")"
+          test "$(sed -n "s/.*package: name='\([^']*\)'.*/\1/p" <<< "$badging" | head -n 1)" = com.chaners.guiyuan
+          test "$(sed -n "s/.*versionName='\([^']*\)'.*/\1/p" <<< "$badging" | head -n 1)" = "$VERSION_NAME"
+          APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
+          test "$("$APKANALYZER" manifest debuggable "$apk")" = false
+          echo "APK_NAME=$(basename "$apk")" >> "$GITHUB_ENV"
+          echo "Source SHA: $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum "$apk" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload APK
+      - name: Upload signed Canary
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ env.APK_NAME }}
           path: dist/${{ env.APK_NAME }}
           if-no-files-found: error
-
-      - name: Validation summary
-        if: always()
-        shell: bash
-        run: |
-          echo "### Work-branch APK" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Source branch: $TRUSTED_SOURCE_BRANCH" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Source SHA: $TRUSTED_SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Variant: $APK_VARIANT" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Trigger: ${{ github.event_name }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Validation: independent exact-SHA APK validation" >> "$GITHUB_STEP_SUMMARY"

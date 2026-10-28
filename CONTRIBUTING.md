@@ -223,6 +223,8 @@ A PR may remain Draft while implementation is moving. Mark it ready at the final
 
 Use squash merge for ordinary work branches.
 
+All CI-built app variants use the same accepted, pinned MIUIX source graph. Work branches distribute only Canary; main owns Internal IT and Release candidates. Before deleting an obsolete workflow, migrate its pinned source, signing, metadata and release boundaries into shared workflows and validate the replacement with Full CI. Never substitute the published MIUIX fallback for a source-matched accepted OS4 build.
+
 ### Stable promotion
 
 The dev-to-main PR is the stable promotion boundary.
@@ -258,13 +260,13 @@ Developer-facing scopes:
 CI proves configured source/build checks, not SystemUI runtime correctness.
 Preserve each pushed `dev`/`main` commit's required integration check: a later documentation-only push must not cancel an unfinished Runtime/Full validation. Superseded PR revisions may cancel their older checks.
 
-Use concise PR titles, typically `type(scope): description`. GitHub Actions appends `| CI #PR` for PR checks. For a Build-labeled APK run, an owner comment such as `B850 Canary` produces `type(scope): description | B850 Canary #PR`; the workflow verifies the requested Build against the checked-out Gradle source. The older `/canary` and `/internal` comments remain compatible but cannot show a Build in the run title.
+Use concise PR titles, typically `type(scope): description`. GitHub Actions appends `| CI #PR` for PR checks. For a Build-labeled APK run, an owner comment such as `B850 Canary` produces `type(scope): description | B850 Canary #PR`; the workflow verifies the requested Build against the checked-out Gradle source. The older `/canary` comment remains compatible but cannot show a Build in the run title.
 
 Do not expose signing credentials or project-signed artifacts to untrusted fork workflows.
 
 ### Canary
 
-Signed work-branch Canary is demand-driven. Request it only when device evidence can change an engineering decision or acceptance state.
+Signed work-branch Canary is demand-driven. Request it only when device evidence can change an engineering decision or acceptance state. The low-privilege pull_request Build compiles and verifies the source-matched unsigned Canary. The default-branch Work Branch APK only selects a successful exact-SHA PR Build and its unexpired candidate artifact, then verifies and signs it in an isolated trusted runner; it never checks out or executes mutable work-branch source. A ready, open same-repository PR with a completed exact-SHA Build is required, including for manual fallback. Do not bypass this boundary by adding Gradle execution or Actions cache access to issue_comment/workflow_dispatch jobs.
 
 A device test is useful for ownership/lifecycle/scene/transition/geometry changes, first meaningful runtime checkpoints, competing hypotheses, integrated runtime validation or a runtime-affecting stable candidate.
 
