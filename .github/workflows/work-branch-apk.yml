@@ -190,7 +190,8 @@ jobs:
             --jq '.content' | base64 -d)"
           version="$(sed -n 's/^combinedStatus.versionName=//p' <<< "$props")"
           build="$(sed -n 's/^combinedStatus.buildId=//p' <<< "$props")"
-          test -n "$version" && [[ "$build" =~ ^[0-9]{8}-[0-9]+$ ]]
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([._-][A-Za-z0-9]+)*$ ]] &&
+            [[ "$build" =~ ^[0-9]{8}-[0-9]+$ ]]
           if [[ -n "$EXPECTED_BUILD" && "$build" != *-"$EXPECTED_BUILD" ]]; then
             echo "::error::Requested B$EXPECTED_BUILD does not match source Build $build."
             exit 1
