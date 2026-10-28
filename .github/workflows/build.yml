@@ -27,11 +27,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    env:
-      MIUIX_GITHUB_ACTOR: ${{ secrets.MIUIX_GITHUB_ACTOR || github.repository_owner }}
-      MIUIX_GITHUB_TOKEN: ${{ secrets.MIUIX_GITHUB_TOKEN }}
-      GITHUB_ACTOR: ${{ github.actor }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      run_canary: ${{ steps.scope.outputs.run_canary }}
 
     steps:
       - name: Checkout
@@ -270,25 +267,12 @@ jobs:
         with:
           cache-provider: basic
 
-      - name: Restore and verify Haple signing
-        if: steps.scope.outputs.run_android == 'true' && github.event_name != 'pull_request'
-        shell: bash
-        env:
-          HAPLE_KEYSTORE_BASE64: ${{ secrets.HAPLE_KEYSTORE_BASE64 }}
-          HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
-          HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
-          HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
-        run: bash tools/setup_haple_signing.sh
-
       - name: Verify pinned HyperOS target profile
         if: steps.scope.outputs.run_android == 'true'
         run: python3 tools/verify_target_profile.py
 
       - name: Test and build required APK variants
         if: steps.scope.outputs.run_android == 'true'
-        env:
-          HAPLE_KEYSTORE_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.HAPLE_KEYSTORE_PASSWORD || '' }}
-          HAPLE_KEY_ALIAS: ${{ github.event_name != 'pull_request' && secrets.HAPLE_KEY_ALIAS || '' }}
         shell: bash
         run: |
           TASKS=(":app:testDebugUnitTest")
@@ -319,9 +303,7 @@ jobs:
           fi
 
           if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
-            if [[ -f "app/build/outputs/apk/canary/app-canary.apk" ]]; then
-              CANARY_APK_PATH="app/build/outputs/apk/canary/app-canary.apk"
-            elif [[ -f "app/build/outputs/apk/canary/app-canary-unsigned.apk" ]]; then
+            if [[ -f "app/build/outputs/apk/canary/app-canary-unsigned.apk" ]]; then
               CANARY_APK_PATH="app/build/outputs/apk/canary/app-canary-unsigned.apk"
             else
               echo "Canary APK output was not found."
@@ -342,35 +324,6 @@ jobs:
             APKS+=("$CANARY_APK_PATH")
           fi
           bash tools/verify_xposed_metadata.sh "${APKS[@]}"
-      - name: Verify Haple APK signatures
-        if: steps.scope.outputs.run_android == 'true' && github.event_name != 'pull_request'
-        shell: bash
-        env:
-          HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
-        run: |
-          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          APKS=()
-          if [[ "${{ steps.scope.outputs.run_debug }}" == "true" ]]; then
-            APKS+=("$DEBUG_APK_PATH")
-          fi
-          if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
-            APKS+=("$CANARY_APK_PATH")
-          fi
-
-          for APK in "${APKS[@]}"; do
-            "$SDK_ROOT/build-tools/37.0.0/apksigner" verify --verbose --print-certs "$APK"
-
-            ACTUAL_CERT_SHA256="$(
-              "$SDK_ROOT/build-tools/37.0.0/apksigner" verify --print-certs "$APK" |
-                awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' |
-                tr '[:upper:]' '[:lower:]'
-            )"
-
-            if [[ "$ACTUAL_CERT_SHA256" != "$HAPLE_CERT_SHA256" ]]; then
-              echo "Built APK is not signed by the Haple certificate: $APK"
-              exit 1
-            fi
-          done
 
       - name: Verify canary is non-debuggable
         if: steps.scope.outputs.run_canary == 'true'
@@ -388,41 +341,14 @@ jobs:
             exit 1
           fi
 
-      - name: Prepare APKs
-        if: steps.scope.outputs.run_android == 'true' && github.event_name != 'pull_request'
-        shell: bash
-        run: |
-          VERSION_NAME="$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)"
-          BUILD_ID="$(sed -n 's/^combinedStatus.buildId=//p' gradle.properties)"
-          mkdir -p dist
-
-          if [[ "${{ steps.scope.outputs.run_debug }}" == "true" ]]; then
-            DEBUG_APK_NAME="Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-debug.apk"
-            cp "$DEBUG_APK_PATH" "dist/$DEBUG_APK_NAME"
-            echo "DEBUG_APK_NAME=$DEBUG_APK_NAME" >> "$GITHUB_ENV"
-          fi
-
-          if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
-            CANARY_APK_NAME="Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-canary.apk"
-            cp "$CANARY_APK_PATH" "dist/$CANARY_APK_NAME"
-            echo "CANARY_APK_NAME=$CANARY_APK_NAME" >> "$GITHUB_ENV"
-          fi
-
-      - name: Upload debug APK
-        if: steps.scope.outputs.run_debug == 'true' && github.event_name != 'pull_request'
+      - name: Pass unsigned Canary to isolated signing job
+        if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && steps.scope.outputs.run_canary == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: ${{ env.DEBUG_APK_NAME }}
-          path: dist/${{ env.DEBUG_APK_NAME }}
+          name: unsigned-ci-canary-${{ github.sha }}
+          path: app/build/outputs/apk/canary/app-canary-unsigned.apk
           if-no-files-found: error
-
-      - name: Upload canary APK
-        if: steps.scope.outputs.run_canary == 'true' && github.event_name != 'pull_request'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: ${{ env.CANARY_APK_NAME }}
-          path: dist/${{ env.CANARY_APK_NAME }}
-          if-no-files-found: error
+          retention-days: 1
 
       - name: Validation summary
         if: always()
@@ -449,3 +375,84 @@ jobs:
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.draft }}" == "true" ]]; then
             echo "- Pull request state: draft (lightweight validation only)" >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  sign-canary:
+    name: Signed dev Canary
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && needs.build.outputs.run_canary == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout trusted signing script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: |
+            tools/setup_haple_signing.sh
+
+      - name: Download unsigned source-built Canary
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: unsigned-ci-canary-${{ github.sha }}
+          path: candidate
+
+      - name: Set up JDK
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Android build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --channel=3 "build-tools;37.0.0"
+
+      - name: Restore trusted signing identity
+        env:
+          HAPLE_KEYSTORE_BASE64: ${{ secrets.HAPLE_KEYSTORE_BASE64 }}
+          HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
+          HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
+          HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
+        run: bash tools/setup_haple_signing.sh
+
+      - name: Sign and validate Canary without executing candidate source
+        shell: bash
+        env:
+          HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
+          HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
+          HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
+        run: |
+          set -euo pipefail
+          source="candidate/app-canary-unsigned.apk"
+          test -s "$source"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          signer="$SDK_ROOT/build-tools/37.0.0/apksigner"
+          version="$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)"
+          build="$(sed -n 's/^combinedStatus.buildId=//p' gradle.properties)"
+          test -n "$version" && test -n "$build"
+          mkdir -p dist
+          apk="dist/Guiyuan-${version}-HyperOS-${build}-canary.apk"
+          "$signer" sign --ks "$HAPLE_KEYSTORE_PATH" --ks-key-alias "$HAPLE_KEY_ALIAS" \
+            --ks-pass env:HAPLE_KEYSTORE_PASSWORD --key-pass env:HAPLE_KEYSTORE_PASSWORD \
+            --out "$apk" "$source"
+          "$signer" verify --verbose --print-certs "$apk"
+          cert="$("$signer" verify --print-certs "$apk" | awk -F': ' '/certificate SHA-256 digest:/ {print $NF; exit}' | tr '[:upper:]' '[:lower:]')"
+          test "$cert" = "$HAPLE_CERT_SHA256"
+          package="$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk" | sed -n "s/.*package: name='\([^']*\)'.*/\1/p" | head -n 1)"
+          test "$package" = com.chaners.guiyuan
+          echo "APK_NAME=$(basename "$apk")" >> "$GITHUB_ENV"
+          sha256sum "$apk" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload signed dev Canary
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ env.APK_NAME }}
+          path: dist/${{ env.APK_NAME }}
+          if-no-files-found: error
