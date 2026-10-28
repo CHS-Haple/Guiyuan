@@ -86,7 +86,8 @@ jobs:
           # This job executes reviewed main source with no Haple signing credentials.
           # The separate signing runner never restores or executes Gradle cache.
           cache-provider: enhanced
-          cache-read-only: false
+          # Only a reviewed main push seeds reusable cache; manual dispatch is read-only.
+          cache-read-only: ${{ github.event_name != 'push' || github.ref != 'refs/heads/main' }}
 
       - name: Test and assemble source-matched unsigned Internal and Release
         shell: bash
