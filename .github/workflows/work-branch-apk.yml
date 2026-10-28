@@ -367,6 +367,8 @@ jobs:
           badging="$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk")"
           test "$(sed -n "s/.*package: name='\([^']*\)'.*/\1/p" <<< "$badging" | head -n 1)" = com.chaners.guiyuan
           test "$(sed -n "s/.*versionName='\([^']*\)'.*/\1/p" <<< "$badging" | head -n 1)" = "$VERSION_NAME"
+          APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
+          test "$("$APKANALYZER" manifest debuggable "$apk")" = false
           echo "APK_NAME=$(basename "$apk")" >> "$GITHUB_ENV"
           echo "Source SHA: $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
           sha256sum "$apk" >> "$GITHUB_STEP_SUMMARY"
