@@ -56,18 +56,18 @@ For a new SystemUI target:
 
 Compatibility expansion must not weaken the current target's ownership and restoration contracts.
 
-## 0.9.1 checkpoint qualification
+## 0.9.1 checkpoint qualification (completed)
 
-0.9.1 is a **pre-1.0 development checkpoint**, not the first formal stable release. Experimental OS4 [#861](https://github.com/CHS-Haple/Guiyuan/pull/861) is integrated in `dev` with matched-source B1536 device acceptance. Keep its pinned source-built Canary distinct from the ordinary published-MIUIX fallback; neither is a formal release. This runtime work remains separate from the native cleanup audit, and **do not bump to 0.9.1 solely because OS4 is integrated**. Before promoting `dev` to `main`:
+The pre-1.0 0.9.1 checkpoint was promoted through [#966](https://github.com/CHS-Haple/Guiyuan/pull/966) after focused target-device B1626 true Release acceptance and B1627 Full/source-matched CI. It is **not** the first formal stable release. The criteria below document the qualification boundary and remain useful to any later development checkpoint; they are not new uncompleted feature requests:
 
 - complete source-proven native callback ownership and exception recovery in [#758](https://github.com/CHS-Haple/Guiyuan/issues/758), retaining exactly-once native methods, single writer and fail-native cleanup; do not treat passing CI as proof of injected failures;
 - accept the **last integrated runtime candidate** on the target for Home, Keyguard, AOD, Control Center, tint/charging, network and Hot Reload. An untested new runtime change invalidates the corresponding earlier device acceptance;
 - independently review the full `main → dev` net diff, source ownership/lifecycle, security, cache/performance, configuration/backup compatibility, latest dependency pins and release assets; resolve deterministic issues before promotion;
 - **OS4 Release provenance:** the accepted B1626 OS4 dialogs/sheets require the pinned PR423 source graph, not the default published-MIUIX fallback. Verify the actual `Release` variant with the same upstream revision and source selector as the accepted OS4 Canary, keep untrusted source compilation separate from signing secrets, and sign/deliver the verified Release APK rather than renaming a Canary. [#957](https://github.com/CHS-Haple/Guiyuan/pull/957) establishes only unsigned source-matched Release compilation; matching signed Release distribution and device acceptance remain gates under [#890](https://github.com/CHS-Haple/Guiyuan/issues/890).
-- move the final durable user-visible `[Unreleased]` notes to a dated `[0.9.1]` section, set `combinedStatus.versionName=0.9.1` with a monotonic internal Build, and validate the exact `dev → main` PR using **Full CI** and the signed APK;
+- keep a dated `[0.9.1]` release section, monotonic internal Build, exact `dev → main` Full CI and source-matched signed APK evidence as the accepted checkpoint contract;
 - preserve [#769](https://github.com/CHS-Haple/Guiyuan/issues/769) as an evidence-only third-party font compatibility limitation if the required real font cannot be tested, and do not advertise compatibility that was not verified.
 
-The current Release workflow reserves `stable` publishing for version **1.0.0 or later**. If an explicit 0.9.1 GitHub Release is requested, use the documented **test/prerelease** channel from the accepted source; do not bypass the workflow by relabeling it stable. Main promotion and any release publication require their own explicit acceptance.
+The current Release workflow reserves `stable` publishing for version **1.0.0 or later**. If an explicit 0.9.1 GitHub Release is requested, use the documented **test/prerelease** channel from the accepted source; do not bypass the workflow by relabeling it stable. Any release publication requires separate explicit maintainer approval; merging a development checkpoint to `main` never publishes automatically.
 
 ## 1.0.0 qualification
 
