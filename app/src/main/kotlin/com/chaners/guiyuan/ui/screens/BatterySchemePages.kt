@@ -3,6 +3,7 @@ package com.chaners.guiyuan.ui.screens
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +45,10 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -156,8 +161,13 @@ internal fun BatterySchemeOverview(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         BatterySchemeIndicatorRail(
-            pageCount = pages.size,
+            pages = pages,
             currentPage = pagerState.currentPage,
+            onPageClick = { target ->
+                if (target != pagerState.currentPage) {
+                    scope.launch { pagerState.springAnimateToPage(target) }
+                }
+            },
         )
         HorizontalPager(
             state = pagerState,
@@ -595,51 +605,65 @@ private fun BatteryAddSchemePage(
 
 @Composable
 private fun BatterySchemeIndicatorRail(
-    pageCount: Int,
+    pages: List<BatterySchemePage>,
     currentPage: Int,
+    onPageClick: (Int) -> Unit,
 ) {
     Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(20.dp),
-        contentAlignment = Alignment.TopCenter,
+        modifier = Modifier.fillMaxWidth().height(40.dp),
+        contentAlignment = Alignment.Center,
     ) {
         BatteryPagerIndicator(
-            pageCount = pageCount,
+            pages = pages,
             currentPage = currentPage,
+            onPageClick = onPageClick,
         )
     }
 }
 
 @Composable
 private fun BatteryPagerIndicator(
-    pageCount: Int,
+    pages: List<BatterySchemePage>,
     currentPage: Int,
+    onPageClick: (Int) -> Unit,
 ) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        repeat(pageCount) { index ->
-            val width by
-                animateDpAsState(
-                    targetValue = if (index == currentPage) 16.dp else 6.dp,
-                    label = "battery-scheme-indicator",
-                )
-            Surface(
-                modifier =
-                    Modifier
-                        .width(width)
-                        .height(6.dp),
-                shape = CircleShape,
-                color =
-                    if (index == currentPage) {
-                        MiuixTheme.colorScheme.primary
-                    } else {
-                        MiuixTheme.colorScheme.disabledOnSecondaryVariant
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        pages.forEachIndexed { index, page ->
+            val name = when (page) {
+                is BatterySchemePage.BuiltIn -> batteryBuiltInName(page.scheme)
+                is BatterySchemePage.Custom -> customSchemeName(page.scheme)
+                BatterySchemePage.Add -> stringResource(R.string.battery_custom_scheme_add_page_title)
+            }
+            val isCurrent = index == currentPage
+            val width by animateDpAsState(
+                targetValue = if (isCurrent) 16.dp else 6.dp,
+                label = "battery-scheme-indicator",
+            )
+            Box(
+                modifier = Modifier
+                    .size(width = 32.dp, height = 40.dp)
+                    .clickable(
+                        role = Role.Tab,
+                        onClickLabel = stringResource(R.string.battery_scheme_go_to, name),
+                        onClick = { onPageClick(index) },
+                    )
+                    .semantics {
+                        contentDescription = name
+                        selected = isCurrent
                     },
-            ) {}
+                contentAlignment = Alignment.Center,
+            ) {
+                Surface(
+                    modifier = Modifier.width(width).height(6.dp),
+                    shape = CircleShape,
+                    color =
+                        if (isCurrent) {
+                            MiuixTheme.colorScheme.primary
+                        } else {
+                            MiuixTheme.colorScheme.disabledOnSecondaryVariant
+                        },
+                ) {}
+            }
         }
     }
 }
