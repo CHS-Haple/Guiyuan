@@ -4091,7 +4091,13 @@ class GyModule : XposedModule() {
             )
         }
 
-        scheduleNativeSlotProbe(host = host, source = source, deferProbe = deferProbe)
+        try {
+            scheduleNativeSlotProbe(host = host, source = source, deferProbe = deferProbe)
+        } catch (error: Throwable) {
+            // A passive diagnostic must not invalidate an already attached native host.
+            SysUiHotReload.rethrowFatal(error)
+            log(Log.WARN, TAG, "Native slot diagnostic unavailable", error)
+        }
 
         logDiagnostic(
             level = Log.INFO,
