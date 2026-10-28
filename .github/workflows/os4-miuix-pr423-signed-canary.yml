@@ -93,10 +93,10 @@ jobs:
             -Pgy.os4.miuixDir=../upstream \
             -Pgy.os4.miuixRevision=b9f70838509fbc3f63f1a972777a7e6ce07f578f \
             -Pgy.os4.dialogSurfaces=true \
-            :app:testDebugUnitTest :app:assembleDebug :app:assembleCanary :app:assembleRelease \
+            :app:testDebugUnitTest :app:assembleDebug :app:assembleCanary :app:assembleInternal :app:assembleRelease \
             --no-daemon --max-workers=2 --stacktrace
 
-      - name: Verify unsigned Canary and source-matched Release candidate
+      - name: Verify unsigned Canary, Internal and source-matched Release candidate
         shell: bash
         run: |
           set -euo pipefail
@@ -105,6 +105,15 @@ jobs:
           bash gui/tools/verify_xposed_metadata.sh "$apk"
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           test "$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk" | sed -n "s/.*package: name='\([^']*\)'.*/\1/p" | head -n 1)" = "com.chaners.guiyuan"
+          # Internal is the release-equivalent IT variant, not a relabeled Canary.
+          internal="gui/app/build/outputs/apk/internal/app-internal-unsigned.apk"
+          test -s "$internal"
+          bash gui/tools/verify_xposed_metadata.sh "$internal"
+          test "$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$internal" | sed -n "s/.*package: name='\([^']*\)'.*/\1/p" | head -n 1)" = "com.chaners.guiyuan"
+          internal_version="$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$internal" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p" | head -n 1)"
+          test "$internal_version" = "$(sed -n 's/^combinedStatus.versionName=//p' gui/gradle.properties)-internal"
+          APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
+          test "$("$APKANALYZER" manifest debuggable "$internal")" = "false"
           # This is a no-secrets compatibility check, not a Release publication.
           release="gui/app/build/outputs/apk/release/app-release-unsigned.apk"
           test -s "$release"
@@ -114,6 +123,7 @@ jobs:
           test "$("$APKANALYZER" manifest debuggable "$release")" = "false"
           mkdir -p dist
           cp "$apk" dist/candidate-unsigned.apk
+          cp "$internal" dist/internal-candidate-unsigned.apk
           cp "$release" dist/release-candidate-unsigned.apk
 
       - name: Deliver unsigned candidate across job boundary
@@ -122,6 +132,7 @@ jobs:
           name: os4-pr423-unsigned-source-candidate
           path: |
             dist/candidate-unsigned.apk
+            dist/internal-candidate-unsigned.apk
             dist/release-candidate-unsigned.apk
           if-no-files-found: error
           retention-days: 3
@@ -218,6 +229,50 @@ jobs:
           APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
           test "$("$APKANALYZER" manifest debuggable "$apk")" = "false"
           echo "Source-matched OS4 Release candidate signed; this is NOT a published GitHub Release" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Sign and verify source-matched Internal IT APK
+        shell: bash
+        env:
+          HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
+          HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
+          HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
+          BUILD_ID: ${{ needs.unsigned.outputs.build_id }}
+          VERSION_NAME: ${{ needs.unsigned.outputs.version_name }}
+          SOURCE_SHA: ${{ needs.unsigned.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          test -s dist/internal-candidate-unsigned.apk
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          APKSIGNER="$SDK_ROOT/build-tools/37.0.0/apksigner"
+          apk="dist/Guiyuan-${VERSION_NAME}-IT-HyperOS-${BUILD_ID}-os4-internal.apk"
+          "$APKSIGNER" sign \
+            --ks "$HAPLE_KEYSTORE_PATH" \
+            --ks-key-alias "$HAPLE_KEY_ALIAS" \
+            --ks-pass env:HAPLE_KEYSTORE_PASSWORD \
+            --key-pass env:HAPLE_KEYSTORE_PASSWORD \
+            --out "$apk" dist/internal-candidate-unsigned.apk
+          "$APKSIGNER" verify --verbose --print-certs "$apk"
+          cert="$("$APKSIGNER" verify --print-certs "$apk" | awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' | tr '[:upper:]' '[:lower:]')"
+          test "$cert" = "$HAPLE_CERT_SHA256"
+          badge="$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk")"
+          package="$(printf '%s\n' "$badge" | sed -n "s/.*package: name='\([^']*\)'.*/\1/p" | head -n 1)"
+          version="$(printf '%s\n' "$badge" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p" | head -n 1)"
+          test "$package" = "com.chaners.guiyuan"
+          test "$version" = "${VERSION_NAME}-internal"
+          APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
+          test "$("$APKANALYZER" manifest debuggable "$apk")" = "false"
+          echo "### OS4 source-matched Internal IT" >> "$GITHUB_STEP_SUMMARY"
+          echo "Guiyuan source SHA: $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "MIUIX PR423 source: b9f70838509fbc3f63f1a972777a7e6ce07f578f" >> "$GITHUB_STEP_SUMMARY"
+          echo "Version: ${VERSION_NAME}-internal; Build: ${BUILD_ID}; cert and non-debuggable status verified" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload signed OS4 Internal IT APK
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Guiyuan-OS4-signed-internal
+          path: dist/*-os4-internal.apk
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Upload Haple-signed OS4 PR423 APK
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
