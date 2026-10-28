@@ -2,7 +2,7 @@ name: OS4 Canary (matched MIUIX)
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ dev, feat/os4-nav-touch-b1626-validation ]
     paths:
       - '.github/workflows/os4-miuix-pr423-signed-canary.yml'
       - 'app/src/os4Upstream/**'
