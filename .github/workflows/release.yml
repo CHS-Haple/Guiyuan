@@ -284,7 +284,6 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       SOURCE_RUN_ID: ${{ inputs.os4_source_run_id }}
       RELEASE_CHANNEL: ${{ inputs.channel }}
-      PUBLISH: ${{ inputs.publish }}
     steps:
       - name: Require explicit matching OS4 source artifact
         shell: bash
