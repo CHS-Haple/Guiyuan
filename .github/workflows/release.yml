@@ -1,15 +1,11 @@
 name: Release
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - gradle.properties
-      - .github/workflows/release.yml
-      - .github/actions/miuix-source/**
-      - app/src/**
-      - app/build.gradle.kts
-      - settings.gradle.kts
+  # Only the successful, same-revision trusted main Build may feed automatic signing.
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       channel:
@@ -28,6 +24,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -36,7 +33,7 @@ concurrency:
 jobs:
   build:
     name: Build matched source without signing credentials
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -115,33 +112,126 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  admit:
+    name: Admit verified main Build artifact
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      ready: ${{ steps.verify.outputs.ready }}
+      source_sha: ${{ steps.verify.outputs.source_sha }}
+      source_run_id: ${{ steps.verify.outputs.source_run_id }}
+      version_name: ${{ steps.verify.outputs.version_name }}
+      build_id: ${{ steps.verify.outputs.build_id }}
+    steps:
+      - name: Verify trusted source, freshness and immutable unsigned artifact
+        id: verify
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] && [[ "$SOURCE_RUN_ID" =~ ^[0-9]+$ ]]
+          upstream="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID")"
+          jq -e --arg sha "$SOURCE_SHA" --arg repo "$GITHUB_REPOSITORY" '
+            .name == "Build" and .event == "push" and
+            .head_branch == "main" and .head_sha == $sha and
+            .head_repository.full_name == $repo and
+            .repository.full_name == $repo and
+            .status == "completed" and .conclusion == "success"
+          ' <<< "$upstream" >/dev/null
+
+          # Superseded main submissions must not produce a newer-looking old release.
+          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq '.commit.sha')"
+          if [[ "$main_sha" != "$SOURCE_SHA" ]]; then
+            echo "Skipping superseded main commit $SOURCE_SHA (current $main_sha)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          artifact_name="unsigned-main-$SOURCE_SHA"
+          artifacts="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/artifacts?per_page=100")"
+          matches="$(jq -r --arg name "$artifact_name" '
+            [.artifacts[] | select(.name == $name and .expired == false and .size_in_bytes > 0)] | length
+          ' <<< "$artifacts")"
+          if [[ "$matches" == "0" ]]; then
+            echo "No distributable unsigned outputs (e.g. docs-only main validation)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          test "$matches" = "1"
+
+          # Read source properties as inert API data; never execute candidate content.
+          props="$(gh api "repos/$GITHUB_REPOSITORY/contents/gradle.properties?ref=$SOURCE_SHA" --jq '.content' | base64 -d)"
+          version="$(sed -n 's/^combinedStatus.versionName=//p' <<< "$props")"
+          build="$(sed -n 's/^combinedStatus.buildId=//p' <<< "$props")"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([._-][A-Za-z0-9]+)*$ ]]
+          [[ "$build" =~ ^[0-9]{8}-[0-9]+$ ]]
+          {
+            echo "ready=true"
+            echo "source_sha=$SOURCE_SHA"
+            echo "source_run_id=$SOURCE_RUN_ID"
+            echo "version_name=$version"
+            echo "build_id=$build"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "### Accepted release candidate"
+            echo "- Trusted source: $SOURCE_SHA"
+            echo "- Successful main Build run: $SOURCE_RUN_ID"
+            echo "- Immutable artifact: $artifact_name"
+            echo "- Version / Build: $version / $build"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   sign:
     name: Sign and verify main IT / Release
-    needs: build
+    needs: [build, admit]
+    if: >-
+      always() &&
+      ((github.event_name == 'workflow_dispatch' && needs.build.result == 'success') ||
+       (github.event_name == 'workflow_run' && needs.admit.result == 'success' && needs.admit.outputs.ready == 'true'))
     runs-on: ubuntu-latest
     timeout-minutes: 25
     environment: release
     permissions:
       contents: write
+      actions: read
     env:
-      VERSION_NAME: ${{ needs.build.outputs.version_name }}
-      BUILD_ID: ${{ needs.build.outputs.build_id }}
+      VERSION_NAME: ${{ github.event_name == 'workflow_run' && needs.admit.outputs.version_name || needs.build.outputs.version_name }}
+      BUILD_ID: ${{ github.event_name == 'workflow_run' && needs.admit.outputs.build_id || needs.build.outputs.build_id }}
+      SOURCE_SHA: ${{ github.event_name == 'workflow_run' && needs.admit.outputs.source_sha || github.sha }}
+      SOURCE_RUN_ID: ${{ github.event_name == 'workflow_run' && needs.admit.outputs.source_run_id || github.run_id }}
     steps:
       - name: Checkout only trusted main release metadata and signing helper
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.SOURCE_SHA }}
           persist-credentials: false
           sparse-checkout: |
             tools/setup_haple_signing.sh
             gradle.properties
             CHANGELOG.md
 
-      - name: Download unsigned inputs as data
+      - name: Verify exact trusted source checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+
+      - name: Download verified unsigned inputs as inert data
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: unsigned-main-${{ github.sha }}
+          name: unsigned-main-${{ env.SOURCE_SHA }}
           path: candidate
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
 
       - name: Set up JDK
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
@@ -200,7 +290,7 @@ jobs:
             test "$version" = "$expected_version"
             APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
             test "$("$APKANALYZER" manifest debuggable "$apk")" = false
-            echo "Signed $channel / main SHA $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+            echo "Signed $channel / main SHA $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
             sha256sum "$apk" >> "$GITHUB_STEP_SUMMARY"
           done
           echo "INTERNAL_APK_NAME=Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-internal.apk" >> "$GITHUB_ENV"
@@ -252,8 +342,8 @@ jobs:
           set -euo pipefail
           tag="build-${BUILD_ID}-ci${GITHUB_RUN_NUMBER}"
           gh release create "$tag" "dist/$APK_NAME" \
-            --target "$GITHUB_SHA" --title "Guiyuan ${VERSION_NAME} (${BUILD_ID})" \
-            --notes "Signed MIUIX source-matched release candidate from ${GITHUB_SHA}." --prerelease
+            --target "$SOURCE_SHA" --title "Guiyuan ${VERSION_NAME} (${BUILD_ID})" \
+            --notes "Signed MIUIX source-matched release candidate from ${SOURCE_SHA}." --prerelease
 
       - name: Publish explicit stable release
         if: github.event_name == 'workflow_dispatch' && inputs.publish && inputs.channel == 'stable'
@@ -268,4 +358,4 @@ jobs:
             exit 1
           fi
           gh release create "$tag" "dist/$APK_NAME" \
-            --target "$GITHUB_SHA" --title "Guiyuan $VERSION_NAME" --notes-file release-notes.md
+            --target "$SOURCE_SHA" --title "Guiyuan $VERSION_NAME" --notes-file release-notes.md
