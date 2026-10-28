@@ -1,6 +1,6 @@
 # OS4 UI conformance and upstream adoption audit
 
-Source baseline: Guiyuan `feat/os4-glass-experimental` B1536 (PR #861; B1536 exact-source signed Canary and configured unit/assemble/sign checks passed; maintainer accepted the installed B1536 visual/behavior corrections). B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
+Accepted source baseline: Guiyuan `dev` after merged PR #861, based on B1536 (exact-source signed Canary, configured unit/assemble/sign checks and the maintainer's focused device acceptance). Post-merge matched-source Canary succeeded; #946 subsequently changed documentation only. B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
 MIUIX pinned published: `8972f941c194bd3c4e14c34543d5ebc7b39e40da` (`0.9.4-8972f941-SNAPSHOT`).
 MIUIX reviewed prerelease: [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (not yet merged).
 The upstream sample may illustrate a visual contract without shipping a public component. Production source and experimental
@@ -100,7 +100,7 @@ Source compared: Guiyuan B1523 against matched MIUIX PR423 `b9f7083` and current
 | Ordinary settings and input | Existing MIUIX `SliderPreference`, `SwitchPreference`, `BasicComponent`, `Card`, `TextField` and `SnackbarHost` have no mandatory PR423 glass replacements. Reusing them is deliberate, not a missing adapter. | Continue theme/disabled/fontScale review; replace only if a verified upstream contract changes the behavior. |
 | Icon families | Top-bar Search/Back/Filter/Share/More and Cancel use scoped PR423 icons. B1521 unified the battery-scheme More action in both OS4 glass and native popup fallback, leaving OS3 unaffected. Semantic row glyphs and unverified third-party Glass icon-family replacements remain native. | Do not bulk-copy a large unpublished icon module or change accepted semantic icons without matching dependency and optical evidence. |
 
-The source review found and corrected concrete UI ownership and glyph issues through B1527; exact-source validation and physical sampling/transition gates remain open. Remaining integration items are not automatically diagnosed runtime failures. Do not merge Draft PR #861 into dev until those relevant gates are reviewed.
+Source review corrected UI ownership and glyph issues through B1536. The accepted target-device scope and matched-source CI justified merging PR #861 into `dev`, but untested display variants, sampling conditions and future published-source parity remain separate evidence gates, not diagnosed runtime failures.
 
 ## Component and state matrix
 
@@ -272,7 +272,7 @@ MIUIX `SearchBarDemo` renders direct `BasicComponent` suggestions without mandat
 5. **Validate top-level dialog sampling after B1495**. `MainHub` now records one clean Scaffold body for OS4 even when navigation is native, hidden, or not texture-backed. Navigation continues using `navBackdrop` only if the original user-enabled nav style requires it. Root-hosted restart/scope-failure dialogs receive that page source through `LocalGlassBackdrop`, while the popup host and its scrim remain outside capture. The backdrop records the body rather than the separately drawn bottom bar; test navbar-edge alignment and shader-off fallback. Preserve `onDismissFinished` restart sequencing and test all nav styles before acceptance.
 6. **Preserve native preference widgets where PR423 supplies no new public visuals.** Avoid speculative blur wrappers for TextField/Slider/Switch and breaking OS3 semantics.
 
-## Required physical acceptance before closing PR #861
+## Remaining physical compatibility checks beyond accepted B1536
 
 - Diagnostics: expanded title inset; collapsed center with Export+More; button 44/24/8 geometry; tap to export / hold to share
 - Search: empty, typed, clear and no-results; scrolled glass against moving text; keyboard and back; shader-fallback state

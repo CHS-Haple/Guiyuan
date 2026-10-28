@@ -19,8 +19,7 @@ PR #423 remains open at the 2026-10-27 review, pinned to
 `miuix-core`, `miuix-ui`, `miuix-blur`, `miuix-preference`,
 `miuix-glass`, and `miuix-glass-icons`. There is no matching published
 artifact set at this revision. **Publication is preferred, not a prerequisite
-for a separately reviewed OS4 experiment.** Do not promote the Draft merely
-because an unpublished component builds.
+for a separately reviewed OS4 experiment.** Do not treat a successful unpublished source build as stable release qualification.
 
 An upstream fix may be integrated ahead of publication when its exact source
 revision, license, changed interfaces, consumers, lifetime, fallbacks and
@@ -56,10 +55,10 @@ assertion that the flicker is fixed.
 3. Review OS4 page design, navigation, top bars, search, menus, dialogs,
    sheets and suitable icons against current upstream contracts; preserve
    OS3 and stored user preferences.
-4. Test geometry/insets, 80–110% density, font scale, RTL, Back/IME, popup
-   ownership, fallback and visual motion. Require focused device acceptance
-   and configured CI before merging experimental #861 into `dev`; do not
-   infer published-build parity from matched-source testing.
+4. B1536 has passed focused target-device acceptance and PR #861 is merged
+   into `dev`. For future UI, dependency or release changes, review geometry,
+   insets, density/font scale, RTL, Back/IME, popup ownership and visual motion
+   as applicable; never infer published-build parity from matched-source testing.
 
 Never run unreviewed third-party build scripts in credentialed signing jobs.
 Do not hide ABI drift with private API shadows, new blur engines, extra popup
@@ -70,7 +69,7 @@ OS4 conformance.
 
 PR423 `8d52b45`'s `GlassPopupSurface.kt` and `GlassPopupColumn.kt` are vendored as exact Apache-2.0 source to restore upstream bounded intrinsic measurement, internal scroll and outside gesture policy. `GlassDropdownPopupContent` and `GlassSecondaryPopup` still use the one Guiyuan root `PopupLayout` because their real anchors lie in a clipped top bar or sheet pager. The new `GlassIconDropdownMenu` requires its anchor inside the same `BoxScope`; substituting it directly would change ownership and introduce clipping/backdrop risk. The root-hosted Diagnostics menu instead adopts upstream's primary-only popup recorder and composed clean-page+primary secondary Backdrop without moving its anchor or sampling the secondary itself. Keep that migration gated by actual host relocation and source/device evidence. The source-matched MIUIX UI/Blur build remains pinned to `b9f7083`; the above Glass leaf-source fixes do not imply upgrading the entire graph.
 
-## Experimental source scope (Draft; check `gradle.properties` for current Build)
+## Integrated OS4 source scope (upstream experiment; check `gradle.properties` for current Build)
 
 - GlassNavigationBar on the main three-page navigation and its preview.
 - GlassTopAppBar / GlassIconButton in hub/detail layouts, and OS4
@@ -142,7 +141,7 @@ conformance: cropped title-action edges (published MIUIX TopAppBar clips),
 wrong mini-preview height and Sandbox launch crash. The B1405 changes
 address the separate preview geometry and sampling ownership defects;
 full title-button clipping needs the matching unpublished upstream UI ABI.
-Source parity and physical acceptance remain unverified. See CONFORMANCE.md.
+At that historical checkpoint, source parity and physical acceptance were unverified; B1536 later received focused target-device acceptance. See CONFORMANCE.md.
 
 B1450 tracks the full source-level audit in CONFORMANCE.md, syncs B1406–1409
 runtime safety fixes from dev and adjusts OS4 no-shader fallback/search.
@@ -150,8 +149,7 @@ It does **not** patch the released MIUIX Blur binary. Upstream PR #423's
 continuous downscaled sample position and retained prefilter effect are
 relevant to the user-reported scrolling flash, but only a version-matched
 verified same-revision source-built or published Blur/UI/Preference/Glass graph can close that ABI gap.
-This snapshot needs fresh build and device acceptance. The upstream PR is
-still unmerged and the PR remains Draft.
+That earlier snapshot required new build and device evidence; B1536 later passed its matched-source signed Canary and focused device acceptance, and PR #861 merged into `dev`. Upstream MIUIX PR #423 remains unmerged.
 
 The OS4 experimental Build identifier is intentionally separated from rapidly
 advancing dev/runtime Builds; B1410 is also used by a concurrent runtime PR
