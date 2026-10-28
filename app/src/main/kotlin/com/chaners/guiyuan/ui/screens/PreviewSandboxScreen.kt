@@ -355,6 +355,7 @@ internal fun PreviewSandboxScreen(
                         }
                     }
                 }
+                }
                 if (os4) Spacer(Modifier.height(GlassTopAppBarDefaults.BandOverhang))
             }
         }
