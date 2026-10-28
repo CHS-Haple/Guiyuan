@@ -4,6 +4,8 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +33,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
@@ -39,6 +42,10 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.onSizeChanged
@@ -69,6 +76,7 @@ import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batteryBuiltInColor
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -627,7 +635,57 @@ private fun BatteryPagerIndicator(
     currentPage: Int,
     onPageClick: (Int) -> Unit,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    val haptic = LocalHapticFeedback.current
+    val navigate by rememberUpdatedState(onPageClick)
+    val centers = remember(pages.size) { FloatArray(pages.size) }
+    var pressedPage by remember { mutableIntStateOf(-1) }
+    val gap by animateDpAsState(
+        targetValue = if (pressedPage >= 0) 8.dp else 6.dp,
+        label = "battery-scheme-gap",
+    )
+    val switchMargin = with(LocalDensity.current) { 2.dp.toPx() }
+
+    Row(
+        modifier = Modifier.pointerInput(pages.size, haptic) {
+            awaitEachGesture {
+                fun nearest(x: Float): Int =
+                    centers.indices.minByOrNull { abs(x - centers[it]) } ?: -1
+
+                val down = awaitFirstDown(
+                    requireUnconsumed = false,
+                    pass = PointerEventPass.Initial,
+                )
+                var selected = nearest(down.position.x)
+                if (selected < 0) return@awaitEachGesture
+                pressedPage = selected
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                down.consume()
+                var released = false
+                try {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        val next = nearest(change.position.x)
+                        if (next >= 0 && next != selected &&
+                            abs(change.position.x - centers[next]) + switchMargin <
+                            abs(change.position.x - centers[selected])
+                        ) {
+                            selected = next
+                            pressedPage = next
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
+                        released = change.changedToUpIgnoreConsumed()
+                        event.changes.forEach { it.consume() }
+                        if (!change.pressed) break
+                    }
+                } finally {
+                    pressedPage = -1
+                }
+                if (released) navigate(selected)
+            }
+        },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         pages.forEachIndexed { index, page ->
             val name = when (page) {
                 is BatterySchemePage.BuiltIn -> batteryBuiltInName(page.scheme)
@@ -635,13 +693,19 @@ private fun BatteryPagerIndicator(
                 BatterySchemePage.Add -> stringResource(R.string.battery_custom_scheme_add_page_title)
             }
             val isCurrent = index == currentPage
+            val isHighlighted = index == (pressedPage.takeIf { it >= 0 } ?: currentPage)
             val width by animateDpAsState(
-                targetValue = if (isCurrent) 16.dp else 6.dp,
+                targetValue = when {
+                    pressedPage >= 0 && isHighlighted -> 19.dp
+                    isHighlighted -> 16.dp
+                    else -> 6.dp
+                },
                 label = "battery-scheme-indicator",
             )
             Box(
                 modifier = Modifier
-                    .width(width + 6.dp).height(20.dp)
+                    .width(width + gap).height(20.dp)
+                    .onGloballyPositioned { centers[index] = it.positionInParent().x + it.size.width / 2f }
                     .clickable(
                         interactionSource = null,
                         indication = null,
@@ -659,7 +723,7 @@ private fun BatteryPagerIndicator(
                     modifier = Modifier.width(width).height(6.dp),
                     shape = CircleShape,
                     color =
-                        if (isCurrent) {
+                        if (isHighlighted) {
                             MiuixTheme.colorScheme.primary
                         } else {
                             MiuixTheme.colorScheme.disabledOnSecondaryVariant
