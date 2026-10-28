@@ -286,18 +286,20 @@ internal fun PreviewSandboxScreen(
         AnimatedVisibility(
             visible = showDock,
             modifier = Modifier.onSizeChanged { dockHeightPx = it.height },
-            enter = (if (os4) androidx.compose.animation.EnterTransition.None else fadeIn()) +
+            enter = if (os4) {
                 expandVertically(
-                    animationSpec = if (os4) GlassMotion.barExpand() else androidx.compose.animation.core.spring(),
+                    animationSpec = GlassMotion.barExpand(),
                     expandFrom = Alignment.Top,
-                    clip = !os4,
-                ),
-            exit = (if (os4) androidx.compose.animation.ExitTransition.None else fadeOut()) +
+                    clip = false,
+                )
+            } else fadeIn() + expandVertically(expandFrom = Alignment.Top),
+            exit = if (os4) {
                 shrinkVertically(
-                    animationSpec = if (os4) GlassMotion.barCollapse() else androidx.compose.animation.core.spring(),
+                    animationSpec = GlassMotion.barCollapse(),
                     shrinkTowards = Alignment.Top,
-                    clip = !os4,
-                ),
+                    clip = false,
+                )
+            } else fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
         ) {
             // Fade the OS4 glass row without an offscreen layer clipping its button shadows.
             val opacityModifier = if (os4) {
