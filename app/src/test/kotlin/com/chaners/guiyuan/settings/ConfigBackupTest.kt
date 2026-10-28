@@ -25,6 +25,49 @@ class ConfigBackupTest {
         batterySchemes = BatteryColorSchemeLibrary(),
     )
 
+    @Test fun sharedSchemeLibraryKeepsSeparateAppliedSelectionsInV1Archive() {
+        val updated = sample().copy(
+            visual = sample().visual.copy(
+                profiles = sample().visual.profiles.map { cfg ->
+                    if (cfg.dualSignal) cfg.copy(batteryColorPreset = BatteryColorPreset.IOS_STYLE)
+                    else cfg
+                },
+            ),
+            batterySchemes = BatteryColorSchemeLibrary(
+                activeSchemeKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+                dualActiveSchemeKey = BATTERY_COLOR_SCHEME_IOS_KEY,
+            ),
+        )
+        val json = ConfigBackupFormat.encode(updated)
+        assertEquals(updated, ConfigBackupFormat.decode(json))
+        assertTrue(json.contains("\"dualActiveSchemeKey\":\"builtin:ios\""))
+
+        // Older V1 files have no dual selection; the actual dual visual profile remains authoritative.
+        val legacy = json.replace(",\"dualActiveSchemeKey\":\"builtin:ios\"", "")
+        assertFalse(legacy.contains("\"dualActiveSchemeKey\""))
+        val restored = ConfigBackupFormat.decode(legacy)
+        assertEquals(null, restored.batterySchemes.dualActiveSchemeKey)
+        assertEquals(
+            BATTERY_COLOR_SCHEME_IOS_KEY,
+            matchingSchemeKey(
+                restored.batterySchemes,
+                restored.visual.profiles.first { it.dualSignal },
+            ),
+        )
+    }
+
+    @Test fun rejectsUnknownDualAppliedSchemeWithoutRejectingLegacyNull() {
+        val source = sample()
+        ConfigBackupFormat.validate(source)
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.validate(
+                source.copy(batterySchemes = source.batterySchemes.copy(
+                    dualActiveSchemeKey = "custom:01",
+                )),
+            )
+        }
+    }
+
     @Test fun rejectsConflictingModeWideValues() {
         val source = sample()
         val first = source.visual.profiles.first()
