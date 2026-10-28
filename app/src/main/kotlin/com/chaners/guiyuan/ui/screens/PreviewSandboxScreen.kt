@@ -308,53 +308,53 @@ internal fun PreviewSandboxScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(dockPadding),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = TopAppBarDefaults.TitlePadding),
-                    contentAlignment = Alignment.CenterStart,
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text(
-                        text = stringResource(R.string.home_preview_live_title),
-                        style = MiuixTheme.textStyles.title4,
-                        fontWeight = FontWeight.Medium,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                SandboxDockIcon(renderModel, visual)
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = if (os4) GlassTopAppBarDefaults.HorizontalPadding else TopAppBarDefaults.ActionIconPadding),
-                    contentAlignment = Alignment.CenterEnd,
-                ) {
-                    val backTop = stringResource(R.string.diagnostics_scroll_top)
-                    TooltipBox(text = backTop) {
-                        if (os4) {
-                            GlassIconButton(
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = TopAppBarDefaults.TitlePadding),
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.home_preview_live_title),
+                            style = MiuixTheme.textStyles.title4,
+                            fontWeight = FontWeight.Medium,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    SandboxDockIcon(renderModel, visual)
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = if (os4) GlassTopAppBarDefaults.HorizontalPadding else TopAppBarDefaults.ActionIconPadding),
+                        contentAlignment = Alignment.CenterEnd,
+                    ) {
+                        val backTop = stringResource(R.string.diagnostics_scroll_top)
+                        TooltipBox(text = backTop) {
+                            if (os4) {
+                                GlassIconButton(
+                                    onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                                    backdrop = topBarBackdrop,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
+                                        contentDescription = backTop,
+                                    )
+                                }
+                            } else IconButton(
                                 onClick = { scope.launch { listState.animateScrollToItem(0) } },
-                                backdrop = topBarBackdrop,
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
                                     contentDescription = backTop,
                                 )
                             }
-                        } else IconButton(
-                            onClick = { scope.launch { listState.animateScrollToItem(0) } },
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
-                                contentDescription = backTop,
-                            )
                         }
                     }
-                }
                 }
                 if (os4) Spacer(Modifier.height(GlassTopAppBarDefaults.BandOverhang))
             }
