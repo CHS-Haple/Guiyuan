@@ -632,7 +632,7 @@ private fun BatterySchemeIndicatorRail(
     onPageSelect: (Int) -> Unit,
 ) {
     Box(
-        modifier = Modifier.fillMaxWidth().height(20.dp),
+        modifier = Modifier.fillMaxWidth().height(28.dp),
         contentAlignment = Alignment.TopCenter,
     ) {
         BatteryPagerIndicator(
@@ -656,11 +656,11 @@ private fun BatteryPagerIndicator(
     val centers = remember(pages.size) { FloatArray(pages.size) }
     var pressedPage by remember { mutableIntStateOf(-1) }
     val gap by animateDpAsState(
-        targetValue = if (pressedPage >= 0) 8.dp else 6.dp,
+        targetValue = if (pressedPage >= 0) 10.dp else 8.dp,
         animationSpec = if (pressedPage >= 0) spring() else snap(),
         label = "battery-scheme-gap",
     )
-    val switchMargin = with(LocalDensity.current) { 2.dp.toPx() }
+    val switchMargin = with(LocalDensity.current) { 3.dp.toPx() }
 
     Row(
         modifier = Modifier.pointerInput(pages.size, haptic) {
@@ -716,16 +716,16 @@ private fun BatteryPagerIndicator(
             val isHighlighted = index == highlightedPage
             val width by animateDpAsState(
                 targetValue = when {
-                    pressedPage >= 0 && isHighlighted -> 19.dp
-                    isHighlighted -> 16.dp
-                    else -> 6.dp
+                    pressedPage >= 0 && isHighlighted -> 24.dp
+                    isHighlighted -> 21.dp
+                    else -> 8.dp
                 },
                 animationSpec = if (pressedPage >= 0) spring() else snap(),
                 label = "battery-scheme-indicator",
             )
             Box(
                 modifier = Modifier
-                    .width(width + gap).height(20.dp)
+                    .width(width + gap).height(28.dp)
                     .onGloballyPositioned { centers[index] = it.positionInParent().x + it.size.width / 2f }
                     .clickable(
                         interactionSource = null,
@@ -738,10 +738,10 @@ private fun BatteryPagerIndicator(
                         contentDescription = name
                         selected = isCurrent
                     },
-                contentAlignment = Alignment.TopCenter,
+                contentAlignment = Alignment.Center,
             ) {
                 Surface(
-                    modifier = Modifier.width(width).height(6.dp),
+                    modifier = Modifier.width(width).height(8.dp),
                     shape = CircleShape,
                     color =
                         if (isHighlighted) {

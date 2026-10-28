@@ -27,7 +27,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 - Added an experimental HyperOS 4 visual mode with upstream-aligned glass navigation, search, dialogs and sheets in the matched-source OS4 Canary; ordinary published-MIUIX builds retain native dialog/sheet fallback. HyperOS 3 remains available.
 - Removed obsolete native icon-observation paths and tightened font-source verification, keeping the native Typeface when its variable-weight source is unverified. Preserved native Control Center endpoints.
 - Made feature search and live-preview navigation follow existing MIUIX focus, Back and scrolling behavior.
-- Enabled accessible press-and-scrub navigation from battery color scheme page indicators: each selected dot switches its card immediately with light haptic feedback, and release adds no further paging or indicator animation. Ordinary card swipes retain MIUIX spring behavior.
+- Enabled proportionate, accessible press-and-scrub battery scheme indicators with larger dots, spacing and touch zones: selecting a dot switches its card immediately with light haptics, and release adds no further animation. Ordinary card swipes retain MIUIX spring behavior.
 
 ### Engineering
 - Strengthened native Hook installation, cleanup and diagnostic exception handling without adding persistent status writers or polling.
