@@ -2,7 +2,7 @@ name: OS4 Canary (matched MIUIX)
 
 on:
   push:
-    branches: [ feat/os4-glass-experimental, dev ]
+    branches: [ dev ]
     paths:
       - '.github/workflows/os4-miuix-pr423-signed-canary.yml'
       - 'app/src/os4Upstream/**'
