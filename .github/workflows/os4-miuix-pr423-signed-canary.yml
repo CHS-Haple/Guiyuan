@@ -2,8 +2,7 @@ name: Guiyuan Matched-Source Build
 
 on:
   push:
-    # Temporary B1633 source-matched device candidate; restore before integration.
-    branches: [ dev, main, fix/os4-sandbox-button-shadow-clip ]
+    branches: [ dev, main ]
     paths:
       - '.github/workflows/os4-miuix-pr423-signed-canary.yml'
       - '.github/workflows/release.yml'
