@@ -669,6 +669,7 @@ private fun BatteryPagerIndicator(
     val centers = remember(pages.size) { FloatArray(pages.size) }
     val inkWidths = remember(pages.size) { FloatArray(pages.size) }
     val liquid = remember { Path() }
+    val sampledY = remember { FloatArray(161) }
     val density = LocalDensity.current
     var pressedPage by remember { mutableIntStateOf(-1) }
     val dotSpring = remember {
@@ -694,91 +695,99 @@ private fun BatteryPagerIndicator(
                 val radius = 4.dp.toPx()
                 val y = size.height / 2f
                 val from = floor(pagePosition).toInt()
-                val t = pagePosition - from
                 val active = pressedPage < 0 && targetPage < 0 && from in 0 until pages.lastIndex
-                val enter = (t / 0.25f).coerceIn(0f, 1f)
-                val exit = ((1f - t) / 0.25f).coerceIn(0f, 1f)
-                val contact = if (t < 0.5f) enter else exit
-                val pull = if (active) 4.dp.toPx() * contact * contact * (3f - 2f * contact) else 0f
-                val joined = active && t > 0.25f && t < 0.75f
-
                 val left = if (active && centers[from] > centers[from + 1]) from + 1 else from
                 val right = if (active && left == from) from + 1 else from
                 val valid = active && inkWidths[left] > 0f && inkWidths[right] > 0f
-                val fusion =
-                    if (valid && joined) {
-                        val phase = ((t - 0.25f) / 0.5f).coerceIn(0f, 1f)
-                        val blend = sin((phase * PI).toFloat())
-                        blend * blend
-                    } else 0f
-                val stretch = if (valid) pull + 1.3.dp.toPx() * fusion else 0f
+
+                val t = pagePosition - from
+                val tension = if (valid) sin((PI * t).toFloat()).let { it * it } else 0f
+                val pull = 4.5.dp.toPx() * tension
+                val enter = ((t - 0.38f) / 0.02f).coerceIn(0f, 1f)
+                val exit = ((0.62f - t) / 0.02f).coerceIn(0f, 1f)
+                val blend = 4.3.dp.toPx() * tension *
+                    enter * enter * (3f - 2f * enter) *
+                    exit * exit * (3f - 2f * exit)
+
+                var merged = false
+                var a = 0f
+                var d = 0f
+                var neckX = 0f
+                if (valid && blend > 0f) {
+                    val w1 = inkWidths[left] + pull
+                    val w2 = inkWidths[right] + pull
+                    val c1 = centers[left] + pull / 2f
+                    val c2 = centers[right] - pull / 2f
+                    val l1 = ((w1 - radius * 2f) / 2f).coerceAtLeast(0f)
+                    val l2 = ((w2 - radius * 2f) / 2f).coerceAtLeast(0f)
+                    a = centers[left] - inkWidths[left] / 2f
+                    d = centers[right] + inkWidths[right] / 2f
+                    neckX = (centers[left] + inkWidths[left] / 2f +
+                        centers[right] - inkWidths[right] / 2f) / 2f
+
+                    fun field(x: Float, h: Float): Float {
+                        val u = (abs(x - c1) - l1).coerceAtLeast(0f)
+                        val v = (abs(x - c2) - l2).coerceAtLeast(0f)
+                        val d1 = sqrt(u * u + h * h) - radius
+                        val d2 = sqrt(v * v + h * h) - radius
+                        val f = ((blend - abs(d1 - d2)) / blend).coerceIn(0f, 1f)
+                        return minOf(d1, d2) - blend * f * f / 4f
+                    }
+
+                    merged = field(neckX, 0f) < 0f
+                    if (merged) {
+                        val steps = ((d - a) / 0.33.dp.toPx()).toInt().coerceIn(48, 160)
+                        val maxY = radius + blend / 4f + 0.25.dp.toPx()
+                        liquid.reset()
+                        liquid.moveTo(a, y)
+                        for (i in 0..steps) {
+                            val x = a + (d - a) * i / steps
+                            var low = 0f
+                            var high = maxY
+                            repeat(9) {
+                                val mid = (low + high) / 2f
+                                if (field(x, mid) < 0f) low = mid else high = mid
+                            }
+                            val edgeY = if (field(x, 0f) < 0f) (low + high) / 2f else 0f
+                            sampledY[i] = edgeY
+                            liquid.lineTo(x, y - edgeY)
+                        }
+                        for (i in steps downTo 0) {
+                            val x = a + (d - a) * i / steps
+                            liquid.lineTo(x, y + sampledY[i])
+                        }
+                        liquid.close()
+                    }
+                }
 
                 pages.indices.forEach { index ->
-                    val width = inkWidths[index]
-                    if (width <= 0f || (fusion > 0f && (index == left || index == right))) {
-                        return@forEach
-                    }
-                    val weight =
+                    val w = inkWidths[index]
+                    if (w <= 0f || (merged && (index == left || index == right))) return@forEach
+                    val p =
                         if (highlightedPage != null) {
                             if (index == highlightedPage) 1f else 0f
                         } else {
                             (1f - abs(index - pagePosition)).coerceIn(0f, 1f)
                         }
-                    val extraLeft = if (valid && index == right) stretch else 0f
-                    val extraRight = if (valid && index == left) stretch else 0f
-                    val start = centers[index] - width / 2f - extraLeft
+                    val extraLeft = if (valid && index == right) pull else 0f
+                    val extraRight = if (valid && index == left) pull else 0f
                     drawRoundRect(
-                        color = lerp(idle, primary, weight),
-                        topLeft = Offset(start, y - radius),
-                        size = Size(width + extraLeft + extraRight, radius * 2f),
+                        color = lerp(idle, primary, p),
+                        topLeft = Offset(centers[index] - w / 2f - extraLeft, y - radius),
+                        size = Size(w + extraLeft + extraRight, radius * 2f),
                         cornerRadius = CornerRadius(radius),
                     )
                 }
-
-                if (fusion > 0f) {
-                    val a = centers[left] - inkWidths[left] / 2f
-                    val b = centers[left] + inkWidths[left] / 2f + stretch
-                    val c = centers[right] - inkWidths[right] / 2f - stretch
-                    val d = centers[right] + inkWidths[right] / 2f
-                    val x1 = b - radius
-                    val x2 = c + radius
-                    val mid = (x1 + x2) / 2f
-                    val span = x2 - x1
-                    val neck =
-                        sqrt((radius * radius - span * span / 4f).coerceAtLeast(0f)) * 0.75f
-                    val guide = span * 0.28f
-                    val pinch = span * 0.16f * fusion
-                    val arc = radius * 0.55228475f
-
-                    liquid.reset()
-                    liquid.moveTo(a + radius, y - radius)
-                    liquid.lineTo(x1, y - radius)
-                    liquid.cubicTo(x1 + guide, y - radius, mid - pinch, y - neck, mid, y - neck)
-                    liquid.cubicTo(mid + pinch, y - neck, x2 - guide, y - radius, x2, y - radius)
-                    liquid.lineTo(d - radius, y - radius)
-                    liquid.cubicTo(d - radius + arc, y - radius, d, y - arc, d, y)
-                    liquid.cubicTo(d, y + arc, d - radius + arc, y + radius, d - radius, y + radius)
-                    liquid.lineTo(x2, y + radius)
-                    liquid.cubicTo(x2 - guide, y + radius, mid + pinch, y + neck, mid, y + neck)
-                    liquid.cubicTo(mid - pinch, y + neck, x1 + guide, y + radius, x1, y + radius)
-                    liquid.lineTo(a + radius, y + radius)
-                    liquid.cubicTo(a + radius - arc, y + radius, a, y + arc, a, y)
-                    liquid.cubicTo(a, y - arc, a + radius - arc, y - radius, a + radius, y - radius)
-                    liquid.close()
-
-                    val leftWeight = (1f - abs(left - pagePosition)).coerceIn(0f, 1f)
-                    val rightWeight = (1f - abs(right - pagePosition)).coerceIn(0f, 1f)
-                    val gradientHalfWidth = 0.1.dp.toPx() + 2.5.dp.toPx() * fusion
+                if (merged) {
+                    val l = (1f - abs(left - pagePosition)).coerceIn(0f, 1f)
+                    val r = (1f - abs(right - pagePosition)).coerceIn(0f, 1f)
                     drawPath(
                         path = liquid,
                         brush =
                             Brush.horizontalGradient(
-                                colors = listOf(
-                                    lerp(idle, primary, leftWeight),
-                                    lerp(idle, primary, rightWeight),
-                                ),
-                                startX = mid - gradientHalfWidth,
-                                endX = mid + gradientHalfWidth,
+                                colors = listOf(lerp(idle, primary, l), lerp(idle, primary, r)),
+                                startX = neckX - 2.dp.toPx(),
+                                endX = neckX + 2.dp.toPx(),
                             ),
                     )
                 }
