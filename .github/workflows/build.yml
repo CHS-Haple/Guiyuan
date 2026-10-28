@@ -29,6 +29,8 @@ jobs:
     timeout-minutes: 90
     outputs:
       run_canary: ${{ steps.scope.outputs.run_canary }}
+      version_name: ${{ steps.identity.outputs.version_name }}
+      build_id: ${{ steps.identity.outputs.build_id }}
 
     steps:
       - name: Checkout
@@ -341,6 +343,14 @@ jobs:
             exit 1
           fi
 
+      - name: Record exact source Build identity
+        id: identity
+        if: steps.scope.outputs.run_canary == 'true'
+        shell: bash
+        run: |
+          echo "version_name=$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)" >> "$GITHUB_OUTPUT"
+          echo "build_id=$(sed -n 's/^combinedStatus.buildId=//p' gradle.properties)" >> "$GITHUB_OUTPUT"
+
       - name: Pass unsigned Canary to isolated signing job
         if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && steps.scope.outputs.run_canary == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -434,8 +444,8 @@ jobs:
           test -s "$source"
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           signer="$SDK_ROOT/build-tools/37.0.0/apksigner"
-          version="$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)"
-          build="$(sed -n 's/^combinedStatus.buildId=//p' gradle.properties)"
+          version="${{ needs.build.outputs.version_name }}"
+          build="${{ needs.build.outputs.build_id }}"
           test -n "$version" && test -n "$build"
           mkdir -p dist
           apk="dist/Guiyuan-${version}-HyperOS-${build}-canary.apk"
