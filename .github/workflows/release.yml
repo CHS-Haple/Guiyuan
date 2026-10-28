@@ -301,13 +301,12 @@ jobs:
           run="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}")"
           source_sha="$(jq -r '.head_sha' <<< "$run")"
           source_branch="$(jq -r '.head_branch' <<< "$run")"
-          workflow_id="$(jq -r '.workflow_id' <<< "$run")"
+          workflow_path="$(jq -r '.path' <<< "$run")"
           conclusion="$(jq -r '.conclusion' <<< "$run")"
           event="$(jq -r '.event' <<< "$run")"
-          expected_id="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/os4-miuix-pr423-signed-canary.yml" --jq '.id')"
           if [[ "$source_sha" != "$GITHUB_SHA" ||
                 "$source_branch" != "dev" ||
-                "$workflow_id" != "$expected_id" ||
+                "$workflow_path" != ".github/workflows/os4-miuix-pr423-signed-canary.yml" ||
                 "$conclusion" != "success" ||
                 ( "$event" != "push" && "$event" != "workflow_dispatch" ) ]]; then
             echo "OS4 signed candidate provenance does not match the current dev commit."
