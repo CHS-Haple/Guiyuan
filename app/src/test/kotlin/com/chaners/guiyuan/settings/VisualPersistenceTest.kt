@@ -489,6 +489,78 @@ class VisualPersistenceTest {
         assertTrue(prefs.all.isEmpty())
     }
 
+    @Test
+    fun activatingBatterySchemeUpdatesOnlyTheCurrentSimMode() {
+        val prefs = MemoryPreferences()
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putString(BATTERY_COLOR_PRESET_KEY, BatteryColorPreset.RECOMMENDED.persistedValue)
+            .putString(
+                batteryColorModeKey(BatteryColorSlot.CHARGING),
+                BatteryColorMode.CUSTOM.persistedValue,
+            )
+            .putInt(batteryColorOverrideKey(BatteryColorSlot.CHARGING), 0xFF123456.toInt())
+            .putString(
+                visualModeKey(true, BATTERY_COLOR_PRESET_KEY),
+                BatteryColorPreset.HYPEROS.persistedValue,
+            )
+            .apply()
+        val editor = prefs.edit()
+        writeBatterySchemeLibrary(editor, BatteryColorSchemeLibrary())
+        editor.apply()
+
+        val schemes = BatterySchemeRepo(prefs)
+        schemes.activateScheme(BATTERY_COLOR_SCHEME_IOS_KEY)
+
+        assertEquals(BATTERY_COLOR_SCHEME_IOS_KEY, schemes.current().activeSchemeKey)
+        assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg(dual = true).batteryColorPreset)
+        assertEquals(BatteryColorMode.PRESET, prefs.readVisualCfg(dual = true).batteryColorModes.charging)
+        assertFalse(prefs.contains(visualModeKey(true, batteryColorOverrideKey(BatteryColorSlot.CHARGING))))
+        assertEquals(BatteryColorPreset.RECOMMENDED, prefs.readVisualCfg(dual = false).batteryColorPreset)
+        assertEquals(BatteryColorMode.CUSTOM, prefs.readVisualCfg(dual = false).batteryColorModes.charging)
+        assertEquals(0xFF123456.toInt(), prefs.readVisualCfg(dual = false).batteryColorOverrides.charging)
+
+        prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false).apply()
+        schemes.activateScheme(BATTERY_COLOR_SCHEME_HYPEROS_KEY)
+        assertEquals(BatteryColorPreset.HYPEROS, prefs.readVisualCfg(dual = false).batteryColorPreset)
+        assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg(dual = true).batteryColorPreset)
+    }
+
+    @Test
+    fun editingActiveCustomSchemeUsesDualBankWithoutTouchingSingle() {
+        val prefs = MemoryPreferences()
+        prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, true).apply()
+        val schemes = BatterySchemeRepo(prefs)
+        val id = requireNotNull(schemes.createCustom("Dual colors", BATTERY_COLOR_SCHEME_HYPEROS_KEY))
+
+        schemes.activateScheme(customSchemeKey(id))
+        schemes.setCustomColor(id, BatteryColorSlot.CHARGING, 0xFF2468AC.toInt())
+
+        assertEquals(BatteryColorMode.CUSTOM, prefs.readVisualCfg(dual = true).batteryColorModes.charging)
+        assertEquals(0xFF2468AC.toInt(), prefs.readVisualCfg(dual = true).batteryColorOverrides.charging)
+        assertEquals(BatteryColorMode.PRESET, prefs.readVisualCfg(dual = false).batteryColorModes.charging)
+        assertFalse(prefs.contains(batteryColorOverrideKey(BatteryColorSlot.CHARGING)))
+    }
+
+    @Test
+    fun migratingBatterySchemeWhileDualDoesNotRewriteSingleColorBank() {
+        val prefs = MemoryPreferences()
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putString(BATTERY_COLOR_PRESET_KEY, BatteryColorPreset.RECOMMENDED.persistedValue)
+            .putString(
+                visualModeKey(true, BATTERY_COLOR_PRESET_KEY),
+                BatteryColorPreset.IOS_STYLE.persistedValue,
+            )
+            .apply()
+
+        val schemes = BatterySchemeRepo(prefs)
+
+        assertEquals(BATTERY_COLOR_SCHEME_IOS_KEY, schemes.current().activeSchemeKey)
+        assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg(dual = true).batteryColorPreset)
+        assertEquals(BatteryColorPreset.RECOMMENDED, prefs.readVisualCfg(dual = false).batteryColorPreset)
+    }
+
     private class MemoryPreferences : SharedPreferences {
         private val values = mutableMapOf<String, Any>()
 
