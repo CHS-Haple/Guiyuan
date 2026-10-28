@@ -92,10 +92,10 @@ jobs:
             -Pgy.os4.miuixDir=../upstream \
             -Pgy.os4.miuixRevision=b9f70838509fbc3f63f1a972777a7e6ce07f578f \
             -Pgy.os4.dialogSurfaces=true \
-            :app:testDebugUnitTest :app:assembleDebug :app:assembleCanary \
+            :app:testDebugUnitTest :app:assembleDebug :app:assembleCanary :app:assembleRelease \
             --no-daemon --max-workers=2 --stacktrace
 
-      - name: Verify unsigned candidate and module manifest
+      - name: Verify unsigned Canary and source-matched Release candidate
         shell: bash
         run: |
           set -euo pipefail
@@ -104,6 +104,13 @@ jobs:
           bash gui/tools/verify_xposed_metadata.sh "$apk"
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           test "$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk" | sed -n "s/.*package: name='\([^']*\)'.*/\1/p" | head -n 1)" = "com.chaners.guiyuan"
+          # This is a no-secrets compatibility check, not a Release publication.
+          release="gui/app/build/outputs/apk/release/app-release-unsigned.apk"
+          test -s "$release"
+          bash gui/tools/verify_xposed_metadata.sh "$release"
+          test "$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$release" | sed -n "s/.*package: name='\([^']*\)'.*/\1/p" | head -n 1)" = "com.chaners.guiyuan"
+          APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
+          test "$("$APKANALYZER" manifest debuggable "$release")" = "false"
           mkdir -p dist
           cp "$apk" dist/candidate-unsigned.apk
 
