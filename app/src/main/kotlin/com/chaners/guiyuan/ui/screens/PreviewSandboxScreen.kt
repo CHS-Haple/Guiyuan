@@ -348,7 +348,6 @@ internal fun PreviewSandboxScreen(
                         title = stringResource(R.string.home_preview_sandbox_title),
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
-                        bandOverhang = maxOf(GlassTopAppBarDefaults.BandOverhang, dockHeight),
                         navigationIcon = backAction,
                         actions = barActions,
                         bottomContent = { dock() },
@@ -372,7 +371,7 @@ internal fun PreviewSandboxScreen(
                 }
               }
             },
-            // Retain MIUIX's one native popup host; it draws above this dock.
+            // Keep the one popup host; OS4's compact row is native top-bar bottom content.
             popupHost = {
                 Box(Modifier.fillMaxSize()) {
                     if (!os4) {
