@@ -610,8 +610,8 @@ private fun BatterySchemeIndicatorRail(
     onPageClick: (Int) -> Unit,
 ) {
     Box(
-        modifier = Modifier.fillMaxWidth().height(40.dp),
-        contentAlignment = Alignment.Center,
+        modifier = Modifier.fillMaxWidth().height(20.dp),
+        contentAlignment = Alignment.TopCenter,
     ) {
         BatteryPagerIndicator(
             pages = pages,
@@ -641,7 +641,7 @@ private fun BatteryPagerIndicator(
             )
             Box(
                 modifier = Modifier
-                    .size(width = 32.dp, height = 40.dp)
+                    .width(width + 6.dp).height(20.dp)
                     .clickable(
                         role = Role.Tab,
                         onClickLabel = stringResource(R.string.battery_scheme_go_to, name),
@@ -651,7 +651,7 @@ private fun BatteryPagerIndicator(
                         contentDescription = name
                         selected = isCurrent
                     },
-                contentAlignment = Alignment.Center,
+                contentAlignment = Alignment.TopCenter,
             ) {
                 Surface(
                     modifier = Modifier.width(width).height(6.dp),
