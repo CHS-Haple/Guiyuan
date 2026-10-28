@@ -58,7 +58,7 @@ Compatibility expansion must not weaken the current target's ownership and resto
 
 ## 0.9.1 checkpoint qualification
 
-0.9.1 is a **pre-1.0 development checkpoint**, not the first formal stable release. **Do not bump to 0.9.1 before experimental OS4 [#861](https://github.com/CHS-Haple/Guiyuan/pull/861) is merged into `dev`.** OS4 must meet its own integration and acceptance requirements; this runtime work remains separate from the native cleanup audit. Before promoting `dev` to `main`:
+0.9.1 is a **pre-1.0 development checkpoint**, not the first formal stable release. Experimental OS4 [#861](https://github.com/CHS-Haple/Guiyuan/pull/861) is integrated in `dev` with matched-source B1536 device acceptance. Keep its pinned source-built Canary distinct from the ordinary published-MIUIX fallback; neither is a formal release. This runtime work remains separate from the native cleanup audit, and **do not bump to 0.9.1 solely because OS4 is integrated**. Before promoting `dev` to `main`:
 
 - complete source-proven native callback ownership and exception recovery in [#758](https://github.com/CHS-Haple/Guiyuan/issues/758), retaining exactly-once native methods, single writer and fail-native cleanup; do not treat passing CI as proof of injected failures;
 - accept the **last integrated runtime candidate** on the target for Home, Keyguard, AOD, Control Center, tint/charging, network and Hot Reload. An untested new runtime change invalidates the corresponding earlier device acceptance;
