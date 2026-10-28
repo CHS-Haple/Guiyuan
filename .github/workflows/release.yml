@@ -176,7 +176,7 @@ jobs:
           signer="$SDK_ROOT/build-tools/37.0.0/apksigner"
           mkdir -p dist
           for channel in internal release; do
-            source="candidate/app-${channel}-unsigned.apk"
+            source="candidate/${channel}/app-${channel}-unsigned.apk"
             test -s "$source"
             apk="dist/Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-${channel}.apk"
             "$signer" sign \
