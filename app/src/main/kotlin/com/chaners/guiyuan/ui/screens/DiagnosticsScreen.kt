@@ -8,8 +8,10 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.animation.core.Animatable
@@ -25,12 +27,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -55,6 +59,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
@@ -80,6 +86,8 @@ import kotlinx.coroutines.withContext
 import java.util.Locale
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Badge
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
@@ -456,19 +464,35 @@ internal fun DiagnosticsScreen(
                     )
                 }
             }
+            entries.isEmpty() && snapshot?.log?.result?.isSuccess == false -> {
+                item(key = "diagnostics-root-unavailable") {
+                    LogEmptyGuide(
+                        title = stringResource(R.string.diagnostics_root_unavailable_title),
+                        description = stringResource(R.string.diagnostics_root_unavailable_message),
+                        note = stringResource(R.string.diagnostics_root_unavailable_export),
+                        iconRes = R.drawable.ic_material_symbol_lock,
+                        busy = loading,
+                        onRetry = ::reloadSnapshot,
+                        modifier = Modifier.fillParentMaxSize(),
+                    )
+                }
+            }
+            entries.isEmpty() -> {
+                item(key = "diagnostics-no-events") {
+                    LogEmptyGuide(
+                        title = stringResource(R.string.diagnostics_events_empty),
+                        description = stringResource(R.string.diagnostics_no_events_hint),
+                        note = null,
+                        iconRes = R.drawable.ic_material_symbol_info,
+                        busy = loading,
+                        onRetry = ::reloadSnapshot,
+                        modifier = Modifier.fillParentMaxSize(),
+                    )
+                }
+            }
             else -> {
                 item(key = "diagnostics-state-empty") {
-                    LogStateCard(
-                        text =
-                            stringResource(
-                                if (entries.isNotEmpty() && filterActive) {
-                                    R.string.diagnostics_filter_empty
-                                } else {
-                                    R.string.diagnostics_events_empty
-                                },
-                            ),
-                        modifier = Modifier,
-                    )
+                    LogStateCard(text = stringResource(R.string.diagnostics_filter_empty))
                 }
             }
         }
@@ -924,6 +948,84 @@ private fun LogCard(
                     value = entry.raw,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun LogEmptyGuide(
+    title: String,
+    description: String,
+    note: String?,
+    @DrawableRes iconRes: Int,
+    busy: Boolean,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 28.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier.widthIn(max = 340.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier =
+                    Modifier.size(72.dp).background(
+                        color = MiuixTheme.colorScheme.secondaryContainerVariant,
+                        shape = CircleShape,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(iconRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                    tint = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                )
+            }
+            Spacer(Modifier.height(22.dp))
+            Text(
+                text = title,
+                style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.SemiBold),
+                color = MiuixTheme.colorScheme.onSurfaceContainer,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = description,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                textAlign = TextAlign.Center,
+            )
+            note?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = it,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = onRetry,
+                enabled = !busy,
+                modifier = Modifier.widthIn(min = 176.dp),
+                colors = ButtonDefaults.buttonColorsPrimary(),
+            ) {
+                Text(
+                    text = stringResource(R.string.diagnostics_retry_logs),
+                    style = MiuixTheme.textStyles.button,
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.diagnostics_pull_hint),
+                style = MiuixTheme.textStyles.footnote2,
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            )
         }
     }
 }

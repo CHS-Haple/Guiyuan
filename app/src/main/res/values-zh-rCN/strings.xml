@@ -350,6 +350,12 @@
     <string name="diagnostics_component_renderer">渲染器</string>
     <string name="diagnostics_component_session">运行会话</string>
     <string name="diagnostics_component_other">组件</string>
+    <string name="diagnostics_root_unavailable_title">无法读取运行日志</string>
+    <string name="diagnostics_root_unavailable_message">请在 Root 管理器中检查归元的授权状态。若已授权仍无法读取，请尝试重新读取。</string>
+    <string name="diagnostics_root_unavailable_export">不授权也可通过右上角导出基础诊断报告，但不包含运行日志。</string>
+    <string name="diagnostics_no_events_hint">本次运行没有可展示的关键事件，可尝试重新读取日志。</string>
+    <string name="diagnostics_retry_logs">重新读取日志</string>
+    <string name="diagnostics_pull_hint">也可下拉刷新</string>
     <string name="diagnostics_events_empty">本次运行暂无关键诊断事件</string>
     <string name="section_diagnostic_report">诊断与报告</string>
     <string name="export_diagnostic_report">导出诊断报告</string>

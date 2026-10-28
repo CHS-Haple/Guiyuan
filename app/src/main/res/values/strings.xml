@@ -351,6 +351,12 @@
     <string name="diagnostics_component_renderer">Renderer</string>
     <string name="diagnostics_component_session">Runtime session</string>
     <string name="diagnostics_component_other">Component</string>
+    <string name="diagnostics_root_unavailable_title">Unable to read runtime logs</string>
+    <string name="diagnostics_root_unavailable_message">Check Root permission for Guiyuan in your Root manager. If permission is already granted, try reading the logs again.</string>
+    <string name="diagnostics_root_unavailable_export">You can still export a basic diagnostic report from the top bar without Root access, but it will not contain runtime logs.</string>
+    <string name="diagnostics_no_events_hint">No key events are available for this session. Try reading the logs again.</string>
+    <string name="diagnostics_retry_logs">Read logs again</string>
+    <string name="diagnostics_pull_hint">You can also pull down to refresh</string>
     <string name="diagnostics_events_empty">No key diagnostic events in the current runtime session</string>
     <string name="section_diagnostic_report">Diagnostics &amp; reports</string>
     <string name="export_diagnostic_report">Export diagnostic report</string>
