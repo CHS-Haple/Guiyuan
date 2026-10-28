@@ -174,12 +174,13 @@ internal fun batterySchemeEntryColor(
         BatteryColorSchemeSource.CUSTOM -> entry.customColor
     }
 
-internal class BatterySchemeRepo(context: Context) {
-    private val preferences =
+internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
+    constructor(context: Context) : this(
         context.applicationContext.getSharedPreferences(
             COMBINED_STATUS_VISUAL_PREFS_NAME,
             Context.MODE_PRIVATE,
-        )
+        ),
+    )
 
     init {
         migrateIfNeeded()
@@ -476,15 +477,16 @@ internal class BatterySchemeRepo(context: Context) {
         library: BatteryColorSchemeLibrary,
         key: String,
     ) {
+        val dual = preferences.dualSignalEnabled()
         val builtIn = BatteryBuiltInColorScheme.fromKey(key)
         if (builtIn != null) {
-            editor.putString(BATTERY_COLOR_PRESET_KEY, builtIn.preset.persistedValue)
+            editor.putString(visualModeKey(dual, BATTERY_COLOR_PRESET_KEY), builtIn.preset.persistedValue)
             BatteryColorSlot.entries.forEach { slot ->
                 editor.putString(
-                    batteryColorModeKey(slot),
+                    visualModeKey(dual, batteryColorModeKey(slot)),
                     BatteryColorMode.PRESET.persistedValue,
                 )
-                editor.remove(batteryColorOverrideKey(slot))
+                editor.remove(visualModeKey(dual, batteryColorOverrideKey(slot)))
             }
             return
         }
@@ -494,7 +496,7 @@ internal class BatterySchemeRepo(context: Context) {
             return
         }
         editor.putString(
-            BATTERY_COLOR_PRESET_KEY,
+            visualModeKey(dual, BATTERY_COLOR_PRESET_KEY),
             BatteryColorPreset.HYPEROS.persistedValue,
         )
         BatteryColorSlot.entries.forEach { slot ->
@@ -509,8 +511,8 @@ internal class BatterySchemeRepo(context: Context) {
                     else ->
                         BatteryColorMode.FOLLOW_SYSTEM
                 }
-            editor.putString(batteryColorModeKey(slot), mode.persistedValue)
-            val colorKey = batteryColorOverrideKey(slot)
+            editor.putString(visualModeKey(dual, batteryColorModeKey(slot)), mode.persistedValue)
+            val colorKey = visualModeKey(dual, batteryColorOverrideKey(slot))
             if (mode == BatteryColorMode.CUSTOM && resolvedColor != null) {
                 editor.putInt(colorKey, resolvedColor.or(0xFF000000.toInt()))
             } else {
