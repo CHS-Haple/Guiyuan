@@ -19,7 +19,38 @@ Evidence language:
 
 ## Target scope
 
-Current target evidence is scoped to Xiaomi HyperOS SystemUI `17.03.260226.r`.
+Current target evidence is scoped to Xiaomi HyperOS SystemUI `17.03.260226.r`. The previously supplied `系统界面_17.03.260226.r(6).apk` was byte-verified (SHA-256 `a0e738e41fe599b97950cbf52a9e2ddc6ae2ceff986efbacb1c9840bea78768d`, three DEX files).
+
+**Verified target DEX boundary.** `MiuiStatusIconContainer` extends `AlphaOptimizedLinearLayout`, which extends Android `LinearLayout`; neither target class declares a `setPaddingRelative` override. The target `MiuiStatusIconContainer.onLayout(ZIIII)V` invokes inherited `getPaddingStart()` and `getPaddingEnd()`; native `addIgnoredSlots(List)` calls `List.add` and `requestLayout`, while `setIgnoredSlots(List)` calls `List.clear` before `addIgnoredSlots`. These are verified method definitions/invocations, **not** proof of the inherited Android setter's internal exception ordering, synchronous reentry, other modules' writers or actual runtime failure. Inspect the matching Android framework binary when that behavior becomes decision-critical; AOSP is secondary context.
+
+**Observed native Padding consumers (DEX call-site offsets).** Re-reading the same SHA-256-verified APK's `classes3.dex` gives the following method invocation positions, measured in DEX *16-bit code units* from the enclosing method's first instruction:
+
+- `MiuiStatusIconContainer.onLayout(ZIIII)V`: inherited `getPaddingEnd()` at offset **108**, `getPaddingStart()` at **114**.
+- `MiuiNotificationStatusContainer.onLayout(ZIIII)V`: `getPaddingStart()` at **13** and **20**; its `onMeasure(II)V` reads `getPaddingStart()` at **195** and `getPaddingEnd()` at **200** and **210**.
+- `MiuiStatusBatteryContainer.onLayout(ZIIII)V`: `getPaddingEnd()` at **33**, **56**, **109**, **132**, **163** and **177**; `getPaddingStart()` at **167** and **173**.
+- `MiuiStatusIconContainer.addIgnoredSlots(Ljava/util/List;)V`: `List.contains` at **18**, `List.add` at **26**, and `requestLayout` at **30**. `setIgnoredSlots(Ljava/util/List;)V`: `List.clear` at **2**, then `addIgnoredSlots` at **5**.
+
+These are invocation references in the target bytecode, not a full path-condition or runtime callback trace. In particular, none establishes the actual inherited Android `setPaddingRelative()` exception/reentry order. Native padding influences more than the Guiyuan glyph bounds, so any session-owned padding acquisition/rollback must account for the native measure/layout consumers and preserve single-writer and foreign-change boundaries.
+
+**Observed native Padding writers (DEX and resource table).** On the same SHA-256-verified target, `MiuiPhoneStatusBarView.updatePaddings()V` in `classes2.dex` invokes inherited `setPaddingRelative(IIII)V` on three recipients:
+
+- `findViewById(0x7f0b0b53)`, named `status_bar_contents` in the packaged `resources.arsc`: call at instruction offset **97**.
+- `findViewById(0x7f0b0be6)`, named `system_icons`: call at offset **107**.
+- Its `mPrivacyArea: LinearLayout` field: call at offset **139**.
+
+**Additional native initialization writer (exact receiver).** `MiuiPhoneStatusBarView.onFinishInflate()V` in `classes2.dex` obtains resource `0x7f0b0be5` (`system_icon_area`) at offsets **86–93**, stores it in `mSystemIconArea: View`, and, in the `MiuiConfigs.IS_PAD` branch, calls inherited `View.setPaddingRelative(IIII)V` on that field at offset **180**. The receiver is the `system_icon_area` View, **not** the separately loaded `mStatusBarStatusIcons: MiuiStatusIconContainer` (`statusIcons`, `0x7f0b0b4e`). This is an initialization-time native Padding write to a different recorded View; it does not establish a same-View writer collision, inherited Android setter exception order, or live host identity.
+
+These calls and resource names were verified from DEX invoke registers, field references and APK resource-entry names. The same target's `MiuiPhoneStatusBarView.onFinishInflate()V` loads `statusIcons` (`0x7f0b0b4e`) as `MiuiStatusIconContainer` into `mStatusBarStatusIcons`, while `system_icons` (`0x7f0b0be6`) is cast to the distinct `MiuiStatusBatteryContainer` and stored as `mStatusBatteryContainer`; `system_icon_area` (`0x7f0b0be5`) is another View. The observed native Padding writes on these recipients do **not** prove a second writer to Guiyuan's checked `MiuiStatusIconContainer`. Parent/peer Padding can still influence native measurement.
+
+**Observed CC FAKE Padding writer (target DEX).** In the same SHA-256-verified APK, `CcFakeStatusBarIcons.updateStatusBarLayout()V` in `classes.dex` reads `statusBarInner: LinearLayout`, updates that View's `FrameLayout.LayoutParams.height` from `SystemBarUtils.getStatusBarHeight`, and invokes its `setLayoutParams` at code-unit offset **31**. The method then reads `statusBarArea: MiuiStatusBatteryContainer` at **34**, loads a dimension from resource `0x7f071937` at **38–44**, and calls inherited `ViewGroup.setPaddingRelative(IIII)V` on that `statusBarArea` at **46** (other three arguments are zero). This is an observed **CC FAKE-specific receiver**, not Guiyuan Home's `MiuiStatusIconContainer` and not evidence of a same-View Padding collision. The target DEX alone does not reveal the inherited Android setter's exception/reentrancy behavior, the dimension's semantic name or the actual runtime View identity across scene recreation.
+
+**Observed Home manager construction (DEX).** In `classes3.dex`, `StatusBarRootKt$$ExternalSyntheticLambda3.invoke(Object)` reads `statusIcons` (`0x7f0b0b4e`) as `MiuiStatusIconContainer` (offsets **171–178**) and passes that same register to `SwitchingProvider$37.create` at **182**. The factory in `classes2.dex` forwards the group to `IconManager.<init>` at **69**; that constructor stores the parameter in `mGroup` at **26**. The callback installs the manager on `MiuiPhoneStatusBarView` through `setDarkIconManager` at **193**. Guiyuan's `NativeParticipantAccess.groupFor` reads that `mGroup`, establishing the original Home `statusIcons` View as its construction-time source.
+
+**Observed Home root initialization on the *same* icon-group View (DEX).** In `StatusBarRootKt$$ExternalSyntheticLambda3.invoke(Object)`, the native builder resolves `R.id.statusIcons` as `MiuiStatusIconContainer` for `DarkIconManager` and later resolves that **same resource ID** as `LinearLayout`. At `classes3.dex` code-unit offset **279**, it invokes inherited `setPaddingRelative(IIII)V` on the latter after reading that very View's current start/top/end/bottom Padding; the preceding `HomeStatusBarIconBlockListBinder.bind` has been called, while `HomeStatusBarViewBinderImpl.bind` and the initializer callback follow. This **is** an original-SystemUI setter on Guiyuan's Home icon-group receiver, but it reapplies live values, not a distinct target Padding. The timing of actual Guiyuan session acquisition, setter reentrancy and any conflicting native/third-party mutation is not established by this static sequence.
+
+**Observed Home manager lifecycle (DEX).** `HomeStatusBarIconBlockListBinder.bind` in `classes3.dex` calls `RepeatWhenAttachedKt.repeatWhenAttached$default` at **7**. Its coroutine registers the manager through `StatusBarIconControllerImpl.addIconGroup` at **33**, enters `repeatOnLifecycle(STARTED)` at **51**, and on exit invokes `DarkIconManager.destroy` at **67** or **87** before removing the manager from `mIconGroups` at **72** or **92**. In `classes2.dex`, `DarkIconManager.destroy()` calls `mGroup.removeAllViews()` at **27** without clearing the `mGroup` field. A retained group reference therefore does not by itself prove that native icon binding is still active.
+
+**Not established:** live group/manager identity after all host recreation or third-party changes, whether an attached host can temporarily retain a retired manager, inherited Android `setPaddingRelative` exception/reentry order, or a divergent desired Padding value / runtime race at the verified same-View initialization setter. Verify the exact native View, manager membership and generation before changing rollback; do not infer write ownership from a resource name, ancestor or equal numeric Padding.
 
 A contract verified here must not be assumed valid on another SystemUI build without revalidation.
 
@@ -39,7 +70,17 @@ Home uses the existing native end-side carrier. Keyguard/AOD use their own verif
 
 ## Represented-slot suppression
 
-**Observed.** The target status-icon container exposes an ignored-slot contract consumed by native measure/layout.
+**Observed.** The target status-icon container exposes an ignored-slot contract consumed by native measure/layout. On the verified `MiuiStatusIconContainer`, `addIgnoredSlots` inserts missing entries one by one and requests layout, while `setIgnoredSlots` first clears the entire native list before calling that add method. The setter is therefore a whole-list replacement, not an atomic delta rollback.
+
+**Observed native ignored-slot callers (same target DEX).** Other SystemUI components also write native ignored lists; method ownership must be traced to the actual container:
+
+- Home `MiuiPhoneStatusBarView.updateCutoutLocation()V` invokes `mStatusBarStatusIcons.setIgnoredSlots(MiuiIconManagerUtils.RIGHT_BLOCK_LIST)` at `classes2.dex` code-unit offset **9**. This is the Home icon container, and the call replaces its list when the native cutout-space check permits the method to proceed.
+- `MiuiQSHeaderView.onAttachedToWindow()V` invokes `mStatusIconContainer.setIgnoredSlots(CONTROL_CENTER_BLOCK_LIST)` at `classes2.dex` offset **144**. `ControlCenterStatusBarIcon.onAttachedToWindow()V` invokes `delegate.statusIcons.addIgnoredSlots(CONTROL_CENTER_BLOCK_LIST)` at `classes.dex` offset **73**, after the native icon manager registration. Both use their respective QS/CC container fields, not the Home `mStatusBarStatusIcons` field.
+- The target `MiuiIconManagerUtils` static `RIGHT_BLOCK_LIST` and `CONTROL_CENTER_BLOCK_LIST` contain none of Guiyuan's five represented slot names (`wifi`, `mobile`, `stacked_mobile`, `airplane`, `no_sim`). This verifies those *static inputs*, not live list contents after callbacks, same-View writer overlap, or execution timing.
+
+**Not established:** whether a native list replacement can interleave an active Guiyuan mutation on the same live View. Retain identity-scoped delta restoration and the shortest justified ownership lifetime; do not infer that separate callers share a View or that disjoint static inputs prove exceptional-path safety.
+
+**Guiyuan rule:** if a native add fails, derive any rollback target from the current native list minus only the session-owned additions. A pre-call whole-list snapshot can discard unrelated SystemUI entries added in reentrant callbacks. Recheck the native result and fail native if restoration cannot be verified; do not claim protection against concurrent writers of the same slot name.
 
 Safe mutation:
 - preserves existing platform ignored slots;
@@ -147,6 +188,14 @@ Carrier-capacity leasing and per-progress reservation are separate. Width leased
 **Observed / Guiyuan rule.** A represented native View may remain a state/lifecycle carrier after its pixels are replaced; that does not automatically make it the best tint authority for Guiyuan's visible pixels.
 
 Prefer a genuinely visible non-represented peer or verified native tint manager/global authority. Do not force a refresh or invent a color when no valid authority exists.
+
+## Native Wi-Fi binding across Hot Reload
+
+**Observed — exact target DEX and device diagnostics.** `ModernStatusBarWifiView` inherits `ModernStatusBarView.binding`. After `MiuiWifiViewBinder.bind`, that native binding retains a `LocationBasedWifiViewModel`; the Home implementation is `HomeWifiViewModel`. Its `getWifiIcon(): StateFlow` exposes the current `WifiIcon.Visible` or `WifiIcon.Hidden` semantic value. The native binding's visibility query reads this same state. An existing View may survive an Xposed generation change without invoking its binder again.
+
+**Guiyuan rule:** an attached, uniquely identified Wi-Fi View under the current verified Home host may be used as a **read-only** bridge to the existing native ViewModel during the main-thread Hot Reload restore. Verify the root, binding and model identities before reading the current Wi-Fi state. Preserve `Hidden` as a semantic fact: a visible ImageView or retained drawable tag does not establish current Wi-Fi visibility. Do not reuse a detached or ambiguous root, create simulated binder registrations, mutate the native binding, or infer signal level from connectivity transport alone.
+
+**Not established:** exact binding shape on other SystemUI builds, an API 102 frame-atomic handoff, and universal recovery of a `Visible` Wi-Fi snapshot when no authentic transferable binding exists during reload preparation. A missing source must fail native rather than transfer an unverified live presentation.
 
 ## Native resource rendering
 

@@ -13,12 +13,21 @@ internal object StatusBarStableSession {
         "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
 
     private var current: Session? = null
+    private val retirement = RetirementGate<Session>()
+
+    private fun stop(session: Session) {
+        retirement.release(session) {
+            session.stop()
+            0
+        }
+    }
 
     @Synchronized
     fun attach(
         host: Any,
         onEvent: (String) -> Unit,
     ): String? {
+        if (retirement.pending != null) return "stable-status-release-incomplete"
         val hostView = host as? ViewGroup
             ?: return "host-not-view-group"
 
@@ -32,7 +41,7 @@ internal object StatusBarStableSession {
             return null
         }
 
-        existing?.stop()
+        existing?.let { stop(it) }
 
         val session = Session(
             host = hostView,
@@ -48,8 +57,9 @@ internal object StatusBarStableSession {
 
     @Synchronized
     fun detach() {
-        current?.stop()
-        current = null
+        val session = current ?: retirement.pending ?: return
+        stop(session)
+        if (current === session) current = null
     }
 
     private fun ViewGroup.directChild(className: String): ViewGroup? {
@@ -90,8 +100,10 @@ internal object StatusBarStableSession {
         }
 
         fun stop() {
-            host.get()?.removeOnAttachStateChangeListener(this)
-            clearAnchorLayoutListener()
+            releaseAll(
+                { host.get()?.removeOnAttachStateChangeListener(this) },
+                { clearAnchorLayoutListener() },
+            )
         }
 
         override fun onViewAttachedToWindow(view: View) {

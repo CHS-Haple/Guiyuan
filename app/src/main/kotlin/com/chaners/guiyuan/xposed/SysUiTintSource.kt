@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import android.graphics.drawable.ClipDrawable
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
@@ -9,10 +10,25 @@ import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
+import java.lang.reflect.InvocationTargetException
 import java.util.ArrayList
 import java.util.WeakHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiTintSource {
+    private fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            rethrowFatal(error)
+            null
+        }
+
     const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
     const val UPDATE_TINT_METHOD_NAME = "updateLightDarkTint"
@@ -22,6 +38,9 @@ internal object SysUiTintSource {
     private const val UPDATE_HOOK_ID = "combinedstatus.tint.battery.update"
     private const val INTERNAL_HOOK_ID = "combinedstatus.tint.battery.internal"
     private val lastStates = WeakHashMap<View, TintState>()
+    // Native reads and successful owner delivery are independent facts.
+    private class Delivery(val state: TintState)
+    private val deliveredStates = WeakHashMap<View, Delivery>()
     private val firstEventLogged = WeakHashMap<View, Unit>()
     private val batteryIconStructureLogged = WeakHashMap<View, Unit>()
     private val batteryIconClipFields = HashMap<Class<*>, List<Field>>()
@@ -42,6 +61,7 @@ internal object SysUiTintSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onTintState: (TintUpdate) -> Unit,
+        onRuntimeFailure: (Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
@@ -71,6 +91,17 @@ internal object SysUiTintSource {
                 .apply { isAccessible = true }
 
         batteryPercentViewField = percentField
+        val warned = AtomicBoolean(false)
+        fun diagnose(block: () -> Unit) {
+            try {
+                block()
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                if (warned.compareAndSet(false, true)) {
+                    readOrNull { Log.w("Guiyuan[Tint]", "Diagnostic failed", error) }
+                }
+            }
+        }
 
         val updateHandle =
             runCatching {
@@ -81,46 +112,50 @@ internal object SysUiTintSource {
                         Hooker { chain ->
                             val result = chain.proceed()
                             if (!hooksReady) return@Hooker result
-                            val sourceView = chain.thisObject as? View
+                            val sourceView = readOrNull { chain.thisObject as? View }
                                 ?: return@Hooker result
                             val state =
                                 dispatchAppliedState(
                                     sourceView = sourceView,
                                     percentField = percentField,
                                     onTintState = onTintState,
+                                    onRuntimeFailure = onRuntimeFailure,
                                 )
-                            if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                                probeBatteryIconAuthority(
-                                    sourceView = sourceView,
-                                    iconField = iconField,
-                                    source = UPDATE_TINT_METHOD_NAME,
-                                    onEvent = onEvent,
-                                )
-                                if (
-                                    state != null &&
-                                    synchronized(this) {
-                                        firstEventLogged.put(sourceView, Unit) == null
-                                    }
-                                ) {
-                                    val darkIntensity =
-                                        (chain.getArg(1) as? Number)?.toFloat()
-                                            ?: Float.NaN
-                                    val lightColor =
-                                        (chain.getArg(3) as? Number)?.toInt() ?: 0
-                                    val darkColor =
-                                        (chain.getArg(4) as? Number)?.toInt() ?: 0
-                                    val useTint =
-                                        chain.getArg(5) as? Boolean ?: false
-                                    onEvent(
-                                        "tintSource receiver=" +
-                                            sourceView.javaClass.simpleName +
-                                            " batteryApplied=" + colorHex(state.appliedTint) +
-                                            " authority=battery-anchor-fallback" +
-                                            " intensity=" + darkIntensity +
-                                            " light=" + colorHex(lightColor) +
-                                            " dark=" + colorHex(darkColor) +
-                                            " useTint=" + useTint,
+                            diagnose {
+                                if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                    probeBatteryIconAuthority(
+                                        sourceView = sourceView,
+                                        iconField = iconField,
+                                        source = UPDATE_TINT_METHOD_NAME,
+                                        onEvent = onEvent,
                                     )
+                                    if (
+                                        state != null &&
+                                        synchronized(this) {
+                                            !firstEventLogged.containsKey(sourceView)
+                                        }
+                                    ) {
+                                        val darkIntensity =
+                                            (chain.getArg(1) as? Number)?.toFloat()
+                                                ?: Float.NaN
+                                        val lightColor =
+                                            (chain.getArg(3) as? Number)?.toInt() ?: 0
+                                        val darkColor =
+                                            (chain.getArg(4) as? Number)?.toInt() ?: 0
+                                        val useTint =
+                                            chain.getArg(5) as? Boolean ?: false
+                                        onEvent(
+                                            "tintSource receiver=" +
+                                                sourceView.javaClass.simpleName +
+                                                " batteryApplied=" + colorHex(state.appliedTint) +
+                                                " authority=battery-anchor-fallback" +
+                                                " intensity=" + darkIntensity +
+                                                " light=" + colorHex(lightColor) +
+                                                " dark=" + colorHex(darkColor) +
+                                                " useTint=" + useTint,
+                                        )
+                                        synchronized(this) { firstEventLogged[sourceView] = Unit }
+                                    }
                                 }
                             }
 
@@ -140,28 +175,39 @@ internal object SysUiTintSource {
                         Hooker { chain ->
                             val result = chain.proceed()
                             if (!hooksReady) return@Hooker result
-                            val sourceView = chain.thisObject as? View
+                            val sourceView = readOrNull { chain.thisObject as? View }
                                 ?: return@Hooker result
                             dispatchAppliedState(
                                 sourceView = sourceView,
                                 percentField = percentField,
                                 onTintState = onTintState,
+                                onRuntimeFailure = onRuntimeFailure,
                             )
-                            if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                                probeBatteryIconAuthority(
-                                    sourceView = sourceView,
-                                    iconField = iconField,
-                                    source = ON_DARK_CHANGED_INTERNAL_METHOD_NAME,
-                                    onEvent = onEvent,
-                                )
+                            diagnose {
+                                if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                    probeBatteryIconAuthority(
+                                        sourceView = sourceView,
+                                        iconField = iconField,
+                                        source = ON_DARK_CHANGED_INTERNAL_METHOD_NAME,
+                                        onEvent = onEvent,
+                                    )
+                                }
                             }
                             result
                         },
                     )
             }.getOrElse { error ->
-                val cleanupFailed = runCatching { updateHandle.unhook() }.isFailure
+                val cleanupFailed =
+                    try {
+                        updateHandle.unhook()
+                        false
+                    } catch (failure: Throwable) {
+                        rethrowFatal(failure)
+                        true
+                    }
                 if (cleanupFailed) failedInstallHandles = listOf(updateHandle)
                 clearSourceState()
+                rethrowFatal(error)
                 if (cleanupFailed) {
                     throw IllegalStateException("tint-source-hook-cleanup-failed", error)
                 }
@@ -178,6 +224,7 @@ internal object SysUiTintSource {
         sourceView: View,
         percentField: Field,
         onTintState: (TintUpdate) -> Unit,
+        onRuntimeFailure: (Throwable) -> Unit,
     ): TintState? {
         val state =
             readAppliedState(
@@ -185,19 +232,38 @@ internal object SysUiTintSource {
                 percentField = percentField,
             ) ?: return null
 
-        val changed =
+        val delivery =
             synchronized(this) {
-                val changed = lastStates[sourceView] != state
-                if (changed) {
-                    lastStates[sourceView] = state
-                }
+                lastStates[sourceView] = state
                 if (lastSourceView?.get() !== sourceView) {
                     lastSourceView = WeakReference(sourceView)
                 }
-                changed
+                if (deliveredStates[sourceView]?.state == state) {
+                    null
+                } else {
+                    Delivery(state).also { deliveredStates[sourceView] = it }
+                }
             }
-        if (changed) {
-            onTintState(TintUpdate(sourceView, state))
+        if (delivery != null) {
+            try {
+                onTintState(TintUpdate(sourceView, state))
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                try {
+                    onRuntimeFailure(error)
+                } catch (failure: Throwable) {
+                    rethrowFatal(failure)
+                    if (failure !== error) error.addSuppressed(failure)
+                } finally {
+                    // Keep the failed delivery marked during native ownership cleanup.
+                    synchronized(this) {
+                        if (deliveredStates[sourceView] === delivery) {
+                            deliveredStates.remove(sourceView)
+                        }
+                    }
+                }
+                return null
+            }
         }
         return state
     }
@@ -209,9 +275,9 @@ internal object SysUiTintSource {
         onEvent: (String) -> Unit,
     ) {
         val iconView =
-            runCatching {
+            readOrNull {
                 iconField.get(sourceView) as? View
-            }.getOrNull() ?: return
+            } ?: return
 
         if (synchronized(this) { batteryIconStructureLogged.containsKey(iconView) }) {
             return
@@ -221,9 +287,9 @@ internal object SysUiTintSource {
         val clipStates: List<BatteryClipTintState> =
             clipFields.map { field ->
                 val clip =
-                    runCatching {
+                    readOrNull {
                         field.get(iconView) as? ClipDrawable
-                    }.getOrNull()
+                    }
                 val filter = clip?.colorFilter
                 BatteryClipTintState(
                     fieldName = field.name,
@@ -242,10 +308,6 @@ internal object SysUiTintSource {
             (iconView as? ImageView)
                 ?.imageTintList
                 ?.defaultColor
-        synchronized(this) {
-            batteryIconStructureLogged[iconView] = Unit
-        }
-
         onEvent(
             "batteryIconProbe source=" + source +
                 " iconClass=" + iconView.javaClass.name +
@@ -272,6 +334,7 @@ internal object SysUiTintSource {
                     }
                 ),
         )
+        synchronized(this) { batteryIconStructureLogged[iconView] = Unit }
     }
 
     private fun readColorFilterColor(filter: android.graphics.ColorFilter?): Int? {
@@ -304,9 +367,9 @@ internal object SysUiTintSource {
                     }
             }
                 ?: return null
-        return runCatching {
+        return readOrNull {
             (getter.invoke(filter) as? Number)?.toInt()
-        }.getOrNull()
+        }
     }
 
 
@@ -368,6 +431,7 @@ internal object SysUiTintSource {
     private fun clearSourceState() {
         hooksReady = false
         lastStates.clear()
+        deliveredStates.clear()
         firstEventLogged.clear()
         batteryIconStructureLogged.clear()
         batteryIconClipFields.clear()
@@ -408,9 +472,9 @@ internal object SysUiTintSource {
         percentField: Field,
     ): TintState? {
         val percentView =
-            runCatching {
+            readOrNull {
                 percentField.get(sourceView) as? TextView
-            }.getOrNull() ?: return null
+            } ?: return null
         return TintState(
             appliedTint = percentView.currentTextColor,
         )

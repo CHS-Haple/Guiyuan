@@ -8,16 +8,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.LocalGlassBackdrop
+import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.icons.Os4GlassBack
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_HYPEROS_KEY
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
@@ -25,17 +30,22 @@ import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.customSchemeKey
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.IconButtonDefaults
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.chaners.guiyuan.ui.components.UiDialogButton
+import com.chaners.guiyuan.ui.components.dialogActionGap
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
+import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import com.chaners.guiyuan.ui.components.UiOverlayBottomSheet
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -109,9 +119,23 @@ private data class DetailRequest(
     val slot: BatteryColorSlot,
 )
 
+private data class RenameRequest(
+    val id: Int,
+    val originalName: String,
+    val visible: Boolean = true,
+)
+
 private data class CreateRequest(
     val sourceKey: String,
     val targetSlot: BatteryColorSlot?,
+    val nextId: Int?,
+    val visible: Boolean = true,
+)
+
+private data class DeleteRequest(
+    val id: Int,
+    val name: String,
+    val visible: Boolean = true,
 )
 
 @Composable
@@ -121,12 +145,13 @@ internal fun BatteryColorBottomSheet(
     repository: BatterySchemeRepo,
     onDismiss: () -> Unit,
 ) {
-    var detailRequest by remember { mutableStateOf<DetailRequest?>(null) }
-    var showDetail by remember { mutableStateOf(false) }
-    var requestedSchemeKey by remember { mutableStateOf<String?>(null) }
-    var createRequest by remember { mutableStateOf<CreateRequest?>(null) }
-    var renameCustomId by remember { mutableStateOf<Int?>(null) }
-    var deleteCustomId by remember { mutableStateOf<Int?>(null) }
+    val context = LocalContext.current
+    var detailRequest by remember(show) { mutableStateOf<DetailRequest?>(null) }
+    var showDetail by remember(show) { mutableStateOf(false) }
+    var requestedSchemeKey by remember(show) { mutableStateOf<String?>(null) }
+    var createRequest by remember(show) { mutableStateOf<CreateRequest?>(null) }
+    var renameRequest by remember(show) { mutableStateOf<RenameRequest?>(null) }
+    var deleteRequest by remember(show) { mutableStateOf<DeleteRequest?>(null) }
 
     val nextCustomId = repository.nextAvailableCustomId(library)
     val nextCustomName =
@@ -141,16 +166,20 @@ internal fun BatteryColorBottomSheet(
             detailCustom != null &&
             detailSlot != null
 
-    LaunchedEffect(show) {
-        if (!show) {
-            showDetail = false
-            detailRequest = null
+    // Capture only the first sheet, not the glass surfaces above it.
+    val sheetColor = MiuixTheme.colorScheme.background
+    val sheetBackdrop = if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
+        rememberLayerBackdrop {
+            drawRect(sheetColor)
+            drawContent()
         }
-    }
+    } else null
 
-    OverlayBottomSheet(
+    UiOverlayBottomSheet(
         show = show,
-        modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
+        modifier = Modifier
+            .fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION)
+            .then(if (sheetBackdrop != null) Modifier.layerBackdrop(sheetBackdrop) else Modifier),
         title = stringResource(R.string.battery_colors),
         backgroundColor = MiuixTheme.colorScheme.background,
         insideMargin = DpSize(0.dp, 0.dp),
@@ -170,158 +199,204 @@ internal fun BatteryColorBottomSheet(
             }
         },
     ) {
-        BatterySchemeOverview(
-            library = library,
-            requestedSchemeKey = requestedSchemeKey,
-            onRequestedSchemeHandled = { requestedSchemeKey = null },
-            canCreateCustom = nextCustomId != null,
-            nextCustomName = nextCustomName,
-            onApplyScheme = repository::activateScheme,
-            onOpenBuiltInSlot = { scheme, slot ->
-                createRequest =
-                    CreateRequest(
-                        sourceKey = scheme.key,
-                        targetSlot = slot,
-                    )
-            },
-            onOpenCustomSlot = { id, slot ->
-                detailRequest = DetailRequest(customId = id, slot = slot)
-                showDetail = true
-            },
-            onAdd = {
-                createRequest =
-                    CreateRequest(
-                        sourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
-                        targetSlot = null,
-                    )
-            },
-            onRenameCustom = { renameCustomId = it },
-            onCopyCustom = { custom ->
-                val name = nextCustomName
-                if (name != null) {
-                    repository.createCustom(name, custom.key)?.let { id ->
-                        requestedSchemeKey = customSchemeKey(id)
-                    }
-                }
-            },
-            onDeleteCustom = { deleteCustomId = it },
-        )
-    }
-
-    OverlayBottomSheet(
-        show = detailVisible,
-        modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION),
-        title =
-            detailSlot?.let { slot ->
-                stringResource(
-                    R.string.battery_mode_editor_title,
-                    stringResource(batteryColorSlotLabel(slot)),
-                )
-            },
-        backgroundColor = MiuixTheme.colorScheme.surface,
-        insideMargin = BottomSheetDefaults.insideMargin,
-        enableWindowDim = false,
-        startAction = {
-            TooltipBox(text = stringResource(R.string.back)) {
-                IconButton(
-                    onClick = { showDetail = false },
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Back,
-                        contentDescription = stringResource(R.string.back),
-                    )
-                }
-            }
-        },
-        onDismissRequest = { showDetail = false },
-        onDismissFinished = {
-            if (!showDetail) {
-                detailRequest = null
-            }
-        },
-    ) {
-        if (detailCustom != null && detailSlot != null) {
-            BatteryCustomModeEditor(
-                custom = detailCustom,
-                slot = detailSlot,
-                onSourceChange = { source ->
-                    repository.setCustomSource(detailCustom.id, detailSlot, source)
+        CompositionLocalProvider(LocalGlassBackdrop provides sheetBackdrop) {
+            BatterySchemeOverview(
+                library = library,
+                requestedSchemeKey = requestedSchemeKey,
+                onRequestedSchemeHandled = { requestedSchemeKey = null },
+                canCreateCustom = nextCustomId != null,
+                nextCustomName = nextCustomName,
+                onApplyScheme = repository::activateScheme,
+                onOpenBuiltInSlot = { scheme, slot ->
+                    createRequest =
+                        CreateRequest(
+                            sourceKey = scheme.key,
+                            targetSlot = slot,
+                            nextId = nextCustomId,
+                        )
                 },
-                onColorChange = { color ->
-                    repository.setCustomColor(detailCustom.id, detailSlot, color)
+                onOpenCustomSlot = { id, slot ->
+                    detailRequest = DetailRequest(customId = id, slot = slot)
+                    showDetail = true
+                },
+                onAdd = {
+                    createRequest =
+                        CreateRequest(
+                            sourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+                            targetSlot = null,
+                            nextId = nextCustomId,
+                        )
+                },
+                onRenameCustom = { id ->
+                    library.customById(id)?.let { custom ->
+                        renameRequest = RenameRequest(custom.id, custom.name.ifBlank { context.getString(R.string.battery_custom_scheme_default_name, custom.id) })
+                    }
+                },
+                onCopyCustom = { custom ->
+                    val name = nextCustomName
+                    if (name != null) {
+                        repository.createCustom(name, custom.key)?.let { id ->
+                            requestedSchemeKey = customSchemeKey(id)
+                        }
+                    }
+                },
+                onDeleteCustom = { id ->
+                    library.customById(id)?.let { custom ->
+                        deleteRequest = DeleteRequest(custom.id, custom.name.ifBlank { context.getString(R.string.battery_custom_scheme_default_name, custom.id) })
+                    }
                 },
             )
         }
     }
 
-    BatteryCreateSchemeDialog(
-        show = createRequest != null,
-        nextId = nextCustomId,
-        onDismiss = {
-            createRequest = null
-        },
-        onCreate = { name ->
-            val request = createRequest
-            createRequest = null
-            if (request != null) {
-                repository.createCustom(
-                    name = name,
-                    fromSchemeKey = request.sourceKey,
-                )?.let { id ->
-                    requestedSchemeKey = customSchemeKey(id)
-                    request.targetSlot?.let { slot ->
-                        detailRequest = DetailRequest(customId = id, slot = slot)
-                        showDetail = true
+    val detailBackdrop = if (sheetBackdrop != null) {
+        val surface = MiuixTheme.colorScheme.surface
+        rememberLayerBackdrop {
+            drawRect(surface)
+            drawContent()
+        }
+    } else null
+
+    // The nested sheet samples the first; its popup samples the second.
+    CompositionLocalProvider(LocalGlassBackdrop provides sheetBackdrop) {
+        UiOverlayBottomSheet(
+            show = detailVisible,
+            modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION)
+                .then(if (detailBackdrop != null) Modifier.layerBackdrop(detailBackdrop) else Modifier),
+            title =
+                detailSlot?.let { slot ->
+                    stringResource(
+                        R.string.battery_mode_editor_title,
+                        stringResource(batteryColorSlotLabel(slot)),
+                    )
+                },
+            backgroundColor = MiuixTheme.colorScheme.surface,
+            insideMargin = BottomSheetDefaults.insideMargin,
+            enableWindowDim = false,
+            startAction = {
+                TooltipBox(text = stringResource(R.string.back)) {
+                    if (LocalUiStyle.current == UiStyle.OS4) {
+                        GlassIconButton(
+                            onClick = { showDetail = false },
+                            backdrop = sheetBackdrop,
+                        ) {
+                            Icon(
+                                imageVector = Os4GlassBack,
+                                contentDescription = stringResource(R.string.back),
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = { showDetail = false }) {
+                            Icon(
+                                imageVector = MiuixIcons.Back,
+                                contentDescription = stringResource(R.string.back),
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
                     }
                 }
-            }
-        },
-    )
-
-    BatteryRenameSchemeDialog(
-        scheme = renameCustomId?.let(library::customById),
-        onDismiss = { renameCustomId = null },
-        onRename = { id, name ->
-            renameCustomId = null
-            repository.renameCustom(id, name)
-        },
-    )
-
-    val deleting = deleteCustomId?.let(library::customById)
-    OverlayDialog(
-        title = stringResource(R.string.battery_custom_scheme_delete),
-        summary =
-            deleting?.let {
-                stringResource(
-                    R.string.battery_custom_scheme_delete_summary,
-                    customSchemeName(it),
-                )
             },
-        show = deleting != null,
-        onDismissRequest = { deleteCustomId = null },
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            onDismissRequest = { showDetail = false },
+            onDismissFinished = {
+                if (!showDetail) {
+                    detailRequest = null
+                }
+            },
         ) {
-            TextButton(
-                text = stringResource(R.string.cancel),
-                modifier = Modifier.weight(1f),
-                onClick = { deleteCustomId = null },
-            )
-            Spacer(Modifier.width(20.dp))
-            TextButton(
-                text = stringResource(R.string.battery_custom_scheme_delete),
-                modifier = Modifier.weight(1f),
-                colors =
-                    ButtonDefaults.textButtonColors(
-                        textColor = MiuixTheme.colorScheme.error,
-                    ),
-                onClick = {
-                    deleting?.let { repository.deleteCustom(it.id) }
-                    deleteCustomId = null
+            if (detailCustom != null && detailSlot != null) {
+                CompositionLocalProvider(LocalGlassBackdrop provides detailBackdrop) {
+                    BatteryCustomModeEditor(
+                        custom = detailCustom,
+                        slot = detailSlot,
+                        onSourceChange = { source ->
+                            repository.setCustomSource(detailCustom.id, detailSlot, source)
+                        },
+                        onColorChange = { color ->
+                            repository.setCustomColor(detailCustom.id, detailSlot, color)
+                        },
+                    )
+                }
+            }
+        }
+
+        BatteryCreateSchemeDialog(
+            show = createRequest?.visible == true,
+            nextId = createRequest?.nextId,
+            onDismiss = { createRequest = createRequest?.copy(visible = false) },
+            onDismissFinished = {
+                if (createRequest?.visible == false) createRequest = null
+            },
+            onCreate = { name ->
+                val request = createRequest?.takeIf { it.visible }
+                createRequest = createRequest?.copy(visible = false)
+                if (request != null) {
+                    repository.createCustom(
+                        name = name,
+                        fromSchemeKey = request.sourceKey,
+                    )?.let { id ->
+                        requestedSchemeKey = customSchemeKey(id)
+                        request.targetSlot?.let { slot ->
+                            detailRequest = DetailRequest(customId = id, slot = slot)
+                            showDetail = true
+                        }
+                    }
+                }
+            },
+        )
+
+        BatteryRenameSchemeDialog(
+            scheme = renameRequest?.id?.let(library::customById),
+            originalName = renameRequest?.originalName.orEmpty(),
+            show = renameRequest?.visible == true,
+            onDismiss = { renameRequest = renameRequest?.copy(visible = false) },
+            onDismissFinished = {
+                if (renameRequest?.visible == false) renameRequest = null
+            },
+            onRename = { id, name ->
+                renameRequest = renameRequest?.copy(visible = false)
+                repository.renameCustom(id, name)
+            },
+        )
+
+        val deleting = deleteRequest
+        UiOverlayDialog(
+            title = stringResource(R.string.battery_custom_scheme_delete),
+            summary =
+                deleting?.let {
+                    stringResource(
+                        R.string.battery_custom_scheme_delete_summary,
+                        it.name,
+                    )
                 },
-            )
+            show = deleting?.visible == true,
+            onDismissRequest = { deleteRequest = deleteRequest?.copy(visible = false) },
+            onDismissFinished = {
+                if (deleteRequest?.visible == false) deleteRequest = null
+            },
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                UiDialogButton(
+                    text = stringResource(R.string.cancel),
+                    modifier = Modifier.weight(1f),
+                    onClick = { deleteRequest = deleteRequest?.copy(visible = false) },
+                )
+                Spacer(Modifier.width(dialogActionGap()))
+                UiDialogButton(
+                    text = stringResource(R.string.battery_custom_scheme_delete),
+                    modifier = Modifier.weight(1f),
+                    enabled = deleting?.visible == true,
+                    role = GlassDialogButtonRole.Destructive,
+                    onClick = {
+                        val request = deleteRequest?.takeIf { it.visible }
+                        deleteRequest = deleteRequest?.copy(visible = false)
+                        request?.let { repository.deleteCustom(it.id) }
+                    },
+                )
+            }
         }
     }
 }

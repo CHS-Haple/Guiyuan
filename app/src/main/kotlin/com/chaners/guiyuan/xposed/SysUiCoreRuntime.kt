@@ -22,8 +22,11 @@ internal object SysUiCoreRuntime {
     ): AttachResult {
         fun attachSource(name: String, block: () -> Boolean): Boolean =
             runCatching(block).getOrElse { error ->
-                runCatching {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                try {
                     onEvent?.invoke("core source=$name attach failed type=${error.javaClass.simpleName}")
+                } catch (failure: Throwable) {
+                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
                 }
                 false
             }
@@ -63,9 +66,17 @@ internal object SysUiCoreRuntime {
     fun detach() {
         // Each system callback must be released even if a sibling release fails.
         val failures = ArrayList<Throwable>(1)
-        runCatching { SysUiConnectivitySource.detach() }.onFailure(failures::add)
-        runCatching { SysUiDefaultDataSubSource.detach() }.onFailure(failures::add)
-        runCatching { SysUiAirplaneSource.detach() }.onFailure(failures::add)
+        fun release(action: () -> Unit) {
+            try {
+                action()
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                failures.add(error)
+            }
+        }
+        release { SysUiConnectivitySource.detach() }
+        release { SysUiDefaultDataSubSource.detach() }
+        release { SysUiAirplaneSource.detach() }
         if (failures.isNotEmpty()) {
             val error = IllegalStateException("core-source-release-incomplete", failures.first())
             failures.drop(1).forEach(error::addSuppressed)

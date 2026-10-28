@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import android.util.Log
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -44,9 +45,30 @@ internal object StatusBarHostCapture {
         onCaptured: (SysUiHostRegistry.Capture) -> Unit,
     ): Hooker = Hooker { chain ->
         val result = chain.proceed()
-
-        chain.thisObject?.let { host ->
-            SysUiHostRegistry.capture(host)?.let(onCaptured)
+        val host =
+            try {
+                chain.thisObject
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                return@Hooker result
+            }
+        host?.let { captured ->
+            try {
+                SysUiHostRegistry.capture(captured)?.let(onCaptured)
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                // Nonfatal callback failures must not replace the native return.
+                try {
+                    SysUiHostRegistry.discardIfCurrent(captured)
+                } catch (failure: Throwable) {
+                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                }
+                try {
+                    Log.w("Guiyuan[HostCapture]", "Host attachment failed", error)
+                } catch (failure: Throwable) {
+                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                }
+            }
         }
 
         result

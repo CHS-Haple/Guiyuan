@@ -17,6 +17,7 @@ internal object VisualPrefsOwner {
 
     private val state = AtomicReference(State(null, null, VisualCfg()))
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+    private val listenerRetirement = PrefListenerRetirement()
 
     fun current(): VisualCfg = state.get().cfg
 
@@ -34,10 +35,14 @@ internal object VisualPrefsOwner {
 
         // A remote request may already exist before this SystemUI binding is installed.
         fun deliverAxisRequest(request: Long) {
-            if (request > 0L && lastRequest.getAndSet(request) != request &&
-                state.get().token === token
-            ) {
+            if (request <= 0L || state.get().token !== token) return
+            val previous = lastRequest.getAndSet(request)
+            if (previous == request) return
+            try {
                 onAxisRequest()
+            } catch (error: Throwable) {
+                lastRequest.compareAndSet(request, previous)
+                throw error
             }
         }
 
@@ -57,8 +62,14 @@ internal object VisualPrefsOwner {
                 val next = resolve(changed)
                 var latest = state.get()
                 while (latest.source === changed && latest.token === token && latest.cfg != next) {
-                    if (state.compareAndSet(latest, latest.copy(cfg = next))) {
-                        onChanged(next)
+                    val pending = latest.copy(cfg = next)
+                    if (state.compareAndSet(latest, pending)) {
+                        try {
+                            onChanged(next)
+                        } catch (error: Throwable) {
+                            state.compareAndSet(pending, latest)
+                            throw error
+                        }
                         break
                     }
                     latest = state.get()
@@ -68,15 +79,41 @@ internal object VisualPrefsOwner {
         source.registerOnSharedPreferenceChangeListener(listener)
         state.set(State(source, token, initial))
         this.listener = listener
-        onChanged(initial)
-        deliverAxisRequest(source.getLong(NativeFontAxis.REQUEST_KEY, 0L))
-        return initial
+        return try {
+            onChanged(initial)
+            deliverAxisRequest(source.getLong(NativeFontAxis.REQUEST_KEY, 0L))
+            // Recheck writes that arrived before the listener was registered.
+            listener.onSharedPreferenceChanged(source, null)
+            current()
+        } catch (error: Throwable) {
+            if (state.get().token === token) {
+                try {
+                    unbindLocked()
+                } catch (cleanup: Throwable) {
+                    if (cleanup is VirtualMachineError || cleanup is ThreadDeath) throw cleanup
+                    if (cleanup !== error) error.addSuppressed(cleanup)
+                } finally {
+                    // A reentrant new binding must not be cleared by the failed old callback.
+                    val retired = state.get()
+                    if (retired.source == null && retired.token == null) {
+                        state.compareAndSet(retired, State(null, null, VisualCfg()))
+                    }
+                }
+            }
+            throw error
+        }
     }
 
     @Synchronized
     fun unbind() {
-        unbindLocked()
-        state.set(State(null, null, VisualCfg()))
+        try {
+            unbindLocked()
+        } finally {
+            val retired = state.get()
+            if (retired.source == null && retired.token == null) {
+                state.compareAndSet(retired, State(null, null, VisualCfg()))
+            }
+        }
     }
 
     private fun unbindLocked() {
@@ -84,9 +121,7 @@ internal object VisualPrefsOwner {
         val oldListener = listener
         listener = null
         // Retire the generation before entering the framework's listener monitor.
-        if (old.source != null && oldListener != null) {
-            old.source.unregisterOnSharedPreferenceChangeListener(oldListener)
-        }
+        listenerRetirement.unregister(old.source, oldListener)
     }
 
     private fun resolve(source: SharedPreferences): VisualCfg =

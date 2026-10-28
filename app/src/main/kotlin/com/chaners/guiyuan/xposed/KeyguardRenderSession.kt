@@ -15,6 +15,14 @@ import java.lang.ref.WeakReference
 
 internal object KeyguardRenderSession {
     private var current: Session? = null
+    private val retirement = RetirementGate<Session>()
+
+    private fun retire(session: Session) {
+        retirement.release(session) {
+            session.stop()
+            0
+        }
+    }
 
     @Synchronized
     fun attach(
@@ -62,6 +70,7 @@ internal object KeyguardRenderSession {
         if (!sceneEligible) {
             return if (scene == Scene.AOD) "aod-not-active" else "keyguard-not-active"
         }
+        if (retirement.pending != null) return "keyguard-render-release-incomplete"
         val featureEnabled =
             resolveFamilyFeatureEnabled(
                 featureEnabled = settings.enabled,
@@ -82,7 +91,10 @@ internal object KeyguardRenderSession {
             return null
         }
 
-        existing?.stop()
+        if (existing != null) {
+            current = null
+            retire(existing)
+        }
         val session =
             Session(
                 resolved = resolved,
@@ -157,18 +169,18 @@ internal object KeyguardRenderSession {
 
     @Synchronized
     fun detach() {
-        val session = current ?: return
+        val session = current ?: retirement.pending ?: return
         if (!session.isScene(Scene.KEYGUARD)) return
         current = null
-        session.stop()
+        retire(session)
     }
 
     @Synchronized
     fun detachAod() {
-        val session = current ?: return
+        val session = current ?: retirement.pending ?: return
         if (!session.isScene(Scene.AOD)) return
         current = null
-        session.stop()
+        retire(session)
     }
 
     internal fun resolveFamilyFeatureEnabled(
@@ -459,22 +471,28 @@ internal object KeyguardRenderSession {
         }
 
         fun stop() {
-            stopFollowingIconAlpha()
-            if (aodDraw != AodDraw.IDLE) {
-                emitEvent {
-                    "keyguardAodWitness source=session-stop" +
-                        " shownDuringAod=" + aodShown +
-                        " freshVisibleDraw=" + (aodDraw == AodDraw.DRAWN) +
-                        " nativeCc=" + SysUiCcSource.nativeVisualState()
-                }
-                aodDraw = AodDraw.IDLE
-            }
+            val hadAod = aodDraw != AodDraw.IDLE
+            val drewAod = aodDraw == AodDraw.DRAWN
+            aodDraw = AodDraw.IDLE
             layoutReady = false
-            dispatchPresentationReadiness("stop")
-            systemIcons.get()?.removeOnAttachStateChangeListener(this)
-            systemIcons.get()?.removeOnLayoutChangeListener(overlayHostLayoutListener)
-            batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener)
-            (renderView.parent as? ViewGroup)?.removeView(renderView)
+            releaseAll(
+                { stopFollowingIconAlpha() },
+                {
+                    if (hadAod) {
+                        emitEvent {
+                            "keyguardAodWitness source=session-stop" +
+                                " shownDuringAod=" + aodShown +
+                                " freshVisibleDraw=" + drewAod +
+                                " nativeCc=" + SysUiCcSource.nativeVisualState()
+                        }
+                    }
+                },
+                { dispatchPresentationReadiness("stop") },
+                { systemIcons.get()?.removeOnAttachStateChangeListener(this) },
+                { systemIcons.get()?.removeOnLayoutChangeListener(overlayHostLayoutListener) },
+                { batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) },
+                { (renderView.parent as? ViewGroup)?.removeView(renderView) },
+            )
         }
 
         fun setFeatureCfg(cfg: FeatureCfg) {
@@ -880,8 +898,10 @@ internal object KeyguardRenderSession {
         }
 
         private inline fun emitEvent(message: () -> String) {
-            if (isDetailedDiagnosticsEnabled()) {
-                onEvent(message())
+            try {
+                if (isDetailedDiagnosticsEnabled()) onEvent(message())
+            } catch (error: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(error)
             }
         }
     }

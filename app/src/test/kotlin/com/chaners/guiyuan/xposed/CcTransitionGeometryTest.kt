@@ -7,6 +7,28 @@ import org.junit.Test
 
 class CcTransitionGeometryTest {
     @Test
+    fun nativeWifiReflowUsesLastCoherentBatteryRelativeTarget() {
+        val normalWifi = floatArrayOf(1195.5f, 240f, 75f, 0f, 0f, 75f)
+        val battery = floatArrayOf(1330.5f, 240f, 135f, 0f, 0f, 169f)
+        val provisionalWifi = floatArrayOf(1265.5f, 240f, 75f, 0f, 0f, 75f)
+        assertTrue(CcTransitionPolicy.wifiBeforeBattery(normalWifi, battery, false))
+        assertEquals(false, CcTransitionPolicy.wifiBeforeBattery(provisionalWifi, battery, false))
+        val movedBattery = battery.copyOf().apply { this[0] += 5f }
+        val carried = CcTransitionPolicy.followBatteryAnchor(
+            normalWifi, battery, movedBattery,
+        )
+        assertEquals(1200.5f, carried[0], 0.0001f)
+        assertTrue(CcTransitionPolicy.wifiBeforeBattery(carried, movedBattery, false))
+        assertTrue(
+            CcTransitionPolicy.wifiBeforeBattery(
+                floatArrayOf(1300f, 240f, 75f, 0f, 0f, 75f),
+                floatArrayOf(1120f, 240f, 135f, 0f, 0f, 169f),
+                true,
+            ),
+        )
+    }
+
+    @Test
     fun mobileTypeHandoffComparesCurrentNativeGlyphNotDataSimOwnership() {
         val native5G = NativePresentationResolver.NetworkType(
             label = "5G",

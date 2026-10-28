@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class TintAuthorityTest {
@@ -79,6 +80,22 @@ class TintAuthorityTest {
 
         assertEquals(0xe6ffffff.toInt(), resolved?.appliedTint)
         assertEquals(0xe6ffffff.toInt(), resolved?.statusIconTint)
+    }
+
+    @Test
+    fun missingOrTransparentStatusTintCannotSeedHome() {
+        assertNull(
+            TintAuthority.resolveStatusIconEvent(
+                previous = null,
+                liveStatusIconTint = null,
+            ),
+        )
+        assertNull(
+            TintAuthority.resolveStatusIconEvent(
+                previous = null,
+                liveStatusIconTint = 0x00112233,
+            ),
+        )
     }
 
     @Test

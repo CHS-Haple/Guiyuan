@@ -21,6 +21,14 @@ internal object HomeRenderSession {
         "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
 
     private var current: Session? = null
+    private val retirement = RetirementGate<Session>()
+
+    private fun stop(session: Session, removeVisual: Boolean = true) {
+        retirement.release(session) {
+            session.stop(removeVisual)
+            0
+        }
+    }
 
     @Synchronized
     fun attach(
@@ -33,6 +41,7 @@ internal object HomeRenderSession {
         allowLiveTintSeed: Boolean = true,
         onPresentationReadinessChanged: ((Boolean) -> Unit)? = null,
     ): String? {
+        if (retirement.pending != null) return "home-render-release-incomplete"
         val hostView = host as? ViewGroup
             ?: return "host-not-view-group"
         val batteryContainer = hostView.directChild(BATTERY_CONTAINER_CLASS_NAME)
@@ -59,7 +68,7 @@ internal object HomeRenderSession {
             return null
         }
 
-        existing?.stop()
+        existing?.let { stop(it) }
         val session = Session(
             host = hostView,
             batteryContainer = batteryContainer,
@@ -140,8 +149,9 @@ internal object HomeRenderSession {
 
     @Synchronized
     fun detach(preserveVisual: Boolean = false) {
-        current?.stop(removeVisual = !preserveVisual)
-        current = null
+        val session = current ?: retirement.pending ?: return
+        stop(session, removeVisual = !preserveVisual)
+        if (current === session) current = null
     }
 
     internal fun resolveOverlayVisible(
@@ -367,13 +377,13 @@ internal object HomeRenderSession {
 
         fun stop(removeVisual: Boolean = true) {
             layoutReady = false
-            dispatchPresentationReadiness("stop")
-            batteryContainer.get()?.removeOnAttachStateChangeListener(this)
-            batteryContainer.get()?.removeOnLayoutChangeListener(overlayHostLayoutListener)
-            batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener)
-            if (removeVisual) {
-                (probeView.parent as? ViewGroup)?.removeView(probeView)
-            }
+            releaseAll(
+                { dispatchPresentationReadiness("stop") },
+                { batteryContainer.get()?.removeOnAttachStateChangeListener(this) },
+                { batteryContainer.get()?.removeOnLayoutChangeListener(overlayHostLayoutListener) },
+                { batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) },
+                { if (removeVisual) (probeView.parent as? ViewGroup)?.removeView(probeView) },
+            )
         }
 
         fun updateControlCenterHomeEligibility(
@@ -632,8 +642,10 @@ internal object HomeRenderSession {
         }
 
         private inline fun emitEvent(message: () -> String) {
-            if (isDetailedDiagnosticsEnabled()) {
-                onEvent(message())
+            try {
+                if (isDetailedDiagnosticsEnabled()) onEvent(message())
+            } catch (error: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(error)
             }
         }
 

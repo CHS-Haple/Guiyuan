@@ -7,7 +7,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -17,6 +16,7 @@ import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.ui.navigation.AppRoute
@@ -57,12 +57,14 @@ internal fun GyApp(
     lang: AppLang,
     iconHidden: Boolean,
     onHotReload: () -> Unit,
+    onUiStyleChange: (UiStyle) -> Unit,
     onThemeChange: (ThemeMode) -> Unit,
     onDynamicChange: (Boolean) -> Unit,
     onColorSpecChange: (ThemeColorSpec?) -> Unit,
     onPaletteStyleChange: (ThemePaletteStyle) -> Unit,
     onNavEnabledChange: (Boolean) -> Unit,
     onNavStyleChange: (NavStyle) -> Unit,
+    onNavTouchExtensionChange: (Boolean) -> Unit,
     onNavContentChange: (NavContent) -> Unit,
     onLiquidModeChange: (LiquidMode) -> Unit,
     onSwipeBackChange: (Boolean) -> Unit,
@@ -173,8 +175,8 @@ internal fun GyApp(
                     ],
             )
 
-        val latestPreview = rememberUpdatedState(previewState)
-        LaunchedEffect(previewState, sandboxActive) {
+        // Only a changed preview updates an active lease; start() owns its first snapshot.
+        LaunchedEffect(previewState) {
             if (sandboxActive) onSandboxUpdate(previewState)
         }
 
@@ -230,6 +232,7 @@ internal fun GyApp(
                 AppearanceScreen(
                     appearance = appearance,
                     dark = dark,
+                    onUiStyleChange = onUiStyleChange,
                     onThemeChange = onThemeChange,
                     onDynamicChange = onDynamicChange,
                     onColorSpecChange = onColorSpecChange,
@@ -238,6 +241,7 @@ internal fun GyApp(
                         onNavEnabledChange,
                     onNavStyleChange =
                         onNavStyleChange,
+                    onNavTouchExtensionChange = onNavTouchExtensionChange,
                     onNavContentChange =
                         onNavContentChange,
                     onLiquidModeChange =
@@ -262,7 +266,7 @@ internal fun GyApp(
                     PreviewSandboxScreen(
                         state = previewState,
                         parasiteActive = sandboxActive,
-                        onParasiteChange = { onSandboxToggle(it, latestPreview.value) },
+                        onParasiteChange = { enabled, snapshot -> onSandboxToggle(enabled, snapshot) },
                         onSimPresentChange = { previewSimPresent = it },
                         onAirplaneModeChange = { previewAirplaneMode = it },
                         onNetworkModeChange = {

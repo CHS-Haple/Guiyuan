@@ -6,9 +6,11 @@ import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.telephony.SubscriptionManager
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import java.lang.reflect.Field
+import java.lang.reflect.InvocationTargetException
 import java.io.File
 import java.io.FileInputStream
 import java.nio.channels.FileChannel
@@ -24,6 +26,15 @@ internal object NativePresentationResolver {
     private data class DrawableFields(val type: Field?, val enhanced: Field?, val textPaint: Field?)
 
     private val drawableFields = ConcurrentHashMap<Class<*>, DrawableFields>()
+
+    internal inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            val cause = (error as? InvocationTargetException)?.targetException ?: error
+            if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+            null
+        }
 
     fun resolve(
         state: StatusStateStore.Snapshot,
@@ -117,9 +128,13 @@ internal object NativePresentationResolver {
         val networkType =
             networkTypeTarget?.let { binding ->
                 resolveNetworkType(
-                    binding = binding,
+                    root = binding.root,
                     pendingMobileTypeDrawable = pendingMobileTypeDrawable,
                 )
+            } ?: if (bindings.isEmpty()) {
+                resolveUnboundNativeType(pendingMobileTypeDrawable)
+            } else {
+                null
             }
 
         return Snapshot(
@@ -178,11 +193,35 @@ internal object NativePresentationResolver {
             else -> Mode.UNKNOWN
         }
 
+    // Binder callbacks are not replayed for an existing SystemUI icon after Hot Reload.
+    // A sole visible native mobile view supplies its label, not an invented SIM binding.
+    private fun resolveUnboundNativeType(pendingMobileTypeDrawable: Drawable?): NetworkType? {
+        val host = SysUiHostRegistry.current() ?: return null
+        val group = NativeParticipantAccess.groupFor(host) ?: return null
+        if (group.childCount > 64) return null
+
+        var candidate: ViewGroup? = null
+        for (index in 0 until group.childCount) {
+            val root = group.getChildAt(index)
+            if (
+                root.javaClass.simpleName != "ModernStatusBarMobileView" ||
+                NativeParticipantAccess.resourceEntryName(root) != "mobile_combo" ||
+                root !is ViewGroup ||
+                !root.isAttachedToWindow ||
+                root.visibility != View.VISIBLE
+            ) {
+                continue
+            }
+            if (candidate != null) return null
+            candidate = root
+        }
+        return candidate?.let { resolveNetworkType(it, pendingMobileTypeDrawable) }
+    }
+
     private fun resolveNetworkType(
-        binding: SysUiNetworkSource.MobilePresentationBinding,
+        root: ViewGroup,
         pendingMobileTypeDrawable: Drawable?,
     ): NetworkType? {
-        val root = binding.root
 
         NativeParticipantAccess.findResourceView(root, MOBILE_TYPE_RESOURCE_ENTRY)
             ?.let { view ->
@@ -195,17 +234,17 @@ internal object NativePresentationResolver {
                     // Keep only immutable Typeface; never retain a SystemUI Paint/View.
                     val face =
                         drawable
-                            ?.takeIf { it.javaClass.name == SysUiMobileTypeSource.CLASS_NAME }
+                            .takeIf { it.javaClass.name == SysUiMobileTypeSource.CLASS_NAME }
                             ?.let { native ->
-                                runCatching {
+                                readOrNull {
                                     (drawableFields[native.javaClass]?.textPaint?.get(native) as? Paint)
                                         ?.typeface
-                                }.getOrNull()
+                                }
                             }
                     return networkType.copy(
                         typeface = face,
                         fontPath =
-                            drawable?.takeIf { face != null }
+                            drawable.takeIf { face != null }
                                 ?.let { nativeFontPath(it, face!!) },
                     )
                 }
@@ -228,50 +267,50 @@ internal object NativePresentationResolver {
 
     // The static native glyph face is available even when Wi-Fi hides the mobile type.
     // Follow SystemUI's own fallback selection; never substitute a guessed app font.
-    fun sandboxMobileTypeface(context: Context): Typeface? = runCatching {
-        val (face, path) = verifiedMobileFont(context) ?: return@runCatching null
+    fun sandboxMobileTypeface(context: Context): Typeface? = readOrNull {
+        val (face, path) = verifiedMobileFont(context) ?: return@readOrNull null
         val file = File(path)
-        if (!file.isFile || file.length() !in 1..(64L * 1024 * 1024)) return@runCatching null
+        if (!file.isFile || file.length() !in 1..(64L * 1024 * 1024)) return@readOrNull null
         val axis = FileInputStream(file).channel.use { channel ->
             FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
         }?.let(NativeFontAxis::checked)
         face.takeIf { axis != null }
-    }.getOrNull()
+    }
 
     // This static SystemUI face remains authoritative when no mobile type is visible.
-    fun verifiedMobileFont(context: Context): Pair<Typeface, String>? = runCatching {
+    fun verifiedMobileFont(context: Context): Pair<Typeface, String>? = readOrNull {
         val loader = context.classLoader
         val clazz = loader.loadClass(SysUiMobileTypeSource.CLASS_NAME)
         val face = clazz.getField("sMiproTypeface").get(null) as? Typeface
-            ?: return@runCatching null
+            ?: return@readOrNull null
         val paint = Paint()
         clazz.getMethod("setMiuiStatusBarTypeface", Array<Paint>::class.java)
             .invoke(null, arrayOf(paint) as Any)
-        if (paint.typeface !== face) return@runCatching null
+        if (paint.typeface !== face) return@readOrNull null
         val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
         val path = config.getField("FONT_MIPRO_PATH").get(null) as? String
-            ?: return@runCatching null
+            ?: return@readOrNull null
         face to path
-    }.getOrNull()
+    }
 
     // Only the exact Typeface built from MiuiConfigs.FONT_MIPRO_PATH proves file identity.
     private fun nativeFontPath(drawable: Drawable, face: Typeface): String? =
-        runCatching {
+        readOrNull {
             val clazz = drawable.javaClass
             val original = clazz.getField("sMiproTypeface").get(null) as? Typeface
-            if (original !== face) return@runCatching null
+            if (original !== face) return@readOrNull null
             val configs = clazz.classLoader!!.loadClass("com.miui.utils.configs.MiuiConfigs")
             configs.getField("FONT_MIPRO_PATH").get(null) as? String
-        }.getOrNull()
+        }
 
     // Snapshot the verified native Paint; never retain its mutable SystemUI owner.
     internal fun nativeMobileTextPaint(view: View?): Paint? {
         val drawable = (view as? ImageView)?.drawable ?: return null
         if (drawable.javaClass.name != SysUiMobileTypeSource.CLASS_NAME) return null
         val fields = drawableFields[drawable.javaClass] ?: return null
-        return runCatching {
+        return readOrNull {
             (fields.textPaint?.get(drawable) as? Paint)?.let { Paint(it) }
-        }.getOrNull()
+        }
     }
 
     // The visual CC target need not belong to the active data subscription.
@@ -289,8 +328,7 @@ internal object NativePresentationResolver {
         val fields =
             drawableFields.computeIfAbsent(drawable.javaClass) { clazz ->
                 fun field(name: String): Field? =
-                    runCatching { clazz.getDeclaredField(name).apply { isAccessible = true } }
-                        .getOrNull()
+                    readOrNull { clazz.getDeclaredField(name).apply { isAccessible = true } }
                 DrawableFields(
                     type = field(MOBILE_TYPE_FIELD),
                     enhanced = field(MOBILE_TYPE_ENHANCED_FIELD),
@@ -298,9 +336,9 @@ internal object NativePresentationResolver {
                 )
             }
         // Drawables can change text without replacing their ImageView.
-        val label = runCatching { fields.type?.get(drawable) as? String }.getOrNull()
+        val label = readOrNull { fields.type?.get(drawable) as? String }
         val enhanced =
-            runCatching { fields.enhanced?.getBoolean(drawable) }.getOrNull() == true
+            readOrNull { fields.enhanced?.getBoolean(drawable) } == true
         return normalizeDrawableNetworkType(label.orEmpty(), enhanced, beforeMeasure)
     }
 
@@ -390,11 +428,11 @@ internal object NativePresentationResolver {
                 ?: return null
 
         // null means the platform source is unavailable; an empty list is authoritative.
-        return runCatching {
+        return readOrNull {
             manager.activeSubscriptionInfoList
                 ?.filter { info -> info.subscriptionId >= 0 }
                 ?.map { info -> info.subscriptionId to info.simSlotIndex }
-        }.getOrNull()
+        }
     }
 
     internal data class Snapshot(

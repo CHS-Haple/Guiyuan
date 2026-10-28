@@ -1,11 +1,19 @@
 package com.chaners.guiyuan.xposed
 
 import android.graphics.drawable.Drawable
+import android.util.Log
 import com.chaners.guiyuan.xposed.network.SysUiMobileTypeSource
 import io.github.libxposed.api.XposedModule
+import java.lang.reflect.InvocationTargetException
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiPresentationRuntime {
     private var current: AttachResult? = null
+
+    internal fun throwIfFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
 
     val installedHookCount: Int
         @Synchronized get() =
@@ -61,10 +69,14 @@ internal object SysUiPresentationRuntime {
         module: XposedModule,
         classLoader: ClassLoader,
         onTintState: (SysUiTintSource.TintUpdate) -> Unit,
+        onTintRuntimeFailure: (Throwable) -> Unit,
         onSceneState: (SysUiSceneSource.SceneUpdate) -> Unit,
+        onSceneRuntimeFailure: (Throwable) -> Unit,
         onKeyguardAodState: (SysUiKeyguardAodSource.AodUpdate) -> Unit,
+        onKeyguardRuntimeFailure: (String, Throwable) -> Unit,
         onKeyguardFullAodTransitionStarted: () -> Unit,
         onKeyguardFullAodTransitionCommitted: () -> Unit,
+        onKeyguardFullAodRuntimeFailure: (String, Throwable) -> Unit,
         onKeyguardStatusIconTransition: () -> Unit,
         onMobileTypeChanged: (Drawable) -> Unit,
         onTintEvent: ((String) -> Unit)?,
@@ -72,6 +84,21 @@ internal object SysUiPresentationRuntime {
         onSceneEvent: ((String) -> Unit)?,
         onKeyguardAodEvent: ((String) -> Unit)?,
     ): AttachResult {
+        val warned = AtomicBoolean(false)
+        fun reportAodFailure(message: String) {
+            try {
+                onKeyguardAodEvent?.invoke(message)
+            } catch (error: Throwable) {
+                throwIfFatal(error)
+                if (warned.compareAndSet(false, true)) {
+                    try {
+                        Log.w("Guiyuan[Aod]", "Install diagnostic failed", error)
+                    } catch (failure: Throwable) {
+                        throwIfFatal(failure)
+                    }
+                }
+            }
+        }
         var tintFailure: String? = null
         val tintHooks =
             runCatching {
@@ -79,10 +106,12 @@ internal object SysUiPresentationRuntime {
                     module = module,
                     classLoader = classLoader,
                     onTintState = onTintState,
+                    onRuntimeFailure = onTintRuntimeFailure,
                     onEvent = onTintEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
+                throwIfFatal(error)
                 tintFailure = error.message ?: error.javaClass.simpleName
                 SysUiTintSource.failedInstallHookCount
             }
@@ -92,11 +121,15 @@ internal object SysUiPresentationRuntime {
                     module = module,
                     classLoader = classLoader,
                     onAodState = onKeyguardAodState,
+                    onRuntimeFailure = { error ->
+                        onKeyguardRuntimeFailure("aod-state", error)
+                    },
                     onEvent = onKeyguardAodEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
-                onKeyguardAodEvent?.invoke(
+                throwIfFatal(error)
+                reportAodFailure(
                     "keyguardAod install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
                         " fallback=native-keyguard",
@@ -110,11 +143,13 @@ internal object SysUiPresentationRuntime {
                     classLoader = classLoader,
                     onTransitionStarted = onKeyguardFullAodTransitionStarted,
                     onTransitionCommitted = onKeyguardFullAodTransitionCommitted,
+                    onRuntimeFailure = onKeyguardFullAodRuntimeFailure,
                     onEvent = onKeyguardAodEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
-                onKeyguardAodEvent?.invoke(
+                throwIfFatal(error)
+                reportAodFailure(
                     "keyguardFullAod install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
                         " fallback=status-icons-alpha",
@@ -127,11 +162,15 @@ internal object SysUiPresentationRuntime {
                     module = module,
                     classLoader = classLoader,
                     onTransition = onKeyguardStatusIconTransition,
+                    onRuntimeFailure = { error ->
+                        onKeyguardRuntimeFailure("icon-transition", error)
+                    },
                     onEvent = onKeyguardAodEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
-                onKeyguardAodEvent?.invoke(
+                throwIfFatal(error)
+                reportAodFailure(
                     "keyguardStatusIconTransition install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
                         " fallback=status-icons-alpha",
@@ -145,10 +184,12 @@ internal object SysUiPresentationRuntime {
                     module = module,
                     classLoader = classLoader,
                     onSceneState = onSceneState,
+                    onRuntimeFailure = onSceneRuntimeFailure,
                     onEvent = onSceneEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
+                throwIfFatal(error)
                 sceneFailure = error.message ?: error.javaClass.simpleName
                 0
             }
@@ -161,6 +202,7 @@ internal object SysUiPresentationRuntime {
                     onChanged = onMobileTypeChanged,
                 ).size
             }.getOrElse { error ->
+                throwIfFatal(error)
                 mobileTypeFailure = error.message ?: error.javaClass.simpleName
                 0
             }

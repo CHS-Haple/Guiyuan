@@ -36,17 +36,17 @@ import com.chaners.guiyuan.system.RuntimeEnv
 import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.chaners.guiyuan.ui.components.UiDialogButton
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurBlendMode
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -190,16 +190,16 @@ internal fun AboutScreen(
             )
         },
         overlay = {
-            OverlayDialog(
+            UiOverlayDialog(
                 title = stringResource(R.string.about_repo_unavailable_title),
                 summary = stringResource(R.string.about_repo_unavailable_summary),
                 show = showRepoUnavailable,
                 onDismissRequest = { showRepoUnavailable = false },
             ) {
-                TextButton(
+                UiDialogButton(
                     text = stringResource(R.string.confirm),
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    role = GlassDialogButtonRole.Primary,
                     onClick = { showRepoUnavailable = false },
                 )
             }
@@ -364,7 +364,7 @@ internal fun AboutScreen(
 @Composable
 internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
     val uriHandler = LocalUriHandler.current
-    val miuixVersion = BuildConfig.MIUIX_VERSION
+    val miuixVersion = "${BuildConfig.MIUIX_VERSION}｜PR #423"
     val runtimeDependencies =
         remember(miuixVersion) {
             listOf(
@@ -387,6 +387,12 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     upstreamUrl = "https://github.com/libxposed/service",
                 ),
                 AboutDependency(
+                    name = "AndroidX Core",
+                    version = BuildConfig.ANDROIDX_CORE_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/androidx/androidx",
+                ),
+                AboutDependency(
                     name = "AndroidX Activity Compose",
                     version = BuildConfig.ACTIVITY_COMPOSE_VERSION,
                     license = "Apache-2.0",
@@ -406,6 +412,12 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                 ),
                 AboutDependency(
                     name = "kotlinx.serialization core",
+                    version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
+                    license = "Apache-2.0",
+                    upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
+                ),
+                AboutDependency(
+                    name = "kotlinx.serialization JSON",
                     version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
                     license = "Apache-2.0",
                     upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",

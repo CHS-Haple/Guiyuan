@@ -30,6 +30,8 @@ import com.chaners.guiyuan.settings.AppearanceRepo
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.GyApp
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
@@ -119,6 +121,7 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(
                 LocalDensity provides uiDensity,
                 LocalWindowInfo provides uiWindow,
+                LocalUiStyle provides appearance.uiStyle,
             ) {
                 GyApp(
                     appearance = appearance,
@@ -136,6 +139,9 @@ class MainActivity : ComponentActivity() {
                     onHotReload = {
                         (application as GyApplication).hotReloadSysUi()
                     },
+                    onUiStyleChange = { style: UiStyle ->
+                        scope.launch { repo.setUiStyle(style) }
+                    },
                     onThemeChange = { mode ->
                         scope.launch { repo.setTheme(mode) }
                     },
@@ -150,6 +156,9 @@ class MainActivity : ComponentActivity() {
                     },
                     onNavEnabledChange = { enabled ->
                         scope.launch { repo.setNavEnabled(enabled) }
+                    },
+                    onNavTouchExtensionChange = { enabled ->
+                        scope.launch { repo.setNavTouchExtension(enabled) }
                     },
                     onNavStyleChange = { style: NavStyle ->
                         scope.launch { repo.setNavStyle(style) }

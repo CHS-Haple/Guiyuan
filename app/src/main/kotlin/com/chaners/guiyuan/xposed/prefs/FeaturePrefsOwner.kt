@@ -25,6 +25,7 @@ internal object FeaturePrefsOwner {
 
     private val state = AtomicReference(State(null, null, disabled))
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+    private val listenerRetirement = PrefListenerRetirement()
 
     fun current(): FeatureCfg = state.get().cfg
 
@@ -48,10 +49,18 @@ internal object FeaturePrefsOwner {
                 val next = resolve(changed)
                 var latest = state.get()
                 while (latest.source === changed && latest.token === token && latest.cfg != next) {
-                    if (state.compareAndSet(latest, latest.copy(cfg = next))) {
-                        val receivedAtNs = SystemClock.elapsedRealtimeNanos()
-                        val changedAtNs = changed.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L)
-                        onChanged(next, transportLatencyNs(changedAtNs, receivedAtNs))
+                    val pending = latest.copy(cfg = next)
+                    if (state.compareAndSet(latest, pending)) {
+                        try {
+                            val changedAtNs = changed.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L)
+                            val receivedAtNs =
+                                if (changedAtNs > 0L) SystemClock.elapsedRealtimeNanos() else 0L
+                            onChanged(next, transportLatencyNs(changedAtNs, receivedAtNs))
+                        } catch (error: Throwable) {
+                            // A failed older callback cannot undo a newer reentrant update.
+                            state.compareAndSet(pending, latest)
+                            throw error
+                        }
                         break
                     }
                     latest = state.get()
@@ -61,14 +70,40 @@ internal object FeaturePrefsOwner {
         source.registerOnSharedPreferenceChangeListener(listener)
         state.set(State(source, token, initial))
         this.listener = listener
-        onChanged(initial, null)
-        return initial
+        return try {
+            onChanged(initial, null)
+            // A write between the first read and registration has no listener notification.
+            listener.onSharedPreferenceChanged(source, null)
+            current()
+        } catch (error: Throwable) {
+            if (state.get().token === token) {
+                try {
+                    unbindLocked()
+                } catch (cleanup: Throwable) {
+                    if (cleanup is VirtualMachineError || cleanup is ThreadDeath) throw cleanup
+                    if (cleanup !== error) error.addSuppressed(cleanup)
+                } finally {
+                    // A reentrant new binding must not be cleared by the failed old callback.
+                    val retired = state.get()
+                    if (retired.source == null && retired.token == null) {
+                        state.compareAndSet(retired, State(null, null, disabled))
+                    }
+                }
+            }
+            throw error
+        }
     }
 
     @Synchronized
     fun unbind() {
-        unbindLocked()
-        state.set(State(null, null, disabled))
+        try {
+            unbindLocked()
+        } finally {
+            val retired = state.get()
+            if (retired.source == null && retired.token == null) {
+                state.compareAndSet(retired, State(null, null, disabled))
+            }
+        }
     }
 
     private fun unbindLocked() {
@@ -76,9 +111,7 @@ internal object FeaturePrefsOwner {
         val oldListener = listener
         listener = null
         // Retire the generation before entering the framework's listener monitor.
-        if (old.source != null && oldListener != null) {
-            old.source.unregisterOnSharedPreferenceChangeListener(oldListener)
-        }
+        listenerRetirement.unregister(old.source, oldListener)
     }
 
     internal fun transportLatencyNs(

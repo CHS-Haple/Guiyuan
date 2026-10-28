@@ -55,3 +55,24 @@ dependencyResolutionManagement {
 
 rootProject.name = "Guiyuan"
 include(":app")
+
+// Opt-in source-matched OS4 graph. The default app still uses published MIUIX packages.
+providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.let { source ->
+    val miuix = file(source)
+    require(miuix.resolve("miuix-blur/build.gradle.kts").isFile &&
+        miuix.resolve("miuix-ui/build.gradle.kts").isFile
+    ) { "gy.os4.miuixDir must point to a complete MIUIX source checkout" }
+
+    includeBuild(miuix) {
+        dependencySubstitution {
+            substitute(module("top.yukonga.miuix.kmp:miuix-core-android")).using(project(":miuix-core"))
+            substitute(module("top.yukonga.miuix.kmp:miuix-shader-android")).using(project(":miuix-shader"))
+            substitute(module("top.yukonga.miuix.kmp:miuix-squircle-android")).using(project(":miuix-squircle"))
+            substitute(module("top.yukonga.miuix.kmp:miuix-ui-android")).using(project(":miuix-ui"))
+            substitute(module("top.yukonga.miuix.kmp:miuix-blur-android")).using(project(":miuix-blur"))
+            substitute(module("top.yukonga.miuix.kmp:miuix-preference-android")).using(project(":miuix-preference"))
+            substitute(module("top.yukonga.miuix.kmp:miuix-icons-android")).using(project(":miuix-icons"))
+            substitute(module("top.yukonga.miuix.kmp:miuix-nav-android")).using(project(":miuix-nav"))
+        }
+    }
+}

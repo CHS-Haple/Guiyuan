@@ -7,8 +7,14 @@ import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
+import java.lang.reflect.InvocationTargetException
 
 internal object SysUiHotReload {
+    internal fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
     internal sealed interface PrepareResult {
         data class Ready(
             val host: Any,
@@ -30,6 +36,14 @@ internal object SysUiHotReload {
         val classLoader: ClassLoader,
     )
 
+    // Mobile type can fail native from its verified SystemUI view after a rootless handoff.
+    // A visible Wi-Fi state without its model cannot be reseeded safely.
+    internal fun networkTransferReady(
+        wifi: StatusStateStore.WifiState,
+        boundWifiRoots: Int,
+    ): Boolean =
+        wifi !is StatusStateStore.WifiState.Visible || boundWifiRoots > 0
+
     fun prepare(
         param: HotReloadingParam,
     ): PrepareResult {
@@ -47,12 +61,9 @@ internal object SysUiHotReload {
         val snapshot = StatusStateStore.snapshot()
         val stableTint = HomeRenderSession.currentTintState()
         val bindingCounts = SysUiNetworkSource.hotReloadBindingCounts()
-        val bindingStateReady =
-            (snapshot.wifi is StatusStateStore.WifiState.Unknown || bindingCounts.first > 0) &&
-                (snapshot.mobile.isEmpty() || bindingCounts.second > 0)
-        if (!bindingStateReady) {
+        if (!networkTransferReady(snapshot.wifi, bindingCounts.first)) {
             return PrepareResult.Unavailable(
-                reason = "network-bindings-not-ready",
+                reason = "visible-wifi-binding-missing",
                 wifiRoots = bindingCounts.first,
                 mobileRoots = bindingCounts.second,
             )
@@ -85,6 +96,7 @@ internal object SysUiHotReload {
         runCatching {
             param.setSavedInstanceState(transfer)
         }.getOrElse { error ->
+            rethrowFatal(error)
             return PrepareResult.Unavailable(
                 reason = error.message ?: error.javaClass.simpleName,
                 wifiRoots = bindingCounts.first,
@@ -113,7 +125,13 @@ internal object SysUiHotReload {
 
     fun releaseOldHooks(param: HotReloadedParam): Int =
         param.oldHookHandles.count { handle ->
-            runCatching { handle.unhook() }.isFailure
+            try {
+                handle.unhook()
+                false
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                true
+            }
         }
 
     fun takeOverHooks(
@@ -135,10 +153,12 @@ internal object SysUiHotReload {
         var removed = 0
         oldHandles.forEach { handle ->
             if (handle !== hostHandle) {
-                runCatching { handle.unhook() }
-                    .getOrElse { cause ->
-                        throw IllegalStateException("stale-hook-unhook-failed", cause)
-                    }
+                try {
+                    handle.unhook()
+                } catch (error: Throwable) {
+                    rethrowFatal(error)
+                    throw IllegalStateException("stale-hook-unhook-failed", error)
+                }
                 removed += 1
             }
         }

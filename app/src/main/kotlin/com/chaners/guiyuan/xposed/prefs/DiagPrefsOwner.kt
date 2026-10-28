@@ -13,6 +13,7 @@ internal object DiagPrefsOwner {
 
     @Volatile private var binding: Binding? = null
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+    private val listenerRetirement = PrefListenerRetirement()
 
     val isBound: Boolean
         get() = binding != null
@@ -57,15 +58,27 @@ internal object DiagPrefsOwner {
         binding = Binding(prefs, token)
         this.listener = listener
 
+        var latest = detailed
         runCatching {
             onChanged(detailed)
-        }.onFailure {
-            unbindLocked()
-            throw it
+            // A change before listener registration cannot produce a callback.
+            latest = isDetailed(prefs, forceDetailed)
+            if (latest != detailed) onChanged(latest)
+        }.onFailure { error ->
+            // An older callback must not retire a newer reentrant binding.
+            if (binding?.token === token) {
+                try {
+                    unbindLocked()
+                } catch (cleanup: Throwable) {
+                    if (cleanup is VirtualMachineError || cleanup is ThreadDeath) throw cleanup
+                    if (cleanup !== error) error.addSuppressed(cleanup)
+                }
+            }
+            throw error
         }
 
         return BindResult(
-            detailed = detailed,
+            detailed = latest,
         )
     }
 
@@ -80,9 +93,7 @@ internal object DiagPrefsOwner {
         binding = null
         listener = null
         // Retire the generation before entering the framework's listener monitor.
-        if (old != null && oldListener != null) {
-            old.prefs.unregisterOnSharedPreferenceChangeListener(oldListener)
-        }
+        listenerRetirement.unregister(old?.prefs, oldListener)
     }
 
     private fun isCurrent(

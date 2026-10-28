@@ -12,6 +12,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -59,6 +60,171 @@ class RemotePrefsLockOrderTest {
         assertTrue(FeaturePrefsOwner.current().enabled)
     }
 
+    @Test
+    fun featureChangedBeforeListenerRegistrationIsRead() {
+        val prefs = LockedPrefs().apply {
+            onRegister = { featureEnabled = false }
+        }
+        val delivered = mutableListOf<Boolean>()
+        val bound = FeaturePrefsOwner.bind(prefs) { cfg, _ -> delivered += cfg.enabled }
+        assertFalse(bound.enabled)
+        assertFalse(FeaturePrefsOwner.current().enabled)
+        assertEquals(false, delivered.last())
+    }
+
+    @Test
+    fun visualChangedBeforeListenerRegistrationIsRead() {
+        val prefs = LockedPrefs().apply {
+            onRegister = { dual = true }
+        }
+        val delivered = mutableListOf<Boolean>()
+        val bound = VisualPrefsOwner.bind(prefs) { cfg -> delivered += cfg.dualSignal }
+        assertTrue(bound.dualSignal)
+        assertTrue(VisualPrefsOwner.current().dualSignal)
+        assertEquals(true, delivered.last())
+    }
+
+    @Test
+    fun failedFeatureDeliveryCanRetryTheSameValue() {
+        val prefs = LockedPrefs()
+        val failure = IllegalStateException("feature-receiver")
+        var attempts = 0
+        FeaturePrefsOwner.bind(prefs) { cfg, _ ->
+            if (!cfg.enabled) {
+                attempts++
+                if (attempts == 1) throw failure
+            }
+        }
+        prefs.featureEnabled = false
+        assertSame(
+            failure,
+            runCatching { prefs.notifyListeners(FEATURE_ENABLED_KEY) }.exceptionOrNull(),
+        )
+        assertTrue(FeaturePrefsOwner.current().enabled)
+        prefs.notifyListeners(FEATURE_ENABLED_KEY)
+        assertEquals(2, attempts)
+        assertFalse(FeaturePrefsOwner.current().enabled)
+    }
+
+    @Test
+    fun failedVisualDeliveryCanRetryTheSameValue() {
+        val prefs = LockedPrefs()
+        val failure = IllegalArgumentException("visual-receiver")
+        var attempts = 0
+        VisualPrefsOwner.bind(prefs) { cfg ->
+            if (cfg.dualSignal) {
+                attempts++
+                if (attempts == 1) throw failure
+            }
+        }
+        prefs.dual = true
+        assertSame(
+            failure,
+            runCatching { prefs.notifyListeners(DUAL_SIGNAL_ENABLED_KEY) }.exceptionOrNull(),
+        )
+        assertFalse(VisualPrefsOwner.current().dualSignal)
+        prefs.notifyListeners(DUAL_SIGNAL_ENABLED_KEY)
+        assertEquals(2, attempts)
+        assertTrue(VisualPrefsOwner.current().dualSignal)
+    }
+
+    @Test
+    fun failedInitialFeatureDeliveryRetiresItsListener() {
+        val prefs = LockedPrefs()
+        val error = IllegalStateException("feature-initial")
+        assertSame(
+            error,
+            runCatching { FeaturePrefsOwner.bind(prefs) { _, _ -> throw error } }.exceptionOrNull(),
+        )
+        assertEquals(0, prefs.listenerCount)
+        assertFalse(FeaturePrefsOwner.current().enabled)
+    }
+
+    @Test
+    fun failedInitialVisualDeliveryRetiresItsListener() {
+        val prefs = LockedPrefs().apply { dual = true }
+        val error = IllegalStateException("visual-initial")
+        assertSame(
+            error,
+            runCatching { VisualPrefsOwner.bind(prefs) { throw error } }.exceptionOrNull(),
+        )
+        assertEquals(0, prefs.listenerCount)
+        assertFalse(VisualPrefsOwner.current().dualSignal)
+    }
+
+    @Test
+    fun failedOldFeatureDeliveryDoesNotRetireReentrantNewBinding() {
+        val old = LockedPrefs()
+        val next = LockedPrefs().apply { featureEnabled = false }
+        val error = IllegalStateException("feature-old")
+        assertSame(
+            error,
+            runCatching {
+                FeaturePrefsOwner.bind(old) { _, _ ->
+                    FeaturePrefsOwner.bind(next) { _, _ -> }
+                    throw error
+                }
+            }.exceptionOrNull(),
+        )
+        assertEquals(0, old.listenerCount)
+        assertEquals(1, next.listenerCount)
+        assertFalse(FeaturePrefsOwner.current().enabled)
+    }
+
+    @Test
+    fun failedOldVisualDeliveryDoesNotRetireReentrantNewBinding() {
+        val old = LockedPrefs()
+        val next = LockedPrefs().apply { dual = true }
+        val error = IllegalStateException("visual-old")
+        assertSame(
+            error,
+            runCatching {
+                VisualPrefsOwner.bind(old) {
+                    VisualPrefsOwner.bind(next) { }
+                    throw error
+                }
+            }.exceptionOrNull(),
+        )
+        assertEquals(0, old.listenerCount)
+        assertEquals(1, next.listenerCount)
+        assertTrue(VisualPrefsOwner.current().dualSignal)
+    }
+
+    @Test
+    fun failedOldDiagnosticsDeliveryDoesNotRetireReentrantNewBinding() {
+        val old = LockedPrefs()
+        val next = LockedPrefs().apply { detailed = true }
+        val error = IllegalStateException("diagnostics-old")
+        var delivered = 0
+        assertSame(
+            error,
+            runCatching {
+                DiagPrefsOwner.bind(old, forceDetailed = false) {
+                    DiagPrefsOwner.bind(next, forceDetailed = false) { delivered++ }
+                    throw error
+                }
+            }.exceptionOrNull(),
+        )
+        assertEquals(0, old.listenerCount)
+        assertEquals(1, next.listenerCount)
+        assertTrue(DiagPrefsOwner.isBound)
+        assertEquals(1, delivered)
+        next.detailed = false
+        next.notifyListeners(DIAG_LEVEL_KEY)
+        assertEquals(2, delivered)
+    }
+
+    @Test
+    fun diagnosticsChangedBeforeListenerRegistrationIsRead() {
+        val prefs = LockedPrefs().apply {
+            onRegister = { detailed = true }
+        }
+        val delivered = mutableListOf<Boolean>()
+        val bound = DiagPrefsOwner.bind(prefs, forceDetailed = false) { delivered += it }
+        assertTrue(bound.detailed)
+        assertEquals(true, delivered.last())
+    }
+
     private fun testStaleRead(
         old: LockedPrefs,
         key: String,
@@ -92,18 +258,18 @@ class RemotePrefsLockOrderTest {
         old.beforeUnregister = { unregister.countDown() }
         val error = AtomicReference<Throwable?>(null)
         val callback = worker(error) { old.notifyHoldingLock(key, held, proceed) }
-        var rebind: Thread? = null
-        try {
+        val rebind = try {
             assertTrue("listener lock held", held.await(3, TimeUnit.SECONDS))
-            rebind = worker(error) { bind(next) }
-            assertTrue("unregister entered", unregister.await(3, TimeUnit.SECONDS))
+            worker(error) { bind(next) }.also {
+                assertTrue("unregister entered", unregister.await(3, TimeUnit.SECONDS))
+            }
         } finally {
             proceed.countDown()
         }
         callback.join(3_000)
-        rebind?.join(3_000)
+        rebind.join(3_000)
         assertFalse("callback finished", callback.isAlive)
-        assertFalse("rebind finished", rebind?.isAlive == true)
+        assertFalse("rebind finished", rebind.isAlive)
         assertNull(error.get())
         assertEquals(0, old.listenerCount)
         assertEquals(1, next.listenerCount)
@@ -123,6 +289,8 @@ class RemotePrefsLockOrderTest {
         private val listeners = linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
         @Volatile var dual = false
         @Volatile var featureEnabled = true
+        @Volatile var detailed = false
+        @Volatile var onRegister: (() -> Unit)? = null
         @Volatile var beforeUnregister: (() -> Unit)? = null
         @Volatile private var pause: Pause? = null
 
@@ -159,6 +327,7 @@ class RemotePrefsLockOrderTest {
         override fun registerOnSharedPreferenceChangeListener(
             listener: SharedPreferences.OnSharedPreferenceChangeListener?,
         ) {
+            onRegister?.invoke()
             if (listener != null) synchronized(lock) { listeners.add(listener) }
         }
 
@@ -179,7 +348,12 @@ class RemotePrefsLockOrderTest {
         }
 
         override fun getAll(): MutableMap<String, *> = mutableMapOf<String, Any>()
-        override fun getString(key: String?, defValue: String?): String? = defValue
+        override fun getString(key: String?, defValue: String?): String? =
+            if (key == DIAG_LEVEL_KEY) {
+                if (detailed) "Detailed" else "General"
+            } else {
+                defValue
+            }
         override fun getStringSet(key: String?, defValues: MutableSet<String>?): MutableSet<String>? =
             defValues
         override fun getInt(key: String?, defValue: Int): Int = defValue

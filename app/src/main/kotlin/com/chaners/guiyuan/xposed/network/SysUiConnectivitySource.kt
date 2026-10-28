@@ -8,8 +8,23 @@ import android.os.Handler
 import android.os.Looper
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
+import java.lang.reflect.InvocationTargetException
 
 internal object SysUiConnectivitySource {
+    private fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            rethrowFatal(error)
+            null
+        }
+
+
     private var manager: ConnectivityManager? = null
     @Volatile
     private var callback: ConnectivityManager.NetworkCallback? = null
@@ -17,6 +32,7 @@ internal object SysUiConnectivitySource {
     private var dataTelephony: TelephonyManager? = null
     private var dataCallback: TelephonyCallback? = null
     private var dataSubscriptionId = -1
+    @Volatile
     private var onDataChanged: (() -> Unit)? = null
 
     @Synchronized
@@ -35,6 +51,7 @@ internal object SysUiConnectivitySource {
             source: String,
             capabilities: NetworkCapabilities?,
         ) {
+            if (onDataChanged == null) return
             val state =
                 State(
                     known = true,
@@ -49,14 +66,27 @@ internal object SysUiConnectivitySource {
                         ) == true,
                     mobileDataEnabled = mobileDataEnabled(context),
                 )
-            onState(state)
-            onEvent?.invoke(
-                "connectivity source=" + source +
-                    " transport=" + state.transport.name +
-                    " validated=" + state.validated +
-                    " internetCapability=" + state.hasInternetCapability +
-                    " mobileDataEnabled=" + (state.mobileDataEnabled?.toString() ?: "unknown"),
-            )
+            try {
+                onState(state)
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                readOrNull {
+                    onEvent?.invoke(
+                        "connectivity delivery-failed source=" + source +
+                            " type=" + error.javaClass.simpleName,
+                    )
+                }
+                return
+            }
+            readOrNull {
+                onEvent?.invoke(
+                    "connectivity source=" + source +
+                        " transport=" + state.transport.name +
+                        " validated=" + state.validated +
+                        " internetCapability=" + state.hasInternetCapability +
+                        " mobileDataEnabled=" + (state.mobileDataEnabled?.toString() ?: "unknown"),
+                )
+            }
         }
 
         var currentDefaultNetwork: Network? = null
@@ -98,23 +128,30 @@ internal object SysUiConnectivitySource {
         onDataChanged = {
             if (callback === networkCallback) {
                 val capabilities =
-                    runCatching {
+                    readOrNull {
                         connectivityManager.activeNetwork?.let(
                             connectivityManager::getNetworkCapabilities,
                         )
-                    }.getOrNull()
+                    }
                 publish(source = "mobile-data", capabilities = capabilities)
             }
         }
-        return runCatching {
+        return try {
             connectivityManager.registerDefaultNetworkCallback(networkCallback, handler)
             if (connectivityManager.activeNetwork == null) {
                 publish(source = "initial-none", capabilities = null)
             }
             refreshDataSubscription()
             true
-        }.getOrElse {
-            detach()
+        } catch (error: Throwable) {
+            try {
+                detach()
+            } catch (failure: Throwable) {
+                if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                throw failure
+            }
+            if (error is VirtualMachineError || error is ThreadDeath) throw error
             false
         }
     }
@@ -127,7 +164,10 @@ internal object SysUiConnectivitySource {
             dataTelephony?.let { telephony ->
                 dataCallback?.let { old ->
                     // Do not register another callback if the previous owner cannot leave.
-                    if (runCatching { telephony.unregisterTelephonyCallback(old) }.isFailure) {
+                    try {
+                        telephony.unregisterTelephonyCallback(old)
+                    } catch (error: Throwable) {
+                        if (error is VirtualMachineError || error is ThreadDeath) throw error
                         return
                     }
                 }
@@ -148,10 +188,15 @@ internal object SysUiConnectivitySource {
                                 if (dataCallback === this) onDataChanged?.invoke()
                             }
                         }
-                    if (runCatching {
+                    val registered =
+                        try {
                             telephony.registerTelephonyCallback(context.mainExecutor, observer)
-                        }.isSuccess
-                    ) {
+                            true
+                        } catch (error: Throwable) {
+                            if (error is VirtualMachineError || error is ThreadDeath) throw error
+                            false
+                        }
+                    if (registered) {
                         dataTelephony = telephony
                         dataCallback = observer
                     }
@@ -163,30 +208,49 @@ internal object SysUiConnectivitySource {
 
     @Synchronized
     fun detach() {
-        val failures = ArrayList<Throwable>(2)
-        dataTelephony?.let { telephony ->
-            dataCallback?.let { old ->
-                runCatching { telephony.unregisterTelephonyCallback(old) }
-                    .onFailure(failures::add)
-            }
-        }
-        dataTelephony = null
-        dataCallback = null
-        dataContext = null
+        // Failed unregisters still own their handles, but cannot publish stale state.
         onDataChanged = null
+        dataContext = null
         dataSubscriptionId = -1
+
+        val failures = ArrayList<Throwable>(2)
+        val telephony = dataTelephony
+        val data = dataCallback
+        if (telephony != null && data != null) {
+            try {
+                telephony.unregisterTelephonyCallback(data)
+                dataTelephony = null
+                dataCallback = null
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                failures.add(error)
+            }
+        } else {
+            dataTelephony = null
+            dataCallback = null
+        }
 
         val currentManager = manager
         val currentCallback = callback
         if (currentManager != null && currentCallback != null) {
-            runCatching { currentManager.unregisterNetworkCallback(currentCallback) }
-                .onFailure { error ->
-                    // Android rejects a callback that was never registered.
-                    if (error !is IllegalArgumentException) failures += error
+            try {
+                currentManager.unregisterNetworkCallback(currentCallback)
+                manager = null
+                callback = null
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                if (error is IllegalArgumentException) {
+                    // Android rejects an unregistered callback; no owner remains.
+                    manager = null
+                    callback = null
+                } else {
+                    failures.add(error)
                 }
+            }
+        } else {
+            manager = null
+            callback = null
         }
-        manager = null
-        callback = null
         if (failures.isNotEmpty()) {
             val error = IllegalStateException("connectivity-release-incomplete", failures.first())
             failures.drop(1).forEach(error::addSuppressed)
@@ -203,11 +267,11 @@ internal object SysUiConnectivitySource {
         val telephony =
             context.getSystemService(TelephonyManager::class.java)
                 ?: return null
-        return runCatching {
+        return readOrNull {
             telephony
                 .createForSubscriptionId(subscriptionId)
                 .isDataEnabled
-        }.getOrNull()
+        }
     }
 
     private fun transport(capabilities: NetworkCapabilities?): Transport =

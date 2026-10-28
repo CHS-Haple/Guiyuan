@@ -8,9 +8,11 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 internal const val SHARED_TRANSITIONS_SCHEMA_KEY = "shared_transitions_schema"
+internal const val SHARED_BATTERY_COLORS_SCHEMA_KEY = "shared_battery_colors_schema"
 
 private val visualPreferenceKeys = buildSet {
     add(SHARED_TRANSITIONS_SCHEMA_KEY)
+    add(SHARED_BATTERY_COLORS_SCHEMA_KEY)
     add(CONTENT_LAYOUT_KEY)
     add(DUAL_SIGNAL_ENABLED_KEY)
     add(DUAL_PROFILES_INITIALIZED_KEY)
@@ -128,13 +130,72 @@ internal fun migrateSharedTransitionsIfNeeded(prefs: SharedPreferences) {
     editor.putInt(SHARED_TRANSITIONS_SCHEMA_KEY, 1).apply()
 }
 
+// The currently displayed SIM mode wins once; colors no longer have a dual bank.
+internal fun migrateSharedBatteryColorsIfNeeded(prefs: SharedPreferences) {
+    if (prefs.getInt(SHARED_BATTERY_COLORS_SCHEMA_KEY, 0) >= 1) return
+
+    val dual = prefs.dualSignalEnabled()
+    val stored = prefs.all
+    val editor = prefs.edit()
+    BATTERY_COLOR_KEYS.forEach { key ->
+        val oldDualKey = visualModeKey(true, key)
+        if (dual) {
+            when (val value = stored[oldDualKey]) {
+                is String -> editor.putString(key, value)
+                is Int -> editor.putInt(key, value)
+                null -> editor.remove(key)
+                else -> error("Unexpected saved battery color value")
+            }
+        }
+        editor.remove(oldDualKey)
+    }
+
+    // A prior test build persisted a second applied selection; retire it.
+    val selectedDual = prefs.getString(BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY, null)
+    if (dual && selectedDual != null) {
+        editor.putString(BATTERY_COLOR_SCHEME_ACTIVE_KEY, selectedDual)
+    } else if (dual) {
+        val visual = prefs.readVisualCfg(dual = true)
+        val selected =
+            if (prefs.contains(BATTERY_COLOR_SCHEME_ACTIVE_KEY)) {
+                BatterySchemeRepo(prefs).current().matchingKey(visual)
+            } else {
+                null
+            }
+        val builtIn =
+            if (BatteryColorSlot.entries.all { slot ->
+                    visual.batteryColorModes.modeFor(slot) == BatteryColorMode.PRESET &&
+                        visual.batteryColorOverrides.colorFor(slot) == null
+                }
+            ) BatteryBuiltInColorScheme.fromPreset(visual.batteryColorPreset).key else null
+        (selected ?: builtIn)?.let { editor.putString(BATTERY_COLOR_SCHEME_ACTIVE_KEY, it) }
+    }
+    editor.remove(BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY)
+    editor.putInt(SHARED_BATTERY_COLORS_SCHEMA_KEY, 1).apply()
+}
+
 // Migrations must finish before the app mirrors its first runtime snapshot.
 internal fun migrateVisualPrefsIfNeeded(preferences: SharedPreferences) {
     migrateSharedLayoutIfNeeded(preferences)
     migrateSharedTransitionsIfNeeded(preferences)
+    migrateSharedBatteryColorsIfNeeded(preferences)
     migrateBatteryColorPresetDefaultIfNeeded(preferences)
     migrateBatteryTopChargingScaleReferenceIfNeeded(preferences)
     migrateTextWeightRanges(preferences)
+}
+
+// Reset visual choices without deleting user-created battery schemes.
+internal fun resetVisualPreferences(
+    preferences: SharedPreferences,
+    schemes: BatteryColorSchemeLibrary,
+) {
+    val editor = preferences.edit().clear()
+    editor.putInt(SHARED_BATTERY_COLORS_SCHEMA_KEY, 1)
+    writeBatterySchemeLibrary(
+        editor,
+        schemes.copy(activeSchemeKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY),
+    )
+    editor.apply()
 }
 
 internal class VisualRepo(context: Context) {
@@ -177,9 +238,6 @@ internal class VisualRepo(context: Context) {
             baseKey = baseKey,
             dual = preferences.dualSignalEnabled(),
         )
-
-    private fun activeGlobalKey(baseKey: String): String =
-        visualModeKey(preferences.dualSignalEnabled(), baseKey)
 
     fun setDualSignal(enabled: Boolean) {
         val editor = preferences.edit()
@@ -278,9 +336,10 @@ internal class VisualRepo(context: Context) {
 
     fun setTopTextScale(scale: Float) {
         val uiScale =
-            scale.coerceIn(
+            scale.finiteIn(
                 BATTERY_TOP_TEXT_UI_SCALE_MIN,
                 BATTERY_TOP_TEXT_UI_SCALE_MAX,
+                topTextUiScaleDefault(preferences.readLayout()),
             )
         preferences
             .edit()
@@ -304,9 +363,10 @@ internal class VisualRepo(context: Context) {
 
     fun setTopOffsetY(offset: Float) {
         val uiOffset =
-            offset.coerceIn(
+            offset.finiteIn(
                 BATTERY_TOP_VERTICAL_OFFSET_UI_MIN,
                 BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
+                0f,
             )
         preferences
             .edit()
@@ -321,7 +381,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(WIFI_VERTICAL_OFFSET_KEY),
-                offset.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+                offset.finiteIn(
+                    NETWORK_TOP_OFFSET_MIN,
+                    NETWORK_TOP_OFFSET_MAX,
+                    NETWORK_TOP_OFFSET_DEFAULT,
+                ),
             ).apply()
     }
 
@@ -329,7 +393,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(MOBILE_TYPE_VERTICAL_OFFSET_KEY),
-                offset.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX),
+                offset.finiteIn(
+                    NETWORK_TOP_OFFSET_MIN,
+                    NETWORK_TOP_OFFSET_MAX,
+                    NETWORK_TOP_OFFSET_DEFAULT,
+                ),
             ).apply()
     }
 
@@ -352,7 +420,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(COMBINED_SCALE_KEY),
-                scale.coerceIn(COMBINED_SCALE_MIN, COMBINED_SCALE_MAX),
+                scale.finiteIn(
+                    COMBINED_SCALE_MIN,
+                    COMBINED_SCALE_MAX,
+                    COMBINED_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -361,7 +433,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(OUTER_WEIGHT_SCALE_KEY),
-                scale.coerceIn(OUTER_WEIGHT_SCALE_MIN, OUTER_WEIGHT_SCALE_MAX),
+                scale.finiteIn(
+                    OUTER_WEIGHT_SCALE_MIN,
+                    OUTER_WEIGHT_SCALE_MAX,
+                    OUTER_WEIGHT_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -376,7 +452,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(WIFI_SIZE_SCALE_KEY),
-                scale.coerceIn(WIFI_SIZE_SCALE_MIN, WIFI_SIZE_SCALE_MAX),
+                scale.finiteIn(
+                    WIFI_SIZE_SCALE_MIN,
+                    WIFI_SIZE_SCALE_MAX,
+                    WIFI_SIZE_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -391,7 +471,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(AIRPLANE_SIZE_SCALE_KEY),
-                scale.coerceIn(AIRPLANE_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MAX),
+                scale.finiteIn(
+                    AIRPLANE_SIZE_SCALE_MIN,
+                    AIRPLANE_SIZE_SCALE_MAX,
+                    AIRPLANE_SIZE_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -400,7 +484,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(NO_SIM_SIZE_SCALE_KEY),
-                scale.coerceIn(NO_SIM_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MAX),
+                scale.finiteIn(
+                    NO_SIM_SIZE_SCALE_MIN,
+                    NO_SIM_SIZE_SCALE_MAX,
+                    NO_SIM_SIZE_SCALE_DEFAULT,
+                ),
             )
             .apply()
     }
@@ -409,7 +497,11 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(MOBILE_TYPE_SIZE_SCALE_KEY),
-                scale.coerceIn(MOBILE_TYPE_SIZE_SCALE_MIN, MOBILE_TYPE_SIZE_SCALE_MAX),
+                scale.finiteIn(
+                    MOBILE_TYPE_SIZE_SCALE_MIN,
+                    MOBILE_TYPE_SIZE_SCALE_MAX,
+                    mobileTypeScaleDefault(preferences.readLayout()),
+                ),
             )
             .apply()
     }
@@ -421,51 +513,6 @@ internal class VisualRepo(context: Context) {
                 weight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX),
             )
             .apply()
-    }
-
-    fun setBatteryColorPreset(preset: BatteryColorPreset) {
-        preferences.edit()
-            .putString(activeGlobalKey(BATTERY_COLOR_PRESET_KEY), preset.persistedValue)
-            .apply()
-    }
-
-    fun setBatteryColorMode(
-        slot: BatteryColorSlot,
-        mode: BatteryColorMode,
-    ) {
-        preferences.edit()
-            .putString(activeGlobalKey(batteryColorModeKey(slot)), mode.persistedValue)
-            .apply()
-    }
-
-    fun setBatteryColorOverride(
-        slot: BatteryColorSlot,
-        color: Int?,
-    ) {
-        val key = activeGlobalKey(batteryColorOverrideKey(slot))
-        val editor = preferences.edit()
-        if (color == null) {
-            editor.remove(key)
-        } else {
-            editor.putInt(key, color or 0xFF000000.toInt())
-        }
-        editor.apply()
-    }
-
-    fun resetBatteryColorSlot(slot: BatteryColorSlot) {
-        preferences.edit()
-            .remove(activeGlobalKey(batteryColorModeKey(slot)))
-            .remove(activeGlobalKey(batteryColorOverrideKey(slot)))
-            .apply()
-    }
-
-    fun resetBatteryColorOverrides() {
-        val editor = preferences.edit()
-        BatteryColorSlot.entries.forEach { slot ->
-            editor.remove(activeGlobalKey(batteryColorModeKey(slot)))
-            editor.remove(activeGlobalKey(batteryColorOverrideKey(slot)))
-        }
-        editor.apply()
     }
 
     fun backup(): VisualBackup =
@@ -490,12 +537,15 @@ internal class VisualRepo(context: Context) {
         val editor = preferences.editBackupVisuals()
         backup.profiles.filter { !it.dualSignal || backup.dualInitialized }
             .forEach { editor.putVisualCfg(it) }
-        // V1 archives may differ across SIM modes; the active bank wins.
+        // Old V1 archives may carry separate colors; the active profile wins globally.
         val active = backup.profiles.first { it.dualSignal == backup.dualEnabled }
+        editor.putBatteryColors(active)
         editor.putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, active.fillFollowsRetract)
             .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, active.ccTintTransition)
             .putInt(SHARED_TRANSITIONS_SCHEMA_KEY, 1)
-        BatterySchemeRepo(context).putBackup(editor, library)
+            .putInt(SHARED_BATTERY_COLORS_SCHEMA_KEY, 1)
+        val applied = library.matchingKey(active) ?: library.activeSchemeKey
+        writeBatterySchemeLibrary(editor, library.copy(activeSchemeKey = applied))
         val activeLayout = if (backup.dualEnabled) backup.dualLayout else backup.singleLayout
         editor.putString(CONTENT_LAYOUT_KEY, activeLayout.persistedValue)
         if (backup.dualInitialized) {
@@ -508,14 +558,15 @@ internal class VisualRepo(context: Context) {
     }
 
     fun resetToDefaults() {
-        preferences.edit().clear().apply()
+        resetVisualPreferences(preferences, BatterySchemeRepo(context).current())
     }
 
     fun setTopChargingIconScale(scale: Float) {
         val uiScale =
-            scale.coerceIn(
+            scale.finiteIn(
                 BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN,
                 BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX,
+                topChargingIconUiScaleDefault(preferences.readLayout()),
             )
         preferences
             .edit()
@@ -643,7 +694,7 @@ internal fun SharedPreferences.readVisualCfg(
         batteryColorPreset =
             BatteryColorPreset.fromPersisted(
                 getString(
-                    visualModeKey(dual, BATTERY_COLOR_PRESET_KEY),
+                    BATTERY_COLOR_PRESET_KEY,
                     BatteryColorPreset.HYPEROS.persistedValue,
                 ),
             ),
@@ -651,43 +702,43 @@ internal fun SharedPreferences.readVisualCfg(
             BatteryColorModes(
                 normal =
                     batteryColorMode(
-                        modeKey = visualModeKey(dual, BATTERY_COLOR_MODE_NORMAL_KEY),
-                        colorKey = visualModeKey(dual, BATTERY_COLOR_NORMAL_KEY),
+                        modeKey = BATTERY_COLOR_MODE_NORMAL_KEY,
+                        colorKey = BATTERY_COLOR_NORMAL_KEY,
                     ),
                 powerSave =
                     batteryColorMode(
-                        modeKey = visualModeKey(dual, BATTERY_COLOR_MODE_POWER_SAVE_KEY),
-                        colorKey = visualModeKey(dual, BATTERY_COLOR_POWER_SAVE_KEY),
+                        modeKey = BATTERY_COLOR_MODE_POWER_SAVE_KEY,
+                        colorKey = BATTERY_COLOR_POWER_SAVE_KEY,
                     ),
                 performance =
                     batteryColorMode(
-                        modeKey = visualModeKey(dual, BATTERY_COLOR_MODE_PERFORMANCE_KEY),
-                        colorKey = visualModeKey(dual, BATTERY_COLOR_PERFORMANCE_KEY),
+                        modeKey = BATTERY_COLOR_MODE_PERFORMANCE_KEY,
+                        colorKey = BATTERY_COLOR_PERFORMANCE_KEY,
                     ),
                 superPowerSave =
                     batteryColorMode(
-                        modeKey = visualModeKey(dual, BATTERY_COLOR_MODE_SUPER_POWER_SAVE_KEY),
-                        colorKey = visualModeKey(dual, BATTERY_COLOR_SUPER_POWER_SAVE_KEY),
+                        modeKey = BATTERY_COLOR_MODE_SUPER_POWER_SAVE_KEY,
+                        colorKey = BATTERY_COLOR_SUPER_POWER_SAVE_KEY,
                     ),
                 charging =
                     batteryColorMode(
-                        modeKey = visualModeKey(dual, BATTERY_COLOR_MODE_CHARGING_KEY),
-                        colorKey = visualModeKey(dual, BATTERY_COLOR_CHARGING_KEY),
+                        modeKey = BATTERY_COLOR_MODE_CHARGING_KEY,
+                        colorKey = BATTERY_COLOR_CHARGING_KEY,
                     ),
                 low =
                     batteryColorMode(
-                        modeKey = visualModeKey(dual, BATTERY_COLOR_MODE_LOW_KEY),
-                        colorKey = visualModeKey(dual, BATTERY_COLOR_LOW_KEY),
+                        modeKey = BATTERY_COLOR_MODE_LOW_KEY,
+                        colorKey = BATTERY_COLOR_LOW_KEY,
                     ),
             ),
         batteryColorOverrides =
             BatteryColorOverrides(
-                normal = optionalColor(visualModeKey(dual, BATTERY_COLOR_NORMAL_KEY)),
-                powerSave = optionalColor(visualModeKey(dual, BATTERY_COLOR_POWER_SAVE_KEY)),
-                performance = optionalColor(visualModeKey(dual, BATTERY_COLOR_PERFORMANCE_KEY)),
-                superPowerSave = optionalColor(visualModeKey(dual, BATTERY_COLOR_SUPER_POWER_SAVE_KEY)),
-                charging = optionalColor(visualModeKey(dual, BATTERY_COLOR_CHARGING_KEY)),
-                low = optionalColor(visualModeKey(dual, BATTERY_COLOR_LOW_KEY)),
+                normal = optionalColor(BATTERY_COLOR_NORMAL_KEY),
+                powerSave = optionalColor(BATTERY_COLOR_POWER_SAVE_KEY),
+                performance = optionalColor(BATTERY_COLOR_PERFORMANCE_KEY),
+                superPowerSave = optionalColor(BATTERY_COLOR_SUPER_POWER_SAVE_KEY),
+                charging = optionalColor(BATTERY_COLOR_CHARGING_KEY),
+                low = optionalColor(BATTERY_COLOR_LOW_KEY),
             ),
     ).normalized()
 }
@@ -781,11 +832,7 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putInt(
         visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, normalized.dualSignal),
         normalized.mobileTypeWeight,
-    ).putString(
-        visualModeKey(normalized.dualSignal, BATTERY_COLOR_PRESET_KEY),
-        normalized.batteryColorPreset.persistedValue,
-    ).applyBatteryColorModes(normalized.batteryColorModes, normalized.dualSignal)
-        .applyBatteryColorOverrides(normalized.batteryColorOverrides, normalized.dualSignal)
+    ).putBatteryColors(normalized)
     return if (normalized.dualSignal) {
         editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
     } else {
@@ -809,32 +856,28 @@ private fun SharedPreferences.optionalColor(key: String): Int? =
         null
     }
 
+internal fun SharedPreferences.Editor.putBatteryColors(settings: VisualCfg): SharedPreferences.Editor =
+    putString(BATTERY_COLOR_PRESET_KEY, settings.batteryColorPreset.persistedValue)
+        .applyBatteryColorModes(settings.batteryColorModes)
+        .applyBatteryColorOverrides(settings.batteryColorOverrides)
+
 private fun SharedPreferences.Editor.applyBatteryColorOverrides(
     overrides: BatteryColorOverrides,
-    dual: Boolean,
 ): SharedPreferences.Editor {
     BatteryColorSlot.entries.forEach { slot ->
-        val key = visualModeKey(dual, batteryColorOverrideKey(slot))
+        val key = batteryColorOverrideKey(slot)
         val color = overrides.colorFor(slot)
-        if (color == null) {
-            remove(key)
-        } else {
-            putInt(key, color or 0xFF000000.toInt())
-        }
+        if (color == null) remove(key)
+        else putInt(key, color or 0xFF000000.toInt())
     }
     return this
 }
 
-
 private fun SharedPreferences.Editor.applyBatteryColorModes(
     modes: BatteryColorModes,
-    dual: Boolean,
 ): SharedPreferences.Editor {
     BatteryColorSlot.entries.forEach { slot ->
-        putString(
-            visualModeKey(dual, batteryColorModeKey(slot)),
-            modes.modeFor(slot).persistedValue,
-        )
+        putString(batteryColorModeKey(slot), modes.modeFor(slot).persistedValue)
     }
     return this
 }

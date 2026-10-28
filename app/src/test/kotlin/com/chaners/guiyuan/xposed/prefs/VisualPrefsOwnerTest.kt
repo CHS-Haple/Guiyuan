@@ -6,6 +6,7 @@ import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.settings.VisualCfg
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class VisualPrefsOwnerTest {
@@ -111,6 +112,75 @@ class VisualPrefsOwnerTest {
         assertEquals(3, requests)
     }
 
+    @Test
+    fun failedAxisRequestCanRetrySameId() {
+        val prefs = FakePreferences(dual = false)
+        val failure = IllegalStateException("axis-request")
+        var deliveries = 0
+        VisualPrefsOwner.bind(
+            prefs,
+            onAxisRequest = {
+                deliveries++
+                if (deliveries == 1) throw failure
+            },
+            onChanged = {},
+        )
+        assertSame(
+            failure,
+            runCatching { prefs.requestAxis(300L) }.exceptionOrNull(),
+        )
+        prefs.notify(NativeFontAxis.REQUEST_KEY)
+        assertEquals(2, deliveries)
+        prefs.notify(NativeFontAxis.REQUEST_KEY)
+        assertEquals(2, deliveries)
+    }
+
+    @Test
+    fun failedUnregisterBlocksRebindUntilOldListenerLeaves() {
+        val old = FakePreferences(dual = false)
+        val next = FakePreferences(dual = true)
+        val delivered = mutableListOf<Boolean>()
+        VisualPrefsOwner.bind(old, onChanged = { delivered += it.dualSignal })
+
+        val failure = IllegalStateException("unregister-visual")
+        old.unregisterFailure = failure
+        assertSame(failure, runCatching { VisualPrefsOwner.unbind() }.exceptionOrNull())
+        assertEquals(1, old.listenerCount)
+        old.setDual(true)
+        assertEquals(listOf(false), delivered)
+
+        assertSame(
+            failure,
+            runCatching {
+                VisualPrefsOwner.bind(next, onChanged = { delivered += it.dualSignal })
+            }.exceptionOrNull(),
+        )
+        assertEquals(0, next.listenerCount)
+
+        old.unregisterFailure = null
+        VisualPrefsOwner.bind(next, onChanged = { delivered += it.dualSignal })
+        assertEquals(0, old.listenerCount)
+        assertEquals(1, next.listenerCount)
+        assertEquals(listOf(false, true), delivered)
+    }
+
+    @Test
+    fun failedExplicitUnbindDropsStaleVisualSettings() {
+        val prefs = FakePreferences(dual = true)
+        VisualPrefsOwner.bind(prefs, onChanged = {})
+        assertEquals(true, VisualPrefsOwner.current().dualSignal)
+
+        val failure = IllegalStateException("unregister-stale-visual")
+        prefs.unregisterFailure = failure
+        assertSame(failure, runCatching { VisualPrefsOwner.unbind() }.exceptionOrNull())
+        assertEquals(VisualCfg(), VisualPrefsOwner.current())
+        assertEquals(1, prefs.listenerCount)
+
+        prefs.unregisterFailure = null
+        VisualPrefsOwner.unbind()
+        assertEquals(0, prefs.listenerCount)
+    }
+
     private class FakePreferences(private var dual: Boolean) : SharedPreferences {
         private val listeners =
             linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
@@ -118,6 +188,7 @@ class VisualPrefsOwnerTest {
         var lastListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
             private set
 
+        var unregisterFailure: RuntimeException? = null
         private var requestId = 0L
 
         fun requestAxis(id: Long) {
@@ -149,6 +220,7 @@ class VisualPrefsOwnerTest {
         override fun unregisterOnSharedPreferenceChangeListener(
             listener: SharedPreferences.OnSharedPreferenceChangeListener?,
         ) {
+            unregisterFailure?.let { throw it }
             if (listener != null) listeners -= listener
         }
 

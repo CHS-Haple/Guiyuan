@@ -33,7 +33,7 @@ import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
 import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
 import com.chaners.guiyuan.xposed.network.ConnectivityPolicy
 import com.chaners.guiyuan.xposed.network.SysUiConnectivitySource
-import com.chaners.guiyuan.xposed.network.NativeNetworkSuppressor
+import com.chaners.guiyuan.xposed.network.NativeStatusObserver
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
 import com.chaners.guiyuan.xposed.network.SysUiNetworkRuntime
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
@@ -112,7 +112,9 @@ class GyModule : XposedModule() {
     private var inSettings = false
     private var settingsHookInstalled = false
     private var reportedFont: Typeface? = null
+    private var reportedFontPath: String? = null
     private var reportedBatteryFont: Typeface? = null
+    private var reportedBatteryFontPath: String? = null
     private var reportedFontHost: View? = null
     private var fontAxisReported = false
 
@@ -142,10 +144,13 @@ class GyModule : XposedModule() {
 
     private fun settingsEntry(): Pair<SettingsEntry, SettingsEntryIcon> {
         val prefs = runCatching { getRemotePreferences(RUNTIME_REMOTE_PREFS_NAME) }
+            .onFailure(SettingsEntryHook::rethrowFatal)
             .getOrNull() ?: return SettingsEntry.Disabled to SettingsEntryIcon.Rounded
         val entry = runCatching { SettingsEntry.from(prefs.getInt(SETTINGS_ENTRY_KEY, 0)) }
+            .onFailure(SettingsEntryHook::rethrowFatal)
             .getOrDefault(SettingsEntry.Disabled)
         val icon = runCatching { SettingsEntryIcon.from(prefs.getInt(SETTINGS_ENTRY_ICON_KEY, 0)) }
+            .onFailure(SettingsEntryHook::rethrowFatal)
             .getOrDefault(SettingsEntryIcon.Rounded)
         return entry to icon
     }
@@ -180,7 +185,7 @@ class GyModule : XposedModule() {
             classLoader = param.classLoader,
             source = "coldStart",
         )
-        installNetworkSuppression(
+        installStatusIconObserver(
             classLoader = param.classLoader,
             source = "coldStart",
         )
@@ -199,6 +204,7 @@ class GyModule : XposedModule() {
                 state = "ready",
             )
         }.onFailure { error ->
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.ERROR,
                 event = "hook.install",
@@ -244,8 +250,8 @@ class GyModule : XposedModule() {
             return runCatching {
                 param.setSavedInstanceState(SETTINGS_RELOAD)
                 true
-            }.getOrElse {
-                Log.w(TAG, "Settings hot reload preparation failed", it)
+            }.getOrElse { error ->
+                SettingsEntryHook.reportFailure("Settings hot reload preparation failed", error)
                 false
             }
         }
@@ -271,7 +277,7 @@ class GyModule : XposedModule() {
                 SysUiNetworkRuntime.installedHookCount +
                 SysUiPresentationRuntime.installedHookCount +
                 SysUiPresentationOwner.installedHookCount +
-                NativeNetworkSuppressor.installedHookCount +
+                NativeStatusObserver.installedHookCount +
                 if (islandSourceInstalled) {
                     SysUiIslandSource.HOOK_COUNT
                 } else {
@@ -301,6 +307,7 @@ class GyModule : XposedModule() {
             runCatching {
                 SysUiHotReload.retireOnMain(::teardownOldGeneration)
             }.onFailure { error ->
+                SysUiHotReload.rethrowFatal(error)
                 log(Log.ERROR, TAG, "Hot reload old-generation retirement failed", error)
             }.getOrDefault(false)
         if (!retired) {
@@ -322,8 +329,9 @@ class GyModule : XposedModule() {
             val (entry, icon) = settingsEntry()
             val restored = runCatching {
                 SettingsEntryHook.reload(this, param.oldHookHandles, entry, icon)
-            }.onFailure { Log.w(TAG, "Settings hot reload failed; restart Settings", it) }
-                .getOrDefault(false)
+            }.onFailure { error ->
+                SettingsEntryHook.reportFailure("Settings hot reload failed; restart Settings", error)
+            }.getOrDefault(false)
             settingsHookInstalled = restored && entry != SettingsEntry.Disabled
             if (!restored) Log.w(TAG, "Settings hook restoration unavailable; restart Settings")
             return
@@ -333,6 +341,7 @@ class GyModule : XposedModule() {
         val restored =
             runCatching { SysUiHotReload.restoreTransfer(param) }
                 .onFailure { error ->
+                    SysUiHotReload.rethrowFatal(error)
                     Log.w(TAG, "Hot reload transfer unavailable; restart SystemUI", error)
                 }.getOrNull()
         if (restored == null) {
@@ -356,7 +365,7 @@ class GyModule : XposedModule() {
                     param = param,
                     onCaptured = ::onStatusHostCaptured,
                 )
-            }
+            }.onFailure(SysUiHotReload::rethrowFatal)
         val takeover = takeoverResult.getOrNull()
 
         if (takeover == null) {
@@ -418,7 +427,7 @@ class GyModule : XposedModule() {
             SysUiPresentationRuntime.resetRuntimeState()
             SysUiKeyguardHostResolver.resetRuntimeState()
             SysUiPresentationOwner.resetRuntimeState("hotReload")
-            NativeNetworkSuppressor.resetRuntimeState("hotReload")
+            NativeStatusObserver.resetRuntimeState()
             bindRuntimeDiagnostics()
             bindFeatureCfg()
             bindVisualCfg()
@@ -468,7 +477,7 @@ class GyModule : XposedModule() {
                 classLoader = classLoader,
                 source = "hotReload",
             )
-            installNetworkSuppression(
+            installStatusIconObserver(
                 classLoader = classLoader,
                 source = "hotReload",
             )
@@ -538,6 +547,7 @@ class GyModule : XposedModule() {
                 "restartScope" to false,
             )
         }.onFailure { error ->
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.ERROR,
                 event = "hotReload.complete",
@@ -558,6 +568,21 @@ class GyModule : XposedModule() {
         runCatching {
             var restoredSnapshot =
                 StatusStateStore.restoreHotReloadState(restored.state)
+            val transferredCharging = restoredSnapshot.battery?.charging
+            val liveBattery =
+                SysUiBatterySource.reconcileHostBatteryState(capture.host) { state ->
+                    StatusStateStore.updateBattery(state)?.let { restoredSnapshot = it }
+                }
+            logDiagnostic(
+                level = if (liveBattery != null) Log.INFO else Log.WARN,
+                event = "battery.reconcile",
+                component = "batteryState",
+                state = if (liveBattery != null) "ready" else "unavailable",
+                "source" to "hotReloadNativeIcon",
+                "transferredCharging" to transferredCharging,
+                "nativeCharging" to liveBattery?.charging,
+                "nativePercent" to liveBattery?.percent,
+            )
             val bindings =
                 SysUiNetworkSource.restoreHotReloadBindings(restored.bindings)
             SysUiNetworkSource.seedRestoredWifiState(
@@ -608,6 +633,7 @@ class GyModule : XposedModule() {
                         handoff.run()
                         "continuous"
                     }.getOrElse { error ->
+                        SysUiHotReload.rethrowFatal(error)
                         throw IllegalStateException(
                             "old-generation-handoff-failed",
                             error,
@@ -645,6 +671,7 @@ class GyModule : XposedModule() {
                 source = "hotReloadRestore",
                 initialTintState = transferredTint,
                 allowLiveTintSeed = false,
+                deferProbe = true,
             )
 
             logDiagnostic(
@@ -688,6 +715,9 @@ class GyModule : XposedModule() {
                 "restartScope" to false,
             )
         }.onFailure { error ->
+            retireFailedHostAttach(capture.host, error)
+            SysUiHostRegistry.discardIfCurrent(capture.host)
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.ERROR,
                 event = "hotReload.complete",
@@ -734,12 +764,12 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun installNetworkSuppression(
+    private fun installStatusIconObserver(
         classLoader: ClassLoader,
         source: String,
     ) {
         val failure =
-            NativeNetworkSuppressor.install(
+            NativeStatusObserver.install(
                 module = this,
                 classLoader = classLoader,
                 onEvent = ::logRuntimeEvent,
@@ -764,7 +794,7 @@ class GyModule : XposedModule() {
                 component = "nativeNetworkSuppression",
                 state = "ready",
                 "source" to source,
-                "hooks" to NativeNetworkSuppressor.installedHookCount,
+                "hooks" to NativeStatusObserver.installedHookCount,
             )
         } else {
             logDiagnostic(
@@ -786,6 +816,9 @@ class GyModule : XposedModule() {
             SysUiNetworkRuntime.attach(
                 module = this,
                 classLoader = classLoader,
+                onRuntimeFailure = { source, error ->
+                    onPresentationCallbackFailure("network-" + source, error)
+                },
                 onWifiState = { state ->
                     val trace = beginRenderTrace("wifi")
                     val changed = StatusStateStore.updateWifi(state)
@@ -818,9 +851,6 @@ class GyModule : XposedModule() {
                             trace = stateTrace,
                         )
                     }
-                },
-                onMobileSignalWillApply = { image ->
-                    NativeNetworkSuppressor.preMaskMobileSignal(image)
                 },
                 onPresentationChanged = {
                     CcTransitionOwner.onNativeMobileRefresh()
@@ -866,6 +896,7 @@ class GyModule : XposedModule() {
                 )
             }
         }.onFailure { error ->
+            SysUiHotReload.rethrowFatal(error)
             SysUiNetworkRuntime.resetRuntimeState()
             logDiagnostic(
                 level = Log.ERROR,
@@ -911,6 +942,7 @@ class GyModule : XposedModule() {
                 "source" to source,
             )
         }.onFailure { error ->
+            SysUiHotReload.rethrowFatal(error)
             islandSourceInstalled = false
             logDiagnostic(
                 level = Log.ERROR,
@@ -969,6 +1001,7 @@ class GyModule : XposedModule() {
                 "source" to source,
             )
         }.onFailure { error ->
+            SysUiHotReload.rethrowFatal(error)
             ccSourceInstalled = false
             HomeRenderSession.onControlCenterAuthorityChanged(true)
             logDiagnostic(
@@ -1626,6 +1659,9 @@ class GyModule : XposedModule() {
             SysUiBatteryRuntime.attach(
                 module = this,
                 classLoader = classLoader,
+                onRuntimeFailure = { source, error ->
+                    onPresentationCallbackFailure("battery-" + source, error)
+                },
                 onBatteryState = { state ->
                     val trace = beginRenderTrace("battery")
                     StatusStateStore.updateBattery(state)?.let { snapshot ->
@@ -1662,6 +1698,7 @@ class GyModule : XposedModule() {
                     "BatteryController callbacks",
             )
         }.onFailure { error ->
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.ERROR,
                 event = "source.install",
@@ -1684,10 +1721,22 @@ class GyModule : XposedModule() {
                 module = this,
                 classLoader = classLoader,
                 onTintState = ::onTintStateUpdate,
+                onTintRuntimeFailure = { error ->
+                    onPresentationCallbackFailure("tint", error)
+                },
                 onSceneState = ::onSceneStateUpdate,
+                onSceneRuntimeFailure = { error ->
+                    onPresentationCallbackFailure("scene", error)
+                },
                 onKeyguardAodState = ::onKeyguardAodStateUpdate,
+                onKeyguardRuntimeFailure = { source, error ->
+                    onPresentationCallbackFailure("keyguard-" + source, error)
+                },
                 onKeyguardFullAodTransitionStarted = ::onFullAodStarted,
                 onKeyguardFullAodTransitionCommitted = ::onFullAodCommitted,
+                onKeyguardFullAodRuntimeFailure = { source, error ->
+                    onPresentationCallbackFailure(source, error)
+                },
                 onKeyguardStatusIconTransition = ::onKeyguardIconTransition,
                 onMobileTypeChanged = { drawable ->
                     refreshMobilePresentation(
@@ -1740,6 +1789,7 @@ class GyModule : XposedModule() {
                 }
             }
         }.onFailure { error ->
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.ERROR,
                 event = "source.install",
@@ -1756,6 +1806,7 @@ class GyModule : XposedModule() {
     private fun refreshMobilePresentation(
         trace: RuntimeRenderTrace? = null,
         pendingMobileTypeDrawable: Drawable? = null,
+        forceRefresh: Boolean = false,
     ) {
         val presentation =
             NativePresentationResolver.resolve(
@@ -1775,8 +1826,13 @@ class GyModule : XposedModule() {
                         .connectivity
                         .mobileDataEnabled,
             )
-        if (changed != null || recoveryCompleted != null) {
-            val presentationTrace = markPresentationCommitted(trace)
+        if (changed != null || recoveryCompleted != null || forceRefresh) {
+            val presentationTrace =
+                if (changed != null || recoveryCompleted != null) {
+                    markPresentationCommitted(trace)
+                } else {
+                    trace
+                }
             if (detailedDiagnosticsEnabled && changed != null) {
                 val platformIds = presentation.platformActiveSubscriptionIds?.sorted()
                 val mobile = StatusStateStore.snapshot().mobile
@@ -1839,12 +1895,16 @@ class GyModule : XposedModule() {
         val batteryFont = SysUiBatterySource.readHostNumberFont(host)
         val batteryFace = batteryFont?.first
         if (!force && fontAxisReported && reportedFontHost === host &&
-            reportedFont === face && reportedBatteryFont === batteryFace
+            reportedFont === face && reportedFontPath == networkType?.fontPath &&
+            reportedBatteryFont === batteryFace && reportedBatteryFontPath == batteryFont?.second
         ) return
-        val mobileFont = networkType?.let { type ->
-            val path = type.fontPath
-            if (face != null && path != null) face to path else null
-        } ?: NativePresentationResolver.verifiedMobileFont(host.context)
+        // A live face without a verified file must not borrow the static font's axis.
+        val mobileFont =
+            if (face != null) {
+                networkType?.fontPath?.let { face to it }
+            } else {
+                NativePresentationResolver.verifiedMobileFont(host.context)
+            }
 
         fun weightAxis(path: String?): FontWeightAxis? =
             path?.let {
@@ -1854,8 +1914,10 @@ class GyModule : XposedModule() {
                     else FileInputStream(file).channel.use { channel ->
                         FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
                     }
-                }.getOrNull()
-                    ?.let(NativeFontAxis::checked)
+                }.getOrElse { error ->
+                    SysUiHotReload.rethrowFatal(error)
+                    null
+                }?.let(NativeFontAxis::checked)
                     ?.takeIf { axis ->
                         kotlin.math.ceil(axis.min.toDouble()).toInt() <
                             kotlin.math.floor(axis.max.toDouble()).toInt()
@@ -1885,10 +1947,15 @@ class GyModule : XposedModule() {
             host.context.sendBroadcast(intent, null, options)
         }.onSuccess {
             reportedFont = face
+            reportedFontPath = networkType?.fontPath
             reportedBatteryFont = batteryFace
+            reportedBatteryFontPath = batteryFont?.second
             reportedFontHost = host
             fontAxisReported = true
-        }.onFailure { Log.w(TAG, "Unable to report verified native font axes", it) }
+        }.onFailure { error ->
+            SysUiHotReload.rethrowFatal(error)
+            Log.w(TAG, "Unable to report verified native font axes", error)
+        }
     }
 
     private fun onCombinedStateChanged(
@@ -1908,7 +1975,7 @@ class GyModule : XposedModule() {
     }
 
     private fun refreshStatusIconObservation(source: String) {
-        NativeNetworkSuppressor.refreshObservation(source)
+        NativeStatusObserver.refreshObservation(source)
     }
 
     private fun onStatusPresentationChanged(
@@ -1948,13 +2015,16 @@ class GyModule : XposedModule() {
                     "noSimResId" to state.noSimIcon?.resourceId,
                 )
             }
+        } else {
+            // A previous delivery may have committed the store before renderer failure.
+            HomeRenderSession.onPresentationStateChanged()
         }
     }
 
     private fun onTintStateUpdate(update: SysUiTintSource.TintUpdate) {
         KeyguardRenderSession.onTintUpdate(update)
         val liveStatusIconTint =
-            NativeNetworkSuppressor.currentAppliedStatusIconTint()
+            NativeStatusObserver.currentAppliedStatusIconTint()
         val resolvedState =
             TintAuthority.resolveBatteryEvent(
                 batteryState = update.state,
@@ -2811,6 +2881,39 @@ class GyModule : XposedModule() {
                     "familyVisual" to KeyguardRenderSession.visualState(),
                 )
             }
+        }
+    }
+
+    private fun onPresentationCallbackFailure(source: String, error: Throwable) {
+        val cleanupFailures = mutableListOf<String>()
+        fun restore(step: String, action: () -> Unit) {
+            try {
+                action()
+            } catch (failure: Throwable) {
+                if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                cleanupFailures += step + ":" + failure.javaClass.simpleName
+            }
+        }
+
+        restore("keyguard-handoff") {
+            KeyguardRenderSession.setNativeHandoffActive(true)
+        }
+        restore("aod-handoff") {
+            KeyguardRenderSession.setAodNativeHandoffActive(true)
+        }
+        restore("presentation-release") {
+            releaseFeatureOwnership(source + "-callback-failed")
+        }
+        restore("diagnostic") {
+            logDiagnostic(
+                level = Log.ERROR,
+                event = "runtime.callback",
+                component = source + "Source",
+                state = if (cleanupFailures.isEmpty()) "fallback-requested" else "cleanup-incomplete",
+                "reason" to (error.message ?: error.javaClass.simpleName),
+                "fallback" to if (cleanupFailures.isEmpty()) "native-systemui" else "unconfirmed",
+                "cleanupFailures" to cleanupFailures.takeIf { it.isNotEmpty() }?.joinToString(","),
+            )
         }
     }
 
@@ -3729,7 +3832,12 @@ class GyModule : XposedModule() {
         // One failed participant must not leave the other old callbacks registered.
         val errors = ArrayList<Throwable>(1)
         fun release(action: () -> Unit) {
-            runCatching(action).onFailure { errors.add(it) }
+            try {
+                action()
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                errors.add(error)
+            }
         }
 
         release { CcTransitionOwner.detach("hotReload-oldGeneration") }
@@ -3741,7 +3849,7 @@ class GyModule : XposedModule() {
         release {
             restoredViews = SysUiPresentationOwner.releaseGenerationForHotReload()
         }
-        release { NativeNetworkSuppressor.deactivate("hotReload-oldGeneration") }
+        release { NativeStatusObserver.deactivate() }
         release { StatusBarStableSession.detach() }
         release { NativeStatusInventory.detach() }
         release { SysUiCoreRuntime.detach() }
@@ -3778,6 +3886,7 @@ class GyModule : XposedModule() {
         source: String,
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
+        deferProbe: Boolean = false,
     ) {
         val hostContext = (host as? android.view.View)?.context
         val coreRuntime =
@@ -3786,18 +3895,18 @@ class GyModule : XposedModule() {
                     context = context,
                     onAirplaneMode = { enabled ->
                         val trace = beginRenderTrace("airplaneObserver")
-                        StatusStateStore.updateAirplaneMode(enabled)?.let { snapshot ->
-                            onCombinedStateChanged(
-                                snapshot = snapshot,
-                                trace = markStateCommitted(trace),
-                            )
-                        }
+                        val changed = StatusStateStore.updateAirplaneMode(enabled)
+                        onCombinedStateChanged(
+                            snapshot = changed ?: StatusStateStore.snapshot(),
+                            trace = if (changed != null) markStateCommitted(trace) else trace,
+                        )
                         refreshStatusIconObservation("airplane")
                     },
                     onDefaultDataSubscriptionChanged = {
                         SysUiConnectivitySource.refreshDataSubscription()
                         refreshMobilePresentation(
                             beginRenderTrace("defaultDataSubscription"),
+                            forceRefresh = true,
                         )
                     },
                     onConnectivityState = { state ->
@@ -3855,56 +3964,51 @@ class GyModule : XposedModule() {
         refreshMobilePresentation()
 
         val stableFailure =
-            StatusBarStableSession.attach(
-                host = host,
-                onEvent = ::logRuntimeEvent,
-            )
-        if (stableFailure == null) {
+            try {
+                StatusBarStableSession.attach(
+                    host = host,
+                    onEvent = ::logRuntimeEvent,
+                )
+            } catch (error: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(error)
+                "stable-status-attach-failed:" + error.javaClass.simpleName
+            }
+        logDiagnostic(
+            level = if (stableFailure == null) Log.INFO else Log.WARN,
+            event = "session.attach",
+            component = "stableStatus",
+            state = if (stableFailure == null) "ready" else "unavailable",
+            "source" to source,
+            "reason" to stableFailure,
+        )
+        // Native charging identity is independent of the diagnostic anchor observer.
+        if (StatusStateStore.snapshot().battery?.charging == true) {
+            val iconId = SysUiBatterySource.readHostChargingIconId(host)
+            if (iconId != null) {
+                StatusStateStore.updateBatteryChargingIcon(iconId)?.let { snapshot ->
+                    onCombinedStateChanged(snapshot)
+                }
+            }
             logDiagnostic(
                 level = Log.INFO,
-                event = "session.attach",
-                component = "stableStatus",
-                state = "ready",
+                event = "glyph.seed",
+                component = "batteryState",
+                state = if (iconId != null) "ready" else "unavailable",
                 "source" to source,
-            )
-            // Hot Reload may not be followed by another battery callback.
-            if (StatusStateStore.snapshot().battery?.charging == true) {
-                val iconId = SysUiBatterySource.readHostChargingIconId(host)
-                if (iconId != null) {
-                    StatusStateStore.updateBatteryChargingIcon(iconId)?.let { snapshot ->
-                        onCombinedStateChanged(snapshot)
-                    }
-                }
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "glyph.seed",
-                    component = "batteryState",
-                    state = if (iconId != null) "ready" else "unavailable",
-                    "source" to source,
-                    "chargingIconId" to (iconId ?: "unavailable"),
-                    "storedIconId" to
-                        (StatusStateStore.snapshot().battery?.chargingIconResId ?: "unavailable"),
-                )
-            }
-        } else {
-            logDiagnostic(
-                level = Log.WARN,
-                event = "session.attach",
-                component = "stableStatus",
-                state = "unavailable",
-                "reason" to stableFailure,
-                "source" to source,
+                "chargingIconId" to (iconId ?: "unavailable"),
+                "storedIconId" to
+                    (StatusStateStore.snapshot().battery?.chargingIconResId ?: "unavailable"),
             )
         }
 
         when (
             val observation =
-                NativeNetworkSuppressor.attachObserver(
+                NativeStatusObserver.attachObserver(
                     host = host,
                     source = source,
                 )
         ) {
-            is NativeNetworkSuppressor.Result.Active -> {
+            is NativeStatusObserver.Result.Active -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "source.attach",
@@ -3914,7 +4018,7 @@ class GyModule : XposedModule() {
                     "mode" to "observation-only",
                 )
             }
-            is NativeNetworkSuppressor.Result.Pending -> {
+            is NativeStatusObserver.Result.Pending -> {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "source.attach",
@@ -3925,7 +4029,7 @@ class GyModule : XposedModule() {
                     "trigger" to "home-dark-icon-manager-registration",
                 )
             }
-            is NativeNetworkSuppressor.Result.Failure -> {
+            is NativeStatusObserver.Result.Failure -> {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "source.attach",
@@ -3936,7 +4040,7 @@ class GyModule : XposedModule() {
                     "fallback" to "native-systemui",
                 )
             }
-            is NativeNetworkSuppressor.Result.Inactive -> Unit
+            is NativeStatusObserver.Result.Inactive -> Unit
         }
 
         val rendererInitialTintState =
@@ -3944,7 +4048,7 @@ class GyModule : XposedModule() {
                 TintAuthority.rebaseTransferred(
                     transferred = transferred,
                     liveStatusIconTint =
-                        NativeNetworkSuppressor
+                        NativeStatusObserver
                             .currentAppliedStatusIconTint(),
                 )
             }
@@ -3963,6 +4067,12 @@ class GyModule : XposedModule() {
                 },
             )
         if (renderFailure == null) {
+            // Native icon Tint can arrive before Home attaches during Hot Reload.
+            if (!allowLiveTintSeed && rendererInitialTintState == null) {
+                HomeRenderSession.onStatusIconTintUpdate(
+                    PresentationStore.snapshot().statusIcons.appliedTint,
+                )
+            }
             logDiagnostic(
                 level = Log.INFO,
                 event = "renderer.attach",
@@ -3981,7 +4091,13 @@ class GyModule : XposedModule() {
             )
         }
 
-        scheduleNativeSlotProbe(host = host, source = source)
+        try {
+            scheduleNativeSlotProbe(host = host, source = source, deferProbe = deferProbe)
+        } catch (error: Throwable) {
+            // A passive diagnostic must not invalidate an already attached native host.
+            SysUiHotReload.rethrowFatal(error)
+            log(Log.WARN, TAG, "Native slot diagnostic unavailable", error)
+        }
 
         logDiagnostic(
             level = Log.INFO,
@@ -4067,6 +4183,7 @@ class GyModule : XposedModule() {
     private fun scheduleNativeSlotProbe(
         host: Any,
         source: String,
+        deferProbe: Boolean,
     ) {
         if (
             !BuildConfig.DEVELOPMENT_PROBES &&
@@ -4081,7 +4198,7 @@ class GyModule : XposedModule() {
 
 
 
-        NativeStatusInventory.schedule(host) { snapshot ->
+        NativeStatusInventory.schedule(host, defer = deferProbe) { snapshot ->
             log(Log.INFO, TAG, snapshot.summary)
             log(Log.INFO, TAG, snapshot.hostLine)
             snapshot.entries.forEach { entry ->
@@ -4107,18 +4224,40 @@ class GyModule : XposedModule() {
     }
 
     private fun onStatusHostCaptured(capture: SysUiHostRegistry.Capture) {
-        logDiagnostic(
-            level = Log.INFO,
-            event = "host.capture",
-            component = "statusHost",
-            "identity" to capture.identity,
-            "replacement" to capture.replacement,
-        )
-        attachHostRuntime(
-            host = capture.host,
-            source = if (capture.replacement) "hostReplacement" else "hostCapture",
-        )
+        try {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "host.capture",
+                component = "statusHost",
+                "identity" to capture.identity,
+                "replacement" to capture.replacement,
+            )
+            attachHostRuntime(
+                host = capture.host,
+                source = if (capture.replacement) "hostReplacement" else "hostCapture",
+            )
+        } catch (error: Throwable) {
+            retireFailedHostAttach(capture.host, error)
+            throw error
+        }
+    }
 
+    private fun retireFailedHostAttach(host: Any, error: Throwable) {
+        if (SysUiHostRegistry.current() !== host) return
+
+        // Retire independently; never replace the attach error with ordinary cleanup failures.
+        fun retire(action: () -> Unit) {
+            try {
+                action()
+            } catch (failure: Throwable) {
+                SysUiHotReload.rethrowFatal(failure)
+                if (failure !== error) error.addSuppressed(failure)
+            }
+        }
+        retire { releaseFeatureOwnership("host-attach-failed") }
+        retire { HomeRenderSession.detach() }
+        retire { StatusBarStableSession.detach() }
+        retire { SysUiCoreRuntime.detach() }
     }
 
     private fun bindRuntimeDiagnostics() {
@@ -4153,6 +4292,7 @@ class GyModule : XposedModule() {
         }.onFailure { error ->
             DiagPrefsOwner.unbind()
             detailedDiagnosticsEnabled = BuildConfig.DEVELOPMENT_PROBES
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.WARN,
                 event = "diagnostics.bind",
@@ -4183,6 +4323,7 @@ class GyModule : XposedModule() {
             )
         }.onFailure { error ->
             FeaturePrefsOwner.unbind()
+            SysUiHotReload.rethrowFatal(error)
             onFeatureCfgChanged(
                 FeaturePrefsOwner.current(),
                 null,
@@ -4291,25 +4432,58 @@ class GyModule : XposedModule() {
         homeAodTargetPrearmPending = false
         controlCenterSceneEligible = false
         keyguardCcLeaseActive = false
-        CcRenderSession.setSceneEligible(false)
-        CcTransitionOwner.setSceneEligible(false)
-        SysUiPresentationOwner.deactivateCc(source)
-        SysUiPresentationOwner.deactivateAod(source)
-        SysUiPresentationOwner.deactivateKeyguard(source)
-        SysUiPresentationOwner.deactivate(source)
-        NativeNetworkSuppressor.deactivate(source)
-        HomeRenderSession.setNativeHandoffActive(true)
+        // A failing surface must not prevent sibling native representations from returning.
+        val failures = ArrayList<Throwable>(1)
+        fun release(action: () -> Unit) {
+            try {
+                action()
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                failures.add(error)
+            }
+        }
+        release { CcRenderSession.setSceneEligible(false) }
+        release { CcTransitionOwner.setSceneEligible(false) }
+        release { SysUiPresentationOwner.deactivateCc(source) }
+        release { SysUiPresentationOwner.deactivateAod(source) }
+        release { SysUiPresentationOwner.deactivateKeyguard(source) }
+        release { SysUiPresentationOwner.deactivate(source) }
+        release { NativeStatusObserver.deactivate() }
+        release { HomeRenderSession.setNativeHandoffActive(true) }
+        if (failures.isNotEmpty()) {
+            val error = IllegalStateException("feature-ownership-release-incomplete", failures.first())
+            failures.drop(1).forEach(error::addSuppressed)
+            throw error
+        }
     }
 
     private fun bindSandbox() {
         runCatching {
-            SandboxHost.bind(getRemotePreferences(SANDBOX_PREFS)) {
+            SandboxHost.bind(getRemotePreferences(SANDBOX_PREFS)) { received ->
                 // Steady HOME is the only consumer; never update CC/Keyguard/AOD scenes.
                 HomeRenderSession.onPresentationStateChanged()
+                runCatching {
+                    logDiagnostic(
+                        level = Log.INFO,
+                        event = "sandbox.lease",
+                        component = "sandbox",
+                        state = if (received == null) "cleared" else "active",
+                        "network" to received?.networkMode,
+                        "airplane" to received?.airplaneMode,
+                        "wifiState" to received?.wifiState,
+                        "wifiBars" to received?.wifiSignalLevel,
+                        "dualEnabled" to received?.dualMobile,
+                        "dualEffective" to (received?.dualLevels != null),
+                        "sim1Bars" to received?.mobileSignalLevel,
+                        "sim2Bars" to received?.sim2SignalLevel,
+                        "battery" to received?.batteryPercent,
+                    )
+                }.onFailure(SysUiHotReload::rethrowFatal)
             }
-        }.onFailure {
+        }.onFailure { error ->
             SandboxHost.unbind()
-            log(Log.WARN, TAG, "Steady sandbox unavailable", it)
+            SysUiHotReload.rethrowFatal(error)
+            log(Log.WARN, TAG, "Steady sandbox unavailable", error)
         }
     }
 
@@ -4338,6 +4512,7 @@ class GyModule : XposedModule() {
             )
         }.onFailure { error ->
             VisualPrefsOwner.unbind()
+            SysUiHotReload.rethrowFatal(error)
             logDiagnostic(
                 level = Log.WARN,
                 event = "runtimePreferences.bind",

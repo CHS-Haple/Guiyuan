@@ -6,9 +6,21 @@ import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import java.lang.reflect.InvocationTargetException
 
 internal object SysUiAirplaneSource {
-    private val uri = Settings.Global.getUriFor(Settings.Global.AIRPLANE_MODE_ON)
+    private fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            rethrowFatal(error)
+            null
+        }
 
     private var resolver: ContentResolver? = null
     private var observer: ContentObserver? = null
@@ -19,8 +31,9 @@ internal object SysUiAirplaneSource {
     @Volatile
     private var onEvent: ((String) -> Unit)? = null
 
-    @Volatile
-    private var lastState: Boolean? = null
+    private class Delivery(val enabled: Boolean)
+
+    private var lastDelivery: Delivery? = null
 
     @Synchronized
     fun attach(
@@ -50,17 +63,21 @@ internal object SysUiAirplaneSource {
                 }
 
             val registered =
-                runCatching {
+                try {
                     nextResolver.registerContentObserver(
-                        uri,
+                        Settings.Global.getUriFor(Settings.Global.AIRPLANE_MODE_ON),
                         false,
                         nextObserver,
                     )
-                }.isSuccess
+                    true
+                } catch (error: Throwable) {
+                    rethrowFatal(error)
+                    false
+                }
             if (!registered) {
                 this.onAirplaneMode = null
                 this.onEvent = null
-                lastState = null
+                lastDelivery = null
                 return false
             }
             resolver = nextResolver
@@ -69,7 +86,9 @@ internal object SysUiAirplaneSource {
 
         this.onAirplaneMode = onAirplaneMode
         this.onEvent = onEvent
-        publish("seed")
+        // The old sink's receipt cannot acknowledge delivery to this attachment.
+        lastDelivery = null
+        publish("seed", force = true)
         return observer != null
     }
 
@@ -84,30 +103,62 @@ internal object SysUiAirplaneSource {
         } finally {
             onAirplaneMode = null
             onEvent = null
-            lastState = null
+            lastDelivery = null
         }
     }
 
     @Synchronized
-    private fun publish(source: String) {
+    private fun publish(source: String, force: Boolean = false) {
         val currentResolver = resolver ?: return
         val enabled =
-            runCatching {
+            readOrNull {
                 Settings.Global.getInt(
                     currentResolver,
                     Settings.Global.AIRPLANE_MODE_ON,
                     0,
                 ) != 0
-            }.getOrNull() ?: return
+            } ?: return
+        val deliver = onAirplaneMode ?: return
 
-        if (lastState == enabled) {
-            return
+        val changed =
+            try {
+                deliverState(enabled, force, deliver)
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                readOrNull {
+                    onEvent?.invoke(
+                        "airplaneState delivery-failed type=" +
+                            error.javaClass.simpleName + " source=" + source,
+                    )
+                }
+                return
+            }
+        if (!changed) return
+        readOrNull {
+            onEvent?.invoke(
+                "airplaneState setting enabled=" + enabled +
+                    " source=" + source,
+            )
         }
-        lastState = enabled
-        onAirplaneMode?.invoke(enabled)
-        onEvent?.invoke(
-            "airplaneState setting enabled=" + enabled +
-                " source=" + source,
-        )
+    }
+
+    @Synchronized
+    internal fun deliverState(
+        enabled: Boolean,
+        force: Boolean,
+        deliver: (Boolean) -> Unit,
+    ): Boolean {
+        if (!force && lastDelivery?.enabled == enabled) return false
+
+        val previous = lastDelivery
+        val next = Delivery(enabled)
+        lastDelivery = next
+        try {
+            deliver(enabled)
+        } catch (error: Throwable) {
+            if (lastDelivery === next) lastDelivery = previous
+            throw error
+        }
+        return true
     }
 }

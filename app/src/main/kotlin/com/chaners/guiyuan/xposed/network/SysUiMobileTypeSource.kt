@@ -1,9 +1,12 @@
 package com.chaners.guiyuan.xposed.network
 
 import android.graphics.drawable.Drawable
+import android.util.Log
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiMobileTypeSource {
     const val CLASS_NAME = "com.miui.systemui.statusbar.views.MobileTypeDrawable"
@@ -21,13 +24,25 @@ internal object SysUiMobileTypeSource {
             clazz.getDeclaredMethod(METHOD_NAME)
                 .apply { isAccessible = true }
 
+        val warned = AtomicBoolean(false)
         val handle =
             module
                 .hook(method)
                 .setId(HOOK_ID)
                 .intercept(
                     Hooker { chain ->
-                        (chain.thisObject as? Drawable)?.let(onChanged)
+                        try {
+                            (chain.thisObject as? Drawable)?.let(onChanged)
+                        } catch (error: Throwable) {
+                            SysUiPresentationRuntime.throwIfFatal(error)
+                            if (warned.compareAndSet(false, true)) {
+                                try {
+                                    Log.w("Guiyuan[MobileType]", "Observation failed", error)
+                                } catch (failure: Throwable) {
+                                    SysUiPresentationRuntime.throwIfFatal(failure)
+                                }
+                            }
+                        }
                         chain.proceed()
                     },
                 )

@@ -31,6 +31,33 @@ internal object CcTransitionPolicy {
         return if (p <= at) p / at else (1f - p) / (1f - at)
     }
 
+    // Reject a native FINAL row while its Wi-Fi slot overlaps the battery carrier.
+    fun wifiBeforeBattery(wifi: FloatArray, battery: FloatArray, rtl: Boolean): Boolean {
+        if (wifi.size != 6 || battery.size != 6 ||
+            !wifi.all(Float::isFinite) || !battery.all(Float::isFinite)
+        ) return false
+        val wifiWidth = vectorLength(wifi[2], wifi[3])
+        val batteryWidth = vectorLength(battery[2], battery[3])
+        if (wifiWidth <= 0f || batteryWidth <= 0f) return false
+        return if (rtl) {
+            wifi[0] - wifiWidth / 2f >= battery[0] + batteryWidth / 2f
+        } else {
+            wifi[0] + wifiWidth / 2f <= battery[0] - batteryWidth / 2f
+        }
+    }
+
+    fun followBatteryAnchor(
+        target: FloatArray,
+        previousBattery: FloatArray,
+        currentBattery: FloatArray,
+    ): FloatArray {
+        require(target.size == 6 && previousBattery.size == 6 && currentBattery.size == 6)
+        return target.copyOf().apply {
+            this[0] += currentBattery[0] - previousBattery[0]
+            this[1] += currentBattery[1] - previousBattery[1]
+        }
+    }
+
     fun retargetShift(
         priorShift: Float,
         priorAnchor: Float?,
@@ -349,6 +376,21 @@ internal object CcTransitionPolicy {
             -> true
             SourceScene.UNKNOWN -> false
         }
+
+    fun reservationSourceChanged(
+        previous: RenderModel,
+        current: RenderModel,
+        visualChanged: Boolean,
+    ): Boolean =
+        visualChanged ||
+            previous.centerIndicator != current.centerIndicator ||
+            previous.batteryPercent != current.batteryPercent ||
+            previous.charging != current.charging ||
+            previous.chargingIconResId != current.chargingIconResId ||
+            previous.mobileLevel != current.mobileLevel ||
+            previous.mobileUnavailableMark != current.mobileUnavailableMark ||
+            previous.effectiveDataSubscriptionId != current.effectiveDataSubscriptionId ||
+            previous.dualMobileLevels != current.dualMobileLevels
 
     data class ReservationSpan(
         val sourceLeft: Float,

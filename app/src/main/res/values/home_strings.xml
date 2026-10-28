@@ -103,4 +103,7 @@
     <string name="home_preview_dual_mobile_summary">SIM1 inner, SIM2 outer, network type follows data SIM</string>
     <string name="home_preview_sim1_signal_title">SIM1 signal</string>
     <string name="home_preview_sim2_signal_title">SIM2 signal</string>
+    <string name="home_preview_network_mode_title">Network mode</string>
+    <string name="home_preview_state_on">On</string>
+    <string name="home_preview_state_off">Off</string>
 </resources>

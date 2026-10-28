@@ -38,9 +38,9 @@ The one-root aggregate shape morph from historic [#511](https://github.com/CHS-H
 Remaining work is evidence-led:
 1. Revisit third-party native child/rebind paths only when authoritative callbacks or reproducible device evidence show a new membership change. The previous [#521](https://github.com/CHS-Haple/Guiyuan/issues/521) audit is **closed** after the accepted native-slot/cache invalidation and observer-cleanup fixes; it is not a standing implementation task.
 2. When relevant hardware is available, exercise data-SIM switching, SIM/eSIM changes, one-SIM recovery, unknown signal, VPN/mobile-data disabled, airplane, Keyguard/AOD and Home→CC reversals on new topologies; keep this separate from B1023 focused acceptance.
-3. Add optional alternative eight-dot styles only with a concrete UX design, a single-choice selector and demonstrated compatibility value.
+3. The optional Duo eight-dot style is integrated. Consider any further style only with a concrete UX need, a single-choice selector and demonstrated compatibility value.
 4. Reconsider single/dual **settings-bank** selection only if a transient SIM fallback produces an observed unwanted visual shift. The chosen dual preference must survive SIM loss.
-5. Track abnormal Hot Reload framework generation cleanup under [#519](https://github.com/CHS-Haple/Guiyuan/issues/519) without guessed cleanup, polling or a second writer.
+5. Revisit exceptional Hot Reload generation cleanup only with a reproducible failure or new authoritative framework contract, without guessed cleanup, polling or a second writer.
 
 
 
@@ -55,6 +55,19 @@ For a new SystemUI target:
 - prefer platform/native state and resources over project-local replicas.
 
 Compatibility expansion must not weaken the current target's ownership and restoration contracts.
+
+## 0.9.1 checkpoint qualification
+
+0.9.1 is a **pre-1.0 development checkpoint**, not the first formal stable release. Experimental OS4 [#861](https://github.com/CHS-Haple/Guiyuan/pull/861) is integrated in `dev` with matched-source B1536 device acceptance. Keep its pinned source-built Canary distinct from the ordinary published-MIUIX fallback; neither is a formal release. This runtime work remains separate from the native cleanup audit, and **do not bump to 0.9.1 solely because OS4 is integrated**. Before promoting `dev` to `main`:
+
+- complete source-proven native callback ownership and exception recovery in [#758](https://github.com/CHS-Haple/Guiyuan/issues/758), retaining exactly-once native methods, single writer and fail-native cleanup; do not treat passing CI as proof of injected failures;
+- accept the **last integrated runtime candidate** on the target for Home, Keyguard, AOD, Control Center, tint/charging, network and Hot Reload. An untested new runtime change invalidates the corresponding earlier device acceptance;
+- independently review the full `main → dev` net diff, source ownership/lifecycle, security, cache/performance, configuration/backup compatibility, latest dependency pins and release assets; resolve deterministic issues before promotion;
+- **OS4 Release provenance:** the accepted B1626 OS4 dialogs/sheets require the pinned PR423 source graph, not the default published-MIUIX fallback. Verify the actual `Release` variant with the same upstream revision and source selector as the accepted OS4 Canary, keep untrusted source compilation separate from signing secrets, and sign/deliver the verified Release APK rather than renaming a Canary. [#957](https://github.com/CHS-Haple/Guiyuan/pull/957) establishes only unsigned source-matched Release compilation; matching signed Release distribution and device acceptance remain gates under [#890](https://github.com/CHS-Haple/Guiyuan/issues/890).
+- move the final durable user-visible `[Unreleased]` notes to a dated `[0.9.1]` section, set `combinedStatus.versionName=0.9.1` with a monotonic internal Build, and validate the exact `dev → main` PR using **Full CI** and the signed APK;
+- preserve [#769](https://github.com/CHS-Haple/Guiyuan/issues/769) as an evidence-only third-party font compatibility limitation if the required real font cannot be tested, and do not advertise compatibility that was not verified.
+
+The current Release workflow reserves `stable` publishing for version **1.0.0 or later**. If an explicit 0.9.1 GitHub Release is requested, use the documented **test/prerelease** channel from the accepted source; do not bypass the workflow by relabeling it stable. Main promotion and any release publication require their own explicit acceptance.
 
 ## 1.0.0 qualification
 

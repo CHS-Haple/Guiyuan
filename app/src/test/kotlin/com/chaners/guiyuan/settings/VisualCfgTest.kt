@@ -5,6 +5,36 @@ import org.junit.Test
 
 class VisualCfgTest {
     @Test
+    fun finiteBoundPreservesValidInputsAndRejectsNonFinite() {
+        for (invalid in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) {
+            assertEquals(1f, invalid.finiteIn(0.4f, 1.25f, 1f), 0f)
+        }
+        assertEquals(0.4f, (-2f).finiteIn(0.4f, 1.25f, 1f), 0f)
+        assertEquals(1.25f, 2f.finiteIn(0.4f, 1.25f, 1f), 0f)
+        assertEquals(0.8f, 0.8f.finiteIn(0.4f, 1.25f, 1f), 0f)
+        for (layout in ContentLayout.entries) {
+            assertEquals(
+                topTextUiScaleDefault(layout),
+                Float.NaN.finiteIn(
+                    BATTERY_TOP_TEXT_UI_SCALE_MIN,
+                    BATTERY_TOP_TEXT_UI_SCALE_MAX,
+                    topTextUiScaleDefault(layout),
+                ),
+                0f,
+            )
+            assertEquals(
+                topChargingIconUiScaleDefault(layout),
+                Float.NaN.finiteIn(
+                    BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN,
+                    BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX,
+                    topChargingIconUiScaleDefault(layout),
+                ),
+                0f,
+            )
+        }
+    }
+
+    @Test
     fun newGeometryControlsUseBoundedDefaults() {
         val settings = VisualCfg()
         assertEquals(1f, settings.combinedScale, 0.0001f)
@@ -75,6 +105,42 @@ class VisualCfgTest {
         assertEquals(WIFI_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MIN, 0.0001f)
         assertEquals(WIFI_SIZE_SCALE_MAX, NO_SIM_SIZE_SCALE_MAX, 0.0001f)
         assertEquals(0.40f, MOBILE_TYPE_SIZE_SCALE_MIN, 0.0001f)
+    }
+
+    @Test
+    fun nonFiniteGeometryFallsBackToLayoutDefaults() {
+        for (invalid in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) {
+            val raw =
+                VisualCfg(layout = ContentLayout.BATTERY_CENTER).copy(
+                    topTextScale = invalid,
+                    topOffsetY = invalid,
+                    wifiOffsetY = invalid,
+                    mobileTypeOffsetY = invalid,
+                    dualDefaultOffsetY = invalid,
+                    dualDuoOffsetY = invalid,
+                    topChargingIconScale = invalid,
+                    combinedScale = invalid,
+                    outerWeightScale = invalid,
+                    wifiScale = invalid,
+                    airplaneScale = invalid,
+                    noSimScale = invalid,
+                    mobileTypeScale = invalid,
+                )
+            val normalized = raw.normalized()
+            assertEquals(topTextScaleDefault(raw.layout), normalized.topTextScale, 0f)
+            assertEquals(BATTERY_TOP_VERTICAL_OFFSET_DEFAULT, normalized.topOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.wifiOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.mobileTypeOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.dualDefaultOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.dualDuoOffsetY, 0f)
+            assertEquals(topChargingIconScaleDefault(raw.layout), normalized.topChargingIconScale, 0f)
+            assertEquals(COMBINED_SCALE_DEFAULT, normalized.combinedScale, 0f)
+            assertEquals(OUTER_WEIGHT_SCALE_DEFAULT, normalized.outerWeightScale, 0f)
+            assertEquals(WIFI_SIZE_SCALE_DEFAULT, normalized.wifiScale, 0f)
+            assertEquals(AIRPLANE_SIZE_SCALE_DEFAULT, normalized.airplaneScale, 0f)
+            assertEquals(NO_SIM_SIZE_SCALE_DEFAULT, normalized.noSimScale, 0f)
+            assertEquals(MOBILE_TYPE_SIZE_SCALE_DEFAULT, normalized.mobileTypeScale, 0f)
+        }
     }
 
     @Test

@@ -1,0 +1,236 @@
+name: OS4 Canary (matched MIUIX)
+
+on:
+  push:
+    branches: [ dev, main ]
+    paths:
+      - '.github/workflows/os4-miuix-pr423-signed-canary.yml'
+      - '.github/workflows/release.yml'
+      - 'app/src/os4Upstream/**'
+      - 'app/src/os4Published/**'
+      - 'app/src/main/kotlin/com/chaners/guiyuan/ui/**'
+      - 'app/src/main/kotlin/top/yukonga/miuix/kmp/glass/**'
+      - 'app/src/main/res/**'
+      - 'gradle.properties'
+      - 'app/build.gradle.kts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: os4-pr423-signed-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unsigned:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    outputs:
+      build_id: ${{ steps.identity.outputs.build_id }}
+      version_name: ${{ steps.identity.outputs.version_name }}
+      source_sha: ${{ steps.identity.outputs.source_sha }}
+    steps:
+      - name: Checkout Guiyuan source without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: gui
+          persist-credentials: false
+
+      - name: Checkout exact reviewed PR423 source without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: compose-miuix-ui/miuix
+          ref: b9f70838509fbc3f63f1a972777a7e6ce07f578f
+          path: upstream
+          persist-credentials: false
+
+      - name: Verify source and record build identity
+        id: identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C upstream rev-parse HEAD)" = "b9f70838509fbc3f63f1a972777a7e6ce07f578f"
+          test "$(git -C gui rev-parse HEAD)" = "$GITHUB_SHA"
+          test -f gui/app/src/os4Upstream/kotlin/top/yukonga/miuix/kmp/glass/GlassDialog.kt
+          test -f gui/app/src/os4Upstream/kotlin/top/yukonga/miuix/kmp/glass/internal/ScrimBackdrop.kt
+          echo "build_id=$(sed -n 's/^combinedStatus.buildId=//p' gui/gradle.properties)" >> "$GITHUB_OUTPUT"
+          echo "version_name=$(sed -n 's/^combinedStatus.versionName=//p' gui/gradle.properties)" >> "$GITHUB_OUTPUT"
+          echo "source_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Verify Gradle wrapper
+        uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android API 37
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --channel=3 "platforms;android-37.0" "build-tools;37.0.0"
+
+      - name: Setup Gradle (no retained credentials or cache)
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-disabled: true
+
+      - name: Compile and test matched source graph without signing secrets
+        shell: bash
+        working-directory: gui
+        env:
+          GRADLE_USER_HOME: ${{ runner.temp }}/os4-source-gradle
+        run: |
+          ./gradlew \
+            -Pgy.os4.miuixDir=../upstream \
+            -Pgy.os4.miuixRevision=b9f70838509fbc3f63f1a972777a7e6ce07f578f \
+            -Pgy.os4.dialogSurfaces=true \
+            :app:testDebugUnitTest :app:assembleDebug :app:assembleCanary :app:assembleRelease \
+            --no-daemon --max-workers=2 --stacktrace
+
+      - name: Verify unsigned Canary and source-matched Release candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="gui/app/build/outputs/apk/canary/app-canary-unsigned.apk"
+          test -s "$apk"
+          bash gui/tools/verify_xposed_metadata.sh "$apk"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          test "$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk" | sed -n "s/.*package: name='\([^']*\)'.*/\1/p" | head -n 1)" = "com.chaners.guiyuan"
+          # This is a no-secrets compatibility check, not a Release publication.
+          release="gui/app/build/outputs/apk/release/app-release-unsigned.apk"
+          test -s "$release"
+          bash gui/tools/verify_xposed_metadata.sh "$release"
+          test "$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$release" | sed -n "s/.*package: name='\([^']*\)'.*/\1/p" | head -n 1)" = "com.chaners.guiyuan"
+          APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
+          test "$("$APKANALYZER" manifest debuggable "$release")" = "false"
+          mkdir -p dist
+          cp "$apk" dist/candidate-unsigned.apk
+          cp "$release" dist/release-candidate-unsigned.apk
+
+      - name: Deliver unsigned candidate across job boundary
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: os4-pr423-unsigned-source-candidate
+          path: |
+            dist/candidate-unsigned.apk
+            dist/release-candidate-unsigned.apk
+          if-no-files-found: error
+          retention-days: 3
+
+  sign:
+    needs: unsigned
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout trusted signing script only (pinned main)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: f9ff55056e3baa21c219440394af9225104493f1
+          sparse-checkout: |
+            tools/setup_haple_signing.sh
+          persist-credentials: false
+
+      - name: Fetch untrusted unsigned APK as data only
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: os4-pr423-unsigned-source-candidate
+          path: dist
+
+      - name: Setup JDK 21 for trusted key verification
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Restore verified signing key in isolated runner
+        shell: bash
+        env:
+          HAPLE_KEYSTORE_BASE64: ${{ secrets.HAPLE_KEYSTORE_BASE64 }}
+          HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
+          HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
+          HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
+        run: bash tools/setup_haple_signing.sh
+
+      - name: Sign and verify non-debuggable OS4 source candidate
+        shell: bash
+        env:
+          HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
+          HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
+          HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
+          BUILD_ID: ${{ needs.unsigned.outputs.build_id }}
+          VERSION_NAME: ${{ needs.unsigned.outputs.version_name }}
+          SOURCE_SHA: ${{ needs.unsigned.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          test -s dist/candidate-unsigned.apk
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          apk="dist/Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-os4-canary.apk"
+          "$SDK_ROOT/build-tools/37.0.0/apksigner" sign \
+            --ks "$HAPLE_KEYSTORE_PATH" \
+            --ks-key-alias "$HAPLE_KEY_ALIAS" \
+            --ks-pass env:HAPLE_KEYSTORE_PASSWORD \
+            --key-pass env:HAPLE_KEYSTORE_PASSWORD \
+            --out "$apk" dist/candidate-unsigned.apk
+          "$SDK_ROOT/build-tools/37.0.0/apksigner" verify --verbose --print-certs "$apk"
+          cert="$("$SDK_ROOT/build-tools/37.0.0/apksigner" verify --print-certs "$apk" | awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' | tr '[:upper:]' '[:lower:]')"
+          test "$cert" = "$HAPLE_CERT_SHA256"
+          APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
+          test "$("$APKANALYZER" manifest debuggable "$apk")" = "false"
+          echo "### OS4 matched-source Canary" >> "$GITHUB_STEP_SUMMARY"
+          echo "Guiyuan source SHA: $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "MIUIX PR423 source: b9f70838509fbc3f63f1a972777a7e6ce07f578f" >> "$GITHUB_STEP_SUMMARY"
+          echo "Native GlassDialog + matched Blur: source built, signature verified; device visual/behavior not attested" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Sign and verify source-matched Release candidate (do not publish)
+        shell: bash
+        env:
+          HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
+          HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
+          HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
+          BUILD_ID: ${{ needs.unsigned.outputs.build_id }}
+          VERSION_NAME: ${{ needs.unsigned.outputs.version_name }}
+        run: |
+          set -euo pipefail
+          test -s dist/release-candidate-unsigned.apk
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          APKSIGNER="$SDK_ROOT/build-tools/37.0.0/apksigner"
+          apk="dist/Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-os4-release-candidate.apk"
+          "$APKSIGNER" sign \
+            --ks "$HAPLE_KEYSTORE_PATH" \
+            --ks-key-alias "$HAPLE_KEY_ALIAS" \
+            --ks-pass env:HAPLE_KEYSTORE_PASSWORD \
+            --key-pass env:HAPLE_KEYSTORE_PASSWORD \
+            --out "$apk" dist/release-candidate-unsigned.apk
+          "$APKSIGNER" verify --verbose --print-certs "$apk"
+          cert="$("$APKSIGNER" verify --print-certs "$apk" | awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' | tr '[:upper:]' '[:lower:]')"
+          test "$cert" = "$HAPLE_CERT_SHA256"
+          APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
+          test "$("$APKANALYZER" manifest debuggable "$apk")" = "false"
+          echo "Source-matched OS4 Release candidate signed; this is NOT a published GitHub Release" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Haple-signed OS4 PR423 APK
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Guiyuan-OS4-signed-canary
+          path: dist/*-os4-canary.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload source-matched signed Release candidate (not a published release)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Guiyuan-OS4-signed-release-candidate
+          path: dist/*-os4-release-candidate.apk
+          if-no-files-found: error
+          retention-days: 7

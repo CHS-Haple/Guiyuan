@@ -68,6 +68,14 @@ Detailed implementation history, rejected experiments, CI runs, and device inves
 
 **Consequence:** never infer a SIM identity from row index, bar/dot shape, third-party package name or generated ID. Two separately verified subscription roots may use independent per-row exact morph. A single composite root with two verified four-glyph optical rows may use **grouped geometry-only** morph with shared X and row-specific native Y; it must not assign SIM identity to either native row. If geometry or source provenance is uncertain, retain the bounded no-target/native fallback. Do not add a second SystemUI signal observer or mutate final Control Center.
 
+## Battery colors do not depend on SIM layout
+
+**Decision:** keep one shared battery color scheme catalog, one applied scheme and one set of saved colors for single- and dual-SIM presentation.
+
+**Why:** SIM count changes the signal layout, not the meaning of charging, low battery or power-saving colors. Separate color banks caused scheme-selection and actual-color disagreement.
+
+**Consequence:** retain independent signal/layout geometry but read and write battery colors through one global preference bank. On upgrade or legacy V1 restore, the currently selected mode's colors win; remove obsolete dual-color keys without modifying other profile settings.
+
 ## Control Center final surface remains native
 
 **Decision:** Guiyuan may project its compact semantics only through the bounded QS_FAKE transition bridge; the fully expanded Control Center remains native.

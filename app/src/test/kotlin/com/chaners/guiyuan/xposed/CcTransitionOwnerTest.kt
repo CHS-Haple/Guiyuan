@@ -2,11 +2,153 @@ package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.InternetState
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CcTransitionOwnerTest {
+    @Test
+    fun releaseContinuesAfterOrdinaryFailureAndKeepsFirstCause() {
+        val visited = mutableListOf<String>()
+        val first = IllegalStateException("reservation")
+        val second = IllegalArgumentException("observer")
+        val failure =
+            runCatching {
+                releaseAll(
+                    { visited += "reservation"; throw first },
+                    { visited += "observer"; throw second },
+                    { visited += "overlay" },
+                    { visited += "mask" },
+                )
+            }.exceptionOrNull()
+
+        assertSame(first, failure)
+        assertEquals(listOf("reservation", "observer", "overlay", "mask"), visited)
+        assertEquals(1, requireNotNull(failure).suppressed.size)
+        assertSame(second, failure.suppressed.single())
+    }
+
+    @Test
+    fun nestedListenerFailureStillReleasesOverlayAndMask() {
+        val visited = mutableListOf<String>()
+        val failure =
+            runCatching {
+                releaseAll(
+                    {
+                        releaseAll(
+                            { visited += "global"; error("global-unregister") },
+                            { visited += "pre-draw" },
+                            { visited += "live-global" },
+                            { visited += "live-pre-draw" },
+                        )
+                    },
+                    { visited += "overlay" },
+                    { visited += "mask" },
+                )
+            }.exceptionOrNull()
+
+        assertEquals("global-unregister", failure?.message)
+        assertEquals(
+            listOf("global", "pre-draw", "live-global", "live-pre-draw", "overlay", "mask"),
+            visited,
+        )
+    }
+
+    @Test
+    fun releaseDoesNotSwallowReflectivelyWrappedFatalFailure() {
+        val fatal = OutOfMemoryError("transition-release")
+        var laterReleaseRan = false
+        val failure =
+            runCatching {
+                releaseAll(
+                    { throw InvocationTargetException(fatal) },
+                    { laterReleaseRan = true },
+                )
+            }.exceptionOrNull()
+
+        assertSame(fatal, failure)
+        assertFalse(laterReleaseRan)
+    }
+
+    @Test
+    fun nativeCcOptionalReadOnlyHidesOrdinaryFailure() {
+        val fatal = ThreadDeath()
+        assertSame(
+            fatal,
+            runCatching {
+                CcTransitionOwner.readOrNull<Unit> { throw InvocationTargetException(fatal) }
+            }.exceptionOrNull(),
+        )
+        val oom = OutOfMemoryError("cc-native-read")
+        assertSame(
+            oom,
+            runCatching { CcTransitionOwner.readOrNull<Unit> { throw oom } }.exceptionOrNull(),
+        )
+        assertNull(
+            CcTransitionOwner.readOrNull<Unit> {
+                throw InvocationTargetException(IllegalStateException("native-unavailable"))
+            },
+        )
+    }
+
+    @Test
+    fun liveSourceChangesInvalidateHeldReservation() {
+        val airplane = RenderModel(
+            batteryPercent = 63,
+            charging = false,
+            centerIndicator = CenterIndicator.Airplane,
+            mobileLevel = null,
+            effectiveDataSubscriptionId = 4,
+        )
+        val wifi = airplane.copy(
+            centerIndicator = CenterIndicator.Wifi(3, InternetState.VALIDATED),
+        )
+        fun changed(model: RenderModel, visualChanged: Boolean = false) =
+            CcTransitionPolicy.reservationSourceChanged(airplane, model, visualChanged)
+
+        assertTrue(changed(wifi))
+        assertTrue(CcTransitionPolicy.reservationSourceChanged(wifi, airplane, false))
+        assertTrue(
+            CcTransitionPolicy.reservationSourceChanged(
+                wifi,
+                wifi.copy(centerIndicator = CenterIndicator.Wifi(1, InternetState.NO_INTERNET)),
+                false,
+            ),
+        )
+        assertTrue(changed(airplane.copy(centerIndicator = CenterIndicator.Empty)))
+        assertTrue(changed(airplane.copy(mobileLevel = 2)))
+        assertTrue(changed(airplane.copy(mobileUnavailableMark = true)))
+        assertTrue(changed(airplane.copy(effectiveDataSubscriptionId = 1)))
+        assertTrue(changed(airplane.copy(dualMobileLevels = DualMobileLevels(3, 4))))
+        assertTrue(changed(airplane.copy(batteryPercent = 64)))
+        assertTrue(changed(airplane.copy(charging = true, chargingIconResId = 123)))
+        assertTrue(changed(airplane, visualChanged = true))
+        assertFalse(changed(airplane))
+        assertFalse(changed(airplane.copy(batterySystemSemanticColor = 0xff00ff00.toInt())))
+    }
+
+    @Test
+    fun sourceRetargetKeepsHeldReservationContinuous() {
+        val compact = 100
+        val previous = listOf(CcTransitionPolicy.ReservationSpan(-20f, -10f, -150f, -130f))
+        val current = listOf(CcTransitionPolicy.ReservationSpan(-20f, -10f, -210f, -190f))
+        val held = 0.5f
+        val before = CcTransitionPolicy.resolveTransitionReservationWidth(compact, previous, held)
+        val after = CcTransitionPolicy.resolveTransitionReservationWidth(compact, current, held)
+        val shift = CcTransitionPolicy.retargetShift(0f, null, held, (after - before).toFloat())
+
+        assertEquals(
+            before.toFloat(),
+            after + shift * CcTransitionPolicy.retargetWeight(held, held),
+            0.001f,
+        )
+        assertEquals(0f, shift * CcTransitionPolicy.retargetWeight(1f, held), 0.001f)
+    }
+
     @Test
     fun dualSignalTargetNeedsVerifiedAggregateOrTwoMatchingSubscriptions() {
         val policy = CcTransitionPolicy

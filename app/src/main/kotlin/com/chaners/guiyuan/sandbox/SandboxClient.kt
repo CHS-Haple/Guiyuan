@@ -59,7 +59,10 @@ internal class SandboxClient(
                             Update.Clear -> editor.remove(SANDBOX_DATA_KEY)
                         }
                         editor.commit()
-                    }.getOrDefault(false)
+                    }.getOrElse { error ->
+                        rethrowSandboxFatal(error)
+                        false
+                    }
 
                 if (update is Update.Show) {
                     synchronized(this@SandboxClient) {
@@ -101,10 +104,9 @@ internal class SandboxClient(
 
     @Synchronized
     fun update(state: PreviewSandboxUiState) {
-        if (latest == state) return
+        if (id == 0L || latest == state) return
         latest = state
-        val session = id
-        if (session != 0L) updates.trySend(Update.Show(session, state))
+        updates.trySend(Update.Show(id, state))
     }
 
     @Synchronized

@@ -1,13 +1,23 @@
 package com.chaners.guiyuan.xposed
 
+import android.util.Log
 import android.view.View
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.util.WeakHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiSceneSource {
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            SysUiPresentationRuntime.throwIfFatal(error)
+            null
+        }
+
     const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
     const val UPDATE_STATE_METHOD_NAME = "updateState"
@@ -18,6 +28,9 @@ internal object SysUiSceneSource {
 
     // Values must not retain the weak View keys.
     private val states = WeakHashMap<View, Int>()
+    // A native state read is not proof that its owner callback completed.
+    private class Delivery(val state: Int)
+    private val deliveredStates = WeakHashMap<View, Delivery>()
 
     @Volatile
     private var statusBarStateField: Field? = null
@@ -26,6 +39,7 @@ internal object SysUiSceneSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onSceneState: (SceneUpdate) -> Unit,
+        onRuntimeFailure: (Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
@@ -40,6 +54,7 @@ internal object SysUiSceneSource {
                 Int::class.javaPrimitiveType,
             ).apply { isAccessible = true }
 
+        val warned = AtomicBoolean(false)
         val handle =
             module
                 .hook(updateStateMethod)
@@ -47,17 +62,19 @@ internal object SysUiSceneSource {
                 .intercept(
                     Hooker { chain ->
                         val result = chain.proceed()
-                        val sourceView = chain.thisObject as? View
+                        val sourceView = readOrNull { chain.thisObject as? View }
                             ?: return@Hooker result
-                        val rawState = (chain.getArg(0) as? Number)?.toInt()
+                        val rawState = readOrNull { (chain.getArg(0) as? Number)?.toInt() }
                             ?: return@Hooker result
                         publish(
                             sourceView = sourceView,
                             rawState = rawState,
                             source = "updateState",
                             onSceneState = onSceneState,
+                            onRuntimeFailure = onRuntimeFailure,
                             onEvent = onEvent,
                             isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                            warned = warned,
                         )
                         result
                     },
@@ -116,8 +133,7 @@ internal object SysUiSceneSource {
             states[sourceView]
                 ?: run {
                     val field = statusBarStateField ?: return null
-                    runCatching { field.getInt(sourceView) }
-                        .getOrNull()
+                    readOrNull { field.getInt(sourceView) }
                         ?.also { states[sourceView] = it }
                         ?: return null
                 }
@@ -127,6 +143,7 @@ internal object SysUiSceneSource {
     @Synchronized
     fun resetRuntimeState() {
         states.clear()
+        deliveredStates.clear()
         statusBarStateField = null
     }
 
@@ -143,30 +160,62 @@ internal object SysUiSceneSource {
         rawState: Int,
         source: String,
         onSceneState: (SceneUpdate) -> Unit,
+        onRuntimeFailure: (Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
+        warned: AtomicBoolean,
     ) {
-        synchronized(this) {
-            if (states[sourceView] == rawState) {
-                return
-            }
-            states[sourceView] = rawState
-        }
+        val delivery =
+            synchronized(this) {
+                states[sourceView] = rawState
+                if (deliveredStates[sourceView]?.state == rawState) {
+                    null
+                } else {
+                    Delivery(rawState).also { deliveredStates[sourceView] = it }
+                }
+            } ?: return
         val update =
             SceneUpdate(
                 sourceView = sourceView,
                 surface = classifyRawState(rawState),
                 rawState = rawState,
             )
-        onSceneState(update)
-        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-            onEvent(
-                "sceneState source=" + source +
-                    " raw=" + rawState +
-                    " batteryState=" + update.surface.name +
-                    " authority=battery-status-state-readonly" +
-                    " homeVisibilityAuthority=host+panel-coordinator",
-            )
+        try {
+            onSceneState(update)
+        } catch (error: Throwable) {
+            SysUiPresentationRuntime.throwIfFatal(error)
+            try {
+                onRuntimeFailure(error)
+            } catch (failure: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(failure)
+                if (failure !== error) error.addSuppressed(failure)
+            } finally {
+                // Keep the failed delivery marked during owner cleanup to avoid reentrant retries.
+                synchronized(this) {
+                    if (deliveredStates[sourceView] === delivery) {
+                        deliveredStates.remove(sourceView)
+                    }
+                }
+            }
+            return
+        }
+        if (onEvent != null) {
+            try {
+                if (isDetailedDiagnosticsEnabled()) {
+                    onEvent(
+                        "sceneState source=" + source +
+                            " raw=" + rawState +
+                            " batteryState=" + update.surface.name +
+                            " authority=battery-status-state-readonly" +
+                            " homeVisibilityAuthority=host+panel-coordinator",
+                    )
+                }
+            } catch (error: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(error)
+                if (warned.compareAndSet(false, true)) {
+                    readOrNull { Log.w("Guiyuan[Scene]", "Diagnostic failed", error) }
+                }
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import android.graphics.Paint
+import android.util.Log
 import android.graphics.Typeface
 import android.view.View
 import android.widget.TextView
@@ -12,6 +13,8 @@ import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.lang.reflect.Method
+import java.lang.reflect.InvocationTargetException
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiBatterySource {
     const val BATTERY_ICON_VIEW_CLASS_NAME =
@@ -39,12 +42,26 @@ internal object SysUiBatterySource {
     private var hooksReady = false
     @Volatile
     private var failedInstallHandles: List<HookHandle> = emptyList()
+    private class Delivery(val state: StatusStateStore.BatteryState)
     @Volatile
-    private var lastState: StatusStateStore.BatteryState? = null
-
+    private var lastDelivery: Delivery? = null
     @Volatile
-
+    private var nativeStateReader: ((View) -> StatusStateStore.BatteryState?)? = null
+    @Volatile
     private var lastChargingIconResId: Int? = null
+
+    internal fun rethrowFatal(error: Throwable) {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
+    }
+
+    private inline fun <T> readOrNull(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            rethrowFatal(error)
+            null
+        }
 
     internal data class VerifiedFont(
         val host: View,
@@ -68,6 +85,7 @@ internal object SysUiBatterySource {
         classLoader: ClassLoader,
         onBatteryState: (StatusStateStore.BatteryState) -> Unit,
         onChargingIconResource: (Int) -> Unit,
+        onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
     ): List<HookHandle> {
         check(!hooksReady && failedInstallHandles.isEmpty()) { "battery-hooks-already-installed" }
@@ -101,8 +119,7 @@ internal object SysUiBatterySource {
             var parent = iconView.parent
             while (parent is View) {
                 if (meterClass.isInstance(parent)) {
-                    return runCatching { chargingIconMethod.invoke(parent) as? Int }
-                        .getOrNull()
+                    return readOrNull { chargingIconMethod.invoke(parent) as? Int }
                         ?.takeIf { it != 0 }
                 }
                 parent = parent.parent
@@ -112,25 +129,23 @@ internal object SysUiBatterySource {
 
         fun readState(iconView: View): StatusStateStore.BatteryState? {
             val level =
-                runCatching { levelField.getInt(iconView) }
-                    .getOrNull()
+                readOrNull { levelField.getInt(iconView) }
                     ?.coerceIn(0, 100)
                     ?: return null
             val charging =
-                runCatching { chargingField.getBoolean(iconView) }
-                    .getOrNull()
+                readOrNull { chargingField.getBoolean(iconView) }
                     ?: return null
             val nativeStatusName =
-                runCatching {
+                readOrNull {
                     (progressStatusMethod.invoke(iconView) as? Enum<*>)?.name
-                }.getOrNull()
+                }
             val semanticState =
                 BatterySemanticState.fromNativeProgressStatus(
                     nativeStatusName,
                 )
             val miuiOptimizationEnabled =
-                runCatching { miuiOptimizationField.getBoolean(iconView) }
-                    .getOrDefault(false)
+                readOrNull { miuiOptimizationField.getBoolean(iconView) }
+                    ?: false
             val systemSemanticColor =
                 if (miuiOptimizationEnabled) {
                     semanticState?.let { state ->
@@ -155,7 +170,7 @@ internal object SysUiBatterySource {
                 systemSemanticColor = systemSemanticColor,
                 lowSystemColor =
                     if (miuiOptimizationEnabled) {
-                        runCatching { lowColorField.getInt(iconView) }.getOrNull()
+                        readOrNull { lowColorField.getInt(iconView) }
                     } else null,
                 chargingIconResId =
                     if (charging) {
@@ -166,28 +181,56 @@ internal object SysUiBatterySource {
             )
         }
 
+        val warned = AtomicBoolean(false)
+        fun fallback(source: String, error: Throwable) {
+            rethrowFatal(error)
+            try {
+                onRuntimeFailure(source, error)
+            } catch (failure: Throwable) {
+                rethrowFatal(failure)
+            }
+        }
+
+        fun report(message: () -> String) {
+            val sink = onEvent ?: return
+            try {
+                sink(message())
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                if (warned.compareAndSet(false, true)) {
+                    readOrNull { Log.w("Guiyuan[Battery]", "Diagnostic failed", error) }
+                }
+            }
+        }
+
         fun publish(
             iconView: View,
             sourceMethod: String,
         ) {
             val state = readState(iconView) ?: return
-            val changed =
+            val delivery =
                 synchronized(this) {
                     if (!state.charging) {
                         lastChargingIconResId = null
                     } else if (state.chargingIconResId != null) {
                         lastChargingIconResId = state.chargingIconResId
                     }
-                    if (lastState == state) {
-                        false
+                    if (lastDelivery?.state == state) {
+                        null
                     } else {
-                        lastState = state
-                        true
+                        Delivery(state).also { lastDelivery = it }
                     }
+                } ?: return
+            try {
+                onBatteryState(state)
+            } catch (error: Throwable) {
+                fallback("state", error)
+                synchronized(this) {
+                    if (lastDelivery === delivery) lastDelivery = null
                 }
-            if (!changed) return
-            onBatteryState(state)
-            onEvent?.invoke(
+                return
+            }
+            report {
                 "batteryState source=MiuiBatteryMeterIconView." + sourceMethod +
                     " percent=" + state.percent +
                     " charging=" + state.charging +
@@ -195,8 +238,8 @@ internal object SysUiBatterySource {
                     " systemColor=" +
                     (state.systemSemanticColor?.let(::colorHex) ?: "status-icon") +
                     " chargingIconId=" + (state.chargingIconResId ?: "unavailable") +
-                    " semanticAuthority=MiuiBatteryMeterIconView.getProgressStatus()",
-            )
+                    " semanticAuthority=MiuiBatteryMeterIconView.getProgressStatus()"
+            }
         }
 
         fun publishChargingGlyph(
@@ -204,8 +247,7 @@ internal object SysUiBatterySource {
             sourceMethod: String,
         ) {
             val iconId =
-                runCatching { chargingIconMethod.invoke(meterView) as? Int }
-                    .getOrNull()
+                readOrNull { chargingIconMethod.invoke(meterView) as? Int }
                     ?.takeIf { it != 0 }
                     ?: return
 
@@ -216,13 +258,18 @@ internal object SysUiBatterySource {
                     changed
                 }
             // Repeated samples still reconcile the state store after Hot Reload.
-            onChargingIconResource(iconId)
+            try {
+                onChargingIconResource(iconId)
+            } catch (error: Throwable) {
+                fallback("charging-glyph", error)
+                return
+            }
             if (changed) {
-                onEvent?.invoke(
+                report {
                     "batteryChargingGlyph source=MiuiBatteryMeterView." + sourceMethod +
                         " resourceId=" + iconId +
-                        " authority=MiuiBatteryMeterView.getHollowChargingIconId()",
-                )
+                        " authority=MiuiBatteryMeterView.getHollowChargingIconId()"
+                }
             }
         }
 
@@ -237,12 +284,16 @@ internal object SysUiBatterySource {
                     Hooker { chain ->
                         val result = chain.proceed()
                         if (!hooksReady) return@Hooker result
-                        val iconView = chain.thisObject as? View
+                        val iconView = readOrNull { chain.thisObject as? View }
                             ?: return@Hooker result
-                        publish(
-                            iconView = iconView,
-                            sourceMethod = method.name,
-                        )
+                        try {
+                            publish(
+                                iconView = iconView,
+                                sourceMethod = method.name,
+                            )
+                        } catch (error: Throwable) {
+                            fallback("state", error)
+                        }
                         result
                     },
                 )
@@ -288,12 +339,16 @@ internal object SysUiBatterySource {
                         Hooker { chain ->
                             val result = chain.proceed()
                             if (!hooksReady) return@Hooker result
-                            val meterView = chain.thisObject as? View
+                            val meterView = readOrNull { chain.thisObject as? View }
                                 ?: return@Hooker result
-                            publishChargingGlyph(
-                                meterView = meterView,
-                                sourceMethod = updateChargeAndTextMethod.name,
-                            )
+                            try {
+                                publishChargingGlyph(
+                                    meterView = meterView,
+                                    sourceMethod = updateChargeAndTextMethod.name,
+                                )
+                            } catch (error: Throwable) {
+                                fallback("charging-glyph", error)
+                            }
                             result
                         },
                     )
@@ -302,14 +357,23 @@ internal object SysUiBatterySource {
             handles += hook(powerSaveMethod, POWER_SAVE_HOOK_ID)
             handles += hook(performanceMethod, PERFORMANCE_HOOK_ID)
             handles += hook(miuiOptimizationMethod, MIUI_OPTIMIZATION_HOOK_ID)
+            nativeStateReader = ::readState
             hooksReady = true
             return handles
         } catch (error: Throwable) {
             hooksReady = false
+            nativeStateReader = null
             val remaining = handles.asReversed().filter { handle ->
-                runCatching { handle.unhook() }.isFailure
+                try {
+                    handle.unhook()
+                    false
+                } catch (failure: Throwable) {
+                    rethrowFatal(failure)
+                    true
+                }
             }
             failedInstallHandles = remaining
+            rethrowFatal(error)
             if (remaining.isNotEmpty()) {
                 throw IllegalStateException("battery-source-hook-cleanup-failed", error)
             }
@@ -322,36 +386,83 @@ internal object SysUiBatterySource {
 
     // Verified against the exact SystemUI fingerprint: both native number
     // routes must use the known file-backed faces, not mipro family fallbacks.
-    fun readHostNumberFont(host: View): Pair<Typeface, String>? = runCatching {
-        val root = host as? ViewGroup ?: return@runCatching null
+    fun readHostNumberFont(host: View): Pair<Typeface, String>? = readOrNull {
+        val root = host as? ViewGroup ?: return@readOrNull null
         val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
-            ?: return@runCatching null
+            ?: return@readOrNull null
         val battery = container.directChild(BATTERY_METER_VIEW_CLASS_NAME)
-            ?: return@runCatching null
-        val loader = battery.javaClass.classLoader ?: return@runCatching null
+            ?: return@readOrNull null
+        val loader = battery.javaClass.classLoader ?: return@readOrNull null
         val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
         val percentFace = config.getField("sMiproTypefaceWght500").get(null) as? Typeface
-            ?: return@runCatching null
+            ?: return@readOrNull null
         val markFace = config.getField("sMiproTypefaceWght600").get(null) as? Typeface
-            ?: return@runCatching null
+            ?: return@readOrNull null
         val percent = battery.javaClass.getField("mBatteryPercentView").get(battery) as? TextView
-            ?: return@runCatching null
+            ?: return@readOrNull null
         val mark = battery.javaClass.getField("mBatteryPercentMarkView").get(battery) as? TextView
-            ?: return@runCatching null
+            ?: return@readOrNull null
         if (percent.typeface !== percentFace || mark.typeface !== markFace) {
-            return@runCatching null
+            return@readOrNull null
         }
         val hollow = battery.javaClass.getField("mHollowBatteryIconView").get(battery)
-            ?: return@runCatching null
+            ?: return@readOrNull null
         val hollowPaint = hollow.javaClass.getField("textPaint").get(hollow) as? Paint
-            ?: return@runCatching null
+            ?: return@readOrNull null
         val hollowFace = loader.loadClass("com.android.systemui.statusbar.util.MiuiBatteryUtils")
-            .getField("FONT_WGHT").get(null) as? Typeface ?: return@runCatching null
-        if (hollowPaint.typeface !== hollowFace) return@runCatching null
+            .getField("FONT_WGHT").get(null) as? Typeface ?: return@readOrNull null
+        if (hollowPaint.typeface !== hollowFace) return@readOrNull null
         val path = config.getField("FONT_MIPRO_PATH").get(null) as? String
-            ?: return@runCatching null
+            ?: return@readOrNull null
         hollowFace to path
-    }.getOrNull()
+    }
+
+    // Reconcile the transferred snapshot with the same authority and delivery receipt as hooks.
+    fun reconcileHostBatteryState(
+        host: Any,
+        commit: (StatusStateStore.BatteryState) -> Unit,
+    ): StatusStateStore.BatteryState? {
+        if (!hooksReady) return null
+        val readState = nativeStateReader ?: return null
+        val priorDelivery = lastDelivery
+        val root = host as? ViewGroup ?: return null
+        val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
+            ?: return null
+        val meter = container.directChild(BATTERY_METER_VIEW_CLASS_NAME) as? ViewGroup
+            ?: return null
+        val pending = ArrayDeque<View>()
+        pending.add(meter)
+        var icon: View? = null
+        var visited = 0
+        while (pending.isNotEmpty()) {
+            // A changed or ambiguous native subtree cannot be a charging-state authority.
+            if (++visited > 64) return null
+            val view = pending.removeFirst()
+            if (view.javaClass.name == BATTERY_ICON_VIEW_CLASS_NAME) {
+                if (icon != null) return null
+                icon = view
+            }
+            if (view is ViewGroup) {
+                for (index in 0 until view.childCount) {
+                    pending.add(view.getChildAt(index))
+                }
+            }
+        }
+        val state = icon?.let(readState) ?: return null
+        commit(state)
+        synchronized(this) {
+            // A reentrant hook delivery takes precedence over the initial native sample.
+            if (lastDelivery === priorDelivery) {
+                lastDelivery = Delivery(state)
+                if (!state.charging) {
+                    lastChargingIconResId = null
+                } else if (state.chargingIconResId != null) {
+                    lastChargingIconResId = state.chargingIconResId
+                }
+            }
+        }
+        return state
+    }
 
     fun readHostChargingIconId(host: Any): Int? {
         val root = host as? ViewGroup ?: return null
@@ -359,11 +470,11 @@ internal object SysUiBatterySource {
             ?: return null
         val battery = container.directChild(BATTERY_METER_VIEW_CLASS_NAME)
             ?: return null
-        return runCatching {
+        return readOrNull {
             battery.javaClass.getDeclaredMethod("getHollowChargingIconId").apply {
                 isAccessible = true
             }.invoke(battery) as? Int
-        }.getOrNull()?.takeIf { it != 0 }
+        }?.takeIf { it != 0 }
     }
 
     private fun ViewGroup.directChild(className: String): View? {
@@ -393,8 +504,7 @@ internal object SysUiBatterySource {
                 BatterySemanticState.PERFORMANCE -> performanceColorField
                 BatterySemanticState.LOW -> lowColorField
             }
-        return runCatching { field.getInt(icon) }
-            .getOrNull()
+        return readOrNull { field.getInt(icon) }
             ?.takeIf { color -> color ushr 24 != 0 }
     }
 
@@ -403,9 +513,9 @@ internal object SysUiBatterySource {
 
     private fun Class<*>.optionalField(vararg names: String): Field? =
         names.firstNotNullOfOrNull { name ->
-            runCatching {
+            readOrNull {
                 getDeclaredField(name).apply { isAccessible = true }
-            }.getOrNull()
+            }
         }
 
     private fun colorHex(color: Int): String =
@@ -423,7 +533,8 @@ internal object SysUiBatterySource {
     fun resetRuntimeState() {
         failedInstallHandles = emptyList()
         hooksReady = false
-        lastState = null
+        lastDelivery = null
+        nativeStateReader = null
         lastChargingIconResId = null
         verifiedFont = null
     }

@@ -16,7 +16,7 @@ An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and 
 
 ### Project status
 
-> **Pre-release development.** The current pre-release version is **0.9.0**, adding an opt-in Duo dual-SIM style, a temporary leased Home status simulator, native variable-font weight controls, adjustable low-battery threshold, and refined MIUIX liquid-glass navigation. Backup restoration and Control Center transitions are further hardened for the verified SystemUI target, with additional normal-path API 102 Hot Reload validation. The first planned formal release remains **1.0.0**; pre-1.0 versions are validated development checkpoints unless a release is explicitly published.
+> **Pre-release development.** The current checkpoint is **0.9.1**, adding feature search, an optional floating-navigation touch extension, and experimental HyperOS 4 UI with source-matched glass dialogs, sheets and navigation. It also improves Sandbox previews, battery color scheme persistence, native icon recovery and Hot Reload safety on the verified SystemUI target. The first planned formal stable release remains **1.0.0**; pre-1.0 versions are development checkpoints.
 
 | Item | Current scope |
 | --- | --- |
@@ -90,7 +90,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ### 项目状态
 
-> **预发布开发阶段。** 当前预发布版本为 **0.9.0**，新增可选 Duo 双排信号样式、临时状态模拟、原生可变字体字重调节和可设置的低电量阈值，并优化 MIUIX 液态玻璃底栏、配置恢复及控制中心过渡，补充 API 102 热重载正常路径的验证。兼容性仍以已验证的 SystemUI 为准。计划首个正式发布版本仍为 **1.0.0**；1.0 之前的版本属于经验证的开发检查点，除非明确发布 Release。
+> **预发布开发阶段。** 当前检查点为 **0.9.1**，新增功能搜索、可选悬浮导航栏触控扩展及实验性 HyperOS 4 界面，包含同源适配的玻璃对话框、弹层和导航栏；同时优化预览沙盒、电量颜色方案保存、原生图标恢复和热重载安全。兼容性仍以已验证的 SystemUI 为准，首个正式稳定版计划为 **1.0.0**。
 
 | 项目 | 当前范围 |
 | --- | --- |

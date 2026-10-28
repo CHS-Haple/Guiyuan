@@ -8,6 +8,8 @@ import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertSame
+import java.lang.reflect.InvocationTargetException
 import org.junit.Test
 
 class MainThreadRetireTest {
@@ -106,24 +108,29 @@ class MainThreadRetireTest {
             Thread {
                 accepted =
                     MainThreadRetire(
-                        post = { task -> Thread(task).start(); true },
+                        post = { task ->
+                            Thread(task).start()
+                            // The timeout must start only after cleanup has entered Running.
+                            check(started.await(10, TimeUnit.SECONDS))
+                            true
+                        },
                         cancel = {},
                         waitMs = 10,
                     ).run {
                         started.countDown()
-                        check(release.await(2, TimeUnit.SECONDS))
+                        release.await()
                         changes.incrementAndGet()
                     }
                 finished.countDown()
             }
         caller.start()
         try {
-            assertTrue(started.await(2, TimeUnit.SECONDS))
+            assertTrue(started.await(10, TimeUnit.SECONDS))
             assertFalse(finished.await(50, TimeUnit.MILLISECONDS))
         } finally {
             release.countDown()
         }
-        assertTrue(finished.await(2, TimeUnit.SECONDS))
+        assertTrue(finished.await(10, TimeUnit.SECONDS))
         caller.join(2_000)
         assertTrue(accepted)
         assertEquals(1, changes.get())
@@ -205,6 +212,91 @@ class MainThreadRetireTest {
         assertTrue(interrupted.get())
         assertEquals(0, cancellations.get())
         assertEquals(1, changes.get())
+    }
+
+    @Test
+    fun fatalCleanupRetainsItsIdentity() {
+        val fatal = ThreadDeath()
+        val actual =
+            runCatching {
+                MainThreadRetire(
+                    post = { it.run(); true },
+                    cancel = {},
+                ).run { throw fatal }
+            }.exceptionOrNull()
+        assertSame(fatal, actual)
+    }
+
+    @Test
+    fun reflectedFatalCleanupRetainsItsIdentity() {
+        val fatal = OutOfMemoryError("cleanup")
+        val actual =
+            runCatching {
+                MainThreadRetire(
+                    post = { it.run(); true },
+                    cancel = {},
+                ).run { throw InvocationTargetException(fatal) }
+            }.exceptionOrNull()
+        assertSame(fatal, actual)
+    }
+
+    @Test
+    fun fatalDispatchCancelsQueuedOldGenerationWork() {
+        val fatal = OutOfMemoryError("dispatch")
+        var queued: Runnable? = null
+        var cancelled = false
+        var touched = false
+        val actual =
+            runCatching {
+                MainThreadRetire(
+                    post = { task -> queued = task; throw fatal },
+                    cancel = { cancelled = true },
+                ).run { touched = true }
+            }.exceptionOrNull()
+        assertSame(fatal, actual)
+        assertTrue(cancelled)
+        queued!!.run()
+        assertFalse(touched)
+    }
+
+    @Test
+    fun startedCleanupFinishesBeforeFatalDispatchEscapes() {
+        val started = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val finished = CountDownLatch(1)
+        val error = OutOfMemoryError("late-dispatch")
+        val outcome = AtomicReference<Throwable?>()
+        val cancelled = AtomicInteger()
+        val caller =
+            Thread {
+                outcome.set(
+                    runCatching {
+                        MainThreadRetire(
+                            post = { task ->
+                                Thread(task).start()
+                                check(started.await(2, TimeUnit.SECONDS))
+                                throw error
+                            },
+                            cancel = { cancelled.incrementAndGet() },
+                        ).run {
+                            started.countDown()
+                            check(release.await(2, TimeUnit.SECONDS))
+                        }
+                    }.exceptionOrNull(),
+                )
+                finished.countDown()
+            }
+        caller.start()
+        try {
+            assertTrue(started.await(2, TimeUnit.SECONDS))
+            assertFalse(finished.await(40, TimeUnit.MILLISECONDS))
+        } finally {
+            release.countDown()
+        }
+        assertTrue(finished.await(2, TimeUnit.SECONDS))
+        caller.join(2_000)
+        assertSame(error, outcome.get())
+        assertEquals(0, cancelled.get())
     }
 
     @Test

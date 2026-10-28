@@ -9,13 +9,33 @@ val appVersionCode = providers.gradleProperty("combinedStatus.versionCode").get(
 val buildId = providers.gradleProperty("combinedStatus.buildId").get()
 val miuixVersion = providers.gradleProperty("miuix.version").get()
 val miuixRevision = providers.gradleProperty("miuix.revision").get()
+val miuixSourceDir = providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)
+val miuixSourceRevision = providers.gradleProperty("gy.os4.miuixRevision").orNull?.takeIf(String::isNotBlank)
+require(miuixSourceRevision == null || (miuixSourceDir != null && Regex("[0-9a-f]{40}").matches(miuixSourceRevision))) {
+    "MIUIX source revision must be a full lowercase commit SHA paired with a source directory"
+}
+// Do not report the published dependency baseline as the version of a source-built candidate.
+val miuixDisplayVersion =
+    if (miuixSourceDir == null) miuixVersion
+    else "source ${miuixSourceRevision?.take(8) ?: "(revision unspecified)"}"
+val miuixDisplayRevision =
+    if (miuixSourceDir == null) miuixRevision
+    else miuixSourceRevision ?: "unverified local source"
 val libxposedVersion = "102.0.0"
+val coreVersion = "1.19.1"
 val activityComposeVersion = "1.13.0"
 val navigationEventComposeVersion = "1.2.0"
-val dataStorePreferencesVersion = "1.2.1"
+val dataStorePreferencesVersion = "1.3.0"
 val kotlinxSerializationCoreVersion = "1.12.0"
 val junitVersion = "4.13.2"
 val gradleVersion = gradle.gradleVersion
+val os4DebugSuffix = providers.gradleProperty("gy.os4.debugSuffix").orNull
+val os4DialogSurfaces = providers.gradleProperty("gy.os4.dialogSurfaces").orNull == "true"
+if (os4DialogSurfaces) {
+    require(providers.gradleProperty("gy.os4.miuixDir").isPresent) {
+        "GlassDialog requires the same-revision MIUIX source graph (-Pgy.os4.miuixDir)"
+    }
+}
 
 val hapleKeystorePath = providers.environmentVariable("HAPLE_KEYSTORE_PATH").orNull
 val hapleKeystorePassword = providers.environmentVariable("HAPLE_KEYSTORE_PASSWORD").orNull
@@ -45,9 +65,10 @@ android {
         versionName = appVersionName
 
         buildConfigField("String", "BUILD_ID", "\"$buildId\"")
-        buildConfigField("String", "MIUIX_VERSION", "\"$miuixVersion\"")
-        buildConfigField("String", "MIUIX_REVISION", "\"$miuixRevision\"")
+        buildConfigField("String", "MIUIX_VERSION", "\"$miuixDisplayVersion\"")
+        buildConfigField("String", "MIUIX_REVISION", "\"$miuixDisplayRevision\"")
         buildConfigField("String", "LIBXPOSED_VERSION", "\"$libxposedVersion\"")
+        buildConfigField("String", "ANDROIDX_CORE_VERSION", "\"$coreVersion\"")
         buildConfigField("String", "ACTIVITY_COMPOSE_VERSION", "\"$activityComposeVersion\"")
         buildConfigField("String", "NAVIGATION_EVENT_COMPOSE_VERSION", "\"$navigationEventComposeVersion\"")
         buildConfigField("String", "DATASTORE_PREFERENCES_VERSION", "\"$dataStorePreferencesVersion\"")
@@ -77,8 +98,19 @@ android {
         buildConfig = true
     }
 
+    // Match the dialog implementation to MIUIX's compiled DialogSurfaceScope ABI.
+    sourceSets.getByName("main").kotlin.directories.add(
+        if (os4DialogSurfaces) "src/os4Upstream/kotlin" else "src/os4Published/kotlin",
+    )
+
     buildTypes {
         debug {
+            if (os4DebugSuffix != null) {
+                require(Regex("""\.[a-z][a-z0-9_]*""").matches(os4DebugSuffix)) {
+                    "gy.os4.debugSuffix must be one simple lowercase application ID segment"
+                }
+                applicationIdSuffix = os4DebugSuffix
+            }
             buildConfigField("String", "BUILD_CHANNEL", "\"debug\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "true")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
@@ -143,7 +175,7 @@ dependencies {
 
     testImplementation("junit:junit:$junitVersion")
 
-    implementation("androidx.core:core:1.19.1")
+    implementation("androidx.core:core:$coreVersion")
     implementation("androidx.activity:activity-compose:$activityComposeVersion")
     implementation("androidx.navigationevent:navigationevent-compose:$navigationEventComposeVersion")
     implementation("androidx.datastore:datastore-preferences:$dataStorePreferencesVersion")

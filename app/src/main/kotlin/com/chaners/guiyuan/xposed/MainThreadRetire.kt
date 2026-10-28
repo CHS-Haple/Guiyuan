@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -11,6 +12,11 @@ internal class MainThreadRetire(
     private val waitMs: Long = 5_000L,
 ) {
     private enum class Phase { Queued, Running, Cancelled }
+
+    private fun fatalCause(error: Throwable): Throwable? {
+        val cause = (error as? InvocationTargetException)?.targetException ?: error
+        return cause.takeIf { it is VirtualMachineError || it is ThreadDeath }
+    }
 
     fun run(cleanup: () -> Unit): Boolean {
         val phase = AtomicReference(Phase.Queued)
@@ -27,11 +33,25 @@ internal class MainThreadRetire(
                     done.countDown()
                 }
             }
-        val posted = runCatching { post(task) }.getOrDefault(false)
-        if (!posted && phase.compareAndSet(Phase.Queued, Phase.Cancelled)) {
-            cancel(task)
-            return false
+        var dispatchFatal: Throwable? = null
+        val posted =
+            try {
+                post(task)
+            } catch (error: Throwable) {
+                dispatchFatal = fatalCause(error)
+                false
+            }
+        fun cancelQueued(): Boolean {
+            if (!phase.compareAndSet(Phase.Queued, Phase.Cancelled)) return false
+            try {
+                cancel(task)
+            } finally {
+                // Fatal dispatch must not leave an old View mutation queued.
+                dispatchFatal?.let { throw it }
+            }
+            return true
         }
+        if (!posted && cancelQueued()) return false
 
         var interrupted = false
         try {
@@ -42,10 +62,7 @@ internal class MainThreadRetire(
                     interrupted = true
                     false
                 }
-            if (!completed && phase.compareAndSet(Phase.Queued, Phase.Cancelled)) {
-                cancel(task)
-                return false
-            }
+            if (!completed && cancelQueued()) return false
 
             // Once the main thread has begun retiring Views, rejection cannot race
             // a late mutation of the old generation. Wait for that owner to finish.
@@ -57,7 +74,11 @@ internal class MainThreadRetire(
                     interrupted = true
                 }
             }
-            failure?.let { throw IllegalStateException("old-generation-retirement-failed", it) }
+            dispatchFatal?.let { throw it }
+            failure?.let { error ->
+                fatalCause(error)?.let { throw it }
+                throw IllegalStateException("old-generation-retirement-failed", error)
+            }
             return true
         } finally {
             if (interrupted) Thread.currentThread().interrupt()

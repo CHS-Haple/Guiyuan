@@ -14,10 +14,13 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.booleanOrNull
 
 @Serializable
 internal data class VisualBackup(
@@ -93,8 +96,34 @@ internal object ConfigBackupFormat {
                 }
             }
         }
-        // V1 allowed 1001..1400. Only those legacy values may be converted before validation.
-        val decoded = json.decodeFromJsonElement(ConfigBackup.serializer(), root)
+        // Older test archives may record two selections; only the active mode survives.
+        val oldSchemes = root["batterySchemes"]?.jsonObject
+        val oldDualKey = oldSchemes?.get("dualActiveSchemeKey")
+        val archive =
+            if (oldSchemes != null && oldDualKey != null) {
+                require(oldDualKey is JsonPrimitive &&
+                    (oldDualKey.isString || oldDualKey is JsonNull)
+                ) { "Invalid legacy dual selection" }
+                val schemeFields = oldSchemes.toMutableMap().apply {
+                    remove("dualActiveSchemeKey")
+                    if (root["visual"]?.jsonObject?.get("dualEnabled")?.jsonPrimitive?.booleanOrNull == true &&
+                        oldDualKey !is JsonNull
+                    ) {
+                        put("activeSchemeKey", oldDualKey)
+                    }
+                }
+                JsonObject(root.toMutableMap().apply {
+                    put("batterySchemes", JsonObject(schemeFields))
+                })
+            } else {
+                root
+            }
+        val decoded = json.decodeFromJsonElement(ConfigBackup.serializer(), archive)
+        if (oldDualKey != null && oldDualKey !is JsonNull) {
+            require(decoded.batterySchemes.containsKey(oldDualKey.jsonPrimitive.content)) {
+                "Unknown legacy dual-SIM scheme"
+            }
+        }
         val profiles = decoded.visual.profiles.map { cfg ->
             cfg.copy(
                 mobileTypeWeight =
