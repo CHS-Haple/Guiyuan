@@ -292,7 +292,7 @@ jobs:
             -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
             -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
             -Pgy.os4.dialogSurfaces=true \
-            "${TASKS[@]}" --stacktrace
+            "${TASKS[@]}" --no-daemon --max-workers=2 --stacktrace
 
       - name: Resolve built APK paths
         if: steps.scope.outputs.run_android == 'true'
