@@ -2,6 +2,7 @@ package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
@@ -26,6 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -40,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -61,6 +64,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chaners.guiyuan.R
@@ -182,7 +186,7 @@ internal fun BatterySchemeOverview(
     ) {
         BatterySchemeIndicatorRail(
             pages = pages,
-            currentPage = pagerState.currentPage,
+            pagerState = pagerState,
             targetPage = dotTarget,
             onPageSelect = { target ->
                 if (target != pagerState.currentPage || dotTarget >= 0 || pagerState.isScrollInProgress) {
@@ -627,7 +631,7 @@ private fun BatteryAddSchemePage(
 @Composable
 private fun BatterySchemeIndicatorRail(
     pages: List<BatterySchemePage>,
-    currentPage: Int,
+    pagerState: PagerState,
     targetPage: Int,
     onPageSelect: (Int) -> Unit,
 ) {
@@ -637,7 +641,7 @@ private fun BatterySchemeIndicatorRail(
     ) {
         BatteryPagerIndicator(
             pages = pages,
-            currentPage = currentPage,
+            pagerState = pagerState,
             targetPage = targetPage,
             onPageSelect = onPageSelect,
         )
@@ -647,7 +651,7 @@ private fun BatterySchemeIndicatorRail(
 @Composable
 private fun BatteryPagerIndicator(
     pages: List<BatterySchemePage>,
-    currentPage: Int,
+    pagerState: PagerState,
     targetPage: Int,
     onPageSelect: (Int) -> Unit,
 ) {
@@ -655,9 +659,12 @@ private fun BatteryPagerIndicator(
     val navigate by rememberUpdatedState(onPageSelect)
     val centers = remember(pages.size) { FloatArray(pages.size) }
     var pressedPage by remember { mutableIntStateOf(-1) }
+    val dotSpring = remember {
+        spring<Dp>(stiffness = Spring.StiffnessMedium, dampingRatio = 0.85f)
+    }
     val gap by animateDpAsState(
         targetValue = if (pressedPage >= 0) 10.dp else 8.dp,
-        animationSpec = if (pressedPage >= 0) spring() else snap(),
+        animationSpec = dotSpring,
         label = "battery-scheme-gap",
     )
     val switchMargin = with(LocalDensity.current) { 3.dp.toPx() }
@@ -702,10 +709,11 @@ private fun BatteryPagerIndicator(
         },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val highlightedPage =
-            pressedPage.takeIf { it >= 0 }
-                ?: targetPage.takeIf { it >= 0 }
-                ?: currentPage
+        val currentPage = pagerState.currentPage
+        val pagePosition =
+            (currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, pages.lastIndex.toFloat())
+        val scrolling = pagerState.isScrollInProgress
+        val highlightedPage = pressedPage.takeIf { it >= 0 } ?: targetPage.takeIf { it >= 0 }
         pages.forEachIndexed { index, page ->
             val name = when (page) {
                 is BatterySchemePage.BuiltIn -> batteryBuiltInName(page.scheme)
@@ -713,14 +721,16 @@ private fun BatteryPagerIndicator(
                 BatterySchemePage.Add -> stringResource(R.string.battery_custom_scheme_add_page_title)
             }
             val isCurrent = index == currentPage
-            val isHighlighted = index == highlightedPage
+            val progress =
+                if (highlightedPage != null) {
+                    if (index == highlightedPage) 1f else 0f
+                } else {
+                    (1f - abs(index - pagePosition)).coerceIn(0f, 1f)
+                }
             val width by animateDpAsState(
-                targetValue = when {
-                    pressedPage >= 0 && isHighlighted -> 24.dp
-                    isHighlighted -> 21.dp
-                    else -> 8.dp
-                },
-                animationSpec = if (pressedPage >= 0) spring() else snap(),
+                targetValue = 8.dp + (if (pressedPage == index) 16.dp else 13.dp) * progress,
+                animationSpec =
+                    if (scrolling && highlightedPage == null) snap() else dotSpring,
                 label = "battery-scheme-indicator",
             )
             Box(
@@ -744,11 +754,11 @@ private fun BatteryPagerIndicator(
                     modifier = Modifier.width(width).height(8.dp),
                     shape = CircleShape,
                     color =
-                        if (isHighlighted) {
-                            MiuixTheme.colorScheme.primary
-                        } else {
-                            MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                        },
+                        lerp(
+                            MiuixTheme.colorScheme.disabledOnSecondaryVariant,
+                            MiuixTheme.colorScheme.primary,
+                            progress,
+                        ),
                 ) {}
             }
         }
