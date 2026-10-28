@@ -117,9 +117,11 @@ modules. No build action downloads source implicitly or alters a default APK.
 
 **Do not include upstream Glass in this mixed experiment:** Guiyuan currently
 vendors same-package Glass sources, so loading both would duplicate classes.
-The CI-only joint compile probe verifies the upstream SHA and calls the same
-Gradle opt-in, without signing keys or publishing an APK. Full upstream-Glass
-replacement and dialog/sheet surface migration are separate acceptance gates.
+The former isolated joint-compile probe verified this upstream SHA and used the
+same Gradle opt-in without signing keys or publishing a production APK. Its
+workflow was retired after PR #861 merged; the retained matched-source signed
+Canary compiles/tests the integrated source graph. Full upstream-Glass replacement
+and dialog/sheet surface migration remain separate acceptance gates.
 
 GlassDialog and GlassBottomSheet cannot be compiled by default: the published
 MIUIX snapshot lacks PR #423's `DialogSurfaceScope`,
@@ -155,27 +157,27 @@ The OS4 experimental Build identifier is intentionally separated from rapidly
 advancing dev/runtime Builds; B1410 is also used by a concurrent runtime PR
 and must not be treated as the OS4 distribution identity.
 
-## Parallel Blur visual A/B builds
+## Historical Blur visual A/B builds (workflow retired)
 
-The opt-in compatibility CI can now produce two **debug-only, different
+The experimental compatibility CI previously produced two **debug-only, different
 application-ID** Android packages from the same Guiyuan source. The first
 uses all published-snapshot source modules at `8972f941`, the second uses
 PR #423's source modules at `b9f70838`. Both use Guiyuan's same existing
 vendored Glass implementation, intentionally holding that part constant.
-The comparison is meant to isolate the Blur/UI module revision as a group,
+The archived comparison was meant to isolate the Blur/UI module revision as a group,
 not assert that a single method is the only changed cause.
 
-The jobs never load the Haple production signing key. Android's ordinary
+Those retired jobs did not load the Haple production signing key. Android's ordinary
 debug signing allows these test applications to coexist with the signed
 Guiyuan package. Their application IDs are
 `com.chaners.guiyuan.os4published` and
-`com.chaners.guiyuan.os4pr423`. They are **visual-only probes**: do not
+`com.chaners.guiyuan.os4pr423`. They were **visual-only probes**: do not
 enable either in LSPosed or assume their module runtime/configuration
 behaves like the installed production identity. They do not overwrite the
-production package or import its settings. On each test app, select the
-OS4 appearance before comparing content scrolling under the bottom bar
-and search capsule. If the build or app entry route prevents a valid
-comparison, record the blocker rather than claim a glass repair.
+production package or import its settings. Neither A/B package is a supported distribution. Their source and evidence
+remain in Git history; the current signed Canary uses the reviewed PR423
+source graph. Any future source comparison needs a new, scoped review, not
+reactivation of these obsolete experiment triggers.
 
 ## Native OS4 DialogSurface ABI gate
 
@@ -193,7 +195,7 @@ as a second copy of Guiyuan's existing vendored Glass classes.
 
 ## Canonical signed OS4 Canary (matched source)
 
-The independent `.github/workflows/os4-miuix-pr423-signed-canary.yml` builds a fixed
+The retained `.github/workflows/os4-miuix-pr423-signed-canary.yml` builds a fixed
 PR #423 (SHA `b9f70838509fbc3f63f1a972777a7e6ce07f578f`) **unsigned**
 APK in a runner with no Haple signing credentials. A second isolated job fetches
 that APK as data, checks out only the trusted signer from fixed `main` SHA
