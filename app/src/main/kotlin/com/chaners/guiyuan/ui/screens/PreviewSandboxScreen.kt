@@ -37,6 +37,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -277,16 +280,28 @@ internal fun PreviewSandboxScreen(
             }
         }
     }
+    val dockSurface = MiuixTheme.colorScheme.surface
+    val dockBand = GlassTopAppBarDefaults.bandBrush(dockSurface)
     val dock: @Composable () -> Unit = {
         AnimatedVisibility(
             visible = showDock,
-            modifier = Modifier.onSizeChanged { dockHeightPx = it.height },
-            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+            modifier = if (os4) Modifier else Modifier.onSizeChanged { dockHeightPx = it.height },
+            enter = if (os4) fadeIn() else fadeIn() + expandVertically(expandFrom = Alignment.Top),
+            exit = if (os4) fadeOut() else fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .then(
+                        if (os4) Modifier.drawBehind {
+                            drawRect(dockSurface)
+                            drawRect(
+                                brush = dockBand,
+                                topLeft = Offset(0f, size.height),
+                                size = Size(size.width, GlassTopAppBarDefaults.BandOverhang.toPx()),
+                            )
+                        } else Modifier,
+                    )
                     .padding(dockPadding),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -349,7 +364,6 @@ internal fun PreviewSandboxScreen(
                         title = stringResource(R.string.home_preview_sandbox_title),
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
-                        bandOverhang = maxOf(GlassTopAppBarDefaults.BandOverhang, dockHeight),
                         navigationIcon = backAction,
                         actions = barActions,
                         unclippedNavigationIcon = true,
