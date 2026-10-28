@@ -237,7 +237,7 @@ jobs:
             -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
             -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
             -Pgy.os4.dialogSurfaces=true \
-            :app:testDebugUnitTest "$ASSEMBLE_TASK" --stacktrace
+            :app:testDebugUnitTest "$ASSEMBLE_TASK" --no-daemon --max-workers=2 --stacktrace
 
       - name: Resolve built APK
         shell: bash
