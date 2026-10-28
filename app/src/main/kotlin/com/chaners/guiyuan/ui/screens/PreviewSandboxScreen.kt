@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -236,6 +237,23 @@ internal fun PreviewSandboxScreen(
     var nativeBarHeightPx by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val dockHeight = with(density) { dockHeightPx.toDp() }
+    val surface = MiuixTheme.colorScheme.surface
+    // Keep the native band opaque through its extra row; only the 28dp tail fades over content.
+    val os4Band = if (os4 && dockHeightPx > 0 && nativeBarHeightPx > 0) {
+        val overhangPx = with(density) { GlassTopAppBarDefaults.BandOverhang.toPx() }
+        val opaqueEnd = nativeBarHeightPx / (nativeBarHeightPx + overhangPx)
+        fun stop(fraction: Float) = opaqueEnd + (1f - opaqueEnd) * fraction
+        Brush.verticalGradient(
+            0f to surface,
+            stop(0.45f) to surface,
+            stop(0.58f) to surface.copy(alpha = 0.82f),
+            stop(0.72f) to surface.copy(alpha = 0.58f),
+            stop(0.86f) to surface.copy(alpha = 0.34f),
+            1f to surface.copy(alpha = 0f),
+        )
+    } else {
+        GlassTopAppBarDefaults.bandBrush(surface)
+    }
     val backAction: @Composable () -> Unit = {
         TooltipBox(text = stringResource(R.string.back)) {
             if (os4) {
@@ -348,6 +366,7 @@ internal fun PreviewSandboxScreen(
                         title = stringResource(R.string.home_preview_sandbox_title),
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
+                        bandBrush = os4Band,
                         navigationIcon = backAction,
                         actions = barActions,
                         bottomContent = { dock() },
