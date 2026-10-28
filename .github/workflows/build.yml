@@ -47,6 +47,7 @@ jobs:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref || '' }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name || '' }}
           PUSH_BEFORE_SHA: ${{ github.event.before || '' }}
           PUSH_HEAD_SHA: ${{ github.sha }}
         run: |
@@ -206,6 +207,7 @@ jobs:
             RUN_DEBUG=true
           fi
           if [[ ( "$SCOPE" == "full" && "$EVENT_NAME" == "pull_request" ) ||
+                ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "pull_request" && "$PR_HEAD_REPO" == "$GITHUB_REPOSITORY" ) ||
                 ( ( "$SCOPE" == "runtime" || "$SCOPE" == "full" ) && "$EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/dev" ) ]]; then
             RUN_CANARY=true
           fi
@@ -365,6 +367,15 @@ jobs:
           path: app/build/outputs/apk/canary/app-canary-unsigned.apk
           if-no-files-found: error
           retention-days: 1
+
+      - name: Store verified unsigned PR Canary for on-demand signing
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.scope.outputs.run_canary == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unsigned-pr-canary-${{ github.event.pull_request.head.sha }}
+          path: app/build/outputs/apk/canary/app-canary-unsigned.apk
+          if-no-files-found: error
+          retention-days: 3
 
       - name: Validation summary
         if: always()
