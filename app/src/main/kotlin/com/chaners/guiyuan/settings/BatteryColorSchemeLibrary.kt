@@ -20,7 +20,9 @@ internal fun isBatterySchemeStorageKey(key: String): Boolean =
     key.startsWith(BATTERY_COLOR_SCHEME_PREFIX)
 private const val BATTERY_COLOR_SCHEME_SCHEMA_KEY = BATTERY_COLOR_SCHEME_PREFIX + "schema"
 private const val BATTERY_COLOR_SCHEME_SCHEMA_CURRENT = 1
-private const val BATTERY_COLOR_SCHEME_ACTIVE_KEY = BATTERY_COLOR_SCHEME_PREFIX + "active"
+internal const val BATTERY_COLOR_SCHEME_ACTIVE_KEY = BATTERY_COLOR_SCHEME_PREFIX + "active"
+// Legacy test builds stored a dual applied selection; never write it again.
+internal const val BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY = BATTERY_COLOR_SCHEME_PREFIX + "dual_active"
 private const val BATTERY_COLOR_SCHEME_ORDER_KEY = BATTERY_COLOR_SCHEME_PREFIX + "custom_order"
 
 @Serializable
@@ -146,6 +148,36 @@ internal data class BatteryColorSchemeLibrary(
         BatteryBuiltInColorScheme.fromKey(key) != null || customByKey(key) != null
 }
 
+// Match persisted pixels only when a known scheme reproduces every color slot.
+internal fun BatteryColorSchemeLibrary.matchingKey(visual: VisualCfg): String? {
+    val preset = visual.batteryColorPreset
+    val slots = BatteryColorSlot.entries
+    if (slots.all { slot ->
+            visual.batteryColorModes.modeFor(slot) == BatteryColorMode.PRESET &&
+                visual.batteryColorOverrides.colorFor(slot) == null
+        }
+    ) {
+        return BatteryBuiltInColorScheme.fromPreset(preset).key
+    }
+    if (preset != BatteryColorPreset.HYPEROS) return null
+
+    fun matches(scheme: BatteryCustomColorScheme): Boolean = slots.all { slot ->
+        val entry = scheme.entries.entryFor(slot)
+        val color = batterySchemeEntryColor(entry, slot)
+        val mode =
+            if (entry.source == BatteryColorSchemeSource.FOLLOW_SYSTEM || color == null) {
+                BatteryColorMode.FOLLOW_SYSTEM
+            } else {
+                BatteryColorMode.CUSTOM
+            }
+        visual.batteryColorModes.modeFor(slot) == mode &&
+            visual.batteryColorOverrides.colorFor(slot) ==
+                if (mode == BatteryColorMode.CUSTOM) color else null
+    }
+    return customByKey(activeSchemeKey)?.takeIf(::matches)?.key
+        ?: customSchemes.firstOrNull(::matches)?.key
+}
+
 internal fun batteryBuiltInColor(
     scheme: BatteryBuiltInColorScheme,
     slot: BatteryColorSlot,
@@ -174,12 +206,13 @@ internal fun batterySchemeEntryColor(
         BatteryColorSchemeSource.CUSTOM -> entry.customColor
     }
 
-internal class BatterySchemeRepo(context: Context) {
-    private val preferences =
+internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
+    constructor(context: Context) : this(
         context.applicationContext.getSharedPreferences(
             COMBINED_STATUS_VISUAL_PREFS_NAME,
             Context.MODE_PRIVATE,
-        )
+        ),
+    )
 
     init {
         migrateIfNeeded()
@@ -283,7 +316,9 @@ internal class BatterySchemeRepo(context: Context) {
             .filter { it.startsWith(customPrefix(id)) }
             .forEach(editor::remove)
         writeBatterySchemeLibrary(editor, updated)
-        applyProjection(editor, updated, active)
+        if (active != library.activeSchemeKey) {
+            applyProjection(editor, updated, active)
+        }
         editor.apply()
     }
 
@@ -359,7 +394,7 @@ internal class BatterySchemeRepo(context: Context) {
             )
         val editor = preferences.edit()
         writeBatterySchemeLibrary(editor, updated)
-        if (updated.activeSchemeKey == changed.key) {
+        if (changed.entries != current.entries && updated.activeSchemeKey == changed.key) {
             applyProjection(editor, updated, changed.key)
         }
         editor.apply()
@@ -395,7 +430,7 @@ internal class BatterySchemeRepo(context: Context) {
         val initial =
             BatteryColorSchemeLibrary(
                 activeSchemeKey =
-                    if (allPreset) {
+                    if (allPreset && !hasStoredCustomMemory) {
                         base.key
                     } else {
                         requireNotNull(legacyCustom).key
