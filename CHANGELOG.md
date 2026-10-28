@@ -11,6 +11,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ### Added
 - Added feature-page search with Chinese, pinyin, initials, English titles and curated related terms; results navigate to the relevant settings without changing the regular browsing layout.
 - Added a compact live-preview dock in the Sandbox with a shortcut back to the full preview. Simulation remains separate from real network and battery state.
+- Added an optional touch extension below every floating navigation style, enabled by default and constrained to safe space above system gesture areas; the original touch behavior remains available through a switch.
 
 ### Fixed
 - Localized recognized states in compact diagnostics while preserving raw technical details and exports.
@@ -25,6 +26,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ### Changed
 - Avoided scanning the full Android ICU transliterator registry before first-use search; retained the existing localized and pinyin matching fallback.
 - Added an experimental HyperOS 4 visual mode with upstream-aligned glass navigation, search, dialogs and sheets in the matched-source OS4 Canary; ordinary published-MIUIX builds retain native dialog/sheet fallback. HyperOS 3 remains available.
+- Adjusted OS4 floating glass navigation's bottom inset ownership to keep its live spacing and preview behavior consistent without shifting the native gesture boundary.
 - Removed obsolete native icon-observation paths and tightened font-source verification, keeping the native Typeface when its variable-weight source is unverified. Preserved native Control Center endpoints.
 - Made feature search and live-preview navigation follow existing MIUIX focus, Back and scrolling behavior.
 - Enabled accessible battery scheme indicators with larger touch targets, haptic-assisted press-and-scrub navigation that starts MIUIX spring page transitions immediately on each new selected dot, gentle press/release feedback and continuous dot morphing during card swipes; finger-up does not trigger an extra page request.
