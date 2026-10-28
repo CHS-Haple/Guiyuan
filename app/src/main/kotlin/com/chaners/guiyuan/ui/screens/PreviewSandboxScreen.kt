@@ -225,6 +225,13 @@ internal fun PreviewSandboxScreen(
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
     val os4 = LocalUiStyle.current == UiStyle.OS4
+    // Match MIUIX's 52dp compact title center plus its 4dp bottom title clearance.
+    val dockPadding = if (os4) {
+        val inset = (TopAppBarDefaults.CollapsedHeight - TopAppBarDefaults.SmallTopAppBarCenterHeight) / 2
+        PaddingValues(top = inset, bottom = inset + TopAppBarDefaults.LargeTitleBottomPadding)
+    } else {
+        PaddingValues(vertical = 6.dp)
+    }
     var dockHeightPx by remember { mutableIntStateOf(0) }
     var nativeBarHeightPx by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
@@ -280,7 +287,7 @@ internal fun PreviewSandboxScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 6.dp),
+                    .padding(dockPadding),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {

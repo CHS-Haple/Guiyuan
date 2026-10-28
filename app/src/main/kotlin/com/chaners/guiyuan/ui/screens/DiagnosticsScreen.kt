@@ -60,7 +60,7 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
-import com.chaners.guiyuan.ui.icons.Os4GlassDownload
+import com.chaners.guiyuan.ui.icons.Os4GlassShare
 import com.chaners.guiyuan.ui.icons.Os4GlassFilter
 import com.chaners.guiyuan.ui.icons.Os4GlassMore
 import com.chaners.guiyuan.settings.DiagLevel
@@ -97,7 +97,7 @@ import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Settings
@@ -333,7 +333,7 @@ internal fun DiagnosticsScreen(
                 enabled = reportEnabled,
             ) {
                 Icon(
-                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassDownload else MiuixIcons.Download,
+                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassShare else MiuixIcons.Share,
                     contentDescription = exportTitle,
                     modifier = Modifier.size(24.dp),
                 )

@@ -190,17 +190,7 @@ internal class PageSearch(private val context: Context) {
 
     private fun buildIndex(): Index {
         val romanizer = runCatching {
-            val ids = Transliterator.getAvailableIDs()
-            var han = false
-            var latinAscii = false
-            while (ids.hasMoreElements()) {
-                when (ids.nextElement()) {
-                    "Han-Latin" -> han = true
-                    "Latin-ASCII" -> latinAscii = true
-                }
-            }
-            if (han && latinAscii) Transliterator.getInstance("Han-Latin; Latin-ASCII")
-            else null
+            Transliterator.getInstance("Han-Latin; Latin-ASCII")
         }.getOrNull()
         val contexts = buildList {
             add(context)

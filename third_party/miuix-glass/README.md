@@ -10,7 +10,7 @@ License: Apache-2.0 (retain source headers and LICENSE).
 
 The separate `Os4BackIcon.kt` likewise preserves the exact Apache-2.0 PR #423 `Regular.Back` vector for OS4 top-bar glass buttons, including its RTL `autoMirror`. OS3 keeps the published Back icon. No behavior, action target or popup owner is duplicated.
 
-`app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4DiagnosticIcons.kt` likewise retains only the `Regular` paths for Filter, Download and More at the same pinned PR #423 revision. OS4 Diagnostics uses those three vectors; OS3 keeps published MIUIX symbols. Remove these temporary files when the matching upstream glass-icons module is integrated.
+`app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4DiagnosticIcons.kt` likewise retains only the `Regular` paths for Filter, Share and More at the same pinned PR #423 revision. OS4 Diagnostics uses those three vectors; OS3 uses the published MIUIX Share icon for the combined export/share action. Remove these temporary files when the matching upstream glass-icons module is integrated.
 
 ## Experimental upstream adoption gate (hold this Draft PR)
 

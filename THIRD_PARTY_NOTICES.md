@@ -49,7 +49,7 @@ updated independently from the corresponding MIUIX UI/Blur contracts. See
 | Component | Variant | Purpose | Upstream license |
 | --- | --- | --- | --- |
 | Google Material Symbols | Local embedded vectors; no library version | Semantic leading glyphs for companion-app information surfaces | Apache-2.0 |
-| MIUIX OS4 glass icon vectors | Exact Regular Back, Search, Close, Filter, Download and More vectors from [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423), `b9f70838509fbc3f63f1a972777a7e6ce07f578f` | Temporary OS4 action-icon compatibility pending a matching `miuix-glass-icons` release | Apache-2.0 |
+| MIUIX OS4 glass icon vectors | Exact Regular Back, Search, Close, Filter, Share and More vectors from [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423), `b9f70838509fbc3f63f1a972777a7e6ce07f578f` | Temporary OS4 action-icon compatibility pending a matching `miuix-glass-icons` release | Apache-2.0 |
 
 The selected Material Symbols are stored as local Android vector drawables sourced from Google's `google/material-design-icons` repository. They are app resources, not a runtime library dependency.
 
