@@ -132,7 +132,7 @@
     <string name="floating_navigation_bar">Floating navigation bar</string>
     <string name="floating_navigation_bar_summary">Use the floating style for the bottom navigation bar</string>
     <string name="floating_navigation_touch_extension">Floating navigation touch extension</string>
-    <string name="floating_navigation_touch_extension_summary">Extend the tap area below the navigation bar to help prevent accidental system gestures.</string>
+    <string name="floating_navigation_touch_extension_summary">Expand the touch area below the navigation bar to reduce mistaps</string>
     <string name="floating_navigation_style">Floating navigation style</string>
     <string name="floating_navigation_style_summary">Choose the material effect used by the floating bottom navigation bar</string>
     <string name="floating_navigation_style_standard">Standard</string>
