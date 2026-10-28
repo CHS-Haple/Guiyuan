@@ -2,7 +2,8 @@ name: Guiyuan Matched-Source Build
 
 on:
   push:
-    branches: [ dev, main ]
+    # Temporary owner-only acceptance run; remove this exact branch before integration.
+    branches: [ dev, main, fix/os4-sandbox-dock-unclipped-surface ]
     paths:
       - '.github/workflows/os4-miuix-pr423-signed-canary.yml'
       - '.github/workflows/release.yml'
