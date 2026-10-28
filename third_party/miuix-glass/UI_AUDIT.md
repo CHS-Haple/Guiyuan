@@ -284,9 +284,16 @@ MIUIX `SearchBarDemo` renders direct `BasicComponent` suggestions without mandat
 
 *Audited against direct source callsites, upstream PR423 files and published snapshot on 2026-10-27. These rows are evidence-backed implementation states, **not** a declaration that every visual case passed physical testing.*
 
+## B1621 OS4 navigation inset ownership (experimental PR423 backport)
+
+- **Source authority:** PR423 `8d52b45f223d4bec9a719d3d6ca52972cc7ea5fb` changes `GlassNavigationBar.defaultWindowInsetsPadding`. The Android path uses 32dp if there is no navigation inset; otherwise 16dp plus the navigation inset, followed by a caption-bar inset animated over 300ms. The source is still an open PR, not a released `miuix-glass` artifact.
+- **Bounded local adaptation:** Only this Android inset/layout contract is backported to the existing in-app glass component. The accepted local `interactive=false` preview extension is retained. `MainHub` drops its competing `max(24dp, navigationInset+8dp)` margin; its OS4 glass bar now uses the component's default inset owner. `AppearanceScreen` disables window insets on its miniature preview and preserves its explicit 24dp preview margin. OS3 navigation, all stored nav preferences, selected-page ownership, native no-shader fallback and liquid navigation remain untouched.
+- **Dependency graph:** Production published MIUIX stays pinned at `8972f941c194bd3c4e14c34543d5ebc7b39e40da`; the matched signed Canary source remains pinned separately at PR423 `b9f70838509fbc3f63f1a972777a7e6ce07f578f`. This is a local source backport with no new cross-module API dependency, **not** a claim that all PR423 modules have been upgraded to `8d52b45`. A full source-graph upgrade requires separate ABI-coherent review and CI.
+- **Review boundary:** Pre-commit call path is `MainHub/AppearanceScreen → GlassNavigationBar → GlassNavigationBarLayout`. One live window-inset writer, a preview-only opt-out, and the original `interactive` guard remain. Check icon-only and icon+text, gesture and caption-bar insets, landscape/RTL, font/display scale, shader fallback, OS3, snackbar and fast page changes in compiled CI and targeted physical tests. This source change does not yet claim passing CI or device acceptance.
+
 ## Upstream PR423 menu, modal and effect adoption gate (2026-10-28)
 
-Scope: current `dev` `d2390ad2`, MIUIX [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `8d52b45f223d4bec9a719d3d6ca52972cc7ea5fb`, and [effect PR #321](https://github.com/compose-miuix-ui/miuix/pull/321) at `73bdd49b4ea965dc7822e276b0a6ce29a5564f54`. Both are open, not published MIUIX releases. Published production MIUIX remains `8972f941`; the source-built OS4 signed workflow separately pins `b9f70838`.
+Scope: audited `dev` at `d2390ad2`, MIUIX [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `8d52b45f223d4bec9a719d3d6ca52972cc7ea5fb`, and [effect PR #321](https://github.com/compose-miuix-ui/miuix/pull/321) at `73bdd49b4ea965dc7822e276b0a6ce29a5564f54`. Both are open, not published MIUIX releases. Published production MIUIX remains `8972f941`; the source-built OS4 signed workflow separately pins `b9f70838`.
 
 ### Icon menus and transform popup
 
@@ -307,7 +314,7 @@ Scope: current `dev` `d2390ad2`, MIUIX [PR #423](https://github.com/compose-miui
 - **Existing owner:** Guiyuan's `LiquidNavBar` already owns its accepted `LiquidDragMotion`, `LiquidHighlight`, `LiquidInnerShadow`, `LiquidLens`, combined backdrop and `rememberDeviceTilt` lighting, each integrated with the selected-page state and native no-shader fallback. Importing another drag/highlight owner or sensor observer would duplicate accepted behavior and add lifecycle/performance risks.
 - **Decision:** Do not introduce this unmerged module or mix its Blur transitive graph with the pinned production snapshot. Reconsider only with an exact compatible release/revision, a concrete reduced-code or user-visible improvement, single motion/light writers, full gesture and rendering parity, GPU/frame-budget measurements and targeted signed-Canary acceptance. No claim that PR #321 fixes existing flicker is supported.
 
-The dedicated navigation-inset experiment is tracked separately in [Guiyuan PR #950](https://github.com/CHS-Haple/Guiyuan/pull/950); it does not certify any of the menu, modal, search or effect gates above.
+The navigation-inset adaptation [Guiyuan PR #950](https://github.com/CHS-Haple/Guiyuan/pull/950) reached `dev` at `405822ba` after the maintainer accepted the B1621 published-graph Canary. That acceptance does not certify OS4 matched-source glass transitions or any unrelated menu, modal, search or effect gate.
 
 #### Effect migration priority against PR321 HEAD
 

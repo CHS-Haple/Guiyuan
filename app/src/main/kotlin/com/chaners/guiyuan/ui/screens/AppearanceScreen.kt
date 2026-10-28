@@ -699,6 +699,7 @@ private fun MiniNavigationPreview(
                     onSelect = {},
                     backdrop = miuixBackdrop,
                     interactive = false,
+                    defaultWindowInsetsPadding = false,
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
                         .padding(bottom = 24.dp),
