@@ -42,6 +42,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInRoot
@@ -52,6 +54,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -81,7 +84,10 @@ import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batteryBuiltInColor
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
 import kotlinx.coroutines.launch
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.floor
+import kotlin.math.sin
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -658,6 +664,9 @@ private fun BatteryPagerIndicator(
     val haptic = LocalHapticFeedback.current
     val navigate by rememberUpdatedState(onPageSelect)
     val centers = remember(pages.size) { FloatArray(pages.size) }
+    val inkWidths = remember(pages.size) { FloatArray(pages.size) }
+    val bridge = remember { Path() }
+    val density = LocalDensity.current
     var pressedPage by remember { mutableIntStateOf(-1) }
     val dotSpring = remember {
         spring<Dp>(stiffness = Spring.StiffnessMedium, dampingRatio = 0.85f)
@@ -667,53 +676,104 @@ private fun BatteryPagerIndicator(
         animationSpec = dotSpring,
         label = "battery-scheme-gap",
     )
-    val switchMargin = with(LocalDensity.current) { 3.dp.toPx() }
+    val switchMargin = with(density) { 3.dp.toPx() }
+    val currentPage = pagerState.currentPage
+    val pagePosition =
+        (currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, pages.lastIndex.toFloat())
+    val scrolling = pagerState.isScrollInProgress
+    val highlightedPage = pressedPage.takeIf { it >= 0 } ?: targetPage.takeIf { it >= 0 }
+    val primary = MiuixTheme.colorScheme.primary
+    val idle = MiuixTheme.colorScheme.disabledOnSecondaryVariant
 
     Row(
-        modifier = Modifier.pointerInput(pages.size, haptic) {
-            awaitEachGesture {
-                fun nearest(x: Float): Int =
-                    centers.indices.minByOrNull { abs(x - centers[it]) } ?: -1
+        modifier = Modifier
+            .drawBehind {
+                if (pages.size < 2 || pressedPage >= 0 || targetPage >= 0) return@drawBehind
+                val from = floor(pagePosition).toInt()
+                if (from !in 0 until pages.lastIndex) return@drawBehind
+                val t = pagePosition - from
+                val blend = ((t - 0.12f) / 0.76f).coerceIn(0f, 1f)
+                val adhesion = sin((blend * PI).toFloat())
+                if (adhesion <= 0.01f) return@drawBehind
 
-                val down = awaitFirstDown(
-                    requireUnconsumed = false,
-                    pass = PointerEventPass.Initial,
+                val left = if (centers[from] < centers[from + 1]) from else from + 1
+                val right = if (left == from) from + 1 else from
+                if (inkWidths[left] <= 0f || inkWidths[right] <= 0f) return@drawBehind
+                val start = centers[left] + inkWidths[left] / 2f
+                val end = centers[right] - inkWidths[right] / 2f
+                if (end <= start) return@drawBehind
+
+                val overlap = 2.dp.toPx()
+                val shoulder = 3.2.dp.toPx() * adhesion
+                val neck = 1.8.dp.toPx() * adhesion
+                val y = size.height / 2f
+                bridge.reset()
+                bridge.moveTo(start - overlap, y - shoulder)
+                bridge.cubicTo(
+                    start + (end - start) * 0.4f, y - neck,
+                    end - (end - start) * 0.4f, y - neck, end + overlap, y - shoulder,
                 )
-                var selected = nearest(down.position.x)
-                if (selected < 0) return@awaitEachGesture
-                pressedPage = selected
-                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                down.consume()
-                navigate(selected)
-                try {
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Initial)
-                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                        val next = nearest(change.position.x)
-                        if (next >= 0 && next != selected &&
-                            abs(change.position.x - centers[next]) + switchMargin <
-                            abs(change.position.x - centers[selected])
-                        ) {
-                            selected = next
-                            pressedPage = next
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            navigate(next)
-                        }
-                        event.changes.forEach { it.consume() }
-                        if (!change.pressed) break
-                    }
-                } finally {
-                    pressedPage = -1
-                }
+                bridge.lineTo(end + overlap, y + shoulder)
+                bridge.cubicTo(
+                    end - (end - start) * 0.4f, y + neck,
+                    start + (end - start) * 0.4f, y + neck, start - overlap, y + shoulder,
+                )
+                bridge.close()
+
+                val leftProgress = if (left == from) 1f - t else t
+                val rightProgress = 1f - leftProgress
+                drawPath(
+                    path = bridge,
+                    brush =
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                lerp(idle, primary, leftProgress),
+                                lerp(idle, primary, rightProgress),
+                            ),
+                            startX = start - overlap,
+                            endX = end + overlap,
+                        ),
+                )
             }
-        },
+            .pointerInput(pages.size, haptic) {
+                awaitEachGesture {
+                    fun nearest(x: Float): Int =
+                        centers.indices.minByOrNull { abs(x - centers[it]) } ?: -1
+
+                    val down = awaitFirstDown(
+                        requireUnconsumed = false,
+                        pass = PointerEventPass.Initial,
+                    )
+                    var selected = nearest(down.position.x)
+                    if (selected < 0) return@awaitEachGesture
+                    pressedPage = selected
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    down.consume()
+                    navigate(selected)
+                    try {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            val next = nearest(change.position.x)
+                            if (next >= 0 && next != selected &&
+                                abs(change.position.x - centers[next]) + switchMargin <
+                                abs(change.position.x - centers[selected])
+                            ) {
+                                selected = next
+                                pressedPage = next
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                navigate(next)
+                            }
+                            event.changes.forEach { it.consume() }
+                            if (!change.pressed) break
+                        }
+                    } finally {
+                        pressedPage = -1
+                    }
+                }
+            },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val currentPage = pagerState.currentPage
-        val pagePosition =
-            (currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, pages.lastIndex.toFloat())
-        val scrolling = pagerState.isScrollInProgress
-        val highlightedPage = pressedPage.takeIf { it >= 0 } ?: targetPage.takeIf { it >= 0 }
         pages.forEachIndexed { index, page ->
             val name = when (page) {
                 is BatterySchemePage.BuiltIn -> batteryBuiltInName(page.scheme)
@@ -736,7 +796,10 @@ private fun BatteryPagerIndicator(
             Box(
                 modifier = Modifier
                     .width(width + gap).height(28.dp)
-                    .onGloballyPositioned { centers[index] = it.positionInParent().x + it.size.width / 2f }
+                    .onGloballyPositioned {
+                        centers[index] = it.positionInParent().x + it.size.width / 2f
+                        inkWidths[index] = with(density) { width.toPx() }
+                    }
                     .clickable(
                         interactionSource = null,
                         indication = null,
@@ -755,8 +818,8 @@ private fun BatteryPagerIndicator(
                     shape = CircleShape,
                     color =
                         lerp(
-                            MiuixTheme.colorScheme.disabledOnSecondaryVariant,
-                            MiuixTheme.colorScheme.primary,
+                            idle,
+                            primary,
                             progress,
                         ),
                 ) {}
