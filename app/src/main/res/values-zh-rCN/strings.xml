@@ -368,6 +368,7 @@
     <string name="battery_color_scheme_applied">已应用</string>
     <string name="battery_color_scheme_previous">切换至上一样式</string>
     <string name="battery_color_scheme_next">切换至下一样式</string>
+    <string name="battery_scheme_go_to">查看%1$s</string>
     <string name="battery_color_preset_recommended">低饱和</string>
     <string name="battery_color_preset_hyperos">HyperOS</string>
     <string name="battery_color_preset_ios">iOS</string>
