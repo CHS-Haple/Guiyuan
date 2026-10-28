@@ -446,7 +446,9 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
             dualActiveSchemeKey = dualKey,
         )
         // The two legacy banks already contain the user's colors. Do not reproject either.
-        writeBatterySchemeLibrary(preferences.edit(), initial).apply()
+        val editor = preferences.edit()
+        writeBatterySchemeLibrary(editor, initial)
+        editor.apply()
     }
 
     private fun readLibrary(): BatteryColorSchemeLibrary {
