@@ -21,6 +21,7 @@ internal fun isBatterySchemeStorageKey(key: String): Boolean =
 private const val BATTERY_COLOR_SCHEME_SCHEMA_KEY = BATTERY_COLOR_SCHEME_PREFIX + "schema"
 private const val BATTERY_COLOR_SCHEME_SCHEMA_CURRENT = 1
 private const val BATTERY_COLOR_SCHEME_ACTIVE_KEY = BATTERY_COLOR_SCHEME_PREFIX + "active"
+private const val BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY = BATTERY_COLOR_SCHEME_PREFIX + "dual_active"
 private const val BATTERY_COLOR_SCHEME_ORDER_KEY = BATTERY_COLOR_SCHEME_PREFIX + "custom_order"
 
 @Serializable
@@ -135,7 +136,14 @@ internal data class BatteryCustomColorScheme(
 internal data class BatteryColorSchemeLibrary(
     val activeSchemeKey: String = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
     val customSchemes: List<BatteryCustomColorScheme> = emptyList(),
+    val dualActiveSchemeKey: String? = null,
 ) {
+    fun activeKey(dual: Boolean): String? =
+        if (dual) dualActiveSchemeKey else activeSchemeKey
+
+    fun withActiveKey(dual: Boolean, key: String): BatteryColorSchemeLibrary =
+        if (dual) copy(dualActiveSchemeKey = key) else copy(activeSchemeKey = key)
+
     fun customById(id: Int): BatteryCustomColorScheme? =
         customSchemes.firstOrNull { it.id == id }
 
@@ -173,6 +181,36 @@ internal fun batterySchemeEntryColor(
         BatteryColorSchemeSource.FOLLOW_SYSTEM -> null
         BatteryColorSchemeSource.CUSTOM -> entry.customColor
     }
+
+// Link an existing color bank only when its values match a known shared scheme.
+internal fun matchingSchemeKey(
+    library: BatteryColorSchemeLibrary,
+    visual: VisualCfg,
+): String? {
+    if (BatteryColorSlot.entries.all { slot ->
+            visual.batteryColorModes.modeFor(slot) == BatteryColorMode.PRESET &&
+                visual.batteryColorOverrides.colorFor(slot) == null
+        }
+    ) {
+        return BatteryBuiltInColorScheme.fromPreset(visual.batteryColorPreset).key
+    }
+    if (visual.batteryColorPreset != BatteryColorPreset.HYPEROS) return null
+    return library.customSchemes.firstOrNull { scheme ->
+        BatteryColorSlot.entries.all { slot ->
+            val entry = scheme.entries.entryFor(slot)
+            val color = batterySchemeEntryColor(entry, slot)
+            val mode =
+                if (entry.source == BatteryColorSchemeSource.FOLLOW_SYSTEM || color == null) {
+                    BatteryColorMode.FOLLOW_SYSTEM
+                } else {
+                    BatteryColorMode.CUSTOM
+                }
+            visual.batteryColorModes.modeFor(slot) == mode &&
+                visual.batteryColorOverrides.colorFor(slot) ==
+                    if (mode == BatteryColorMode.CUSTOM) color else null
+        }
+    }?.key
+}
 
 internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
     constructor(context: Context) : this(
@@ -217,10 +255,11 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
         val library = current()
         val target =
             if (library.containsKey(key)) key else BATTERY_COLOR_SCHEME_HYPEROS_KEY
-        val updated = library.copy(activeSchemeKey = target)
+        val dual = preferences.dualSignalEnabled()
+        val updated = library.withActiveKey(dual, target)
         val editor = preferences.edit()
         writeBatterySchemeLibrary(editor, updated)
-        applyProjection(editor, updated, target)
+        applyProjection(editor, updated, target, dual)
         editor.apply()
     }
 
@@ -267,24 +306,25 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
     fun deleteCustom(id: Int) {
         val library = current()
         val removed = library.customById(id) ?: return
-        val remaining = library.customSchemes.filterNot { it.id == id }
-        val active =
-            if (library.activeSchemeKey == removed.key) {
-                removed.baseTemplate.key
-            } else {
-                library.activeSchemeKey
-            }
-        val updated =
-            library.copy(
-                activeSchemeKey = active,
-                customSchemes = remaining,
-            )
+        val updated = library.copy(
+            activeSchemeKey =
+                if (library.activeSchemeKey == removed.key) removed.baseTemplate.key
+                else library.activeSchemeKey,
+            dualActiveSchemeKey =
+                if (library.dualActiveSchemeKey == removed.key) removed.baseTemplate.key
+                else library.dualActiveSchemeKey,
+            customSchemes = library.customSchemes.filterNot { it.id == id },
+        )
         val editor = preferences.edit()
         preferences.all.keys
             .filter { it.startsWith(customPrefix(id)) }
             .forEach(editor::remove)
         writeBatterySchemeLibrary(editor, updated)
-        applyProjection(editor, updated, active)
+        for (dual in listOf(false, true)) {
+            if (library.activeKey(dual) == removed.key) {
+                applyProjection(editor, updated, removed.baseTemplate.key, dual)
+            }
+        }
         editor.apply()
     }
 
@@ -360,54 +400,53 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
             )
         val editor = preferences.edit()
         writeBatterySchemeLibrary(editor, updated)
-        if (updated.activeSchemeKey == changed.key) {
-            applyProjection(editor, updated, changed.key)
+        for (dual in listOf(false, true)) {
+            if (updated.activeKey(dual) == changed.key) {
+                applyProjection(editor, updated, changed.key, dual)
+            }
         }
         editor.apply()
     }
 
     private fun migrateIfNeeded() {
-        if (
-            preferences.getInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, 0) >=
-                BATTERY_COLOR_SCHEME_SCHEMA_CURRENT
-        ) return
+        if (preferences.getInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, 0) >= 1) return
 
-        val visual = preferences.readVisualCfg()
-        val allPreset =
-            BatteryColorSlot.entries.all { slot ->
+        val singles = preferences.readVisualCfg(dual = false)
+        val doubles = preferences.readVisualCfg(dual = true)
+        val customs = mutableListOf<BatteryCustomColorScheme>()
+
+        fun keyFor(visual: VisualCfg): String {
+            val allPreset = BatteryColorSlot.entries.all { slot ->
                 visual.batteryColorModes.modeFor(slot) == BatteryColorMode.PRESET
             }
-        val hasStoredCustomMemory =
-            BatteryColorSlot.entries.any { slot ->
+            val hasCustomMemory = BatteryColorSlot.entries.any { slot ->
                 visual.batteryColorOverrides.colorFor(slot) != null
             }
-        val base = BatteryBuiltInColorScheme.fromPreset(visual.batteryColorPreset)
-        val legacyCustom =
-            if (!allPreset || hasStoredCustomMemory) {
-                BatteryCustomColorScheme(
-                    id = 1,
-                    name = "",
-                    baseTemplate = base,
-                    entries = entriesFromLegacyVisual(visual),
-                )
-            } else {
-                null
-            }
-        val initial =
-            BatteryColorSchemeLibrary(
-                activeSchemeKey =
-                    if (allPreset) {
-                        base.key
-                    } else {
-                        requireNotNull(legacyCustom).key
-                    },
-                customSchemes = listOfNotNull(legacyCustom),
-            )
+            val base = BatteryBuiltInColorScheme.fromPreset(visual.batteryColorPreset)
+            if (allPreset && !hasCustomMemory) return base.key
 
-        val editor = preferences.edit()
-        writeBatterySchemeLibrary(editor, initial)
-        applyProjection(editor, initial, initial.activeSchemeKey)
-        editor.apply()
+            val entries = entriesFromLegacyVisual(visual)
+            customs.firstOrNull { it.baseTemplate == base && it.entries == entries }
+                ?.let { return it.key }
+            val custom = BatteryCustomColorScheme(
+                id = customs.size + 1,
+                name = "",
+                baseTemplate = base,
+                entries = entries,
+            )
+            customs.add(custom)
+            return custom.key
+        }
+
+        val singleKey = keyFor(singles)
+        val dualKey = keyFor(doubles)
+        val initial = BatteryColorSchemeLibrary(
+            activeSchemeKey = singleKey,
+            customSchemes = customs,
+            dualActiveSchemeKey = dualKey,
+        )
+        // The two legacy banks already contain the user's colors. Do not reproject either.
+        writeBatterySchemeLibrary(preferences.edit(), initial).apply()
     }
 
     private fun readLibrary(): BatteryColorSchemeLibrary {
@@ -425,16 +464,17 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
                 BATTERY_COLOR_SCHEME_ACTIVE_KEY,
                 BATTERY_COLOR_SCHEME_HYPEROS_KEY,
             ) ?: BATTERY_COLOR_SCHEME_HYPEROS_KEY
-        val provisional =
-            BatteryColorSchemeLibrary(
-                activeSchemeKey = rawActive,
-                customSchemes = customs,
-            )
-        return if (provisional.containsKey(rawActive)) {
-            provisional
-        } else {
-            provisional.copy(activeSchemeKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY)
-        }
+        val provisional = BatteryColorSchemeLibrary(
+            activeSchemeKey =
+                rawActive.takeIf { key ->
+                    BatteryBuiltInColorScheme.fromKey(key) != null ||
+                        customs.any { it.key == key }
+                } ?: BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+            customSchemes = customs,
+        )
+        val dualKey = preferences.getString(BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY, null)
+            ?: matchingSchemeKey(provisional, preferences.readVisualCfg(dual = true))
+        return provisional.copy(dualActiveSchemeKey = dualKey?.takeIf(provisional::containsKey))
     }
 
     private fun readCustom(id: Int): BatteryCustomColorScheme? {
@@ -476,8 +516,8 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
         editor: SharedPreferences.Editor,
         library: BatteryColorSchemeLibrary,
         key: String,
+        dual: Boolean,
     ) {
-        val dual = preferences.dualSignalEnabled()
         val builtIn = BatteryBuiltInColorScheme.fromKey(key)
         if (builtIn != null) {
             editor.putString(visualModeKey(dual, BATTERY_COLOR_PRESET_KEY), builtIn.preset.persistedValue)
@@ -492,7 +532,7 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
         }
 
         val custom = library.customByKey(key) ?: run {
-            applyProjection(editor, library, BATTERY_COLOR_SCHEME_HYPEROS_KEY)
+            applyProjection(editor, library, BATTERY_COLOR_SCHEME_HYPEROS_KEY, dual)
             return
         }
         editor.putString(
@@ -560,6 +600,9 @@ internal fun writeBatterySchemeLibrary(
     editor
         .putInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, BATTERY_COLOR_SCHEME_SCHEMA_CURRENT)
         .putString(BATTERY_COLOR_SCHEME_ACTIVE_KEY, library.activeSchemeKey)
+        .putString(
+            BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY, library.dualActiveSchemeKey,
+        )
         .putString(
             BATTERY_COLOR_SCHEME_ORDER_KEY,
             library.customSchemes.joinToString(",") { it.id.toString() },
