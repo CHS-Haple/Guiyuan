@@ -83,6 +83,7 @@ class AppearanceTest {
         val settings = Appearance()
 
         assertTrue(settings.navEnabled)
+        assertTrue(settings.navTouchExtension)
         assertEquals(UiStyle.OS4, settings.uiStyle)
         assertEquals(listOf(UiStyle.OS4, UiStyle.OS3), uiStyleMenuOrder)
         assertEquals(NavStyle.Glass, settings.navStyle)
@@ -90,6 +91,14 @@ class AppearanceTest {
         assertEquals(NavContent.IconAndText, settings.liquidContent)
         assertEquals(NavContent.IconAndText, settings.activeNavContent)
         assertEquals(LiquidMode.Balanced, settings.liquidMode)
+    }
+
+    @Test
+    fun floatingTouchExtensionCanBeDisabledWithoutChangingNavigation() {
+        val current = Appearance(navStyle = NavStyle.Liquid, navTouchExtension = false)
+        assertFalse(current.navTouchExtension)
+        assertEquals(NavStyle.Liquid, current.navStyle)
+        assertTrue(current.copy(navTouchExtension = true).navTouchExtension)
     }
 
     @Test

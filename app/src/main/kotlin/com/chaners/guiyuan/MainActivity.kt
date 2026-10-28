@@ -157,6 +157,9 @@ class MainActivity : ComponentActivity() {
                     onNavEnabledChange = { enabled ->
                         scope.launch { repo.setNavEnabled(enabled) }
                     },
+                    onNavTouchExtensionChange = { enabled ->
+                        scope.launch { repo.setNavTouchExtension(enabled) }
+                    },
                     onNavStyleChange = { style: NavStyle ->
                         scope.launch { repo.setNavStyle(style) }
                     },

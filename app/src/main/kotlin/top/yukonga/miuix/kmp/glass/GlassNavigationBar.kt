@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
+import com.chaners.guiyuan.ui.components.navTouchExtension
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -189,6 +190,7 @@ object GlassNavigationBarDefaults {
  * @param selectedColor Tint of the selected icon and label.
  * @param unselectedColor Tint of the others. They are not dimmed; the indicator alone says which
  *   one is current.
+ * @param touchExtension Whether safe bottom whitespace also accepts destination taps.
  * @param interactive Whether destination gestures, keyboard actions and accessibility actions are enabled.
  *   Noninteractive is for a visual preview, not for the real bottom navigation.
  * @param trailingAction Optional independent action outside the glass capsule. It owns its size
@@ -215,6 +217,7 @@ fun GlassNavigationBar(
     selectedColor: Color = MiuixTheme.colorScheme.onBackground,
     unselectedColor: Color = MiuixTheme.colorScheme.onBackground,
     interactive: Boolean = true,
+    touchExtension: Boolean = false,
     trailingAction: (@Composable () -> Unit)? = null,
 ) {
     if (items.isEmpty()) return
@@ -311,6 +314,20 @@ fun GlassNavigationBar(
     GlassNavigationBarLayout(
         modifier = modifier
             .fillMaxWidth()
+            .then(
+                if (touchExtension && inputEnabled && defaultWindowInsetsPadding && trailingAction == null) {
+                    Modifier.navTouchExtension(
+                        bottomPadding = bottomPadding,
+                        horizontalPadding = 0.dp,
+                        contentPadding = GlassNavigationBarDefaults.ContentPaddingHorizontal,
+                        itemCount = items.size,
+                        rtl = layoutDirection == LayoutDirection.Rtl,
+                        onSelect = onSelect,
+                    )
+                } else {
+                    Modifier
+                },
+            )
             .padding(bottom = bottomPadding)
             .graphicsLayer {
                 val show = showScale.value

@@ -88,6 +88,7 @@ internal fun AppearanceScreen(
     onPaletteStyleChange: (ThemePaletteStyle) -> Unit,
     onNavEnabledChange: (Boolean) -> Unit,
     onNavStyleChange: (NavStyle) -> Unit,
+    onNavTouchExtensionChange: (Boolean) -> Unit,
     onNavContentChange: (NavContent) -> Unit,
     onLiquidModeChange: (LiquidMode) -> Unit,
     onUiScaleChange: (Int) -> Unit,
@@ -349,6 +350,17 @@ internal fun AppearanceScreen(
                             }
                         }
                     },
+                )
+                SwitchPreference(
+                    title = stringResource(R.string.floating_navigation_touch_extension),
+                    summary = stringResource(R.string.floating_navigation_touch_extension_summary),
+                    startAction = {
+                        SemanticLeadingIcon(
+                            iconRes = R.drawable.ic_material_symbol_fit_screen,
+                        )
+                    },
+                    checked = appearance.navTouchExtension,
+                    onCheckedChange = onNavTouchExtensionChange,
                 )
             }
         }
