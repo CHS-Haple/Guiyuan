@@ -2,7 +2,8 @@ name: Guiyuan Matched-Source Build
 
 on:
   push:
-    branches: [ dev, main ]
+    # Temporary B1631 target-device candidate; remove before integration.
+    branches: [ dev, main, fix/os4-sandbox-band-dock-clip ]
     paths:
       - '.github/workflows/os4-miuix-pr423-signed-canary.yml'
       - '.github/workflows/release.yml'
