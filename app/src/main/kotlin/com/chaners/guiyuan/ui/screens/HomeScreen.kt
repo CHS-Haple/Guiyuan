@@ -13,6 +13,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -55,6 +57,9 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualCfg
@@ -79,6 +84,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
@@ -157,24 +163,39 @@ internal fun HomeScreen(
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
 
+    val os4 = LocalUiStyle.current == UiStyle.OS4
+    val actions: @Composable RowScope.() -> Unit = {
+        HotReloadAction(
+            inProgress = hotReloadInProgress,
+            enabled = !restartInProgress && !scopeRequestInProgress,
+            onClick = onHotReload,
+        )
+    }
+
+    CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
     Scaffold(
         topBar = {
-            MiuixBlurredTopBar(
-                backdrop = topBarBackdrop,
-                scrollBehavior = scrollBehavior,
-            ) { barColor ->
-                TopAppBar(
+            if (os4) {
+                GlassTopAppBar(
+                    isContentScrolled = listState.canScrollBackward,
                     title = stringResource(R.string.home_title),
-                    color = barColor,
-                    actions = {
-                        HotReloadAction(
-                            inProgress = hotReloadInProgress,
-                            enabled = !restartInProgress && !scopeRequestInProgress,
-                            onClick = onHotReload,
-                        )
-                    },
+                    backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
+                    actions = actions,
+                    unclippedActions = true,
                 )
+            } else {
+                MiuixBlurredTopBar(
+                    backdrop = topBarBackdrop,
+                    scrollBehavior = scrollBehavior,
+                ) { barColor ->
+                    TopAppBar(
+                        title = stringResource(R.string.home_title),
+                        color = barColor,
+                        actions = actions,
+                        scrollBehavior = scrollBehavior,
+                    )
+                }
             }
         },
     ) { paddingValues ->
@@ -230,6 +251,7 @@ internal fun HomeScreen(
                 }
             }
         }
+    }
     }
 }
 

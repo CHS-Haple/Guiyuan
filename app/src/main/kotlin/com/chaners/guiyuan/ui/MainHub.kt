@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
@@ -20,6 +22,8 @@ import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -44,7 +48,9 @@ import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.system.RestartTarget
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.ui.components.NavContentItem
@@ -64,17 +70,22 @@ import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
 import com.chaners.guiyuan.ui.screens.SemanticLeadingIcon
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.glass.GlassNavigationBar
+import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
+import top.yukonga.miuix.kmp.basic.NavigationBarDisplayMode
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.chaners.guiyuan.ui.components.UiDialogButton
+import com.chaners.guiyuan.ui.components.dialogActionGap
+import com.chaners.guiyuan.ui.LocalGlassBackdrop
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -144,7 +155,11 @@ internal fun MainHub(
     var availableTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
     var selectedTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
     var queuedRestart by remember { mutableStateOf(emptySet<RestartTarget>()) }
-    val failedTargets = (restartState as? ScopeRestart.State.Failed)?.targets.orEmpty()
+    val failedTargets = (restartState as? ScopeRestart.State.Failed)?.targets
+    var failedTargetsForExit by remember { mutableStateOf(emptySet<RestartTarget>()) }
+    if (failedTargets != null) {
+        SideEffect { failedTargetsForExit = failedTargets }
+    }
     val app = context.applicationContext as GyApplication
     val scopeBusy by app.scopeRequestInFlight.collectAsState(initial = app.scopeRequestActive)
     val hotReloadInProgress by app.hotReloadInFlight.collectAsState(initial = app.hotReloadActive)
@@ -163,6 +178,8 @@ internal fun MainHub(
             restartPickerOpen = true
         }
     }
+    val os4 = appearance.uiStyle == UiStyle.OS4
+    val os4Glass = os4 && appearance.navEnabled && appearance.navStyle == NavStyle.Glass
     val miuixMaterialActive =
         appearance.navEnabled &&
             appearance.navStyle.requiresTextureBackdrop &&
@@ -172,8 +189,9 @@ internal fun MainHub(
             appearance.navStyle == NavStyle.Liquid &&
             liquidNavSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
+    // The root dialog needs a clean page source even with native/hidden navigation.
     val miuixBackdrop =
-        if (miuixMaterialActive) {
+        if (miuixMaterialActive || (os4 && isRuntimeShaderSupported())) {
             rememberLayerBackdrop {
                 drawRect(surfaceColor)
                 drawContent()
@@ -181,6 +199,7 @@ internal fun MainHub(
         } else {
             null
         }
+    val navBackdrop = miuixBackdrop.takeIf { miuixMaterialActive }
     val liquidBackdrop =
         if (liquidMaterialActive) {
             rememberLiquidNavBackdrop(surfaceColor)
@@ -220,9 +239,9 @@ internal fun MainHub(
     )
 
     val navigationBarModifier =
-        if (miuixBackdrop != null) {
+        if (navBackdrop != null && !os4Glass) {
             Modifier.floatingNavMaterial(
-                backdrop = miuixBackdrop,
+                backdrop = navBackdrop,
                 dark = dark,
                 style = appearance.navStyle,
             )
@@ -230,14 +249,45 @@ internal fun MainHub(
             Modifier
         }
     val liquidBottomPadding = liquidNavBottomPadding()
+    // Follow the upstream OS4 page's bottom clearances, measured from the window inset.
+    val os4BottomMargin = if (os4) {
+        val navInset = with(LocalDensity.current) { WindowInsets.navigationBars.getBottom(this).toDp() }
+        maxOf(24.dp, navInset + 8.dp)
+    } else {
+        0.dp
+    }
 
     Scaffold(
         // This Scaffold owns the bottom bar, so it must also position the snackbar.
         snackbarHost = { SnackbarHost(state = featureSnackbarState) },
         bottomBar = {
             when {
-                !appearance.navEnabled -> {
-                    NavigationBar {
+                os4Glass && navBackdrop != null -> {
+                    GlassNavigationBar(
+                        items = items.mapIndexed { index, item ->
+                            GlassNavigationItem(
+                                icon = if (pagerState.currentPage == index) item.selectedIcon else item.icon,
+                                label = item.label.takeIf { appearance.activeNavContent == NavContent.IconAndText },
+                                contentDescription = item.label,
+                            )
+                        },
+                        selectedIndex = pagerState.currentPage,
+                        onSelect = ::selectPage,
+                        backdrop = navBackdrop,
+                        modifier = Modifier
+                            .padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = os4BottomMargin),
+                    )
+                }
+                // OS4 without a usable shader must fall back to native MIUIX,
+                // not resurrect a previously saved OS3 floating-bar style.
+                (os4Glass && navBackdrop == null) || !appearance.navEnabled -> {
+                    NavigationBar(
+                        mode = if (os4Glass && appearance.activeNavContent == NavContent.IconOnly) {
+                            NavigationBarDisplayMode.IconOnly
+                        } else {
+                            NavigationBarDisplayMode.IconAndText
+                        },
+                    ) {
                         items.forEachIndexed { index, item ->
                             val selected = pagerState.currentPage == index
                             NavigationBarItem(
@@ -282,7 +332,7 @@ internal fun MainHub(
                     FloatingNavigationBar(
                         modifier = navigationBarModifier,
                         color =
-                            if (miuixBackdrop != null) {
+                            if (navBackdrop != null) {
                                 Color.Transparent
                             } else {
                                 MiuixTheme.colorScheme.surfaceContainer
@@ -364,7 +414,9 @@ internal fun MainHub(
             )
         }
 
-        OverlayDialog(
+        // Popups are hosted outside this page's backdrop recording.
+        CompositionLocalProvider(LocalGlassBackdrop provides if (os4) miuixBackdrop else null) {
+        UiOverlayDialog(
             title = stringResource(R.string.restart_scope),
             summary = stringResource(
                 if (availableTargets.isEmpty()) R.string.restart_scope_no_targets
@@ -438,7 +490,7 @@ internal fun MainHub(
                     Spacer(Modifier.height(12.dp))
                 }
                 if (availableTargets.isEmpty()) {
-                    TextButton(
+                    UiDialogButton(
                         text = stringResource(R.string.confirm),
                         modifier = Modifier.fillMaxWidth(),
                         onClick = { restartPickerOpen = false },
@@ -448,7 +500,7 @@ internal fun MainHub(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        TextButton(
+                        UiDialogButton(
                             text = stringResource(
                                 if (selectedTargets == availableTargets) {
                                     R.string.restart_scope_clear_all
@@ -463,12 +515,12 @@ internal fun MainHub(
                                     else availableTargets
                             },
                         )
-                        Spacer(Modifier.width(20.dp))
-                        TextButton(
+                        Spacer(Modifier.width(dialogActionGap()))
+                        UiDialogButton(
                             text = stringResource(R.string.restart),
                             modifier = Modifier.weight(1f),
                             enabled = selectedTargets.isNotEmpty(),
-                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                            role = GlassDialogButtonRole.Primary,
                             onClick = {
                                 queuedRestart = selectedTargets intersect availableTargets
                                 restartPickerOpen = false
@@ -479,25 +531,25 @@ internal fun MainHub(
             }
         }
 
-        OverlayDialog(
+        UiOverlayDialog(
             title = stringResource(R.string.home_scope_request_failed),
             summary = stringResource(R.string.home_scope_request_failed_summary),
             show = scopeRequestFailed,
             onDismissRequest = { scopeRequestFailed = false },
         ) {
-            TextButton(
+            UiDialogButton(
                 text = stringResource(R.string.confirm),
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColorsPrimary(),
+                role = GlassDialogButtonRole.Primary,
                 onClick = { scopeRequestFailed = false },
             )
         }
 
-        OverlayDialog(
+        UiOverlayDialog(
             title = stringResource(R.string.restart_scope_failed),
             summary = stringResource(
                 R.string.restart_scope_failed_summary,
-                failedTargets
+                (failedTargets ?: failedTargetsForExit)
                     .map {
                         when (it) {
                             RestartTarget.SYS_UI -> context.getString(R.string.restart_scope_sysui)
@@ -508,13 +560,15 @@ internal fun MainHub(
             ),
             show = restartState is ScopeRestart.State.Failed,
             onDismissRequest = ScopeRestart::clearFailure,
+            onDismissFinished = { failedTargetsForExit = emptySet() },
         ) {
-            TextButton(
+            UiDialogButton(
                 text = stringResource(R.string.confirm),
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColorsPrimary(),
+                role = GlassDialogButtonRole.Primary,
                 onClick = ScopeRestart::clearFailure,
             )
+        }
         }
     }
 }

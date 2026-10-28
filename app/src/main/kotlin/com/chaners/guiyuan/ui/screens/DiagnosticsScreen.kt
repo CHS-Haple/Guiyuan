@@ -9,6 +9,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
@@ -45,6 +48,8 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -53,6 +58,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.icons.Os4GlassShare
+import com.chaners.guiyuan.ui.icons.Os4GlassFilter
+import com.chaners.guiyuan.ui.icons.Os4GlassMore
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.DiagSettings
 import com.chaners.guiyuan.settings.DiagRepo
@@ -77,18 +87,22 @@ import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.IconButtonDefaults
+import top.yukonga.miuix.kmp.squircle.squircleSurface
+import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.basic.SnackbarHost
+import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
 import top.yukonga.miuix.kmp.nav.transition.NavRole
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -249,7 +263,8 @@ internal fun DiagnosticsScreen(
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
-        titlePadding = 0.dp,
+        titlePadding = if (LocalUiStyle.current == UiStyle.OS4) TopAppBarDefaults.TitlePadding else 0.dp,
+        glassActions = true,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
         navigationActions = {
             LogFilterMenu(
@@ -272,60 +287,56 @@ internal fun DiagnosticsScreen(
             )
         },
         actions = {
-            TooltipBox(text = shareTitle) {
-                IconButton(
-                    onClick = {
-                        withReport { report ->
-                            val prepared =
-                                DiagFiles.prepare(
-                                    context = context,
-                                    report = report,
-                                )
-                            if (prepared == null) {
-                                snackbarHostState.showSnackbar(shareFailMsg)
-                                return@withReport
-                            }
-                            val sendIntent =
-                                Intent(Intent.ACTION_SEND).apply {
-                                    type = DiagFiles.MIME_TYPE
-                                    putExtra(Intent.EXTRA_STREAM, prepared.uri)
-                                    clipData =
-                                        ClipData.newUri(
-                                            context.contentResolver,
-                                            shareTitle,
-                                            prepared.uri,
-                                        )
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-                            DiagFiles.logIntent(sendIntent, prepared.uri)
-                            val chooserIntent =
-                                Intent.createChooser(sendIntent, shareTitle).apply {
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-                            runCatching { context.startActivity(chooserIntent) }
-                                .onSuccess { DiagFiles.logChooser() }
-                                .onFailure { error ->
-                                    DiagFiles.logChooser(error)
-                                    DiagFiles.discard(context, prepared)
-                                    snackbarHostState.showSnackbar(shareFailMsg)
-                                }
+            DiagActionButton(
+                onClick = {
+                    exportOpen = true
+                    exportLauncher.launch(DiagFiles.fileName())
+                },
+                onLongClick = {
+                    withReport { report ->
+                        val prepared =
+                            DiagFiles.prepare(
+                                context = context,
+                                report = report,
+                            )
+                        if (prepared == null) {
+                            snackbarHostState.showSnackbar(shareFailMsg)
+                            return@withReport
                         }
-                    },
-                    enabled = reportEnabled,
-                ) {
-                    Icon(MiuixIcons.Share, contentDescription = shareTitle)
-                }
-            }
-            TooltipBox(text = exportTitle) {
-                IconButton(
-                    onClick = {
-                        exportOpen = true
-                        exportLauncher.launch(DiagFiles.fileName())
-                    },
-                    enabled = reportEnabled,
-                ) {
-                    Icon(MiuixIcons.Download, contentDescription = exportTitle)
-                }
+                        val sendIntent =
+                            Intent(Intent.ACTION_SEND).apply {
+                                type = DiagFiles.MIME_TYPE
+                                putExtra(Intent.EXTRA_STREAM, prepared.uri)
+                                clipData =
+                                    ClipData.newUri(
+                                        context.contentResolver,
+                                        shareTitle,
+                                        prepared.uri,
+                                    )
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                        DiagFiles.logIntent(sendIntent, prepared.uri)
+                        val chooserIntent =
+                            Intent.createChooser(sendIntent, shareTitle).apply {
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                        runCatching { context.startActivity(chooserIntent) }
+                            .onSuccess { DiagFiles.logChooser() }
+                            .onFailure { error ->
+                                DiagFiles.logChooser(error)
+                                DiagFiles.discard(context, prepared)
+                                snackbarHostState.showSnackbar(shareFailMsg)
+                            }
+                    }
+                },
+                longClickLabel = shareTitle,
+                enabled = reportEnabled,
+            ) {
+                Icon(
+                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassShare else MiuixIcons.Share,
+                    contentDescription = exportTitle,
+                    modifier = Modifier.size(24.dp),
+                )
             }
             DiagMenu(
                 title = menuTitle,
@@ -565,6 +576,45 @@ private val CategoryOptions =
     )
 
 @Composable
+private fun DiagActionButton(
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    longClickLabel: String,
+    enabled: Boolean,
+    content: @Composable () -> Unit,
+) {
+    if (LocalUiStyle.current == UiStyle.OS4) {
+        GlassIconButton(
+            onClick = onClick,
+            onLongClick = onLongClick,
+            onLongClickLabel = longClickLabel,
+            enabled = enabled,
+            content = content,
+        )
+    } else {
+        // MIUIX's IconButton is click-only; this retains its surface and one gesture owner.
+        Box(
+            modifier = Modifier
+                .defaultMinSize(
+                    minWidth = IconButtonDefaults.MinWidth,
+                    minHeight = IconButtonDefaults.MinHeight,
+                )
+                .squircleSurface(color = Color.Unspecified, cornerRadius = IconButtonDefaults.CornerRadius)
+                .combinedClickable(
+                    enabled = enabled,
+                    role = Role.Button,
+                    onLongClickLabel = longClickLabel,
+                    onLongClick = onLongClick,
+                    onClick = onClick,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
 private fun LogFilterMenu(
     title: String,
     levelMask: Int,
@@ -637,29 +687,35 @@ private fun LogFilterMenu(
             ),
         )
 
-    TooltipBox(text = title) {
-        WindowIconCascadingDropdownMenu(
-            entries = entries,
-            collapseOnSelection = false,
+    val icon: @Composable () -> Unit = {
+        BadgedBox(
+            badge = {
+                AnimatedVisibility(
+                    visible = filterActive,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                ) {
+                    Badge(containerColor = MiuixTheme.colorScheme.primary)
+                }
+            },
         ) {
-            BadgedBox(
-                badge = {
-                    AnimatedVisibility(
-                        visible = filterActive,
-                        enter = fadeIn(),
-                        exit = fadeOut(),
-                    ) {
-                        Badge(
-                            containerColor = MiuixTheme.colorScheme.primary,
-                        )
-                    }
-                },
-            ) {
-                Icon(
-                    MiuixIcons.Filter,
-                    contentDescription = title,
-                )
-            }
+            Icon(
+                imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassFilter else MiuixIcons.Filter,
+                contentDescription = title,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+    }
+
+    TooltipBox(text = title) {
+        if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
+            Os4CascadingMenu(entries = entries, collapseOnSelection = false, content = icon)
+        } else {
+            WindowIconCascadingDropdownMenu(
+                entries = entries,
+                collapseOnSelection = false,
+                content = icon,
+            )
         }
     }
 }
@@ -739,8 +795,22 @@ private fun DiagMenu(
         )
 
     TooltipBox(text = title) {
-        WindowIconCascadingDropdownMenu(entries = entries) {
-            Icon(MiuixIcons.More, contentDescription = title)
+        if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
+            Os4CascadingMenu(entries = entries) {
+                Icon(
+                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassMore else MiuixIcons.More,
+                    contentDescription = title,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        } else {
+            WindowIconCascadingDropdownMenu(entries = entries) {
+                Icon(
+                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassMore else MiuixIcons.More,
+                    contentDescription = title,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
         }
     }
 }

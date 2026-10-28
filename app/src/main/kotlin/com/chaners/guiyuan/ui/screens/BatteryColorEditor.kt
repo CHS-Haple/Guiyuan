@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
@@ -35,19 +37,19 @@ import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
 import com.chaners.guiyuan.settings.limitCustomSchemeName
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HsvHueSlider
 import top.yukonga.miuix.kmp.basic.HsvSaturationSlider
 import top.yukonga.miuix.kmp.basic.HsvValueSlider
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.chaners.guiyuan.ui.components.UiDialogButton
+import com.chaners.guiyuan.ui.components.dialogActionGap
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TextFieldDefaults
 import top.yukonga.miuix.kmp.color.api.toHsv
 import top.yukonga.miuix.kmp.color.space.Hsv
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 
@@ -149,7 +151,7 @@ internal fun BatteryCustomModeEditor(
                 .padding(bottom = 24.dp),
     ) {
         Card(modifier = Modifier.fillMaxWidth()) {
-            OverlayDropdownPreference(
+            UiDropdownPreference(
                 items = sourceLabels,
                 selectedIndex = selectedSourceIndex,
                 title = stringResource(R.string.battery_color_source),
@@ -403,18 +405,20 @@ internal fun BatteryCreateSchemeDialog(
     show: Boolean,
     nextId: Int?,
     onDismiss: () -> Unit,
+    onDismissFinished: () -> Unit,
     onCreate: (String) -> Unit,
 ) {
     val defaultName =
         nextId?.let {
             stringResource(R.string.battery_custom_scheme_default_name, it)
         }.orEmpty()
-    var name by remember(show, nextId) { mutableStateOf(defaultName) }
+    var name by remember(nextId) { mutableStateOf(defaultName) }
 
-    OverlayDialog(
+    UiOverlayDialog(
         title = stringResource(R.string.battery_custom_scheme_new),
         show = show && nextId != null,
         onDismissRequest = onDismiss,
+        onDismissFinished = onDismissFinished,
     ) {
         Column {
             TextField(
@@ -422,6 +426,11 @@ internal fun BatteryCreateSchemeDialog(
                 onValueChange = { name = limitCustomSchemeName(it) },
                 label = stringResource(R.string.battery_custom_scheme_name),
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
+                    val next = name.trim()
+                    if (show && next.isNotEmpty()) onCreate(next)
+                }),
             )
             Row(
                 modifier =
@@ -430,19 +439,19 @@ internal fun BatteryCreateSchemeDialog(
                         .padding(top = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                TextButton(
+                UiDialogButton(
                     text = stringResource(R.string.cancel),
                     modifier = Modifier.weight(1f),
                     onClick = onDismiss,
                 )
-                Spacer(Modifier.width(20.dp))
-                TextButton(
+                Spacer(Modifier.width(dialogActionGap()))
+                UiDialogButton(
                     text = stringResource(R.string.battery_custom_scheme_create),
                     modifier = Modifier.weight(1f),
-                    enabled = name.trim().isNotEmpty(),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    enabled = show && name.trim().isNotEmpty(),
+                    role = GlassDialogButtonRole.Primary,
                     onClick = {
-                        onCreate(name.trim())
+                        if (show) onCreate(name.trim())
                     },
                 )
             }
@@ -453,15 +462,19 @@ internal fun BatteryCreateSchemeDialog(
 @Composable
 internal fun BatteryRenameSchemeDialog(
     scheme: BatteryCustomColorScheme?,
+    originalName: String,
+    show: Boolean,
+    onDismissFinished: () -> Unit,
     onDismiss: () -> Unit,
     onRename: (Int, String) -> Unit,
 ) {
-    val currentName = scheme?.let { customSchemeName(it) }.orEmpty()
+    val currentName = originalName
     var name by remember(scheme?.id, currentName) { mutableStateOf(currentName) }
-    OverlayDialog(
+    UiOverlayDialog(
         title = stringResource(R.string.battery_custom_scheme_rename),
-        show = scheme != null,
+        show = show && scheme != null,
         onDismissRequest = onDismiss,
+        onDismissFinished = onDismissFinished,
     ) {
         if (scheme != null) {
             Column {
@@ -470,6 +483,11 @@ internal fun BatteryRenameSchemeDialog(
                     onValueChange = { name = limitCustomSchemeName(it) },
                     label = stringResource(R.string.battery_custom_scheme_name),
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        val next = name.trim()
+                        if (show && next.isNotEmpty() && next != currentName) onRename(scheme.id, next)
+                    }),
                 )
                 Row(
                     modifier =
@@ -478,19 +496,19 @@ internal fun BatteryRenameSchemeDialog(
                             .padding(top = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    TextButton(
+                    UiDialogButton(
                         text = stringResource(R.string.cancel),
                         modifier = Modifier.weight(1f),
                         onClick = onDismiss,
                     )
-                    Spacer(Modifier.width(20.dp))
-                    TextButton(
+                    Spacer(Modifier.width(dialogActionGap()))
+                    UiDialogButton(
                         text = stringResource(R.string.confirm),
                         modifier = Modifier.weight(1f),
                         enabled =
-                            name.trim().isNotEmpty() &&
+                            show && name.trim().isNotEmpty() &&
                                 name.trim() != currentName,
-                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        role = GlassDialogButtonRole.Primary,
                         onClick = {
                             onRename(scheme.id, name.trim())
                         },

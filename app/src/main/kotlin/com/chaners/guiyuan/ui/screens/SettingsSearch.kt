@@ -7,12 +7,15 @@ import android.icu.text.Transliterator
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.chaners.guiyuan.R
 import java.util.Locale
 
@@ -126,47 +129,41 @@ internal class PageSearch(private val context: Context) {
 
     val filtering get() = isSearchFiltering(active, query)
 
-    private val romanizer by lazy(LazyThreadSafetyMode.NONE) {
-        runCatching { Transliterator.getInstance("Han-Latin; Latin-ASCII") }.getOrNull()
-    }
-    // Each title ID indexes every supported locale without changing the displayed language.
-    private val localizedContexts by lazy(LazyThreadSafetyMode.NONE) {
-        buildList {
-            add(context)
-            val supported = runCatching { LocaleConfig(context).supportedLocales }.getOrNull()
-            if (supported != null) {
-                for (i in 0 until supported.size()) {
-                    val localized = runCatching {
-                        val config = Configuration(context.resources.configuration)
-                        config.setLocale(supported[i])
-                        context.createConfigurationContext(config)
-                    }.getOrNull()
-                    if (localized != null) add(localized)
-                }
-            }
-        }
-    }
     private data class LocalizedTerms(
         val current: SearchTerm,
         val other: List<SearchTerm>,
     )
 
-    private val cache = mutableMapOf<Int, LocalizedTerms>()
-    private val aliasCache = mutableMapOf<Int, List<SearchTerm>>()
+    private data class Index(
+        val titles: Map<Int, LocalizedTerms>,
+        val aliases: Map<Int, List<SearchTerm>>,
+    )
+
+    private var index by mutableStateOf<Index?>(null)
+
+    // ICU and locale-specific resources are resolved once, before keystrokes, off the UI thread.
+    suspend fun prepare() {
+        if (index != null) return
+        val built = withContext(Dispatchers.Default) { buildIndex() }
+        index = built
+    }
 
     private val matchSet by derivedStateOf {
-        if (filtering) {
-            SearchMatches(
-                FeatureSearchIds.all, ::currentMatches, ::aliasMatches,
-                ::translatedMatches, ::translatedInitialMatches,
-            )
-        } else {
+        if (!filtering) {
             null
+        } else {
+            val terms = index
+            SearchMatches(
+                FeatureSearchIds.all,
+                { id -> terms?.titles?.get(id)?.current?.matches(query) ?: quickMatch(id) },
+                { id -> terms?.aliases?.get(id)?.any { it.matches(query) } ?: quickAlias(id) },
+                { id -> terms?.titles?.get(id)?.other?.any { it.matches(query, includeInitials = false) } == true },
+                { id -> terms?.titles?.get(id)?.other?.any { it.matchesInitials(query) } == true },
+            )
         }
     }
 
     fun open() { active = true }
-
     fun close() {
         active = false
         query = ""
@@ -180,35 +177,53 @@ internal class PageSearch(private val context: Context) {
     fun any(vararg ids: Int): Boolean =
         !filtering || ids.any(::matches)
 
-    private fun currentMatches(@StringRes id: Int): Boolean =
-        terms(id).current.matches(query)
+    // The index may still be preparing when the user types immediately after opening the page.
+    // Use only cheap current-language and curated-name checks until the complete index arrives.
+    private fun quickMatch(@StringRes id: Int): Boolean =
+        fold(context.getString(id)).contains(fold(query))
 
-    private fun aliasMatches(@StringRes id: Int): Boolean =
-        aliasCache.getOrPut(id) { searchAliases(id).map { makeTerm(it) } }
-            .any { it.matches(query) }
+    private fun quickAlias(@StringRes id: Int): Boolean =
+        searchAliases(id).any { fold(it).contains(fold(query)) }
 
-    private fun translatedMatches(@StringRes id: Int): Boolean =
-        terms(id).other.any { it.matches(query, includeInitials = false) }
+    private fun fold(value: String): String =
+        value.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
 
-    private fun translatedInitialMatches(@StringRes id: Int): Boolean =
-        terms(id).other.any { it.matchesInitials(query) }
-
-    private fun terms(@StringRes id: Int): LocalizedTerms =
-        cache.getOrPut(id) {
-            val names = localizedContexts.map { it.getString(id) }.distinct()
-            LocalizedTerms(
-                makeTerm(names.first()),
-                names.drop(1).map { makeTerm(it, foreign = true) },
-            )
+    private fun buildIndex(): Index {
+        val romanizer = runCatching {
+            Transliterator.getInstance("Han-Latin; Latin-ASCII")
+        }.getOrNull()
+        val contexts = buildList {
+            add(context)
+            val supported = runCatching { LocaleConfig(context).supportedLocales }.getOrNull()
+            if (supported != null) {
+                for (i in 0 until supported.size()) {
+                    val localized = runCatching {
+                        val config = Configuration(context.resources.configuration)
+                        config.setLocale(supported[i])
+                        context.createConfigurationContext(config)
+                    }.getOrNull()
+                    if (localized != null) add(localized)
+                }
+            }
         }
-
-    private fun makeTerm(text: String, foreign: Boolean = false): SearchTerm =
-        SearchTerm(
+        fun term(text: String, foreign: Boolean = false) = SearchTerm(
             text,
             runCatching { romanizer?.transliterate(text) }.getOrNull() ?: text,
             foreign,
         )
-
+        return Index(
+            titles = FeatureSearchIds.all.associateWith { id ->
+                val names = contexts.map { it.getString(id) }.distinct()
+                LocalizedTerms(
+                    current = term(names.first()),
+                    other = names.drop(1).map { term(it, foreign = true) },
+                )
+            },
+            aliases = FeatureSearchIds.all.associateWith { id ->
+                searchAliases(id).map { term(it) }
+            },
+        )
+    }
 }
 
 // Curated task vocabulary has lower recall than free-text descriptions but avoids
@@ -255,5 +270,7 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
 internal fun rememberPageSearch(): PageSearch {
     val context = LocalContext.current
     val config = LocalConfiguration.current
-    return remember(context, config) { PageSearch(context) }
+    val search = remember(context, config) { PageSearch(context) }
+    LaunchedEffect(search) { search.prepare() }
+    return search
 }

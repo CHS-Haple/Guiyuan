@@ -16,6 +16,7 @@ Load the rest only when the task needs it:
 - [reference/lsposed-7927-hot-reload.md](reference/lsposed-7927-hot-reload.md) — binary-verified LSPosed generation handoff and lifecycle limits.
 - [reference/lsposed-7930-compatibility.md](reference/lsposed-7930-compatibility.md) — bounded 7930 device Hot Reload evidence, archive integrity and remaining compatibility gates.
 - [CHANGELOG.md](../CHANGELOG.md) — public release-level changes.
+- [OS4 experimental UI audit](../third_party/miuix-glass/UI_AUDIT.md) — Draft PR #861's full source-backed OS4 conformance matrix and unverified visual gates; **not** accepted dev state.
 
 ## Authority
 

@@ -136,6 +136,7 @@
     <string name="floating_navigation_style_standard">Standard</string>
     <string name="floating_navigation_style_blur">Blur</string>
     <string name="floating_navigation_style_glass">Glass</string>
+    <string name="floating_navigation_style_soft_glass">Soft Glass</string>
     <string name="floating_navigation_style_liquid">Liquid Glass</string>
     <string name="floating_navigation_liquid_mode">Liquid glass finish</string>
     <string name="floating_navigation_liquid_mode_summary">Choose how much the glass blurs the background</string>
@@ -472,5 +473,10 @@
     <string name="config_restore_invalid">Invalid or incompatible backup file</string>
     <string name="config_restore_confirm">Replace current feature settings with this backup?</string>
     <string name="feature_search">Search features</string>
+    <string name="feature_search_clear">Clear search text</string>
     <string name="feature_search_empty">No matching features</string>
+    <string name="ui_style_title">MIUIX interface standard</string>
+    <string name="ui_style_summary">Switch the app interface and interaction style</string>
+    <string name="ui_style_os3">OS3</string>
+    <string name="ui_style_os4">OS4 (Experimental)</string>
 </resources>

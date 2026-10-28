@@ -23,6 +23,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ### Changed
 - Avoided scanning the full Android ICU transliterator registry before first-use search; retained the existing localized and pinyin matching fallback.
+- Added an experimental HyperOS 4 visual mode with upstream-aligned glass navigation, search, dialogs and sheets in the matched-source OS4 Canary; ordinary published-MIUIX builds retain native dialog/sheet fallback. HyperOS 3 remains available.
 - Removed obsolete native icon-observation paths and tightened font-source verification, keeping the native Typeface when its variable-weight source is unverified. Preserved native Control Center endpoints.
 - Made feature search and live-preview navigation follow existing MIUIX focus, Back and scrolling behavior.
 

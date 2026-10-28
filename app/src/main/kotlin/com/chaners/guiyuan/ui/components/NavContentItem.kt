@@ -32,6 +32,7 @@ internal fun NavContentItem(
     icon: ImageVector,
     label: String,
     modifier: Modifier = Modifier,
+    interactive: Boolean = true,
 ) {
     if (content == NavContent.IconOnly) {
         FloatingNavigationBarItem(
@@ -40,6 +41,7 @@ internal fun NavContentItem(
             icon = icon,
             label = label,
             modifier = modifier,
+            enabled = interactive,
         )
         return
     }
@@ -61,6 +63,7 @@ internal fun NavContentItem(
             modifier.selectable(
                 selected = selected,
                 onClick = onClick,
+                enabled = interactive,
                 role = Role.Tab,
                 interactionSource = interactionSource,
                 indication = null,

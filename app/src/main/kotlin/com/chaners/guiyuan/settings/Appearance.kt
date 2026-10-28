@@ -3,6 +3,7 @@ package com.chaners.guiyuan.settings
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
@@ -13,6 +14,7 @@ import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
@@ -51,6 +53,10 @@ internal fun decodePalette(value: String?): ThemePaletteStyle =
 internal fun compatiblePalette(spec: ThemeColorSpec?, palette: ThemePaletteStyle): ThemePaletteStyle =
     if (spec != null && palette !in palettesFor(spec)) ThemePaletteStyle.TonalSpot else palette
 
+internal enum class UiStyle { OS3, OS4 }
+
+internal val uiStyleMenuOrder = listOf(UiStyle.OS4, UiStyle.OS3)
+
 internal enum class NavStyle {
     Standard,
     Blur,
@@ -71,12 +77,13 @@ internal enum class LiquidMode(val stored: String) {
 
 internal data class Appearance(
     val theme: ThemeMode = ThemeMode.System,
+    val uiStyle: UiStyle = UiStyle.OS4,
     val dynamicColor: Boolean = false,
     val colorSpec: ThemeColorSpec? = null,
     val paletteStyle: ThemePaletteStyle = ThemePaletteStyle.TonalSpot,
     val navEnabled: Boolean = true,
     val navStyle: NavStyle = NavStyle.Glass,
-    val navContent: NavContent = NavContent.IconOnly,
+    val navContent: NavContent = NavContent.IconAndText,
     val liquidContent: NavContent = NavContent.IconAndText,
     val liquidMode: LiquidMode = LiquidMode.Balanced,
     val swipeBack: Boolean = true,
@@ -147,10 +154,24 @@ private val Context.appearanceStore: DataStore<Preferences> by preferencesDataSt
     name = "appearance",
 )
 
+private val uiStyleKey = stringPreferencesKey("ui_style")
+private val navContentKey = stringPreferencesKey("floating_navigation_content")
+private val os4UpgradeKey = booleanPreferencesKey("ui_style_os4_upgrade_done")
+
+internal fun migrateOs4Appearance(prefs: MutablePreferences) {
+    if (prefs[os4UpgradeKey] == true) return
+
+    val freshInstall = prefs.asMap().isEmpty()
+    prefs[uiStyleKey] = UiStyle.OS4.name
+    if (freshInstall) prefs[navContentKey] = NavContent.IconAndText.name
+    prefs[os4UpgradeKey] = true
+}
+
 internal class AppearanceRepo(context: Context) {
     private val store = context.applicationContext.appearanceStore
 
     val settings: Flow<Appearance> = store.data
+        .onStart { store.edit { prefs -> migrateOs4Appearance(prefs) } }
         .catch { error ->
             if (error is IOException) {
                 emit(emptyPreferences())
@@ -174,6 +195,7 @@ internal class AppearanceRepo(context: Context) {
             val colorSpec = decodeColorSpec(prefs[colorSpecKey])
             Appearance(
                 theme = theme.mode,
+                uiStyle = UiStyle.entries.firstOrNull { it.name == prefs[uiStyleKey] } ?: UiStyle.OS3,
                 dynamicColor = theme.dynamicColor,
                 colorSpec = colorSpec,
                 paletteStyle = compatiblePalette(colorSpec, decodePalette(prefs[paletteStyleKey])),
@@ -191,6 +213,13 @@ internal class AppearanceRepo(context: Context) {
                 uiScalePercent = uiScalePercent(prefs[uiScaleKey]),
             )
         }
+
+    suspend fun setUiStyle(style: UiStyle) {
+        store.edit { prefs ->
+            prefs[uiStyleKey] = style.name
+            prefs[os4UpgradeKey] = true
+        }
+    }
 
     suspend fun setTheme(mode: ThemeMode) {
         store.edit { prefs ->
@@ -284,7 +313,6 @@ internal class AppearanceRepo(context: Context) {
         val legacyGlassKey = booleanPreferencesKey("glass_bottom_bar_enabled")
         val navEnabledKey = booleanPreferencesKey("floating_navigation_bar_enabled")
         val navStyleKey = stringPreferencesKey("floating_navigation_style")
-        val navContentKey = stringPreferencesKey("floating_navigation_content")
         val liquidContentKey = stringPreferencesKey("floating_navigation_liquid_content")
         val liquidModeKey = stringPreferencesKey("floating_navigation_liquid_mode")
         val legacyNavBlurKey = booleanPreferencesKey("floating_navigation_blur_enabled")

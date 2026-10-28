@@ -7,6 +7,7 @@ import android.graphics.Paint
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.drawWithContent
@@ -40,10 +42,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.icons.Os4GlassBack
+import com.chaners.guiyuan.ui.LocalGlassBackdrop
+import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
+import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -171,6 +179,7 @@ internal fun SettingsPage(
     snackbarHost: @Composable () -> Unit = {},
     navigationActions: @Composable RowScope.() -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
+    glassActions: Boolean = false,
     titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     titleAlpha: Float = 1f,
     listState: LazyListState? = null,
@@ -183,37 +192,70 @@ internal fun SettingsPage(
     val scrollBehavior = MiuixScrollBehavior()
     val resolvedListState = listState ?: rememberLazyListState()
     val topBarBackdrop = rememberTopBarBackdrop()
+    val os4 = LocalUiStyle.current == UiStyle.OS4
+    val navigationIcon: @Composable () -> Unit = {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = if (os4) Arrangement.spacedBy(8.dp) else Arrangement.Start,
+        ) {
+            TooltipBox(text = stringResource(R.string.back)) {
+                if (os4) {
+                    GlassIconButton(onClick = onBack) {
+                        Icon(Os4GlassBack, contentDescription = stringResource(R.string.back))
+                    }
+                } else {
+                    IconButton(onClick = onBack) {
+                        Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
+                    }
+                }
+            }
+            navigationActions()
+        }
+    }
 
+    CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
     Scaffold(
         snackbarHost = snackbarHost,
         topBar = {
-            MiuixBlurredTopBar(
-                backdrop = topBarBackdrop,
-                scrollBehavior = scrollBehavior,
-            ) { barColor ->
-                SmallTopAppBar(
+            if (os4) {
+                GlassTopAppBar(
+                    isContentScrolled = resolvedListState.canScrollBackward,
                     title = title,
-                    color = barColor,
-                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = titleAlpha),
+                    backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
+                    titleAlpha = { titleAlpha },
                     titlePadding = titlePadding,
-                    navigationIcon = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            TooltipBox(text = stringResource(R.string.back)) {
-                                IconButton(onClick = onBack) {
-                                    Icon(
-                                        MiuixIcons.Back,
-                                        contentDescription = stringResource(R.string.back),
-                                    )
-                                }
+                    navigationIcon = navigationIcon,
+                    actions = {
+                        if (glassActions) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                actions()
                             }
-                            navigationActions()
+                        } else {
+                            actions()
                         }
                     },
-                    actions = actions,
+                    unclippedNavigationIcon = true,
+                    unclippedActions = glassActions,
                 )
+            } else {
+                MiuixBlurredTopBar(
+                    backdrop = topBarBackdrop,
+                    scrollBehavior = scrollBehavior,
+                ) { barColor ->
+                    SmallTopAppBar(
+                        title = title,
+                        color = barColor,
+                        titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = titleAlpha),
+                        scrollBehavior = scrollBehavior,
+                        titlePadding = titlePadding,
+                        navigationIcon = navigationIcon,
+                        actions = actions,
+                    )
+                }
             }
         },
     ) { paddingValues ->
@@ -265,6 +307,7 @@ internal fun SettingsPage(
         }
 
         overlay()
+    }
     }
 }
 

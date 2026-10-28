@@ -3,11 +3,14 @@ package com.chaners.guiyuan.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Icon
@@ -22,9 +25,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,6 +47,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -48,6 +60,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.LocalGlassBackdrop
+import com.chaners.guiyuan.ui.icons.Os4GlassSearch
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.settings.SettingsEntry
 import com.chaners.guiyuan.settings.SettingsEntryCfg
@@ -115,17 +131,21 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.chaners.guiyuan.ui.components.UiDialogButton
+import com.chaners.guiyuan.ui.components.dialogActionGap
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
+import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import top.yukonga.miuix.kmp.glass.GlassMotion
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
+import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -264,27 +284,29 @@ internal fun FeaturesScreen(
         bottomContentPadding = bottomContentPadding,
         search = search,
         overlay = {
-            pendingImport?.let { selected ->
-                OverlayDialog(
-                    title = stringResource(R.string.config_restore_title),
-                    summary = stringResource(R.string.config_restore_confirm),
-                    show = true,
-                    onDismissRequest = { if (!ioBusy) pendingImport = null },
-                ) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        TextButton(
-                            text = stringResource(R.string.cancel),
-                            modifier = Modifier.weight(1f),
-                            enabled = !ioBusy,
-                            onClick = { pendingImport = null },
-                        )
-                        Spacer(Modifier.width(20.dp))
-                        TextButton(
-                            text = stringResource(R.string.restore),
-                            modifier = Modifier.weight(1f),
-                            enabled = !ioBusy,
-                            colors = ButtonDefaults.textButtonColorsPrimary(),
-                            onClick = {
+            val selectedImport = pendingImport
+            UiOverlayDialog(
+                title = stringResource(R.string.config_restore_title),
+                summary = stringResource(R.string.config_restore_confirm),
+                show = selectedImport != null,
+                onDismissRequest = { if (!ioBusy) pendingImport = null },
+            ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    UiDialogButton(
+                        text = stringResource(R.string.cancel),
+                        modifier = Modifier.weight(1f),
+                        enabled = !ioBusy,
+                        onClick = { pendingImport = null },
+                    )
+                    Spacer(Modifier.width(dialogActionGap()))
+                    UiDialogButton(
+                        text = stringResource(R.string.restore),
+                        modifier = Modifier.weight(1f),
+                        enabled = !ioBusy,
+                        role = GlassDialogButtonRole.Primary,
+                        onClick = {
+                            val selected = selectedImport
+                            if (selected != null && !ioBusy) {
                                 ioBusy = true
                                 scope.launch {
                                     val result = runCatching { backupFiles.restore(selected) }
@@ -295,9 +317,9 @@ internal fun FeaturesScreen(
                                         else restoreError,
                                     )
                                 }
-                            },
-                        )
-                    }
+                            }
+                        },
+                    )
                 }
             }
             BatteryColorBottomSheet(
@@ -342,7 +364,7 @@ internal fun FeaturesScreen(
                     }
                 },
             )
-            OverlayDialog(
+            UiOverlayDialog(
                 title = stringResource(R.string.restore_feature_defaults),
                 summary = stringResource(R.string.restore_feature_defaults_dialog_summary),
                 show = showResetDialog,
@@ -352,16 +374,16 @@ internal fun FeaturesScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    TextButton(
+                    UiDialogButton(
                         text = stringResource(R.string.cancel),
                         modifier = Modifier.weight(1f),
                         onClick = { showResetDialog = false },
                     )
-                    Spacer(Modifier.width(20.dp))
-                    TextButton(
+                    Spacer(Modifier.width(dialogActionGap()))
+                    UiDialogButton(
                         text = stringResource(R.string.restore),
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        role = GlassDialogButtonRole.Primary,
                         onClick = {
                             showResetDialog = false
                             featureRepo.reset()
@@ -423,7 +445,7 @@ internal fun FeaturesScreen(
                         search.any(R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset)) ||
                     (searching && visual.layout == ContentLayout.BATTERY_CENTER &&
                         search.matches(R.string.top_info_vertical_offset))) {
-                    OverlayDropdownPreference(
+                    UiDropdownPreference(
                         items = layoutOptions,
                         selectedIndex = visual.layout.ordinal,
                         title = stringResource(R.string.content_layout_title),
@@ -457,7 +479,7 @@ internal fun FeaturesScreen(
                 }
                 AnimatedPreferenceGroup(visible = visual.dualSignal) {
                     if (search.matches(R.string.dual_dot_style_title)) {
-                        OverlayDropdownPreference(
+                        UiDropdownPreference(
                             title = stringResource(R.string.dual_dot_style_title),
                             items = dualDotStyles,
                             selectedIndex = visual.dualDotStyle.ordinal,
@@ -1068,7 +1090,7 @@ internal fun SettingsHubScreen(
         title = stringResource(R.string.settings_title),
         bottomContentPadding = bottomContentPadding,
         overlay = {
-            OverlayDialog(
+            UiOverlayDialog(
                 title = stringResource(R.string.settings_entry_scope_title),
                 summary = stringResource(R.string.settings_entry_scope_summary),
                 show = pending != null,
@@ -1078,16 +1100,16 @@ internal fun SettingsHubScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    TextButton(
+                    UiDialogButton(
                         text = stringResource(R.string.cancel),
                         modifier = Modifier.weight(1f),
                         onClick = { pending = null },
                     )
-                    Spacer(Modifier.width(20.dp))
-                    TextButton(
+                    Spacer(Modifier.width(dialogActionGap()))
+                    UiDialogButton(
                         text = stringResource(R.string.confirm),
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        role = GlassDialogButtonRole.Primary,
                         enabled = !runtimeBusy && scopeApplying == null,
                         onClick = {
                             val target = pending
@@ -1115,13 +1137,13 @@ internal fun SettingsHubScreen(
                     )
                 }
             }
-            OverlayDialog(
+            UiOverlayDialog(
                 title = stringResource(R.string.settings_entry_failed_title),
                 summary = stringResource(R.string.settings_entry_failed_summary),
                 show = requestFailed,
                 onDismissRequest = { requestFailed = false },
             ) {
-                TextButton(
+                UiDialogButton(
                     text = stringResource(R.string.confirm),
                     modifier = Modifier.fillMaxWidth(),
                     onClick = { requestFailed = false },
@@ -1153,7 +1175,7 @@ internal fun SettingsHubScreen(
             )
         }
         Section(R.string.section_app) {
-            OverlayDropdownPreference(
+            UiDropdownPreference(
                 items = languageOptions,
                 selectedIndex = lang.ordinal,
                 title = stringResource(R.string.language_title),
@@ -1179,7 +1201,7 @@ internal fun SettingsHubScreen(
                 checked = iconHidden,
                 onCheckedChange = onIconHiddenChange,
             )
-            OverlayDropdownPreference(
+            UiDropdownPreference(
                 items = entryOptions,
                 selectedIndex = entry.ordinal,
                 title = stringResource(R.string.settings_entry_title),
@@ -1208,7 +1230,7 @@ internal fun SettingsHubScreen(
                 },
             )
             if (entry != SettingsEntry.Disabled) {
-                OverlayDropdownPreference(
+                UiDropdownPreference(
                     items = iconOptions,
                     selectedIndex = entryIcon.ordinal,
                     title = stringResource(R.string.settings_entry_icon_title),
@@ -1289,76 +1311,174 @@ private fun HubPage(
     val filtering = search?.filtering == true
     val listState = if (filtering) resultsState else browsingState
     val canScroll = listState.canScrollBackward || listState.canScrollForward
-    val scrollBehavior = MiuixScrollBehavior()
+    val os4 = LocalUiStyle.current == UiStyle.OS4
+    val browsingScroll = MiuixScrollBehavior()
+    val resultsScroll = if (os4) MiuixScrollBehavior() else browsingScroll
+    val scrollBehavior = if (filtering) resultsScroll else browsingScroll
     val topBarBackdrop = rememberTopBarBackdrop()
     val keyboardController = LocalSoftwareKeyboardController.current
     LaunchedEffect(filtering, search?.query) {
-        if (filtering) resultsState.scrollToItem(0)
+        if (filtering) {
+            if (os4) resultsState.requestScrollToItem(0)
+            else resultsState.scrollToItem(0)
+        }
     }
-
+    val searchExpanded = os4 && search?.active == true
+    val searchMotion = rememberOs4SearchMotion(searchExpanded)
+    var revealTitleOnExit by remember { mutableStateOf(false) }
+    val titleReveal = rememberOs4TitleReveal(
+        expanded = searchExpanded,
+        exitNeedsReveal = revealTitleOnExit,
+        motion = searchMotion,
+        collapsed = browsingScroll.state.collapsedFraction >= 1f,
+    )
+    val barAlpha = rememberOs4BarAlpha(searchExpanded)
+    val os3SearchActionAlpha by animateFloatAsState(
+        targetValue = if (!os4 && search?.active == true) 0f else 1f,
+        animationSpec = tween(150),
+        label = "os3SearchAction",
+    )
+    // Only actual content overlap changes the surface; search geometry has its own clock.
+    val searchShadow = GlassTopAppBarDefaults.collapseRamp(scrollBehavior)
+    val searchMaterial = animateFloatAsState(
+        targetValue = if (os4 && listState.canScrollBackward) 1f else 0f,
+        animationSpec = GlassMotion.topBarButtonFloat(),
+        label = "os4SearchMaterial",
+    )
+    val searchAction: @Composable RowScope.() -> Unit = {
+        if (search != null) {
+            val label = stringResource(R.string.feature_search)
+            val ready = !search.active && (!os4 || !searchMotion.mounted)
+            TooltipBox(text = label, enabled = ready) {
+                Box(
+                    Modifier
+                        .then(if (ready) Modifier else Modifier.clearAndSetSemantics {})
+                        .then(
+                            if (os4) Modifier
+                            else Modifier.graphicsLayer { alpha = os3SearchActionAlpha }
+                        ),
+                ) {
+                    if (os4) {
+                        GlassIconButton(onClick = { if (ready) { revealTitleOnExit = false; search.open() } }) {
+                            Icon(
+                                Os4GlassSearch,
+                                contentDescription = label,
+                                modifier = Modifier.graphicsLayer { alpha = barAlpha.value },
+                            )
+                        }
+                    } else IconButton(
+                        onClick = search::open,
+                        enabled = ready,
+                    ) {
+                        Icon(MiuixIcons.Search, contentDescription = label)
+                    }
+                }
+            }
+        }
+    }
+    val searchContent: @Composable () -> Unit = {
+        if (search != null) {
+            if (os4) {
+                if (searchMotion.mounted) {
+                    Os4SearchMode(
+                        motion = searchMotion,
+                        expanded = search.active,
+                        query = search.query,
+                        backdrop = topBarBackdrop,
+                        materialProgress = searchMaterial,
+                        shadowProgress = searchShadow,
+                        onQueryChange = search::update,
+                        onSearch = { keyboardController?.hide() },
+                        onClose = {
+                            // close() clears the query immediately; record which title was covered.
+                            revealTitleOnExit = search.filtering || browsingScroll.state.collapsedFraction >= 1f
+                            search.close()
+                        },
+                    )
+                }
+            } else {
+                AnimatedVisibility(
+                    visible = search.active,
+                    modifier = Modifier.fillMaxWidth(),
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut(),
+                ) {
+                    SearchBar(
+                        modifier = Modifier.fillMaxWidth(),
+                        inputField = {
+                            InputField(
+                                query = search.query,
+                                onQueryChange = search::update,
+                                onSearch = { keyboardController?.hide() },
+                                expanded = search.active,
+                                onExpandedChange = { if (!it) search.close() },
+                                label = stringResource(R.string.feature_search),
+                            )
+                        },
+                        expanded = search.active,
+                        onExpandedChange = { if (!it) search.close() },
+                        outsideEndAction = {
+                            Text(
+                                modifier = Modifier
+                                    .padding(start = 4.dp, end = 16.dp)
+                                    .clickable(
+                                        interactionSource = null,
+                                        indication = null,
+                                        onClick = search::close,
+                                    ),
+                                text = stringResource(R.string.cancel),
+                                fontWeight = FontWeight.Bold,
+                                color = MiuixTheme.colorScheme.primary,
+                            )
+                        },
+                        content = {},
+                    )
+                }
+            }
+        }
+    }
+    CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
     Scaffold(
         topBar = {
-            MiuixBlurredTopBar(
-                backdrop = topBarBackdrop,
-                scrollBehavior = scrollBehavior,
-            ) { barColor ->
-                if (search == null) {
-                    TopAppBar(title = title, color = barColor, scrollBehavior = scrollBehavior)
-                } else {
+            if (os4) {
+                Box(Modifier.fillMaxWidth()) {
+                    GlassTopAppBar(
+                        title = if (searchMotion.mounted && searchExpanded) "" else title,
+                        titleAlpha = { titleReveal.value },
+                        largeTitle = title,
+                        compact = filtering,
+                        alpha = barAlpha.value,
+                        isContentScrolled = listState.canScrollBackward,
+                        backdrop = topBarBackdrop,
+                        scrollBehavior = scrollBehavior,
+                        actions = searchAction,
+                        unclippedActions = search != null,
+                    )
+                    if (search != null) {
+                        // An overlaid search row keeps the bar's measured height stable.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
+                                .windowInsetsPadding(WindowInsets.statusBars)
+                                .padding(horizontal = GlassTopAppBarDefaults.HorizontalPadding)
+                                .padding(top = 4.dp),
+                        ) {
+                            searchContent()
+                        }
+                    }
+                }
+            } else {
+                MiuixBlurredTopBar(
+                    backdrop = topBarBackdrop,
+                    scrollBehavior = scrollBehavior,
+                ) { barColor ->
                     TopAppBar(
                         title = title,
                         color = barColor,
                         scrollBehavior = scrollBehavior,
-                        actions = {
-                            if (!search.active) {
-                                val label = stringResource(R.string.feature_search)
-                                TooltipBox(text = label) {
-                                    IconButton(onClick = search::open) {
-                                        Icon(MiuixIcons.Search, contentDescription = label)
-                                    }
-                                }
-                            }
-                        },
-                        bottomContent = {
-                            AnimatedVisibility(
-                                visible = search.active,
-                                modifier = Modifier.fillMaxWidth(),
-                                enter = expandVertically() + fadeIn(),
-                                exit = shrinkVertically() + fadeOut(),
-                            ) {
-                                SearchBar(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    inputField = {
-                                        InputField(
-                                            query = search.query,
-                                            onQueryChange = search::update,
-                                            onSearch = { keyboardController?.hide() },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            expanded = search.active,
-                                            onExpandedChange = { if (!it) search.close() },
-                                            label = stringResource(R.string.feature_search),
-                                        )
-                                    },
-                                    expanded = search.active,
-                                    onExpandedChange = { if (!it) search.close() },
-                                    outsideEndAction = {
-                                        Text(
-                                            modifier = Modifier
-                                                .padding(start = 4.dp, end = 16.dp)
-                                                .clickable(
-                                                    interactionSource = null,
-                                                    indication = null,
-                                                    onClick = search::close,
-                                                ),
-                                            text = stringResource(R.string.cancel),
-                                            fontWeight = FontWeight.Bold,
-                                            color = MiuixTheme.colorScheme.primary,
-                                        )
-                                    },
-                                    content = {},
-                                )
-                            }
-                        },
+                        actions = searchAction,
+                        bottomContent = searchContent,
                     )
                 }
             }
@@ -1387,6 +1507,7 @@ private fun HubPage(
         }
 
         overlay()
+    }
     }
 }
 

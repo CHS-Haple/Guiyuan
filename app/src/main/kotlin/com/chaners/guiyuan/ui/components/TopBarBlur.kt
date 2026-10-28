@@ -3,9 +3,11 @@ package com.chaners.guiyuan.ui.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
@@ -38,6 +40,7 @@ internal fun rememberTopBarBackdrop(): LayerBackdrop? {
 internal fun MiuixBlurredTopBar(
     backdrop: LayerBackdrop?,
     scrollBehavior: ScrollBehavior,
+    fadeExtension: Dp = 0.dp,
     content: @Composable (Color) -> Unit,
 ) {
     val blurActive = backdrop != null
@@ -59,6 +62,16 @@ internal fun MiuixBlurredTopBar(
                 modifier =
                     Modifier
                         .matchParentSize()
+                        .layout { measurable, constraints ->
+                            // Draw beyond the native bar without changing Scaffold's content inset.
+                            val blurHeight = constraints.maxHeight + fadeExtension.roundToPx()
+                            val layer = measurable.measure(
+                                constraints.copy(minHeight = blurHeight, maxHeight = blurHeight),
+                            )
+                            layout(constraints.maxWidth, constraints.maxHeight) {
+                                layer.placeRelative(0, 0)
+                            }
+                        }
                         .graphicsLayer {
                             alpha =
                                 (-scrollBehavior.state.contentOffset / 48.dp.toPx())
