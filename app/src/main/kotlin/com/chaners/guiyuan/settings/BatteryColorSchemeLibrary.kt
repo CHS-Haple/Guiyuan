@@ -20,8 +20,8 @@ internal fun isBatterySchemeStorageKey(key: String): Boolean =
     key.startsWith(BATTERY_COLOR_SCHEME_PREFIX)
 private const val BATTERY_COLOR_SCHEME_SCHEMA_KEY = BATTERY_COLOR_SCHEME_PREFIX + "schema"
 private const val BATTERY_COLOR_SCHEME_SCHEMA_CURRENT = 1
-private const val BATTERY_COLOR_SCHEME_ACTIVE_KEY = BATTERY_COLOR_SCHEME_PREFIX + "active"
-private const val BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY = BATTERY_COLOR_SCHEME_PREFIX + "dual_active"
+internal const val BATTERY_COLOR_SCHEME_ACTIVE_KEY = BATTERY_COLOR_SCHEME_PREFIX + "active"
+internal const val BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY = BATTERY_COLOR_SCHEME_PREFIX + "dual_active"
 private const val BATTERY_COLOR_SCHEME_ORDER_KEY = BATTERY_COLOR_SCHEME_PREFIX + "custom_order"
 
 @Serializable
@@ -400,9 +400,11 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
             )
         val editor = preferences.edit()
         writeBatterySchemeLibrary(editor, updated)
-        for (dual in listOf(false, true)) {
-            if (updated.activeKey(dual) == changed.key) {
-                applyProjection(editor, updated, changed.key, dual)
+        if (changed.entries != current.entries) {
+            for (dual in listOf(false, true)) {
+                if (updated.activeKey(dual) == changed.key) {
+                    applyProjection(editor, updated, changed.key, dual)
+                }
             }
         }
         editor.apply()
