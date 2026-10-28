@@ -472,7 +472,7 @@ internal fun DiagnosticsScreen(
                         note = stringResource(R.string.diagnostics_root_unavailable_export),
                         iconRes = R.drawable.ic_material_symbol_lock,
                         busy = loading,
-                        onRetry = ::reloadSnapshot,
+                        onRetry = ::refresh,
                         modifier = Modifier.fillParentMaxSize(),
                     )
                 }
@@ -485,7 +485,7 @@ internal fun DiagnosticsScreen(
                         note = null,
                         iconRes = R.drawable.ic_material_symbol_info,
                         busy = loading,
-                        onRetry = ::reloadSnapshot,
+                        onRetry = ::refresh,
                         modifier = Modifier.fillParentMaxSize(),
                     )
                 }
