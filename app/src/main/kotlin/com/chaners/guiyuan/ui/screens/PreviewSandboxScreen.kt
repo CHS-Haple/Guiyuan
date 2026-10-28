@@ -65,7 +65,6 @@ import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
-import com.chaners.guiyuan.ui.components.topBarProgressiveBlur
 import com.chaners.guiyuan.xposed.RenderModel
 import com.chaners.guiyuan.ui.components.PreviewSummary
 import com.chaners.guiyuan.ui.components.signalValueText
@@ -381,14 +380,6 @@ internal fun PreviewSandboxScreen(
                             top = with(density) { nativeBarHeightPx.toDp() },
                         ),
                     ) {
-                        if (os4 && topBarBackdrop != null && dockHeightPx > 0) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(dockHeight)
-                                    .topBarProgressiveBlur(topBarBackdrop, startFraction = 0f),
-                            )
-                        }
                         dock()
                     }
                     MiuixPopupHost()
