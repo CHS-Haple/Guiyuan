@@ -170,6 +170,7 @@ jobs:
           HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
         run: |
           set -euo pipefail
+          test -n "$VERSION_NAME" && test -n "$BUILD_ID"
           test "$VERSION_NAME" = "$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)"
           test "$BUILD_ID" = "$(sed -n 's/^combinedStatus.buildId=//p' gradle.properties)"
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
@@ -218,9 +219,10 @@ jobs:
               raise SystemExit("A dated and substantive version-specific CHANGELOG section is required.")
           remainder = changelog[match.end():]
           section = remainder.split("\n## [", 1)[0].strip()
-          if not section or not re.sub(r"^### Engineering\s*\n.*?(?=^### |\Z)", "", section, flags=re.M|re.S).strip():
+          user_notes = re.sub(r"^### Engineering\s*\n.*?(?=^### |\Z)", "", section, flags=re.M | re.S).strip()
+          if not user_notes:
               raise SystemExit("User-facing stable release notes are required.")
-          pathlib.Path("release-notes.md").write_text(section + "\n", encoding="utf-8")
+          pathlib.Path("release-notes.md").write_text(user_notes + "\n", encoding="utf-8")
           PY
 
       - name: Upload signed Internal IT
