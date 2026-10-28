@@ -303,6 +303,7 @@ internal fun FeaturesScreen(
             BatteryColorBottomSheet(
                 show = showBatteryColorSheet,
                 library = schemeLibrary,
+                dual = visual.dualSignal,
                 repository = schemeRepo,
                 onDismiss = {
                     showBatteryColorSheet = false
@@ -789,6 +790,7 @@ internal fun FeaturesScreen(
                 if (search.matches(R.string.battery_colors)) {
                 BatteryColorPreference(
                     library = schemeLibrary,
+                    dual = visual.dualSignal,
                     enabled = featureCfg.enabled,
                     holdDownState = showBatteryColorSheet,
                     onClick = {
