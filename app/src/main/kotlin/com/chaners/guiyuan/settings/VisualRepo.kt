@@ -145,7 +145,10 @@ internal fun resetVisualPreferences(
     val editor = preferences.edit().clear()
     writeBatterySchemeLibrary(
         editor,
-        schemes.copy(activeSchemeKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY),
+        schemes.copy(
+            activeSchemeKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+            dualActiveSchemeKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+        ),
     )
     editor.apply()
 }
@@ -542,7 +545,14 @@ internal class VisualRepo(context: Context) {
         editor.putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, active.fillFollowsRetract)
             .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, active.ccTintTransition)
             .putInt(SHARED_TRANSITIONS_SCHEMA_KEY, 1)
-        writeBatterySchemeLibrary(editor, library)
+        val dualVisual = backup.profiles.first { it.dualSignal }
+        writeBatterySchemeLibrary(
+            editor,
+            library.copy(
+                dualActiveSchemeKey =
+                    library.dualActiveSchemeKey ?: matchingSchemeKey(library, dualVisual),
+            ),
+        )
         val activeLayout = if (backup.dualEnabled) backup.dualLayout else backup.singleLayout
         editor.putString(CONTENT_LAYOUT_KEY, activeLayout.persistedValue)
         if (backup.dualInitialized) {
