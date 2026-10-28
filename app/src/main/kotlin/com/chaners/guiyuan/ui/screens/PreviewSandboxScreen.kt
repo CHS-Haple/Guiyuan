@@ -2,6 +2,8 @@ package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -35,6 +37,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
@@ -84,6 +88,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRowDefaults
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
@@ -281,12 +286,41 @@ internal fun PreviewSandboxScreen(
         AnimatedVisibility(
             visible = showDock,
             modifier = Modifier.onSizeChanged { dockHeightPx = it.height },
-            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+            enter = if (os4) {
+                expandVertically(
+                    animationSpec = GlassMotion.barExpand(),
+                    expandFrom = Alignment.Top,
+                    clip = false,
+                )
+            } else fadeIn() + expandVertically(expandFrom = Alignment.Top),
+            exit = if (os4) {
+                shrinkVertically(
+                    animationSpec = GlassMotion.barCollapse(),
+                    shrinkTowards = Alignment.Top,
+                    clip = false,
+                )
+            } else fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
         ) {
+            // The OS4 button shadow extends outside the animated row; avoid offscreen alpha clipping.
+            val opacityModifier = if (os4) {
+                val opacity by transition.animateFloat(
+                    transitionSpec = {
+                        if (targetState == EnterExitState.Visible) GlassMotion.fadeIn()
+                        else GlassMotion.fadeOut()
+                    },
+                    label = "dockOpacity",
+                ) { state ->
+                    if (state == EnterExitState.Visible) 1f else 0f
+                }
+                Modifier.graphicsLayer {
+                    alpha = opacity
+                    compositingStrategy = CompositingStrategy.ModulateAlpha
+                }
+            } else Modifier
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .then(opacityModifier)
                     .padding(dockPadding),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -349,7 +383,7 @@ internal fun PreviewSandboxScreen(
                         title = stringResource(R.string.home_preview_sandbox_title),
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
-                        bandOverhang = maxOf(GlassTopAppBarDefaults.BandOverhang, dockHeight),
+                        bandOverhang = GlassTopAppBarDefaults.BandOverhang + dockHeight,
                         navigationIcon = backAction,
                         actions = barActions,
                         unclippedNavigationIcon = true,
