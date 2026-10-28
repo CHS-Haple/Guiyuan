@@ -340,7 +340,7 @@ internal fun AppearanceScreen(
                         title = stringResource(R.string.floating_navigation_touch_extension),
                         summary = stringResource(R.string.floating_navigation_touch_extension_summary),
                         startAction = {
-                            SemanticLeadingIcon(R.drawable.ic_material_symbol_target)
+                            SemanticLeadingIcon(R.drawable.ic_material_symbol_fit_screen)
                         },
                         checked = appearance.navTouchExtension,
                         onCheckedChange = onNavTouchExtensionChange,
