@@ -14,6 +14,14 @@ Describe the problem or engineering need, the resulting change, and its boundari
 
 > Normal product/runtime contributions target `dev`. Promotion and hotfix pull requests are maintainer-managed.
 
+## MIUIX UI impact (when UI is affected)
+
+- Affected style: OS3 / OS4 / both / neither; include shared controls and style switching, with rationale.
+- Corresponding upstream references/revisions **for each affected style** and relevant layout, material, motion, state, interaction and lifecycle contracts:
+- Current implementation versus upstream; post-change verification and unverified gaps:
+- If OS4 is involved: accepted pinned implementation or new/materially changed PR/component?
+- If new/changed: expected benefit, maturity, dependency/ABI and compatibility/performance risks, rollback cost, and adopt / isolated experiment / defer decision:
+
 ## Runtime impact
 
 Complete only when runtime-sensitive:
