@@ -145,6 +145,7 @@ internal fun BatterySchemeOverview(
             pageCount = { pages.size },
         )
     val scope = rememberCoroutineScope()
+    var dotTarget by remember { mutableIntStateOf(-1) }
     var settingsCardHeightPx by remember { mutableIntStateOf(0) }
     val flingBehavior =
         PagerDefaults.flingBehavior(
@@ -163,16 +164,27 @@ internal fun BatterySchemeOverview(
         }
     }
 
+    LaunchedEffect(dotTarget) {
+        val target = dotTarget
+        if (target < 0) return@LaunchedEffect
+        try {
+            pagerState.springAnimateToPage(target)
+        } finally {
+            if (dotTarget == target) dotTarget = -1
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         BatterySchemeIndicatorRail(
             pages = pages,
-            currentPage = pagerState.targetPage,
+            currentPage = pagerState.currentPage,
+            targetPage = dotTarget,
             onPageSelect = { target ->
-                if (target != pagerState.targetPage) {
-                    scope.launch { pagerState.springAnimateToPage(target) }
+                if (target != pagerState.currentPage || dotTarget >= 0 || pagerState.isScrollInProgress) {
+                    dotTarget = target
                 }
             },
         )
@@ -614,6 +626,7 @@ private fun BatteryAddSchemePage(
 private fun BatterySchemeIndicatorRail(
     pages: List<BatterySchemePage>,
     currentPage: Int,
+    targetPage: Int,
     onPageSelect: (Int) -> Unit,
 ) {
     Box(
@@ -623,6 +636,7 @@ private fun BatterySchemeIndicatorRail(
         BatteryPagerIndicator(
             pages = pages,
             currentPage = currentPage,
+            targetPage = targetPage,
             onPageSelect = onPageSelect,
         )
     }
@@ -632,6 +646,7 @@ private fun BatterySchemeIndicatorRail(
 private fun BatteryPagerIndicator(
     pages: List<BatterySchemePage>,
     currentPage: Int,
+    targetPage: Int,
     onPageSelect: (Int) -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
@@ -684,6 +699,10 @@ private fun BatteryPagerIndicator(
         },
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val highlightedPage =
+            pressedPage.takeIf { it >= 0 }
+                ?: targetPage.takeIf { it >= 0 }
+                ?: currentPage
         pages.forEachIndexed { index, page ->
             val name = when (page) {
                 is BatterySchemePage.BuiltIn -> batteryBuiltInName(page.scheme)
@@ -691,7 +710,7 @@ private fun BatteryPagerIndicator(
                 BatterySchemePage.Add -> stringResource(R.string.battery_custom_scheme_add_page_title)
             }
             val isCurrent = index == currentPage
-            val isHighlighted = index == (pressedPage.takeIf { it >= 0 } ?: currentPage)
+            val isHighlighted = index == highlightedPage
             val width by animateDpAsState(
                 targetValue = when {
                     pressedPage >= 0 && isHighlighted -> 19.dp
