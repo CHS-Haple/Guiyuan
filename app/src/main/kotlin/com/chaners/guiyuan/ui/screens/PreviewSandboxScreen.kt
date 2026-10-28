@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -38,9 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -281,71 +277,46 @@ internal fun PreviewSandboxScreen(
             }
         }
     }
-    val dockSurface = MiuixTheme.colorScheme.surface
-    val dockBand = GlassTopAppBarDefaults.bandBrush(dockSurface)
     val dock: @Composable () -> Unit = {
         AnimatedVisibility(
             visible = showDock,
-            modifier = if (os4) Modifier else Modifier.onSizeChanged { dockHeightPx = it.height },
-            enter = if (os4) fadeIn() else fadeIn() + expandVertically(expandFrom = Alignment.Top),
-            exit = if (os4) fadeOut() else fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+            modifier = Modifier.onSizeChanged { dockHeightPx = it.height },
+            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top, clip = !os4),
+            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top, clip = !os4),
         ) {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .then(
-                        if (os4) Modifier.drawBehind {
-                            val overhang = GlassTopAppBarDefaults.BandOverhang.toPx()
-                            val dockBottom = (size.height - overhang).coerceAtLeast(0f)
-                            drawRect(dockSurface, size = Size(size.width, dockBottom))
-                            translate(top = dockBottom) {
-                                drawRect(dockBand, size = Size(size.width, overhang))
-                            }
-                        } else Modifier,
-                    ),
+                    .padding(dockPadding),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Row(
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(dockPadding),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        .weight(1f)
+                        .padding(start = TopAppBarDefaults.TitlePadding),
+                    contentAlignment = Alignment.CenterStart,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = TopAppBarDefaults.TitlePadding),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.home_preview_live_title),
-                            style = MiuixTheme.textStyles.title4,
-                            fontWeight = FontWeight.Medium,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    SandboxDockIcon(renderModel, visual)
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = if (os4) GlassTopAppBarDefaults.HorizontalPadding else TopAppBarDefaults.ActionIconPadding),
-                        contentAlignment = Alignment.CenterEnd,
-                    ) {
-                        val backTop = stringResource(R.string.diagnostics_scroll_top)
-                        TooltipBox(text = backTop) {
-                            if (os4) {
-                                GlassIconButton(
-                                    onClick = { scope.launch { listState.animateScrollToItem(0) } },
-                                    backdrop = topBarBackdrop,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
-                                        contentDescription = backTop,
-                                    )
-                                }
-                            } else IconButton(
+                    Text(
+                        text = stringResource(R.string.home_preview_live_title),
+                        style = MiuixTheme.textStyles.title4,
+                        fontWeight = FontWeight.Medium,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                SandboxDockIcon(renderModel, visual)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = if (os4) GlassTopAppBarDefaults.HorizontalPadding else TopAppBarDefaults.ActionIconPadding),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    val backTop = stringResource(R.string.diagnostics_scroll_top)
+                    TooltipBox(text = backTop) {
+                        if (os4) {
+                            GlassIconButton(
                                 onClick = { scope.launch { listState.animateScrollToItem(0) } },
                             ) {
                                 Icon(
@@ -353,10 +324,16 @@ internal fun PreviewSandboxScreen(
                                     contentDescription = backTop,
                                 )
                             }
+                        } else IconButton(
+                            onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
+                                contentDescription = backTop,
+                            )
                         }
                     }
                 }
-                if (os4) Spacer(Modifier.height(GlassTopAppBarDefaults.BandOverhang))
             }
         }
     }
@@ -371,8 +348,10 @@ internal fun PreviewSandboxScreen(
                         title = stringResource(R.string.home_preview_sandbox_title),
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
+                        bandOverhang = maxOf(GlassTopAppBarDefaults.BandOverhang, dockHeight),
                         navigationIcon = backAction,
                         actions = barActions,
+                        bottomContent = { dock() },
                         unclippedNavigationIcon = true,
                         unclippedActions = true,
                     )
@@ -396,12 +375,14 @@ internal fun PreviewSandboxScreen(
             // Retain MIUIX's one native popup host; it draws above this dock.
             popupHost = {
                 Box(Modifier.fillMaxSize()) {
-                    Box(
-                        Modifier.fillMaxWidth().padding(
-                            top = with(density) { nativeBarHeightPx.toDp() },
-                        ),
-                    ) {
-                        dock()
+                    if (!os4) {
+                        Box(
+                            Modifier.fillMaxWidth().padding(
+                                top = with(density) { nativeBarHeightPx.toDp() },
+                            ),
+                        ) {
+                            dock()
+                        }
                     }
                     MiuixPopupHost()
                 }
@@ -418,7 +399,15 @@ internal fun PreviewSandboxScreen(
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     pageContentPadding(
-                        innerPadding = paddingValues,
+                        innerPadding = if (os4) {
+                            val direction = LocalLayoutDirection.current
+                            PaddingValues(
+                                start = paddingValues.calculateStartPadding(direction),
+                                top = (paddingValues.calculateTopPadding() - dockHeight).coerceAtLeast(0.dp),
+                                end = paddingValues.calculateEndPadding(direction),
+                                bottom = paddingValues.calculateBottomPadding(),
+                            )
+                        } else paddingValues,
                         extraBottom = 12.dp,
                     ),
             ) {
