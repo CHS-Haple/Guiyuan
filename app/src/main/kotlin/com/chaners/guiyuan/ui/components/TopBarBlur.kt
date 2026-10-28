@@ -48,16 +48,6 @@ internal fun MiuixBlurredTopBar(
 
     Box {
         if (blurActive) {
-            val blurColors =
-                BlurDefaults.blurColors(
-                    blendColors =
-                        listOf(
-                            BlendColorEntry(
-                                color = surface.copy(alpha = ProgressiveTopBarBlendAlpha),
-                            ),
-                        ),
-                )
-
             Box(
                 modifier =
                     Modifier
@@ -77,23 +67,37 @@ internal fun MiuixBlurredTopBar(
                                 (-scrollBehavior.state.contentOffset / 48.dp.toPx())
                                     .coerceIn(0f, 1f)
                         }
-                        .progressiveTextureBlur(
-                            backdrop = backdrop,
-                            shape = RectangleShape,
-                            gradient =
-                                ProgressiveBlur.Top.copy(
-                                    startFraction = ProgressiveTopBarFullStrengthFraction,
-                                    endFraction = 1f,
-                                    curve = ProgressiveTopBarCurve,
-                                ),
-                            blurRadius = ProgressiveTopBarBlurRadius,
-                            colors = blurColors,
-                        ),
+                        .topBarProgressiveBlur(backdrop),
             )
         }
 
         content(if (blurActive) Color.Transparent else surface)
     }
+}
+
+@Composable
+internal fun Modifier.topBarProgressiveBlur(
+    backdrop: LayerBackdrop,
+    startFraction: Float = ProgressiveTopBarFullStrengthFraction,
+): Modifier {
+    val blurColors = BlurDefaults.blurColors(
+        blendColors = listOf(
+            BlendColorEntry(
+                color = MiuixTheme.colorScheme.surface.copy(alpha = ProgressiveTopBarBlendAlpha),
+            ),
+        ),
+    )
+    return progressiveTextureBlur(
+        backdrop = backdrop,
+        shape = RectangleShape,
+        gradient = ProgressiveBlur.Top.copy(
+            startFraction = startFraction,
+            endFraction = 1f,
+            curve = ProgressiveTopBarCurve,
+        ),
+        blurRadius = ProgressiveTopBarBlurRadius,
+        colors = blurColors,
+    )
 }
 
 internal fun Modifier.topBarBackdropSource(backdrop: LayerBackdrop?): Modifier =
