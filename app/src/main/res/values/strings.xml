@@ -363,6 +363,7 @@
     <string name="low_battery_threshold_summary">Use low battery colors below this level</string>
     <string name="battery_colors">Battery colors</string>
     <string name="battery_color_scheme_summary">Scheme: %1$s</string>
+    <string name="battery_color_scheme_unlinked">Existing colors (no scheme linked)</string>
     <string name="battery_color_scheme">Color scheme</string>
     <string name="battery_color_scheme_apply">Apply</string>
     <string name="battery_color_scheme_applied">Applied</string>
