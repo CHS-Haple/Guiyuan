@@ -332,11 +332,7 @@ internal fun AppearanceScreen(
                         },
                     )
                 }
-                AnimatedPreferenceGroup(
-                    visible = appearance.navStyle == NavStyle.Liquid ||
-                        (appearance.uiStyle == UiStyle.OS4 && appearance.navStyle == NavStyle.Glass),
-                ) {
-                    SwitchPreference(
+                SwitchPreference(
                         title = stringResource(R.string.floating_navigation_touch_extension),
                         summary = stringResource(R.string.floating_navigation_touch_extension_summary),
                         startAction = {
@@ -344,8 +340,7 @@ internal fun AppearanceScreen(
                         },
                         checked = appearance.navTouchExtension,
                         onCheckedChange = onNavTouchExtensionChange,
-                    )
-                }
+                )
                 UiDropdownPreference(
                     items = floatingContentOptions,
                     selectedIndex = appearance.activeNavContent.ordinal,

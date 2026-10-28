@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.ui.components
 
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -13,6 +14,36 @@ class NavTouchExtensionPolicyTest {
         assertEquals(0.dp, navTouchExtensionHeight(24.dp, 24.dp))
         assertEquals(0.dp, navTouchExtensionHeight(0.dp, 24.dp))
         assertEquals(12.dp, navTouchExtensionHeight(56.dp, 0.dp))
+    }
+
+    @Test
+    fun publishedMiuixFloatingBarUsesMeasuredUnequalItemCenters() {
+        val host = Rect(0f, 0f, 400f, 140f)
+        val bar = Rect(45f, 20f, 355f, 76f)
+        val items = listOf(
+            Rect(58f, 20f, 102f, 76f),
+            Rect(120f, 20f, 235f, 76f),
+            Rect(256f, 20f, 340f, 76f),
+        )
+        val choice = { x: Float, y: Float ->
+            measuredNavTouchTarget(x, y, host, bar, items, 24f, 12f, 4f)
+        }
+        assertEquals(0, choice(80f, 82f))
+        assertEquals(1, choice(160f, 82f))
+        assertEquals(2, choice(303f, 82f))
+        assertNull(choice(25f, 82f))
+        assertNull(choice(160f, 100f))
+        assertNull(choice(160f, 74f))
+        assertNull(choice(160f, 90f))
+        assertNull(choice(160f, 88f))
+    }
+
+    @Test
+    fun gestureInsetCanSuppressMeasuredFloatingExtension() {
+        val host = Rect(0f, 0f, 400f, 102f)
+        val bar = Rect(40f, 0f, 360f, 76f)
+        val items = listOf(Rect(50f, 0f, 350f, 76f))
+        assertNull(measuredNavTouchTarget(200f, 80f, host, bar, items, 24f, 12f, 4f))
     }
 
     @Test

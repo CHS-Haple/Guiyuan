@@ -28,8 +28,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -56,6 +60,7 @@ import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.navTouchExtension
+import com.chaners.guiyuan.ui.components.measuredNavTouchExtension
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
@@ -337,24 +342,71 @@ internal fun MainHub(
                 }
 
                 else -> {
-                    FloatingNavigationBar(
-                        modifier = navigationBarModifier,
-                        color =
-                            if (navBackdrop != null) {
-                                Color.Transparent
-                            } else {
-                                MiuixTheme.colorScheme.surfaceContainer
-                            },
+                    val barBounds = remember(appearance.navStyle, appearance.uiStyle) {
+                        mutableStateOf<Rect?>(null)
+                    }
+                    val hostBounds = remember(appearance.navStyle, appearance.uiStyle) {
+                        mutableStateOf<Rect?>(null)
+                    }
+                    val itemBounds = remember(appearance.navStyle, appearance.uiStyle, items.size) {
+                        mutableStateListOf<Rect?>().apply {
+                            repeat(items.size) { add(null) }
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (appearance.navTouchExtension) {
+                                    Modifier
+                                        .onGloballyPositioned { coordinates ->
+                                            hostBounds.value = coordinates.boundsInRoot()
+                                        }
+                                        .measuredNavTouchExtension(
+                                            hostBounds = hostBounds.value,
+                                            barBounds = barBounds.value,
+                                            itemBounds = itemBounds.toList(),
+                                            onSelect = ::selectPage,
+                                        )
+                                } else {
+                                    Modifier
+                                },
+                            ),
                     ) {
-                        items.forEachIndexed { index, item ->
-                            val selected = pagerState.currentPage == index
-                            NavContentItem(
-                                content = appearance.activeNavContent,
-                                selected = selected,
-                                onClick = { selectPage(index) },
-                                icon = if (selected) item.selectedIcon else item.icon,
-                                label = item.label,
-                            )
+                        FloatingNavigationBar(
+                            modifier = navigationBarModifier.then(
+                                if (appearance.navTouchExtension) {
+                                    Modifier.onGloballyPositioned { coordinates ->
+                                        barBounds.value = coordinates.boundsInRoot()
+                                    }
+                                } else {
+                                    Modifier
+                                },
+                            ),
+                            color =
+                                if (navBackdrop != null) {
+                                    Color.Transparent
+                                } else {
+                                    MiuixTheme.colorScheme.surfaceContainer
+                                },
+                        ) {
+                            items.forEachIndexed { index, item ->
+                                val selected = pagerState.currentPage == index
+                                NavContentItem(
+                                    content = appearance.activeNavContent,
+                                    selected = selected,
+                                    onClick = { selectPage(index) },
+                                    icon = if (selected) item.selectedIcon else item.icon,
+                                    label = item.label,
+                                    modifier = if (appearance.navTouchExtension) {
+                                        Modifier.onGloballyPositioned { coordinates ->
+                                            itemBounds[index] = coordinates.boundsInRoot()
+                                        }
+                                    } else {
+                                        Modifier
+                                    },
+                                )
+                            }
                         }
                     }
                 }
