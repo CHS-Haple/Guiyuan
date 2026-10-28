@@ -328,10 +328,10 @@ jobs:
           VERSION_NAME="$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)"
           BUILD_ID="$(sed -n 's/^combinedStatus.buildId=//p' gradle.properties)"
           test -n "$VERSION_NAME" && test -n "$BUILD_ID"
-          apk="Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-os4-release-candidate.apk"
+          apk="Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-release.apk"
           mkdir -p dist
           gh run download "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" \
-            --name Guiyuan-OS4-signed-release-candidate --dir dist
+            --name "$apk" --dir dist
           test -s "dist/$apk"
           echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
           echo "BUILD_ID=$BUILD_ID" >> "$GITHUB_ENV"
