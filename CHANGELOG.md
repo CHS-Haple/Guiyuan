@@ -10,6 +10,8 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [0.9.1] - 2026-10-28
 
+The primary **0.9.1-IT / B1634 tester-facing update log**, including earlier internal-test history, is the [Chinese IT changelog](docs/releases/Guiyuan-0.9.1-IT-CHANGELOG.txt). The English details below remain the technical changelog; this documentation update does not change the signed APK.
+
 ### Added
 - Added feature-page search with Chinese, pinyin, initials, English titles and curated related terms; results navigate to the relevant settings without changing the regular browsing layout.
 - Added a compact live-preview dock in the Sandbox with a shortcut back to the full preview. Simulation remains separate from real network and battery state.
