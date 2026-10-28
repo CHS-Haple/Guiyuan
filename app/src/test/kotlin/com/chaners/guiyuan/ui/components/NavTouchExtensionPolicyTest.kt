@@ -31,6 +31,8 @@ class NavTouchExtensionPolicyTest {
         assertEquals(0, choice(80f, 82f))
         assertEquals(1, choice(160f, 82f))
         assertEquals(2, choice(303f, 82f))
+        assertNull(choice(111f, 82f)) // Blank space between actual MIUIX items stays inert.
+        assertNull(choice(245f, 82f))
         assertNull(choice(25f, 82f))
         assertNull(choice(160f, 100f))
         assertNull(choice(160f, 74f))

@@ -2,7 +2,6 @@ package com.chaners.guiyuan.ui.components
 
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
@@ -12,8 +11,10 @@ import androidx.compose.foundation.layout.systemGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.platform.LocalDensity
-import kotlin.math.abs
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
@@ -53,13 +54,10 @@ internal fun Modifier.navTouchExtension(
                 return@awaitEachGesture
             }
 
-            val up = waitForUpOrCancellation() ?: return@awaitEachGesture
-            if (up.isConsumed || (up.position - start).getDistance() > viewConfiguration.touchSlop ||
-                up.position.x < left || up.position.x >= right ||
+            val up = awaitShortTapUp(down) ?: return@awaitEachGesture
+            if (up.position.x < left || up.position.x >= right ||
                 up.position.y < top || up.position.y >= bottom
-            ) {
-                return@awaitEachGesture
-            }
+            ) return@awaitEachGesture
             val index = navTouchIndex(
                 x = up.position.x,
                 left = left,
@@ -127,10 +125,7 @@ internal fun Modifier.measuredNavTouchExtension(
                 gesturePx, extensionPx, safetyPx,
             ) ?: return@awaitEachGesture
 
-            val up = waitForUpOrCancellation() ?: return@awaitEachGesture
-            if (up.isConsumed || (up.position - down.position).getDistance() > viewConfiguration.touchSlop) {
-                return@awaitEachGesture
-            }
+            val up = awaitShortTapUp(down) ?: return@awaitEachGesture
             val end = up.position + hostBounds.topLeft
             if (measuredNavTouchTarget(
                     end.x, end.y, hostBounds, barBounds, measuredItems,
@@ -158,5 +153,22 @@ internal fun measuredNavTouchTarget(
     if (items.isEmpty() || x < bar.left || x >= bar.right ||
         y < bar.bottom || y >= bottom
     ) return null
-    return items.indices.minByOrNull { abs(items[it].center.x - x) }
+    return items.indices.firstOrNull { x >= items[it].left && x < items[it].right }
 }
+
+/** Accept one short stationary tap. A long hold, drag excursion or second finger cancels. */
+private suspend fun AwaitPointerEventScope.awaitShortTapUp(down: PointerInputChange): PointerInputChange? =
+    withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+        var up: PointerInputChange? = null
+        while (up == null) {
+            val event = awaitPointerEvent()
+            if (event.changes.any { it.id != down.id && it.pressed }) return@withTimeoutOrNull null
+            val change = event.changes.firstOrNull { it.id == down.id }
+                ?: return@withTimeoutOrNull null
+            if (change.isConsumed ||
+                (change.position - down.position).getDistance() > viewConfiguration.touchSlop
+            ) return@withTimeoutOrNull null
+            if (!change.pressed) up = change
+        }
+        up
+    }
