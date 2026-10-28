@@ -360,7 +360,8 @@ internal fun MainHub(
                                 if (appearance.navTouchExtension) {
                                     Modifier
                                         .onGloballyPositioned { coordinates ->
-                                            hostBounds.value = coordinates.boundsInRoot()
+                                            val bounds = coordinates.boundsInRoot()
+                                            if (hostBounds.value != bounds) hostBounds.value = bounds
                                         }
                                         .measuredNavTouchExtension(
                                             hostBounds = hostBounds.value,
@@ -377,7 +378,8 @@ internal fun MainHub(
                             modifier = navigationBarModifier.then(
                                 if (appearance.navTouchExtension) {
                                     Modifier.onGloballyPositioned { coordinates ->
-                                        barBounds.value = coordinates.boundsInRoot()
+                                        val bounds = coordinates.boundsInRoot()
+                                        if (barBounds.value != bounds) barBounds.value = bounds
                                     }
                                 } else {
                                     Modifier
@@ -400,7 +402,8 @@ internal fun MainHub(
                                     label = item.label,
                                     modifier = if (appearance.navTouchExtension) {
                                         Modifier.onGloballyPositioned { coordinates ->
-                                            itemBounds[index] = coordinates.boundsInRoot()
+                                            val bounds = coordinates.boundsInRoot()
+                                            if (itemBounds[index] != bounds) itemBounds[index] = bounds
                                         }
                                     } else {
                                         Modifier
