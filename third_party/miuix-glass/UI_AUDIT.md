@@ -308,3 +308,19 @@ Scope: current `dev` `d2390ad2`, MIUIX [PR #423](https://github.com/compose-miui
 - **Decision:** Do not introduce this unmerged module or mix its Blur transitive graph with the pinned production snapshot. Reconsider only with an exact compatible release/revision, a concrete reduced-code or user-visible improvement, single motion/light writers, full gesture and rendering parity, GPU/frame-budget measurements and targeted signed-Canary acceptance. No claim that PR #321 fixes existing flicker is supported.
 
 The dedicated navigation-inset experiment is tracked separately in [Guiyuan PR #950](https://github.com/CHS-Haple/Guiyuan/pull/950); it does not certify any of the menu, modal, search or effect gates above.
+
+#### Effect migration priority against PR321 HEAD
+
+Reviewed against the `miuix-effect` source at `73bdd49b4ea965dc7822e276b0a6ce29a5564f54` and Guiyuan `dev` liquid source. This is a **future replacement shortlist**, not authorization to combine experimental source and the published `8972f941` binary graph:
+
+| Local owner | PR321 counterpart | Source-backed decision |
+| --- | --- | --- |
+| `LiquidBackdrop.CombinedBackdrop` | `liquid.CombinedBackdrop` | First replacement candidate once a compatible module ships: both compose base plus recorded tab backdrop, including coordinate dependency and residual offset. Delete the local copy rather than retaining two classes. |
+| `LiquidBackdrop.vibrancy` | `liquid.Vibrancy` | First candidate: the same `colorControls(0f, 1f, 1.5f)` contract. This is a maintenance-only migration. |
+| `LiquidLens.lens` | `liquid.Lens` | Good replacement candidate after exact shader/uniform, RGB dispersion, RTL corner-radius and unsupported-shader parity checks; a visual upgrade is not established merely by moving source. |
+| `LiquidHighlight` | `animation.InteractiveHighlight` | Evaluate separately: Guiyuan uses a cached Android `RuntimeShader` brush with a solid fallback; PR321 uses a Compose radial gradient and its own gesture modifier. Compare press/drag cancellation, color and frame time; replace the existing owner, never add a second one. |
+| `LiquidDragMotion` and `inspectLiquidDrag` | `animation.DampedDragAnimation` and its gesture inspector | Higher-risk owner migration: PR321 adds `canDrag` and `onDragStarted` but they are not drop-in replacements for Guiyuan's selected-index callbacks, RTL delta, tab-width updates, noninteractive preview, and cancellation. The upstream `canDrag` check gates drag deltas, not the initial press event. Keep one drag and page-selection writer; require physical gesture and animation parity. |
+| `LiquidInnerShadow` | `liquid.InnerShadow` | Retain local implementation for now: Guiyuan skips the offscreen operation at alpha zero and resets its blur-radius cache after a new graphics-layer attach; neither protection appears in the reviewed PR321 implementation. Replacing it would not be a demonstrated improvement. |
+| `rememberGlassTilt/litHighlight` | `highlight.ContainerHighlight` | Do not replace the custom light geometry and preview contract with upstream presets. PR321's `rememberContainerHighlight` composes tilt-light sensors even when the container is disabled; Guiyuan suppresses sensor ownership for noninteractive previews. |
+
+The library's `miuix-effect` `commonMain` declares `api(projects.miuixBlur)`; it is a source-graph module still under review, not an independently compatible public artifact at Guiyuan's pinned release. Prefer a single coherent module upgrade (with released artifacts or a source-matched build), then remove local duplicates in one reviewed batch. No Build change for this documentation-only comparison.
