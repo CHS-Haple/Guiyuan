@@ -22,6 +22,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 - Improved native icon restoration and callback isolation around Control Center, AOD, Hot Reload and network/battery observation; normal SystemUI behavior remains the fallback when a feature cannot safely take ownership.
 
 ### Changed
+- Avoided scanning the full Android ICU transliterator registry before first-use search; retained the existing localized and pinyin matching fallback.
 - Removed obsolete native icon-observation paths and tightened font-source verification, keeping the native Typeface when its variable-weight source is unverified. Preserved native Control Center endpoints.
 - Made feature search and live-preview navigation follow existing MIUIX focus, Back and scrolling behavior.
 

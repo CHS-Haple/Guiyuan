@@ -127,19 +127,7 @@ internal class PageSearch(private val context: Context) {
     val filtering get() = isSearchFiltering(active, query)
 
     private val romanizer by lazy(LazyThreadSafetyMode.NONE) {
-        runCatching {
-            val ids = Transliterator.getAvailableIDs()
-            var han = false
-            var latinAscii = false
-            while (ids.hasMoreElements()) {
-                when (ids.nextElement()) {
-                    "Han-Latin" -> han = true
-                    "Latin-ASCII" -> latinAscii = true
-                }
-            }
-            if (han && latinAscii) Transliterator.getInstance("Han-Latin; Latin-ASCII")
-            else null
-        }.getOrNull()
+        runCatching { Transliterator.getInstance("Han-Latin; Latin-ASCII") }.getOrNull()
     }
     // Each title ID indexes every supported locale without changing the displayed language.
     private val localizedContexts by lazy(LazyThreadSafetyMode.NONE) {
