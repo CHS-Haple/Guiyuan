@@ -19,6 +19,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 - Corrected native scene-state delivery when a prior SystemUI state read would otherwise suppress a pending Home/Keyguard update.
 - Recovered Home Wi-Fi and mobile network-type presentation after rapid Hot Reload, including cases where existing native bindings do not replay.
 - Restoring visual defaults now keeps user-created battery color schemes and returns the active selection to the built-in HyperOS scheme.
+- Unified battery color presets, custom colors and applied scheme across single- and dual-SIM modes, preserving the currently active legacy colors during migration and configuration restore.
 - Improved native icon restoration and callback isolation around Control Center, AOD, Hot Reload and network/battery observation; normal SystemUI behavior remains the fallback when a feature cannot safely take ownership.
 
 ### Changed

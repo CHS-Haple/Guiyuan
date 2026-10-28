@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.settings
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -20,6 +21,16 @@ class VisualPreferenceKeysTest {
         assertTrue(isVisualPreferenceKey("battery_center.battery_top_text_scale"))
         assertTrue(isVisualPreferenceKey("network_center.mobile_follows_battery_color"))
         assertTrue(isVisualPreferenceKey("battery_center.mobile_follows_battery_color"))
+    }
+
+    @Test
+    fun sharedBatteryColorsStayInRuntimeAndBackupKeyScopes() {
+        assertTrue(isVisualPreferenceKey(SHARED_BATTERY_COLORS_SCHEMA_KEY))
+        assertEquals(1 + 2 * BatteryColorSlot.entries.size, BATTERY_COLOR_KEYS.size)
+        for (key in BATTERY_COLOR_KEYS) {
+            assertTrue("Missing global color key $key", isVisualPreferenceKey(key))
+            assertTrue("Missing legacy dual key $key", isBackupVisualKey(visualModeKey(true, key)))
+        }
     }
 
     @Test

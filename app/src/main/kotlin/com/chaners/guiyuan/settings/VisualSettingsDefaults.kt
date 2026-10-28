@@ -80,25 +80,18 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         MOBILE_TYPE_WEIGHT_KEY,
     )
 
+internal val BATTERY_COLOR_KEYS =
+    setOf(BATTERY_COLOR_PRESET_KEY) +
+        BatteryColorSlot.entries.flatMap { slot ->
+            listOf(batteryColorModeKey(slot), batteryColorOverrideKey(slot))
+        }
+
 internal val GLOBAL_VISUAL_KEYS =
     setOf(
         DUAL_DOT_STYLE_KEY,
         BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
         CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
-        BATTERY_COLOR_PRESET_KEY,
-        BATTERY_COLOR_MODE_NORMAL_KEY,
-        BATTERY_COLOR_MODE_POWER_SAVE_KEY,
-        BATTERY_COLOR_MODE_PERFORMANCE_KEY,
-        BATTERY_COLOR_MODE_SUPER_POWER_SAVE_KEY,
-        BATTERY_COLOR_MODE_CHARGING_KEY,
-        BATTERY_COLOR_MODE_LOW_KEY,
-        BATTERY_COLOR_NORMAL_KEY,
-        BATTERY_COLOR_POWER_SAVE_KEY,
-        BATTERY_COLOR_PERFORMANCE_KEY,
-        BATTERY_COLOR_SUPER_POWER_SAVE_KEY,
-        BATTERY_COLOR_CHARGING_KEY,
-        BATTERY_COLOR_LOW_KEY,
-    )
+    ) + BATTERY_COLOR_KEYS
 
 // Persisted text scale is physical; UI percentages use the 1.3x reference.
 internal const val BATTERY_TOP_TEXT_UI_SCALE_REFERENCE = 1.3f

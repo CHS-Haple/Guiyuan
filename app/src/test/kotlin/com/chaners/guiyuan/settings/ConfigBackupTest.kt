@@ -25,6 +25,46 @@ class ConfigBackupTest {
         batterySchemes = BatteryColorSchemeLibrary(),
     )
 
+    @Test fun b1601V1BackupsImportTheActiveModeSelection() {
+        val original = ConfigBackupFormat.encode(sample())
+        val dualArchive = original.replace(
+            "\"activeSchemeKey\":\"builtin:hyperos\",",
+            "\"activeSchemeKey\":\"builtin:hyperos\",\"dualActiveSchemeKey\":\"builtin:ios\",",
+        )
+        assertTrue(dualArchive.contains("\"dualActiveSchemeKey\""))
+        val restored = ConfigBackupFormat.decode(dualArchive)
+        assertEquals(BATTERY_COLOR_SCHEME_IOS_KEY, restored.batterySchemes.activeSchemeKey)
+        assertEquals(1, restored.schemaVersion)
+        assertFalse(ConfigBackupFormat.encode(restored).contains("\"dualActiveSchemeKey\""))
+
+        val singleArchive = dualArchive.replace("\"dualEnabled\":true", "\"dualEnabled\":false")
+        val single = ConfigBackupFormat.decode(singleArchive)
+        assertEquals(BATTERY_COLOR_SCHEME_HYPEROS_KEY, single.batterySchemes.activeSchemeKey)
+    }
+
+    @Test fun invalidB1601SelectionAndUnknownBackupFieldsStayRejected() {
+        val original = ConfigBackupFormat.encode(sample())
+        val prefix = "\"activeSchemeKey\":\"builtin:hyperos\","
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.decode(original.replace(
+                prefix,
+                prefix + "\"dualActiveSchemeKey\":\"custom:999\",",
+            ))
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.decode(original.replace(
+                prefix,
+                prefix + "\"dualActiveSchemeKey\":7,",
+            ))
+        }
+        assertThrows(Exception::class.java) {
+            ConfigBackupFormat.decode(original.replace(
+                prefix,
+                prefix + "\"unrecognizedSelection\":\"builtin:ios\",",
+            ))
+        }
+    }
+
     @Test fun rejectsConflictingModeWideValues() {
         val source = sample()
         val first = source.visual.profiles.first()
