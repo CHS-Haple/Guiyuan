@@ -643,6 +643,8 @@ private fun BatteryPagerIndicator(
                 modifier = Modifier
                     .width(width + 6.dp).height(20.dp)
                     .clickable(
+                        interactionSource = null,
+                        indication = null,
                         role = Role.Tab,
                         onClickLabel = stringResource(R.string.battery_scheme_go_to, name),
                         onClick = { onPageClick(index) },
