@@ -5,10 +5,8 @@ run-name: >-
       || (github.event.issue.pull_request != null
           && github.actor == github.repository_owner
           && (github.event.comment.body == '/canary'
-              || github.event.comment.body == '/internal'
               || (startsWith(github.event.comment.body, 'B')
-                  && (endsWith(github.event.comment.body, ' Canary')
-                      || endsWith(github.event.comment.body, ' Internal'))))
+                  && endsWith(github.event.comment.body, ' Canary')))
           && format('{0} | {1} #{2}', github.event.issue.title,
               github.event.comment.body, github.event.issue.number))
       || format('Skipped comment | #{0}', github.event.issue.number) }}
@@ -27,7 +25,6 @@ on:
         type: choice
         options:
           - canary
-          - internal
       build_number:
         description: 'Build suffix (for example 850); checked against the source Gradle Build'
         required: true
@@ -54,13 +51,11 @@ jobs:
       (github.event_name == 'issue_comment' &&
        github.event.issue.pull_request != null &&
        (github.event.comment.body == '/canary' ||
-        github.event.comment.body == '/internal' ||
         (startsWith(github.event.comment.body, 'B') &&
-         (endsWith(github.event.comment.body, ' Canary') ||
-          endsWith(github.event.comment.body, ' Internal')))) &&
+         endsWith(github.event.comment.body, ' Canary'))) &&
        github.actor == github.repository_owner)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     env:
       MIUIX_GITHUB_ACTOR: ${{ secrets.MIUIX_GITHUB_ACTOR || github.repository_owner }}
       MIUIX_GITHUB_TOKEN: ${{ secrets.MIUIX_GITHUB_TOKEN }}
@@ -92,7 +87,7 @@ jobs:
                 echo "::error::Manual APK source must be a feat/*, fix/*, refactor/* or hotfix/* branch, got: $branch"
                 exit 1
               fi
-              if [[ "$variant" != "canary" && "$variant" != "internal" ]]; then
+              if [[ "$variant" != "canary" ]]; then
                 echo "::error::Unsupported APK variant: $variant"
                 exit 1
               fi
@@ -113,11 +108,10 @@ jobs:
               source_sha="$(jq -r '.head.sha // empty' <<<"$pr_json")"
               case "$COMMENT_BODY" in
                 /canary) variant="canary"; expected_build="" ;;
-                /internal) variant="internal"; expected_build="" ;;
                 *)
-                  if [[ "$COMMENT_BODY" =~ ^B([0-9]+)[[:space:]](Canary|Internal)$ ]]; then
+                  if [[ "$COMMENT_BODY" =~ ^B([0-9]+)[[:space:]]Canary$ ]]; then
                     expected_build="${BASH_REMATCH[1]}"
-                    variant="${BASH_REMATCH[2],,}"
+                    variant="canary"
                   else
                     echo "::error::Unsupported PR build command."
                     exit 1
@@ -201,6 +195,9 @@ jobs:
           echo "TRUSTED_SOURCE_BRANCH=$EXPECTED_SOURCE_BRANCH" >> "$GITHUB_ENV"
           echo "APK_VARIANT=$EXPECTED_VARIANT" >> "$GITHUB_ENV"
 
+      - name: Checkout accepted MIUIX source
+        uses: ./.github/actions/miuix-source
+
       - name: Validate Gradle Wrapper
         uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
@@ -243,13 +240,17 @@ jobs:
         run: |
           case "$APK_VARIANT" in
             canary) ASSEMBLE_TASK=":app:assembleCanary" ;;
-            internal) ASSEMBLE_TASK=":app:assembleInternal" ;;
             *)
               echo "::error::Unsupported APK variant: $APK_VARIANT"
               exit 1
               ;;
           esac
-          ./gradlew :app:testDebugUnitTest "$ASSEMBLE_TASK" --stacktrace
+          test -n "$MIUIX_SOURCE_REVISION" && test -n "$MIUIX_SOURCE_DIR"
+          ./gradlew \
+            -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
+            -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
+            -Pgy.os4.dialogSurfaces=true \
+            :app:testDebugUnitTest "$ASSEMBLE_TASK" --stacktrace
 
       - name: Resolve built APK
         shell: bash
@@ -328,4 +329,4 @@ jobs:
           echo "- Source SHA: $TRUSTED_SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
           echo "- Variant: $APK_VARIANT" >> "$GITHUB_STEP_SUMMARY"
           echo "- Trigger: ${{ github.event_name }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Validation: independent exact-SHA APK validation" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Validation: independent exact-SHA APK validation; MIUIX source $MIUIX_SOURCE_REVISION" >> "$GITHUB_STEP_SUMMARY"

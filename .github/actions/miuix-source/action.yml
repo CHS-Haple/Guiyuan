@@ -1,0 +1,25 @@
+name: Accepted MIUIX source
+description: Checkout and verify the pinned MIUIX graph shared by OS3 and OS4 variants.
+runs:
+  using: composite
+  steps:
+    - name: Checkout exact accepted MIUIX source
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: compose-miuix-ui/miuix
+        ref: b9f70838509fbc3f63f1a972777a7e6ce07f578f
+        path: miuix-upstream
+        persist-credentials: false
+    - name: Verify exact source revision and dialog dependencies
+      shell: bash
+      run: |
+        set -euo pipefail
+        expected="$(sed -n 's/^miuix.upstream.revision=//p' gradle.properties)"
+        actual="$(git -C miuix-upstream rev-parse HEAD)"
+        test -n "$expected" && test "$actual" = "$expected"
+        test -f miuix-upstream/miuix-ui/build.gradle.kts
+        test -f miuix-upstream/miuix-blur/build.gradle.kts
+        test -f app/src/os4Upstream/kotlin/top/yukonga/miuix/kmp/glass/GlassDialog.kt
+        test -f app/src/os4Upstream/kotlin/top/yukonga/miuix/kmp/glass/internal/ScrimBackdrop.kt
+        echo "MIUIX_SOURCE_REVISION=$expected" >> "$GITHUB_ENV"
+        echo "MIUIX_SOURCE_DIR=miuix-upstream" >> "$GITHUB_ENV"

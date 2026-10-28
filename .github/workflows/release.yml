@@ -6,6 +6,10 @@ on:
     paths:
       - gradle.properties
       - .github/workflows/release.yml
+      - .github/actions/miuix-source/**
+      - app/src/**
+      - app/build.gradle.kts
+      - settings.gradle.kts
   workflow_dispatch:
     inputs:
       channel:
@@ -21,20 +25,15 @@ on:
         required: true
         default: true
         type: boolean
-      os4_source_run_id:
-        description: Successful OS4 source-matched signed candidate run ID (required for dev/main test releases)
-        required: false
-        default: ''
-        type: string
 
 permissions:
   contents: read
 
 jobs:
   release:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.channel == 'stable'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     environment: release
     env:
       RELEASE_CHANNEL: ${{ github.event_name == 'workflow_dispatch' && inputs.channel || 'test' }}
@@ -68,6 +67,9 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Checkout accepted MIUIX source
+        uses: ./.github/actions/miuix-source
 
       - name: Validate Gradle Wrapper
         uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
@@ -103,18 +105,21 @@ jobs:
       - name: Verify pinned HyperOS target profile
         run: python3 tools/verify_target_profile.py
 
-      - name: Run unit tests
-        run: ./gradlew :app:testDebugUnitTest --stacktrace
-
-      - name: Build signed release APK
+      - name: Test and build source-matched Internal IT and Release APKs
         env:
           HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
           HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
-        run: ./gradlew :app:assembleRelease --stacktrace
+        run: |
+          test -n "$MIUIX_SOURCE_REVISION" && test -n "$MIUIX_SOURCE_DIR"
+          ./gradlew \
+            -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
+            -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
+            -Pgy.os4.dialogSurfaces=true \
+            :app:testDebugUnitTest :app:assembleInternal :app:assembleRelease --stacktrace
 
       - name: Verify modern Xposed metadata
         shell: bash
-        run: bash tools/verify_xposed_metadata.sh app/build/outputs/apk/release/app-release.apk
+        run: bash tools/verify_xposed_metadata.sh app/build/outputs/apk/internal/app-internal.apk app/build/outputs/apk/release/app-release.apk
       - name: Verify release is non-debuggable
         shell: bash
         run: |
@@ -125,10 +130,12 @@ jobs:
             exit 1
           fi
 
-          if [[ "$("$APKANALYZER" manifest debuggable app/build/outputs/apk/release/app-release.apk)" != "false" ]]; then
-            echo "Release APK must be non-debuggable."
-            exit 1
-          fi
+          for APK in app/build/outputs/apk/internal/app-internal.apk app/build/outputs/apk/release/app-release.apk; do
+            if [[ "$("$APKANALYZER" manifest debuggable "$APK")" != "false" ]]; then
+              echo "$APK must be non-debuggable."
+              exit 1
+            fi
+          done
 
       - name: Verify APK signature
         shell: bash
@@ -137,22 +144,18 @@ jobs:
         run: |
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           APKSIGNER="$SDK_ROOT/build-tools/37.0.0/apksigner"
-          APK="app/build/outputs/apk/release/app-release.apk"
-
-          "$APKSIGNER" verify --verbose --print-certs "$APK"
-
-          ACTUAL_CERT_SHA256="$(
-            "$APKSIGNER" verify --print-certs "$APK" |
-              awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' |
-              tr '[:upper:]' '[:lower:]'
-          )"
-
-          if [[ "$ACTUAL_CERT_SHA256" != "$HAPLE_CERT_SHA256" ]]; then
-            echo "Built APK is not signed by the Haple certificate."
-            echo "Expected: $HAPLE_CERT_SHA256"
-            echo "Actual:   $ACTUAL_CERT_SHA256"
-            exit 1
-          fi
+          for APK in app/build/outputs/apk/internal/app-internal.apk app/build/outputs/apk/release/app-release.apk; do
+            "$APKSIGNER" verify --verbose --print-certs "$APK"
+            ACTUAL_CERT_SHA256="$(
+              "$APKSIGNER" verify --print-certs "$APK" |
+                awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' |
+                tr '[:upper:]' '[:lower:]'
+            )"
+            if [[ "$ACTUAL_CERT_SHA256" != "$HAPLE_CERT_SHA256" ]]; then
+              echo "Built APK is not signed by the Haple certificate: $APK"
+              exit 1
+            fi
+          done
 
       - name: Prepare release asset
         shell: bash
@@ -162,6 +165,8 @@ jobs:
           mkdir -p dist
           APK_NAME="Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-release.apk"
           cp app/build/outputs/apk/release/app-release.apk "dist/$APK_NAME"
+          INTERNAL_APK_NAME="Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-internal.apk"
+          cp app/build/outputs/apk/internal/app-internal.apk "dist/$INTERNAL_APK_NAME"
 
           if [[ "$RELEASE_CHANNEL" == "stable" ]]; then
             RELEASE_TAG="v$VERSION_NAME"
@@ -174,6 +179,8 @@ jobs:
           echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
           echo "BUILD_ID=$BUILD_ID" >> "$GITHUB_ENV"
           echo "APK_NAME=$APK_NAME" >> "$GITHUB_ENV"
+          echo "INTERNAL_APK_NAME=$INTERNAL_APK_NAME" >> "$GITHUB_ENV"
+          echo "MIUIX_SOURCE_SHA=$MIUIX_SOURCE_REVISION" >> "$GITHUB_ENV"
           echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
           echo "RELEASE_TITLE=$RELEASE_TITLE" >> "$GITHUB_ENV"
 
@@ -249,6 +256,13 @@ jobs:
           path: dist/${{ env.APK_NAME }}
           if-no-files-found: error
 
+      - name: Upload signed Internal IT artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ env.INTERNAL_APK_NAME }}
+          path: dist/${{ env.INTERNAL_APK_NAME }}
+          if-no-files-found: error
+
       - name: Publish test release
         if: github.event_name == 'workflow_dispatch' && inputs.publish && inputs.channel == 'test'
         shell: bash
@@ -272,106 +286,3 @@ jobs:
             --title "$RELEASE_TITLE" \
             --notes-file release-notes.md
 
-  os4-test:
-    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && inputs.channel == 'test'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment: release
-    permissions:
-      contents: write
-      actions: read
-    env:
-      GH_TOKEN: ${{ github.token }}
-      SOURCE_RUN_ID: ${{ inputs.os4_source_run_id }}
-      RELEASE_CHANNEL: ${{ inputs.channel }}
-    steps:
-      - name: Require explicit matching OS4 source artifact
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$RELEASE_CHANNEL" = "test" || {
-            echo "Pre-1.0 OS4 artifacts may only use the test prerelease channel."
-            exit 1
-          }
-          [[ "$SOURCE_RUN_ID" =~ ^[0-9]+$ ]] || {
-            echo "Supply the exact completed OS4 source-matched run ID."
-            exit 1
-          }
-
-          run="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}")"
-          source_sha="$(jq -r '.head_sha' <<< "$run")"
-          source_branch="$(jq -r '.head_branch' <<< "$run")"
-          workflow_path="$(jq -r '.path' <<< "$run")"
-          conclusion="$(jq -r '.conclusion' <<< "$run")"
-          event="$(jq -r '.event' <<< "$run")"
-          if [[ "$source_sha" != "$GITHUB_SHA" ||
-                "$source_branch" != "$GITHUB_REF_NAME" ||
-                "$workflow_path" != ".github/workflows/os4-miuix-pr423-signed-canary.yml" ||
-                "$conclusion" != "success" ||
-                ( "$event" != "push" && "$event" != "workflow_dispatch" ) ]]; then
-            echo "OS4 signed candidate provenance does not match the selected branch commit."
-            exit 1
-          fi
-          echo "SOURCE_SHA=$source_sha" >> "$GITHUB_ENV"
-
-      - name: Checkout release metadata without running source code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          sparse-checkout: |
-            gradle.properties
-
-      - name: Fetch exactly the trusted signed Release candidate
-        shell: bash
-        run: |
-          set -euo pipefail
-          VERSION_NAME="$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)"
-          BUILD_ID="$(sed -n 's/^combinedStatus.buildId=//p' gradle.properties)"
-          test -n "$VERSION_NAME" && test -n "$BUILD_ID"
-          apk="Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-release.apk"
-          mkdir -p dist
-          gh run download "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" \
-            --name "$apk" --dir dist
-          test -s "dist/$apk"
-          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
-          echo "BUILD_ID=$BUILD_ID" >> "$GITHUB_ENV"
-          echo "APK_NAME=$apk" >> "$GITHUB_ENV"
-
-      - name: Verify signed Release APK identity
-        shell: bash
-        run: |
-          set -euo pipefail
-          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" --channel=3 "build-tools;37.0.0"
-          apk="dist/$APK_NAME"
-          APKSIGNER="$SDK_ROOT/build-tools/37.0.0/apksigner"
-          "$APKSIGNER" verify --verbose --print-certs "$apk"
-          cert="$("$APKSIGNER" verify --print-certs "$apk" | awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' | tr '[:upper:]' '[:lower:]')"
-          test "$cert" = "7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7"
-          package="$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk" | sed -n "s/.*package: name='\\([^']*\\)'.*/\\1/p" | head -n 1)"
-          test "$package" = "com.chaners.guiyuan"
-          APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
-          test "$("$APKANALYZER" manifest debuggable "$apk")" = "false"
-          sha256sum "$apk" >> "$GITHUB_STEP_SUMMARY"
-          echo "OS4 Release source: $SOURCE_SHA / signed candidate run: $SOURCE_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload verified signed OS4 test-release artifact
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: ${{ env.APK_NAME }}
-          path: dist/${{ env.APK_NAME }}
-          if-no-files-found: error
-
-      - name: Publish explicit OS4 test prerelease only
-        if: inputs.publish
-        shell: bash
-        run: |
-          set -euo pipefail
-          tag="build-${BUILD_ID}-ci${GITHUB_RUN_NUMBER}"
-          gh release create "$tag" "dist/$APK_NAME" \
-            --target "$GITHUB_SHA" \
-            --title "Guiyuan ${VERSION_NAME} (${BUILD_ID})" \
-            --notes "Signed source-matched OS4 test build from $SOURCE_SHA (run $SOURCE_RUN_ID)." \
-            --prerelease

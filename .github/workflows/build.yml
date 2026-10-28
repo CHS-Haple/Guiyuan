@@ -26,7 +26,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     env:
       MIUIX_GITHUB_ACTOR: ${{ secrets.MIUIX_GITHUB_ACTOR || github.repository_owner }}
       MIUIX_GITHUB_TOKEN: ${{ secrets.MIUIX_GITHUB_TOKEN }}
@@ -206,7 +206,8 @@ jobs:
           if [[ "$SCOPE" == "full" || ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "pull_request" ) ]]; then
             RUN_DEBUG=true
           fi
-          if [[ "$SCOPE" == "full" || ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/dev" ) ]]; then
+          if [[ ( "$SCOPE" == "full" && "$EVENT_NAME" == "pull_request" ) ||
+                ( ( "$SCOPE" == "runtime" || "$SCOPE" == "full" ) && "$EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/dev" ) ]]; then
             RUN_CANARY=true
           fi
 
@@ -238,6 +239,10 @@ jobs:
             fi
             git diff --check "$BASE_SHA" "$HEAD_SHA"
           fi
+
+      - name: Checkout accepted MIUIX source
+        if: steps.scope.outputs.run_android == 'true'
+        uses: ./.github/actions/miuix-source
 
       - name: Validate Gradle Wrapper
         if: steps.scope.outputs.run_android == 'true'
@@ -293,7 +298,12 @@ jobs:
           if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
             TASKS+=(":app:assembleCanary")
           fi
-          ./gradlew "${TASKS[@]}" --stacktrace
+          test -n "$MIUIX_SOURCE_REVISION" && test -n "$MIUIX_SOURCE_DIR"
+          ./gradlew \
+            -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
+            -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
+            -Pgy.os4.dialogSurfaces=true \
+            "${TASKS[@]}" --stacktrace
 
       - name: Resolve built APK paths
         if: steps.scope.outputs.run_android == 'true'
@@ -431,6 +441,9 @@ jobs:
             echo "- Guidance: keep Full while combined; split only when the high-risk surface is independently mergeable/reversible, then back-sync before ordinary runtime work continues." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "- Mixed-surface review: not required" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [[ "${{ steps.scope.outputs.run_android }}" == "true" ]]; then
+            echo "- MIUIX: accepted source graph ${MIUIX_SOURCE_REVISION:-unverified}; glass dialog surfaces enabled" >> "$GITHUB_STEP_SUMMARY"
           fi
           echo "- Signed work-branch Canary: explicit/demand-driven and independently validates the requested source SHA." >> "$GITHUB_STEP_SUMMARY"
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.draft }}" == "true" ]]; then

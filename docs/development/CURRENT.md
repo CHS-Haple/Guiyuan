@@ -4,7 +4,7 @@ This file records **accepted behavior, current constraints and next work**, not 
 
 ## Current 0.9.1 development checkpoint
 
-- **Promotion:** [#966](https://github.com/CHS-Haple/Guiyuan/pull/966) integrated the accepted 0.9.1 / B1627 source into `main` without publishing a GitHub Release or changing the 1.0.0 stable-release boundary. The existing B1626 source-matched OS4 Release received focused target-device acceptance; B1627 changes version identity, documentation and release provenance, not feature behavior. The pinned PR423 source-built GlassDialog/Sheet remains the production OS4 candidate; the default published MIUIX fallback is not equivalent and must not be substituted for a release. Native exceptional callback/setter timing and third-party variable-font appearance remain outside observed device coverage.
+- **Promotion:** [#966](https://github.com/CHS-Haple/Guiyuan/pull/966) integrated the accepted 0.9.1 / B1627 source into `main` without publishing a GitHub Release or changing the 1.0.0 stable-release boundary. The existing B1626 source-matched OS4 Release received focused target-device acceptance; B1627 changes version identity, documentation and release provenance, not feature behavior. The pinned PR423 source-built GlassDialog/Sheet remains the accepted OS4 candidate; every distributed CI channel must use its verified same-revision source graph, never the nonequivalent published MIUIX fallback. Native exceptional callback/setter timing and third-party variable-font appearance remain outside observed device coverage.
 
 ## Historical 0.9.0 checkpoint
 
