@@ -319,6 +319,7 @@ fun GlassNavigationBar(
                     Modifier.navTouchExtension(
                         bottomPadding = bottomPadding,
                         horizontalPadding = 0.dp,
+                        contentPadding = GlassNavigationBarDefaults.ContentPaddingHorizontal,
                         itemCount = items.size,
                         rtl = layoutDirection == LayoutDirection.Rtl,
                         onSelect = onSelect,

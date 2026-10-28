@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 internal fun Modifier.navTouchExtension(
     bottomPadding: Dp,
     horizontalPadding: Dp,
+    contentPadding: Dp,
     itemCount: Int,
     rtl: Boolean,
     onSelect: (Int) -> Unit,
@@ -33,11 +34,11 @@ internal fun Modifier.navTouchExtension(
         WindowInsets.mandatorySystemGestures.only(WindowInsetsSides.Bottom)
             .asPaddingValues().calculateBottomPadding(),
     )
-    val extension = (bottomPadding - bottomGestureInset - 4.dp).coerceIn(0.dp, 12.dp)
+    val extension = navTouchExtensionHeight(bottomPadding, bottomGestureInset)
     if (extension == 0.dp) return this
 
     val select = rememberUpdatedState(onSelect)
-    return this.pointerInput(bottomPadding, extension, horizontalPadding, itemCount, rtl) {
+    return this.pointerInput(bottomPadding, extension, horizontalPadding, contentPadding, itemCount, rtl) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false)
             val left = horizontalPadding.toPx()
@@ -56,12 +57,33 @@ internal fun Modifier.navTouchExtension(
             ) {
                 return@awaitEachGesture
             }
-            val width = right - left
-            if (width <= 0f) return@awaitEachGesture
-            val relativeX = if (rtl) right - up.position.x else up.position.x - left
-            val index = ((relativeX / width) * itemCount).toInt().coerceIn(0, itemCount - 1)
+            val index = navTouchIndex(
+                x = up.position.x,
+                left = left,
+                right = right,
+                contentPadding = contentPadding.toPx(),
+                count = itemCount,
+                rtl = rtl,
+            ) ?: return@awaitEachGesture
             up.consume()
             select.value(index)
         }
     }
+}
+
+internal fun navTouchExtensionHeight(bottomPadding: Dp, gestureInset: Dp): Dp =
+    (bottomPadding - gestureInset - 4.dp).coerceIn(0.dp, 12.dp)
+
+internal fun navTouchIndex(
+    x: Float,
+    left: Float,
+    right: Float,
+    contentPadding: Float,
+    count: Int,
+    rtl: Boolean,
+): Int? {
+    val width = right - left - contentPadding * 2f
+    if (count <= 0 || x < left || x >= right || width <= 0f) return null
+    val relative = if (rtl) right - contentPadding - x else x - left - contentPadding
+    return (relative / width * count).toInt().coerceIn(0, count - 1)
 }

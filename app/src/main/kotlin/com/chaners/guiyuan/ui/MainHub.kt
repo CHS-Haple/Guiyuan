@@ -304,6 +304,7 @@ internal fun MainHub(
                                         Modifier.navTouchExtension(
                                             bottomPadding = liquidBottomPadding,
                                             horizontalPadding = LiquidNavSpec.sidePadding,
+                                            contentPadding = 4.dp,
                                             itemCount = items.size,
                                             rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
                                             onSelect = ::selectPage,
