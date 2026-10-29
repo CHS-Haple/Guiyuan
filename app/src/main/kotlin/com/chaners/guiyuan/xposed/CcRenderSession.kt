@@ -496,10 +496,10 @@ internal object CcRenderSession {
         if (view == null) return "none"
         val location = IntArray(2)
         val hasLocation =
-            runCatching {
+            SysUiPresentationRuntime.optionalNativeRead {
                 view.getLocationOnScreen(location)
                 true
-            }.getOrDefault(false)
+            } == true
         return view.javaClass.simpleName +
             "(v=" + view.visibility +
             ",a=" + view.alpha +
