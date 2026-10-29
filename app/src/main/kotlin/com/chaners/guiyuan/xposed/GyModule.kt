@@ -4227,13 +4227,15 @@ class GyModule : XposedModule() {
 
     private fun onStatusHostCaptured(capture: SysUiHostRegistry.Capture) {
         try {
-            logDiagnostic(
-                level = Log.INFO,
-                event = "host.capture",
-                component = "statusHost",
-                "identity" to capture.identity,
-                "replacement" to capture.replacement,
-            )
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "host.capture",
+                    component = "statusHost",
+                    "identity" to capture.identity,
+                    "replacement" to capture.replacement,
+                )
+            }
             attachHostRuntime(
                 host = capture.host,
                 source = if (capture.replacement) "hostReplacement" else "hostCapture",
