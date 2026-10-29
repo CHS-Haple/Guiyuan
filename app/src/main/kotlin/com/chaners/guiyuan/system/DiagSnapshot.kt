@@ -24,10 +24,14 @@ internal data class DiagSnapshot(
             val env = RuntimeEnv.resolve(appCtx)
             val level = DiagRepo(appCtx).current()
             val log = DiagLogReader.read(appCtx)
-            val (entries, runtimeEvents) =
+            val (entries, runtimeEvents, fontAxis) =
                 withContext(Dispatchers.Default) {
                     val lines = log.sessionLines
-                    lines.map(DiagLogParser::parse) to RuntimeEventSnapshot.fromLines(lines)
+                    Triple(
+                        lines.map(DiagLogParser::parse),
+                        RuntimeEventSnapshot.fromLines(lines),
+                        NativeFontAxis.diagnosticState(appCtx),
+                    )
                 }
 
             return DiagSnapshot(
@@ -37,7 +41,7 @@ internal data class DiagSnapshot(
                 runtimeEvents = runtimeEvents,
                 entries = entries,
                 capturedAt = OffsetDateTime.now(),
-                fontAxis = NativeFontAxis.diagnosticState(appCtx),
+                fontAxis = fontAxis,
             )
         }
     }
