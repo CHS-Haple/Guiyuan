@@ -69,6 +69,15 @@ class DiagnosticsLogPresentationTest {
     }
 
     @Test
+    fun duplicateLogLinesHaveDistinctStableRowKeys() {
+        val a = legacy("connectivity source=capabilities transport=WIFI")
+        val b = legacy("connectivity source=capabilities transport=WIFI")
+        assertEquals(a.key, b.key)
+        assertEquals(logRowKey(a, 0), logRowKey(b, 0))
+        assertFalse(logRowKey(a, 0) == logRowKey(b, 1))
+    }
+
+    @Test
     fun batteryReconcileDetailsPreferOriginalChargingFields() {
         val entry = structured(
             "battery.reconcile",
