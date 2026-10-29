@@ -31,7 +31,9 @@ internal data class DiagSnapshot(
                     Triple(
                         lines.map(DiagLogParser::parse),
                         RuntimeEventSnapshot.fromLines(lines),
-                        if (BuildConfig.DEVELOPMENT_PROBES) NativeFontAxis.diagnosticState(appCtx) else null,
+                        if (BuildConfig.FONT_AXIS_DIAGNOSTIC && level == DiagLevel.Detailed) {
+                            NativeFontAxis.diagnosticState(appCtx)
+                        } else null,
                     )
                 }
 
