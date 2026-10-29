@@ -90,6 +90,13 @@ internal object DiagReport {
                     (env.sysUiVersionCode?.toString() ?: "unknown"),
             )
             appendLine()
+            if (BuildConfig.DEVELOPMENT_PROBES && snapshot.fontAxis != null) {
+                appendLine("[Font axis diagnostics]")
+                appendLine("receipt=" + snapshot.fontAxis.receipt)
+                appendLine("mobile=" + snapshot.fontAxis.mobile)
+                appendLine("battery=" + snapshot.fontAxis.battery)
+                appendLine()
+            }
             appendLine("[Runtime snapshot]")
             appendLine("source=structured-runtime-events")
             runtimeEvents.reportLines().forEach(::appendLine)
