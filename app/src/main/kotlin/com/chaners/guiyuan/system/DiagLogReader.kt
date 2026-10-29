@@ -107,7 +107,10 @@ internal object DiagLogReader {
             }
         val failedNewGeneration =
             tagged.lastOrNull { (_, event) ->
-                if (event.event != "hotReload.complete" || event.state != "error") {
+                if (
+                    event.event != "hotReload.complete" ||
+                    (event.state != "error" && event.state != "unavailable")
+                ) {
                     false
                 } else {
                     val id = event.fields["sessionId"]
