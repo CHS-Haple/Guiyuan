@@ -69,6 +69,31 @@ class DiagnosticsLogPresentationTest {
     }
 
     @Test
+    fun batteryReconcileDetailsPreferOriginalChargingFields() {
+        val entry = structured(
+            "battery.reconcile",
+            linkedMapOf(
+                "source" to "hotReloadNativeIcon",
+                "reason" to "native-read",
+                "traceId" to "a7",
+                "owner" to "SystemUI",
+                "extra" to "extra",
+                "transferredCharging" to "true",
+                "nativeCharging" to "false",
+                "nativePercent" to "82",
+            ),
+        )
+        val details = logDetailFields(entry)
+        assertEquals(5, details.size)
+        assertEquals(
+            listOf("transferredCharging", "nativeCharging", "nativePercent", "source", "reason"),
+            details.map { it.first },
+        )
+        assertEquals(listOf("true", "false", "82"), details.take(3).map { it.second })
+        assertTrue(entry.raw.contains("traceId=a7"))
+    }
+
+    @Test
     fun expandedFieldsStayBoundedAndKeepRootCauseEvidence() {
         val entry = structured(
             "hotReload.complete",

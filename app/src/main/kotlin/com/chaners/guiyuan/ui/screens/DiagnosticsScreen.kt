@@ -1216,16 +1216,19 @@ internal fun isRuntimeLog(entry: LogEntry, focusedCategory: LogCategory? = null)
     }
 }
 
-internal fun logDetailFields(entry: LogEntry): List<Pair<String, String>> =
-    entry.fields
+internal fun logDetailFields(entry: LogEntry): List<Pair<String, String>> {
+    val priority =
+        if (entry.event == "battery.reconcile") BATTERY_DETAIL_PRIORITY else DETAIL_FIELD_PRIORITY
+    return entry.fields
         .asSequence()
         .filter { (key, _) -> key !in LOG_META_FIELDS }
         .sortedBy { (key, _) ->
-            DETAIL_FIELD_PRIORITY.indexOf(key).let { if (it < 0) Int.MAX_VALUE else it }
+            priority.indexOf(key).let { if (it < 0) Int.MAX_VALUE else it }
         }
         .take(MAX_DETAIL_FIELDS)
         .map { (key, value) -> key to value }
         .toList()
+}
 
 private fun levelLabel(level: LogLevel): String =
     when (level) {
@@ -1632,3 +1635,6 @@ private val LOG_META_FIELDS =
     )
 
 private val DETAIL_FIELD_PRIORITY = listOf("reason", "source", "traceId", "target", "owner")
+private val BATTERY_DETAIL_PRIORITY = listOf(
+    "transferredCharging", "nativeCharging", "nativePercent", "source", "reason",
+)
