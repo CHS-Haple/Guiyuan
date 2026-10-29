@@ -524,7 +524,13 @@ internal fun DiagnosticsScreen(
                     LogEmptyGuide(
                         title = stringResource(R.string.diagnostics_root_unavailable_title),
                         description = stringResource(R.string.diagnostics_root_unavailable_message),
-                        note = stringResource(R.string.diagnostics_root_unavailable_export),
+                        note = stringResource(
+                            if (snapshot?.log?.sessionLines?.isNotEmpty() == true) {
+                                R.string.diagnostics_root_partial_export
+                            } else {
+                                R.string.diagnostics_root_unavailable_export
+                            },
+                        ),
                         icon = MiuixIcons.Medium.Report,
                         busy = loading,
                         onRetry = ::refresh,
