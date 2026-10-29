@@ -175,7 +175,7 @@ jobs:
             printf '%s\n' "- Source branch: \`$branch\`"
             printf '%s\n' "- Resolved SHA: \`$source_sha\`"
             printf '%s\n' "- APK variant: \`$variant\`"
-            printf '%s\n' "- Validation: this workflow signs only a successful exact-SHA PR Build artifact; no PR code executes here"
+            printf '%s\n' "- Validation: this workflow signs only a successful exact-SHA Build artifact; no mutable source executes here"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Require an accepted matching PR and a successful exact-SHA Build
@@ -196,7 +196,7 @@ jobs:
             test "$(jq -r '.commit.sha' <<< "$branch_json")" = "$SOURCE_SHA"
             artifact="unsigned-it-internal-$SOURCE_SHA"
             event="push"
-            pr_number="protected-it"
+            pr_number=""
           else
             prs="$(gh api -X GET "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100")"
             pr_number="$(jq -r \
@@ -245,8 +245,12 @@ jobs:
             echo "artifact_name=$artifact"
           } >> "$GITHUB_OUTPUT"
           {
-            echo "### Signed Canary admission"
-            echo "- PR: #$pr_number"
+            echo "### Signed APK admission"
+            if [[ "$SOURCE_BRANCH" == "it" ]]; then
+              echo "- Source: protected IT branch"
+            else
+              echo "- PR: #$pr_number"
+            fi
             echo "- Source SHA: $SOURCE_SHA"
             echo "- Trusted successful PR Build: $run_id"
             echo "- Build: $build"
@@ -255,7 +259,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   sign:
-    name: Signed work-branch Canary
+    name: Sign reviewed Canary / protected IT Internal
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
