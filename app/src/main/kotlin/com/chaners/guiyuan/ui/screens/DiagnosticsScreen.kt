@@ -275,9 +275,11 @@ internal fun DiagnosticsScreen(
     val filterActive =
         levelFilter != LEVEL_ALL ||
             categoryFilter != CAT_ALL
+    val showRootGuide = !viewCleared && entries.isEmpty() && snapshot?.log?.result?.isSuccess == false
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
+        compactTopBar = showRootGuide,
         titlePadding = if (LocalUiStyle.current == UiStyle.OS4) TopAppBarDefaults.TitlePadding else 0.dp,
         glassActions = true,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
@@ -472,7 +474,7 @@ internal fun DiagnosticsScreen(
                     )
                 }
             }
-            entries.isEmpty() && snapshot?.log?.result?.isSuccess == false -> {
+            showRootGuide -> {
                 item(key = "diagnostics-root-unavailable") {
                     LogEmptyGuide(
                         title = stringResource(R.string.diagnostics_root_unavailable_title),
