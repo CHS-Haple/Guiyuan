@@ -1892,7 +1892,7 @@ class GyModule : XposedModule() {
         if (Build.VERSION.SDK_INT < 34) return
         val host = SysUiHostRegistry.current() as? View
         if (host == null) {
-            if (force && BuildConfig.DEVELOPMENT_PROBES) {
+            if (force && BuildConfig.FONT_AXIS_DIAGNOSTIC) {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "fontAxis.report",
@@ -1964,7 +1964,7 @@ class GyModule : XposedModule() {
             reportedBatteryFontPath = batteryFont?.second
             reportedFontHost = host
             fontAxisReported = true
-            if (BuildConfig.DEVELOPMENT_PROBES) {
+            if (BuildConfig.FONT_AXIS_DIAGNOSTIC) {
                 logDiagnostic(
                     level = Log.INFO,
                     event = "fontAxis.report",
@@ -1976,7 +1976,7 @@ class GyModule : XposedModule() {
             }
         }.onFailure { error ->
             SysUiHotReload.rethrowFatal(error)
-            if (BuildConfig.DEVELOPMENT_PROBES) {
+            if (BuildConfig.FONT_AXIS_DIAGNOSTIC) {
                 logDiagnostic(
                     level = Log.WARN,
                     event = "fontAxis.report",
@@ -4560,7 +4560,7 @@ class GyModule : XposedModule() {
             Handler(Looper.getMainLooper()).post { onFontAxisRequest() }
             return
         }
-        if (BuildConfig.DEVELOPMENT_PROBES) {
+        if (BuildConfig.FONT_AXIS_DIAGNOSTIC) {
             logDiagnostic(
                 level = Log.INFO,
                 event = "fontAxis.request",

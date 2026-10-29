@@ -90,7 +90,7 @@ internal object DiagReport {
                     (env.sysUiVersionCode?.toString() ?: "unknown"),
             )
             appendLine()
-            if (BuildConfig.DEVELOPMENT_PROBES && snapshot.fontAxis != null) {
+            if (BuildConfig.FONT_AXIS_DIAGNOSTIC && level == DiagLevel.Detailed && snapshot.fontAxis != null) {
                 appendLine("[Font axis diagnostics]")
                 appendLine("receipt=" + snapshot.fontAxis.receipt)
                 appendLine("mobile=" + snapshot.fontAxis.mobile)

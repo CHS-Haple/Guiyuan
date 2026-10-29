@@ -125,6 +125,7 @@ android {
             }
             buildConfigField("String", "BUILD_CHANNEL", "\"debug\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "true")
+            buildConfigField("boolean", "FONT_AXIS_DIAGNOSTIC", "true")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
             buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
             if (hapleSigningEnabled) {
@@ -134,6 +135,7 @@ android {
         release {
             buildConfigField("String", "BUILD_CHANNEL", "\"release\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
+            buildConfigField("boolean", "FONT_AXIS_DIAGNOSTIC", "false")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "false")
             buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
             isMinifyEnabled = true
@@ -154,6 +156,19 @@ android {
             buildConfigField("String", "BUILD_CHANNEL", "\"canary\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+        }
+        if (isItChannel) {
+            create("itDiagnostic") {
+                initWith(getByName("release"))
+                if (itVersionSuffix != null) versionNameSuffix = itVersionSuffix
+                matchingFallbacks += listOf("canary", "release")
+                isDebuggable = false
+                buildConfigField("String", "BUILD_CHANNEL", "\"it-debug\"")
+                buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
+                buildConfigField("boolean", "FONT_AXIS_DIAGNOSTIC", "true")
+                buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+                buildConfigField("boolean", "REPO_LINK_ENABLED", "false")
+            }
         }
         create("internal") {
             initWith(getByName("release"))
