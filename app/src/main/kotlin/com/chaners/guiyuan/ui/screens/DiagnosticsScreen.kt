@@ -279,6 +279,7 @@ internal fun DiagnosticsScreen(
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
+        keepCompactTitle = showRootGuide,
         titlePadding = if (LocalUiStyle.current == UiStyle.OS4) TopAppBarDefaults.TitlePadding else 0.dp,
         glassActions = true,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },

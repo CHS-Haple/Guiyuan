@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.drawWithContent
@@ -32,6 +33,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -182,6 +184,7 @@ internal fun SettingsPage(
     glassActions: Boolean = false,
     titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     titleAlpha: Float = 1f,
+    keepCompactTitle: Boolean = false,
     userScrollEnabled: Boolean = true,
     listState: LazyListState? = null,
     pullToRefresh: SettingsPullToRefresh? = null,
@@ -194,6 +197,11 @@ internal fun SettingsPage(
     val resolvedListState = listState ?: rememberLazyListState()
     val topBarBackdrop = rememberTopBarBackdrop()
     val os4 = LocalUiStyle.current == UiStyle.OS4
+    if (os4 && keepCompactTitle) {
+        DisposableEffect(scrollBehavior) {
+            onDispose { scrollBehavior.state.heightOffset = 0f }
+        }
+    }
     val navigationIcon: @Composable () -> Unit = {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -222,6 +230,18 @@ internal fun SettingsPage(
                 GlassTopAppBar(
                     isContentScrolled = resolvedListState.canScrollBackward,
                     title = title,
+                    modifier =
+                        if (keepCompactTitle) {
+                            Modifier.onGloballyPositioned {
+                                val state = scrollBehavior.state
+                                val limit = state.heightOffsetLimit
+                                if (limit.isFinite() && limit < 0f && state.heightOffset != limit) {
+                                    state.heightOffset = limit
+                                }
+                            }
+                        } else {
+                            Modifier
+                        },
                     backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
                     titleAlpha = { titleAlpha },
