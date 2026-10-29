@@ -86,7 +86,7 @@ jobs:
           # Only a reviewed main push seeds reusable cache; manual dispatch is read-only.
           cache-read-only: ${{ github.event_name != 'push' || github.ref != 'refs/heads/main' }}
 
-      - name: Test and assemble source-matched unsigned Internal and Release
+      - name: Test and assemble source-matched unsigned Release
         shell: bash
         run: |
           set -euo pipefail
@@ -95,20 +95,17 @@ jobs:
             -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
             -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
             -Pgy.os4.dialogSurfaces=true \
-            :app:testDebugUnitTest :app:assembleInternal :app:assembleRelease \
+            :app:testDebugUnitTest :app:assembleRelease \
             --no-daemon --max-workers=2 --stacktrace
-          internal="app/build/outputs/apk/internal/app-internal-unsigned.apk"
           release="app/build/outputs/apk/release/app-release-unsigned.apk"
-          test -s "$internal" && test -s "$release"
-          bash tools/verify_xposed_metadata.sh "$internal" "$release"
+          test -s "$release"
+          bash tools/verify_xposed_metadata.sh "$release"
 
       - name: Transfer unsigned outputs across signing boundary
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unsigned-main-${{ github.sha }}
-          path: |
-            app/build/outputs/apk/internal/app-internal-unsigned.apk
-            app/build/outputs/apk/release/app-release-unsigned.apk
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
           retention-days: 1
 
@@ -191,7 +188,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   sign:
-    name: Sign and verify main IT / Release
+    name: Sign and verify main Release
     needs: [build, admit]
     if: >-
       always() &&
@@ -256,7 +253,7 @@ jobs:
           HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
         run: bash tools/setup_haple_signing.sh
 
-      - name: Sign and verify both distribution channels
+      - name: Sign and verify Release
         shell: bash
         env:
           HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
@@ -270,10 +267,9 @@ jobs:
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           signer="$SDK_ROOT/build-tools/37.0.0/apksigner"
           mkdir -p dist
-          for channel in internal release; do
-            source="candidate/${channel}/app-${channel}-unsigned.apk"
-            test -s "$source"
-            apk="dist/Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-${channel}.apk"
+          source="candidate/app-release-unsigned.apk"
+          test -s "$source"
+          apk="dist/Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-release.apk"
             "$signer" sign \
               --ks "$HAPLE_KEYSTORE_PATH" --ks-key-alias "$HAPLE_KEY_ALIAS" \
               --ks-pass env:HAPLE_KEYSTORE_PASSWORD --key-pass env:HAPLE_KEYSTORE_PASSWORD \
@@ -285,15 +281,11 @@ jobs:
             package="$(sed -n "s/.*package: name='\([^']*\)'.*/\1/p" <<< "$badging" | head -n 1)"
             version="$(sed -n "s/.*versionName='\([^']*\)'.*/\1/p" <<< "$badging" | head -n 1)"
             test "$package" = com.chaners.guiyuan
-            expected_version="$VERSION_NAME"
-            if [[ "$channel" == internal ]]; then expected_version="${VERSION_NAME}-internal"; fi
-            test "$version" = "$expected_version"
+            test "$version" = "$VERSION_NAME"
             APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
             test "$("$APKANALYZER" manifest debuggable "$apk")" = false
-            echo "Signed $channel / main SHA $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
-            sha256sum "$apk" >> "$GITHUB_STEP_SUMMARY"
-          done
-          echo "INTERNAL_APK_NAME=Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-internal.apk" >> "$GITHUB_ENV"
+          echo "Signed Release / main SHA $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum "$apk" >> "$GITHUB_STEP_SUMMARY"
           echo "APK_NAME=Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-release.apk" >> "$GITHUB_ENV"
 
       - name: Validate stable release boundary
@@ -318,13 +310,6 @@ jobs:
               raise SystemExit("User-facing stable release notes are required.")
           pathlib.Path("release-notes.md").write_text(user_notes + "\n", encoding="utf-8")
           PY
-
-      - name: Upload signed Internal IT
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: ${{ env.INTERNAL_APK_NAME }}
-          path: dist/${{ env.INTERNAL_APK_NAME }}
-          if-no-files-found: error
 
       - name: Upload signed Release APK
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
