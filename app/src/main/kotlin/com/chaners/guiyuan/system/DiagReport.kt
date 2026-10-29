@@ -7,19 +7,25 @@ internal object DiagReport {
     private const val DETAILED_LINES = 600
     private const val RELEASE_LINES = 120
 
+    internal fun exportLineLimit(level: DiagLevel): Int =
+        if (
+            level == DiagLevel.Detailed &&
+            (BuildConfig.RUNTIME_DIAGNOSTICS || BuildConfig.DEVELOPMENT_PROBES)
+        ) {
+            DETAILED_LINES
+        } else {
+            RELEASE_LINES
+        }
+
+    internal fun omittedEarlierLines(snapshot: DiagSnapshot): Int =
+        (snapshot.log.sessionLines.size - exportLineLimit(snapshot.level)).coerceAtLeast(0)
+
     internal fun build(snapshot: DiagSnapshot): String {
         val env = snapshot.env
         val level = snapshot.level
         val log = snapshot.log
-        val limit =
-            if (
-                level == DiagLevel.Detailed &&
-                (BuildConfig.RUNTIME_DIAGNOSTICS || BuildConfig.DEVELOPMENT_PROBES)
-            ) {
-                DETAILED_LINES
-            } else {
-                RELEASE_LINES
-            }
+        val limit = exportLineLimit(level)
+        val omitted = omittedEarlierLines(snapshot)
         val lines = log.sessionLines
         val runtimeEvents = snapshot.runtimeEvents
         val logLines = lines.takeLast(limit)
@@ -93,6 +99,10 @@ internal object DiagReport {
             appendLine("collection=" + collectionState(log.result))
             if (log.result.truncated) appendLine("capture=latest-complete-lines-only")
             appendLine("lines=" + logLines.size)
+            if (omitted > 0) {
+                appendLine("report=latest-session-lines-only")
+                appendLine("omittedEarlierSessionLines=" + omitted)
+            }
             if (logLines.isEmpty()) {
                 appendLine(
                     if (log.result.isSuccess) {

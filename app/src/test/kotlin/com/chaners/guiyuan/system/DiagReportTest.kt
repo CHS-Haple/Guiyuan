@@ -2,6 +2,7 @@ package com.chaners.guiyuan.system
 
 import com.chaners.guiyuan.settings.DiagLevel
 import java.time.OffsetDateTime
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -104,6 +105,30 @@ class DiagReportTest {
     @Test
     fun truncatedCaptureIsDisclosed() {
         assertTrue(report(truncated = true).contains("capture=latest-complete-lines-only"))
+    }
+
+    @Test
+    fun reportLineLimitIsDisclosedOnlyWhenEarlierSessionLinesAreOmitted() {
+        val limit = DiagReport.exportLineLimit(DiagLevel.Detailed)
+        val exactlyAtLimit = report(*Array(limit) { "record-${it + 1}" })
+        assertFalse(exactlyAtLimit.contains("omittedEarlierSessionLines="))
+        assertFalse(exactlyAtLimit.contains("report=latest-session-lines-only"))
+
+        val oneOverLimit = report(*Array(limit + 1) { "record-${it + 1}" })
+        assertTrue(oneOverLimit.contains("lines=${limit}\n"))
+        assertTrue(oneOverLimit.contains("report=latest-session-lines-only"))
+        assertTrue(oneOverLimit.contains("omittedEarlierSessionLines=1"))
+        assertFalse(oneOverLimit.contains("\nrecord-1\n"))
+        assertTrue(oneOverLimit.contains("\nrecord-${limit + 1}\n"))
+    }
+
+    @Test
+    fun captureTruncationAndReportLineLimitAreBothDisclosed() {
+        val limit = DiagReport.exportLineLimit(DiagLevel.Detailed)
+        val result = report(*Array(limit + 3) { "record-${it + 1}" }, truncated = true)
+        assertTrue(result.contains("capture=latest-complete-lines-only"))
+        assertTrue(result.contains("omittedEarlierSessionLines=3"))
+        assertTrue(result.contains("lines=${limit}\n"))
     }
 
     @Test
