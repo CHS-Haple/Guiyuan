@@ -325,7 +325,17 @@ jobs:
             -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
             -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
             -Pgy.os4.dialogSurfaces=true \
-            "${TASKS[@]}" --no-daemon --max-workers=2 --stacktrace
+            "${TASKS[@]}" --no-daemon --max-workers=2 --stacktrace --parallel --profile
+
+      # Experiment-only profile. Do not merge profiler or parallel flag without evidence.
+      - name: Upload parallel Gradle performance profile (experiment only)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/ci-parallel-profile-trial' && steps.scope.outputs.run_android == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gradle-parallel-profile-${{ github.event.pull_request.head.sha }}
+          path: build/reports/profile/*.html
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Resolve built APK paths
         if: steps.scope.outputs.run_android == 'true'
