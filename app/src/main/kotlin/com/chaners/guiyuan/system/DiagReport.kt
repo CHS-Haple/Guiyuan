@@ -90,6 +90,11 @@ internal object DiagReport {
                     (env.sysUiVersionCode?.toString() ?: "unknown"),
             )
             appendLine()
+            appendLine("[Font axis]")
+            appendLine("receipt=" + (snapshot.fontAxis?.receipt ?: "not-observed"))
+            appendLine("mobile=" + (snapshot.fontAxis?.mobile ?: "not-observed"))
+            appendLine("battery=" + (snapshot.fontAxis?.battery ?: "not-observed"))
+            appendLine()
             appendLine("[Runtime snapshot]")
             appendLine("source=structured-runtime-events")
             runtimeEvents.reportLines().forEach(::appendLine)

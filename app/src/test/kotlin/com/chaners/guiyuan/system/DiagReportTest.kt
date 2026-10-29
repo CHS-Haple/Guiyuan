@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.system
 
 import com.chaners.guiyuan.settings.DiagLevel
+import com.chaners.guiyuan.settings.NativeFontAxis
 import java.time.OffsetDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -8,6 +9,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DiagReportTest {
+    @Test
+    fun fontAxisDiagnosticsDoNotClaimSubmissionProvesReceipt() {
+        val result = report(
+            fontAxis = NativeFontAxis.DiagnosticState(
+                receipt = "not-received",
+                mobile = "pending",
+                battery = "pending",
+            ),
+        )
+        assertTrue(result.contains("[Font axis]\nreceipt=not-received\nmobile=pending\nbattery=pending"))
+    }
+
     @Test
     fun missingRuntimeLevelIsNotMistakenForBindingFailure() {
         val report = report(
@@ -180,6 +193,7 @@ class DiagReportTest {
         truncated: Boolean = false,
         collection: RootShell.Result? = null,
         level: DiagLevel = DiagLevel.Detailed,
+        fontAxis: NativeFontAxis.DiagnosticState? = null,
     ): String {
         val recorded = lines.toList()
         return DiagReport.build(
@@ -205,6 +219,7 @@ class DiagReportTest {
                 runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
                 entries = recorded.map(DiagLogParser::parse),
                 capturedAt = OffsetDateTime.parse("2026-10-08T22:00:00+08:00"),
+                fontAxis = fontAxis,
             ),
         )
     }

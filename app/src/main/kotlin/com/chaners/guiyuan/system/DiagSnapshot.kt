@@ -3,6 +3,7 @@ package com.chaners.guiyuan.system
 import android.content.Context
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.DiagRepo
+import com.chaners.guiyuan.settings.NativeFontAxis
 import java.time.OffsetDateTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,6 +15,7 @@ internal data class DiagSnapshot(
     val runtimeEvents: RuntimeEventSnapshot,
     val entries: List<LogEntry>,
     val capturedAt: OffsetDateTime,
+    val fontAxis: NativeFontAxis.DiagnosticState? = null,
 ) {
     companion object {
         // Capture once so the screen and exported report describe the same runtime session.
@@ -35,6 +37,7 @@ internal data class DiagSnapshot(
                 runtimeEvents = runtimeEvents,
                 entries = entries,
                 capturedAt = OffsetDateTime.now(),
+                fontAxis = NativeFontAxis.diagnosticState(appCtx),
             )
         }
     }
