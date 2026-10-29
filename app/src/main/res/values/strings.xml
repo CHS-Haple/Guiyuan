@@ -362,6 +362,8 @@
     <string name="diagnostics_log_battery_percent">Battery %1$d%%</string>
     <string name="diagnostics_events_summary">Showing %1$d events</string>
     <string name="diagnostics_collection_incomplete">Log collection did not complete; the available events may be incomplete.</string>
+    <string name="diagnostics_capture_truncated">Log capture exceeded its size limit. Only the latest complete lines were retained; earlier records may be missing.</string>
+    <string name="diagnostics_report_lines_omitted">The exported report will omit %1$d earlier session log lines due to its line limit.</string>
     <string name="diagnostics_component_module">Module</string>
     <string name="diagnostics_component_compatibility">Compatibility</string>
     <string name="diagnostics_component_status_host">Status bar host</string>

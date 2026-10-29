@@ -276,8 +276,21 @@ internal fun DiagnosticsScreen(
         levelFilter != LEVEL_ALL ||
             categoryFilter != CAT_ALL
     val collectionFailed = snapshot?.log?.result?.isSuccess == false
+    val captureTruncated = snapshot?.log?.result?.truncated == true
+    val omittedEarlierLines = snapshot?.let(DiagReport::omittedEarlierLines) ?: 0
     val showRootGuide = !viewCleared && entries.isEmpty() && collectionFailed
-    val showIncompleteNotice = !viewCleared && entries.isNotEmpty() && collectionFailed
+    val integrityNotice =
+        listOfNotNull(
+            if (collectionFailed && entries.isNotEmpty()) {
+                stringResource(R.string.diagnostics_collection_incomplete)
+            } else null,
+            if (captureTruncated) {
+                stringResource(R.string.diagnostics_capture_truncated)
+            } else null,
+            if (omittedEarlierLines > 0) {
+                stringResource(R.string.diagnostics_report_lines_omitted, omittedEarlierLines)
+            } else null,
+        ).joinToString("\n")
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
@@ -400,10 +413,10 @@ internal fun DiagnosticsScreen(
                 )
             },
     ) {
-        if (showIncompleteNotice) {
-            item(key = "diagnostics-incomplete-collection") {
+        if (!viewCleared && !showRootGuide && integrityNotice.isNotEmpty()) {
+            item(key = "diagnostics-log-integrity") {
                 Text(
-                    text = stringResource(R.string.diagnostics_collection_incomplete),
+                    text = integrityNotice,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceSecondary,
@@ -524,13 +537,16 @@ internal fun DiagnosticsScreen(
                     LogEmptyGuide(
                         title = stringResource(R.string.diagnostics_root_unavailable_title),
                         description = stringResource(R.string.diagnostics_root_unavailable_message),
-                        note = stringResource(
-                            if (snapshot?.log?.sessionLines?.isNotEmpty() == true) {
-                                R.string.diagnostics_root_partial_export
-                            } else {
-                                R.string.diagnostics_root_unavailable_export
-                            },
-                        ),
+                        note = listOfNotNull(
+                            stringResource(
+                                if (snapshot?.log?.sessionLines?.isNotEmpty() == true) {
+                                    R.string.diagnostics_root_partial_export
+                                } else {
+                                    R.string.diagnostics_root_unavailable_export
+                                },
+                            ),
+                            integrityNotice.takeIf(String::isNotEmpty),
+                        ).joinToString("\n"),
                         icon = MiuixIcons.Medium.Report,
                         busy = loading,
                         onRetry = ::refresh,

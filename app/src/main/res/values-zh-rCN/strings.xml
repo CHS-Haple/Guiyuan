@@ -361,6 +361,8 @@
     <string name="diagnostics_log_battery_percent">电量 %1$d%%</string>
     <string name="diagnostics_events_summary">当前显示 %1$d 条日志</string>
     <string name="diagnostics_collection_incomplete">日志读取未完成，当前事件记录可能不完整。</string>
+    <string name="diagnostics_capture_truncated">日志采集超过容量上限，仅保留最近的完整日志行，较早记录可能缺失。</string>
+    <string name="diagnostics_report_lines_omitted">导出报告受行数限制，将省略本次会话中较早的 %1$d 条日志。</string>
     <string name="diagnostics_component_module">模块</string>
     <string name="diagnostics_component_compatibility">兼容性</string>
     <string name="diagnostics_component_status_host">状态栏宿主</string>
