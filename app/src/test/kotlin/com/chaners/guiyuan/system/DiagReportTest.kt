@@ -107,6 +107,28 @@ class DiagReportTest {
     }
 
     @Test
+    fun timedOutCollectionRetainsPartialEvidenceAndFailureStatus() {
+        val raw = DiagProtocol.format(
+            event = "diagnostics.snapshot",
+            component = "diagnostics",
+            state = "ready",
+            fields = mapOf("sessionId" to "test-session"),
+        )
+        val report = report(
+            raw,
+            collection = RootShell.Result(
+                exitCode = null,
+                output = raw,
+                timedOut = true,
+                error = null,
+            ),
+        )
+        assertTrue(report.contains("collection=timeout"))
+        assertTrue(report.contains(raw))
+        assertTrue(!report.contains("No Guiyuan runtime log entries were available."))
+    }
+
+    @Test
     fun failedRootLogCollectionIsDistinguishedFromEmptyLog() {
         val report = report(collection = RootShell.Result(1, "", false, null))
         assertTrue(report.contains("Runtime logs were not collected."))
