@@ -26,6 +26,27 @@ class SysUiPresentationRuntimeTest {
     }
 
     @Test
+    fun optionalGeometryQueryFallsBackWithoutTreatingFatalAsFalse() {
+        val known = SysUiPresentationRuntime.optionalNativeRead { true } == true
+        val unavailable =
+            SysUiPresentationRuntime.optionalNativeRead<Boolean> {
+                throw IllegalStateException("location-unavailable")
+            } == true
+        assertEquals(true, known)
+        assertEquals(false, unavailable)
+
+        val fatal = OutOfMemoryError("geometry")
+        assertSame(
+            fatal,
+            runCatching {
+                SysUiPresentationRuntime.optionalNativeRead<Boolean> {
+                    throw InvocationTargetException(fatal)
+                } == true
+            }.exceptionOrNull(),
+        )
+    }
+
+    @Test
     fun optionalNativeReadPreservesDirectAndReflectedFatalErrors() {
         for (fatal in listOf<Throwable>(ThreadDeath(), OutOfMemoryError("native"))) {
             assertSame(
