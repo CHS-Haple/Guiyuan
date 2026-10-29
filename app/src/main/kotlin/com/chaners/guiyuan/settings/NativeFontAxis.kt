@@ -6,6 +6,8 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Process
+import android.os.SystemClock
+import com.chaners.guiyuan.BuildConfig
 import android.provider.Settings
 import java.lang.reflect.InvocationTargetException
 import kotlinx.coroutines.channels.awaitClose
@@ -24,6 +26,10 @@ internal object NativeFontAxis {
     const val BAT_DEFAULT = "battery_default"
     const val BAT_MAX = "battery_max"
     const val REQUEST_KEY = "native_font_axis_request"
+    const val TRACE_ID = "font_axis_delivery_trace"
+    private const val TRANSPORT_PREFS = "font_axis_transport_diagnostic"
+    private const val TRANSPORT_EVENTS = "events"
+    private const val MAX_TRANSPORT_EVENTS = 20
     private const val PREFS = "native_font_axis"
     private const val BOOT = "boot_count"
     private const val REPORTED = "reported"
@@ -39,7 +45,41 @@ internal object NativeFontAxis {
         val receipt: String,
         val mobile: String,
         val battery: String,
+        val savedBootPresent: Boolean,
+        val reported: Boolean,
+        val events: List<String>,
     )
+
+    internal enum class ReceiverReject { API, UID, PACKAGE, ACTION }
+
+    internal fun receiverReject(
+        sdk: Int,
+        uid: Int,
+        pkg: String?,
+        action: String?,
+    ): ReceiverReject? = when {
+        sdk < 34 -> ReceiverReject.API
+        uid != Process.SYSTEM_UID -> ReceiverReject.UID
+        pkg != "com.android.systemui" -> ReceiverReject.PACKAGE
+        action != ACTION -> ReceiverReject.ACTION
+        else -> null
+    }
+
+    internal fun appendTransportEvent(history: String, event: String): String =
+        (history.lineSequence().filter(String::isNotBlank).toList().takeLast(MAX_TRANSPORT_EVENTS - 1) +
+            event).joinToString("\n")
+
+    internal fun receiverEvent(context: Context, traceId: Long, stage: String, evidence: String) {
+        if (!BuildConfig.FONT_AXIS_DIAGNOSTIC) return
+        runCatching {
+            val prefs = context.applicationContext.getSharedPreferences(TRANSPORT_PREFS, Context.MODE_PRIVATE)
+            val event = "uptimeMs=${SystemClock.elapsedRealtime()} trace=$traceId stage=$stage $evidence"
+            synchronized(this) {
+                val old = prefs.getString(TRANSPORT_EVENTS, "").orEmpty()
+                prefs.edit().putString(TRANSPORT_EVENTS, appendTransportEvent(old, event)).apply()
+            }
+        }.onFailure(::rethrowFatal)
+    }
 
     internal fun receiptStatus(currentBoot: Int, savedBoot: Int, reported: Boolean): String =
         when {
@@ -60,14 +100,18 @@ internal object NativeFontAxis {
     internal fun diagnosticState(context: Context): DiagnosticState = runCatching {
         val app = context.applicationContext
         val prefs = prefs(app)
+        val savedBoot = prefs.getInt(BOOT, -1)
+        val reported = prefs.getBoolean(REPORTED, false)
+        val events = app.getSharedPreferences(TRANSPORT_PREFS, Context.MODE_PRIVATE)
+            .getString(TRANSPORT_EVENTS, "").orEmpty()
+            .lineSequence().filter(String::isNotBlank).toList().takeLast(MAX_TRANSPORT_EVENTS)
         DiagnosticState(
-            receipt = receiptStatus(
-                currentBoot = bootCount(app),
-                savedBoot = prefs.getInt(BOOT, -1),
-                reported = prefs.getBoolean(REPORTED, false),
-            ),
+            receipt = receiptStatus(bootCount(app), savedBoot, reported),
             mobile = stateLabel(read(app, prefs, MIN, DEFAULT, MAX)),
             battery = stateLabel(read(app, prefs, BAT_MIN, BAT_DEFAULT, BAT_MAX)),
+            savedBootPresent = savedBoot >= 0,
+            reported = reported,
+            events = events,
         )
     }.onFailure(::rethrowFatal).getOrDefault(
         DiagnosticState("read-error", "unknown", "unknown"),
@@ -130,13 +174,26 @@ internal object NativeFontAxis {
     ): Flow<State> = callbackFlow {
         val app = context.applicationContext
         val prefs = prefs(app)
+        val channel = if (min == BAT_MIN) "battery" else "mobile"
+        var previous: State? = null
+        fun publish(source: String) {
+            val state = read(app, prefs, min, default, max)
+            if (BuildConfig.FONT_AXIS_DIAGNOSTIC && previous != state) {
+                receiverEvent(
+                    app, 0L, "observer",
+                    "channel=$channel trigger=$source state=${stateLabel(state)}",
+                )
+            }
+            previous = state
+            trySend(state)
+        }
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (key == min || key == default || key == max || key == BOOT || key == REPORTED) {
-                trySend(read(app, prefs, min, default, max))
+                publish("preference")
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
-        trySend(read(app, prefs, min, default, max))
+        publish("initial")
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }.distinctUntilChanged()
 
@@ -162,11 +219,32 @@ internal object NativeFontAxis {
 
 class NativeFontAxisReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (Build.VERSION.SDK_INT < 34 ||
-            sentFromUid != Process.SYSTEM_UID ||
-            sentFromPackage != "com.android.systemui" ||
-            intent.action != NativeFontAxis.ACTION
-        ) return
+        val uid = if (Build.VERSION.SDK_INT >= 34) sentFromUid else Process.INVALID_UID
+        val pkg = if (Build.VERSION.SDK_INT >= 34) sentFromPackage else null
+        val reject = NativeFontAxis.receiverReject(Build.VERSION.SDK_INT, uid, pkg, intent.action)
+        val traceId = if (reject == null && BuildConfig.FONT_AXIS_DIAGNOSTIC) {
+            intent.getLongExtra(NativeFontAxis.TRACE_ID, 0L)
+        } else 0L
+        if (BuildConfig.FONT_AXIS_DIAGNOSTIC) {
+            val uidClass = when (uid) {
+                Process.SYSTEM_UID -> "system"
+                Process.INVALID_UID -> "unavailable"
+                else -> "other"
+            }
+            val pkgClass = when (pkg) {
+                "com.android.systemui" -> "systemui"
+                null -> "unavailable"
+                else -> "other"
+            }
+            NativeFontAxis.receiverEvent(
+                context, traceId, "entered",
+                "gate=${reject?.name?.lowercase() ?: "accepted"} uid=$uidClass pkg=$pkgClass " +
+                    "action=${intent.action == NativeFontAxis.ACTION} " +
+                    "mobileExtras=${intent.hasExtra(NativeFontAxis.MIN) && intent.hasExtra(NativeFontAxis.DEFAULT) && intent.hasExtra(NativeFontAxis.MAX)} " +
+                    "batteryExtras=${intent.hasExtra(NativeFontAxis.BAT_MIN) && intent.hasExtra(NativeFontAxis.BAT_DEFAULT) && intent.hasExtra(NativeFontAxis.BAT_MAX)}",
+            )
+        }
+        if (reject != null) return
 
         fun axis(min: String, default: String, max: String): FontWeightAxis? =
             if (intent.hasExtra(min) && intent.hasExtra(default) && intent.hasExtra(max)) {
@@ -178,10 +256,22 @@ class NativeFontAxisReceiver : BroadcastReceiver() {
                     ),
                 )
             } else null
-        NativeFontAxis.save(
-            context,
-            mobile = axis(NativeFontAxis.MIN, NativeFontAxis.DEFAULT, NativeFontAxis.MAX),
-            battery = axis(NativeFontAxis.BAT_MIN, NativeFontAxis.BAT_DEFAULT, NativeFontAxis.BAT_MAX),
-        )
+
+        val mobile = axis(NativeFontAxis.MIN, NativeFontAxis.DEFAULT, NativeFontAxis.MAX)
+        val battery = axis(NativeFontAxis.BAT_MIN, NativeFontAxis.BAT_DEFAULT, NativeFontAxis.BAT_MAX)
+        try {
+            NativeFontAxis.save(context, mobile, battery)
+            if (BuildConfig.FONT_AXIS_DIAGNOSTIC) {
+                val saved = NativeFontAxis.diagnosticState(context)
+                NativeFontAxis.receiverEvent(
+                    context, traceId, "saved",
+                    "receipt=${saved.receipt} storedBoot=${saved.savedBootPresent} " +
+                        "reported=${saved.reported} mobile=${saved.mobile} battery=${saved.battery}",
+                )
+            }
+        } catch (error: Throwable) {
+            NativeFontAxis.receiverEvent(context, traceId, "save-error", "type=${error.javaClass.simpleName}")
+            throw error
+        }
     }
 }
