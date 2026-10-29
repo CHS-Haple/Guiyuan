@@ -104,6 +104,10 @@ android {
     sourceSets.getByName("main").kotlin.directories.add(
         if (os4DialogSurfaces) "src/os4Upstream/kotlin" else "src/os4Published/kotlin",
     )
+    if (!projectLinkEnabled) {
+        // IT-owned read-only diagnostics; never included in public branch sources.
+        sourceSets.getByName("main").kotlin.directories.add("../it-only/kotlin")
+    }
 
     buildTypes {
         debug {
