@@ -314,7 +314,7 @@ jobs:
           if [[ "${{ steps.scope.outputs.scope }}" == "full" &&
                 ( ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.base.ref }}" == "main" ) ||
                   ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
-            TASKS+=(":app:assembleInternal" ":app:assembleRelease")
+            TASKS+=(":app:assembleRelease")
           elif [[ "${{ steps.scope.outputs.run_it_internal }}" == "true" ]]; then
             TASKS+=(":app:assembleInternal")
           fi
@@ -362,7 +362,7 @@ jobs:
           if [[ "${{ steps.scope.outputs.scope }}" == "full" &&
                 ( ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.base.ref }}" == "main" ) ||
                   ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
-            APKS+=("app/build/outputs/apk/internal/app-internal-unsigned.apk" "app/build/outputs/apk/release/app-release-unsigned.apk")
+            APKS+=("app/build/outputs/apk/release/app-release-unsigned.apk")
           elif [[ "${{ steps.scope.outputs.run_it_internal }}" == "true" ]]; then
             APKS+=("app/build/outputs/apk/internal/app-internal-unsigned.apk")
           fi
@@ -428,14 +428,12 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-      - name: Transfer verified main unsigned IT / Release for isolated signing
+      - name: Transfer verified main unsigned Release for isolated signing
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.scope.outputs.scope == 'full'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unsigned-main-${{ github.sha }}
-          path: |
-            app/build/outputs/apk/internal/app-internal-unsigned.apk
-            app/build/outputs/apk/release/app-release-unsigned.apk
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
           retention-days: 3
 
