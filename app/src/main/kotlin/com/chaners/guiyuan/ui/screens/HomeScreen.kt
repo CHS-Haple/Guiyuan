@@ -401,67 +401,58 @@ private fun HomeRuntimeCardBody(
             .background(cardGradient)
             .then(if (onCardClick == null) Modifier else Modifier.clickable(onClick = onCardClick)),
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 22.dp, vertical = 18.dp),
         ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                RuntimeStatusMark(
-                    kind = state.mark,
-                    color = accentColor,
-                    modifier =
-                        Modifier
-                            .align(Alignment.CenterEnd)
-                            .size(RuntimeStatusMarkSize),
-                )
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(end = 98.dp),
-                ) {
-                    Text(
-                        text = stringResource(state.titleRes),
-                        style =
-                            MiuixTheme.textStyles.title3.copy(
-                                fontWeight = FontWeight.Medium,
-                            ),
-                    )
-                    Text(
-                        text =
-                            stringResource(
-                                R.string.home_version_line,
-                                BuildConfig.VERSION_NAME,
-                            ),
-                        modifier = Modifier.padding(top = 5.dp),
-                        style =
-                            MiuixTheme.textStyles.body1.copy(
-                                fontWeight = FontWeight.Medium,
-                            ),
-                        color = MiuixTheme.colorScheme.onSurfaceContainer,
-                    )
-                    Text(
-                        text =
-                            stringResource(
-                                R.string.home_build_line,
-                                BuildConfig.BUILD_ID,
-                            ),
-                        modifier = Modifier.padding(top = 1.dp),
-                        style =
-                            MiuixTheme.textStyles.body1.copy(
-                                fontWeight = FontWeight.Medium,
-                            ),
-                        color = MiuixTheme.colorScheme.onSurfaceContainer,
-                    )
-                }
-            }
-            Text(
-                text = stringResource(state.summaryRes),
-                modifier = Modifier.padding(top = 12.dp),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            RuntimeStatusMark(
+                kind = state.mark,
+                color = accentColor,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(RuntimeStatusMarkSize),
             )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 98.dp),
+            ) {
+                Text(
+                    text = stringResource(state.titleRes),
+                    style = MiuixTheme.textStyles.title3.copy(
+                        fontWeight = FontWeight.Medium,
+                    ),
+                )
+                Text(
+                    text = stringResource(
+                        R.string.home_version_line,
+                        BuildConfig.VERSION_NAME,
+                    ),
+                    modifier = Modifier.padding(top = 5.dp),
+                    style = MiuixTheme.textStyles.body1.copy(
+                        fontWeight = FontWeight.Medium,
+                    ),
+                    color = MiuixTheme.colorScheme.onSurfaceContainer,
+                )
+                Text(
+                    text = stringResource(
+                        R.string.home_build_line,
+                        BuildConfig.BUILD_ID,
+                    ),
+                    modifier = Modifier.padding(top = 1.dp),
+                    style = MiuixTheme.textStyles.body1.copy(
+                        fontWeight = FontWeight.Medium,
+                    ),
+                    color = MiuixTheme.colorScheme.onSurfaceContainer,
+                )
+                Text(
+                    text = stringResource(state.summaryRes),
+                    modifier = Modifier.padding(top = 12.dp),
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                )
+            }
         }
         val switchTitle = stringResource(R.string.home_runtime_enable_title)
         BasicComponent(
