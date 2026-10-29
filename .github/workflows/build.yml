@@ -311,7 +311,9 @@ jobs:
           if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
             TASKS+=(":app:assembleCanary")
           fi
-          if [[ "${{ steps.scope.outputs.scope }}" == "full" && ( "${{ github.event_name }}" == "pull_request" || ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
+          if [[ "${{ steps.scope.outputs.scope }}" == "full" &&
+                ( ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.base.ref }}" == "main" ) ||
+                  ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
             TASKS+=(":app:assembleInternal" ":app:assembleRelease")
           elif [[ "${{ steps.scope.outputs.run_it_internal }}" == "true" ]]; then
             TASKS+=(":app:assembleInternal")
@@ -357,7 +359,9 @@ jobs:
           if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
             APKS+=("$CANARY_APK_PATH")
           fi
-          if [[ "${{ steps.scope.outputs.scope }}" == "full" && ( "${{ github.event_name }}" == "pull_request" || ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
+          if [[ "${{ steps.scope.outputs.scope }}" == "full" &&
+                ( ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.base.ref }}" == "main" ) ||
+                  ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
             APKS+=("app/build/outputs/apk/internal/app-internal-unsigned.apk" "app/build/outputs/apk/release/app-release-unsigned.apk")
           elif [[ "${{ steps.scope.outputs.run_it_internal }}" == "true" ]]; then
             APKS+=("app/build/outputs/apk/internal/app-internal-unsigned.apk")
