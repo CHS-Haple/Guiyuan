@@ -349,11 +349,12 @@ internal fun DiagnosticsScreen(
             DiagMenu(
                 title = menuTitle,
                 diagnosticsLevel = diagSettings.level,
+                canChangeLevel = !loading,
                 canScrollTop = !loading && !viewCleared && listState.canScrollBackward,
                 canScrollBottom = !loading && !viewCleared && listState.canScrollForward,
                 canClear = snapshot != null && !viewCleared,
                 onDiagLevelChange = { level ->
-                    if (level != diagSettings.level) {
+                    if (!loading && level != diagSettings.level) {
                         diagRepo.setLevel(level)
                         reloadSnapshot()
                     }
@@ -748,6 +749,7 @@ private fun LogFilterMenu(
 private fun DiagMenu(
     title: String,
     diagnosticsLevel: DiagLevel,
+    canChangeLevel: Boolean,
     canScrollTop: Boolean,
     canScrollBottom: Boolean,
     canClear: Boolean,
@@ -776,6 +778,7 @@ private fun DiagMenu(
                         },
                     ),
                 selected = diagnosticsLevel == level,
+                enabled = canChangeLevel,
                 onClick = { onDiagLevelChange(level) },
             )
         }
@@ -787,6 +790,7 @@ private fun DiagMenu(
                         DropdownItem(
                             text = stringResource(R.string.diagnostics_mode_title),
                             summary = currentLevelLabel,
+                            enabled = canChangeLevel,
                             children = levelItems,
                         ),
                     ),
