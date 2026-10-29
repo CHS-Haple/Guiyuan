@@ -3002,7 +3002,9 @@ class GyModule : XposedModule() {
         }
 
         if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
-            SysUiKeyguardHostProbe.capture(update)?.let(::onKeyguardHostProbe)
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
+                SysUiKeyguardHostProbe.capture(update)?.let(::onKeyguardHostProbe)
+            }
         }
 
         SysUiTintSource.currentState(update.sourceView)?.let { state ->
