@@ -75,25 +75,28 @@ internal object HotReloadTransfer {
         )
     }
 
+    // V9's eleventh element was an old-ClassLoader Runnable. Only neutral
+    // transfers can cross the API 102 generation boundary.
+    internal fun payloadSizeFor(version: Int): Int? =
+        when (version) {
+            VERSION -> CURRENT_PAYLOAD_SIZE
+            UNSAFE_CALLBACK_TRANSFER_VERSION -> null
+            PRESENTATION_TRANSFER_VERSION -> PRESENTATION_PAYLOAD_SIZE
+            TINT_TRANSFER_VERSION -> TINT_PAYLOAD_SIZE
+            CONTROL_CENTER_TRANSFER_VERSION -> CONTROL_CENTER_PAYLOAD_SIZE
+            SHADE_TRANSFER_VERSION -> SHADE_PAYLOAD_SIZE
+            PREVIOUS_VERSION -> PREVIOUS_PAYLOAD_SIZE
+            NATIVE_TRANSFER_VERSION -> NATIVE_PAYLOAD_SIZE
+            VISUAL_TRANSFER_VERSION -> VISUAL_PAYLOAD_SIZE
+            LEGACY_VERSION -> LEGACY_PAYLOAD_SIZE
+            else -> null
+        }
+
     fun restore(raw: Any?): Restored? {
         val payload = raw as? Array<*> ?: return null
         val version = (payload.getOrNull(INDEX_VERSION) as? Number)?.toInt()
             ?: return null
-        val expectedSize =
-            when (version) {
-                VERSION -> CURRENT_PAYLOAD_SIZE
-                // V9 embedded an old-module Runnable; reject it before reading Views.
-                UNSAFE_CALLBACK_TRANSFER_VERSION -> return null
-                PRESENTATION_TRANSFER_VERSION -> PRESENTATION_PAYLOAD_SIZE
-                TINT_TRANSFER_VERSION -> TINT_PAYLOAD_SIZE
-                CONTROL_CENTER_TRANSFER_VERSION -> CONTROL_CENTER_PAYLOAD_SIZE
-                SHADE_TRANSFER_VERSION -> SHADE_PAYLOAD_SIZE
-                PREVIOUS_VERSION -> PREVIOUS_PAYLOAD_SIZE
-                NATIVE_TRANSFER_VERSION -> NATIVE_PAYLOAD_SIZE
-                VISUAL_TRANSFER_VERSION -> VISUAL_PAYLOAD_SIZE
-                LEGACY_VERSION -> LEGACY_PAYLOAD_SIZE
-                else -> return null
-            }
+        val expectedSize = payloadSizeFor(version) ?: return null
         if (payload.size != expectedSize) {
             return null
         }
