@@ -15,15 +15,6 @@ internal object StatusBarStableSession {
     private var current: Session? = null
     private val retirement = RetirementGate<Session>()
 
-    // Diagnostics are passive; only fatal VM failures may escape a native layout callback.
-    internal inline fun emitDiagnostic(block: () -> Unit) {
-        try {
-            block()
-        } catch (error: Throwable) {
-            SysUiPresentationRuntime.throwIfFatal(error)
-        }
-    }
-
     private fun stop(session: Session) {
         retirement.release(session) {
             session.stop()
@@ -177,7 +168,7 @@ internal object StatusBarStableSession {
             anchorCaptured = true
             clearAnchorLayoutListener()
 
-            emitDiagnostic {
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
                 onEvent(
                     Anchor(
                         source = source,
@@ -192,7 +183,7 @@ internal object StatusBarStableSession {
                 )
             }
 
-            emitDiagnostic {
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
                 val statusIcons = container.directChild(STATUS_ICON_CONTAINER_CLASS_NAME)
                 val layoutParams = view.layoutParams
                 val margins = layoutParams as? ViewGroup.MarginLayoutParams
