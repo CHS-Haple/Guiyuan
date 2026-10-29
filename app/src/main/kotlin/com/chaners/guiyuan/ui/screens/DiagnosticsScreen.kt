@@ -456,18 +456,19 @@ internal fun DiagnosticsScreen(
                 }
                 itemsIndexed(
                     items = visibleEntries,
-                    key = { _, entry -> entry.key },
+                    key = { index, entry -> logRowKey(entry, index) },
                 ) { index, entry ->
+                    val rowKey = logRowKey(entry, index)
                     LogCard(
                         context = context,
                         entry = entry,
-                        expanded = expandedKey == entry.key,
+                        expanded = expandedKey == rowKey,
                         onToggle = {
                             expandedKey =
-                                if (expandedKey == entry.key) {
+                                if (expandedKey == rowKey) {
                                     null
                                 } else {
-                                    entry.key
+                                    rowKey
                                 }
                         },
                         modifier =
@@ -548,6 +549,10 @@ internal fun DiagnosticsScreen(
 }
 
 internal const val EVENT_PAGE_SIZE = 100
+
+// The same raw line can appear more than once in a capture.
+internal fun logRowKey(entry: LogEntry, index: Int): String = "${entry.key}:$index"
+
 private const val MAX_DETAIL_FIELDS = 5
 
 private fun logProgress(progress: Float, index: Int): Float {
