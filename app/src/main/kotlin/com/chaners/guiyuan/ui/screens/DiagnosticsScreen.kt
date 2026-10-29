@@ -8,7 +8,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
-import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
@@ -53,13 +52,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -107,6 +106,8 @@ import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Filter
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
@@ -471,7 +472,7 @@ internal fun DiagnosticsScreen(
                         title = stringResource(R.string.diagnostics_root_unavailable_title),
                         description = stringResource(R.string.diagnostics_root_unavailable_message),
                         note = stringResource(R.string.diagnostics_root_unavailable_export),
-                        iconRes = R.drawable.ic_material_symbol_lock,
+                        icon = MiuixIcons.Report,
                         busy = loading,
                         onRetry = ::refresh,
                         modifier = Modifier.fillParentMaxSize(),
@@ -484,7 +485,7 @@ internal fun DiagnosticsScreen(
                         title = stringResource(R.string.diagnostics_events_empty),
                         description = stringResource(R.string.diagnostics_no_events_hint),
                         note = null,
-                        iconRes = R.drawable.ic_material_symbol_info,
+                        icon = MiuixIcons.Info,
                         busy = loading,
                         onRetry = ::refresh,
                         modifier = Modifier.fillParentMaxSize(),
@@ -961,7 +962,7 @@ private fun LogEmptyGuide(
     title: String,
     description: String,
     note: String?,
-    @DrawableRes iconRes: Int,
+    icon: ImageVector,
     busy: Boolean,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
@@ -976,23 +977,23 @@ private fun LogEmptyGuide(
         ) {
             Box(
                 modifier =
-                    Modifier.size(72.dp).background(
+                    Modifier.size(64.dp).background(
                         color = MiuixTheme.colorScheme.secondaryContainerVariant,
                         shape = CircleShape,
                     ),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    painter = painterResource(iconRes),
+                    imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(30.dp),
                     tint = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                 )
             }
-            Spacer(Modifier.height(22.dp))
+            Spacer(Modifier.height(20.dp))
             Text(
                 text = title,
-                style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.SemiBold),
+                style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight.Medium),
                 color = MiuixTheme.colorScheme.onSurfaceContainer,
                 textAlign = TextAlign.Center,
             )
@@ -1007,7 +1008,7 @@ private fun LogEmptyGuide(
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = it,
-                    style = MiuixTheme.textStyles.body2,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                     textAlign = TextAlign.Center,
                 )
@@ -1024,12 +1025,6 @@ private fun LogEmptyGuide(
                     style = MiuixTheme.textStyles.button,
                 )
             }
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = stringResource(R.string.diagnostics_pull_hint),
-                style = MiuixTheme.textStyles.footnote2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            )
         }
     }
 }
