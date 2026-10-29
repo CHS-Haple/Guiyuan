@@ -32,7 +32,12 @@ val gradleVersion = gradle.gradleVersion
 val os4DebugSuffix = providers.gradleProperty("gy.os4.debugSuffix").orNull
 val os4DialogSurfaces = providers.gradleProperty("gy.os4.dialogSurfaces").orNull == "true"
 // The marker exists only on the protected IT branch and is blocked from public PR targets.
-val projectLinkEnabled = !rootProject.file("it-only/RESTRICT_PROJECT_LINK").isFile
+val isItChannel = rootProject.file("it-only/RESTRICT_PROJECT_LINK").isFile
+val projectLinkEnabled = !isItChannel
+val itVersionSuffix = providers.gradleProperty("combinedStatus.itVersionSuffix").orNull
+require(itVersionSuffix == null || (isItChannel && itVersionSuffix == "-IT")) {
+    "IT version suffix requires the protected IT channel marker and must be -IT"
+}
 if (os4DialogSurfaces) {
     require(providers.gradleProperty("gy.os4.miuixDir").isPresent) {
         "GlassDialog requires the same-revision MIUIX source graph (-Pgy.os4.miuixDir)"
@@ -104,9 +109,14 @@ android {
     sourceSets.getByName("main").kotlin.directories.add(
         if (os4DialogSurfaces) "src/os4Upstream/kotlin" else "src/os4Published/kotlin",
     )
+    if (isItChannel) {
+        // IT-only evidence is read from the existing user-requested snapshot.
+        sourceSets.getByName("main").kotlin.directories.add("../it-only/kotlin")
+    }
 
     buildTypes {
         debug {
+            if (itVersionSuffix != null) versionNameSuffix = itVersionSuffix
             if (os4DebugSuffix != null) {
                 require(Regex("""\.[a-z][a-z0-9_]*""").matches(os4DebugSuffix)) {
                     "gy.os4.debugSuffix must be one simple lowercase application ID segment"
@@ -138,6 +148,7 @@ android {
         }
         create("canary") {
             initWith(getByName("release"))
+            if (itVersionSuffix != null) versionNameSuffix = itVersionSuffix
             matchingFallbacks += listOf("release")
             isDebuggable = false
             buildConfigField("String", "BUILD_CHANNEL", "\"canary\"")

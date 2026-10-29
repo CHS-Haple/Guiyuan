@@ -368,6 +368,22 @@ jobs:
           fi
           bash tools/verify_xposed_metadata.sh "${APKS[@]}"
 
+      - name: Verify IT version suffix on installable candidates
+        if: steps.scope.outputs.run_android == 'true' && ((github.event_name == 'push' && github.ref == 'refs/heads/it') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'it' && github.event.pull_request.head.repo.full_name == github.repository))
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          aapt="$SDK_ROOT/build-tools/37.0.0/aapt"
+          base="$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)"
+          expected="${base}-IT"
+          for path in "${DEBUG_APK_PATH:-}" "${CANARY_APK_PATH:-}"; do
+            [[ -z "$path" ]] && continue
+            test -s "$path"
+            actual="$("$aapt" dump badging "$path" | sed -n "s/.*versionName='\\([^']*\\)'.*/\\1/p" | head -n 1)"
+            test "$actual" = "$expected" || { echo "::error::IT candidate $path version=$actual, expected=$expected"; exit 1; }
+          done
+
       - name: Verify canary is non-debuggable
         if: steps.scope.outputs.run_canary == 'true'
         shell: bash
