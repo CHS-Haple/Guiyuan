@@ -32,7 +32,8 @@ val gradleVersion = gradle.gradleVersion
 val os4DebugSuffix = providers.gradleProperty("gy.os4.debugSuffix").orNull
 val os4DialogSurfaces = providers.gradleProperty("gy.os4.dialogSurfaces").orNull == "true"
 // The marker exists only on the protected IT branch and is blocked from public PR targets.
-val projectLinkEnabled = !rootProject.file("it-only/RESTRICT_PROJECT_LINK").isFile
+val isItChannel = rootProject.file("it-only/RESTRICT_PROJECT_LINK").isFile
+val projectLinkEnabled = !isItChannel
 if (os4DialogSurfaces) {
     require(providers.gradleProperty("gy.os4.miuixDir").isPresent) {
         "GlassDialog requires the same-revision MIUIX source graph (-Pgy.os4.miuixDir)"
@@ -107,6 +108,7 @@ android {
 
     buildTypes {
         debug {
+            if (isItChannel) versionNameSuffix = "-IT"
             if (os4DebugSuffix != null) {
                 require(Regex("""\.[a-z][a-z0-9_]*""").matches(os4DebugSuffix)) {
                     "gy.os4.debugSuffix must be one simple lowercase application ID segment"
@@ -138,6 +140,7 @@ android {
         }
         create("canary") {
             initWith(getByName("release"))
+            if (isItChannel) versionNameSuffix = "-IT"
             matchingFallbacks += listOf("release")
             isDebuggable = false
             buildConfigField("String", "BUILD_CHANNEL", "\"canary\"")

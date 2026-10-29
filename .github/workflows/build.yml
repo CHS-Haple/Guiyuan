@@ -368,6 +368,22 @@ jobs:
           fi
           bash tools/verify_xposed_metadata.sh "${APKS[@]}"
 
+      - name: Verify IT version suffix on installable candidates
+        if: steps.scope.outputs.run_android == 'true' && ((github.event_name == 'push' && github.ref == 'refs/heads/it') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'it' && github.event.pull_request.head.repo.full_name == github.repository))
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          aapt="$SDK_ROOT/build-tools/37.0.0/aapt"
+          base="$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)"
+          expected="${base}-IT"
+          for path in "${DEBUG_APK_PATH:-}" "${CANARY_APK_PATH:-}"; do
+            [[ -z "$path" ]] && continue
+            test -s "$path"
+            actual="$("$aapt" dump badging "$path" | sed -n "s/.*versionName='\\([^']*\\)'.*/\\1/p" | head -n 1)"
+            test "$actual" = "$expected" || { echo "::error::IT candidate $path version=$actual, expected=$expected"; exit 1; }
+          done
+
       - name: Verify canary is non-debuggable
         if: steps.scope.outputs.run_canary == 'true'
         shell: bash
@@ -400,6 +416,15 @@ jobs:
           path: app/build/outputs/apk/canary/app-canary-unsigned.apk
           if-no-files-found: error
           retention-days: 1
+
+      - name: Store verified IT Debug for optional Haple re-signing
+        if: steps.scope.outputs.run_debug == 'true' && ((github.event_name == 'push' && github.ref == 'refs/heads/it') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'it' && github.event.pull_request.head.repo.full_name == github.repository))
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: verified-it-debug-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 3
 
       - name: Store verified unsigned PR Canary for on-demand signing
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.scope.outputs.run_canary == 'true'
