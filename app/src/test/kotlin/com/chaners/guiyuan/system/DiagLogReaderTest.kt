@@ -162,6 +162,27 @@ class DiagLogReaderTest {
     }
 
     @Test
+    fun unavailableHotReloadBeforeModuleReloadedSelectsNewGeneration() {
+        fun event(second: Int, kind: String, state: String?, session: String): String =
+            "10-11 20:17:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
+                DiagProtocol.format(
+                    event = kind,
+                    component = if (kind.startsWith("module.")) "module" else "hotReload",
+                    state = state,
+                    fields = mapOf("sessionId" to session),
+                )
+
+        val oldStart = event(30, "module.loaded", "ready", "old")
+        val unavailable = event(31, "hotReload.complete", "unavailable", "new")
+        val delayedOld = event(32, "runtime.teardown", "released", "old")
+
+        assertEquals(
+            listOf(unavailable),
+            DiagLogReader.latestSession(listOf(oldStart, unavailable, delayedOld)),
+        )
+    }
+
+    @Test
     fun lateOldGenerationFailureCannotOverrideNewSuccessfulStart() {
         fun event(second: Int, kind: String, state: String?, session: String): String =
             "10-11 20:16:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
