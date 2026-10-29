@@ -345,6 +345,7 @@
     <string name="diagnostics_clear_view">Clear view</string>
     <string name="diagnostics_view_cleared">View cleared. Refresh diagnostics to read the current state again.</string>
     <string name="section_diagnostics_events">Key events</string>
+    <string name="diagnostics_events_load_earlier">Load earlier logs</string>
     <string name="diagnostics_events_summary_limited">Showing latest %1$d of %2$d events</string>
     <string name="diagnostics_log_source_none">No network</string>
     <string name="diagnostics_log_source_other">Other network</string>

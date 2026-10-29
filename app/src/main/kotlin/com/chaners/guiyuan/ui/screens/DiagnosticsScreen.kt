@@ -268,7 +268,10 @@ internal fun DiagnosticsScreen(
     val filteredEntries = remember(entries, levelFilter, categoryFilter) {
         entries.filter { matchesFilter(it, levelFilter, categoryFilter) }
     }
-    val visibleEntries = remember(filteredEntries) { filteredEntries.take(MAX_EVENTS) }
+    var visibleLimit by remember(snapshot, viewCleared, levelFilter, categoryFilter) {
+        mutableIntStateOf(MAX_EVENTS)
+    }
+    val visibleEntries = remember(filteredEntries, visibleLimit) { filteredEntries.take(visibleLimit) }
     val filterActive =
         levelFilter != LEVEL_ALL ||
             categoryFilter != CAT_ALL
@@ -475,6 +478,27 @@ internal fun DiagnosticsScreen(
                                     alpha = shown
                                 },
                     )
+                }
+                if (filteredEntries.size > visibleEntries.size) {
+                    item(key = "diagnostics-load-earlier") {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Button(
+                                onClick = {
+                                    visibleLimit =
+                                        (visibleLimit + MAX_EVENTS).coerceAtMost(filteredEntries.size)
+                                },
+                                colors = ButtonDefaults.buttonColors(),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.diagnostics_events_load_earlier),
+                                    style = MiuixTheme.textStyles.button,
+                                )
+                            }
+                        }
+                    }
                 }
             }
             showRootGuide -> {
