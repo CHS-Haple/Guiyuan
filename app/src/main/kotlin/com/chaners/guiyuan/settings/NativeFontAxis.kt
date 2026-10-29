@@ -34,6 +34,45 @@ internal object NativeFontAxis {
         data class Variable(val axis: FontWeightAxis) : State
     }
 
+    // Only explains an existing receipt; it does not attempt to discover or enable any font.
+    internal data class DiagnosticState(
+        val receipt: String,
+        val mobile: String,
+        val battery: String,
+    )
+
+    internal fun receiptStatus(currentBoot: Int, savedBoot: Int, reported: Boolean): String =
+        when {
+            currentBoot < 0 -> "boot-unavailable"
+            savedBoot < 0 -> "not-received"
+            savedBoot != currentBoot -> "stale-boot"
+            !reported -> "not-received"
+            else -> "received"
+        }
+
+    private fun stateLabel(state: State): String =
+        when (state) {
+            State.Pending -> "pending"
+            State.Unavailable -> "unverified"
+            is State.Variable -> "verified"
+        }
+
+    internal fun diagnosticState(context: Context): DiagnosticState = runCatching {
+        val app = context.applicationContext
+        val prefs = prefs(app)
+        DiagnosticState(
+            receipt = receiptStatus(
+                currentBoot = bootCount(app),
+                savedBoot = prefs.getInt(BOOT, -1),
+                reported = prefs.getBoolean(REPORTED, false),
+            ),
+            mobile = stateLabel(read(app, prefs, MIN, DEFAULT, MAX)),
+            battery = stateLabel(read(app, prefs, BAT_MIN, BAT_DEFAULT, BAT_MAX)),
+        )
+    }.onFailure(::rethrowFatal).getOrDefault(
+        DiagnosticState("read-error", "unknown", "unknown"),
+    )
+
     internal fun state(reported: Boolean, axis: FontWeightAxis?): State =
         if (!reported) State.Pending
         else checked(axis)?.let(State::Variable) ?: State.Unavailable

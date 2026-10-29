@@ -1890,7 +1890,19 @@ class GyModule : XposedModule() {
         force: Boolean = false,
     ) {
         if (Build.VERSION.SDK_INT < 34) return
-        val host = SysUiHostRegistry.current() as? View ?: return
+        val host = SysUiHostRegistry.current() as? View
+        if (host == null) {
+            if (force && BuildConfig.DEVELOPMENT_PROBES) {
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "fontAxis.report",
+                    component = "fontAxis",
+                    state = "deferred",
+                    "reason" to "status-host-unavailable",
+                )
+            }
+            return
+        }
         val face = networkType?.typeface
         val batteryFont = SysUiBatterySource.readHostNumberFont(host)
         val batteryFace = batteryFont?.first
@@ -1952,8 +1964,27 @@ class GyModule : XposedModule() {
             reportedBatteryFontPath = batteryFont?.second
             reportedFontHost = host
             fontAxisReported = true
+            if (BuildConfig.DEVELOPMENT_PROBES) {
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "fontAxis.report",
+                    component = "fontAxis",
+                    state = "submitted",
+                    "mobileAxis" to if (mobileAxis != null) "verified" else "unverified",
+                    "batteryAxis" to if (batteryAxis != null) "verified" else "unverified",
+                )
+            }
         }.onFailure { error ->
             SysUiHotReload.rethrowFatal(error)
+            if (BuildConfig.DEVELOPMENT_PROBES) {
+                logDiagnostic(
+                    level = Log.WARN,
+                    event = "fontAxis.report",
+                    component = "fontAxis",
+                    state = "error",
+                    "reason" to error.javaClass.simpleName,
+                )
+            }
             Log.w(TAG, "Unable to report verified native font axes", error)
         }
     }
@@ -4528,6 +4559,14 @@ class GyModule : XposedModule() {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             Handler(Looper.getMainLooper()).post { onFontAxisRequest() }
             return
+        }
+        if (BuildConfig.DEVELOPMENT_PROBES) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "fontAxis.request",
+                component = "fontAxis",
+                state = "received",
+            )
         }
         reportFontAxis(PresentationStore.snapshot().mobilePresentation?.networkType, force = true)
     }
