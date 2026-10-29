@@ -325,7 +325,18 @@ jobs:
             -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
             -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
             -Pgy.os4.dialogSurfaces=true \
-            "${TASKS[@]}" --no-daemon --max-workers=2 --stacktrace
+            "${TASKS[@]}" --no-daemon --max-workers=3 --stacktrace --profile
+
+      # Temporary one-off comparison against the previous --max-workers=2 profile.
+      # Keep this instrumentation on the experiment branch; never merge it to dev.
+      - name: Store temporary Gradle performance profile
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/ci-profile-workers-3' && steps.scope.outputs.run_android == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gradle-workers-3-profile-${{ github.event.pull_request.head.sha }}
+          path: build/reports/profile/*.html
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Resolve built APK paths
         if: steps.scope.outputs.run_android == 'true'
