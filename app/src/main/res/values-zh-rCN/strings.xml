@@ -360,6 +360,7 @@
     <string name="diagnostics_log_battery_native">原生：%1$s</string>
     <string name="diagnostics_log_battery_percent">电量 %1$d%%</string>
     <string name="diagnostics_events_summary">当前显示 %1$d 条日志</string>
+    <string name="diagnostics_collection_incomplete">日志读取未完成，当前事件记录可能不完整。</string>
     <string name="diagnostics_component_module">模块</string>
     <string name="diagnostics_component_compatibility">兼容性</string>
     <string name="diagnostics_component_status_host">状态栏宿主</string>
