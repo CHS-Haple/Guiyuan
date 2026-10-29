@@ -993,14 +993,14 @@ private fun LogEmptyGuide(
             Spacer(Modifier.height(20.dp))
             Text(
                 text = title,
-                style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight.SemiBold),
+                style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.SemiBold),
                 color = MiuixTheme.colorScheme.onSurfaceContainer,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(10.dp))
             Text(
                 text = description,
-                style = MiuixTheme.textStyles.body2,
+                style = MiuixTheme.textStyles.body1,
                 color = MiuixTheme.colorScheme.onSurfaceSecondary,
                 textAlign = TextAlign.Center,
             )
@@ -1008,7 +1008,7 @@ private fun LogEmptyGuide(
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = it,
-                    style = MiuixTheme.textStyles.footnote1,
+                    style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     textAlign = TextAlign.Center,
                 )
