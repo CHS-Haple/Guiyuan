@@ -94,8 +94,8 @@ internal object DiagReport {
             appendLine("source=structured-runtime-events")
             runtimeEvents.reportLines().forEach(::appendLine)
             appendLine()
-            if (BuildConfig.DEVELOPMENT_PROBES && level == DiagLevel.Detailed) {
-                appendLine("[IT Debug evidence]")
+            if (BuildConfig.RUNTIME_DIAGNOSTICS && level == DiagLevel.Detailed) {
+                appendLine("[IT diagnostic evidence]")
                 ItDebugTriage.reportLines(snapshot).forEach(::appendLine)
                 appendLine()
             }
