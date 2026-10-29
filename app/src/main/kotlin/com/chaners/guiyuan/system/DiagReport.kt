@@ -94,6 +94,13 @@ internal object DiagReport {
             appendLine("source=structured-runtime-events")
             runtimeEvents.reportLines().forEach(::appendLine)
             appendLine()
+            if (level == DiagLevel.Detailed &&
+                (BuildConfig.RUNTIME_DIAGNOSTICS || BuildConfig.DEVELOPMENT_PROBES)
+            ) {
+                appendLine("[Diagnostic evidence]")
+                DiagEvidenceSummary.reportLines(snapshot).forEach(::appendLine)
+                appendLine()
+            }
             appendLine("[Runtime log]")
             appendLine("source=" + log.source.reportName)
             appendLine("collection=" + collectionState(log.result))
