@@ -205,6 +205,24 @@ jobs:
             --jq '.content' | base64 -d)"
           version="$(sed -n 's/^combinedStatus.versionName=//p' <<< "$props")"
           build="$(sed -n 's/^combinedStatus.buildId=//p' <<< "$props")"
+          it_suffix="$(sed -n 's/^combinedStatus.itVersionSuffix=//p' <<< "$props")"
+          # Only the IT-owned source may opt into a visible IT version suffix.
+          if [[ -n "$it_suffix" ]]; then
+            if [[ "$it_suffix" != "-IT" ]]; then
+              echo "::error::Unsupported version suffix from source."
+              exit 1
+            fi
+            if [[ "$SOURCE_BRANCH" != "it" ]]; then
+              base_branch="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$pr_number" --jq '.base.ref')"
+              if [[ "$base_branch" != "it" ]]; then
+                echo "::error::IT version suffix requires a PR targeting protected it."
+                exit 1
+              fi
+            fi
+            marker_type="$(gh api "repos/$GITHUB_REPOSITORY/contents/it-only/RESTRICT_PROJECT_LINK?ref=$SOURCE_SHA" --jq '.type')"
+            test "$marker_type" = "file"
+            version="$version$it_suffix"
+          fi
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([._-][A-Za-z0-9]+)*$ ]] &&
             [[ "$build" =~ ^[0-9]{8}-[0-9]+$ ]]
           if [[ -n "$EXPECTED_BUILD" && "$build" != *-"$EXPECTED_BUILD" ]]; then
