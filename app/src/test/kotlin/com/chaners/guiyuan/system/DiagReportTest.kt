@@ -22,7 +22,7 @@ class DiagReportTest {
     }
 
     @Test
-    fun itDetailedReportIncludesOnlyObservedEvidenceWithoutClaimingNativeViewTreeCapture() {
+    fun detailedReportContainsOnlyExistingSessionEvidence() {
         val raw = DiagProtocol.format(
             event = "hotReload.complete",
             component = "hotReload",
@@ -30,22 +30,21 @@ class DiagReportTest {
             fields = mapOf("sessionId" to "latest", "bounds" to "0,0,10,10"),
         )
         val observed = report(raw)
-        assertTrue(observed.contains("[IT diagnostic evidence]"))
+        assertTrue(observed.contains("[Diagnostic evidence]"))
         assertTrue(observed.contains("collectedNewNativeData=false"))
-        assertTrue(observed.contains("geometryEvents=1"))
-        assertTrue(observed.contains("nativeViewTree=partial-event-fields-only"))
-        assertTrue(observed.contains("capturedStackTraces=existing-log-only"))
+        assertTrue(observed.contains("geometryFieldEntries=1"))
+        assertTrue(observed.contains("nativeViewTree=not-collected"))
     }
 
     @Test
-    fun itDebugTriageLabelsMissingGeometryAsNotObserved() {
+    fun missingGeometryIsNotReportedAsNativeCapture() {
         val observed = report("unstructured line")
-        assertTrue(observed.contains("geometryEvents=0"))
-        assertTrue(observed.contains("nativeViewTree=not-observed"))
+        assertTrue(observed.contains("geometryFieldEntries=0"))
+        assertTrue(observed.contains("nativeViewTree=not-collected"))
     }
 
     @Test
-    fun generalReportDoesNotIncludeItDetailedEvidenceSection() {
+    fun generalReportDoesNotIncludeDetailedEvidenceSection() {
         val report = report(
             DiagProtocol.format(
                 event = "hotReload.complete",
@@ -54,7 +53,7 @@ class DiagReportTest {
             ),
             level = DiagLevel.General,
         )
-        assertFalse(report.contains("[IT diagnostic evidence]"))
+        assertFalse(report.contains("[Diagnostic evidence]"))
     }
 
     @Test

@@ -101,9 +101,11 @@ internal object DiagReport {
             appendLine("source=structured-runtime-events")
             runtimeEvents.reportLines().forEach(::appendLine)
             appendLine()
-            if (BuildConfig.RUNTIME_DIAGNOSTICS && level == DiagLevel.Detailed) {
-                appendLine("[IT diagnostic evidence]")
-                ItDebugTriage.reportLines(snapshot).forEach(::appendLine)
+            if (level == DiagLevel.Detailed &&
+                (BuildConfig.RUNTIME_DIAGNOSTICS || BuildConfig.DEVELOPMENT_PROBES)
+            ) {
+                appendLine("[Diagnostic evidence]")
+                DiagEvidenceSummary.reportLines(snapshot).forEach(::appendLine)
                 appendLine()
             }
             appendLine("[Runtime log]")
