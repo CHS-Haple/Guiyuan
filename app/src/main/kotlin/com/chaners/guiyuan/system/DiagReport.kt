@@ -90,17 +90,6 @@ internal object DiagReport {
                     (env.sysUiVersionCode?.toString() ?: "unknown"),
             )
             appendLine()
-            if (BuildConfig.FONT_AXIS_DIAGNOSTIC && level == DiagLevel.Detailed && snapshot.fontAxis != null) {
-                appendLine("[Font axis diagnostics]")
-                appendLine("receipt=" + snapshot.fontAxis.receipt)
-                appendLine("mobile=" + snapshot.fontAxis.mobile)
-                appendLine("battery=" + snapshot.fontAxis.battery)
-                appendLine("savedBootPresent=" + snapshot.fontAxis.savedBootPresent)
-                appendLine("prefsReportedAtCapture=" + snapshot.fontAxis.reported)
-                appendLine("receiverEvents=" + snapshot.fontAxis.events.size)
-                snapshot.fontAxis.events.forEach(::appendLine)
-                appendLine()
-            }
             appendLine("[Runtime snapshot]")
             appendLine("source=structured-runtime-events")
             runtimeEvents.reportLines().forEach(::appendLine)

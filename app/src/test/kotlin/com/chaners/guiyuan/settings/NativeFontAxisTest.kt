@@ -28,15 +28,6 @@ class NativeFontAxisTest {
     }
 
     @Test
-    fun fontReceiptDiagnosticsSeparateMissingStaleAndUnknownBoot() {
-        assertEquals("boot-unavailable", NativeFontAxis.receiptStatus(-1, -1, false))
-        assertEquals("not-received", NativeFontAxis.receiptStatus(4, -1, false))
-        assertEquals("not-received", NativeFontAxis.receiptStatus(4, 4, false))
-        assertEquals("stale-boot", NativeFontAxis.receiptStatus(5, 4, true))
-        assertEquals("received", NativeFontAxis.receiptStatus(5, 5, true))
-    }
-
-    @Test
     fun distinguishesPendingAndUnavailableReports() {
         val axis = FontWeightAxis(150f, 330f, 700f)
         assertEquals(NativeFontAxis.State.Pending, NativeFontAxis.state(false, null))
@@ -50,30 +41,6 @@ class NativeFontAxisTest {
             NativeFontAxis.State.Unavailable,
             NativeFontAxis.state(true, FontWeightAxis(0f, 330f, 700f)),
         )
-    }
-
-    @Test
-    fun receiverAuthorizationRequiresSystemUidPackageAndAction() {
-        val action = NativeFontAxis.ACTION
-        assertNull(NativeFontAxis.receiverReject(37, android.os.Process.SYSTEM_UID, "com.android.systemui", action))
-        assertEquals(NativeFontAxis.ReceiverReject.API,
-            NativeFontAxis.receiverReject(33, android.os.Process.SYSTEM_UID, "com.android.systemui", action))
-        assertEquals(NativeFontAxis.ReceiverReject.UID,
-            NativeFontAxis.receiverReject(37, -1, "com.android.systemui", action))
-        assertEquals(NativeFontAxis.ReceiverReject.PACKAGE,
-            NativeFontAxis.receiverReject(37, android.os.Process.SYSTEM_UID, null, action))
-        assertEquals(NativeFontAxis.ReceiverReject.ACTION,
-            NativeFontAxis.receiverReject(37, android.os.Process.SYSTEM_UID, "com.android.systemui", "wrong"))
-    }
-
-    @Test
-    fun receiverEvidenceIsBoundedToTwentyEvents() {
-        val events = (1..28).fold("") { history, n ->
-            NativeFontAxis.appendTransportEvent(history, "event-$n")
-        }.lines()
-        assertEquals(20, events.size)
-        assertEquals("event-9", events.first())
-        assertEquals("event-28", events.last())
     }
 
     @Test

@@ -1890,19 +1890,7 @@ class GyModule : XposedModule() {
         force: Boolean = false,
     ) {
         if (Build.VERSION.SDK_INT < 34) return
-        val host = SysUiHostRegistry.current() as? View
-        if (host == null) {
-            if (force && BuildConfig.FONT_AXIS_DIAGNOSTIC) {
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "fontAxis.report",
-                    component = "fontAxis",
-                    state = "deferred",
-                    "reason" to "status-host-unavailable",
-                )
-            }
-            return
-        }
+        val host = SysUiHostRegistry.current() as? View ?: return
         val face = networkType?.typeface
         val batteryFont = SysUiBatterySource.readHostNumberFont(host)
         val batteryFace = batteryFont?.first
@@ -1942,10 +1930,8 @@ class GyModule : XposedModule() {
             weightAxis(batteryFont?.second)
         }
         SysUiBatterySource.setVerifiedNumberFont(host, batteryFace, batteryAxis)
-        val traceId = if (BuildConfig.FONT_AXIS_DIAGNOSTIC) SystemClock.elapsedRealtimeNanos() else 0L
         val intent = Intent(NativeFontAxis.ACTION)
             .setClassName("com.chaners.guiyuan", NativeFontAxis.RECEIVER)
-        if (BuildConfig.FONT_AXIS_DIAGNOSTIC) intent.putExtra(NativeFontAxis.TRACE_ID, traceId)
         mobileAxis?.let {
             intent.putExtra(NativeFontAxis.MIN, it.min)
             intent.putExtra(NativeFontAxis.DEFAULT, it.default)
@@ -1955,32 +1941,6 @@ class GyModule : XposedModule() {
             intent.putExtra(NativeFontAxis.BAT_MIN, it.min)
             intent.putExtra(NativeFontAxis.BAT_DEFAULT, it.default)
             intent.putExtra(NativeFontAxis.BAT_MAX, it.max)
-        }
-        if (BuildConfig.FONT_AXIS_DIAGNOSTIC) {
-            runCatching {
-                val receiver = runCatching {
-                    val info = host.context.packageManager.getReceiverInfo(requireNotNull(intent.component), 0)
-                    "found:enabled=${info.enabled}:exported=${info.exported}:" +
-                        "statusBarPermission=${info.permission == "android.permission.STATUS_BAR"}"
-                }.getOrElse { error ->
-                    SysUiHotReload.rethrowFatal(error)
-                    "unresolved:${error.javaClass.simpleName}"
-                }
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "fontAxis.send",
-                    component = "fontAxis",
-                    state = "attempt",
-                    "trace" to traceId,
-                    "uidSystem" to (Process.myUid() == Process.SYSTEM_UID),
-                    "contextSystemUi" to (host.context.packageName == "com.android.systemui"),
-                    "senderStatusBarPermission" to (
-                        host.context.checkSelfPermission("android.permission.STATUS_BAR") ==
-                            android.content.pm.PackageManager.PERMISSION_GRANTED
-                    ),
-                    "receiver" to receiver,
-                )
-            }.onFailure(SysUiHotReload::rethrowFatal)
         }
         runCatching {
             val options = BroadcastOptions.makeBasic().setShareIdentityEnabled(true).toBundle()
@@ -1992,29 +1952,8 @@ class GyModule : XposedModule() {
             reportedBatteryFontPath = batteryFont?.second
             reportedFontHost = host
             fontAxisReported = true
-            if (BuildConfig.FONT_AXIS_DIAGNOSTIC) {
-                logDiagnostic(
-                    level = Log.INFO,
-                    event = "fontAxis.report",
-                    component = "fontAxis",
-                    state = "submitted",
-                    "trace" to traceId,
-                    "mobileAxis" to if (mobileAxis != null) "verified" else "unverified",
-                    "batteryAxis" to if (batteryAxis != null) "verified" else "unverified",
-                )
-            }
         }.onFailure { error ->
             SysUiHotReload.rethrowFatal(error)
-            if (BuildConfig.FONT_AXIS_DIAGNOSTIC) {
-                logDiagnostic(
-                    level = Log.WARN,
-                    event = "fontAxis.report",
-                    component = "fontAxis",
-                    state = "error",
-                    "trace" to traceId,
-                    "reason" to error.javaClass.simpleName,
-                )
-            }
             Log.w(TAG, "Unable to report verified native font axes", error)
         }
     }
@@ -4589,14 +4528,6 @@ class GyModule : XposedModule() {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             Handler(Looper.getMainLooper()).post { onFontAxisRequest() }
             return
-        }
-        if (BuildConfig.FONT_AXIS_DIAGNOSTIC) {
-            logDiagnostic(
-                level = Log.INFO,
-                event = "fontAxis.request",
-                component = "fontAxis",
-                state = "received",
-            )
         }
         reportFontAxis(PresentationStore.snapshot().mobilePresentation?.networkType, force = true)
     }

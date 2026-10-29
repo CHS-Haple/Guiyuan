@@ -1055,7 +1055,7 @@ private fun LogEmptyGuide(
             Box(
                 modifier =
                     Modifier.size(72.dp).background(
-                        color = MiuixTheme.colorScheme.secondaryContainerVariant,
+                        color = MiuixTheme.colorScheme.surfaceContainerHighest,
                         shape = CircleShape,
                     ),
                 contentAlignment = Alignment.Center,
@@ -1064,7 +1064,7 @@ private fun LogEmptyGuide(
                     imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(40.dp),
-                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    tint = MiuixTheme.colorScheme.onSurfaceContainerHighest,
                 )
             }
             Spacer(Modifier.height(24.dp))
