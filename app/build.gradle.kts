@@ -144,16 +144,6 @@ android {
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
         }
-        create("internal") {
-            initWith(getByName("release"))
-            matchingFallbacks += listOf("release")
-            isDebuggable = false
-            versionNameSuffix = "-internal"
-            buildConfigField("String", "BUILD_CHANNEL", "\"internal\"")
-            buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
-            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
-            buildConfigField("boolean", "REPO_LINK_ENABLED", "false")
-        }
     }
 
     compileOptions {
