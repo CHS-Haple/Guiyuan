@@ -265,13 +265,10 @@ internal fun DiagnosticsScreen(
         if (viewCleared) emptyList()
         else snapshot?.entries.orEmpty().asReversed().filter { isRuntimeLog(it, focusedCategory) }
     }
-    val visibleEntries = remember(entries, levelFilter, categoryFilter) {
-        entries
-            .asSequence()
-            .filter { matchesFilter(it, levelFilter, categoryFilter) }
-            .take(MAX_EVENTS)
-            .toList()
+    val filteredEntries = remember(entries, levelFilter, categoryFilter) {
+        entries.filter { matchesFilter(it, levelFilter, categoryFilter) }
     }
+    val visibleEntries = remember(filteredEntries) { filteredEntries.take(MAX_EVENTS) }
     val filterActive =
         levelFilter != LEVEL_ALL ||
             categoryFilter != CAT_ALL
@@ -425,10 +422,16 @@ internal fun DiagnosticsScreen(
             visibleEntries.isNotEmpty() -> {
                 item(key = "diagnostics-summary") {
                     Text(
-                        text = stringResource(
-                            R.string.diagnostics_events_summary,
-                            visibleEntries.size,
-                        ),
+                        text =
+                            if (filteredEntries.size > visibleEntries.size) {
+                                stringResource(
+                                    R.string.diagnostics_events_summary_limited,
+                                    visibleEntries.size,
+                                    filteredEntries.size,
+                                )
+                            } else {
+                                stringResource(R.string.diagnostics_events_summary, visibleEntries.size)
+                            },
                         modifier =
                             Modifier
                                 .fillMaxWidth()
@@ -515,7 +518,7 @@ internal fun DiagnosticsScreen(
 
 }
 
-private const val MAX_EVENTS = 40
+internal const val MAX_EVENTS = 100
 private const val MAX_DETAIL_FIELDS = 5
 
 private fun logProgress(progress: Float, index: Int): Float {
@@ -941,24 +944,27 @@ private fun LogCard(
             Column {
                 Spacer(modifier = Modifier.height(10.dp))
                 LogDetail(
-                    label = "event",
+                    label = logFieldLabel(context, "event"),
                     value = entry.event ?: "—",
                 )
                 entry.component?.let { component ->
                     LogDetail(
-                        label = "component",
+                        label = logFieldLabel(context, "component"),
                         value = component,
                     )
                 }
                 entry.state?.let { state ->
                     LogDetail(
-                        label = "state",
-                        value = state,
+                        label = logFieldLabel(context, "state"),
+                        value = stateLabel(context, state),
                     )
                 }
 
                 logDetailFields(entry).forEach { (key, value) ->
-                    LogDetail(label = key, value = value)
+                    LogDetail(
+                        label = logFieldLabel(context, key),
+                        value = logFieldValue(context, key, value),
+                    )
                 }
             }
         }
@@ -1470,18 +1476,52 @@ internal fun stateRes(state: String): Int? =
         else -> null
     }
 
-private fun sourceLabel(
-    context: Context,
-    value: String,
-): String =
+internal fun sourceRes(value: String): Int? =
     when (value.lowercase(Locale.ROOT)) {
-        "wifi" -> "Wi-Fi"
-        "mobile" -> context.getString(R.string.diagnostics_log_source_mobile)
-        "native" -> context.getString(R.string.diagnostics_log_source_native)
-        "coldstart" -> context.getString(R.string.diagnostics_log_source_cold_start)
-        "hotreload" -> context.getString(R.string.diagnostics_log_source_hot_reload)
-        "hotreloadrestore" -> context.getString(R.string.diagnostics_log_source_hot_reload_restore)
-        "hotreloadtransfer" -> context.getString(R.string.diagnostics_log_source_hot_reload_transfer)
+        "cellular", "mobile" -> R.string.diagnostics_log_source_mobile
+        "none" -> R.string.diagnostics_log_source_none
+        "other" -> R.string.diagnostics_log_source_other
+        "capabilities" -> R.string.diagnostics_log_source_capabilities
+        "lost" -> R.string.diagnostics_log_source_lost
+        "mobile-data" -> R.string.diagnostics_log_source_mobile_data
+        "initial-none" -> R.string.diagnostics_log_source_initial_none
+        "callback" -> R.string.diagnostics_log_source_callback
+        "hotreloadnativeicon" -> R.string.diagnostics_log_source_hot_reload_native_icon
+        "native" -> R.string.diagnostics_log_source_native
+        "coldstart" -> R.string.diagnostics_log_source_cold_start
+        "hotreload" -> R.string.diagnostics_log_source_hot_reload
+        "hotreloadrestore" -> R.string.diagnostics_log_source_hot_reload_restore
+        "hotreloadtransfer" -> R.string.diagnostics_log_source_hot_reload_transfer
+        else -> null
+    }
+
+private fun sourceLabel(context: Context, value: String): String =
+    if (value.equals("wifi", ignoreCase = true)) "Wi-Fi"
+    else sourceRes(value)?.let(context::getString) ?: value
+
+internal fun logFieldLabelRes(key: String): Int? =
+    when (key) {
+        "event" -> R.string.diagnostics_log_field_event
+        "component" -> R.string.diagnostics_log_field_component
+        "state" -> R.string.diagnostics_log_field_state
+        "reason" -> R.string.diagnostics_log_field_reason
+        "source" -> R.string.diagnostics_log_field_source
+        "transport" -> R.string.diagnostics_log_field_transport
+        "target" -> R.string.diagnostics_log_field_target
+        "owner" -> R.string.diagnostics_log_field_owner
+        "type" -> R.string.diagnostics_log_field_type
+        "traceId" -> R.string.diagnostics_log_field_trace_id
+        else -> null
+    }
+
+private fun logFieldLabel(context: Context, key: String): String =
+    logFieldLabelRes(key)?.let(context::getString) ?: key
+
+private fun logFieldValue(context: Context, key: String, value: String): String =
+    when (key) {
+        "source", "transport" -> sourceLabel(context, value)
+        "state" -> stateLabel(context, value)
+        "reason" -> reasonLabel(context, value)
         else -> value
     }
 

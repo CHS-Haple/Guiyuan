@@ -1,11 +1,13 @@
 package com.chaners.guiyuan.ui.screens
 
+import com.chaners.guiyuan.R
 import com.chaners.guiyuan.system.DiagLogParser
 import com.chaners.guiyuan.system.DiagProtocol
 import com.chaners.guiyuan.system.LogCategory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class DiagnosticsLogPresentationTest {
@@ -38,6 +40,23 @@ class DiagnosticsLogPresentationTest {
         assertTrue(isRuntimeLog(presentation, LogCategory.Display))
         assertFalse(isRuntimeLog(latency, LogCategory.Display))
         assertFalse(isRuntimeLog(presentation, LogCategory.Performance))
+    }
+
+    @Test
+    fun userFacingNetworkValuesAndFieldNamesMapWithoutChangingRawEvidence() {
+        assertEquals(R.string.diagnostics_log_source_mobile, sourceRes("CELLULAR"))
+        assertEquals(R.string.diagnostics_log_source_none, sourceRes("NONE"))
+        assertEquals(R.string.diagnostics_log_source_other, sourceRes("OTHER"))
+        assertEquals(R.string.diagnostics_log_source_capabilities, sourceRes("capabilities"))
+        assertEquals(R.string.diagnostics_log_source_lost, sourceRes("lost"))
+        assertEquals(R.string.diagnostics_log_source_mobile_data, sourceRes("mobile-data"))
+        assertEquals(R.string.diagnostics_log_source_hot_reload_native_icon, sourceRes("hotReloadNativeIcon"))
+        assertNull(sourceRes("WIFI"))
+        assertNull(sourceRes("VPN"))
+        assertEquals(R.string.diagnostics_log_field_transport, logFieldLabelRes("transport"))
+        assertEquals(R.string.diagnostics_log_field_trace_id, logFieldLabelRes("traceId"))
+        assertNull(logFieldLabelRes("futurePayload"))
+        assertEquals(100, MAX_EVENTS)
     }
 
     @Test
