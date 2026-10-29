@@ -43,7 +43,7 @@ class DiagnosticsLogPresentationTest {
     }
 
     @Test
-    fun userFacingNetworkValuesAndFieldNamesMapWithoutChangingRawEvidence() {
+    fun userFacingNetworkValuesMapWithoutChangingRawEvidence() {
         assertEquals(R.string.diagnostics_log_source_mobile, transportRes("CELLULAR"))
         assertEquals(R.string.diagnostics_log_source_none, transportRes("NONE"))
         assertEquals(R.string.diagnostics_log_source_other, transportRes("OTHER"))
@@ -59,15 +59,13 @@ class DiagnosticsLogPresentationTest {
         assertNull(transportRes("VPN"))
         assertNull(sourceRes("WIFI"))
         assertNull(sourceRes("VPN"))
-        assertEquals(R.string.diagnostics_log_field_transport, logFieldLabelRes("transport"))
-        assertEquals(R.string.diagnostics_log_field_trace_id, logFieldLabelRes("traceId"))
-        assertNull(logFieldLabelRes("futurePayload"))
-        assertEquals(R.string.diagnostics_log_field_native_charging, logFieldLabelRes("nativeCharging"))
-        assertEquals(R.string.diagnostics_log_field_native_percent, logFieldLabelRes("nativePercent"))
         assertEquals(R.string.diagnostics_log_charging_on, chargingStateRes("true"))
         assertEquals(R.string.diagnostics_log_charging_off, chargingStateRes("FALSE"))
         assertNull(chargingStateRes("null"))
         assertEquals(100, EVENT_PAGE_SIZE)
+        val raw = legacy("connectivity source=capabilities transport=CELLULAR validated=true")
+        assertEquals("CELLULAR", raw.fields["transport"])
+        assertEquals("capabilities", raw.fields["source"])
     }
 
     @Test

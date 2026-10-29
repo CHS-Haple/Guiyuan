@@ -32,7 +32,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -183,7 +182,7 @@ internal fun SettingsPage(
     glassActions: Boolean = false,
     titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     titleAlpha: Float = 1f,
-    compactTopBar: Boolean = false,
+    userScrollEnabled: Boolean = true,
     listState: LazyListState? = null,
     pullToRefresh: SettingsPullToRefresh? = null,
     background: @Composable BoxScope.(PaddingValues) -> Unit = {},
@@ -215,34 +214,11 @@ internal fun SettingsPage(
         }
     }
 
-    val os4Actions: @Composable RowScope.() -> Unit = {
-        if (glassActions) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                actions()
-            }
-        } else {
-            actions()
-        }
-    }
-
     CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
     Scaffold(
         snackbarHost = snackbarHost,
         topBar = {
-            if (os4 && compactTopBar) {
-                SmallTopAppBar(
-                    title = title,
-                    color = Color.Transparent,
-                    titleColor = MiuixTheme.colorScheme.onSurface,
-                    scrollBehavior = scrollBehavior,
-                    titlePadding = titlePadding,
-                    navigationIcon = navigationIcon,
-                    actions = os4Actions,
-                )
-            } else if (os4) {
+            if (os4) {
                 GlassTopAppBar(
                     isContentScrolled = resolvedListState.canScrollBackward,
                     title = title,
@@ -251,7 +227,18 @@ internal fun SettingsPage(
                     titleAlpha = { titleAlpha },
                     titlePadding = titlePadding,
                     navigationIcon = navigationIcon,
-                    actions = os4Actions,
+                    actions = {
+                        if (glassActions) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                actions()
+                            }
+                        } else {
+                            actions()
+                        }
+                    },
                     unclippedNavigationIcon = true,
                     unclippedActions = glassActions,
                 )
@@ -291,6 +278,7 @@ internal fun SettingsPage(
                 val canScroll = resolvedListState.canScrollBackward || resolvedListState.canScrollForward
                 LazyColumn(
                     state = resolvedListState,
+                    userScrollEnabled = userScrollEnabled,
                     modifier =
                         Modifier
                             .fillMaxSize()

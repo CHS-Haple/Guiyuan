@@ -279,7 +279,6 @@ internal fun DiagnosticsScreen(
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
-        compactTopBar = showRootGuide,
         titlePadding = if (LocalUiStyle.current == UiStyle.OS4) TopAppBarDefaults.TitlePadding else 0.dp,
         glassActions = true,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
@@ -385,13 +384,18 @@ internal fun DiagnosticsScreen(
             )
         },
         listState = listState,
-        // Keep one MIUIX refresh host across entry and refresh.
+        userScrollEnabled = !showRootGuide,
+        // The Root failure guide has a retry action; no pull gesture in this state.
         pullToRefresh =
-            SettingsPullToRefresh(
-                refreshing = refreshing,
-                onRefresh = ::refresh,
-                texts = refreshTexts,
-            ),
+            if (showRootGuide) {
+                null
+            } else {
+                SettingsPullToRefresh(
+                    refreshing = refreshing,
+                    onRefresh = ::refresh,
+                    texts = refreshTexts,
+                )
+            },
     ) {
         when {
             viewCleared -> {
@@ -968,26 +972,26 @@ private fun LogCard(
             Column {
                 Spacer(modifier = Modifier.height(10.dp))
                 LogDetail(
-                    label = logFieldLabel(context, "event"),
+                    label = "event",
                     value = entry.event ?: "—",
                 )
                 entry.component?.let { component ->
                     LogDetail(
-                        label = logFieldLabel(context, "component"),
+                        label = "component",
                         value = component,
                     )
                 }
                 entry.state?.let { state ->
                     LogDetail(
-                        label = logFieldLabel(context, "state"),
-                        value = stateLabel(context, state),
+                        label = "state",
+                        value = state,
                     )
                 }
 
                 logDetailFields(entry).forEach { (key, value) ->
                     LogDetail(
-                        label = logFieldLabel(context, key),
-                        value = logFieldValue(context, key, value),
+                        label = key,
+                        value = value,
                     )
                 }
             }
@@ -1010,7 +1014,7 @@ private fun LogEmptyGuide(
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier.widthIn(max = 340.dp),
+            modifier = Modifier.widthIn(max = 340.dp).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
@@ -1028,30 +1032,32 @@ private fun LogEmptyGuide(
                     tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(24.dp))
             Text(
                 text = title,
                 style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.SemiBold),
                 color = MiuixTheme.colorScheme.onSurfaceContainer,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(20.dp))
             Text(
                 text = description,
+                modifier = Modifier.fillMaxWidth(),
                 style = MiuixTheme.textStyles.body1,
                 color = MiuixTheme.colorScheme.onSurfaceSecondary,
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Start,
             )
             note?.let {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(16.dp))
                 Text(
                     text = it,
+                    modifier = Modifier.fillMaxWidth(),
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
+                    textAlign = TextAlign.Start,
                 )
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(32.dp))
             Button(
                 onClick = onRetry,
                 enabled = !busy,
@@ -1550,27 +1556,6 @@ private fun transportLabel(context: Context, value: String): String =
     if (value.equals("wifi", ignoreCase = true)) "Wi-Fi"
     else transportRes(value)?.let(context::getString) ?: value
 
-internal fun logFieldLabelRes(key: String): Int? =
-    when (key) {
-        "event" -> R.string.diagnostics_log_field_event
-        "component" -> R.string.diagnostics_log_field_component
-        "state" -> R.string.diagnostics_log_field_state
-        "reason" -> R.string.diagnostics_log_field_reason
-        "source" -> R.string.diagnostics_log_field_source
-        "transport" -> R.string.diagnostics_log_field_transport
-        "target" -> R.string.diagnostics_log_field_target
-        "owner" -> R.string.diagnostics_log_field_owner
-        "type" -> R.string.diagnostics_log_field_type
-        "traceId" -> R.string.diagnostics_log_field_trace_id
-        "transferredCharging" -> R.string.diagnostics_log_field_transferred_charging
-        "nativeCharging" -> R.string.diagnostics_log_field_native_charging
-        "nativePercent" -> R.string.diagnostics_log_field_native_percent
-        else -> null
-    }
-
-private fun logFieldLabel(context: Context, key: String): String =
-    logFieldLabelRes(key)?.let(context::getString) ?: key
-
 internal fun chargingStateRes(value: String): Int? =
     when (value.lowercase(Locale.ROOT)) {
         "true" -> R.string.diagnostics_log_charging_on
@@ -1580,18 +1565,6 @@ internal fun chargingStateRes(value: String): Int? =
 
 private fun chargingStateLabel(context: Context, value: String?): String? =
     value?.let { chargingStateRes(it)?.let(context::getString) }
-
-private fun logFieldValue(context: Context, key: String, value: String): String =
-    when (key) {
-        "source" -> sourceLabel(context, value)
-        "transport" -> transportLabel(context, value)
-        "state" -> stateLabel(context, value)
-        "reason" -> reasonLabel(context, value)
-        "transferredCharging", "nativeCharging" -> chargingStateLabel(context, value) ?: value
-        "nativePercent" ->
-            value.toIntOrNull()?.takeIf { it in 0..100 }?.let { "$it%" } ?: value
-        else -> value
-    }
 
 private fun reasonLabel(
     context: Context,
