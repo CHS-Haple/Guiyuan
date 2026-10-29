@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
-import android.os.Process
 import android.provider.Settings
 import java.lang.reflect.InvocationTargetException
 import kotlinx.coroutines.channels.awaitClose
@@ -16,6 +15,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 // A read-only report from verified SystemUI source, never a control surface.
 internal object NativeFontAxis {
     const val ACTION = "com.chaners.guiyuan.NATIVE_FONT_AXIS"
+    const val SYSTEM_UI = "com.android.systemui"
     const val RECEIVER = "com.chaners.guiyuan.settings.NativeFontAxisReceiver"
     const val MIN = "min"
     const val DEFAULT = "default"
@@ -37,6 +37,9 @@ internal object NativeFontAxis {
     internal fun state(reported: Boolean, axis: FontWeightAxis?): State =
         if (!reported) State.Pending
         else checked(axis)?.let(State::Variable) ?: State.Unavailable
+
+    internal fun isSystemUiSender(uid: Int, pkg: String?, installedUid: Int?): Boolean =
+        uid >= 0 && pkg == SYSTEM_UI && uid == installedUid
 
     fun checked(axis: FontWeightAxis?): FontWeightAxis? =
         axis?.takeIf {
@@ -123,11 +126,12 @@ internal object NativeFontAxis {
 
 class NativeFontAxisReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (Build.VERSION.SDK_INT < 34 ||
-            sentFromUid != Process.SYSTEM_UID ||
-            sentFromPackage != "com.android.systemui" ||
-            intent.action != NativeFontAxis.ACTION
-        ) return
+        if (Build.VERSION.SDK_INT < 34 || intent.action != NativeFontAxis.ACTION) return
+        // SystemUI may have its own UID; match the OS-resolved package owner.
+        val systemUiUid = runCatching {
+            context.packageManager.getPackageUid(NativeFontAxis.SYSTEM_UI, 0)
+        }.onFailure(NativeFontAxis::rethrowFatal).getOrNull()
+        if (!NativeFontAxis.isSystemUiSender(sentFromUid, sentFromPackage, systemUiUid)) return
 
         fun axis(min: String, default: String, max: String): FontWeightAxis? =
             if (intent.hasExtra(min) && intent.hasExtra(default) && intent.hasExtra(max)) {
