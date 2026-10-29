@@ -6,7 +6,8 @@ run-name: >-
           && github.actor == github.repository_owner
           && (github.event.comment.body == '/canary'
               || (startsWith(github.event.comment.body, 'B')
-                  && endsWith(github.event.comment.body, ' Canary')))
+                  && (endsWith(github.event.comment.body, ' Canary') ||
+                      endsWith(github.event.comment.body, ' Diagnostic'))))
           && format('{0} | {1} #{2}', github.event.issue.title,
               github.event.comment.body, github.event.issue.number))
       || format('Skipped comment | #{0}', github.event.issue.number) }}
@@ -53,7 +54,8 @@ jobs:
        github.event.issue.pull_request != null &&
        (github.event.comment.body == '/canary' ||
         (startsWith(github.event.comment.body, 'B') &&
-         endsWith(github.event.comment.body, ' Canary'))) &&
+         (endsWith(github.event.comment.body, ' Canary') ||
+          endsWith(github.event.comment.body, ' Diagnostic')))) &&
        github.actor == github.repository_owner)
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -108,26 +110,36 @@ jobs:
               head_repo="$(jq -r '.head.repo.full_name // empty' <<<"$pr_json")"
               branch="$(jq -r '.head.ref // empty' <<<"$pr_json")"
               source_sha="$(jq -r '.head.sha // empty' <<<"$pr_json")"
-              case "$COMMENT_BODY" in
-                /canary) variant="canary"; expected_build="" ;;
-                *)
-                  if [[ "$COMMENT_BODY" =~ ^B([0-9]+)[[:space:]]Canary$ ]]; then
-                    expected_build="${BASH_REMATCH[1]}"
-                    variant="canary"
-                  else
-                    echo "::error::Unsupported PR build command."
-                    exit 1
-                  fi
-                  ;;
-              esac
-
-              if [[ "$pr_state" != "open" ]]; then
-                echo "::error::Comment-triggered Canary requires an open pull request."
-                exit 1
-              fi
-              if [[ "$head_repo" != "$GITHUB_REPOSITORY" ]]; then
-                echo "::error::Comment-triggered Canary accepts same-repository pull requests only."
-                exit 1
+              if [[ "$COMMENT_BODY" =~ ^B([0-9]+)[[:space:]]Diagnostic$ ]]; then
+                expected_build="${BASH_REMATCH[1]}"
+                variant="diagnostic"
+                branch_json="$(gh api "repos/$GITHUB_REPOSITORY/branches/it")"
+                test "$(jq -r '.protected' <<< "$branch_json")" = true
+                source_sha="$(jq -r '.commit.sha' <<< "$branch_json")"
+                # The comment author must own the repository; only the just-merged
+                # protected IT PR may authorize this exact diagnostic candidate.
+                test "$(jq -r '.merged' <<< "$pr_json")" = true
+                test "$(jq -r '.base.ref' <<< "$pr_json")" = it
+                test "$(jq -r '.merge_commit_sha' <<< "$pr_json")" = "$source_sha"
+                test "$head_repo" = "$GITHUB_REPOSITORY"
+                branch="it"
+              else
+                case "$COMMENT_BODY" in
+                  /canary) variant="canary"; expected_build="" ;;
+                  *)
+                    if [[ "$COMMENT_BODY" =~ ^B([0-9]+)[[:space:]]Canary$ ]]; then
+                      expected_build="${BASH_REMATCH[1]}"
+                      variant="canary"
+                    else
+                      echo "::error::Unsupported PR build command."
+                      exit 1
+                    fi
+                    ;;
+                esac
+                if [[ "$pr_state" != "open" || "$head_repo" != "$GITHUB_REPOSITORY" ]]; then
+                  echo "::error::Canary comments require an open same-repository PR."
+                  exit 1
+                fi
               fi
 
               ;;
@@ -140,11 +152,11 @@ jobs:
 
           if [[ ( "$variant" != "canary" && "$variant" != "diagnostic" ) ||
                 ( "$branch" != "it" && "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ) ||
-                ( "$variant" == "diagnostic" && ( "$branch" != "it" || "$EVENT_NAME" != "workflow_dispatch" ) ) ]]; then
+                ( "$variant" == "diagnostic" && "$branch" != "it" ) ]]; then
             echo "::error::Diagnostic signing is owner-only from protected it."
             exit 1
           fi
-          if [[ "$branch" == "it" && "$EVENT_NAME" != "workflow_dispatch" ]]; then
+          if [[ "$branch" == "it" && "$EVENT_NAME" != "workflow_dispatch" && "$variant" != "diagnostic" ]]; then
             echo "::error::Protected IT Canary requires owner-triggered dispatch."
             exit 1
           fi
