@@ -94,7 +94,13 @@ internal object DiagReport {
             if (log.result.truncated) appendLine("capture=latest-complete-lines-only")
             appendLine("lines=" + logLines.size)
             if (logLines.isEmpty()) {
-                appendLine("No Guiyuan runtime log entries were available.")
+                appendLine(
+                    if (log.result.isSuccess) {
+                        "No Guiyuan runtime log entries were available."
+                    } else {
+                        "Runtime logs were not collected. Check Root access or log collection."
+                    },
+                )
             } else {
                 logLines.forEach(::appendLine)
             }

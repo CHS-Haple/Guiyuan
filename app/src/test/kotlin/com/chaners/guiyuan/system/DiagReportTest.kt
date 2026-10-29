@@ -106,7 +106,19 @@ class DiagReportTest {
         assertTrue(report(truncated = true).contains("capture=latest-complete-lines-only"))
     }
 
-    private fun report(vararg lines: String, truncated: Boolean = false): String {
+    @Test
+    fun failedRootLogCollectionIsDistinguishedFromEmptyLog() {
+        val report = report(collection = RootShell.Result(1, "", false, null))
+        assertTrue(report.contains("Runtime logs were not collected."))
+        assertTrue(report.contains("collection=exit:1"))
+        assertTrue(report.contains("[Device]"))
+    }
+
+    private fun report(
+        vararg lines: String,
+        truncated: Boolean = false,
+        collection: RootShell.Result? = null,
+    ): String {
         val recorded = lines.toList()
         return DiagReport.build(
             DiagSnapshot(
@@ -124,7 +136,7 @@ class DiagReportTest {
                 level = DiagLevel.Detailed,
                 log = DiagLogReader.Snapshot(
                     source = DiagLogReader.Source.LspModules,
-                    result = RootShell.Result(0, recorded.joinToString("\n"), false, null, truncated),
+                    result = collection ?: RootShell.Result(0, recorded.joinToString("\n"), false, null, truncated),
                     lines = recorded,
                     sessionLines = recorded,
                 ),
