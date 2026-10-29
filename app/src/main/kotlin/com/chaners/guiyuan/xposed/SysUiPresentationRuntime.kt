@@ -15,6 +15,15 @@ internal object SysUiPresentationRuntime {
         if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
     }
 
+    // Passive evidence must never become a SystemUI callback failure.
+    internal inline fun emitPassiveDiagnostic(block: () -> Unit) {
+        try {
+            block()
+        } catch (error: Throwable) {
+            throwIfFatal(error)
+        }
+    }
+
     val installedHookCount: Int
         @Synchronized get() =
             current?.let {
