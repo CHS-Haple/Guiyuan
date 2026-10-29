@@ -63,29 +63,29 @@ internal object SysUiKeyguardHostResolver {
     ): Boolean? =
         findField(resolved.host.javaClass, TO_LOCK_SCREEN_FIELD)
             ?.let { field ->
-                runCatching { field.get(resolved.host) as? Boolean }.getOrNull()
+                SysUiPresentationRuntime.optionalNativeRead { field.get(resolved.host) as? Boolean }
             }
 
     // Native screen-off decision, sampled only by detailed AOD diagnostics.
     internal fun sleepLinkageState(resolved: ResolvedHost): String? =
-        runCatching {
+        SysUiPresentationRuntime.optionalNativeRead {
             fun field(owner: Any, name: String): Any? =
                 findField(owner.javaClass, name)?.get(owner)
 
-            val dep = field(resolved.host, "mDep") ?: return@runCatching null
-            val lazy = field(dep, "dozeServiceHost") ?: return@runCatching null
+            val dep = field(resolved.host, "mDep") ?: return@optionalNativeRead null
+            val lazy = field(dep, "dozeServiceHost") ?: return@optionalNativeRead null
             val doze = lazy.javaClass.methods
                 .firstOrNull { it.name == "get" && it.parameterCount == 0 }
-                ?.invoke(lazy) ?: return@runCatching null
+                ?.invoke(lazy) ?: return@optionalNativeRead null
             if (doze.javaClass.name !=
                 "com.android.keyguard.injector.DozeServiceHostInjector"
             ) {
-                return@runCatching null
+                return@optionalNativeRead null
             }
-            val cc = field(doze, "mControlCenter") ?: return@runCatching null
+            val cc = field(doze, "mControlCenter") ?: return@optionalNativeRead null
             val expanded = cc.javaClass.methods
                 .firstOrNull { it.name == "getExpanded" && it.parameterCount == 0 }
-                ?.invoke(cc) ?: return@runCatching null
+                ?.invoke(cc) ?: return@optionalNativeRead null
             "ccExpanded=" + expanded +
                 ":linkage=" + field(doze, "mScreenOffNeedLinkageAnim") +
                 ":fullAod=" + field(doze, "mScreenOffNeedFullAodAnim") +
@@ -93,7 +93,7 @@ internal object SysUiKeyguardHostResolver {
                 ":dozeAfterOff=" + field(doze, "mShouldDozeAfterScreenOff") +
                 ":sleepReason=" + field(doze, "mSleepReason") +
                 ":interactive=" + field(doze, "mDeviceInteractive")
-        }.getOrNull()
+        }
 
     internal fun statusIconsPresentationAlpha(
         resolved: ResolvedHost,
@@ -201,7 +201,7 @@ internal object SysUiKeyguardHostResolver {
         fieldName: String,
     ): View? =
         findField(owner.javaClass, fieldName)
-            ?.let { field -> runCatching { field.get(owner) as? View }.getOrNull() }
+            ?.let { field -> SysUiPresentationRuntime.optionalNativeRead { field.get(owner) as? View } }
 
     private fun findField(
         type: Class<*>,
@@ -211,11 +211,11 @@ internal object SysUiKeyguardHostResolver {
         while (current != null) {
             val candidate = current
             val field =
-                runCatching {
+                SysUiPresentationRuntime.optionalNativeRead {
                     candidate
                         .getDeclaredField(name)
                         .apply { isAccessible = true }
-                }.getOrNull()
+                }
             if (field != null) {
                 return field
             }
