@@ -179,19 +179,19 @@ internal object StatusBarStableSession {
 
             emitDiagnostic {
                 onEvent(
-                Anchor(
-                    source = source,
-                    hostIdentity = System.identityHashCode(hostView),
-                    batteryContainerIndex = hostView.indexOfChild(container),
-                    batteryIndex = container.indexOfChild(view),
-                    batteryWidth = view.width,
-                    batteryHeight = view.height,
-                    batteryMeasuredWidth = view.measuredWidth,
-                    batteryMeasuredHeight = view.measuredHeight,
-                ).logLine,
-            )
-
+                    Anchor(
+                        source = source,
+                        hostIdentity = System.identityHashCode(hostView),
+                        batteryContainerIndex = hostView.indexOfChild(container),
+                        batteryIndex = container.indexOfChild(view),
+                        batteryWidth = view.width,
+                        batteryHeight = view.height,
+                        batteryMeasuredWidth = view.measuredWidth,
+                        batteryMeasuredHeight = view.measuredHeight,
+                    ).logLine,
+                )
             }
+
             emitDiagnostic {
                 val statusIcons = container.directChild(STATUS_ICON_CONTAINER_CLASS_NAME)
                 val layoutParams = view.layoutParams
@@ -213,14 +213,13 @@ internal object StatusBarStableSession {
                         statusIconsRight = statusIcons?.right ?: -1,
                         batteryLeft = view.left,
                         batteryRight = view.right,
-                        adjacentGap =
-                            statusIcons?.let { icons -> view.left - icons.right } ?: -1,
+                        adjacentGap = statusIcons?.let { icons -> view.left - icons.right } ?: -1,
                         batteryClipChildren = view.clipChildren,
                         containerClipChildren = container.clipChildren,
                         layoutRtl = view.layoutDirection == View.LAYOUT_DIRECTION_RTL,
                         batteryTranslationX = view.translationX,
                     )
-                    onEvent(slotMetrics.logLine)
+                onEvent(slotMetrics.logLine)
             }
             return true
         }
