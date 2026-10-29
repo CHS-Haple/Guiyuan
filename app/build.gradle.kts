@@ -155,6 +155,18 @@ android {
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
         }
+        if (isItChannel) {
+            create("itDiagnostic") {
+                initWith(getByName("release"))
+                if (itVersionSuffix != null) versionNameSuffix = itVersionSuffix
+                matchingFallbacks += listOf("canary", "release")
+                isDebuggable = false
+                buildConfigField("String", "BUILD_CHANNEL", "\"it-debug\"")
+                buildConfigField("boolean", "DEVELOPMENT_PROBES", "true")
+                buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+                buildConfigField("boolean", "REPO_LINK_ENABLED", "false")
+            }
+        }
         create("internal") {
             initWith(getByName("release"))
             matchingFallbacks += listOf("release")
