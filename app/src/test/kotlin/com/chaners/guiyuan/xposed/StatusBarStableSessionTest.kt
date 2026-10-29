@@ -7,12 +7,12 @@ import org.junit.Test
 
 class StatusBarStableSessionTest {
     @Test
-    fun failedAnchorEvidenceDoesNotBlockIndependentMetrics() {
+    fun failedPassiveEvidenceDoesNotBlockIndependentSnapshots() {
         var delivered = 0
-        StatusBarStableSession.emitDiagnostic {
+        SysUiPresentationRuntime.emitPassiveDiagnostic {
             throw IllegalStateException("anchor-log-unavailable")
         }
-        StatusBarStableSession.emitDiagnostic { delivered++ }
+        SysUiPresentationRuntime.emitPassiveDiagnostic { delivered++ }
         assertEquals(1, delivered)
     }
 
@@ -22,7 +22,7 @@ class StatusBarStableSessionTest {
         assertSame(
             fatal,
             runCatching {
-                StatusBarStableSession.emitDiagnostic { throw fatal }
+                SysUiPresentationRuntime.emitPassiveDiagnostic { throw fatal }
             }.exceptionOrNull(),
         )
 
@@ -30,12 +30,12 @@ class StatusBarStableSessionTest {
         assertSame(
             reflected,
             runCatching {
-                StatusBarStableSession.emitDiagnostic {
+                SysUiPresentationRuntime.emitPassiveDiagnostic {
                     throw InvocationTargetException(reflected)
                 }
             }.exceptionOrNull(),
         )
-        StatusBarStableSession.emitDiagnostic {
+        SysUiPresentationRuntime.emitPassiveDiagnostic {
             throw InvocationTargetException(IllegalStateException("ordinary"))
         }
     }
