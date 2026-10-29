@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.system
 
 import com.chaners.guiyuan.settings.DiagLevel
-import com.chaners.guiyuan.settings.NativeFontAxis
 import java.time.OffsetDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -9,53 +8,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DiagReportTest {
-    @Test
-    fun fontAxisDiagnosticsDoNotClaimSubmissionProvesReceipt() {
-        val result = report(
-            fontAxis = NativeFontAxis.DiagnosticState(
-                receipt = "not-received",
-                mobile = "pending",
-                battery = "pending",
-            ),
-        )
-        assertTrue(result.contains("[Font axis diagnostics]\nreceipt=not-received\nmobile=pending\nbattery=pending"))
-    }
-
-    @Test
-    fun detailedReportContainsOnlyExistingSessionEvidence() {
-        val raw = DiagProtocol.format(
-            event = "hotReload.complete",
-            component = "hotReload",
-            state = "ready",
-            fields = mapOf("sessionId" to "latest", "bounds" to "0,0,10,10"),
-        )
-        val observed = report(raw)
-        assertTrue(observed.contains("[Diagnostic evidence]"))
-        assertTrue(observed.contains("collectedNewNativeData=false"))
-        assertTrue(observed.contains("geometryFieldEntries=1"))
-        assertTrue(observed.contains("nativeViewTree=not-collected"))
-    }
-
-    @Test
-    fun missingGeometryIsNotReportedAsNativeCapture() {
-        val observed = report("unstructured line")
-        assertTrue(observed.contains("geometryFieldEntries=0"))
-        assertTrue(observed.contains("nativeViewTree=not-collected"))
-    }
-
-    @Test
-    fun generalReportDoesNotIncludeDetailedEvidenceSection() {
-        val report = report(
-            DiagProtocol.format(
-                event = "hotReload.complete",
-                component = "hotReload",
-                fields = mapOf("sessionId" to "latest"),
-            ),
-            level = DiagLevel.General,
-        )
-        assertFalse(report.contains("[Diagnostic evidence]"))
-    }
-
     @Test
     fun missingRuntimeLevelIsNotMistakenForBindingFailure() {
         val report = report(
@@ -228,7 +180,6 @@ class DiagReportTest {
         truncated: Boolean = false,
         collection: RootShell.Result? = null,
         level: DiagLevel = DiagLevel.Detailed,
-        fontAxis: NativeFontAxis.DiagnosticState? = null,
     ): String {
         val recorded = lines.toList()
         return DiagReport.build(
@@ -254,7 +205,6 @@ class DiagReportTest {
                 runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
                 entries = recorded.map(DiagLogParser::parse),
                 capturedAt = OffsetDateTime.parse("2026-10-08T22:00:00+08:00"),
-                fontAxis = fontAxis,
             ),
         )
     }

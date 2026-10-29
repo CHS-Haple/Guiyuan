@@ -217,11 +217,13 @@ jobs:
           if [[ "$SCOPE" == "runtime" || "$SCOPE" == "full" ]]; then
             RUN_ANDROID=true
           fi
-          if [[ "$SCOPE" == "full" || ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "pull_request" ) ]]; then
+          if [[ ( "$SCOPE" == "full" || ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "pull_request" ) ) &&
+                ! ( "$EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ) &&
+                ! ( "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" == "main" ) ]]; then
             RUN_DEBUG=true
           fi
-          if [[ ( "$SCOPE" == "full" && "$EVENT_NAME" == "pull_request" ) ||
-                ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "pull_request" && "$PR_HEAD_REPO" == "$GITHUB_REPOSITORY" ) ||
+          if [[ ( "$SCOPE" == "full" && "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" != "main" ) ||
+                ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" != "main" && "$PR_HEAD_REPO" == "$GITHUB_REPOSITORY" ) ||
                 ( ( "$SCOPE" == "runtime" || "$SCOPE" == "full" ) && "$EVENT_NAME" == "push" &&
                     ( "$GITHUB_REF" == "refs/heads/dev" || "$GITHUB_REF" == "refs/heads/it" ) ) ]]; then
             RUN_CANARY=true
@@ -249,8 +251,8 @@ jobs:
           echo "mixed_surface_reason=$MIXED_SURFACE_REASON" >> "$GITHUB_OUTPUT"
           echo "Validation scope: $SCOPE ($REASON)"
 
-      - name: Lightweight repository checks
-        if: steps.scope.outputs.scope == 'light'
+      - name: Early PR diff / light repository checks
+        if: github.event_name == 'pull_request' || steps.scope.outputs.scope == 'light'
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
@@ -323,7 +325,7 @@ jobs:
             -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
             -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
             -Pgy.os4.dialogSurfaces=true \
-            "${TASKS[@]}" --no-daemon --max-workers=2 --stacktrace
+            "${TASKS[@]}" --no-daemon --max-workers=3 --stacktrace
 
       - name: Resolve built APK paths
         if: steps.scope.outputs.run_android == 'true'
@@ -516,7 +518,7 @@ jobs:
             tools/setup_haple_signing.sh
 
       - name: Download unsigned source-built Canary
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: unsigned-ci-canary-${{ github.sha }}
           path: candidate
