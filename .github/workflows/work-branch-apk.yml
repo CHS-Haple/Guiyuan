@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       source_branch:
-        description: 'Reviewed work branch for Canary; protected it for Internal'
+        description: 'Reviewed work branch or protected it for Canary'
         required: true
         type: string
       variant:
@@ -25,7 +25,6 @@ on:
         type: choice
         options:
           - canary
-          - internal
       build_number:
         description: 'Build suffix (for example 850); checked against the source Gradle Build'
         required: true
@@ -86,18 +85,9 @@ jobs:
               branch="$MANUAL_SOURCE_BRANCH"
               variant="$MANUAL_VARIANT"
               expected_build="$MANUAL_BUILD_NUMBER"
-              if [[ "$variant" == "internal" ]]; then
-                if [[ "$branch" != "it" ]]; then
-                  echo "::error::Internal distribution requires the protected it branch."
-                  exit 1
-                fi
-              elif [[ "$variant" == "canary" ]]; then
-                if [[ "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ]]; then
-                  echo "::error::Canary requires a reviewed work branch."
-                  exit 1
-                fi
-              else
-                echo "::error::Unsupported APK variant: $variant"
+              if [[ "$variant" != "canary" ||
+                    ( "$branch" != "it" && "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ) ]]; then
+                echo "::error::Canary requires protected it or a reviewed work branch."
                 exit 1
               fi
               source_sha="$(
@@ -145,14 +135,13 @@ jobs:
               ;;
           esac
 
-          if [[ "$variant" == "internal" ]]; then
-            if [[ "$EVENT_NAME" != "workflow_dispatch" || "$branch" != "it" ]]; then
-              echo "::error::Only owner-triggered, protected IT branch builds may be Internal."
-              exit 1
-            fi
-          elif [[ "$variant" != "canary" ||
-                  ( "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ) ]]; then
-            echo "::error::Canary requires a reviewed feat/fix/refactor/hotfix branch."
+          if [[ "$variant" != "canary" ||
+                ( "$branch" != "it" && "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ) ]]; then
+            echo "::error::Canary requires protected it or a reviewed feat/fix/refactor/hotfix branch."
+            exit 1
+          fi
+          if [[ "$branch" == "it" && "$EVENT_NAME" != "workflow_dispatch" ]]; then
+            echo "::error::Protected IT Canary requires owner-triggered dispatch."
             exit 1
           fi
           if [[ ! "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
@@ -194,14 +183,14 @@ jobs:
             branch_json="$(gh api "repos/$GITHUB_REPOSITORY/branches/it")"
             test "$(jq -r '.protected' <<< "$branch_json")" = "true"
             test "$(jq -r '.commit.sha' <<< "$branch_json")" = "$SOURCE_SHA"
-            artifact="unsigned-it-internal-$SOURCE_SHA"
+            artifact="unsigned-it-canary-$SOURCE_SHA"
             event="push"
             pr_number=""
           else
             prs="$(gh api -X GET "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100")"
             pr_number="$(jq -r \
               --arg repo "$GITHUB_REPOSITORY" --arg branch "$SOURCE_BRANCH" --arg sha "$SOURCE_SHA" \
-              '.[] | select(.head.repo.full_name == $repo and .head.ref == $branch and .head.sha == $sha) | .number' \
+              '.[] | select(.head.repo.full_name == $repo and .head.ref == $branch and .head.sha == $sha and .draft == false) | .number' \
               <<< "$prs" | head -n 1)"
             if [[ -z "$pr_number" ]]; then
               echo "::error::Canary requires an open same-repository PR at the requested exact SHA."
@@ -259,7 +248,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   sign:
-    name: Sign reviewed Canary / protected IT Internal
+    name: Sign reviewed Canary / protected IT Canary
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -318,7 +307,7 @@ jobs:
           VARIANT: ${{ needs.build.outputs.variant }}
         run: |
           set -euo pipefail
-          test "$VARIANT" = "canary" || test "$VARIANT" = "internal"
+          test "$VARIANT" = "canary"
           source="candidate/app-$VARIANT-unsigned.apk"
           test -s "$source" && test -n "$SOURCE_SHA" && test -n "$VERSION_NAME" && test -n "$BUILD_ID"
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
@@ -333,9 +322,7 @@ jobs:
           test "$cert" = "$HAPLE_CERT_SHA256"
           badging="$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk")"
           test "$(sed -n "s/.*package: name='\([^']*\)'.*/\1/p" <<< "$badging" | head -n 1)" = com.chaners.guiyuan
-          expected_version="$VERSION_NAME"
-          if [[ "$VARIANT" == "internal" ]]; then expected_version="${VERSION_NAME}-internal"; fi
-          test "$(sed -n "s/.*versionName='\([^']*\)'.*/\1/p" <<< "$badging" | head -n 1)" = "$expected_version"
+          test "$(sed -n "s/.*versionName='\\([^']*\\)'.*/\\1/p" <<< "$badging" | head -n 1)" = "$VERSION_NAME"
           APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
           test "$("$APKANALYZER" manifest debuggable "$apk")" = false
           echo "APK_NAME=$(basename "$apk")" >> "$GITHUB_ENV"
