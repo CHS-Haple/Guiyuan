@@ -627,26 +627,12 @@ class GyModule : XposedModule() {
                 }
             }
 
-            val generationHandoff =
-                restored.generationHandoff?.let { handoff ->
-                    runCatching {
-                        handoff.run()
-                        "continuous"
-                    }.getOrElse { error ->
-                        SysUiHotReload.rethrowFatal(error)
-                        throw IllegalStateException(
-                            "old-generation-handoff-failed",
-                            error,
-                        )
-                    }
-                } ?: "retired-before-reload"
-
             logDiagnostic(
                 level = Log.INFO,
                 event = "hotReload.generationHandoff",
                 component = "hotReload",
                 state = "ready",
-                "mode" to generationHandoff,
+                "mode" to "retired-before-reload",
             )
 
             SysUiCcSource.restoreHomeEligibility(

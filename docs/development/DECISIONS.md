@@ -122,7 +122,7 @@ Detailed implementation history, rejected experiments, CI runs, and device inves
 
 **Why:** LSPosed 7927 loads the replacement ClassLoader *after* old `onHotReloading`, and provides no frame-atomic UI transaction. Keeping old listeners inside a V9 Array breaks lifetime ownership even if the UI appears seamless.
 
-**Consequence:** new owners revalidate live host identity before acquiring runtime resources; native battery/network may briefly display between generations. A refused/failed transfer must report restart rather than claim rollback of partial native teardown. Queued cleanup may be canceled; cleanup already running must finish. Legacy V9 reader compatibility does not make the old producer safe; restart SystemUI when upgrading into V10.
+**Consequence:** new owners revalidate live host identity before acquiring runtime resources; native battery/network may briefly display between generations. A refused/failed transfer must report restart rather than claim rollback of partial native teardown. Queued cleanup may be canceled; cleanup already running must finish. V9's payload embeds an old-generation Runnable and is rejected before restoring Views; upgrading from V9 requires a SystemUI restart rather than running that callback in the new ClassLoader. Older neutral payload formats retain their existing validation rules.
 
 ## Maintainability favors useful boundaries over uniform structure
 
