@@ -212,7 +212,7 @@ jobs:
           RUN_ANDROID=false
           RUN_DEBUG=false
           RUN_CANARY=false
-          RUN_IT_INTERNAL=false
+          RUN_IT_DIAGNOSTIC=false
 
           if [[ "$SCOPE" == "runtime" || "$SCOPE" == "full" ]]; then
             RUN_ANDROID=true
@@ -230,10 +230,10 @@ jobs:
           if [[ ( "$SCOPE" == "runtime" || "$SCOPE" == "full" ) &&
                 ( ( "$EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/it" ) ||
                   ( "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" == "it" ) ) ]]; then
-            RUN_IT_INTERNAL=true
+            RUN_IT_DIAGNOSTIC=true
           fi
 
-          echo "run_it_internal=$RUN_IT_INTERNAL" >> "$GITHUB_OUTPUT"
+          echo "run_it_diagnostic=$RUN_IT_DIAGNOSTIC" >> "$GITHUB_OUTPUT"
           echo "scope=$SCOPE" >> "$GITHUB_OUTPUT"
           echo "reason=$REASON" >> "$GITHUB_OUTPUT"
           echo "run_android=$RUN_ANDROID" >> "$GITHUB_OUTPUT"
@@ -314,9 +314,9 @@ jobs:
           if [[ "${{ steps.scope.outputs.scope }}" == "full" &&
                 ( ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.base.ref }}" == "main" ) ||
                   ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
-            TASKS+=(":app:assembleInternal" ":app:assembleRelease")
-          elif [[ "${{ steps.scope.outputs.run_it_internal }}" == "true" ]]; then
-            TASKS+=(":app:assembleInternal" ":app:assembleItDiagnostic")
+            TASKS+=(":app:assembleRelease")
+          elif [[ "${{ steps.scope.outputs.run_it_diagnostic }}" == "true" ]]; then
+            TASKS+=(":app:assembleItDiagnostic")
           fi
           test -n "$MIUIX_SOURCE_REVISION" && test -n "$MIUIX_SOURCE_DIR"
           ./gradlew \
@@ -349,7 +349,7 @@ jobs:
           fi
 
       - name: Locate opt-in IT diagnostic candidate
-        if: steps.scope.outputs.run_it_internal == 'true'
+        if: steps.scope.outputs.run_it_diagnostic == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -371,9 +371,9 @@ jobs:
           if [[ "${{ steps.scope.outputs.scope }}" == "full" &&
                 ( ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.base.ref }}" == "main" ) ||
                   ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
-            APKS+=("app/build/outputs/apk/internal/app-internal-unsigned.apk" "app/build/outputs/apk/release/app-release-unsigned.apk")
-          elif [[ "${{ steps.scope.outputs.run_it_internal }}" == "true" ]]; then
-            APKS+=("app/build/outputs/apk/internal/app-internal-unsigned.apk" "$IT_DIAGNOSTIC_APK_PATH")
+            APKS+=("app/build/outputs/apk/release/app-release-unsigned.apk")
+          elif [[ "${{ steps.scope.outputs.run_it_diagnostic }}" == "true" ]]; then
+            APKS+=("$IT_DIAGNOSTIC_APK_PATH")
           fi
           bash tools/verify_xposed_metadata.sh "${APKS[@]}"
 
@@ -410,7 +410,7 @@ jobs:
           fi
 
       - name: Verify IT diagnostic is non-debuggable
-        if: steps.scope.outputs.run_it_internal == 'true'
+        if: steps.scope.outputs.run_it_diagnostic == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -445,17 +445,8 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-      - name: Store unsigned protected IT Internal for trusted signing
-        if: github.event_name == 'push' && github.ref == 'refs/heads/it' && steps.scope.outputs.run_it_internal == 'true'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: unsigned-it-internal-${{ github.sha }}
-          path: app/build/outputs/apk/internal/app-internal-unsigned.apk
-          if-no-files-found: error
-          retention-days: 3
-
       - name: Store protected IT diagnostic candidate for trusted owner-only signing
-        if: github.event_name == 'push' && github.ref == 'refs/heads/it' && steps.scope.outputs.run_it_internal == 'true'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/it' && steps.scope.outputs.run_it_diagnostic == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unsigned-it-diagnostic-${{ github.sha }}
@@ -472,14 +463,12 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-      - name: Transfer verified main unsigned IT / Release for isolated signing
+      - name: Transfer verified main unsigned Release for isolated signing
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.scope.outputs.scope == 'full'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unsigned-main-${{ github.sha }}
-          path: |
-            app/build/outputs/apk/internal/app-internal-unsigned.apk
-            app/build/outputs/apk/release/app-release-unsigned.apk
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
           retention-days: 3
 
