@@ -325,7 +325,77 @@ jobs:
             -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
             -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
             -Pgy.os4.dialogSurfaces=true \
-            "${TASKS[@]}" --no-daemon --max-workers=2 --stacktrace
+            "${TASKS[@]}" --no-daemon --max-workers=2 --stacktrace --profile
+
+      # Temporary measurement PR only: do not promote profiler flags into dev.
+      - name: Print temporary Gradle task profile
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/ci-profile-gradle-bottlenecks' && steps.scope.outputs.run_android == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          import re
+
+          class Rows(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.inside_row = False
+                  self.inside_cell = False
+                  self.cell = ''
+                  self.row = []
+                  self.rows = []
+
+              def handle_starttag(self, tag, attrs):
+                  if tag == 'tr':
+                      self.inside_row = True
+                      self.row = []
+                  elif tag in ('td', 'th') and self.inside_row:
+                      self.inside_cell = True
+                      self.cell = ''
+
+              def handle_data(self, data):
+                  if self.inside_cell:
+                      self.cell += data
+
+              def handle_endtag(self, tag):
+                  if tag in ('td', 'th') and self.inside_cell:
+                      self.row.append(self.cell.strip())
+                      self.inside_cell = False
+                  elif tag == 'tr' and self.inside_row:
+                      if self.row:
+                          self.rows.append(self.row)
+                      self.inside_row = False
+
+          reports = sorted(Path('build/reports/profile').glob('*.html'))
+          if len(reports) != 1:
+              raise SystemExit(f'Expected one Gradle profile HTML; found {len(reports)}')
+          parser = Rows()
+          parser.feed(reports[0].read_text(encoding='utf-8'))
+          tasks = []
+          for row in parser.rows:
+              if len(row) < 2 or not row[0].startswith(':'):
+                  continue
+              match = re.fullmatch(r'([0-9]+(?:\.[0-9]+)?)s', row[1])
+              if match:
+                  tasks.append((float(match.group(1)), row[0]))
+          if not tasks:
+              raise SystemExit('Could not read task durations from Gradle profile HTML')
+          print('=== Gradle profile (temporary diagnostic; task times may overlap) ===')
+          print(f'Parsed {len(tasks)} task durations, top 25 by elapsed task time:')
+          for seconds, name in sorted(tasks, reverse=True)[:25]:
+              print(f'{seconds:9.3f}s {name}')
+          PY
+
+      - name: Upload temporary Gradle profiling report
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/ci-profile-gradle-bottlenecks' && steps.scope.outputs.run_android == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gradle-task-profile-${{ github.event.pull_request.head.sha }}
+          path: build/reports/profile/*.html
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Resolve built APK paths
         if: steps.scope.outputs.run_android == 'true'
