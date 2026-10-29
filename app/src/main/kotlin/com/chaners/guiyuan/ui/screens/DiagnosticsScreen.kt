@@ -1249,6 +1249,8 @@ private fun logTitle(
             "pipeline.latency" -> R.string.diagnostics_log_event_pipeline_latency
             "visualSettings.changed" -> R.string.diagnostics_log_event_visual_settings
             "featureSettings.changed" -> R.string.diagnostics_log_event_feature_settings
+            "hotReload.cleanup" -> R.string.diagnostics_log_event_hot_reload_cleanup
+            "battery.reconcile" -> R.string.diagnostics_log_event_battery_reconcile
             "hotReload.prepare" -> R.string.diagnostics_log_event_hot_reload_prepare
             "hotReload.generationHandoff" -> R.string.diagnostics_log_event_hot_reload_handoff
             "hotReload.migration" -> R.string.diagnostics_log_event_hot_reload_migration
@@ -1505,6 +1507,7 @@ private val RUNTIME_EVENTS =
         "module.loaded",
         "module.reloaded",
         "diagnostics.snapshot",
+        "battery.reconcile",
         "compatibility.probe",
         "compatibility.revalidated",
         "hook.install",

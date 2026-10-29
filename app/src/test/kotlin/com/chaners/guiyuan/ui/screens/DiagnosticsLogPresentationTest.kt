@@ -21,6 +21,7 @@ class DiagnosticsLogPresentationTest {
     @Test
     fun essentialHealthAndLegacyNetworkEventsRemainVisible() {
         assertTrue(isRuntimeLog(structured("diagnostics.snapshot")))
+        assertTrue(isRuntimeLog(structured("battery.reconcile", mapOf("nativeCharging" to "false"))))
         assertTrue(isRuntimeLog(legacy("connectivity source=capabilities transport=WIFI validated=true")))
         assertTrue(isRuntimeLog(legacy("connectivity delivery-failed source=callback type=IllegalStateException")))
         assertFalse(isRuntimeLog(legacy("unrelated traceInfo=value")))
