@@ -361,6 +361,7 @@
     <string name="diagnostics_log_battery_native">Native: %1$s</string>
     <string name="diagnostics_log_battery_percent">Battery %1$d%%</string>
     <string name="diagnostics_events_summary">Showing %1$d events</string>
+    <string name="diagnostics_collection_incomplete">Log collection did not complete; the available events may be incomplete.</string>
     <string name="diagnostics_component_module">Module</string>
     <string name="diagnostics_component_compatibility">Compatibility</string>
     <string name="diagnostics_component_status_host">Status bar host</string>
