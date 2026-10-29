@@ -250,6 +250,7 @@
     <string name="diagnostics_log_event_aod_state">AOD state updated</string>
     <string name="diagnostics_log_event_aod_target">AOD target updated</string>
     <string name="diagnostics_log_event_connectivity">Connectivity updated</string>
+    <string name="diagnostics_log_event_connectivity_failure">Connectivity delivery failed</string>
     <string name="diagnostics_log_event_wifi_icon">Wi-Fi icon state updated</string>
     <string name="diagnostics_log_event_status_icon_presentation">Status icon presentation</string>
     <string name="diagnostics_log_event_tint_commit">Tint committed</string>

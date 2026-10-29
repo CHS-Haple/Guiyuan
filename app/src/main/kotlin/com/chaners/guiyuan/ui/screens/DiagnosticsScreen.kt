@@ -255,9 +255,15 @@ internal fun DiagnosticsScreen(
             !loading &&
             !reportBusy &&
             !exportOpen
-    val entries = remember(snapshot, viewCleared) {
+    val focusedCategory =
+        when (categoryFilter) {
+            CAT_PERF -> LogCategory.Performance
+            CAT_DISPLAY -> LogCategory.Display
+            else -> null
+        }
+    val entries = remember(snapshot, viewCleared, focusedCategory) {
         if (viewCleared) emptyList()
-        else snapshot?.entries.orEmpty().asReversed().filter(::isRuntimeLog)
+        else snapshot?.entries.orEmpty().asReversed().filter { isRuntimeLog(it, focusedCategory) }
     }
     val visibleEntries = remember(entries, levelFilter, categoryFilter) {
         entries
@@ -479,6 +485,11 @@ internal fun DiagnosticsScreen(
                     )
                 }
             }
+            entries.isEmpty() && filterActive -> {
+                item(key = "diagnostics-state-filter-empty") {
+                    LogStateCard(text = stringResource(R.string.diagnostics_filter_empty))
+                }
+            }
             entries.isEmpty() -> {
                 item(key = "diagnostics-no-events") {
                     LogEmptyGuide(
@@ -503,6 +514,7 @@ internal fun DiagnosticsScreen(
 }
 
 private const val MAX_EVENTS = 40
+private const val MAX_DETAIL_FIELDS = 5
 
 private fun logProgress(progress: Float, index: Int): Float {
     // Off-screen rows share the last visible row's start.
@@ -943,15 +955,9 @@ private fun LogCard(
                     )
                 }
 
-                entry.fields
-                    .filterKeys { key -> key !in LOG_META_FIELDS }
-                    .forEach { (key, value) ->
-                        LogDetail(label = key, value = value)
-                    }
-                LogDetail(
-                    label = "raw",
-                    value = entry.raw,
-                )
+                logDetailFields(entry).forEach { (key, value) ->
+                    LogDetail(label = key, value = value)
+                }
             }
         }
     }
@@ -1126,6 +1132,8 @@ private fun LogDetail(
             text = value,
             style = MiuixTheme.textStyles.footnote1,
             color = MiuixTheme.colorScheme.onSurfaceContainer,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -1150,7 +1158,7 @@ private fun copyLog(
     ).show()
 }
 
-private fun isRuntimeLog(entry: LogEntry): Boolean {
+internal fun isRuntimeLog(entry: LogEntry, focusedCategory: LogCategory? = null): Boolean {
     if (
         entry.level == LogLevel.Warning ||
         entry.level == LogLevel.Error ||
@@ -1158,11 +1166,27 @@ private fun isRuntimeLog(entry: LogEntry): Boolean {
     ) {
         return true
     }
-    if (!entry.structured) {
-        return false
+    // The connectivity source still emits a legacy INFO record.
+    if (entry.event == "connectivity" && "transport" in entry.fields) return true
+    if (entry.event == "connectivity.delivery-failed") return true
+    if (!entry.structured) return false
+    return when (entry.event) {
+        "pipeline.latency" -> focusedCategory == LogCategory.Performance
+        "presentation.resolve" -> focusedCategory == LogCategory.Display
+        else -> entry.event in RUNTIME_EVENTS
     }
-    return entry.event in RUNTIME_EVENTS
 }
+
+internal fun logDetailFields(entry: LogEntry): List<Pair<String, String>> =
+    entry.fields
+        .asSequence()
+        .filter { (key, _) -> key !in LOG_META_FIELDS }
+        .sortedBy { (key, _) ->
+            DETAIL_FIELD_PRIORITY.indexOf(key).let { if (it < 0) Int.MAX_VALUE else it }
+        }
+        .take(MAX_DETAIL_FIELDS)
+        .map { (key, value) -> key to value }
+        .toList()
 
 private fun levelLabel(level: LogLevel): String =
     when (level) {
@@ -1235,6 +1259,7 @@ private fun logTitle(
             "aod.state" -> R.string.diagnostics_log_event_aod_state
             "aod.target" -> R.string.diagnostics_log_event_aod_target
             "connectivity" -> R.string.diagnostics_log_event_connectivity
+            "connectivity.delivery-failed" -> R.string.diagnostics_log_event_connectivity_failure
             "networkPipeline.wifi.iconEvent" -> R.string.diagnostics_log_event_wifi_icon
             "statusIconPresentation" -> R.string.diagnostics_log_event_status_icon_presentation
             "tintCommit" -> R.string.diagnostics_log_event_tint_commit
@@ -1256,6 +1281,15 @@ private fun logSummary(
     val separator = context.getString(R.string.diagnostics_log_summary_separator)
     fun join(vararg parts: String?): String =
         parts.filterNotNull().filter(String::isNotBlank).joinToString(separator)
+
+    if (entry.event == "connectivity.delivery-failed") {
+        return join(
+            fields["source"]?.let {
+                context.getString(R.string.diagnostics_log_summary_source, sourceLabel(context, it))
+            },
+            fields["type"],
+        ).ifBlank { fallback }
+    }
 
     if (entry.event == "connectivity") {
         return buildList {
@@ -1470,6 +1504,7 @@ private val RUNTIME_EVENTS =
     setOf(
         "module.loaded",
         "module.reloaded",
+        "diagnostics.snapshot",
         "compatibility.probe",
         "compatibility.revalidated",
         "hook.install",
@@ -1505,7 +1540,8 @@ private val LOG_META_FIELDS =
         "sequence",
         "sessionId",
         "uptimeMs",
-        "traceId",
         "healthSnapshot",
         "sampling",
     )
+
+private val DETAIL_FIELD_PRIORITY = listOf("reason", "source", "traceId", "target", "owner")

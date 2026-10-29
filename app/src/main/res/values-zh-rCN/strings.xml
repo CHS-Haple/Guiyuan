@@ -249,6 +249,7 @@
     <string name="diagnostics_log_event_aod_state">AOD 状态更新</string>
     <string name="diagnostics_log_event_aod_target">AOD 目标更新</string>
     <string name="diagnostics_log_event_connectivity">连接状态更新</string>
+    <string name="diagnostics_log_event_connectivity_failure">网络状态交付失败</string>
     <string name="diagnostics_log_event_wifi_icon">Wi-Fi 图标状态更新</string>
     <string name="diagnostics_log_event_status_icon_presentation">状态栏展示状态</string>
     <string name="diagnostics_log_event_tint_commit">颜色提交</string>

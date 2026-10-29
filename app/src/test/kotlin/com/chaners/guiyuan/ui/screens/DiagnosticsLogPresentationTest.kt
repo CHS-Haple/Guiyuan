@@ -1,0 +1,60 @@
+package com.chaners.guiyuan.ui.screens
+
+import com.chaners.guiyuan.system.DiagLogParser
+import com.chaners.guiyuan.system.DiagProtocol
+import com.chaners.guiyuan.system.LogCategory
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class DiagnosticsLogPresentationTest {
+    private fun structured(event: String, fields: Map<String, String> = emptyMap()) =
+        DiagLogParser.parse(
+            "10-29 09:20:12.456 1200 1200 I CombinedStatus: " +
+                DiagProtocol.format(event, "diagnostics", fields = fields),
+        )
+
+    private fun legacy(message: String, level: String = "I") =
+        DiagLogParser.parse("10-29 09:20:12.456 1200 1200 $level CombinedStatus: $message")
+
+    @Test
+    fun essentialHealthAndLegacyNetworkEventsRemainVisible() {
+        assertTrue(isRuntimeLog(structured("diagnostics.snapshot")))
+        assertTrue(isRuntimeLog(legacy("connectivity source=capabilities transport=WIFI validated=true")))
+        assertTrue(isRuntimeLog(legacy("connectivity delivery-failed source=callback type=IllegalStateException")))
+        assertFalse(isRuntimeLog(legacy("unrelated traceInfo=value")))
+        assertTrue(isRuntimeLog(legacy("unrelated traceInfo=value", level = "W")))
+    }
+
+    @Test
+    fun detailedSamplesOnlyEnterFocusedCategory() {
+        val latency = structured("pipeline.latency", mapOf("sourceToDrawUs" to "3214"))
+        val presentation = structured("presentation.resolve", mapOf("mode" to "normal"))
+        assertFalse(isRuntimeLog(latency))
+        assertFalse(isRuntimeLog(presentation))
+        assertTrue(isRuntimeLog(latency, LogCategory.Performance))
+        assertTrue(isRuntimeLog(presentation, LogCategory.Display))
+        assertFalse(isRuntimeLog(latency, LogCategory.Display))
+        assertFalse(isRuntimeLog(presentation, LogCategory.Performance))
+    }
+
+    @Test
+    fun expandedFieldsStayBoundedAndKeepRootCauseEvidence() {
+        val entry = structured(
+            "hotReload.complete",
+            mapOf(
+                "alpha" to "1", "beta" to "2", "gamma" to "3",
+                "delta" to "4", "owner" to "sysui", "source" to "reload",
+                "reason" to "native-transition", "traceId" to "trace-7",
+                "sequence" to "45", "sessionId" to "build-session", "healthSnapshot" to "false",
+            ),
+        )
+        val fields = logDetailFields(entry)
+        assertEquals(5, fields.size)
+        assertEquals(listOf("reason", "source", "traceId", "owner", "alpha"), fields.map { it.first })
+        assertFalse(fields.any { it.first == "sessionId" || it.first == "healthSnapshot" })
+        assertTrue(entry.raw.contains("sessionId=build-session"))
+        assertTrue(entry.raw.contains("gamma=3"))
+    }
+}
