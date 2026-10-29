@@ -9,6 +9,42 @@ import org.junit.Test
 
 class DiagReportTest {
     @Test
+    fun itDetailedReportIncludesOnlyObservedEvidenceWithoutClaimingNativeViewTreeCapture() {
+        val raw = DiagProtocol.format(
+            event = "hotReload.complete",
+            component = "hotReload",
+            state = "ready",
+            fields = mapOf("sessionId" to "latest", "bounds" to "0,0,10,10"),
+        )
+        val observed = report(raw)
+        assertTrue(observed.contains("[IT diagnostic evidence]"))
+        assertTrue(observed.contains("collectedNewNativeData=false"))
+        assertTrue(observed.contains("geometryEvents=1"))
+        assertTrue(observed.contains("nativeViewTree=partial-event-fields-only"))
+        assertTrue(observed.contains("capturedStackTraces=existing-log-only"))
+    }
+
+    @Test
+    fun itDebugTriageLabelsMissingGeometryAsNotObserved() {
+        val observed = report("unstructured line")
+        assertTrue(observed.contains("geometryEvents=0"))
+        assertTrue(observed.contains("nativeViewTree=not-observed"))
+    }
+
+    @Test
+    fun generalReportDoesNotIncludeItDetailedEvidenceSection() {
+        val report = report(
+            DiagProtocol.format(
+                event = "hotReload.complete",
+                component = "hotReload",
+                fields = mapOf("sessionId" to "latest"),
+            ),
+            level = DiagLevel.General,
+        )
+        assertFalse(report.contains("[IT diagnostic evidence]"))
+    }
+
+    @Test
     fun missingRuntimeLevelIsNotMistakenForBindingFailure() {
         val report = report(
             DiagProtocol.format(

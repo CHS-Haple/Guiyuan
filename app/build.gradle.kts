@@ -109,6 +109,10 @@ android {
     sourceSets.getByName("main").kotlin.directories.add(
         if (os4DialogSurfaces) "src/os4Upstream/kotlin" else "src/os4Published/kotlin",
     )
+    if (isItChannel) {
+        // IT-only evidence is read from the existing user-requested snapshot.
+        sourceSets.getByName("main").kotlin.directories.add("../it-only/kotlin")
+    }
 
     buildTypes {
         debug {
