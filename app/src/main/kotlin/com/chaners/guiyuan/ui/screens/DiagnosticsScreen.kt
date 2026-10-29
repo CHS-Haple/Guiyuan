@@ -472,7 +472,7 @@ internal fun DiagnosticsScreen(
                         title = stringResource(R.string.diagnostics_root_unavailable_title),
                         description = stringResource(R.string.diagnostics_root_unavailable_message),
                         note = stringResource(R.string.diagnostics_root_unavailable_export),
-                        icon = MiuixIcons.Report,
+                        icon = MiuixIcons.Medium.Report,
                         busy = loading,
                         onRetry = ::refresh,
                         modifier = Modifier.fillParentMaxSize(),
@@ -977,7 +977,7 @@ private fun LogEmptyGuide(
         ) {
             Box(
                 modifier =
-                    Modifier.size(64.dp).background(
+                    Modifier.size(72.dp).background(
                         color = MiuixTheme.colorScheme.secondaryContainerVariant,
                         shape = CircleShape,
                     ),
@@ -986,14 +986,14 @@ private fun LogEmptyGuide(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.size(30.dp),
-                    tint = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    modifier = Modifier.size(40.dp),
+                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
             Spacer(Modifier.height(20.dp))
             Text(
                 text = title,
-                style = MiuixTheme.textStyles.title4,
+                style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight.SemiBold),
                 color = MiuixTheme.colorScheme.onSurfaceContainer,
                 textAlign = TextAlign.Center,
             )
@@ -1001,7 +1001,7 @@ private fun LogEmptyGuide(
             Text(
                 text = description,
                 style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                color = MiuixTheme.colorScheme.onSurfaceSecondary,
                 textAlign = TextAlign.Center,
             )
             note?.let {
@@ -1009,7 +1009,7 @@ private fun LogEmptyGuide(
                 Text(
                     text = it,
                     style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     textAlign = TextAlign.Center,
                 )
             }

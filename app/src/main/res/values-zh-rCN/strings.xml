@@ -351,8 +351,8 @@
     <string name="diagnostics_component_session">运行会话</string>
     <string name="diagnostics_component_other">组件</string>
     <string name="diagnostics_root_unavailable_title">无法读取运行日志</string>
-    <string name="diagnostics_root_unavailable_message">读取运行日志需要 Root 权限。请在 Root 管理器中检查归元的授权状态，然后重新读取。</string>
-    <string name="diagnostics_root_unavailable_export">无需授予 Root，也可从右上角导出基础诊断报告，但不包含运行日志。</string>
+    <string name="diagnostics_root_unavailable_message">读取运行日志需要 Root 权限。请在 Root 管理器中检查归元的授权状态。</string>
+    <string name="diagnostics_root_unavailable_export">无需 Root 也可从右上角导出基础诊断报告，但不包含运行日志。</string>
     <string name="diagnostics_no_events_hint">日志采集已完成，当前没有可展示的关键事件。</string>
     <string name="diagnostics_retry_logs">重新读取日志</string>
     <string name="diagnostics_events_empty">本次运行暂无关键诊断事件</string>
