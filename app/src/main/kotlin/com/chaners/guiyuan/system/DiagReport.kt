@@ -4,8 +4,8 @@ import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.DiagLevel
 
 internal object DiagReport {
-    private const val DETAILED_LINES = 600
-    private const val RELEASE_LINES = 120
+    private const val DETAILED_LINES = 1500
+    private const val RELEASE_LINES = 300
 
     internal fun exportLineLimit(level: DiagLevel): Int =
         if (
