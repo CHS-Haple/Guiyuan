@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -406,7 +405,6 @@ private fun HomeRuntimeCardBody(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .heightIn(min = RuntimeCardMinHeight)
                     .padding(horizontal = 22.dp, vertical = 18.dp),
         ) {
             RuntimeStatusMark(
@@ -421,7 +419,7 @@ private fun HomeRuntimeCardBody(
             Column(
                 modifier =
                     Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
                         .padding(end = 98.dp),
             ) {
                 Text(
@@ -462,6 +460,7 @@ private fun HomeRuntimeCardBody(
                     modifier = Modifier.padding(top = 12.dp),
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    minLines = 2,
                     maxLines = 2,
                 )
             }
@@ -755,7 +754,6 @@ private fun resolveHomeRuntimeCardState(
 private const val StatusColorAnimMillis = 220
 // MIUIX's indeterminate arc starts with a 30-degree sweep.
 private const val MinSpinnerSweep = 30f / 360f
-private val RuntimeCardMinHeight = 160.dp
 private val RuntimeStatusMarkSize = 96.dp
 private val HomePreviewStageHeight = 180.dp
 private val HomePreviewIconSize = 112.dp
