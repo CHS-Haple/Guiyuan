@@ -415,6 +415,7 @@ private fun HomeRuntimeCardBody(
             )
             Column(
                 modifier = Modifier
+                    .align(Alignment.CenterStart)
                     .fillMaxWidth()
                     .padding(end = 98.dp),
             ) {
