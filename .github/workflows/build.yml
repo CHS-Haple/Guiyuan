@@ -36,6 +36,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # Signed PR artifacts must be compiled from the named PR HEAD, not the synthetic merge commit.
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
       - name: Classify validation scope
@@ -169,7 +171,7 @@ jobs:
             done
           }
 
-          if [[ "$EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/dev" ]]; then
+          if [[ "$EVENT_NAME" == "push" && ( "$GITHUB_REF" == "refs/heads/dev" || "$GITHUB_REF" == "refs/heads/it" ) ]]; then
             if [[ -n "$PUSH_BEFORE_SHA" && "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
               classify_paths "$PUSH_BEFORE_SHA" "$PUSH_HEAD_SHA" runtime
               detect_surfaces "$PUSH_BEFORE_SHA" "$PUSH_HEAD_SHA"
