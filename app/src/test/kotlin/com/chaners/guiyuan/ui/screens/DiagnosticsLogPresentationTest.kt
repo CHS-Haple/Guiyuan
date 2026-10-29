@@ -44,13 +44,19 @@ class DiagnosticsLogPresentationTest {
 
     @Test
     fun userFacingNetworkValuesAndFieldNamesMapWithoutChangingRawEvidence() {
-        assertEquals(R.string.diagnostics_log_source_mobile, sourceRes("CELLULAR"))
-        assertEquals(R.string.diagnostics_log_source_none, sourceRes("NONE"))
-        assertEquals(R.string.diagnostics_log_source_other, sourceRes("OTHER"))
+        assertEquals(R.string.diagnostics_log_source_mobile, transportRes("CELLULAR"))
+        assertEquals(R.string.diagnostics_log_source_none, transportRes("NONE"))
+        assertEquals(R.string.diagnostics_log_source_other, transportRes("OTHER"))
+        assertNull(sourceRes("CELLULAR"))
+        assertNull(sourceRes("NONE"))
+        assertNull(sourceRes("OTHER"))
+        assertEquals(R.string.diagnostics_log_source_mobile, sourceRes("mobile"))
         assertEquals(R.string.diagnostics_log_source_capabilities, sourceRes("capabilities"))
         assertEquals(R.string.diagnostics_log_source_lost, sourceRes("lost"))
         assertEquals(R.string.diagnostics_log_source_mobile_data, sourceRes("mobile-data"))
         assertEquals(R.string.diagnostics_log_source_hot_reload_native_icon, sourceRes("hotReloadNativeIcon"))
+        assertNull(transportRes("WIFI"))
+        assertNull(transportRes("VPN"))
         assertNull(sourceRes("WIFI"))
         assertNull(sourceRes("VPN"))
         assertEquals(R.string.diagnostics_log_field_transport, logFieldLabelRes("transport"))

@@ -1303,7 +1303,7 @@ private fun logSummary(
 
     if (entry.event == "connectivity") {
         return buildList {
-            fields["transport"]?.let { add(sourceLabel(context, it)) }
+            fields["transport"]?.let { add(transportLabel(context, it)) }
             if (fields["validated"] == "true") {
                 add(context.getString(R.string.diagnostics_log_summary_validated))
             }
@@ -1478,9 +1478,7 @@ internal fun stateRes(state: String): Int? =
 
 internal fun sourceRes(value: String): Int? =
     when (value.lowercase(Locale.ROOT)) {
-        "cellular", "mobile" -> R.string.diagnostics_log_source_mobile
-        "none" -> R.string.diagnostics_log_source_none
-        "other" -> R.string.diagnostics_log_source_other
+        "mobile" -> R.string.diagnostics_log_source_mobile
         "capabilities" -> R.string.diagnostics_log_source_capabilities
         "lost" -> R.string.diagnostics_log_source_lost
         "mobile-data" -> R.string.diagnostics_log_source_mobile_data
@@ -1498,6 +1496,18 @@ internal fun sourceRes(value: String): Int? =
 private fun sourceLabel(context: Context, value: String): String =
     if (value.equals("wifi", ignoreCase = true)) "Wi-Fi"
     else sourceRes(value)?.let(context::getString) ?: value
+
+internal fun transportRes(value: String): Int? =
+    when (value.lowercase(Locale.ROOT)) {
+        "cellular" -> R.string.diagnostics_log_source_mobile
+        "none" -> R.string.diagnostics_log_source_none
+        "other" -> R.string.diagnostics_log_source_other
+        else -> null
+    }
+
+private fun transportLabel(context: Context, value: String): String =
+    if (value.equals("wifi", ignoreCase = true)) "Wi-Fi"
+    else transportRes(value)?.let(context::getString) ?: value
 
 internal fun logFieldLabelRes(key: String): Int? =
     when (key) {
@@ -1519,7 +1529,8 @@ private fun logFieldLabel(context: Context, key: String): String =
 
 private fun logFieldValue(context: Context, key: String, value: String): String =
     when (key) {
-        "source", "transport" -> sourceLabel(context, value)
+        "source" -> sourceLabel(context, value)
+        "transport" -> transportLabel(context, value)
         "state" -> stateLabel(context, value)
         "reason" -> reasonLabel(context, value)
         else -> value
