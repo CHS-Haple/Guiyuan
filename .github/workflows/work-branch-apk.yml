@@ -264,7 +264,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      contents: write
+      contents: read
       actions: read
     steps:
       - name: Checkout trusted main signing script
@@ -342,36 +342,9 @@ jobs:
           echo "Source SHA: $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
           sha256sum "$apk" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload signed public Canary
-        if: needs.build.outputs.variant == 'canary'
+      - name: Upload signed Canary
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ env.APK_NAME }}
           path: dist/${{ env.APK_NAME }}
           if-no-files-found: error
-
-      - name: Keep signed Internal unpublished for owner handoff
-        if: needs.build.outputs.variant == 'internal'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BUILD_ID: ${{ needs.build.outputs.build_id }}
-          SOURCE_SHA: ${{ needs.build.outputs.source_sha }}
-        run: |
-          set -euo pipefail
-          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$BUILD_ID" =~ ^[0-9]{8}-[0-9]+$ ]]
-          test -s "dist/$APK_NAME"
-          tag="it-${BUILD_ID}-${SOURCE_SHA:0:12}"
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "::error::An IT draft already exists for $tag; refusing to overwrite or publish it."
-            exit 1
-          fi
-          gh release create "$tag" "dist/$APK_NAME" \
-            --draft --target "$SOURCE_SHA" \
-            --title "Internal test $BUILD_ID" \
-            --notes "Unpublished Internal APK for repository maintainers only. Never publish this draft; distribute the verified APK privately."
-          release_json="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag")"
-          jq -e '.draft == true and .prerelease == false and (.assets | length == 1)' \
-            <<< "$release_json" >/dev/null
-          echo "Signed Internal stored in an unpublished draft. The owner must retrieve and distribute it privately." >> "$GITHUB_STEP_SUMMARY"
