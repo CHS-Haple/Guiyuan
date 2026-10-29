@@ -59,6 +59,7 @@ jobs:
     outputs:
       source_sha: ${{ steps.source.outputs.sha }}
       version_name: ${{ steps.identity.outputs.version_name }}
+      version_code: ${{ steps.identity.outputs.version_code }}
       build_id: ${{ steps.identity.outputs.build_id }}
       candidate_run_id: ${{ steps.identity.outputs.candidate_run_id }}
       artifact_name: ${{ steps.identity.outputs.artifact_name }}
@@ -205,6 +206,8 @@ jobs:
             --jq '.content' | base64 -d)"
           version="$(sed -n 's/^combinedStatus.versionName=//p' <<< "$props")"
           build="$(sed -n 's/^combinedStatus.buildId=//p' <<< "$props")"
+          version_code="$(sed -n 's/^combinedStatus.versionCode=//p' <<< "$props")"
+          [[ "$version_code" =~ ^[1-9][0-9]+$ ]]
           it_suffix="$(sed -n 's/^combinedStatus.itVersionSuffix=//p' <<< "$props")"
           # Only the IT-owned source may opt into a visible IT version suffix.
           if [[ -n "$it_suffix" ]]; then
@@ -247,6 +250,7 @@ jobs:
           fi
           {
             echo "version_name=$version"
+            echo "version_code=$version_code"
             echo "build_id=$build"
             echo "candidate_run_id=$run_id"
             echo "artifact_name=$artifact"
@@ -320,6 +324,7 @@ jobs:
           HAPLE_KEY_ALIAS: ${{ secrets.HAPLE_KEY_ALIAS }}
           HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
           VERSION_NAME: ${{ needs.build.outputs.version_name }}
+          VERSION_CODE: ${{ needs.build.outputs.version_code }}
           BUILD_ID: ${{ needs.build.outputs.build_id }}
           SOURCE_SHA: ${{ needs.build.outputs.source_sha }}
           VARIANT: ${{ needs.build.outputs.variant }}
@@ -341,6 +346,7 @@ jobs:
           badging="$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk")"
           test "$(sed -n "s/.*package: name='\([^']*\)'.*/\1/p" <<< "$badging" | head -n 1)" = com.chaners.guiyuan
           test "$(sed -n "s/.*versionName='\([^']*\)'.*/\1/p" <<< "$badging" | head -n 1)" = "$VERSION_NAME"
+          test "$(sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p" <<< "$badging" | head -n 1)" = "$VERSION_CODE"
           APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
           test "$("$APKANALYZER" manifest debuggable "$apk")" = false
           echo "APK_NAME=$(basename "$apk")" >> "$GITHUB_ENV"
