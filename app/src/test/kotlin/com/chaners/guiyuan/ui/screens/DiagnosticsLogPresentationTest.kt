@@ -62,6 +62,11 @@ class DiagnosticsLogPresentationTest {
         assertEquals(R.string.diagnostics_log_field_transport, logFieldLabelRes("transport"))
         assertEquals(R.string.diagnostics_log_field_trace_id, logFieldLabelRes("traceId"))
         assertNull(logFieldLabelRes("futurePayload"))
+        assertEquals(R.string.diagnostics_log_field_native_charging, logFieldLabelRes("nativeCharging"))
+        assertEquals(R.string.diagnostics_log_field_native_percent, logFieldLabelRes("nativePercent"))
+        assertEquals(R.string.diagnostics_log_charging_on, chargingStateRes("true"))
+        assertEquals(R.string.diagnostics_log_charging_off, chargingStateRes("FALSE"))
+        assertNull(chargingStateRes("null"))
         assertEquals(100, EVENT_PAGE_SIZE)
     }
 

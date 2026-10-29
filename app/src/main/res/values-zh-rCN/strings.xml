@@ -363,6 +363,14 @@
     <string name="diagnostics_log_field_target">目标</string>
     <string name="diagnostics_log_field_owner">归属</string>
     <string name="diagnostics_log_field_type">异常类型</string>
+    <string name="diagnostics_log_field_transferred_charging">交接前充电状态</string>
+    <string name="diagnostics_log_field_native_charging">原生充电状态</string>
+    <string name="diagnostics_log_field_native_percent">原生电量</string>
+    <string name="diagnostics_log_charging_on">充电中</string>
+    <string name="diagnostics_log_charging_off">未充电</string>
+    <string name="diagnostics_log_battery_transition">充电：%1$s → %2$s</string>
+    <string name="diagnostics_log_battery_native">原生：%1$s</string>
+    <string name="diagnostics_log_battery_percent">电量 %1$d%%</string>
     <string name="diagnostics_log_field_trace_id">追踪 ID</string>
     <string name="diagnostics_events_summary">当前显示 %1$d 条日志</string>
     <string name="diagnostics_component_module">模块</string>

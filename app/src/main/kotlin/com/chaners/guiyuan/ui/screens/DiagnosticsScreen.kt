@@ -1344,6 +1344,23 @@ private fun logSummary(
         }.joinToString(separator).ifBlank { fallback }
     }
 
+    if (entry.event == "battery.reconcile") {
+        val previous = chargingStateLabel(context, fields["transferredCharging"])
+        val native = chargingStateLabel(context, fields["nativeCharging"])
+        val charging =
+            when {
+                previous != null && native != null ->
+                    context.getString(R.string.diagnostics_log_battery_transition, previous, native)
+                native != null -> context.getString(R.string.diagnostics_log_battery_native, native)
+                else -> entry.state?.let { stateLabel(context, it) }
+            }
+        val percent = fields["nativePercent"]?.toIntOrNull()?.takeIf { it in 0..100 }
+        return join(
+            charging,
+            percent?.let { context.getString(R.string.diagnostics_log_battery_percent, it) },
+        ).ifBlank { fallback }
+    }
+
     if (entry.event == "pipeline.latency") {
         return join(
             fields["sourceToDrawUs"]?.toLongOrNull()?.let { micros ->
@@ -1545,11 +1562,24 @@ internal fun logFieldLabelRes(key: String): Int? =
         "owner" -> R.string.diagnostics_log_field_owner
         "type" -> R.string.diagnostics_log_field_type
         "traceId" -> R.string.diagnostics_log_field_trace_id
+        "transferredCharging" -> R.string.diagnostics_log_field_transferred_charging
+        "nativeCharging" -> R.string.diagnostics_log_field_native_charging
+        "nativePercent" -> R.string.diagnostics_log_field_native_percent
         else -> null
     }
 
 private fun logFieldLabel(context: Context, key: String): String =
     logFieldLabelRes(key)?.let(context::getString) ?: key
+
+internal fun chargingStateRes(value: String): Int? =
+    when (value.lowercase(Locale.ROOT)) {
+        "true" -> R.string.diagnostics_log_charging_on
+        "false" -> R.string.diagnostics_log_charging_off
+        else -> null
+    }
+
+private fun chargingStateLabel(context: Context, value: String?): String? =
+    value?.let { chargingStateRes(it)?.let(context::getString) }
 
 private fun logFieldValue(context: Context, key: String, value: String): String =
     when (key) {
@@ -1557,6 +1587,9 @@ private fun logFieldValue(context: Context, key: String, value: String): String 
         "transport" -> transportLabel(context, value)
         "state" -> stateLabel(context, value)
         "reason" -> reasonLabel(context, value)
+        "transferredCharging", "nativeCharging" -> chargingStateLabel(context, value) ?: value
+        "nativePercent" ->
+            value.toIntOrNull()?.takeIf { it in 0..100 }?.let { "$it%" } ?: value
         else -> value
     }
 

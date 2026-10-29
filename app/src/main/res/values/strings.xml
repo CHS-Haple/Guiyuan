@@ -364,6 +364,14 @@
     <string name="diagnostics_log_field_target">Target</string>
     <string name="diagnostics_log_field_owner">Owner</string>
     <string name="diagnostics_log_field_type">Error type</string>
+    <string name="diagnostics_log_field_transferred_charging">Transferred charging state</string>
+    <string name="diagnostics_log_field_native_charging">Native charging state</string>
+    <string name="diagnostics_log_field_native_percent">Native battery level</string>
+    <string name="diagnostics_log_charging_on">Charging</string>
+    <string name="diagnostics_log_charging_off">Not charging</string>
+    <string name="diagnostics_log_battery_transition">Charging: %1$s → %2$s</string>
+    <string name="diagnostics_log_battery_native">Native: %1$s</string>
+    <string name="diagnostics_log_battery_percent">Battery %1$d%%</string>
     <string name="diagnostics_log_field_trace_id">Trace ID</string>
     <string name="diagnostics_events_summary">Showing %1$d events</string>
     <string name="diagnostics_component_module">Module</string>
