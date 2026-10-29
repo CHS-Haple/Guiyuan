@@ -24,6 +24,15 @@ internal object SysUiPresentationRuntime {
         }
     }
 
+    // Optional platform reads may be missing, but VM-fatal errors are not absence.
+    internal inline fun <T> optionalNativeRead(block: () -> T): T? =
+        try {
+            block()
+        } catch (error: Throwable) {
+            throwIfFatal(error)
+            null
+        }
+
     val installedHookCount: Int
         @Synchronized get() =
             current?.let {

@@ -360,11 +360,9 @@ internal object NativeStatusInventory {
             return "none"
         }
 
-        return runCatching {
+        return SysUiPresentationRuntime.optionalNativeRead {
             view.resources.getResourceName(view.id)
-        }.getOrElse {
-            view.id.toString()
-        }
+        } ?: view.id.toString()
     }
 
     private fun visibilityName(visibility: Int): String =
