@@ -45,9 +45,9 @@ internal object NativeFontAxis {
         val receipt: String,
         val mobile: String,
         val battery: String,
-        val savedBootPresent: Boolean,
-        val reported: Boolean,
-        val events: List<String>,
+        val savedBootPresent: Boolean? = null,
+        val reported: Boolean? = null,
+        val events: List<String> = emptyList(),
     )
 
     internal enum class ReceiverReject { API, UID, PACKAGE, ACTION }
