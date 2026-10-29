@@ -374,7 +374,6 @@
     <string name="diagnostics_root_unavailable_title">无法读取运行日志</string>
     <string name="diagnostics_root_unavailable_message">读取运行日志需要 Root 权限，请在 Root 管理器中检查归元的授权状态。</string>
     <string name="diagnostics_root_unavailable_export">无需 Root 也可从右上角导出基础报告，但不包含运行日志。</string>
-    <string name="diagnostics_root_partial_export">已获取部分运行日志，右上角导出的报告将包含这些记录，但可能不完整。</string>
     <string name="diagnostics_no_events_hint">日志采集已完成，当前没有可展示的关键事件。</string>
     <string name="diagnostics_retry_logs">重新读取日志</string>
     <string name="diagnostics_events_empty">本次运行暂无关键诊断事件</string>
