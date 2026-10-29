@@ -275,7 +275,9 @@ internal fun DiagnosticsScreen(
     val filterActive =
         levelFilter != LEVEL_ALL ||
             categoryFilter != CAT_ALL
-    val showRootGuide = !viewCleared && entries.isEmpty() && snapshot?.log?.result?.isSuccess == false
+    val collectionFailed = snapshot?.log?.result?.isSuccess == false
+    val showRootGuide = !viewCleared && entries.isEmpty() && collectionFailed
+    val showIncompleteNotice = !viewCleared && entries.isNotEmpty() && collectionFailed
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
@@ -398,6 +400,16 @@ internal fun DiagnosticsScreen(
                 )
             },
     ) {
+        if (showIncompleteNotice) {
+            item(key = "diagnostics-incomplete-collection") {
+                Text(
+                    text = stringResource(R.string.diagnostics_collection_incomplete),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                )
+            }
+        }
         when {
             viewCleared -> {
                 item(key = "diagnostics-state-cleared") {
@@ -512,7 +524,13 @@ internal fun DiagnosticsScreen(
                     LogEmptyGuide(
                         title = stringResource(R.string.diagnostics_root_unavailable_title),
                         description = stringResource(R.string.diagnostics_root_unavailable_message),
-                        note = stringResource(R.string.diagnostics_root_unavailable_export),
+                        note = stringResource(
+                            if (snapshot?.log?.sessionLines?.isNotEmpty() == true) {
+                                R.string.diagnostics_root_partial_export
+                            } else {
+                                R.string.diagnostics_root_unavailable_export
+                            },
+                        ),
                         icon = MiuixIcons.Medium.Report,
                         busy = loading,
                         onRetry = ::refresh,
