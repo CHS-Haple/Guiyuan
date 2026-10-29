@@ -437,19 +437,24 @@ private fun HomeRuntimeCardBody(
                 }
             }
             val titleStyle = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Medium)
+            val bodyStyle = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium)
             val summaryStyle = MiuixTheme.textStyles.body2
+            val versionText = stringResource(R.string.home_version_line, BuildConfig.VERSION_NAME)
+            val buildText = stringResource(R.string.home_build_line, BuildConfig.BUILD_ID)
             val textWidth = with(density) {
                 (maxWidth - RuntimeStatusMarkSize - 2.dp).roundToPx().coerceAtLeast(1)
             }
             val textConstraints = Constraints(maxWidth = textWidth)
-            val slotHeights = remember(candidates, textConstraints, titleStyle, summaryStyle, textMeasurer) {
-                val titleHeight = candidates.maxOf { (title, _) ->
-                    textMeasurer.measure(title, style = titleStyle, constraints = textConstraints).size.height
+            val textHeight = remember(candidates, textConstraints, titleStyle, bodyStyle, summaryStyle, versionText, buildText, textMeasurer, density) {
+                val fixedHeight =
+                    textMeasurer.measure(versionText, style = bodyStyle, constraints = textConstraints).size.height +
+                        textMeasurer.measure(buildText, style = bodyStyle, constraints = textConstraints).size.height
+                val changingHeight = candidates.maxOf { (title, summary) ->
+                    textMeasurer.measure(title, style = titleStyle, constraints = textConstraints).size.height +
+                        textMeasurer.measure(summary, style = summaryStyle, constraints = textConstraints).size.height
                 }
-                val summaryHeight = candidates.maxOf { (_, summary) ->
-                    textMeasurer.measure(summary, style = summaryStyle, constraints = textConstraints).size.height
-                }
-                titleHeight to summaryHeight
+                val spacing = with(density) { 5.dp.roundToPx() + 1.dp.roundToPx() + 12.dp.roundToPx() }
+                with(density) { (fixedHeight + changingHeight + spacing).toDp() }
             }
 
             Row(
@@ -457,39 +462,26 @@ private fun HomeRuntimeCardBody(
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(modifier = Modifier.weight(1f).heightIn(min = textHeight)) {
                     Text(
                         text = stringResource(state.titleRes),
-                        modifier = Modifier.heightIn(min = with(density) { slotHeights.first.toDp() }),
                         style = titleStyle,
                     )
                     Text(
-                        text = stringResource(
-                            R.string.home_version_line,
-                            BuildConfig.VERSION_NAME,
-                        ),
+                        text = versionText,
                         modifier = Modifier.padding(top = 5.dp),
-                        style = MiuixTheme.textStyles.body1.copy(
-                            fontWeight = FontWeight.Medium,
-                        ),
+                        style = bodyStyle,
                         color = MiuixTheme.colorScheme.onSurfaceContainer,
                     )
                     Text(
-                        text = stringResource(
-                            R.string.home_build_line,
-                            BuildConfig.BUILD_ID,
-                        ),
+                        text = buildText,
                         modifier = Modifier.padding(top = 1.dp),
-                        style = MiuixTheme.textStyles.body1.copy(
-                            fontWeight = FontWeight.Medium,
-                        ),
+                        style = bodyStyle,
                         color = MiuixTheme.colorScheme.onSurfaceContainer,
                     )
                     Text(
                         text = stringResource(state.summaryRes),
-                        modifier = Modifier
-                            .padding(top = 12.dp)
-                            .heightIn(min = with(density) { slotHeights.second.toDp() }),
+                        modifier = Modifier.padding(top = 12.dp),
                         style = summaryStyle,
                         color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                     )
