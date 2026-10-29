@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       source_branch:
-        description: 'Trusted same-repository feat/*, fix/*, refactor/* or hotfix/* branch to validate'
+        description: 'Reviewed work branch or protected it for Canary'
         required: true
         type: string
       variant:
@@ -61,6 +61,8 @@ jobs:
       version_name: ${{ steps.identity.outputs.version_name }}
       build_id: ${{ steps.identity.outputs.build_id }}
       candidate_run_id: ${{ steps.identity.outputs.candidate_run_id }}
+      artifact_name: ${{ steps.identity.outputs.artifact_name }}
+      variant: ${{ steps.source.outputs.variant }}
 
     steps:
       - name: Resolve trusted source
@@ -83,12 +85,9 @@ jobs:
               branch="$MANUAL_SOURCE_BRANCH"
               variant="$MANUAL_VARIANT"
               expected_build="$MANUAL_BUILD_NUMBER"
-              if [[ "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ]]; then
-                echo "::error::Manual APK source must be a feat/*, fix/*, refactor/* or hotfix/* branch, got: $branch"
-                exit 1
-              fi
-              if [[ "$variant" != "canary" ]]; then
-                echo "::error::Unsupported APK variant: $variant"
+              if [[ "$variant" != "canary" ||
+                    ( "$branch" != "it" && "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ) ]]; then
+                echo "::error::Canary requires protected it or a reviewed work branch."
                 exit 1
               fi
               source_sha="$(
@@ -136,8 +135,13 @@ jobs:
               ;;
           esac
 
-          if [[ "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ]]; then
-            echo "::error::APK source must be a feat/*, fix/*, refactor/* or hotfix/* branch, got: $branch"
+          if [[ "$variant" != "canary" ||
+                ( "$branch" != "it" && "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ) ]]; then
+            echo "::error::Canary requires protected it or a reviewed feat/fix/refactor/hotfix branch."
+            exit 1
+          fi
+          if [[ "$branch" == "it" && "$EVENT_NAME" != "workflow_dispatch" ]]; then
+            echo "::error::Protected IT Canary requires owner-triggered dispatch."
             exit 1
           fi
           if [[ ! "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
@@ -160,7 +164,7 @@ jobs:
             printf '%s\n' "- Source branch: \`$branch\`"
             printf '%s\n' "- Resolved SHA: \`$source_sha\`"
             printf '%s\n' "- APK variant: \`$variant\`"
-            printf '%s\n' "- Validation: this workflow signs only a successful exact-SHA PR Build artifact; no PR code executes here"
+            printf '%s\n' "- Validation: this workflow signs only a successful exact-SHA Build artifact; no mutable source executes here"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Require an accepted matching PR and a successful exact-SHA Build
@@ -175,14 +179,25 @@ jobs:
           set -euo pipefail
           # Never check out or execute the selected PR's source on this default-branch runner.
           test "$SOURCE_SHA" != "" && [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          prs="$(gh api -X GET "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100")"
-          pr_number="$(jq -r \
-            --arg repo "$GITHUB_REPOSITORY" --arg branch "$SOURCE_BRANCH" --arg sha "$SOURCE_SHA" \
-            '.[] | select(.head.repo.full_name == $repo and .head.ref == $branch and .head.sha == $sha) | .number' \
-            <<< "$prs" | head -n 1)"
-          if [[ -z "$pr_number" ]]; then
-            echo "::error::Canary requires an open same-repository PR at the requested exact SHA."
-            exit 1
+          if [[ "$SOURCE_BRANCH" == "it" ]]; then
+            branch_json="$(gh api "repos/$GITHUB_REPOSITORY/branches/it")"
+            test "$(jq -r '.protected' <<< "$branch_json")" = "true"
+            test "$(jq -r '.commit.sha' <<< "$branch_json")" = "$SOURCE_SHA"
+            artifact="unsigned-it-canary-$SOURCE_SHA"
+            event="push"
+            pr_number=""
+          else
+            prs="$(gh api -X GET "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100")"
+            pr_number="$(jq -r \
+              --arg repo "$GITHUB_REPOSITORY" --arg branch "$SOURCE_BRANCH" --arg sha "$SOURCE_SHA" \
+              '.[] | select(.head.repo.full_name == $repo and .head.ref == $branch and .head.sha == $sha and .draft == false) | .number' \
+              <<< "$prs" | head -n 1)"
+            if [[ -z "$pr_number" ]]; then
+              echo "::error::Canary requires an open same-repository PR at the requested exact SHA."
+              exit 1
+            fi
+            artifact="unsigned-pr-canary-$SOURCE_SHA"
+            event="pull_request"
           fi
 
           # Gradle properties are read as inert GitHub API data, never sourced or executed.
@@ -198,29 +213,33 @@ jobs:
           fi
 
           runs="$(gh api -X GET \
-            "repos/$GITHUB_REPOSITORY/actions/workflows/build.yml/runs?event=pull_request&head_sha=$SOURCE_SHA&per_page=100")"
-          run_id="$(jq -r --arg sha "$SOURCE_SHA" --arg branch "$SOURCE_BRANCH" \
-            '.workflow_runs | map(select(.head_sha == $sha and .head_branch == $branch and .event == "pull_request" and .status == "completed" and .conclusion == "success")) | max_by(.run_number) | .id // empty' \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/build.yml/runs?event=$event&head_sha=$SOURCE_SHA&per_page=100")"
+          run_id="$(jq -r --arg sha "$SOURCE_SHA" --arg branch "$SOURCE_BRANCH" --arg event "$event" \
+            '.workflow_runs | map(select(.head_sha == $sha and .head_branch == $branch and .event == $event and .status == "completed" and .conclusion == "success")) | max_by(.run_number) | .id // empty' \
             <<< "$runs")"
           if [[ -z "$run_id" ]]; then
-            echo "::error::No successful exact-SHA pull_request Build was found. Complete PR CI before requesting Canary."
+            echo "::error::No successful exact-SHA $event Build was found for $SOURCE_BRANCH."
             exit 1
           fi
-          artifact="unsigned-pr-canary-$SOURCE_SHA"
           list="$(gh api -X GET "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100")"
           if ! jq -e --arg name "$artifact" '.artifacts | any(.name == $name and .expired == false)' \
             <<< "$list" >/dev/null; then
-            echo "::error::Verified PR Build $run_id has no nonexpired exact-SHA unsigned Canary. Rerun PR Build."
+            echo "::error::Verified Build $run_id has no nonexpired exact-SHA artifact $artifact."
             exit 1
           fi
           {
             echo "version_name=$version"
             echo "build_id=$build"
             echo "candidate_run_id=$run_id"
+            echo "artifact_name=$artifact"
           } >> "$GITHUB_OUTPUT"
           {
-            echo "### Signed Canary admission"
-            echo "- PR: #$pr_number"
+            echo "### Signed APK admission"
+            if [[ "$SOURCE_BRANCH" == "it" ]]; then
+              echo "- Source: protected IT branch"
+            else
+              echo "- PR: #$pr_number"
+            fi
             echo "- Source SHA: $SOURCE_SHA"
             echo "- Trusted successful PR Build: $run_id"
             echo "- Build: $build"
@@ -229,7 +248,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   sign:
-    name: Signed work-branch Canary
+    name: Sign reviewed Canary / protected IT Canary
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -248,7 +267,7 @@ jobs:
       - name: Fetch unsigned candidate only as data
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: unsigned-pr-canary-${{ needs.build.outputs.source_sha }}
+          name: ${{ needs.build.outputs.artifact_name }}
           path: candidate
           run-id: ${{ needs.build.outputs.candidate_run_id }}
           github-token: ${{ github.token }}
@@ -285,14 +304,16 @@ jobs:
           VERSION_NAME: ${{ needs.build.outputs.version_name }}
           BUILD_ID: ${{ needs.build.outputs.build_id }}
           SOURCE_SHA: ${{ needs.build.outputs.source_sha }}
+          VARIANT: ${{ needs.build.outputs.variant }}
         run: |
           set -euo pipefail
-          source="candidate/app-canary-unsigned.apk"
+          test "$VARIANT" = "canary"
+          source="candidate/app-$VARIANT-unsigned.apk"
           test -s "$source" && test -n "$SOURCE_SHA" && test -n "$VERSION_NAME" && test -n "$BUILD_ID"
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           signer="$SDK_ROOT/build-tools/37.0.0/apksigner"
           mkdir -p dist
-          apk="dist/Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-canary.apk"
+          apk="dist/Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-${VARIANT}.apk"
           "$signer" sign --ks "$HAPLE_KEYSTORE_PATH" --ks-key-alias "$HAPLE_KEY_ALIAS" \
             --ks-pass env:HAPLE_KEYSTORE_PASSWORD --key-pass env:HAPLE_KEYSTORE_PASSWORD \
             --out "$apk" "$source"
