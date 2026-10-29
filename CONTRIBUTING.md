@@ -233,7 +233,7 @@ Use squash merge for ordinary work branches.
 - The public PR CI rejects direct `it` heads and exclusive paths. The repository owner must extend branch protection to `it` (PR + required build check); an in-PR check alone is not a tamper-proof branch protection policy. Build/signing on `it` is **not enabled by creating the branch**; do not distribute it until source-matched internal build and isolated signing path have passed their own CI and protection gates.
 
 
-All CI-built app variants use the same accepted, pinned MIUIX source graph. Work branches distribute only Canary; main owns Internal IT and Release candidates. Before deleting an obsolete workflow, migrate its pinned source, signing, metadata and release boundaries into shared workflows and validate the replacement with Full CI. Never substitute the published MIUIX fallback for a source-matched accepted OS4 build.
+All CI-built app variants use the same accepted, pinned MIUIX source graph. Work branches distribute only Canary; the protected `it` branch provides Internal test candidates through the trusted exact-SHA signer, and `main` retains public Release candidates. The legacy main Internal output must be retired only after the protected IT lane is verified. Before deleting an obsolete workflow, migrate its pinned source, signing, metadata and release boundaries into shared workflows and validate the replacement with Full CI. Never substitute the published MIUIX fallback for a source-matched accepted OS4 build.
 
 ### Stable promotion
 
