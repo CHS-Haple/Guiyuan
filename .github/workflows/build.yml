@@ -217,11 +217,13 @@ jobs:
           if [[ "$SCOPE" == "runtime" || "$SCOPE" == "full" ]]; then
             RUN_ANDROID=true
           fi
-          if [[ "$SCOPE" == "full" || ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "pull_request" ) ]]; then
+          if [[ ( "$SCOPE" == "full" || ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "pull_request" ) ) &&
+                ! ( "$EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ) &&
+                ! ( "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" == "main" ) ]]; then
             RUN_DEBUG=true
           fi
-          if [[ ( "$SCOPE" == "full" && "$EVENT_NAME" == "pull_request" ) ||
-                ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "pull_request" && "$PR_HEAD_REPO" == "$GITHUB_REPOSITORY" ) ||
+          if [[ ( "$SCOPE" == "full" && "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" != "main" ) ||
+                ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" != "main" && "$PR_HEAD_REPO" == "$GITHUB_REPOSITORY" ) ||
                 ( ( "$SCOPE" == "runtime" || "$SCOPE" == "full" ) && "$EVENT_NAME" == "push" &&
                     ( "$GITHUB_REF" == "refs/heads/dev" || "$GITHUB_REF" == "refs/heads/it" ) ) ]]; then
             RUN_CANARY=true
