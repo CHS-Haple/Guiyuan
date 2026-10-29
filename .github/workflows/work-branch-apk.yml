@@ -201,7 +201,7 @@ jobs:
             prs="$(gh api -X GET "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100")"
             pr_number="$(jq -r \
               --arg repo "$GITHUB_REPOSITORY" --arg branch "$SOURCE_BRANCH" --arg sha "$SOURCE_SHA" \
-              '.[] | select(.head.repo.full_name == $repo and .head.ref == $branch and .head.sha == $sha) | .number' \
+              '.[] | select(.head.repo.full_name == $repo and .head.ref == $branch and .head.sha == $sha and .draft == false) | .number' \
               <<< "$prs" | head -n 1)"
             if [[ -z "$pr_number" ]]; then
               echo "::error::Canary requires an open same-repository PR at the requested exact SHA."

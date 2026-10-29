@@ -36,6 +36,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # Signed PR artifacts must be compiled from the named PR HEAD, not the synthetic merge commit.
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
       - name: Classify validation scope
@@ -169,7 +171,7 @@ jobs:
             done
           }
 
-          if [[ "$EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/dev" ]]; then
+          if [[ "$EVENT_NAME" == "push" && ( "$GITHUB_REF" == "refs/heads/dev" || "$GITHUB_REF" == "refs/heads/it" ) ]]; then
             if [[ -n "$PUSH_BEFORE_SHA" && "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
               classify_paths "$PUSH_BEFORE_SHA" "$PUSH_HEAD_SHA" runtime
               detect_surfaces "$PUSH_BEFORE_SHA" "$PUSH_HEAD_SHA"
@@ -220,7 +222,8 @@ jobs:
           fi
           if [[ ( "$SCOPE" == "full" && "$EVENT_NAME" == "pull_request" ) ||
                 ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "pull_request" && "$PR_HEAD_REPO" == "$GITHUB_REPOSITORY" ) ||
-                ( ( "$SCOPE" == "runtime" || "$SCOPE" == "full" ) && "$EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/dev" ) ]]; then
+                ( ( "$SCOPE" == "runtime" || "$SCOPE" == "full" ) && "$EVENT_NAME" == "push" &&
+                    ( "$GITHUB_REF" == "refs/heads/dev" || "$GITHUB_REF" == "refs/heads/it" ) ) ]]; then
             RUN_CANARY=true
           fi
 
@@ -308,7 +311,9 @@ jobs:
           if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
             TASKS+=(":app:assembleCanary")
           fi
-          if [[ "${{ steps.scope.outputs.scope }}" == "full" && ( "${{ github.event_name }}" == "pull_request" || ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
+          if [[ "${{ steps.scope.outputs.scope }}" == "full" &&
+                ( ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.base.ref }}" == "main" ) ||
+                  ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
             TASKS+=(":app:assembleInternal" ":app:assembleRelease")
           elif [[ "${{ steps.scope.outputs.run_it_internal }}" == "true" ]]; then
             TASKS+=(":app:assembleInternal")
@@ -354,7 +359,9 @@ jobs:
           if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
             APKS+=("$CANARY_APK_PATH")
           fi
-          if [[ "${{ steps.scope.outputs.scope }}" == "full" && ( "${{ github.event_name }}" == "pull_request" || ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
+          if [[ "${{ steps.scope.outputs.scope }}" == "full" &&
+                ( ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.base.ref }}" == "main" ) ||
+                  ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
             APKS+=("app/build/outputs/apk/internal/app-internal-unsigned.apk" "app/build/outputs/apk/release/app-release-unsigned.apk")
           elif [[ "${{ steps.scope.outputs.run_it_internal }}" == "true" ]]; then
             APKS+=("app/build/outputs/apk/internal/app-internal-unsigned.apk")
@@ -409,6 +416,15 @@ jobs:
         with:
           name: unsigned-it-internal-${{ github.sha }}
           path: app/build/outputs/apk/internal/app-internal-unsigned.apk
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Store unsigned protected IT Canary for future trusted signing
+        if: github.event_name == 'push' && github.ref == 'refs/heads/it' && steps.scope.outputs.run_canary == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unsigned-it-canary-${{ github.sha }}
+          path: app/build/outputs/apk/canary/app-canary-unsigned.apk
           if-no-files-found: error
           retention-days: 3
 
