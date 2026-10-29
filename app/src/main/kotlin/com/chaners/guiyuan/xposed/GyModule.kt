@@ -1981,7 +1981,6 @@ class GyModule : XposedModule() {
                 state = "error",
                 "reason" to error.javaClass.simpleName,
             )
-            SysUiHotReload.rethrowFatal(error)
             Log.w(TAG, "Unable to report verified native font axes", error)
         }
     }
