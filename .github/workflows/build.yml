@@ -8,9 +8,9 @@ run-name: >-
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ main, dev, it ]
   pull_request:
-    branches: [ main, dev ]
+    branches: [ main, dev, it ]
     types: [ opened, synchronize, reopened, ready_for_review ]
   workflow_dispatch:
 
@@ -48,6 +48,7 @@ jobs:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
           PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name || '' }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref || '' }}
           PUSH_BEFORE_SHA: ${{ github.event.before || '' }}
           PUSH_HEAD_SHA: ${{ github.sha }}
         run: |
@@ -181,6 +182,16 @@ jobs:
           elif [[ "$EVENT_NAME" == "pull_request" ]]; then
             # Only the PR's changes count; the base branch may have advanced independently.
             PR_DIFF_BASE="$(git merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA")"
+            if [[ "$PR_BASE_REF" == "dev" || "$PR_BASE_REF" == "main" ]]; then
+              if [[ "$PR_HEAD_REF" == "it" ]]; then
+                echo "::error::IT branch must not merge wholesale into $PR_BASE_REF. Port reviewed public fixes from a fresh dev branch."
+                exit 1
+              fi
+              if git diff --name-only "$PR_DIFF_BASE" "$PR_HEAD_SHA" | grep -Eq '^(app/src/internal/|it-only/)'; then
+                echo "::error::IT-exclusive files may not enter public branches."
+                exit 1
+              fi
+            fi
             detect_surfaces "$PR_DIFF_BASE" "$PR_HEAD_SHA"
             if [[ "$PR_DRAFT" == "true" ]]; then
               SCOPE=light
@@ -199,6 +210,7 @@ jobs:
           RUN_ANDROID=false
           RUN_DEBUG=false
           RUN_CANARY=false
+          RUN_IT_INTERNAL=false
 
           if [[ "$SCOPE" == "runtime" || "$SCOPE" == "full" ]]; then
             RUN_ANDROID=true
@@ -212,6 +224,13 @@ jobs:
             RUN_CANARY=true
           fi
 
+          if [[ ( "$SCOPE" == "runtime" || "$SCOPE" == "full" ) &&
+                ( ( "$EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/it" ) ||
+                  ( "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" == "it" ) ) ]]; then
+            RUN_IT_INTERNAL=true
+          fi
+
+          echo "run_it_internal=$RUN_IT_INTERNAL" >> "$GITHUB_OUTPUT"
           echo "scope=$SCOPE" >> "$GITHUB_OUTPUT"
           echo "reason=$REASON" >> "$GITHUB_OUTPUT"
           echo "run_android=$RUN_ANDROID" >> "$GITHUB_OUTPUT"
@@ -291,6 +310,8 @@ jobs:
           fi
           if [[ "${{ steps.scope.outputs.scope }}" == "full" && ( "${{ github.event_name }}" == "pull_request" || ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
             TASKS+=(":app:assembleInternal" ":app:assembleRelease")
+          elif [[ "${{ steps.scope.outputs.run_it_internal }}" == "true" ]]; then
+            TASKS+=(":app:assembleInternal")
           fi
           test -n "$MIUIX_SOURCE_REVISION" && test -n "$MIUIX_SOURCE_DIR"
           ./gradlew \
@@ -335,6 +356,8 @@ jobs:
           fi
           if [[ "${{ steps.scope.outputs.scope }}" == "full" && ( "${{ github.event_name }}" == "pull_request" || ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
             APKS+=("app/build/outputs/apk/internal/app-internal-unsigned.apk" "app/build/outputs/apk/release/app-release-unsigned.apk")
+          elif [[ "${{ steps.scope.outputs.run_it_internal }}" == "true" ]]; then
+            APKS+=("app/build/outputs/apk/internal/app-internal-unsigned.apk")
           fi
           bash tools/verify_xposed_metadata.sh "${APKS[@]}"
 
@@ -377,6 +400,15 @@ jobs:
         with:
           name: unsigned-pr-canary-${{ github.event.pull_request.head.sha }}
           path: app/build/outputs/apk/canary/app-canary-unsigned.apk
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Store unsigned protected IT Internal for trusted signing
+        if: github.event_name == 'push' && github.ref == 'refs/heads/it' && steps.scope.outputs.run_it_internal == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unsigned-it-internal-${{ github.sha }}
+          path: app/build/outputs/apk/internal/app-internal-unsigned.apk
           if-no-files-found: error
           retention-days: 3
 

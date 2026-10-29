@@ -206,7 +206,8 @@ Branch roles:
 - `feat/*` — coherent capability/behavior change;
 - `fix/*` — bounded correction;
 - `refactor/*` — behavior-neutral maintainability work;
-- `dev` — integration;
+- `dev` — public/shared integration;
+- `it` — unstable internal-test integration, not a promotion source;
 - `main` — accepted stable baseline;
 - `hotfix/*` — urgent stable correction;
 - `dependabot/*` — dependency proposal.
@@ -223,7 +224,16 @@ A PR may remain Draft while implementation is moving. Mark it ready at the final
 
 Use squash merge for ordinary work branches.
 
-All CI-built app variants use the same accepted, pinned MIUIX source graph. Work branches distribute only Canary; main owns Internal IT and Release candidates. Before deleting an obsolete workflow, migrate its pinned source, signing, metadata and release boundaries into shared workflows and validate the replacement with Full CI. Never substitute the published MIUIX fallback for a source-matched accepted OS4 build.
+### IT synchronization and boundaries
+
+- `it` is a long-lived test branch. Develop IT-only experiments from an `it` base and merge them into `it` by reviewed PR; its `internal` Android build type remains non-debuggable, diagnostics-capable, and hides the in-app project page entry. Do not attempt to strip all embedded repository strings.
+- Sync public fixes **dev → it** through reviewed integration PRs. For **it → dev**, create a fresh branch from current `dev`, selectively port only generally applicable fixes and submit a separate PR. Never merge the whole `it` branch into `dev` or `main`. Stable fixes go `main → dev → it`.
+- IT-only sources must stay under `app/src/internal/` or `it-only/` and must not enter public branches. Shared-path changes require semantic review: a file-path guard cannot detect all IT-only behavior. No public branch can inherit IT behavior just because its fix was observed during IT testing.
+- Both channels retain package/signing identity. Plan `versionCode` monotonicity so installation of a later public version after IT is possible. No Build bump for branch creation or CI/governance only.
+- The public PR CI rejects direct `it` heads and exclusive paths. The repository owner must extend branch protection to `it` (PR + required build check); an in-PR check alone is not a tamper-proof branch protection policy. Build/signing on `it` is **not enabled by creating the branch**; do not distribute it until source-matched internal build and isolated signing path have passed their own CI and protection gates.
+
+
+All CI-built app variants use the same accepted, pinned MIUIX source graph. Work branches distribute only Canary; the protected `it` branch provides Internal test candidates through the trusted exact-SHA signer, and `main` retains public Release candidates. The legacy main Internal output must be retired only after the protected IT lane is verified. Before deleting an obsolete workflow, migrate its pinned source, signing, metadata and release boundaries into shared workflows and validate the replacement with Full CI. Never substitute the published MIUIX fallback for a source-matched accepted OS4 build.
 
 ### Stable promotion
 
