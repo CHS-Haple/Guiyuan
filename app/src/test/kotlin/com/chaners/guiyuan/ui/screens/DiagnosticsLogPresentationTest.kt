@@ -62,7 +62,7 @@ class DiagnosticsLogPresentationTest {
         assertEquals(R.string.diagnostics_log_field_transport, logFieldLabelRes("transport"))
         assertEquals(R.string.diagnostics_log_field_trace_id, logFieldLabelRes("traceId"))
         assertNull(logFieldLabelRes("futurePayload"))
-        assertEquals(100, MAX_EVENTS)
+        assertEquals(100, EVENT_PAGE_SIZE)
     }
 
     @Test

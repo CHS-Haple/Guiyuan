@@ -269,7 +269,7 @@ internal fun DiagnosticsScreen(
         entries.filter { matchesFilter(it, levelFilter, categoryFilter) }
     }
     var visibleLimit by remember(snapshot, viewCleared, levelFilter, categoryFilter) {
-        mutableIntStateOf(MAX_EVENTS)
+        mutableIntStateOf(EVENT_PAGE_SIZE)
     }
     val visibleEntries = remember(filteredEntries, visibleLimit) { filteredEntries.take(visibleLimit) }
     val filterActive =
@@ -488,7 +488,7 @@ internal fun DiagnosticsScreen(
                             Button(
                                 onClick = {
                                     visibleLimit =
-                                        (visibleLimit + MAX_EVENTS).coerceAtMost(filteredEntries.size)
+                                        (visibleLimit + EVENT_PAGE_SIZE).coerceAtMost(filteredEntries.size)
                                 },
                                 colors = ButtonDefaults.buttonColors(),
                             ) {
@@ -542,7 +542,7 @@ internal fun DiagnosticsScreen(
 
 }
 
-internal const val MAX_EVENTS = 100
+internal const val EVENT_PAGE_SIZE = 100
 private const val MAX_DETAIL_FIELDS = 5
 
 private fun logProgress(progress: Float, index: Int): Float {
