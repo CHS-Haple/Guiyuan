@@ -226,14 +226,14 @@ Use squash merge for ordinary work branches.
 
 ### IT synchronization and boundaries
 
-- `it` is a long-lived test branch. Develop IT-only experiments from an `it` base and merge them into `it` by reviewed PR; its `internal` Android build type remains non-debuggable, diagnostics-capable, and hides the in-app project page entry. Do not attempt to strip all embedded repository strings.
+- `it` is a long-lived test branch. Develop IT-only experiments from an `it` base and merge them into `it` by reviewed PR. The IT-owned `it-only/RESTRICT_PROJECT_LINK` marker disables in-app project navigation for Debug and Canary without changing their build-type semantics. This does not hide the entry, remove embedded strings, or make the APK confidential.
 - Sync public fixes **dev → it** through reviewed integration PRs. For **it → dev**, create a fresh branch from current `dev`, selectively port only generally applicable fixes and submit a separate PR. Never merge the whole `it` branch into `dev` or `main`. Stable fixes go `main → dev → it`.
 - IT-only sources must stay under `app/src/internal/` or `it-only/` and must not enter public branches. Shared-path changes require semantic review: a file-path guard cannot detect all IT-only behavior. No public branch can inherit IT behavior just because its fix was observed during IT testing.
 - Both channels retain package/signing identity. Plan `versionCode` monotonicity so installation of a later public version after IT is possible. No Build bump for branch creation or CI/governance only.
-- The public PR CI rejects direct `it` heads and exclusive paths. The repository owner must extend branch protection to `it` (PR + required build check); an in-PR check alone is not a tamper-proof branch protection policy. Build/signing on `it` is **not enabled by creating the branch**; do not distribute it until source-matched internal build and isolated signing path have passed their own CI and protection gates.
+- The public PR CI rejects direct `it` heads and exclusive paths. Protect `it` via PR + required official Build check, not an in-PR check alone. The protected IT Canary is distributable only after its exact-SHA push Build and the separate main-trusted signed-APK verification have succeeded.
 
 
-All CI-built app variants use the same accepted, pinned MIUIX source graph. Work branches distribute only Canary; the protected `it` branch provides Internal test candidates through the trusted exact-SHA signer, and `main` retains public Release candidates. The legacy main Internal output must be retired only after the protected IT lane is verified. Before deleting an obsolete workflow, migrate its pinned source, signing, metadata and release boundaries into shared workflows and validate the replacement with Full CI. Never substitute the published MIUIX fallback for a source-matched accepted OS4 build.
+All distributable CI APKs use the same accepted, pinned MIUIX source graph. The build matrix is: `dev` Debug validation and demand-driven signed Canary; `it` Debug validation, daily-use optimized Canary, and an opt-in, temporary optimized diagnostic variant when a specific defect needs evidence; `main` Release only. Canary remains non-debuggable, release-optimized and defaults to General diagnostics on every branch. Detailed diagnostics must be user-selected, while issue-specific probes require an explicit removal plan and must not enter public `dev`. No ordinary Release assembly on `dev` or `it`; no routine Debug/Canary on `main`. The trusted Work Branch APK signs only successful exact-SHA source-built artifacts; candidate code never executes with Haple credentials. The old Internal producer/distribution role is retired once ordinary protected IT Canary signing has passed. Never substitute the published MIUIX fallback for the accepted source-built OS4 graph.
 
 ### Stable promotion
 
@@ -265,7 +265,7 @@ Developer-facing scopes:
 
 - **Light** — Draft and proven repository-only/mechanical changes.
 - **Runtime** — ordinary app/SystemUI PRs and trusted runtime integration on `dev`; validates target profile, tests, Debug build and Xposed metadata as configured.
-- **Full** — stable boundaries plus dependency/build/CI/tooling/signing/release changes; validates Debug and signed Canary where applicable.
+- **Full** — stable admission plus dependency/build/CI/tooling/signing/release changes; compiles and validates only the required target-branch APK variants. Signing remains a separate trust step.
 
 CI proves configured source/build checks, not SystemUI runtime correctness.
 Preserve each pushed `dev`/`main` commit's required integration check: a later documentation-only push must not cancel an unfinished Runtime/Full validation. Superseded PR revisions may cancel their older checks.
@@ -276,13 +276,13 @@ Do not expose signing credentials or project-signed artifacts to untrusted fork 
 
 ### Canary
 
-Signed work-branch Canary is demand-driven. Request it only when device evidence can change an engineering decision or acceptance state. The low-privilege pull_request Build compiles and verifies the source-matched unsigned Canary. The default-branch Work Branch APK only selects a successful exact-SHA PR Build and its unexpired candidate artifact, then verifies and signs it in an isolated trusted runner; it never checks out or executes mutable work-branch source. A ready, open same-repository PR with a completed exact-SHA Build is required, including for manual fallback. Do not bypass this boundary by adding Gradle execution or Actions cache access to issue_comment/workflow_dispatch jobs.
+Signed work-branch Canary is demand-driven. Request it only when device evidence can change an engineering decision or acceptance state. The low-privilege pull_request Build compiles and verifies the source-matched unsigned Canary. The default-branch Work Branch APK only selects a successful exact-SHA PR Build and its unexpired candidate artifact, then verifies and signs it in an isolated trusted runner; it never checks out or executes mutable work-branch source. A ready, open same-repository PR with a completed exact-SHA Build is required for work-branch Canary. Protected `it` Canary requires the current protected IT SHA plus a successful exact-SHA Push Build. The repository owner may dispatch it or request `B<build> Canary` on the just-merged, current-head IT PR; that comment is rejected for stale, foreign or unmerged IT PRs. The same restricted `B<build> Diagnostic` shortcut applies only to the temporary IT diagnostic variant. Ordinary work-branch Canary comments remain open-PR-only. Do not bypass either boundary by adding Gradle execution or Actions cache access to signing jobs.
 
 A device test is useful for ownership/lifecycle/scene/transition/geometry changes, first meaningful runtime checkpoints, competing hypotheses, integrated runtime validation or a runtime-affecting stable candidate.
 
 Do not request device testing merely because a commit or APK exists.
 
-The `internal` build is a distribution-only test variant: non-debuggable, release-equivalent, and runtime-diagnostic capable. It may gate app-side public project navigation, but must not change SystemUI behavior, settings semantics or Xposed scope.
+Canary is non-debuggable, release-optimized and retains bounded runtime diagnostics. IT-only policy is branch-owned, not a new build type; Debug and Canary must share its app-side navigation restrictions without altering SystemUI behavior or Xposed scope. The former Internal build type is retired from routine distribution. IT-specific native probes are permitted only in the temporary optimized diagnostic variant and must be removed after the issue has sufficient evidence; they do not change the default Canary contract.
 
 ## Versions, dependencies and release
 
