@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       source_branch:
-        description: 'Reviewed work branch or protected it for Canary'
+        description: 'Reviewed work Canary or protected IT Canary/diagnostic candidate'
         required: true
         type: string
       variant:
@@ -25,6 +25,7 @@ on:
         type: choice
         options:
           - canary
+          - diagnostic
       build_number:
         description: 'Build suffix (for example 850); checked against the source Gradle Build'
         required: true
@@ -86,9 +87,10 @@ jobs:
               branch="$MANUAL_SOURCE_BRANCH"
               variant="$MANUAL_VARIANT"
               expected_build="$MANUAL_BUILD_NUMBER"
-              if [[ "$variant" != "canary" ||
-                    ( "$branch" != "it" && "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ) ]]; then
-                echo "::error::Canary requires protected it or a reviewed work branch."
+              if [[ ( "$variant" != "canary" && "$variant" != "diagnostic" ) ||
+                    ( "$branch" != "it" && "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ) ||
+                    ( "$variant" == "diagnostic" && "$branch" != "it" ) ]]; then
+                echo "::error::Diagnostic candidate requires protected IT and owner dispatch."
                 exit 1
               fi
               source_sha="$(
@@ -136,9 +138,10 @@ jobs:
               ;;
           esac
 
-          if [[ "$variant" != "canary" ||
-                ( "$branch" != "it" && "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ) ]]; then
-            echo "::error::Canary requires protected it or a reviewed feat/fix/refactor/hotfix branch."
+          if [[ ( "$variant" != "canary" && "$variant" != "diagnostic" ) ||
+                ( "$branch" != "it" && "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ) ||
+                ( "$variant" == "diagnostic" && ( "$branch" != "it" || "$EVENT_NAME" != "workflow_dispatch" ) ) ]]; then
+            echo "::error::Diagnostic signing is owner-only from protected it."
             exit 1
           fi
           if [[ "$branch" == "it" && "$EVENT_NAME" != "workflow_dispatch" ]]; then
@@ -184,10 +187,15 @@ jobs:
             branch_json="$(gh api "repos/$GITHUB_REPOSITORY/branches/it")"
             test "$(jq -r '.protected' <<< "$branch_json")" = "true"
             test "$(jq -r '.commit.sha' <<< "$branch_json")" = "$SOURCE_SHA"
-            artifact="unsigned-it-canary-$SOURCE_SHA"
+            if [[ "${{ steps.source.outputs.variant }}" == "diagnostic" ]]; then
+              artifact="unsigned-it-diagnostic-$SOURCE_SHA"
+            else
+              artifact="unsigned-it-canary-$SOURCE_SHA"
+            fi
             event="push"
             pr_number=""
           else
+            test "${{ steps.source.outputs.variant }}" = "canary"
             prs="$(gh api -X GET "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100")"
             pr_number="$(jq -r \
               --arg repo "$GITHUB_REPOSITORY" --arg branch "$SOURCE_BRANCH" --arg sha "$SOURCE_SHA" \
@@ -270,7 +278,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   sign:
-    name: Sign reviewed Canary / protected IT Canary
+    name: Sign reviewed Canary / protected IT diagnostic
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -317,7 +325,7 @@ jobs:
           HAPLE_CERT_SHA256: 7a64fc85325afe79439afb63369d832d7ddc20fd5b3935b4c28d7bcb85e92fc7
         run: bash tools/setup_haple_signing.sh
 
-      - name: Sign exact reviewed Canary bytes and verify identity
+      - name: Sign reviewed candidate and verify identity
         shell: bash
         env:
           HAPLE_KEYSTORE_PASSWORD: ${{ secrets.HAPLE_KEYSTORE_PASSWORD }}
@@ -330,8 +338,12 @@ jobs:
           VARIANT: ${{ needs.build.outputs.variant }}
         run: |
           set -euo pipefail
-          test "$VARIANT" = "canary"
-          source="candidate/app-$VARIANT-unsigned.apk"
+          [[ "$VARIANT" == "canary" || "$VARIANT" == "diagnostic" ]]
+          if [[ "$VARIANT" == "diagnostic" ]]; then
+            source="candidate/app-itDiagnostic-unsigned.apk"
+          else
+            source="candidate/app-canary-unsigned.apk"
+          fi
           test -s "$source" && test -n "$SOURCE_SHA" && test -n "$VERSION_NAME" && test -n "$BUILD_ID"
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           signer="$SDK_ROOT/build-tools/37.0.0/apksigner"
@@ -353,9 +365,10 @@ jobs:
           echo "Source SHA: $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
           sha256sum "$apk" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload signed Canary
+      - name: Upload signed reviewed APK
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ env.APK_NAME }}
           path: dist/${{ env.APK_NAME }}
           if-no-files-found: error
+          retention-days: ${{ needs.build.outputs.variant == 'diagnostic' && 2 || 3 }}
