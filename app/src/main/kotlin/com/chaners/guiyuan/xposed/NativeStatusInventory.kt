@@ -63,7 +63,9 @@ internal object NativeStatusInventory {
         }
 
         if (hostView.isLaidOut) {
-            onSnapshot(inspect(hostView))
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
+                onSnapshot(inspect(hostView))
+            }
             return
         }
 
@@ -84,7 +86,9 @@ internal object NativeStatusInventory {
                     // Keep the receipt if framework listener removal fails.
                     view.removeOnLayoutChangeListener(this)
                     if (pending?.second === this) pending = null
-                    onSnapshot(inspect(hostView))
+                    SysUiPresentationRuntime.emitPassiveDiagnostic {
+                        onSnapshot(inspect(hostView))
+                    }
                 }
             }
         pending = hostView to listener
