@@ -95,6 +95,10 @@ internal object DiagReport {
                 appendLine("receipt=" + snapshot.fontAxis.receipt)
                 appendLine("mobile=" + snapshot.fontAxis.mobile)
                 appendLine("battery=" + snapshot.fontAxis.battery)
+                appendLine("savedBootPresent=" + snapshot.fontAxis.savedBootPresent)
+                appendLine("prefsReportedAtCapture=" + snapshot.fontAxis.reported)
+                appendLine("receiverEvents=" + snapshot.fontAxis.events.size)
+                snapshot.fontAxis.events.forEach(::appendLine)
                 appendLine()
             }
             appendLine("[Runtime snapshot]")

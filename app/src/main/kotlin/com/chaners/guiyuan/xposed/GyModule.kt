@@ -1942,8 +1942,10 @@ class GyModule : XposedModule() {
             weightAxis(batteryFont?.second)
         }
         SysUiBatterySource.setVerifiedNumberFont(host, batteryFace, batteryAxis)
+        val traceId = if (BuildConfig.FONT_AXIS_DIAGNOSTIC) SystemClock.elapsedRealtimeNanos() else 0L
         val intent = Intent(NativeFontAxis.ACTION)
             .setClassName("com.chaners.guiyuan", NativeFontAxis.RECEIVER)
+        if (BuildConfig.FONT_AXIS_DIAGNOSTIC) intent.putExtra(NativeFontAxis.TRACE_ID, traceId)
         mobileAxis?.let {
             intent.putExtra(NativeFontAxis.MIN, it.min)
             intent.putExtra(NativeFontAxis.DEFAULT, it.default)
@@ -1953,6 +1955,32 @@ class GyModule : XposedModule() {
             intent.putExtra(NativeFontAxis.BAT_MIN, it.min)
             intent.putExtra(NativeFontAxis.BAT_DEFAULT, it.default)
             intent.putExtra(NativeFontAxis.BAT_MAX, it.max)
+        }
+        if (BuildConfig.FONT_AXIS_DIAGNOSTIC) {
+            runCatching {
+                val receiver = runCatching {
+                    val info = host.context.packageManager.getReceiverInfo(requireNotNull(intent.component), 0)
+                    "found:enabled=${info.enabled}:exported=${info.exported}:" +
+                        "statusBarPermission=${info.permission == "android.permission.STATUS_BAR"}"
+                }.getOrElse { error ->
+                    SysUiHotReload.rethrowFatal(error)
+                    "unresolved:${error.javaClass.simpleName}"
+                }
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "fontAxis.send",
+                    component = "fontAxis",
+                    state = "attempt",
+                    "trace" to traceId,
+                    "uidSystem" to (Process.myUid() == Process.SYSTEM_UID),
+                    "contextSystemUi" to (host.context.packageName == "com.android.systemui"),
+                    "senderStatusBarPermission" to (
+                        host.context.checkSelfPermission("android.permission.STATUS_BAR") ==
+                            android.content.pm.PackageManager.PERMISSION_GRANTED
+                    ),
+                    "receiver" to receiver,
+                )
+            }.onFailure(SysUiHotReload::rethrowFatal)
         }
         runCatching {
             val options = BroadcastOptions.makeBasic().setShareIdentityEnabled(true).toBundle()
@@ -1970,6 +1998,7 @@ class GyModule : XposedModule() {
                     event = "fontAxis.report",
                     component = "fontAxis",
                     state = "submitted",
+                    "trace" to traceId,
                     "mobileAxis" to if (mobileAxis != null) "verified" else "unverified",
                     "batteryAxis" to if (batteryAxis != null) "verified" else "unverified",
                 )
@@ -1982,6 +2011,7 @@ class GyModule : XposedModule() {
                     event = "fontAxis.report",
                     component = "fontAxis",
                     state = "error",
+                    "trace" to traceId,
                     "reason" to error.javaClass.simpleName,
                 )
             }

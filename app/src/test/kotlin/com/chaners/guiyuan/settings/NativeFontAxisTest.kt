@@ -53,6 +53,30 @@ class NativeFontAxisTest {
     }
 
     @Test
+    fun receiverAuthorizationRequiresSystemUidPackageAndAction() {
+        val action = NativeFontAxis.ACTION
+        assertNull(NativeFontAxis.receiverReject(37, android.os.Process.SYSTEM_UID, "com.android.systemui", action))
+        assertEquals(NativeFontAxis.ReceiverReject.API,
+            NativeFontAxis.receiverReject(33, android.os.Process.SYSTEM_UID, "com.android.systemui", action))
+        assertEquals(NativeFontAxis.ReceiverReject.UID,
+            NativeFontAxis.receiverReject(37, -1, "com.android.systemui", action))
+        assertEquals(NativeFontAxis.ReceiverReject.PACKAGE,
+            NativeFontAxis.receiverReject(37, android.os.Process.SYSTEM_UID, null, action))
+        assertEquals(NativeFontAxis.ReceiverReject.ACTION,
+            NativeFontAxis.receiverReject(37, android.os.Process.SYSTEM_UID, "com.android.systemui", "wrong"))
+    }
+
+    @Test
+    fun receiverEvidenceIsBoundedToTwentyEvents() {
+        val events = (1..28).fold("") { history, n ->
+            NativeFontAxis.appendTransportEvent(history, "event-$n")
+        }.lines()
+        assertEquals(20, events.size)
+        assertEquals("event-9", events.first())
+        assertEquals("event-28", events.last())
+    }
+
+    @Test
     fun rejectsUnverifiedAndUnsafeAxis() {
         assertNull(NativeFontAxis.checked(null))
         assertNull(NativeFontAxis.checked(FontWeightAxis(Float.NaN, 330f, 700f)))
