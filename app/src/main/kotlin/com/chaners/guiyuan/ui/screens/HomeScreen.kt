@@ -11,8 +11,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -401,24 +403,14 @@ private fun HomeRuntimeCardBody(
             .background(cardGradient)
             .then(if (onCardClick == null) Modifier else Modifier.clickable(onClick = onCardClick)),
     ) {
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 22.dp, vertical = 18.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            RuntimeStatusMark(
-                kind = state.mark,
-                color = accentColor,
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .size(RuntimeStatusMarkSize),
-            )
-            Column(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .fillMaxWidth()
-                    .padding(end = 98.dp),
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(state.titleRes),
                     style = MiuixTheme.textStyles.title3.copy(
@@ -454,6 +446,11 @@ private fun HomeRuntimeCardBody(
                     color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                 )
             }
+            RuntimeStatusMark(
+                kind = state.mark,
+                color = accentColor,
+                modifier = Modifier.size(RuntimeStatusMarkSize),
+            )
         }
         val switchTitle = stringResource(R.string.home_runtime_enable_title)
         BasicComponent(
