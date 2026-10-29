@@ -136,9 +136,21 @@ jobs:
                     fi
                     ;;
                 esac
-                if [[ "$pr_state" != "open" || "$head_repo" != "$GITHUB_REPOSITORY" ]]; then
-                  echo "::error::Canary comments require an open same-repository PR."
+                if [[ "$head_repo" != "$GITHUB_REPOSITORY" ]]; then
+                  echo "::error::Canary comments require a same-repository PR."
                   exit 1
+                fi
+                if [[ "$pr_state" != "open" ]]; then
+                  # A just-merged IT PR may authorize an exact-head Canary,
+                  # without granting an arbitrary closed PR the same privilege.
+                  test "$variant" = canary
+                  test "$(jq -r '.merged' <<< "$pr_json")" = true
+                  test "$(jq -r '.base.ref' <<< "$pr_json")" = it
+                  branch_json="$(gh api "repos/$GITHUB_REPOSITORY/branches/it")"
+                  test "$(jq -r '.protected' <<< "$branch_json")" = true
+                  source_sha="$(jq -r '.commit.sha' <<< "$branch_json")"
+                  test "$(jq -r '.merge_commit_sha' <<< "$pr_json")" = "$source_sha"
+                  branch=it
                 fi
               fi
 
@@ -156,7 +168,8 @@ jobs:
             echo "::error::Diagnostic signing is owner-only from protected it."
             exit 1
           fi
-          if [[ "$branch" == "it" && "$EVENT_NAME" != "workflow_dispatch" && "$variant" != "diagnostic" ]]; then
+          if [[ "$branch" == "it" && "$EVENT_NAME" != "workflow_dispatch" &&
+                "$variant" != "diagnostic" && "$variant" != "canary" ]]; then
             echo "::error::Protected IT Canary requires owner-triggered dispatch."
             exit 1
           fi
