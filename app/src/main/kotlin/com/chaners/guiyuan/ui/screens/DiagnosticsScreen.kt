@@ -413,7 +413,7 @@ internal fun DiagnosticsScreen(
                 )
             },
     ) {
-        if (!viewCleared && integrityNotice.isNotEmpty()) {
+        if (!viewCleared && !showRootGuide && integrityNotice.isNotEmpty()) {
             item(key = "diagnostics-log-integrity") {
                 Text(
                     text = integrityNotice,
@@ -537,13 +537,16 @@ internal fun DiagnosticsScreen(
                     LogEmptyGuide(
                         title = stringResource(R.string.diagnostics_root_unavailable_title),
                         description = stringResource(R.string.diagnostics_root_unavailable_message),
-                        note = stringResource(
-                            if (snapshot?.log?.sessionLines?.isNotEmpty() == true) {
-                                R.string.diagnostics_root_partial_export
-                            } else {
-                                R.string.diagnostics_root_unavailable_export
-                            },
-                        ),
+                        note = listOfNotNull(
+                            stringResource(
+                                if (snapshot?.log?.sessionLines?.isNotEmpty() == true) {
+                                    R.string.diagnostics_root_partial_export
+                                } else {
+                                    R.string.diagnostics_root_unavailable_export
+                                },
+                            ),
+                            integrityNotice.takeIf(String::isNotEmpty),
+                        ).joinToString("\n"),
                         icon = MiuixIcons.Medium.Report,
                         busy = loading,
                         onRetry = ::refresh,
