@@ -39,10 +39,13 @@ Keep credentials, signing material, local SDK paths, generated APK/AAB artifacts
 
 Before editing:
 1. confirm the requirement or defect;
-2. identify the responsible owner/state source/lifecycle/API/layout rule;
-3. choose a coherent scope that removes the cause without unrelated churn;
-4. identify behavior that must remain unchanged;
-5. decide what evidence is needed for acceptance.
+2. identify the responsible owner/state source/lifecycle/API/layout rule and verify the root cause when fixing a defect;
+3. investigate relevant native/platform, upstream and existing-repository solutions; continue looking for credible alternatives even if the first option appears suitable;
+4. compare viable approaches against evidence, correctness, ownership/lifecycle, compatibility, security, performance, regression/rollback risk and maintenance cost; select the best fit rather than the first workable fix;
+5. choose a coherent scope that removes the cause without unrelated churn;
+6. identify behavior that must remain unchanged and evidence needed for acceptance.
+
+For non-trivial decisions, record the alternatives considered, their evidence and trade-offs, and why the chosen approach is preferable before implementation; keep this proportional to the risk and scope. Do not invent alternatives or evidence for simple mechanical changes.
 
 For defects, investigate root cause before adding a workaround. Do not add geometry, timing, alpha, visibility, polling, retry or delayed patches merely because they hide one symptom.
 
