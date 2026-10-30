@@ -199,11 +199,11 @@ internal object KeyguardRenderSession {
         while (type != null) {
             val current = type
             val field =
-                runCatching {
+                SysUiPresentationRuntime.optionalNativeRead {
                     current.getDeclaredField(name).apply { isAccessible = true }
-                }.getOrNull()
+                }
             if (field != null) {
-                return runCatching { field.get(owner) as? View }.getOrNull()
+                return SysUiPresentationRuntime.optionalNativeRead { field.get(owner) as? View }
             }
             type = current.superclass
         }
@@ -511,6 +511,7 @@ internal object KeyguardRenderSession {
                 host.get()?.post { setFeatureState(enabled) }
                 return
             }
+            if (KeyguardRenderSession.current !== this) return
             if (featureEnabled == enabled) return
             featureEnabled = enabled
             val visible = applyResolvedVisibility()
