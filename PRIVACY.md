@@ -4,7 +4,7 @@
 
 ## 简体中文
 
-归元是一款调整系统状态信息显示的 LSPosed 模块。运行时会在设备上处理 SystemUI 状态、用户设置和诊断信息。应用没有由项目运营的自动数据上报或遥测服务，也不申请 Android 的 `INTERNET` 权限。
+归元是一款调整系统状态信息显示的 LSPosed 模块。运行时会在设备上处理 SystemUI 状态、用户设置和诊断信息。归元不会自动向项目维护者发送这些信息，也不申请 Android 的 `INTERNET` 权限。
 
 ### 本地设置
 
@@ -12,9 +12,9 @@
 
 ### 诊断与 Root 权限
 
-查看或刷新诊断日志、生成诊断报告时，归元可能使用 Root 权限读取 LSPosed 共享日志或系统日志，再筛选出与归元相关的记录用于显示和报告。因此，底层读取过程可能接触其他应用的日志，但不会把整个日志源直接作为归元的诊断报告。
+查看或刷新诊断日志、生成诊断报告时，归元可能使用 Root 权限读取 LSPosed 共享日志或系统日志，再筛选出与归元相关的记录用于显示和报告。因此，底层读取时可能接触其他应用的日志，诊断页面和报告则使用筛选后的记录。
 
-Root 权限还用于经你确认的 SystemUI 或设置作用域维护操作。
+当你确认重新加载 SystemUI 或结束设置应用进程时，归元也会使用 Root 权限。
 
 诊断报告由你主动生成，可能包含归元版本、设备及系统信息、运行状态和相关日志。使用**“清空日志”**后，较早的记录不再出现在诊断页面和新生成的报告中，但 LSPosed 原始日志及此前导出的文件不会被删除。
 
@@ -34,7 +34,7 @@ Root 权限还用于经你确认的 SystemUI 或设置作用域维护操作。
 
 ## English
 
-Guiyuan is an LSPosed module that changes how system status information is displayed. It processes SystemUI state, your settings, and diagnostics on your device. The app does not include project-operated automatic data reporting or telemetry and does not request Android's `INTERNET` permission.
+Guiyuan is an LSPosed module that changes how system status information is displayed. It processes SystemUI state, your settings, and diagnostics on your device. Guiyuan does not automatically send this information to project maintainers or request Android's `INTERNET` permission.
 
 ### Settings stored on your device
 
@@ -42,9 +42,9 @@ Appearance, language, launcher icon visibility, and diagnostic preferences are s
 
 ### Diagnostics and Root access
 
-When you view or refresh logs, or generate a diagnostic report, Guiyuan may use Root access to read shared LSPosed logs or system logs before filtering entries related to Guiyuan for display and reporting. The underlying read may therefore encounter logs from other apps, but the complete source log is not included directly in a Guiyuan report.
+When you view or refresh logs, or generate a diagnostic report, Guiyuan may use Root access to read shared LSPosed logs or system logs before filtering entries related to Guiyuan for display and reporting. The underlying read may therefore encounter other apps' logs; the Diagnostics view and reports use the filtered entries.
 
-Root access also supports SystemUI or Settings maintenance actions that you confirm.
+Root access is also used when you confirm actions to reload SystemUI or stop the Settings app.
 
 You generate diagnostic reports when needed. They may include the Guiyuan version, device and system information, runtime state, and related logs. **Clear logs** hides earlier entries from the Diagnostics view and newly generated reports; it does not delete the original LSPosed logs or files you have previously exported.
 
