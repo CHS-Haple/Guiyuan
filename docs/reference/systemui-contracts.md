@@ -36,7 +36,7 @@ Current target evidence is scoped to Xiaomi HyperOS SystemUI `17.03.260226.r`. T
 - `MiuiStatusBatteryContainer.onLayout(ZIIII)V`: `getPaddingEnd()` at **33**, **56**, **109**, **132**, **163** and **177**; `getPaddingStart()` at **167** and **173**.
 - `MiuiStatusIconContainer.addIgnoredSlots(Ljava/util/List;)V`: `List.contains` at **18**, `List.add` at **26**, and `requestLayout` at **30**. `setIgnoredSlots(Ljava/util/List;)V`: `List.clear` at **2**, then `addIgnoredSlots` at **5**.
 
-These are invocation references in the target bytecode, not a full path-condition or runtime callback trace. These call sites alone do not establish an exception or reentrant callback. The separately inspected Xiaomi Framework DEX below resolves the setter's static instruction order. Native padding influences more than the Guiyuan glyph bounds, so any session-owned padding acquisition/rollback must account for the native measure/layout consumers and preserve single-writer and foreign-change boundaries.
+These are invocation references in the target bytecode, not a full path-condition or runtime callback trace. These call sites alone do not establish an exception or reentrant callback. The separately inspected Xiaomi Framework DEX above resolves the setter's static instruction order. Native padding influences more than the Guiyuan glyph bounds, so any session-owned padding acquisition/rollback must account for the native measure/layout consumers and preserve single-writer and foreign-change boundaries.
 
 **Observed native Padding writers (DEX and resource table).** On the same SHA-256-verified target, `MiuiPhoneStatusBarView.updatePaddings()V` in `classes2.dex` invokes inherited `setPaddingRelative(IIII)V` on three recipients:
 
