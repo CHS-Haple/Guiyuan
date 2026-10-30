@@ -1,6 +1,6 @@
 # LSPosed 7930 Compatibility Check
 
-This reference separates a **static examination** of the supplied `LSPosed-v2.2.1-7930-release.zip` from **bounded 7930 runtime evidence** in earlier maintainer-provided Guiyuan diagnostic logs. The archive checks do not prove publisher authenticity or exact installed-framework byte identity. For independently verified callback ordering in the 7927 Java binary, see [LSPosed 7927 Hot Reload Contract](lsposed-7927-hot-reload.md).
+This reference separates a **static examination** of the supplied `LSPosed-v2.2.1-7930-release.zip` from **bounded 7930 runtime evidence** in earlier maintainer-provided Guiyuan diagnostic logs. The archive checks do not prove publisher authenticity or exact installed-framework byte identity. The supplied 7930 Java framework has now been independently compared with the byte-verified 7927 Java framework; for the underlying API 102 callback path, see [LSPosed 7927 Hot Reload Contract](lsposed-7927-hot-reload.md).
 
 ## Supplied archive
 
@@ -15,6 +15,12 @@ This reference separates a **static examination** of the supplied `LSPosed-v2.2.
 | Java API surface | `framework.dex` still contains `API_102`, `onHotReloading`, `onHotReloaded`, `onModuleLoaded` and `onPackageReady` strings. This demonstrates the entrypoint names survive, not that their invocation order or failure behavior is unchanged. |
 
 These are self-consistency checks, **not** a release signature or independent download-origin verification. The archive itself does not contain a source diff establishing all of its changes relative to 7927. Do not deploy an unverified package merely because its internal sidecars match.
+
+### Direct 7927–7930 Java framework parity check (2026-10-30)
+
+The original supplied 7927 and 7930 release ZIPs were re-extracted (ZIP method 95, XZ) and the actual `framework.dex` SHA-256 hashes matched the table above and the 7927 reference: `455155d12173462d51bea31465fe1278fcf91da4ef1d5427dc9beec0c07ccdb4` versus `e84ca1e7e35f7f268c50ff49b1beaff162b0475b9c12f50fa3654bf85b625269`. Both DEX inputs were independently disassembled with the original `baksmali-3.0.10-fat-release.jar`, producing **181 class definitions each**. All class paths, instruction sequences and method bodies match after excluding the changed R8 `.source` map ID and the single expected version constant in `y0.smali` (`0x1ef7` = 7927 to `0x1efa` = 7930). No other instruction-level changes were found in the extracted Java framework.
+
+In particular, `y0` retains the same `onHotReloading` and `onHotReloaded` calls and their surrounding class-loader handoff logic as the independently examined 7927 binary. Thus, the 7927 normal-path API 102 **Java callback ordering also applies to the supplied 7930 Java DEX**, with stronger evidence than string presence or user logs alone. This comparison does **not** show equivalence of `libframework.so`, Zygisk injection/wrapper/daemon behavior, the exact files actually installed on the user's device, or native exceptional scheduling/cleanup. No Guiyuan runtime change or new device acceptance follows from this source check.
 
 ## Reported framework changes
 
@@ -41,7 +47,7 @@ This is positive evidence for repeated **normal-path** API 102 V10 module reload
 
 ## Guiyuan boundary and remaining validation
 
-Guiyuan's `GyModule` uses API 102 `onHotReloading` to retire its old owner synchronously on the SystemUI main thread and only reuses neutral transfer state. `onHotReloaded` validates the transferred host and releases old Hook handles on failure. The 7927 binary confirms the internal normal-path callback ordering; the 7930 **device logs** confirm completed normal-path handoffs, not identical 7930 internal failure behavior, wrapper identity or asynchronous completion guarantees.
+Guiyuan's `GyModule` uses API 102 `onHotReloading` to retire its old owner synchronously on the SystemUI main thread and only reuses neutral transfer state. `onHotReloaded` validates the transferred host and releases old Hook handles on failure. Direct normalized DEX comparison confirms that the supplied 7930 `framework.dex` retains the 7927 Java normal-path callback ordering. The 7930 **device logs** separately confirm completed normal-path handoffs; neither source establishes identical native failure behavior, installed-binary identity, wrapper identity or asynchronous completion guarantees.
 
 **Do not change the core ownership/Hot Reload implementation based only on the changelog.** The observed 7930 normal-path handoffs narrow the remaining gates to:
 
