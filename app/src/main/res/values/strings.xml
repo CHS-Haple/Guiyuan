@@ -344,7 +344,7 @@
     <string name="diagnostics_scroll_bottom">Scroll to bottom</string>
     <string name="diagnostics_clear_history">Clear earlier logs</string>
     <string name="diagnostics_clear_history_action">Clear logs</string>
-    <string name="diagnostics_history_clear_confirm">Earlier logs will be excluded from the app and new reports. New logs continue; original logs and exported files stay intact.</string>
+    <string name="diagnostics_history_clear_confirm">Earlier logs will no longer appear or be exported. New logs continue normally.</string>
     <string name="diagnostics_history_cleared">Earlier logs cleared.</string>
     <string name="diagnostics_history_clear_failed">Could not clear earlier logs.</string>
     <string name="diagnostics_history_refresh_failed">Earlier logs cleared, but refreshing failed.</string>
