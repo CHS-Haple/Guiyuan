@@ -35,6 +35,8 @@ A report may contain:
 
 Guiyuan does not intentionally collect unrelated third-party application logs for diagnostic reports.
 
+The “Clear diagnostic history” action stores a local cutoff: earlier Guiyuan entries will no longer appear in the Diagnostics list or newly generated reports, including after refresh or app restart. It does **not** delete LSPosed's shared source logs or previously exported reports. New entries continue to be recorded normally.
+
 Review diagnostic reports before sharing them publicly, because device and runtime details may be identifying in some contexts.
 
 ### Export and sharing
@@ -83,6 +85,8 @@ Guiyuan 以本地运行和最小化数据处理为设计原则。
 - Guiyuan 结构化运行快照与模块日志。
 
 Guiyuan 不会为了生成诊断报告而主动收集无关第三方应用的日志。
+
+“清除诊断历史”会在本地保存一个清理时间点：之前的归元日志不再出现在诊断列表与新生成的报告中，刷新或重启应用后也不会恢复。该操作**不会删除 LSPosed 共享原始日志或此前已导出的报告**，之后的新日志仍正常记录。
 
 由于设备和运行环境信息在某些场景下可能具有识别性，公开分享报告前仍建议先检查内容。
 
