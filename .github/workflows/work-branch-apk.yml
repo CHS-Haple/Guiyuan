@@ -304,7 +304,8 @@ jobs:
               }
             else
               # The authorized PR must also belong to this exact upstream Build run.
-              jq -e --argjson pr "$pr_number"                 '.pull_requests | any(.number == $pr)' <<< "$upstream" >/dev/null
+              jq -e --argjson pr "$pr_number" \
+                '.pull_requests | any(.number == $pr)' <<< "$upstream" >/dev/null
               # An owner decision is bound to the exact source SHA and must predate its CI run.
               started="$(jq -r '.run_started_at // .created_at' <<< "$upstream")"
               [[ "$started" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]] || exit 1
