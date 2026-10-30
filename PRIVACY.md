@@ -1,36 +1,32 @@
-# Privacy / 隐私说明
+# Privacy Policy / 隐私政策
 
-[English](#english) | [简体中文](#简体中文)
+[简体中文](#简体中文) | [English](#english)
 
 ## English
 
-Guiyuan adjusts how status information appears in supported system interfaces. It processes SystemUI state, your settings, and diagnostics on the device. The app has no project-operated automatic data upload or telemetry service and does not request Android's `INTERNET` permission.
+Guiyuan adjusts how status information appears in supported system interfaces. It uses SystemUI state, your saved settings, and diagnostic information on your device. The app does not provide automatic data uploads or telemetry operated by the project, and it does not request Android's `INTERNET` permission.
 
 ### Settings and backups
 
-Appearance, language, launcher icon visibility, and diagnostic preferences are saved on your device. You can back up or restore these settings using Android's file picker. The backup is written to, or read from, the location you choose.
+Appearance, language, launcher icon visibility, and diagnostic preferences are saved on your device. You can use Android's file picker to choose where to export a settings backup or which file to restore.
 
-### Diagnostics and Root
+### Diagnostics and Root access
 
-When you open or refresh Diagnostics, or generate a report, Guiyuan may use Root access to read shared LSPosed logs or a limited portion of system logs, then select entries related to Guiyuan for display and reporting. The underlying read may encounter entries from other apps before filtering. Root is also used for supported SystemUI or Settings maintenance actions after your confirmation. These actions do not require a continuously running Root service.
+When you view or refresh diagnostic logs, or generate a report, Guiyuan may use Root access to read shared LSPosed logs or system logs and then filter for entries related to Guiyuan. Because filtering follows the underlying read, entries from other apps may be encountered along the way. The displayed log and report use the selected Guiyuan-related entries.
 
-A diagnostic report is generated locally when you request it. It may include the Guiyuan version and build, device and system versions, runtime state, and related log entries. Some of this information may identify your device or runtime environment. Review the report before sharing it.
+Root access also supports confirmed maintenance actions for selected SystemUI or Settings scopes. Guiyuan does not run a persistent Root service.
 
-**Clear logs** keeps earlier entries out of the Diagnostics view and newly generated reports, even after reopening the app. It does not remove the original shared LSPosed logs or reports you have already exported. New entries continue to appear normally.
+Reports are created on your device when requested. They may contain the app version, device and system details, runtime state, and related logs. Review a report before sharing it, as some details may identify your device or environment.
 
-### Exporting and sharing
+### Log history and files
 
-For exports, Android lets you choose where to save the report. For sharing, Guiyuan prepares a text attachment in `Download/Guiyuan` and opens Android's share sheet for you to choose a destination. Older attachments created by Guiyuan are cleaned up when another share is prepared.
+**Clear logs** sets a local cutoff for older entries in the Diagnostics view and new reports. It does not delete the original shared LSPosed logs or files you have already exported. New entries continue to appear.
 
-After you save or share a copy, its storage and handling depend on the destination you chose.
+For exports, Android lets you choose the destination. To share a report, Guiyuan prepares a text attachment in `Download/Guiyuan` and opens Android's share sheet. It cleans up older app-managed share attachments when preparing another one; this does not remove separately exported files or copies saved by a receiving app.
 
-### Feedback and third-party services
+### Feedback and other platforms
 
-Guiyuan does not automatically send diagnostic reports or usage data to its maintainers. If you submit an issue, contribution, or report through GitHub or another service, the maintainers can access the information you choose to provide. That service handles your submission under its own privacy terms.
-
-### Security reports
-
-If you need to report a security issue, please use the private reporting process in [SECURITY.md](SECURITY.md). Check any diagnostic excerpts before including them in a public issue.
+If you send an issue, report, or contribution through GitHub or another platform, project maintainers can read the information you submit. The platform handles that information under its own privacy terms. For sensitive security issues, please use the private process described in [SECURITY.md](SECURITY.md).
 
 ---
 
@@ -38,28 +34,24 @@ If you need to report a security issue, please use the private reporting process
 
 归元用于调整受支持系统界面中的状态信息显示，并在本机处理 SystemUI 状态、用户设置和诊断信息。应用不提供由项目运营的自动数据上传或遥测服务，也不申请 Android 的 `INTERNET` 权限。
 
-### 设置与备份
+### 本地设置与备份
 
-外观、语言、桌面图标显示和诊断等级等设置保存在本机。你可以通过 Android 系统文件选择器备份或恢复这些设置，文件的保存位置和读取来源由你选择。
+外观、语言、桌面图标显示和诊断等级等设置保存在本机。备份或恢复设置时，你可以通过 Android 系统文件选择器决定保存位置或选择要导入的文件。
 
-### 诊断与 Root
+### 诊断与 Root 权限
 
-打开或刷新诊断页面、生成诊断报告时，归元可能使用 Root 权限读取 LSPosed 共享日志或一定范围内的系统日志，再筛选与归元相关的条目用于显示和报告。由于筛选发生在读取之后，底层读取过程可能接触其他应用的日志。经你确认后，部分 SystemUI 或设置维护操作也会使用 Root 权限。这些操作不需要常驻 Root 服务。
+查看、刷新诊断日志或生成报告时，归元可能使用 Root 权限读取 LSPosed 共享日志或系统日志，再筛选出与归元相关的记录。由于筛选发生在底层读取之后，读取过程可能接触其他应用的日志；诊断页面和报告使用的是筛选后的归元相关记录。
 
-诊断报告在你发起操作时于本机生成，可能包含归元版本与构建信息、设备及系统版本、运行状态和相关日志。其中的部分信息可能具有设备识别性，分享前可以先查看报告内容。
+经你确认后，Root 权限还可用于所选 SystemUI 或设置作用域的维护操作。归元不运行常驻 Root 服务。
 
-使用**“清空日志”**后，此前的日志将不再出现在诊断页面及新生成的报告中，重新打开应用也不会恢复显示。此操作不会删除 LSPosed 共享的原始日志或此前已导出的报告，之后的新日志仍会正常显示。
+诊断报告在你发起操作时于本机生成，可能包含应用版本、设备与系统信息、运行状态和相关日志。部分信息可能识别设备或运行环境，分享前建议先查看报告内容。
 
-### 导出与分享
+### 历史日志与文件
 
-导出报告时，你可以通过 Android 系统界面选择保存位置。分享报告时，归元会在 `Download/Guiyuan` 中准备文本附件，并打开系统分享界面供你选择目标应用。再次准备分享文件时，归元会清理较早生成的此类附件。
+**“清空日志”**会为诊断页面和新报告设置本地历史截止点，不会删除 LSPosed 共享的原始日志或此前已导出的文件。新产生的记录仍会正常显示。
 
-报告保存或分享后的副本，由你选择的存储位置或目标应用管理。
+导出报告时，可以通过 Android 系统界面选择保存位置。分享报告时，归元会在 `Download/Guiyuan` 中准备文本附件，再打开系统分享界面。下次准备分享时，应用会清理较早生成的受管理附件，但不会删除你单独导出的文件或接收方保存的副本。
 
-### 反馈与第三方服务
+### 反馈与第三方平台
 
-归元不会自动向项目维护者发送诊断报告或使用数据。如果你通过 GitHub 等平台主动提交 Issue、贡献内容或诊断报告，维护者可以查看你提交的信息；这些平台也会依据各自的隐私政策处理相关内容。
-
-### 安全问题反馈
-
-如需反馈安全问题，请使用 [SECURITY.md](SECURITY.md) 中的私密报告渠道。向公开 Issue 附加诊断内容前，请先检查是否包含敏感信息。
+如果你通过 GitHub 等平台主动提交问题、报告或贡献内容，项目维护者可以查看你提交的信息。平台会按照各自的隐私政策处理这些内容。涉及敏感信息的安全问题，请使用 [SECURITY.md](SECURITY.md) 中的私密报告渠道。
