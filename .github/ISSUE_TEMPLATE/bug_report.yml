@@ -7,7 +7,7 @@ body:
       value: |
         Thanks for reporting a problem. Guiyuan is pre-release software and currently supports a narrow, verified SystemUI baseline. Please provide enough runtime context to reproduce the issue.
 
-        Before attaching diagnostics or logs, review them and remove unrelated personal or sensitive information.
+        Diagnostics and logs are optional. Before attaching any file, review the [Guiyuan Privacy Policy](https://github.com/CHS-Haple/Guiyuan/blob/dev/PRIVACY.md) and remove personal or unrelated details. Normal Issues are public; use [private vulnerability reporting](https://github.com/CHS-Haple/Guiyuan/security/advisories/new) for security/privacy vulnerabilities.
   - type: input
     id: build
     attributes:
@@ -73,7 +73,7 @@ body:
     id: diagnostics
     attributes:
       label: Diagnostics and evidence
-      description: Attach the built-in diagnostic report, relevant LSPosed log excerpt, screenshot, or recording when useful. Remove unrelated sensitive information first.
+      description: Optional. Attach only the relevant and reviewed report/log excerpt, screenshot, or recording. Do not post sensitive identifiers or unrelated application data.
   - type: checkboxes
     id: checks
     attributes:
