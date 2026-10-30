@@ -8,6 +8,8 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-10-30
+
 ### Fixed
 - Restored variable-font weight controls on affected HyperOS 4 devices by authenticating the actual installed SystemUI sender UID, retaining the existing receiver permission and fail-closed identity checks.
 - Rejected unsafe legacy V9 cross-ClassLoader Hot Reload callbacks; unsupported old transfers now require SystemUI restart while supported V10 handoff is unchanged.
