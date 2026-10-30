@@ -343,7 +343,7 @@
     <string name="diagnostics_scroll_bottom">滚动到底部</string>
     <string name="diagnostics_clear_history">清除诊断历史</string>
     <string name="diagnostics_clear_history_action">确认清除</string>
-    <string name="diagnostics_history_clear_confirm">清除前的记录将不再出现在归元诊断列表或后续报告中；不会删除 LSPosed 共享原始日志及已导出的文件。</string>
+    <string name="diagnostics_history_clear_confirm">清除后，历史记录将不再显示或出现在后续报告中。LSPosed 原始日志和已导出文件不受影响。</string>
     <string name="diagnostics_history_cleared">已清除此前的诊断历史。</string>
     <string name="diagnostics_history_clear_failed">无法清除诊断历史。</string>
     <string name="diagnostics_history_refresh_failed">历史已清除，但刷新日志失败。</string>
