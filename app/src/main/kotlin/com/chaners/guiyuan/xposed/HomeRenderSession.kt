@@ -404,6 +404,7 @@ internal object HomeRenderSession {
                 }
                 return
             }
+            if (HomeRenderSession.current !== this) return
             if (controlCenterAllowsHome == homeEligible) {
                 return
             }
@@ -429,6 +430,7 @@ internal object HomeRenderSession {
                 }
                 return
             }
+            if (HomeRenderSession.current !== this) return
             if (featureEnabled == enabled) {
                 return
             }
