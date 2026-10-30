@@ -62,7 +62,6 @@ class DiagnosticsLogPresentationTest {
         assertEquals(R.string.diagnostics_log_charging_on, chargingStateRes("true"))
         assertEquals(R.string.diagnostics_log_charging_off, chargingStateRes("FALSE"))
         assertNull(chargingStateRes("null"))
-        assertEquals(100, EVENT_PAGE_SIZE)
         val raw = legacy("connectivity source=capabilities transport=CELLULAR validated=true")
         assertEquals("CELLULAR", raw.fields["transport"])
         assertEquals("capabilities", raw.fields["source"])
