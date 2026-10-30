@@ -64,6 +64,34 @@ jobs:
           HAS_DOCS=false
           MIXED_SURFACE=false
           MIXED_SURFACE_REASON=""
+          DEVICE_APK=false
+
+          detect_device_apk() {
+            local base_sha="$1" head_sha="$2"
+            local old_props new_props old_code new_code old_build new_build
+            old_props="$(git show "$base_sha:gradle.properties")"
+            new_props="$(git show "$head_sha:gradle.properties")"
+            old_code="$(sed -n 's/^combinedStatus.versionCode=//p' <<< "$old_props")"
+            new_code="$(sed -n 's/^combinedStatus.versionCode=//p' <<< "$new_props")"
+            old_build="$(sed -n 's/^combinedStatus.buildId=//p' <<< "$old_props")"
+            new_build="$(sed -n 's/^combinedStatus.buildId=//p' <<< "$new_props")"
+            [[ "$old_code" =~ ^[1-9][0-9]*$ && "$new_code" =~ ^[1-9][0-9]*$ &&
+               "$old_build" =~ ^[0-9]{8}-[0-9]+$ && "$new_build" =~ ^[0-9]{8}-[0-9]+$ ]] || {
+              echo "::error::Missing or invalid Build identity in Git history."
+              exit 1
+            }
+            if [[ "$old_code" != "$new_code" || "$old_build" != "$new_build" ]]; then
+              [[ "$old_code" != "$new_code" && "$old_build" != "$new_build" ]] || {
+                echo "::error::A delivery checkpoint must change versionCode and buildId together."
+                exit 1
+              }
+              (( new_code > old_code )) || {
+                echo "::error::Device checkpoint versionCode must increase relative to its branch base."
+                exit 1
+              }
+              DEVICE_APK=true
+            fi
+          }
 
           has_non_routine_gradle_properties() {
             local base_sha="$1"
@@ -205,6 +233,22 @@ jobs:
             fi
           fi
 
+          if [[ "$EVENT_NAME" == "push" && -n "$PUSH_BEFORE_SHA" &&
+                "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
+            detect_device_apk "$PUSH_BEFORE_SHA" "$PUSH_HEAD_SHA"
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
+            detect_device_apk "$PR_DIFF_BASE" "$PR_HEAD_SHA"
+          fi
+
+          if [[ "$DEVICE_APK" == "true" && "$SCOPE" == "light" && "$PR_DRAFT" != "true" ]]; then
+            if [[ "$GITHUB_REF" == "refs/heads/main" || "$PR_BASE_REF" == "main" ]]; then
+              SCOPE=full
+            else
+              SCOPE=runtime
+            fi
+            REASON="explicit APK delivery checkpoint: Build identity changed"
+          fi
+
           if [[ "$MIXED_SURFACE" == "true" ]]; then
             echo "::warning title=Mixed validation surfaces::$MIXED_SURFACE_REASON. Full remains required while these surfaces are combined. If they are independently mergeable and reversible, isolate the build/CI/tooling change and back-sync it before continuing ordinary runtime work."
           fi
@@ -216,15 +260,16 @@ jobs:
           if [[ "$SCOPE" == "runtime" || "$SCOPE" == "full" ]]; then
             RUN_ANDROID=true
           fi
-          if [[ ( "$SCOPE" == "full" || ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "pull_request" ) ) &&
+          if [[ ( "$SCOPE" == "full" || ( "$SCOPE" == "runtime" && ( "$EVENT_NAME" == "pull_request" || "$DEVICE_APK" == "false" ) ) ) &&
                 ! ( "$EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ) &&
                 ! ( "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" == "main" ) ]]; then
             RUN_DEBUG=true
           fi
-          if [[ ( "$SCOPE" == "full" && "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" != "main" ) ||
+          if [[ "$DEVICE_APK" == "true" &&
+                ( ( "$SCOPE" == "full" && "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" != "main" ) ||
                 ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" != "main" && "$PR_HEAD_REPO" == "$GITHUB_REPOSITORY" ) ||
                 ( ( "$SCOPE" == "runtime" || "$SCOPE" == "full" ) && "$EVENT_NAME" == "push" &&
-                    ( "$GITHUB_REF" == "refs/heads/dev" || "$GITHUB_REF" == "refs/heads/it" ) ) ]]; then
+                    ( "$GITHUB_REF" == "refs/heads/dev" || "$GITHUB_REF" == "refs/heads/it" ) ) ) ]]; then
             RUN_CANARY=true
           fi
 
@@ -233,6 +278,7 @@ jobs:
           echo "run_android=$RUN_ANDROID" >> "$GITHUB_OUTPUT"
           echo "run_debug=$RUN_DEBUG" >> "$GITHUB_OUTPUT"
           echo "run_canary=$RUN_CANARY" >> "$GITHUB_OUTPUT"
+          echo "device_apk=$DEVICE_APK" >> "$GITHUB_OUTPUT"
           echo "surface_diff_available=$SURFACE_DIFF_AVAILABLE" >> "$GITHUB_OUTPUT"
           echo "has_runtime=$HAS_RUNTIME" >> "$GITHUB_OUTPUT"
           echo "has_ci=$HAS_CI" >> "$GITHUB_OUTPUT"
@@ -426,7 +472,7 @@ jobs:
           retention-days: 3
 
       - name: Transfer verified main unsigned Release for isolated signing
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.scope.outputs.scope == 'full'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.scope.outputs.scope == 'full' && steps.scope.outputs.device_apk == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unsigned-main-${{ github.sha }}
@@ -441,6 +487,7 @@ jobs:
           echo "### Build validation" >> "$GITHUB_STEP_SUMMARY"
           echo "- Validation scope: ${{ steps.scope.outputs.scope }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Routing reason: ${{ steps.scope.outputs.reason }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Installable APK checkpoint: ${{ steps.scope.outputs.device_apk }}" >> "$GITHUB_STEP_SUMMARY"
           if [[ "${{ steps.scope.outputs.surface_diff_available }}" == "true" ]]; then
             echo "- Changed surfaces: runtime=${{ steps.scope.outputs.has_runtime }}, build=${{ steps.scope.outputs.has_build }}, CI=${{ steps.scope.outputs.has_ci }}, tooling=${{ steps.scope.outputs.has_tooling }}, docs=${{ steps.scope.outputs.has_docs }}" >> "$GITHUB_STEP_SUMMARY"
           else
