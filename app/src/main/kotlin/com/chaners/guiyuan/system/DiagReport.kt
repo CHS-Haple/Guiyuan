@@ -73,6 +73,10 @@ internal object DiagReport {
             appendLine("requestedLevel=" + requested)
             appendLine("runtimeLevel=" + runtimeLevel)
             appendLine("runtimeBinding=" + runtimeBinding)
+            if (log.clearedAt != null) {
+                appendLine("visibleHistorySince=" + log.clearedAt)
+                appendLine("historyClearScope=guiyuan-view-and-report-only")
+            }
             appendLine("schemaVersion=" + runtimeEvents.schemaVersion)
             appendLine("sessionId=" + (runtimeEvents.sessionId ?: "unavailable"))
             appendLine()
