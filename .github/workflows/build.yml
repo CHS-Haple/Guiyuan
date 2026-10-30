@@ -289,7 +289,9 @@ jobs:
             RUN_DEBUG=true
           fi
           if [[ "$DEVICE_APK" == "true" &&
-                ( ( "$SCOPE" == "full" && "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" != "main" ) ||
+                ( ( "$SCOPE" == "full" && "$EVENT_NAME" == "pull_request" &&
+                    ( "$PR_BASE_REF" != "main" ||
+                      ( "$PR_HEAD_REF" == hotfix/* && "$PR_HEAD_REPO" == "$GITHUB_REPOSITORY" ) ) ) ||
                 ( "$SCOPE" == "runtime" && "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" != "main" && "$PR_HEAD_REPO" == "$GITHUB_REPOSITORY" ) ||
                 ( ( "$SCOPE" == "runtime" || "$SCOPE" == "full" ) && "$EVENT_NAME" == "push" &&
                     ( "$GITHUB_REF" == "refs/heads/dev" || "$GITHUB_REF" == "refs/heads/it" ) ) ) ]]; then

@@ -1,7 +1,7 @@
 name: Work Branch APK
 run-name: >-
   ${{ github.event_name == 'workflow_run'
-      && format('Auto signed IT Canary | {0}', github.event.workflow_run.head_sha)
+      && format('Canary signing eligibility | {0}', github.event.workflow_run.head_sha)
       || github.event_name == 'workflow_dispatch'
       && format('{0} | B{1} {2}', inputs.source_branch, inputs.build_number, inputs.variant)
       || (github.event.issue.pull_request != null
@@ -36,7 +36,7 @@ on:
   workflow_run:
     workflows: [Build]
     types: [completed]
-    branches: [it]
+    branches: [it, 'feat/**', 'fix/**', 'refactor/**', 'hotfix/**']
 
 permissions:
   actions: read
@@ -61,10 +61,15 @@ jobs:
          endsWith(github.event.comment.body, ' Canary'))) &&
        github.actor == github.repository_owner) ||
       (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.event == 'push' &&
-       github.event.workflow_run.head_branch == 'it' &&
        github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_repository.full_name == github.repository)
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       ((github.event.workflow_run.event == 'push' &&
+         github.event.workflow_run.head_branch == 'it') ||
+        (github.event.workflow_run.event == 'pull_request' &&
+         (startsWith(github.event.workflow_run.head_branch, 'feat/') ||
+          startsWith(github.event.workflow_run.head_branch, 'fix/') ||
+          startsWith(github.event.workflow_run.head_branch, 'refactor/') ||
+          startsWith(github.event.workflow_run.head_branch, 'hotfix/')))))
     runs-on: ubuntu-latest
     timeout-minutes: 90
     outputs:
@@ -91,13 +96,15 @@ jobs:
           COMMENT_BODY: ${{ github.event.comment.body }}
           AUTO_SOURCE_SHA: ${{ github.event.workflow_run.head_sha || '' }}
           AUTO_SOURCE_RUN_ID: ${{ github.event.workflow_run.id || '' }}
+          AUTO_SOURCE_BRANCH: ${{ github.event.workflow_run.head_branch || '' }}
+          AUTO_SOURCE_EVENT: ${{ github.event.workflow_run.event || '' }}
         run: |
           set -euo pipefail
 
 
           case "$EVENT_NAME" in
             workflow_run)
-              branch=it
+              branch="$AUTO_SOURCE_BRANCH"
               variant=canary
               expected_build=""
               source_sha="$AUTO_SOURCE_SHA"
@@ -105,6 +112,13 @@ jobs:
                 echo "::error::Invalid upstream Build run id."
                 exit 1
               }
+              if [[ ! ( "$AUTO_SOURCE_EVENT" == "push" && "$branch" == "it" ) &&
+                    ! ( "$AUTO_SOURCE_EVENT" == "pull_request" &&
+                        ( "$branch" == feat/* || "$branch" == fix/* ||
+                          "$branch" == refactor/* || "$branch" == hotfix/* ) ) ]]; then
+                echo "::error::Unsupported upstream Build channel."
+                exit 1
+              fi
               ;;
             workflow_dispatch)
               branch="$MANUAL_SOURCE_BRANCH"
@@ -267,25 +281,45 @@ jobs:
             run_id="$AUTO_SOURCE_RUN_ID"
             [[ "$run_id" =~ ^[1-9][0-9]*$ ]] || exit 1
             upstream="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id")"
-            jq -e --arg sha "$SOURCE_SHA" --arg repo "$GITHUB_REPOSITORY" '
-              .path == ".github/workflows/build.yml" and .event == "push" and
-              .head_branch == "it" and .head_sha == $sha and
+            jq -e --arg sha "$SOURCE_SHA" --arg repo "$GITHUB_REPOSITORY" \
+              --arg branch "$SOURCE_BRANCH" --arg event "$event" '
+              .path == ".github/workflows/build.yml" and
+              .event == $event and .head_branch == $branch and .head_sha == $sha and
               .repository.full_name == $repo and .head_repository.full_name == $repo and
               .status == "completed" and .conclusion == "success"
             ' <<< "$upstream" >/dev/null
-            parent="$(gh api "repos/$GITHUB_REPOSITORY/commits/$SOURCE_SHA" --jq '.parents[0].sha')"
-            [[ "$parent" =~ ^[0-9a-f]{40}$ ]] || exit 1
-            prior="$(gh api "repos/$GITHUB_REPOSITORY/contents/gradle.properties?ref=$parent" --jq '.content' | base64 -d)"
-            prior_code="$(sed -n 's/^combinedStatus.versionCode=//p' <<< "$prior")"
-            prior_build="$(sed -n 's/^combinedStatus.buildId=//p' <<< "$prior")"
-            if [[ "$version_code" == "$prior_code" && "$build" == "$prior_build" ]]; then
-              echo "No new installable Build; skip automatic IT signing." >> "$GITHUB_STEP_SUMMARY"
-              exit 0
+            if [[ "$SOURCE_BRANCH" == "it" ]]; then
+              parent="$(gh api "repos/$GITHUB_REPOSITORY/commits/$SOURCE_SHA" --jq '.parents[0].sha')"
+              [[ "$parent" =~ ^[0-9a-f]{40}$ ]] || exit 1
+              prior="$(gh api "repos/$GITHUB_REPOSITORY/contents/gradle.properties?ref=$parent" --jq '.content' | base64 -d)"
+              prior_code="$(sed -n 's/^combinedStatus.versionCode=//p' <<< "$prior")"
+              prior_build="$(sed -n 's/^combinedStatus.buildId=//p' <<< "$prior")"
+              if [[ "$version_code" == "$prior_code" && "$build" == "$prior_build" ]]; then
+                echo "No new installable Build; skip automatic IT signing." >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              [[ "$version_code" != "$prior_code" && "$build" != "$prior_build" ]] || {
+                echo "::error::Protected IT Build identity changed only in part."
+                exit 1
+              }
+            else
+              # The authorized PR must also belong to this exact upstream Build run.
+              jq -e --argjson pr "$pr_number" \
+                '.pull_requests | any(.number == $pr)' <<< "$upstream" >/dev/null
+              # An owner decision is bound to the exact source SHA and must predate its CI run.
+              started="$(jq -r '.run_started_at // .created_at' <<< "$upstream")"
+              [[ "$started" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]] || exit 1
+              request="B${build##*-} Canary SHA $SOURCE_SHA"
+              authorized="$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$pr_number/comments?per_page=100" |
+                jq -s --arg owner "$GITHUB_REPOSITORY_OWNER" --arg body "$request" --arg started "$started" \
+                  '[.[][] | select(.user.login == $owner and .body == $body and
+                    .created_at <= $started and .updated_at <= $started)] | length')"
+              if [[ "$authorized" == "0" ]]; then
+                echo "No prior exact-SHA owner authorization; skip automatic PR signing." >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              echo "Signed Canary authorized before CI: $request" >> "$GITHUB_STEP_SUMMARY"
             fi
-            [[ "$version_code" != "$prior_code" && "$build" != "$prior_build" ]] || {
-              echo "::error::Protected IT Build identity changed only in part."
-              exit 1
-            }
           else
             runs="$(gh api -X GET \
               "repos/$GITHUB_REPOSITORY/actions/workflows/build.yml/runs?event=$event&head_sha=$SOURCE_SHA&per_page=100")"
