@@ -63,6 +63,12 @@ Prefer host-scoped sessions over unrelated global mutable state.
 
 For SystemUI call chains, hooks, state/lifecycle and Hot Reload changes, inspect the decompiled SystemUI of the corresponding version first. Verify native classes/methods, ownership and cleanup; cite the evidence and explain deviations. Mark inaccessible references as unverified.
 
+### SystemUI reference source
+
+Before repeating target-specific reverse engineering, consult the maintainer-controlled private `SystemUI-Reference` repository **when authorized and accessible**. It owns detailed target-binary identities, DEX method/instruction indexes, investigation notes and device-specific traces. The public `docs/reference/systemui-contracts.md` is limited to reusable integration constraints, not a substitute for the private evidence or a complete proof of platform behavior.
+
+If the private reference is unavailable, explain the missing evidence and independently verify an authorized copy of the exact target SystemUI/Framework as required; do not claim access, assume an old binary still matches, or substitute generic AOSP internals for a vendor-specific contract. Access to the private reference is not required for unrelated public contributions. Keep decompiled code/binaries, raw device logs, local reverse-tool/MCP configurations and sensitive device details outside this public repository. The reference repository is development-only, never a Gradle/CI/runtime dependency.
+
 ### State and writers
 
 Prefer:
