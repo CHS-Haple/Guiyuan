@@ -16,7 +16,7 @@ An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and 
 
 ### Project status
 
-> **Pre-release development.** The current checkpoint is **0.9.1**, adding feature search, an optional floating-navigation touch extension, and experimental HyperOS 4 UI with source-matched glass dialogs, sheets and navigation. It also improves Sandbox previews, battery color scheme persistence, native icon recovery and Hot Reload safety on the verified SystemUI target. The first planned formal stable release remains **1.0.0**; pre-1.0 versions are development checkpoints.
+> **Pre-release development.** The current checkpoint is **0.9.2**. It retains 0.9.1's feature search, optional floating-navigation touch extension and experimental source-matched HyperOS 4 glass UI, while strengthening SystemUI sender verification for font-weight controls, API 102 Hot Reload callback retirement, Home status-card layout and bounded diagnostic reporting on the verified target. The first planned formal stable release remains **1.0.0**; pre-1.0 versions are development checkpoints.
 
 | Item | Current scope |
 | --- | --- |
@@ -90,7 +90,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ### 项目状态
 
-> **预发布开发阶段。** 当前检查点为 **0.9.1**，新增功能搜索、可选悬浮导航栏触控扩展及实验性 HyperOS 4 界面，包含同源适配的玻璃对话框、弹层和导航栏；同时优化预览沙盒、电量颜色方案保存、原生图标恢复和热重载安全。兼容性仍以已验证的 SystemUI 为准，首个正式稳定版计划为 **1.0.0**。
+> **预发布开发阶段。** 当前检查点为 **0.9.2**。在保留 0.9.1 的功能搜索、可选悬浮导航栏触控扩展及实验性 HyperOS 4 玻璃界面的基础上，进一步完善字体字重控制的 SystemUI 发送方身份校验、API 102 热重载旧回调清理、首页运行状态卡片布局与有界诊断报告。兼容性仍以已验证的 SystemUI 为准，首个正式稳定版计划为 **1.0.0**。
 
 | 项目 | 当前范围 |
 | --- | --- |
