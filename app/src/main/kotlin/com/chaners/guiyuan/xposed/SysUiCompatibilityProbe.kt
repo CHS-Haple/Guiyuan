@@ -11,9 +11,9 @@ internal object SysUiCompatibilityProbe {
 
     fun inspect(classLoader: ClassLoader): Snapshot {
         val resolved = markerClasses.mapValues { (_, className) ->
-            runCatching {
+            SysUiPresentationRuntime.optionalNativeRead {
                 Class.forName(className, false, classLoader)
-            }.isSuccess
+            } != null
         }
         return Snapshot(resolved)
     }

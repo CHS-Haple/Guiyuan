@@ -102,6 +102,8 @@ class GyModule : XposedModule() {
     private var lastMobileTargetProbeSummary: String? = null
     private var ccWifiGeometryStage = -1
     private var ccWifiGeometrySamples = 0
+    // Queued old-loader preference work must not regain native ownership after API 102 retirement.
+    @Volatile private var retiredForHotReload = false
     private var runtimeSessionId = newRuntimeSessionId()
     private val diagnosticSequence = AtomicLong(0L)
     private val renderTraceSequence = AtomicLong(0L)
@@ -627,26 +629,12 @@ class GyModule : XposedModule() {
                 }
             }
 
-            val generationHandoff =
-                restored.generationHandoff?.let { handoff ->
-                    runCatching {
-                        handoff.run()
-                        "continuous"
-                    }.getOrElse { error ->
-                        SysUiHotReload.rethrowFatal(error)
-                        throw IllegalStateException(
-                            "old-generation-handoff-failed",
-                            error,
-                        )
-                    }
-                } ?: "retired-before-reload"
-
             logDiagnostic(
                 level = Log.INFO,
                 event = "hotReload.generationHandoff",
                 component = "hotReload",
                 state = "ready",
-                "mode" to generationHandoff,
+                "mode" to "retired-before-reload",
             )
 
             SysUiCcSource.restoreHomeEligibility(
@@ -3002,7 +2990,9 @@ class GyModule : XposedModule() {
         }
 
         if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
-            SysUiKeyguardHostProbe.capture(update)?.let(::onKeyguardHostProbe)
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
+                SysUiKeyguardHostProbe.capture(update)?.let(::onKeyguardHostProbe)
+            }
         }
 
         SysUiTintSource.currentState(update.sourceView)?.let { state ->
@@ -3814,6 +3804,7 @@ class GyModule : XposedModule() {
     }
 
     private fun teardownOldGeneration() {
+        retiredForHotReload = true
         ccSourceInstalled = false
         controlCenterSceneVisible = false
         controlCenterSceneEligible = false
@@ -4225,13 +4216,15 @@ class GyModule : XposedModule() {
 
     private fun onStatusHostCaptured(capture: SysUiHostRegistry.Capture) {
         try {
-            logDiagnostic(
-                level = Log.INFO,
-                event = "host.capture",
-                component = "statusHost",
-                "identity" to capture.identity,
-                "replacement" to capture.replacement,
-            )
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "host.capture",
+                    component = "statusHost",
+                    "identity" to capture.identity,
+                    "replacement" to capture.replacement,
+                )
+            }
             attachHostRuntime(
                 host = capture.host,
                 source = if (capture.replacement) "hostReplacement" else "hostCapture",
@@ -4343,6 +4336,7 @@ class GyModule : XposedModule() {
         cfg: FeatureCfg,
         transportNs: Long?,
     ) {
+        if (retiredForHotReload) return
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             val dispatch =
                 Runnable {
@@ -4459,7 +4453,11 @@ class GyModule : XposedModule() {
 
     private fun bindSandbox() {
         runCatching {
-            SandboxHost.bind(getRemotePreferences(SANDBOX_PREFS)) { received ->
+            SandboxHost.bind(
+                prefs = getRemotePreferences(SANDBOX_PREFS),
+                canBind = { !retiredForHotReload },
+            ) { received ->
+                if (retiredForHotReload) return@bind
                 // Steady HOME is the only consumer; never update CC/Keyguard/AOD scenes.
                 HomeRenderSession.onPresentationStateChanged()
                 runCatching {
@@ -4525,6 +4523,7 @@ class GyModule : XposedModule() {
 
     // An app data reset loses the received axis report, not SystemUI's font source.
     private fun onFontAxisRequest() {
+        if (retiredForHotReload) return
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             Handler(Looper.getMainLooper()).post { onFontAxisRequest() }
             return
@@ -4535,6 +4534,7 @@ class GyModule : XposedModule() {
     private fun onVisualCfgChanged(
         visual: VisualCfg,
     ) {
+        if (retiredForHotReload) return
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             val dispatch =
                 Runnable {

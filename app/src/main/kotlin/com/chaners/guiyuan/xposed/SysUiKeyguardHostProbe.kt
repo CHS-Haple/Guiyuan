@@ -205,7 +205,7 @@ internal object SysUiKeyguardHostProbe {
         fieldName: String,
     ): Any? =
         findField(owner.javaClass, fieldName)
-            ?.let { field -> runCatching { field.get(owner) }.getOrNull() }
+            ?.let { field -> SysUiPresentationRuntime.optionalNativeRead { field.get(owner) } }
 
     private fun findField(
         type: Class<*>,
@@ -215,11 +215,11 @@ internal object SysUiKeyguardHostProbe {
         while (current != null) {
             val candidate = current
             val field =
-                runCatching {
+                SysUiPresentationRuntime.optionalNativeRead {
                     candidate
                         .getDeclaredField(name)
                         .apply { isAccessible = true }
-                }.getOrNull()
+                }
             if (field != null) {
                 return field
             }

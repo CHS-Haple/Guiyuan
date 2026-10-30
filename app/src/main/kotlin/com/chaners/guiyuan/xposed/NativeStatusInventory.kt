@@ -63,7 +63,9 @@ internal object NativeStatusInventory {
         }
 
         if (hostView.isLaidOut) {
-            onSnapshot(inspect(hostView))
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
+                onSnapshot(inspect(hostView))
+            }
             return
         }
 
@@ -84,7 +86,9 @@ internal object NativeStatusInventory {
                     // Keep the receipt if framework listener removal fails.
                     view.removeOnLayoutChangeListener(this)
                     if (pending?.second === this) pending = null
-                    onSnapshot(inspect(hostView))
+                    SysUiPresentationRuntime.emitPassiveDiagnostic {
+                        onSnapshot(inspect(hostView))
+                    }
                 }
             }
         pending = hostView to listener
@@ -356,11 +360,9 @@ internal object NativeStatusInventory {
             return "none"
         }
 
-        return runCatching {
+        return SysUiPresentationRuntime.optionalNativeRead {
             view.resources.getResourceName(view.id)
-        }.getOrElse {
-            view.id.toString()
-        }
+        } ?: view.id.toString()
     }
 
     private fun visibilityName(visibility: Int): String =
