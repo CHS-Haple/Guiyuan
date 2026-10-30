@@ -29,3 +29,14 @@ signing.properties
 *.pfx
 *.pem
 *.key
+
+# Private reverse-engineering workspaces and device evidence (defense in depth)
+/.local-analysis/
+/private-analysis/
+/private-evidence/
+framework.jar
+*.dex
+*.vdex
+*.odex
+*.hprof
+Guiyuan-Diagnostic-*.txt
