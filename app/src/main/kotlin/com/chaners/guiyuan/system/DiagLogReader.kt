@@ -78,11 +78,10 @@ internal object DiagLogReader {
                 command = LSP_CMD,
                 timeoutSeconds = TIMEOUT_SEC,
             )
-        val rawLspLines = filterModuleLines(lspResult.output)
-        val lspLines = afterHistoryClear(rawLspLines, boundary)
+        val lspLines = afterHistoryClear(filterModuleLines(lspResult.output), boundary)
 
-        // Only a successful empty LSP read warrants a second Root command.
-        if (rawLspLines.isNotEmpty() || !lspResult.isSuccess) {
+        // A cleared LSP history may have no new entries; filter logcat too before fallback.
+        if (lspLines.isNotEmpty() || !lspResult.isSuccess) {
             return@withContext Snapshot(
                 source = Source.LspModules,
                 result = lspResult,
