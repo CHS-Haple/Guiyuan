@@ -15,6 +15,7 @@ Load the rest only when the task needs it:
 - [reference/systemui-contracts.md](reference/systemui-contracts.md) — reusable target SystemUI evidence and integration constraints.
 - [reference/lsposed-7927-hot-reload.md](reference/lsposed-7927-hot-reload.md) — binary-verified LSPosed generation handoff and lifecycle limits.
 - [reference/lsposed-7930-compatibility.md](reference/lsposed-7930-compatibility.md) — bounded 7930 device Hot Reload evidence, archive integrity and remaining compatibility gates.
+- [reference/lsposed-7936-compatibility.md](reference/lsposed-7936-compatibility.md) — source-verified 7936 versus 7930 framework changes and evidence gates before upgrading the tested LSPosed runtime.
 - [CHANGELOG.md](../CHANGELOG.md) — public release-level changes.
 - [OS4 integration audit](../third_party/miuix-glass/UI_AUDIT.md) — source-backed OS4 UI conformance, B1536 matched-source acceptance and remaining variant-specific visual/evidence limits. The ordinary published-MIUIX fallback is not equivalent to the accepted source-built Canary.
 

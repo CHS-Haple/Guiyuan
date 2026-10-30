@@ -11,13 +11,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -46,13 +50,16 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.GyApplication
@@ -116,6 +123,20 @@ private data class HomeRuntimeCardState(
     val tone: RuntimeStatusTone,
     val mark: RuntimeStatusMarkKind,
     val action: HomeRuntimeAction = HomeRuntimeAction.None,
+)
+
+// Keep these in sync with resolveHomeRuntimeCardState.
+private val RuntimeTextVariants = listOf(
+    R.string.home_runtime_disabled to R.string.home_runtime_disabled_summary,
+    R.string.home_runtime_restarting to R.string.home_runtime_restarting_summary,
+    R.string.home_runtime_reloading to R.string.home_runtime_reloading_summary,
+    R.string.home_runtime_requesting to R.string.home_runtime_requesting_summary,
+    R.string.home_runtime_checking to R.string.home_runtime_checking_summary,
+    R.string.home_runtime_framework_unavailable to R.string.home_runtime_framework_unavailable_summary,
+    R.string.home_runtime_unknown to R.string.home_runtime_unknown_summary,
+    R.string.home_runtime_unhooked to R.string.home_runtime_unhooked_summary,
+    R.string.home_runtime_running to R.string.home_runtime_running_summary,
+    R.string.home_runtime_pending to R.string.home_runtime_restart_summary,
 )
 
 @Composable
@@ -401,67 +422,74 @@ private fun HomeRuntimeCardBody(
             .background(cardGradient)
             .then(if (onCardClick == null) Modifier else Modifier.clickable(onClick = onCardClick)),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(RuntimeCardHeight)
-                    .padding(horizontal = 22.dp, vertical = 18.dp),
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 22.dp, vertical = 18.dp),
         ) {
-            RuntimeStatusMark(
-                kind = state.mark,
-                color = accentColor,
-                modifier =
-                    Modifier
-                        .align(Alignment.CenterEnd)
-                        .size(RuntimeStatusMarkSize),
-            )
+            val density = LocalDensity.current
+            val textMeasurer = rememberTextMeasurer()
+            val configuration = LocalConfiguration.current
+            val context = LocalContext.current
+            val candidates = remember(context, configuration) {
+                RuntimeTextVariants.map { (title, summary) ->
+                    context.getString(title) to context.getString(summary)
+                }
+            }
+            val titleStyle = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Medium)
+            val bodyStyle = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium)
+            val summaryStyle = MiuixTheme.textStyles.body2
+            val versionText = stringResource(R.string.home_version_line, BuildConfig.VERSION_NAME)
+            val buildText = stringResource(R.string.home_build_line, BuildConfig.BUILD_ID)
+            val textWidth = with(density) {
+                (maxWidth - RuntimeStatusMarkSize - 2.dp).roundToPx().coerceAtLeast(1)
+            }
+            val textConstraints = Constraints(maxWidth = textWidth)
+            val textHeight = remember(candidates, textConstraints, titleStyle, bodyStyle, summaryStyle, versionText, buildText, textMeasurer, density) {
+                val fixedHeight =
+                    textMeasurer.measure(versionText, style = bodyStyle, constraints = textConstraints).size.height +
+                        textMeasurer.measure(buildText, style = bodyStyle, constraints = textConstraints).size.height
+                val changingHeight = candidates.maxOf { (title, summary) ->
+                    textMeasurer.measure(title, style = titleStyle, constraints = textConstraints).size.height +
+                        textMeasurer.measure(summary, style = summaryStyle, constraints = textConstraints).size.height
+                }
+                val spacing = with(density) { 5.dp.roundToPx() + 1.dp.roundToPx() + 12.dp.roundToPx() }
+                with(density) { (fixedHeight + changingHeight + spacing).toDp() }
+            }
 
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(end = 98.dp),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = stringResource(state.titleRes),
-                    style =
-                        MiuixTheme.textStyles.title3.copy(
-                            fontWeight = FontWeight.Medium,
-                        ),
-                )
-                Text(
-                    text =
-                        stringResource(
-                            R.string.home_version_line,
-                            BuildConfig.VERSION_NAME,
-                        ),
-                    modifier = Modifier.padding(top = 5.dp),
-                    style =
-                        MiuixTheme.textStyles.body1.copy(
-                            fontWeight = FontWeight.Medium,
-                        ),
-                    color = MiuixTheme.colorScheme.onSurfaceContainer,
-                )
-                Text(
-                    text =
-                        stringResource(
-                            R.string.home_build_line,
-                            BuildConfig.BUILD_ID,
-                        ),
-                    modifier = Modifier.padding(top = 1.dp),
-                    style =
-                        MiuixTheme.textStyles.body1.copy(
-                            fontWeight = FontWeight.Medium,
-                        ),
-                    color = MiuixTheme.colorScheme.onSurfaceContainer,
-                )
-                Text(
-                    text = stringResource(state.summaryRes),
-                    modifier = Modifier.padding(top = 12.dp),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    maxLines = 2,
+                Column(modifier = Modifier.weight(1f).heightIn(min = textHeight)) {
+                    Text(
+                        text = stringResource(state.titleRes),
+                        style = titleStyle,
+                    )
+                    Text(
+                        text = versionText,
+                        modifier = Modifier.padding(top = 5.dp),
+                        style = bodyStyle,
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        text = buildText,
+                        modifier = Modifier.padding(top = 1.dp),
+                        style = bodyStyle,
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        text = stringResource(state.summaryRes),
+                        modifier = Modifier.padding(top = 12.dp),
+                        style = summaryStyle,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    )
+                }
+                RuntimeStatusMark(
+                    kind = state.mark,
+                    color = accentColor,
+                    modifier = Modifier.size(RuntimeStatusMarkSize),
                 )
             }
         }
@@ -754,7 +782,6 @@ private fun resolveHomeRuntimeCardState(
 private const val StatusColorAnimMillis = 220
 // MIUIX's indeterminate arc starts with a 30-degree sweep.
 private const val MinSpinnerSweep = 30f / 360f
-private val RuntimeCardHeight = 160.dp
 private val RuntimeStatusMarkSize = 96.dp
 private val HomePreviewStageHeight = 180.dp
 private val HomePreviewIconSize = 112.dp
