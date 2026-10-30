@@ -1,4 +1,9 @@
 name: Release
+run-name: >-
+  ${{ github.event_name == 'workflow_run'
+      && format('release: Check {0} | Release', github.event.workflow_run.head_branch)
+      || format('release: {0} {1} | Release',
+          inputs.publish && 'Publish' || 'Validate', inputs.channel) }}
 
 on:
   # Only the successful, same-revision trusted main Build may feed automatic signing.
