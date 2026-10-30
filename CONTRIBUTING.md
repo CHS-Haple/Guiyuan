@@ -194,11 +194,11 @@ For Material Symbols:
 
 ### Version and build identity
 
-The external `versionName` changes only when a version promotion is explicitly requested. Internal Build identifies a **materially different installable APK**, not a commit, CI run, or byte-for-byte archive.
+The external `versionName` changes only when the maintainer requests promotion. **Reserve a new Build for an explicit installable APK checkpoint**, not for code changes, PRs, merges, CI runs or branch synchronization. Non-device CI validates source without issuing a new distribution Build even if runtime behavior changed.
 
-Increment `buildId` and Android `versionCode` together when an APK changes meaningfully in behavior, visible UI/assets, compatibility, or another user-relevant property. Two APKs with no substantive difference may keep the same Build despite different Git SHAs or incidental binary/build variations.
+For an intended device-test or distribution candidate, compare it with the last delivered candidate. A materially different installable APK needs one new Build: advance Android `versionCode` and `buildId` together before submitting the checkpoint. Rebuilds, source SHAs and branch copies of the same material APK do not each consume a Build. The protected-branch Build-identity pair is the deliberate signal for automatic unsigned Canary/Release artifact production and trusted signing; no new pair means the distribution steps are skipped while required source/build checks continue.
 
-Do not bump Build for docs, governance, CI reruns, non-behavioral refactors, or rebuilds without a substantive APK change. Assign a fresh unique Build before distributing a materially changed APK; check parallel branches to avoid reusing a Build for different behavior. Keep the exact Git SHA in build evidence for source traceability.
+Before delivery, check other public/IT installed versions so the intended upgrade has a strictly higher `versionCode`; channel-specific functional differences cannot silently share a Build identity. Use the exact Git SHA and branch/channel to trace every CI result and signed artifact. Keep trusted signing isolated from candidate code. Work-branch device tests still require an explicitly reviewed same-repository PR and a separately authorized signing request; never allow unreviewed PRs to trigger privileged signing automatically.
 
 ## Git workflow
 
