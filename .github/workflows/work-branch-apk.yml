@@ -238,6 +238,10 @@ jobs:
               '.[] | select(.head.repo.full_name == $repo and .head.ref == $branch and .head.sha == $sha and .draft == false) | .number' \
               <<< "$prs" | head -n 1)"
             if [[ -z "$pr_number" ]]; then
+              if [[ "$EVENT_NAME" == "workflow_run" ]]; then
+                echo "No eligible current PR for this source SHA; skip automatic signing." >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
               echo "::error::Canary requires an open same-repository PR at the requested exact SHA."
               exit 1
             fi
@@ -306,14 +310,14 @@ jobs:
               # The authorized PR must also belong to this exact upstream Build run.
               jq -e --argjson pr "$pr_number" \
                 '.pull_requests | any(.number == $pr)' <<< "$upstream" >/dev/null
-              # An owner decision is bound to the exact source SHA and must predate its CI run.
-              started="$(jq -r '.run_started_at // .created_at' <<< "$upstream")"
-              [[ "$started" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]] || exit 1
+              # An owner decision is bound to the exact source SHA and must predate CI creation.
+              created="$(jq -r '.created_at' <<< "$upstream")"
+              [[ "$created" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]] || exit 1
               request="B${build##*-} Canary SHA $SOURCE_SHA"
               authorized="$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$pr_number/comments?per_page=100" |
-                jq -s --arg owner "$GITHUB_REPOSITORY_OWNER" --arg body "$request" --arg started "$started" \
+                jq -s --arg owner "$GITHUB_REPOSITORY_OWNER" --arg body "$request" --arg created "$created" \
                   '[.[][] | select(.user.login == $owner and .body == $body and
-                    .created_at <= $started and .updated_at <= $started)] | length')"
+                    .created_at <= $created and .updated_at <= $created)] | length')"
               if [[ "$authorized" == "0" ]]; then
                 echo "No prior exact-SHA owner authorization; skip automatic PR signing." >> "$GITHUB_STEP_SUMMARY"
                 exit 0
