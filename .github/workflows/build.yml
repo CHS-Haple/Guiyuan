@@ -89,6 +89,28 @@ jobs:
                 echo "::error::Device checkpoint versionCode must increase relative to its branch base."
                 exit 1
               }
+              # An installable checkpoint must also upgrade the other protected channels.
+              local channel channel_props channel_code channel_build
+              for channel in main dev it; do
+                # A protected push has already been compared with its previous commit.
+                if [[ "$EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/$channel" ]]; then
+                  continue
+                fi
+                channel_props="$(git show "refs/remotes/origin/$channel:gradle.properties")" || {
+                  echo "::error::Cannot verify the $channel Build identity."
+                  exit 1
+                }
+                channel_code="$(sed -n 's/^combinedStatus.versionCode=//p' <<< "$channel_props")"
+                channel_build="$(sed -n 's/^combinedStatus.buildId=//p' <<< "$channel_props")"
+                [[ "$channel_code" =~ ^[1-9][0-9]*$ && "$channel_build" =~ ^[0-9]{8}-[0-9]+$ ]] || {
+                  echo "::error::Invalid $channel Build identity."
+                  exit 1
+                }
+                if (( new_code <= channel_code )) || [[ "$new_build" == "$channel_build" ]]; then
+                  echo "::error::Device checkpoint $new_build ($new_code) cannot upgrade or uniquely identify the $channel Build $channel_build ($channel_code)."
+                  exit 1
+                fi
+              done
               DEVICE_APK=true
             fi
           }
