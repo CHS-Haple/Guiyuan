@@ -398,31 +398,30 @@ internal class RenderView(
         canvas.restoreToCount(viewportSave)
         onDrawn?.invoke(this)
 
-        onStateRendered?.let { report ->
-            val committedAt = pendingStateUptimeMs
-            if (committedAt != 0L) {
-                pendingStateUptimeMs = 0L
-                val trace = pendingTrace
-                val modelCommittedNanos = pendingModelCommittedNanos
-                pendingTrace = null
-                pendingModelCommittedNanos = 0L
-                val sample =
-                    if (trace != null && modelCommittedNanos != 0L) {
-                        RuntimeRenderLatencySample.from(
-                            trace = trace,
-                            modelCommittedNanos = modelCommittedNanos,
-                            drawNanos = SystemClock.elapsedRealtimeNanos(),
-                            committedOnMainThread = pendingStateCommittedOnMainThread,
-                        )
-                    } else {
-                        null
-                    }
-                report(
-                    (SystemClock.uptimeMillis() - committedAt).coerceAtLeast(0L),
-                    pendingStateCommittedOnMainThread,
-                    sample,
-                )
-            }
+        val report = onStateRendered ?: return
+        val committedAt = pendingStateUptimeMs
+        if (committedAt != 0L) {
+            pendingStateUptimeMs = 0L
+            val trace = pendingTrace
+            val modelCommittedNanos = pendingModelCommittedNanos
+            pendingTrace = null
+            pendingModelCommittedNanos = 0L
+            val sample =
+                if (trace != null && modelCommittedNanos != 0L) {
+                    RuntimeRenderLatencySample.from(
+                        trace = trace,
+                        modelCommittedNanos = modelCommittedNanos,
+                        drawNanos = SystemClock.elapsedRealtimeNanos(),
+                        committedOnMainThread = pendingStateCommittedOnMainThread,
+                    )
+                } else {
+                    null
+                }
+            report(
+                (SystemClock.uptimeMillis() - committedAt).coerceAtLeast(0L),
+                pendingStateCommittedOnMainThread,
+                sample,
+            )
         }
     }
 
