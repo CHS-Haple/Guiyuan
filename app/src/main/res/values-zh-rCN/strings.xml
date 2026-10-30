@@ -343,7 +343,7 @@
     <string name="diagnostics_scroll_bottom">滚动到底部</string>
     <string name="diagnostics_clear_history">清空此前日志</string>
     <string name="diagnostics_clear_history_action">清空日志</string>
-    <string name="diagnostics_history_clear_confirm">此前日志将不再显示或纳入后续报告；新日志仍可查看。LSPosed 原始日志和已导出文件不受影响。</string>
+    <string name="diagnostics_history_clear_confirm">此前日志不再显示或纳入新报告；新日志照常记录，原始日志及已导出文件不变。</string>
     <string name="diagnostics_history_cleared">已清空此前日志。</string>
     <string name="diagnostics_history_clear_failed">无法清空此前日志。</string>
     <string name="diagnostics_history_refresh_failed">此前日志已清空，但刷新失败。</string>
