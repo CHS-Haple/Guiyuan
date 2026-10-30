@@ -505,8 +505,8 @@ internal fun DiagnosticsScreen(
                     Text(
                         text = stringResource(
                             when {
-                                filterActive -> R.string.diagnostics_events_end_filtered
                                 captureTruncated -> R.string.diagnostics_events_end_truncated
+                                filterActive -> R.string.diagnostics_events_end_filtered
                                 else -> R.string.diagnostics_events_end
                             },
                         ),
