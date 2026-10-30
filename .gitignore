@@ -30,13 +30,11 @@ signing.properties
 *.pem
 *.key
 
-# Private reverse-engineering workspaces and device evidence (defense in depth)
+# Local analysis inputs (do not commit private device evidence)
 /.local-analysis/
-/private-analysis/
 /private-evidence/
 framework.jar
 *.dex
 *.vdex
 *.odex
-*.hprof
 Guiyuan-Diagnostic-*.txt
