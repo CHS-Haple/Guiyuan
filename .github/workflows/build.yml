@@ -243,8 +243,8 @@ jobs:
           echo "mixed_surface_reason=$MIXED_SURFACE_REASON" >> "$GITHUB_OUTPUT"
           echo "Validation scope: $SCOPE ($REASON)"
 
-      - name: Lightweight repository checks
-        if: steps.scope.outputs.scope == 'light'
+      - name: Early PR diff / light repository checks
+        if: github.event_name == 'pull_request' || steps.scope.outputs.scope == 'light'
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
