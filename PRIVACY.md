@@ -1,103 +1,57 @@
-# Privacy
+# Privacy / 隐私说明
 
 [English](#english) | [简体中文](#简体中文)
 
 ## English
 
-Guiyuan is designed to operate locally on the device.
+Guiyuan adjusts how status information appears in supported system interfaces. Its settings and diagnostics are handled on your device. The app does not request Android's `INTERNET` permission or include accounts, advertising, or project-operated usage analytics.
 
-### Network and telemetry
+### Settings and backups
 
-The application does not declare the Android `INTERNET` permission and does not include project-operated analytics, telemetry, advertising, or remote-account services.
+Appearance, language, launcher icon visibility, and diagnostic preferences are saved on your device. You can back up or restore these settings using Android's file picker. The backup is written to, or read from, the location you choose.
 
-### Local preferences
+### Diagnostics and Root
 
-Preferences such as appearance, language choice, launcher visibility, and diagnostics level are stored locally using Android platform storage.
+When you open or refresh Diagnostics, or generate a report, Guiyuan may use Root access to read its runtime entries from LSPosed module logs or filter relevant entries from system logs. Root is also used for supported SystemUI or Settings maintenance actions after your confirmation. These actions do not require a continuously running Root service.
 
-### Root access
+A diagnostic report is generated locally when you request it. It may include the Guiyuan version and build, device and system versions, runtime state, and related log entries. These details can sometimes identify a device or session, so check the report before sharing it.
 
-Root access is used only for explicit maintenance or diagnostic actions that require it, currently:
+**Clear logs** keeps earlier entries out of the Diagnostics view and newly generated reports, even after reopening the app. It does not remove the original shared LSPosed logs or reports you have already exported. New entries continue to appear normally.
 
-- restarting user-selected, eligible SystemUI or Settings scopes after confirmation (Settings is force-stopped and not relaunched by Guiyuan);
-- reading Guiyuan-related local runtime logs when the user opens or refreshes the Diagnostics log view, or generates a diagnostic report.
+### Exporting and sharing
 
-Guiyuan does not run a persistent Root service.
+For exports, Android lets you choose where to save the report. For sharing, Guiyuan prepares a text attachment in `Download/Guiyuan` and opens Android's share sheet for you to choose a destination. Older attachments created by Guiyuan are cleaned up when another share is prepared.
 
-### Diagnostic reports
-
-Diagnostic reports are generated locally and only when requested by the user.
-
-A report may contain:
-
-- Guiyuan version, build, package name, build channel, and diagnostics state;
-- device model/codename, Android version, HyperOS information, and SystemUI version;
-- Guiyuan structured runtime snapshot and module log entries.
-
-Guiyuan does not intentionally collect unrelated third-party application logs for diagnostic reports.
-
-The “Clear diagnostic history” action stores a local cutoff: earlier Guiyuan entries will no longer appear in the Diagnostics list or newly generated reports, including after refresh or app restart. It does **not** delete LSPosed's shared source logs or previously exported reports. New entries continue to be recorded normally.
-
-Review diagnostic reports before sharing them publicly, because device and runtime details may be identifying in some contexts.
-
-### Export and sharing
-
-Export uses Android's system document picker.
-
-When preparing a share attachment, Guiyuan creates an app-managed text report under `Download/Guiyuan` and automatically prunes older managed reports.
-
-Guiyuan does not upload diagnostic reports to a project server. Sharing occurs only after the user chooses a destination through Android's system UI.
+Copies you save or share remain with the location or app you select and are managed there.
 
 ### Security reports
 
-Do not post credentials, signing material, private logs, or exploit details in public issues. Use the private process described in [SECURITY.md](SECURITY.md).
+If you need to report a security issue, please use the private reporting process in [SECURITY.md](SECURITY.md). Check any diagnostic excerpts before including them in a public issue.
 
 ---
 
 ## 简体中文
 
-Guiyuan 以本地运行和最小化数据处理为设计原则。
+归元用于调整受支持系统界面中的状态信息显示。应用设置和诊断信息主要在本机处理。归元不申请 Android 的 `INTERNET` 权限，也不提供账号、广告或由项目运营的使用统计服务。
 
-### 网络与遥测
+### 设置与备份
 
-应用本身不声明 Android `INTERNET` 权限，也不包含由本项目运营的统计分析、遥测、广告或远程账号服务。
+外观、语言、桌面图标显示和诊断等级等设置保存在本机。你可以通过 Android 系统文件选择器备份或恢复这些设置，文件的保存位置和读取来源由你选择。
 
-### 本地设置
+### 诊断与 Root
 
-外观、语言选择、桌面图标显示和诊断等级等设置通过 Android 平台存储保存在本机。
+打开或刷新诊断页面、生成诊断报告时，归元可能使用 Root 权限读取 LSPosed 模块日志中的运行记录，或从系统日志中筛选与归元相关的条目。经你确认后，部分 SystemUI 或设置维护操作也会使用 Root 权限。这些操作不需要常驻 Root 服务。
 
-### Root 权限
+诊断报告在你发起操作时于本机生成，可能包含归元版本与构建信息、设备及系统版本、运行状态和相关日志。部分信息可能用于识别设备或运行环境，分享前建议先查看报告内容。
 
-仅在用户明确触发且功能确实需要时使用 Root，目前用于：
-
-- 经用户确认后重启已授权且由用户选择的 SystemUI 或设置作用域（归元仅结束设置进程，不主动打开设置）；
-- 用户打开或刷新“诊断”日志视图，或主动生成诊断报告时，读取与 Guiyuan 相关的本地运行日志。
-
-归元不使用常驻 Root 服务。
-
-### 诊断报告
-
-诊断报告只在用户主动请求时于本机生成。
-
-报告可能包含：
-
-- Guiyuan 版本、构建、包名、构建通道与诊断状态；
-- 设备型号/代号、Android 版本、HyperOS 信息与 SystemUI 版本；
-- Guiyuan 结构化运行快照与模块日志。
-
-Guiyuan 不会为了生成诊断报告而主动收集无关第三方应用的日志。
-
-“清除诊断历史”会在本地保存一个清理时间点：之前的归元日志不再出现在诊断列表与新生成的报告中，刷新或重启应用后也不会恢复。该操作**不会删除 LSPosed 共享原始日志或此前已导出的报告**，之后的新日志仍正常记录。
-
-由于设备和运行环境信息在某些场景下可能具有识别性，公开分享报告前仍建议先检查内容。
+使用**“清空日志”**后，此前的日志将不再出现在诊断页面及新生成的报告中，重新打开应用也不会恢复显示。此操作不会删除 LSPosed 共享的原始日志或此前已导出的报告，之后的新日志仍会正常显示。
 
 ### 导出与分享
 
-导出使用 Android 系统文件选择器。
+导出报告时，你可以通过 Android 系统界面选择保存位置。分享报告时，归元会在 `Download/Guiyuan` 中准备文本附件，并打开系统分享界面供你选择目标应用。再次准备分享文件时，归元会清理较早生成的此类附件。
 
-准备分享附件时，Guiyuan 会在 `Download/Guiyuan` 下创建由应用管理的文本报告，并自动清理较旧的此类文件。
+已保存或分享的副本由你选择的存储位置或目标应用管理。
 
-Guiyuan 不会将诊断报告上传至项目服务器。只有用户通过 Android 系统界面选择目标应用或位置后，报告才会被导出或分享。
+### 安全问题反馈
 
-### 安全问题
-
-请勿在公开 Issue 中发布账号凭据、签名材料、私人日志或漏洞利用细节。安全问题请使用 [SECURITY.md](SECURITY.md) 中说明的私密报告流程。
+如需反馈安全问题，请使用 [SECURITY.md](SECURITY.md) 中的私密报告渠道。向公开 Issue 附加诊断内容前，请先检查是否包含敏感信息。
