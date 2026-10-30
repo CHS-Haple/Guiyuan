@@ -286,7 +286,7 @@ Canary is non-debuggable, release-optimized and retains bounded runtime diagnost
 
 ## Versions, dependencies and release
 
-Current version/build identity comes from Gradle configuration. Display version changes only when explicitly intended; ordinary development may advance internal build identity.
+Current version/build identity comes from Gradle configuration. Change the displayed version only when explicitly requested; ordinary development retains the existing Build until a device-test or distribution APK checkpoint is deliberately selected (see Version and build identity above).
 
 CHANGELOG records durable release-level changes, not failed experiments or Build-by-Build debugging history.
 
