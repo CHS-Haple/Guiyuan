@@ -4,7 +4,7 @@
 
 ## English
 
-Guiyuan adjusts how status information appears in supported system interfaces. Settings and diagnostics are processed on the device. Guiyuan does not request Android's `INTERNET` permission or include accounts, ads, or project-operated usage analytics.
+Guiyuan adjusts how status information appears in supported system interfaces. It processes SystemUI state, your settings, and diagnostics on the device. The app has no project-operated automatic data upload or telemetry service and does not request Android's `INTERNET` permission.
 
 ### Settings and backups
 
@@ -36,7 +36,7 @@ If you need to report a security issue, please use the private reporting process
 
 ## 简体中文
 
-归元用于调整受支持系统界面中的状态信息显示。设置与诊断信息由应用在本机处理。归元不申请 Android 的 `INTERNET` 权限，也不提供账号、广告或由项目运营的使用统计服务。
+归元用于调整受支持系统界面中的状态信息显示，并在本机处理 SystemUI 状态、用户设置和诊断信息。应用不提供由项目运营的自动数据上传或遥测服务，也不申请 Android 的 `INTERNET` 权限。
 
 ### 设置与备份
 
