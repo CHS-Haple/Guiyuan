@@ -347,7 +347,7 @@
     <string name="section_diagnostics_events">Key events</string>
     <string name="diagnostics_events_end">Oldest record in this capture</string>
     <string name="diagnostics_events_end_truncated">Earlier records were not included in this capture</string>
-    <string name="diagnostics_events_end_filtered">All matching records shown</string>
+    <string name="diagnostics_events_end_filtered">All matching records in this capture shown</string>
     <string name="diagnostics_log_source_none">No network</string>
     <string name="diagnostics_log_source_other">Other network</string>
     <string name="diagnostics_log_source_capabilities">Network capabilities</string>
