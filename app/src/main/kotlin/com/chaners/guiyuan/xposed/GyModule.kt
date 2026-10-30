@@ -102,6 +102,8 @@ class GyModule : XposedModule() {
     private var lastMobileTargetProbeSummary: String? = null
     private var ccWifiGeometryStage = -1
     private var ccWifiGeometrySamples = 0
+    // Queued old-loader preference work must not regain native ownership after API 102 retirement.
+    @Volatile private var retiredForHotReload = false
     private var runtimeSessionId = newRuntimeSessionId()
     private val diagnosticSequence = AtomicLong(0L)
     private val renderTraceSequence = AtomicLong(0L)
@@ -3802,6 +3804,7 @@ class GyModule : XposedModule() {
     }
 
     private fun teardownOldGeneration() {
+        retiredForHotReload = true
         ccSourceInstalled = false
         controlCenterSceneVisible = false
         controlCenterSceneEligible = false
@@ -4333,6 +4336,7 @@ class GyModule : XposedModule() {
         cfg: FeatureCfg,
         transportNs: Long?,
     ) {
+        if (retiredForHotReload) return
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             val dispatch =
                 Runnable {
@@ -4449,7 +4453,11 @@ class GyModule : XposedModule() {
 
     private fun bindSandbox() {
         runCatching {
-            SandboxHost.bind(getRemotePreferences(SANDBOX_PREFS)) { received ->
+            SandboxHost.bind(
+                prefs = getRemotePreferences(SANDBOX_PREFS),
+                canBind = { !retiredForHotReload },
+            ) { received ->
+                if (retiredForHotReload) return@bind
                 // Steady HOME is the only consumer; never update CC/Keyguard/AOD scenes.
                 HomeRenderSession.onPresentationStateChanged()
                 runCatching {
@@ -4515,6 +4523,7 @@ class GyModule : XposedModule() {
 
     // An app data reset loses the received axis report, not SystemUI's font source.
     private fun onFontAxisRequest() {
+        if (retiredForHotReload) return
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             Handler(Looper.getMainLooper()).post { onFontAxisRequest() }
             return
@@ -4525,6 +4534,7 @@ class GyModule : XposedModule() {
     private fun onVisualCfgChanged(
         visual: VisualCfg,
     ) {
+        if (retiredForHotReload) return
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             val dispatch =
                 Runnable {

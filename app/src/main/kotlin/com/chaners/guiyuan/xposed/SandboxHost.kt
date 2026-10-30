@@ -29,9 +29,15 @@ internal object SandboxHost {
     private var staticMobileFace: android.graphics.Typeface? = null
     private val expiry = Runnable { refresh() }
 
-    fun bind(prefs: SharedPreferences, changed: (PreviewSandboxUiState?) -> Unit) {
+    fun bind(
+        prefs: SharedPreferences,
+        canBind: () -> Boolean,
+        changed: (PreviewSandboxUiState?) -> Unit,
+    ) {
+        // A bind posted before Hot Reload may arrive after the old owner was retired.
+        if (!canBind()) return
         if (Looper.myLooper() !== Looper.getMainLooper()) {
-            handler.post { bind(prefs, changed) }
+            handler.post { bind(prefs, canBind, changed) }
             return
         }
         unbind()
