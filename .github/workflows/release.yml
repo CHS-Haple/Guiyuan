@@ -1,9 +1,10 @@
 name: Release
 run-name: >-
   ${{ github.event_name == 'workflow_run'
-      && format('release: Check {0} | Release', github.event.workflow_run.head_branch)
-      || format('release: {0} {1} | Release',
-          inputs.publish && 'Publish' || 'Validate', inputs.channel) }}
+      && format('release: Check main Build #{0} | Release', github.event.workflow_run.run_number)
+      || format('release: {0} Guiyuan {1} | {2}',
+          inputs.publish && 'Publish' || 'Sign', inputs.version_name,
+          inputs.channel == 'stable' && 'Stable' || 'Test') }}
 
 on:
   # Only the successful, same-revision trusted main Build may feed automatic signing.
@@ -13,6 +14,10 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
+      version_name:
+        description: 'Guiyuan versionName to sign or publish; must match main'
+        required: true
+        type: string
       channel:
         description: Release channel
         required: true
@@ -55,10 +60,17 @@ jobs:
       - name: Record release identity
         id: identity
         shell: bash
+        env:
+          REQUESTED_VERSION_NAME: ${{ inputs.version_name }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          echo "version_name=$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)" >> "$GITHUB_OUTPUT"
+          version_name="$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)"
+          if [[ "$REQUESTED_VERSION_NAME" != "$version_name" ]]; then
+            echo "::error::Requested version $REQUESTED_VERSION_NAME does not match main source $version_name."
+            exit 1
+          fi
+          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
           echo "build_id=$(sed -n 's/^combinedStatus.buildId=//p' gradle.properties)" >> "$GITHUB_OUTPUT"
 
       - name: Checkout accepted MIUIX source
