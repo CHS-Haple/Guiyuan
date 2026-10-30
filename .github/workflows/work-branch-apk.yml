@@ -1,7 +1,7 @@
 name: Work Branch APK
 run-name: >-
   ${{ github.event_name == 'workflow_run'
-      && format('Automatic Canary admission | {0}', github.event.workflow_run.head_sha)
+      && format('Canary signing eligibility | {0}', github.event.workflow_run.head_sha)
       || github.event_name == 'workflow_dispatch'
       && format('{0} | B{1} {2}', inputs.source_branch, inputs.build_number, inputs.variant)
       || (github.event.issue.pull_request != null
@@ -303,6 +303,8 @@ jobs:
                 exit 1
               }
             else
+              # The authorized PR must also belong to this exact upstream Build run.
+              jq -e --argjson pr "$pr_number"                 '.pull_requests | any(.number == $pr)' <<< "$upstream" >/dev/null
               # An owner decision is bound to the exact source SHA and must predate its CI run.
               started="$(jq -r '.run_started_at // .created_at' <<< "$upstream")"
               [[ "$started" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]] || exit 1
