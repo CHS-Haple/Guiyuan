@@ -8,6 +8,9 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ## [Unreleased]
 
+### Fixed
+- Prevented old-generation preference, font-axis and Sandbox callbacks queued before API 102 Hot Reload from mutating retired runtime owners; Home/Keyguard delayed callbacks now verify their original session identity before applying updates.
+
 ## [0.9.1] - 2026-10-28
 
 ### Added
