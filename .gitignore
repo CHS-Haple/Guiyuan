@@ -29,3 +29,12 @@ signing.properties
 *.pfx
 *.pem
 *.key
+
+# Local analysis inputs (do not commit private device evidence)
+/.local-analysis/
+/private-evidence/
+framework.jar
+*.dex
+*.vdex
+*.odex
+Guiyuan-Diagnostic-*.txt
