@@ -1,9 +1,9 @@
 name: Work Branch APK
 run-name: >-
   ${{ github.event_name == 'workflow_run'
-      && format('Auto signed IT Canary | {0}', github.event.workflow_run.head_sha)
+      && format('canary: Check {0} | Canary', github.event.workflow_run.head_branch)
       || github.event_name == 'workflow_dispatch'
-      && format('{0} | B{1} {2}', inputs.source_branch, inputs.build_number, inputs.variant)
+      && format('canary: Sign {0} | B{1} Canary', inputs.source_branch, inputs.build_number)
       || (github.event.issue.pull_request != null
           && github.actor == github.repository_owner
           && (github.event.comment.body == '/canary'
@@ -11,7 +11,7 @@ run-name: >-
                   && endsWith(github.event.comment.body, ' Canary')))
           && format('{0} | {1} #{2}', github.event.issue.title,
               github.event.comment.body, github.event.issue.number))
-      || format('Skipped comment | #{0}', github.event.issue.number) }}
+      || format('canary: Ignore comment | Canary #{0}', github.event.issue.number) }}
 
 on:
   workflow_dispatch:
