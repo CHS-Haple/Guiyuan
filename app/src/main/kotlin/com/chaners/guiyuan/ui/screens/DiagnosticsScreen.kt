@@ -268,10 +268,6 @@ internal fun DiagnosticsScreen(
     val filteredEntries = remember(entries, levelFilter, categoryFilter) {
         entries.filter { matchesFilter(it, levelFilter, categoryFilter) }
     }
-    var visibleLimit by remember(snapshot, viewCleared, levelFilter, categoryFilter) {
-        mutableIntStateOf(EVENT_PAGE_SIZE)
-    }
-    val visibleEntries = remember(filteredEntries, visibleLimit) { filteredEntries.take(visibleLimit) }
     val filterActive =
         levelFilter != LEVEL_ALL ||
             categoryFilter != CAT_ALL
@@ -285,12 +281,15 @@ internal fun DiagnosticsScreen(
             if (collectionFailed && hasCapturedSessionLines) {
                 stringResource(R.string.diagnostics_collection_incomplete)
             } else null,
-            if (captureTruncated) {
-                stringResource(R.string.diagnostics_capture_truncated)
-            } else null,
-            if (omittedEarlierLines > 0) {
-                stringResource(R.string.diagnostics_report_lines_omitted, omittedEarlierLines)
-            } else null,
+            when {
+                captureTruncated && omittedEarlierLines > 0 ->
+                    stringResource(R.string.diagnostics_capture_and_report_limited, omittedEarlierLines)
+                captureTruncated ->
+                    stringResource(R.string.diagnostics_capture_truncated)
+                omittedEarlierLines > 0 ->
+                    stringResource(R.string.diagnostics_report_lines_omitted, omittedEarlierLines)
+                else -> null
+            },
         ).joinToString("\n")
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
@@ -453,19 +452,10 @@ internal fun DiagnosticsScreen(
                     }
                 }
             }
-            visibleEntries.isNotEmpty() -> {
+            filteredEntries.isNotEmpty() -> {
                 item(key = "diagnostics-summary") {
                     Text(
-                        text =
-                            if (filteredEntries.size > visibleEntries.size) {
-                                stringResource(
-                                    R.string.diagnostics_events_summary_limited,
-                                    visibleEntries.size,
-                                    filteredEntries.size,
-                                )
-                            } else {
-                                stringResource(R.string.diagnostics_events_summary, visibleEntries.size)
-                            },
+                        text = stringResource(R.string.diagnostics_events_summary, filteredEntries.size),
                         modifier =
                             Modifier
                                 .fillMaxWidth()
@@ -481,7 +471,7 @@ internal fun DiagnosticsScreen(
                     )
                 }
                 itemsIndexed(
-                    items = visibleEntries,
+                    items = filteredEntries,
                     key = { index, entry -> logRowKey(entry, index) },
                 ) { index, entry ->
                     val rowKey = logRowKey(entry, index)
@@ -511,26 +501,20 @@ internal fun DiagnosticsScreen(
                                 },
                     )
                 }
-                if (filteredEntries.size > visibleEntries.size) {
-                    item(key = "diagnostics-load-earlier") {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Button(
-                                onClick = {
-                                    visibleLimit =
-                                        (visibleLimit + EVENT_PAGE_SIZE).coerceAtMost(filteredEntries.size)
-                                },
-                                colors = ButtonDefaults.buttonColors(),
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.diagnostics_events_load_earlier),
-                                    style = MiuixTheme.textStyles.button,
-                                )
-                            }
-                        }
-                    }
+                item(key = "diagnostics-history-end") {
+                    Text(
+                        text = stringResource(
+                            when {
+                                captureTruncated -> R.string.diagnostics_events_end_truncated
+                                filterActive -> R.string.diagnostics_events_end_filtered
+                                else -> R.string.diagnostics_events_end
+                            },
+                        ),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        textAlign = TextAlign.Center,
+                    )
                 }
             }
             showRootGuide -> {
@@ -576,8 +560,6 @@ internal fun DiagnosticsScreen(
     }
 
 }
-
-internal const val EVENT_PAGE_SIZE = 100
 
 // The same raw line can appear more than once in a capture.
 internal fun logRowKey(entry: LogEntry, index: Int): String = "${entry.key}:$index"
