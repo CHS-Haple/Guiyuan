@@ -240,7 +240,7 @@ jobs:
             detect_device_apk "$PR_DIFF_BASE" "$PR_HEAD_SHA"
           fi
 
-          if [[ "$DEVICE_APK" == "true" && "$SCOPE" == "light" ]]; then
+          if [[ "$DEVICE_APK" == "true" && "$SCOPE" == "light" && "$PR_DRAFT" != "true" ]]; then
             if [[ "$GITHUB_REF" == "refs/heads/main" || "$PR_BASE_REF" == "main" ]]; then
               SCOPE=full
             else
