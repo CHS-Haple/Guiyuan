@@ -346,7 +346,7 @@
     <string name="section_diagnostics_events">关键事件</string>
     <string name="diagnostics_events_end">已到达本次采集的最早记录</string>
     <string name="diagnostics_events_end_truncated">更早记录未包含在本次采集中</string>
-    <string name="diagnostics_events_end_filtered">已显示全部符合筛选条件的记录</string>
+    <string name="diagnostics_events_end_filtered">已显示本次采集的全部匹配记录</string>
     <string name="diagnostics_log_source_none">无网络</string>
     <string name="diagnostics_log_source_other">其他网络</string>
     <string name="diagnostics_log_source_capabilities">网络能力变化</string>
