@@ -446,17 +446,17 @@ internal fun DiagnosticsScreen(
                                         DiagLogReader.clearHistory(context.applicationContext)
                                     }.getOrDefault(false)
                                     clearConfirmOpen = false
-                                    if (cleared) {
-                                        loading = true
-                                        val refreshed = runCatching { captureSnapshot() }.isSuccess
-                                        listState.scrollToItem(0)
-                                        snackbarHostState.showSnackbar(
-                                            if (refreshed) clearedMsg else refreshFailedMsg,
-                                        )
-                                    } else {
-                                        snackbarHostState.showSnackbar(clearFailedMsg)
-                                    }
+                                    val feedback =
+                                        if (cleared) {
+                                            loading = true
+                                            val refreshed = runCatching { captureSnapshot() }.isSuccess
+                                            listState.scrollToItem(0)
+                                            if (refreshed) clearedMsg else refreshFailedMsg
+                                        } else {
+                                            clearFailedMsg
+                                        }
                                     clearingHistory = false
+                                    snackbarHostState.showSnackbar(feedback)
                                 }
                             }
                         },
