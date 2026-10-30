@@ -341,8 +341,12 @@
     <string name="diagnostics_refresh_complete">刷新完成</string>
     <string name="diagnostics_scroll_top">滚动到顶部</string>
     <string name="diagnostics_scroll_bottom">滚动到底部</string>
-    <string name="diagnostics_clear_view">清空列表</string>
-    <string name="diagnostics_view_cleared">列表已清空，刷新后可重新读取日志。</string>
+    <string name="diagnostics_clear_history">清除诊断历史</string>
+    <string name="diagnostics_history_clear_confirm">清除前的记录将不再出现在归元诊断列表或后续报告中；不会删除 LSPosed 共享原始日志及已导出的文件。</string>
+    <string name="diagnostics_history_cleared">已清除此前的诊断历史。</string>
+    <string name="diagnostics_history_clear_failed">无法清除诊断历史。</string>
+    <string name="diagnostics_history_refresh_failed">历史已清除，但刷新日志失败。</string>
+    <string name="diagnostics_history_empty">此前历史已清除，刷新后可查看新记录。</string>
     <string name="section_diagnostics_events">关键事件</string>
     <string name="diagnostics_events_end">已到达本次采集的最早记录</string>
     <string name="diagnostics_events_end_truncated">更早记录未包含在本次采集中</string>
