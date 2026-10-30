@@ -1,103 +1,61 @@
-# Privacy
+# 隐私政策 / Privacy Policy
 
-[English](#english) | [简体中文](#简体中文)
-
-## English
-
-Guiyuan is designed to operate locally on the device.
-
-### Network and telemetry
-
-The application does not declare the Android `INTERNET` permission and does not include project-operated analytics, telemetry, advertising, or remote-account services.
-
-### Local preferences
-
-Preferences such as appearance, language choice, launcher visibility, and diagnostics level are stored locally using Android platform storage.
-
-### Root access
-
-Root access is used only for explicit maintenance or diagnostic actions that require it, currently:
-
-- restarting user-selected, eligible SystemUI or Settings scopes after confirmation (Settings is force-stopped and not relaunched by Guiyuan);
-- reading Guiyuan-related local runtime logs when the user opens or refreshes the Diagnostics log view, or generates a diagnostic report.
-
-Guiyuan does not run a persistent Root service.
-
-### Diagnostic reports
-
-Diagnostic reports are generated locally and only when requested by the user.
-
-A report may contain:
-
-- Guiyuan version, build, package name, build channel, and diagnostics state;
-- device model/codename, Android version, HyperOS information, and SystemUI version;
-- Guiyuan structured runtime snapshot and module log entries.
-
-Guiyuan does not intentionally collect unrelated third-party application logs for diagnostic reports.
-
-The “Clear diagnostic history” action stores a local cutoff: earlier Guiyuan entries will no longer appear in the Diagnostics list or newly generated reports, including after refresh or app restart. It does **not** delete LSPosed's shared source logs or previously exported reports. New entries continue to be recorded normally.
-
-Review diagnostic reports before sharing them publicly, because device and runtime details may be identifying in some contexts.
-
-### Export and sharing
-
-Export uses Android's system document picker.
-
-When preparing a share attachment, Guiyuan creates an app-managed text report under `Download/Guiyuan` and automatically prunes older managed reports.
-
-Guiyuan does not upload diagnostic reports to a project server. Sharing occurs only after the user chooses a destination through Android's system UI.
-
-### Security reports
-
-Do not post credentials, signing material, private logs, or exploit details in public issues. Use the private process described in [SECURITY.md](SECURITY.md).
-
----
+[简体中文](#简体中文) | [English](#english)
 
 ## 简体中文
 
-Guiyuan 以本地运行和最小化数据处理为设计原则。
-
-### 网络与遥测
-
-应用本身不声明 Android `INTERNET` 权限，也不包含由本项目运营的统计分析、遥测、广告或远程账号服务。
+归元是一款调整系统状态信息显示的 LSPosed 模块。运行时会在设备上处理 SystemUI 状态、用户设置和诊断信息。归元不会自动向项目维护者发送这些信息，也不申请 Android 的 `INTERNET` 权限。
 
 ### 本地设置
 
-外观、语言选择、桌面图标显示和诊断等级等设置通过 Android 平台存储保存在本机。
+外观、语言、桌面图标显示和诊断等级等设置保存在本机。你可以通过 Android 系统文件选择器导出或恢复配置，并自行选择文件的位置。
 
-### Root 权限
+### 诊断与 Root 权限
 
-仅在用户明确触发且功能确实需要时使用 Root，目前用于：
+查看或刷新诊断日志、生成诊断报告时，归元可能使用 Root 权限读取 LSPosed 共享日志或系统日志，再筛选出与归元相关的记录用于显示和报告。因此，底层读取时可能接触其他应用的日志，诊断页面和报告则使用筛选后的记录。
 
-- 经用户确认后重启已授权且由用户选择的 SystemUI 或设置作用域（归元仅结束设置进程，不主动打开设置）；
-- 用户打开或刷新“诊断”日志视图，或主动生成诊断报告时，读取与 Guiyuan 相关的本地运行日志。
+当你确认重新加载 SystemUI 或结束设置应用进程时，归元也会使用 Root 权限。
 
-归元不使用常驻 Root 服务。
-
-### 诊断报告
-
-诊断报告只在用户主动请求时于本机生成。
-
-报告可能包含：
-
-- Guiyuan 版本、构建、包名、构建通道与诊断状态；
-- 设备型号/代号、Android 版本、HyperOS 信息与 SystemUI 版本；
-- Guiyuan 结构化运行快照与模块日志。
-
-Guiyuan 不会为了生成诊断报告而主动收集无关第三方应用的日志。
-
-“清除诊断历史”会在本地保存一个清理时间点：之前的归元日志不再出现在诊断列表与新生成的报告中，刷新或重启应用后也不会恢复。该操作**不会删除 LSPosed 共享原始日志或此前已导出的报告**，之后的新日志仍正常记录。
-
-由于设备和运行环境信息在某些场景下可能具有识别性，公开分享报告前仍建议先检查内容。
+诊断报告由你主动生成，可能包含归元版本、设备及系统信息、运行状态和相关日志。使用**“清空日志”**后，较早的记录不再出现在诊断页面和新生成的报告中，但 LSPosed 原始日志及此前导出的文件不会被删除。
 
 ### 导出与分享
 
-导出使用 Android 系统文件选择器。
+你可以使用系统文件选择器保存报告，或通过 Android 分享界面选择接收应用。为分享报告，归元会在 `Download/Guiyuan` 中创建文本附件，并在后续准备分享时清理较早生成的此类附件。
 
-准备分享附件时，Guiyuan 会在 `Download/Guiyuan` 下创建由应用管理的文本报告，并自动清理较旧的此类文件。
+报告中的部分设备信息可能具有识别性，分享前建议先查看内容。保存或分享后的副本，由相应的存储位置或接收应用管理。
 
-Guiyuan 不会将诊断报告上传至项目服务器。只有用户通过 Android 系统界面选择目标应用或位置后，报告才会被导出或分享。
+### 项目反馈与第三方平台
 
-### 安全问题
+如果你通过 GitHub 等平台提交问题、日志或其他资料，项目维护者可以查看你提供的内容；平台也会按照各自的隐私政策处理这些信息。
 
-请勿在公开 Issue 中发布账号凭据、签名材料、私人日志或漏洞利用细节。安全问题请使用 [SECURITY.md](SECURITY.md) 中说明的私密报告流程。
+有关隐私或安全问题，可以通过项目仓库联系维护者。涉及敏感内容的安全报告，请使用 [SECURITY.md](SECURITY.md) 说明的私密渠道。
+
+---
+
+## English
+
+Guiyuan is an LSPosed module that changes how system status information is displayed. It processes SystemUI state, your settings, and diagnostics on your device. Guiyuan does not automatically send this information to project maintainers or request Android's `INTERNET` permission.
+
+### Settings stored on your device
+
+Appearance, language, launcher icon visibility, and diagnostic preferences are stored locally. You can export or restore a settings backup using Android's file picker, choosing the file and location yourself.
+
+### Diagnostics and Root access
+
+When you view or refresh logs, or generate a diagnostic report, Guiyuan may use Root access to read shared LSPosed logs or system logs before filtering entries related to Guiyuan for display and reporting. The underlying read may therefore encounter other apps' logs; the Diagnostics view and reports use the filtered entries.
+
+Root access is also used when you confirm actions to reload SystemUI or stop the Settings app.
+
+You generate diagnostic reports when needed. They may include the Guiyuan version, device and system information, runtime state, and related logs. **Clear logs** hides earlier entries from the Diagnostics view and newly generated reports; it does not delete the original LSPosed logs or files you have previously exported.
+
+### Exporting and sharing
+
+You can save a report using Android's file picker or choose a receiving app through the system share sheet. To prepare a share, Guiyuan creates a text attachment in `Download/Guiyuan` and cleans up older such attachments when preparing a subsequent share.
+
+Some device details in a report may be identifying, so review it before sharing. Saved or shared copies are handled by the destination or receiving app.
+
+### Project feedback and third-party platforms
+
+If you submit issues, logs, or other material through GitHub or another platform, project maintainers can see what you provide. The platform processes that information under its own privacy policy.
+
+You can contact the maintainers through the project repository about privacy or security questions. For reports containing sensitive security details, use the private channel described in [SECURITY.md](SECURITY.md).
