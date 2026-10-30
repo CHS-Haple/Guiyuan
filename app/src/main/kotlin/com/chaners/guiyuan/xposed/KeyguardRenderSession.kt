@@ -511,6 +511,7 @@ internal object KeyguardRenderSession {
                 host.get()?.post { setFeatureState(enabled) }
                 return
             }
+            if (KeyguardRenderSession.current !== this) return
             if (featureEnabled == enabled) return
             featureEnabled = enabled
             val visible = applyResolvedVisibility()
