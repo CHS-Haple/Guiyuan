@@ -12,7 +12,7 @@ Appearance, language, launcher icon visibility, and diagnostic preferences are s
 
 ### Diagnostics and Root
 
-When you open or refresh Diagnostics, or generate a report, Guiyuan may use Root access to read its runtime entries from LSPosed module logs or filter relevant entries from system logs. Root is also used for supported SystemUI or Settings maintenance actions after your confirmation. These actions do not require a continuously running Root service.
+When you open or refresh Diagnostics, or generate a report, Guiyuan may use Root access to read shared LSPosed logs or a limited portion of system logs, then select entries related to Guiyuan for display and reporting. The underlying read may encounter entries from other apps before filtering. Root is also used for supported SystemUI or Settings maintenance actions after your confirmation. These actions do not require a continuously running Root service.
 
 A diagnostic report is generated locally when you request it. It may include the Guiyuan version and build, device and system versions, runtime state, and related log entries. Some of this information may identify your device or runtime environment. Review the report before sharing it.
 
@@ -23,6 +23,10 @@ A diagnostic report is generated locally when you request it. It may include the
 For exports, Android lets you choose where to save the report. For sharing, Guiyuan prepares a text attachment in `Download/Guiyuan` and opens Android's share sheet for you to choose a destination. Older attachments created by Guiyuan are cleaned up when another share is prepared.
 
 After you save or share a copy, its storage and handling depend on the destination you chose.
+
+### Feedback and third-party services
+
+Guiyuan does not automatically send diagnostic reports or usage data to its maintainers. If you submit an issue, contribution, or report through GitHub or another service, the maintainers can access the information you choose to provide. That service handles your submission under its own privacy terms.
 
 ### Security reports
 
@@ -40,7 +44,7 @@ If you need to report a security issue, please use the private reporting process
 
 ### 诊断与 Root
 
-打开或刷新诊断页面、生成诊断报告时，归元可能使用 Root 权限读取 LSPosed 模块日志中的运行记录，或从系统日志中筛选与归元相关的条目。经你确认后，部分 SystemUI 或设置维护操作也会使用 Root 权限。这些操作不需要常驻 Root 服务。
+打开或刷新诊断页面、生成诊断报告时，归元可能使用 Root 权限读取 LSPosed 共享日志或一定范围内的系统日志，再筛选与归元相关的条目用于显示和报告。由于筛选发生在读取之后，底层读取过程可能接触其他应用的日志。经你确认后，部分 SystemUI 或设置维护操作也会使用 Root 权限。这些操作不需要常驻 Root 服务。
 
 诊断报告在你发起操作时于本机生成，可能包含归元版本与构建信息、设备及系统版本、运行状态和相关日志。其中的部分信息可能具有设备识别性，分享前可以先查看报告内容。
 
@@ -51,6 +55,10 @@ If you need to report a security issue, please use the private reporting process
 导出报告时，你可以通过 Android 系统界面选择保存位置。分享报告时，归元会在 `Download/Guiyuan` 中准备文本附件，并打开系统分享界面供你选择目标应用。再次准备分享文件时，归元会清理较早生成的此类附件。
 
 报告保存或分享后的副本，由你选择的存储位置或目标应用管理。
+
+### 反馈与第三方服务
+
+归元不会自动向项目维护者发送诊断报告或使用数据。如果你通过 GitHub 等平台主动提交 Issue、贡献内容或诊断报告，维护者可以查看你提交的信息；这些平台也会依据各自的隐私政策处理相关内容。
 
 ### 安全问题反馈
 
