@@ -10,6 +10,7 @@ For normal development, start with:
 Load the rest only when the task needs it:
 
 - [development/ROADMAP.md](development/ROADMAP.md) — future direction and release exit criteria.
+- [development/RELEASE_READINESS.md](development/RELEASE_READINESS.md) — inspectable 1.0.0 source preflight, proof limits and final device/signing acceptance gates.
 - [development/DECISIONS.md](development/DECISIONS.md) — durable engineering decisions and the reasons behind them.
 - [architecture/README.md](architecture/README.md) — current runtime ownership and scene/layout policy.
 - [reference/systemui-contracts.md](reference/systemui-contracts.md) — reusable target SystemUI evidence and integration constraints.
