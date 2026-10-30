@@ -434,7 +434,7 @@ internal fun DiagnosticsScreen(
                         onClick = { clearConfirmOpen = false },
                     )
                     UiDialogButton(
-                        text = stringResource(R.string.diagnostics_clear_history),
+                        text = stringResource(R.string.diagnostics_clear_history_action),
                         modifier = Modifier.weight(1f),
                         enabled = !clearingHistory,
                         role = GlassDialogButtonRole.Destructive,
