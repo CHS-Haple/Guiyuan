@@ -241,7 +241,10 @@ internal object HomeRenderSession {
         private val probeView =
             RenderView(host.context) { latencyMs, committedOnMainThread, sample ->
                 if (sample != null && onLatencySample != null) {
-                    onLatencySample.invoke(sample)
+                    // Telemetry runs from RenderView.onDraw; it never owns drawing.
+                    SysUiPresentationRuntime.emitPassiveDiagnostic {
+                        onLatencySample.invoke(sample)
+                    }
                 } else {
                     emitEvent {
                         "homeRenderLatency stateToDrawMs=" + latencyMs +
@@ -401,6 +404,7 @@ internal object HomeRenderSession {
                 }
                 return
             }
+            if (HomeRenderSession.current !== this) return
             if (controlCenterAllowsHome == homeEligible) {
                 return
             }
@@ -426,6 +430,7 @@ internal object HomeRenderSession {
                 }
                 return
             }
+            if (HomeRenderSession.current !== this) return
             if (featureEnabled == enabled) {
                 return
             }
