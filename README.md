@@ -16,7 +16,7 @@ An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and 
 
 ### Project status
 
-> **Pre-release development.** The current checkpoint is **0.9.2**. It retains 0.9.1's feature search, optional floating-navigation touch extension and experimental source-matched HyperOS 4 glass UI, while strengthening SystemUI sender verification for font-weight controls, API 102 Hot Reload callback retirement, Home status-card layout and bounded diagnostic reporting on the verified target. The first planned formal stable release remains **1.0.0**; pre-1.0 versions are development checkpoints.
+> **Preparing for the first stable release.** The current development version is **0.9.2**; **1.0.0 has not been released**. Guiyuan focuses on a compact, native-aware status indicator, with optional lock-screen/AOD display, configurable appearance and local diagnostics. Compatibility is verified on a specific SystemUI baseline rather than every HyperOS device.
 
 | Item | Current scope |
 | --- | --- |
@@ -27,7 +27,7 @@ An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and 
 | Verified Guiyuan surfaces | Home status bar; optional lock screen / Keyguard; optional AOD |
 | Other SystemUI surfaces | Native until separately supported and validated |
 
-Compatibility is established against the actual target SystemUI. Other HyperOS builds or device variants may differ internally and are not assumed compatible until validated.
+Compatibility is checked against the target SystemUI, not inferred from the HyperOS name alone. The maintainer has reported normal operation on Xiaomi 15 Pro / HyperOS `OS4.0.0.19.XOBCNXM`; the official ROM's matching SystemUI APK and core Framework JAR were independently fingerprint-verified. This does **not** establish support for every HyperOS 4 device or modified ROM.
 
 ### Highlights
 
@@ -48,7 +48,7 @@ Compatibility is established against the actual target SystemUI. Other HyperOS b
 - General and Detailed diagnostic levels.
 - Local diagnostic-report export and Android sharing.
 - User-confirmed restart of eligible SystemUI or Settings scopes when Root access is available.
-- No project-operated telemetry or persistent Root service. See [PRIVACY.md](PRIVACY.md).
+- No project-operated telemetry or persistent Root service. For details about on-device data, log filtering, exports and third-party links, read the [Privacy Policy](PRIVACY.md).
 
 ### Current scope
 
@@ -60,7 +60,7 @@ The project is still under active development, so broader device, system-version
 
 **Project / user-facing**
 - [CHANGELOG.md](CHANGELOG.md) — unreleased net changes and future release history.
-- [PRIVACY.md](PRIVACY.md) — local data, diagnostics, Root, export, and sharing.
+- [Privacy Policy / PRIVACY.md](PRIVACY.md) — what stays on your device, Root/diagnostic access, sharing and deletion limits.
 - [SECURITY.md](SECURITY.md) — private security-reporting policy.
 - [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) — direct dependencies and license notices.
 - [LICENSE](LICENSE) — GNU General Public License v3.0 only (`GPL-3.0-only`).
@@ -90,7 +90,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ### 项目状态
 
-> **预发布开发阶段。** 当前检查点为 **0.9.2**。在保留 0.9.1 的功能搜索、可选悬浮导航栏触控扩展及实验性 HyperOS 4 玻璃界面的基础上，进一步完善字体字重控制的 SystemUI 发送方身份校验、API 102 热重载旧回调清理、首页运行状态卡片布局与有界诊断报告。兼容性仍以已验证的 SystemUI 为准，首个正式稳定版计划为 **1.0.0**。
+> **正在准备首个正式版。** 当前开发版本为 **0.9.2**，**1.0.0 尚未发布**。归元专注于整合电量、蜂窝网络与 Wi-Fi 的状态栏图标，并提供可选的锁屏/息屏显示、外观配置和本地诊断。兼容性以实际验证过的 SystemUI 为准，不代表所有 HyperOS 设备均受支持。
 
 | 项目 | 当前范围 |
 | --- | --- |
@@ -101,7 +101,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 | 已验证归元场景 | 主状态栏；可选锁屏 / Keyguard；可选 AOD |
 | 其他 SystemUI 场景 | 在分别完成支持与验证前保持原生 |
 
-兼容性以目标 SystemUI 的实际结构和运行表现为准。其他 HyperOS 版本或不同机型的内部实现可能不同，在完成验证前不会默认视为兼容。
+兼容性以目标 SystemUI 为准，不仅凭 HyperOS 名称推定。维护者已反馈 Xiaomi 15 Pro 的 HyperOS `OS4.0.0.19.XOBCNXM` 正常运行；该版本官方固件中的 SystemUI APK 和核心 Framework JAR 也已完成文件指纹核验。但这**不代表所有 HyperOS 4 设备或修改版系统都已兼容**。
 
 ### 功能概览
 
@@ -122,7 +122,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 - 提供一般与详细两档诊断模式。
 - 本地生成诊断报告，并通过 Android 系统导出或分享。
 - 具备 Root 权限时，可由用户明确确认后重启已授权的 SystemUI 或设置作用域。
-- 不包含项目运营的遥测，也不使用常驻 Root 服务。详见 [PRIVACY.md](PRIVACY.md)。
+- 不包含项目运营的遥测，也不使用常驻 Root 服务。本地系统状态、日志筛选、导出与外部平台的处理边界见[隐私政策](PRIVACY.md)。
 
 ### 当前范围
 
@@ -134,7 +134,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 **项目 / 用户**
 - [CHANGELOG.md](CHANGELOG.md) — 当前未发布净变化与未来发布历史。
-- [PRIVACY.md](PRIVACY.md) — 本地数据、诊断、Root、导出与分享说明。
+- [隐私政策 / PRIVACY.md](PRIVACY.md) — 本地信息、Root 与诊断、分享及数据清理边界。
 - [SECURITY.md](SECURITY.md) — 安全问题私密报告规则。
 - [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) — 直接依赖与许可证说明。
 - [LICENSE](LICENSE) — GNU 通用公共许可证 v3.0（仅第 3 版）（`GPL-3.0-only`）。
