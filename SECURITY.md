@@ -1,6 +1,6 @@
 # Security Policy
 
-Guiyuan is currently in pre-release development. Security reports may target the current `main` baseline or the active `dev` line.
+Guiyuan is preparing its first stable release. Security reports may concern the current published `main` baseline, the active `dev` line, or a specifically identified signed test build. For what information the app handles locally and what happens when a user shares diagnostic data, see the [Privacy Policy](PRIVACY.md).
 
 ## Reporting a vulnerability
 
@@ -8,7 +8,7 @@ Please report security-sensitive issues through GitHub's private vulnerability r
 
 **Security -> Report a vulnerability**
 
-Do not publish credentials, signing material, exploit details, private diagnostic data, or other sensitive information in a public issue.
+Do not publish credentials, signing material, exploit details, private diagnostic data, or other sensitive information in a public issue. Use [private vulnerability reporting](https://github.com/CHS-Haple/Guiyuan/security/advisories/new) for sensitive reports; normal GitHub Issues are public.
 
 A useful report includes:
 
