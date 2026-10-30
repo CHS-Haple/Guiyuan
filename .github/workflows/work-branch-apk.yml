@@ -6,8 +6,7 @@ run-name: >-
           && github.actor == github.repository_owner
           && (github.event.comment.body == '/canary'
               || (startsWith(github.event.comment.body, 'B')
-                  && (endsWith(github.event.comment.body, ' Canary') ||
-                      endsWith(github.event.comment.body, ' Diagnostic'))))
+                  && endsWith(github.event.comment.body, ' Canary')))
           && format('{0} | {1} #{2}', github.event.issue.title,
               github.event.comment.body, github.event.issue.number))
       || format('Skipped comment | #{0}', github.event.issue.number) }}
@@ -16,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       source_branch:
-        description: 'Reviewed work Canary or protected IT Canary/diagnostic candidate'
+        description: 'Reviewed work Canary or protected IT Canary'
         required: true
         type: string
       variant:
@@ -26,7 +25,6 @@ on:
         type: choice
         options:
           - canary
-          - diagnostic
       build_number:
         description: 'Build suffix (for example 850); checked against the source Gradle Build'
         required: true
@@ -54,8 +52,7 @@ jobs:
        github.event.issue.pull_request != null &&
        (github.event.comment.body == '/canary' ||
         (startsWith(github.event.comment.body, 'B') &&
-         (endsWith(github.event.comment.body, ' Canary') ||
-          endsWith(github.event.comment.body, ' Diagnostic')))) &&
+         endsWith(github.event.comment.body, ' Canary'))) &&
        github.actor == github.repository_owner)
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -89,10 +86,9 @@ jobs:
               branch="$MANUAL_SOURCE_BRANCH"
               variant="$MANUAL_VARIANT"
               expected_build="$MANUAL_BUILD_NUMBER"
-              if [[ ( "$variant" != "canary" && "$variant" != "diagnostic" ) ||
-                    ( "$branch" != "it" && "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ) ||
-                    ( "$variant" == "diagnostic" && "$branch" != "it" ) ]]; then
-                echo "::error::Diagnostic candidate requires protected IT and owner dispatch."
+              if [[ "$variant" != "canary" ||
+                    ( "$branch" != "it" && "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ) ]]; then
+                echo "::error::Unsupported Canary source branch or variant."
                 exit 1
               fi
               source_sha="$(
@@ -110,48 +106,33 @@ jobs:
               head_repo="$(jq -r '.head.repo.full_name // empty' <<<"$pr_json")"
               branch="$(jq -r '.head.ref // empty' <<<"$pr_json")"
               source_sha="$(jq -r '.head.sha // empty' <<<"$pr_json")"
-              if [[ "$COMMENT_BODY" =~ ^B([0-9]+)[[:space:]]Diagnostic$ ]]; then
-                expected_build="${BASH_REMATCH[1]}"
-                variant="diagnostic"
+              case "$COMMENT_BODY" in
+                /canary) variant="canary"; expected_build="" ;;
+                *)
+                  if [[ "$COMMENT_BODY" =~ ^B([0-9]+)[[:space:]]Canary$ ]]; then
+                    expected_build="${BASH_REMATCH[1]}"
+                    variant="canary"
+                  else
+                    echo "::error::Unsupported PR build command."
+                    exit 1
+                  fi
+                  ;;
+              esac
+              if [[ "$head_repo" != "$GITHUB_REPOSITORY" ]]; then
+                echo "::error::Canary comments require a same-repository PR."
+                exit 1
+              fi
+              if [[ "$pr_state" != "open" ]]; then
+                # A just-merged IT PR may authorize an exact-head Canary,
+                # without granting an arbitrary closed PR the same privilege.
+                test "$variant" = canary
+                test "$(jq -r '.merged' <<< "$pr_json")" = true
+                test "$(jq -r '.base.ref' <<< "$pr_json")" = it
                 branch_json="$(gh api "repos/$GITHUB_REPOSITORY/branches/it")"
                 test "$(jq -r '.protected' <<< "$branch_json")" = true
                 source_sha="$(jq -r '.commit.sha' <<< "$branch_json")"
-                # The comment author must own the repository; only the just-merged
-                # protected IT PR may authorize this exact diagnostic candidate.
-                test "$(jq -r '.merged' <<< "$pr_json")" = true
-                test "$(jq -r '.base.ref' <<< "$pr_json")" = it
                 test "$(jq -r '.merge_commit_sha' <<< "$pr_json")" = "$source_sha"
-                test "$head_repo" = "$GITHUB_REPOSITORY"
-                branch="it"
-              else
-                case "$COMMENT_BODY" in
-                  /canary) variant="canary"; expected_build="" ;;
-                  *)
-                    if [[ "$COMMENT_BODY" =~ ^B([0-9]+)[[:space:]]Canary$ ]]; then
-                      expected_build="${BASH_REMATCH[1]}"
-                      variant="canary"
-                    else
-                      echo "::error::Unsupported PR build command."
-                      exit 1
-                    fi
-                    ;;
-                esac
-                if [[ "$head_repo" != "$GITHUB_REPOSITORY" ]]; then
-                  echo "::error::Canary comments require a same-repository PR."
-                  exit 1
-                fi
-                if [[ "$pr_state" != "open" ]]; then
-                  # A just-merged IT PR may authorize an exact-head Canary,
-                  # without granting an arbitrary closed PR the same privilege.
-                  test "$variant" = canary
-                  test "$(jq -r '.merged' <<< "$pr_json")" = true
-                  test "$(jq -r '.base.ref' <<< "$pr_json")" = it
-                  branch_json="$(gh api "repos/$GITHUB_REPOSITORY/branches/it")"
-                  test "$(jq -r '.protected' <<< "$branch_json")" = true
-                  source_sha="$(jq -r '.commit.sha' <<< "$branch_json")"
-                  test "$(jq -r '.merge_commit_sha' <<< "$pr_json")" = "$source_sha"
-                  branch=it
-                fi
+                branch=it
               fi
 
               ;;
@@ -162,15 +143,9 @@ jobs:
               ;;
           esac
 
-          if [[ ( "$variant" != "canary" && "$variant" != "diagnostic" ) ||
-                ( "$branch" != "it" && "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ) ||
-                ( "$variant" == "diagnostic" && "$branch" != "it" ) ]]; then
-            echo "::error::Diagnostic signing is owner-only from protected it."
-            exit 1
-          fi
-          if [[ "$branch" == "it" && "$EVENT_NAME" != "workflow_dispatch" &&
-                "$variant" != "diagnostic" && "$variant" != "canary" ]]; then
-            echo "::error::Protected IT Canary requires owner-triggered dispatch."
+          if [[ "$variant" != "canary" ||
+                ( "$branch" != "it" && "$branch" != feat/* && "$branch" != fix/* && "$branch" != refactor/* && "$branch" != hotfix/* ) ]]; then
+            echo "::error::Canary signing requires a reviewed work branch or protected IT."
             exit 1
           fi
           if [[ ! "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
@@ -212,11 +187,7 @@ jobs:
             branch_json="$(gh api "repos/$GITHUB_REPOSITORY/branches/it")"
             test "$(jq -r '.protected' <<< "$branch_json")" = "true"
             test "$(jq -r '.commit.sha' <<< "$branch_json")" = "$SOURCE_SHA"
-            if [[ "${{ steps.source.outputs.variant }}" == "diagnostic" ]]; then
-              artifact="unsigned-it-diagnostic-$SOURCE_SHA"
-            else
-              artifact="unsigned-it-canary-$SOURCE_SHA"
-            fi
+            artifact="unsigned-it-canary-$SOURCE_SHA"
             event="push"
             pr_number=""
           else
@@ -303,7 +274,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   sign:
-    name: Sign reviewed Canary / protected IT diagnostic
+    name: Sign reviewed Canary
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -363,12 +334,8 @@ jobs:
           VARIANT: ${{ needs.build.outputs.variant }}
         run: |
           set -euo pipefail
-          [[ "$VARIANT" == "canary" || "$VARIANT" == "diagnostic" ]]
-          if [[ "$VARIANT" == "diagnostic" ]]; then
-            source="candidate/app-itDiagnostic-unsigned.apk"
-          else
-            source="candidate/app-canary-unsigned.apk"
-          fi
+          [[ "$VARIANT" == "canary" ]]
+          source="candidate/app-canary-unsigned.apk"
           test -s "$source" && test -n "$SOURCE_SHA" && test -n "$VERSION_NAME" && test -n "$BUILD_ID"
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           signer="$SDK_ROOT/build-tools/37.0.0/apksigner"
@@ -396,4 +363,4 @@ jobs:
           name: ${{ env.APK_NAME }}
           path: dist/${{ env.APK_NAME }}
           if-no-files-found: error
-          retention-days: ${{ needs.build.outputs.variant == 'diagnostic' && 2 || 3 }}
+          retention-days: 3
