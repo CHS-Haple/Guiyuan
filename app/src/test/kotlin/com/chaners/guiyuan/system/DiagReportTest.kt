@@ -176,7 +176,7 @@ class DiagReportTest {
         )
         assertTrue(output.contains("visibleHistorySince=2026-10-30T23:00:10"))
         assertTrue(output.contains("historyClearScope=guiyuan-view-and-report-only"))
-        assertTrue(output.contains("\\nnew-event\\n"))
+        assertTrue(output.contains("\nnew-event\n"))
     }
 
     @Test
