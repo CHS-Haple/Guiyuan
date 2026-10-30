@@ -21,11 +21,11 @@ internal class RenderView(
     private val onDrawn: ((View) -> Unit)? = null,
     private val onShownChanged: ((View) -> Unit)? = null,
     private val preview: Boolean = false,
-    private val onStateRendered: (
+    private val onStateRendered: ((
         latencyMs: Long,
         committedOnMainThread: Boolean,
         sample: RuntimeRenderLatencySample?,
-    ) -> Unit = { _, _, _ -> },
+    ) -> Unit)? = null,
 ) : View(context) {
     private val painter = StatusPainter(context, preview = preview)
     private val centerEnterInterpolator: Interpolator =
@@ -101,16 +101,18 @@ internal class RenderView(
 
         val previousModel = this.model
         this.model = model
-        pendingStateUptimeMs = SystemClock.uptimeMillis()
-        pendingStateCommittedOnMainThread =
-            Looper.myLooper() === Looper.getMainLooper()
-        pendingTrace = trace
-        pendingModelCommittedNanos =
-            if (trace == null) {
-                0L
-            } else {
-                SystemClock.elapsedRealtimeNanos()
-            }
+        if (onStateRendered != null) {
+            pendingStateUptimeMs = SystemClock.uptimeMillis()
+            pendingStateCommittedOnMainThread =
+                Looper.myLooper() === Looper.getMainLooper()
+            pendingTrace = trace
+            pendingModelCommittedNanos =
+                if (trace == null) {
+                    0L
+                } else {
+                    SystemClock.elapsedRealtimeNanos()
+                }
+        }
 
         val previousCenter = previousModel?.centerIndicator
         val nextCenter = model?.centerIndicator
@@ -396,29 +398,31 @@ internal class RenderView(
         canvas.restoreToCount(viewportSave)
         onDrawn?.invoke(this)
 
-        val committedAt = pendingStateUptimeMs
-        if (committedAt != 0L) {
-            pendingStateUptimeMs = 0L
-            val trace = pendingTrace
-            val modelCommittedNanos = pendingModelCommittedNanos
-            pendingTrace = null
-            pendingModelCommittedNanos = 0L
-            val sample =
-                if (trace != null && modelCommittedNanos != 0L) {
-                    RuntimeRenderLatencySample.from(
-                        trace = trace,
-                        modelCommittedNanos = modelCommittedNanos,
-                        drawNanos = SystemClock.elapsedRealtimeNanos(),
-                        committedOnMainThread = pendingStateCommittedOnMainThread,
-                    )
-                } else {
-                    null
-                }
-            onStateRendered(
-                (SystemClock.uptimeMillis() - committedAt).coerceAtLeast(0L),
-                pendingStateCommittedOnMainThread,
-                sample,
-            )
+        onStateRendered?.let { report ->
+            val committedAt = pendingStateUptimeMs
+            if (committedAt != 0L) {
+                pendingStateUptimeMs = 0L
+                val trace = pendingTrace
+                val modelCommittedNanos = pendingModelCommittedNanos
+                pendingTrace = null
+                pendingModelCommittedNanos = 0L
+                val sample =
+                    if (trace != null && modelCommittedNanos != 0L) {
+                        RuntimeRenderLatencySample.from(
+                            trace = trace,
+                            modelCommittedNanos = modelCommittedNanos,
+                            drawNanos = SystemClock.elapsedRealtimeNanos(),
+                            committedOnMainThread = pendingStateCommittedOnMainThread,
+                        )
+                    } else {
+                        null
+                    }
+                report(
+                    (SystemClock.uptimeMillis() - committedAt).coerceAtLeast(0L),
+                    pendingStateCommittedOnMainThread,
+                    sample,
+                )
+            }
         }
     }
 
