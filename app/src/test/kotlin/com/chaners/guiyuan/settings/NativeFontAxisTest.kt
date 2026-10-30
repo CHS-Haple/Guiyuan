@@ -20,6 +20,17 @@ class NativeFontAxisTest {
     }
 
     @Test
+    fun senderMustOwnInstalledSystemUiPackage() {
+        assertEquals(true, NativeFontAxis.isSystemUiSender(10224, "com.android.systemui", 10224))
+        assertEquals(true, NativeFontAxis.isSystemUiSender(1000, "com.android.systemui", 1000))
+        assertEquals(false, NativeFontAxis.isSystemUiSender(10224, "com.android.systemui", 1000))
+        assertEquals(false, NativeFontAxis.isSystemUiSender(10224, "com.example.app", 10224))
+        assertEquals(false, NativeFontAxis.isSystemUiSender(-1, "com.android.systemui", -1))
+        assertEquals(false, NativeFontAxis.isSystemUiSender(10224, null, 10224))
+        assertEquals(false, NativeFontAxis.isSystemUiSender(10224, "com.android.systemui", null))
+    }
+
+    @Test
     fun acceptsActualVariableAxisRange() {
         val axis = FontWeightAxis(150f, 330f, 700f)
         assertEquals(axis, NativeFontAxis.checked(axis))
