@@ -31,6 +31,8 @@ val junitVersion = "4.13.2"
 val gradleVersion = gradle.gradleVersion
 val os4DebugSuffix = providers.gradleProperty("gy.os4.debugSuffix").orNull
 val os4DialogSurfaces = providers.gradleProperty("gy.os4.dialogSurfaces").orNull == "true"
+// The marker exists only on the protected IT branch and is blocked from public PR targets.
+val projectLinkEnabled = !rootProject.file("it-only/RESTRICT_PROJECT_LINK").isFile
 if (os4DialogSurfaces) {
     require(providers.gradleProperty("gy.os4.miuixDir").isPresent) {
         "GlassDialog requires the same-revision MIUIX source graph (-Pgy.os4.miuixDir)"
@@ -114,7 +116,7 @@ android {
             buildConfigField("String", "BUILD_CHANNEL", "\"debug\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "true")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
-            buildConfigField("boolean", "REPO_LINK_ENABLED", "true")
+            buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
             if (hapleSigningEnabled) {
                 signingConfig = signingConfigs.getByName("haple")
             }
@@ -123,7 +125,7 @@ android {
             buildConfigField("String", "BUILD_CHANNEL", "\"release\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "false")
-            buildConfigField("boolean", "REPO_LINK_ENABLED", "true")
+            buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
             isMinifyEnabled = true
             isShrinkResources = true
             if (hapleSigningEnabled) {
