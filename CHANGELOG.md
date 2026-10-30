@@ -9,7 +9,10 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 ## [Unreleased]
 
 ### Fixed
+- Restored variable-font weight controls on affected HyperOS 4 devices by authenticating the actual installed SystemUI sender UID, retaining the existing receiver permission and fail-closed identity checks.
+- Rejected unsafe legacy V9 cross-ClassLoader Hot Reload callbacks; unsupported old transfers now require SystemUI restart while supported V10 handoff is unchanged.
 - Prevented old-generation preference, font-axis and Sandbox callbacks queued before API 102 Hot Reload from mutating retired runtime owners; Home/Keyguard delayed callbacks now verify their original session identity before applying updates.
+- Refined the Home runtime-status card's measured text alignment across different status descriptions and adjusted bounded diagnostic export/integrity reporting without changing Root data acquisition.
 
 ## [0.9.1] - 2026-10-28
 
