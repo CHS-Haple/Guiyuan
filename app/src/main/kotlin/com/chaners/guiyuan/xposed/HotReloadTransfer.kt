@@ -6,7 +6,7 @@ import android.view.ViewGroup
 
 internal object HotReloadTransfer {
     private const val VERSION = 10
-    private const val DEFERRED_TRANSFER_VERSION = 9
+    private const val UNSAFE_CALLBACK_TRANSFER_VERSION = 9
     private const val PRESENTATION_TRANSFER_VERSION = 8
     private const val TINT_TRANSFER_VERSION = 7
     private const val CONTROL_CENTER_TRANSFER_VERSION = 6
@@ -25,9 +25,7 @@ internal object HotReloadTransfer {
     private const val INDEX_STATUS_ICON_TINT = 7
     private const val INDEX_CONTROL_CENTER_FAKE_HOST = 8
     private const val INDEX_CONTROL_CENTER_COMPACT_READY = 9
-    private const val INDEX_GENERATION_HANDOFF = 10
     private const val CURRENT_PAYLOAD_SIZE = 10
-    private const val DEFERRED_PAYLOAD_SIZE = 11
     private const val PRESENTATION_PAYLOAD_SIZE = 9
     private const val TINT_PAYLOAD_SIZE = 8
     private const val CONTROL_CENTER_PAYLOAD_SIZE = 6
@@ -77,24 +75,28 @@ internal object HotReloadTransfer {
         )
     }
 
+    // V9's eleventh element was an old-ClassLoader Runnable. Only neutral
+    // transfers can cross the API 102 generation boundary.
+    internal fun payloadSizeFor(version: Int): Int? =
+        when (version) {
+            VERSION -> CURRENT_PAYLOAD_SIZE
+            UNSAFE_CALLBACK_TRANSFER_VERSION -> null
+            PRESENTATION_TRANSFER_VERSION -> PRESENTATION_PAYLOAD_SIZE
+            TINT_TRANSFER_VERSION -> TINT_PAYLOAD_SIZE
+            CONTROL_CENTER_TRANSFER_VERSION -> CONTROL_CENTER_PAYLOAD_SIZE
+            SHADE_TRANSFER_VERSION -> SHADE_PAYLOAD_SIZE
+            PREVIOUS_VERSION -> PREVIOUS_PAYLOAD_SIZE
+            NATIVE_TRANSFER_VERSION -> NATIVE_PAYLOAD_SIZE
+            VISUAL_TRANSFER_VERSION -> VISUAL_PAYLOAD_SIZE
+            LEGACY_VERSION -> LEGACY_PAYLOAD_SIZE
+            else -> null
+        }
+
     fun restore(raw: Any?): Restored? {
         val payload = raw as? Array<*> ?: return null
         val version = (payload.getOrNull(INDEX_VERSION) as? Number)?.toInt()
             ?: return null
-        val expectedSize =
-            when (version) {
-                VERSION -> CURRENT_PAYLOAD_SIZE
-                DEFERRED_TRANSFER_VERSION -> DEFERRED_PAYLOAD_SIZE
-                PRESENTATION_TRANSFER_VERSION -> PRESENTATION_PAYLOAD_SIZE
-                TINT_TRANSFER_VERSION -> TINT_PAYLOAD_SIZE
-                CONTROL_CENTER_TRANSFER_VERSION -> CONTROL_CENTER_PAYLOAD_SIZE
-                SHADE_TRANSFER_VERSION -> SHADE_PAYLOAD_SIZE
-                PREVIOUS_VERSION -> PREVIOUS_PAYLOAD_SIZE
-                NATIVE_TRANSFER_VERSION -> NATIVE_PAYLOAD_SIZE
-                VISUAL_TRANSFER_VERSION -> VISUAL_PAYLOAD_SIZE
-                LEGACY_VERSION -> LEGACY_PAYLOAD_SIZE
-                else -> return null
-            }
+        val expectedSize = payloadSizeFor(version) ?: return null
         if (payload.size != expectedSize) {
             return null
         }
@@ -148,20 +150,11 @@ internal object HotReloadTransfer {
             }
 
         val controlCenterCompactReady =
-            if (version >= DEFERRED_TRANSFER_VERSION) {
+            if (version == VERSION) {
                 payload.getOrNull(INDEX_CONTROL_CENTER_COMPACT_READY) as? Boolean ?: false
             } else {
                 false
             }
-        val generationHandoff =
-            if (version == DEFERRED_TRANSFER_VERSION) {
-                // Accept the previous generation once when upgrading from B1063.
-                payload.getOrNull(INDEX_GENERATION_HANDOFF) as? Runnable
-                    ?: return null
-            } else {
-                null
-            }
-
         return Restored(
             host = host,
             state = state,
@@ -172,7 +165,6 @@ internal object HotReloadTransfer {
             statusIconTint = statusIconTint,
             controlCenterFakeHost = controlCenterFakeHost,
             controlCenterCompactReady = controlCenterCompactReady,
-            generationHandoff = generationHandoff,
         )
     }
 
@@ -189,6 +181,5 @@ internal object HotReloadTransfer {
         val statusIconTint: Int?,
         val controlCenterFakeHost: ViewGroup?,
         val controlCenterCompactReady: Boolean,
-        val generationHandoff: Runnable?,
     )
 }
