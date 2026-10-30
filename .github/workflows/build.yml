@@ -212,7 +212,6 @@ jobs:
           RUN_ANDROID=false
           RUN_DEBUG=false
           RUN_CANARY=false
-          RUN_IT_DIAGNOSTIC=false
 
           if [[ "$SCOPE" == "runtime" || "$SCOPE" == "full" ]]; then
             RUN_ANDROID=true
@@ -229,13 +228,6 @@ jobs:
             RUN_CANARY=true
           fi
 
-          if [[ ( "$SCOPE" == "runtime" || "$SCOPE" == "full" ) &&
-                ( ( "$EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/it" ) ||
-                  ( "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" == "it" ) ) ]]; then
-            RUN_IT_DIAGNOSTIC=true
-          fi
-
-          echo "run_it_diagnostic=$RUN_IT_DIAGNOSTIC" >> "$GITHUB_OUTPUT"
           echo "scope=$SCOPE" >> "$GITHUB_OUTPUT"
           echo "reason=$REASON" >> "$GITHUB_OUTPUT"
           echo "run_android=$RUN_ANDROID" >> "$GITHUB_OUTPUT"
@@ -317,8 +309,6 @@ jobs:
                 ( ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.base.ref }}" == "main" ) ||
                   ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
             TASKS+=(":app:assembleRelease")
-          elif [[ "${{ steps.scope.outputs.run_it_diagnostic }}" == "true" ]]; then
-            TASKS+=(":app:assembleItDiagnostic")
           fi
           test -n "$MIUIX_SOURCE_REVISION" && test -n "$MIUIX_SOURCE_DIR"
           ./gradlew \
@@ -350,15 +340,6 @@ jobs:
             echo "CANARY_APK_PATH=$CANARY_APK_PATH" >> "$GITHUB_ENV"
           fi
 
-      - name: Locate opt-in IT diagnostic candidate
-        if: steps.scope.outputs.run_it_diagnostic == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          mapfile -t found < <(find app/build/outputs/apk/itDiagnostic -maxdepth 1 -type f -name '*-unsigned.apk')
-          test "${#found[@]}" -eq 1
-          echo "IT_DIAGNOSTIC_APK_PATH=${found[0]}" >> "$GITHUB_ENV"
-
       - name: Verify modern Xposed metadata
         if: steps.scope.outputs.run_android == 'true'
         shell: bash
@@ -374,8 +355,6 @@ jobs:
                 ( ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.base.ref }}" == "main" ) ||
                   ( "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ) ) ]]; then
             APKS+=("app/build/outputs/apk/release/app-release-unsigned.apk")
-          elif [[ "${{ steps.scope.outputs.run_it_diagnostic }}" == "true" ]]; then
-            APKS+=("$IT_DIAGNOSTIC_APK_PATH")
           fi
           bash tools/verify_xposed_metadata.sh "${APKS[@]}"
 
@@ -388,7 +367,7 @@ jobs:
           aapt="$SDK_ROOT/build-tools/37.0.0/aapt"
           base="$(sed -n 's/^combinedStatus.versionName=//p' gradle.properties)"
           expected="${base}-IT"
-          for path in "${DEBUG_APK_PATH:-}" "${CANARY_APK_PATH:-}" "${IT_DIAGNOSTIC_APK_PATH:-}"; do
+          for path in "${DEBUG_APK_PATH:-}" "${CANARY_APK_PATH:-}"; do
             [[ -z "$path" ]] && continue
             test -s "$path"
             actual="$("$aapt" dump badging "$path" | sed -n "s/.*versionName='\\([^']*\\)'.*/\\1/p" | head -n 1)"
@@ -410,16 +389,6 @@ jobs:
             echo "Canary APK must be non-debuggable."
             exit 1
           fi
-
-      - name: Verify IT diagnostic is non-debuggable
-        if: steps.scope.outputs.run_it_diagnostic == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          analyzer="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
-          test -n "$analyzer"
-          test "$("$analyzer" manifest debuggable "$IT_DIAGNOSTIC_APK_PATH")" = false
 
       - name: Record exact source Build identity
         id: identity
@@ -446,15 +415,6 @@ jobs:
           path: app/build/outputs/apk/canary/app-canary-unsigned.apk
           if-no-files-found: error
           retention-days: 3
-
-      - name: Store protected IT diagnostic candidate for trusted owner-only signing
-        if: github.event_name == 'push' && github.ref == 'refs/heads/it' && steps.scope.outputs.run_it_diagnostic == 'true'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: unsigned-it-diagnostic-${{ github.sha }}
-          path: ${{ env.IT_DIAGNOSTIC_APK_PATH }}
-          if-no-files-found: error
-          retention-days: 2
 
       - name: Store unsigned protected IT Canary for future trusted signing
         if: github.event_name == 'push' && github.ref == 'refs/heads/it' && steps.scope.outputs.run_canary == 'true'
