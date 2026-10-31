@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -358,17 +359,18 @@ internal fun OnboardingFlow(
                 )
                 Spacer(Modifier.height(44.dp))
             }
-        }
-        AppSettingsEntryDialogs(entryState)
-        UiOverlayBottomSheet(
-            show = policyOpen,
-            modifier = Modifier.fillMaxHeight(0.85f),
-            title = stringResource(R.string.privacy_title),
-            backgroundColor = MiuixTheme.colorScheme.background,
-            insideMargin = DpSize(0.dp, 0.dp),
-            onDismissRequest = { policyOpen = false },
-        ) {
-            PrivacyPolicySheetBody()
+            // Both overlays require the composition locals owned by this Scaffold.
+            AppSettingsEntryDialogs(entryState)
+            UiOverlayBottomSheet(
+                show = policyOpen,
+                modifier = Modifier.fillMaxHeight(0.85f),
+                title = stringResource(R.string.privacy_title),
+                backgroundColor = MiuixTheme.colorScheme.background,
+                insideMargin = DpSize(0.dp, 0.dp),
+                onDismissRequest = { policyOpen = false },
+            ) {
+                PrivacyPolicySheetBody()
+            }
         }
     }
 }
@@ -522,7 +524,11 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                         .size(70.dp)
                         .clip(CircleShape)
                         .background(Color(0x99000000))
-                        .clickable(onClickLabel = stringResource(R.string.guide_continue), onClick = onNext),
+                        .clickable(
+                            onClickLabel = stringResource(R.string.guide_continue),
+                            role = Role.Button,
+                            onClick = onNext,
+                        ),
                     contentAlignment = Alignment.Center,
                 ) {
                     Canvas(Modifier.width(31.dp).height(22.dp)) {
@@ -530,9 +536,9 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                         val end = size.width * 0.96f
                         val start = size.width * 0.04f
                         val wing = size.height * 0.42f
-                        drawLine(Color.White, Offset(start, middle), Offset(end, middle), strokeWidth = 2.6.dp.toPx())
-                        drawLine(Color.White, Offset(end - wing, middle - wing), Offset(end, middle), strokeWidth = 2.6.dp.toPx())
-                        drawLine(Color.White, Offset(end - wing, middle + wing), Offset(end, middle), strokeWidth = 2.6.dp.toPx())
+                        drawLine(Color.White, Offset(start, middle), Offset(end, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                        drawLine(Color.White, Offset(end - wing, middle - wing), Offset(end, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                        drawLine(Color.White, Offset(end - wing, middle + wing), Offset(end, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
                     }
                 }
                 Spacer(Modifier.weight(0.28f))
