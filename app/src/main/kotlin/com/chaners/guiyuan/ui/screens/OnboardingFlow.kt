@@ -99,6 +99,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
@@ -687,22 +688,12 @@ private fun GuidePermissionItem(
                 color = MiuixTheme.colorScheme.onSurfaceContainer,
             )
             if (checked) {
-                Canvas(Modifier.size(26.dp)) {
-                    drawLine(
-                        checkColor,
-                        Offset(size.width * 0.19f, size.height * 0.52f),
-                        Offset(size.width * 0.42f, size.height * 0.75f),
-                        strokeWidth = 2.6.dp.toPx(),
-                        cap = StrokeCap.Round,
-                    )
-                    drawLine(
-                        checkColor,
-                        Offset(size.width * 0.42f, size.height * 0.75f),
-                        Offset(size.width * 0.82f, size.height * 0.29f),
-                        strokeWidth = 2.6.dp.toPx(),
-                        cap = StrokeCap.Round,
-                    )
-                }
+                Icon(
+                    imageVector = MiuixIcons.Basic.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(26.dp),
+                    tint = checkColor,
+                )
             }
         }
     }
