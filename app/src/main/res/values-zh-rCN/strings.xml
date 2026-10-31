@@ -549,7 +549,7 @@
     <string name="guide_scope_request_failed">作用域申请未完成，请检查框架服务及模块管理器后重试。</string>
     <string name="guide_scope_note">请在兼容的模块框架管理器中启用归元，并将 SystemUI 添加到作用域。暂时无法设置时，可以稍后完成。</string>
     <string name="guide_done_title">欢迎使用</string>
-    <string name="guide_start">启动归元</string>
+    <string name="guide_start">进入归元</string>
     <string name="privacy_title">隐私政策</string>
     <string name="about_privacy_summary">了解数据处理、权限与隐私选择</string>
     <string name="privacy_intro">本隐私政策适用于归元（Guiyuan）应用及模块，说明其在设备本地运行、诊断、文件导出与分享过程中涉及的信息及处理方式。本政策仅适用于归元本身；Android、模块框架、Root 管理器及第三方应用的独立数据处理行为，应以各自的说明为准。</string>

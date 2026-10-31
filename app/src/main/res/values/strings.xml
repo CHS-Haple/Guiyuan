@@ -550,7 +550,7 @@
     <string name="guide_scope_request_failed">The scope request was not completed. Check the framework service and module manager, then try again.</string>
     <string name="guide_scope_note">Enable Guiyuan in the compatible module framework manager and add SystemUI to its scope. You can finish this later if setup is unavailable.</string>
     <string name="guide_done_title">Welcome</string>
-    <string name="guide_start">Launch Guiyuan</string>
+    <string name="guide_start">Open Guiyuan</string>
     <string name="privacy_title">Privacy policy</string>
     <string name="about_privacy_summary">Read about data handling and privacy choices</string>
     <string name="privacy_intro">This Privacy Policy applies to the Guiyuan app and module. It explains information handled during local operation, diagnostics, file export, and sharing. It applies only to Guiyuan; Android, module frameworks, Root managers, and third-party apps may have their own data-handling practices.</string>
