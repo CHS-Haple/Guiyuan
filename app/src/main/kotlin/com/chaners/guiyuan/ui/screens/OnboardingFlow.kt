@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -40,7 +39,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.StrokeCap
@@ -51,6 +49,7 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
@@ -65,6 +64,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import top.yukonga.miuix.kmp.blur.BlurColors
+import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -394,6 +394,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
     }
     val surface = MiuixTheme.colorScheme.surface
     val accent = MiuixTheme.colorScheme.primary
+    val actionColors = guideActionColors()
     // The established About shader owns the mixed colors. Keep a bounded
     // theme-color fallback for devices without RuntimeShader support.
     val fallback = Brush.linearGradient(
@@ -512,8 +513,8 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                     cornerRadius = 16.dp,
                     textStyle = MiuixTheme.textStyles.button.copy(fontSize = 17.sp),
                     colors = ButtonDefaults.textButtonColors(
-                        color = Color(0x99000000),
-                        textColor = Color.White,
+                        color = actionColors.container,
+                        textColor = actionColors.content,
                     ),
                     onClick = onNext,
                 )
@@ -522,8 +523,11 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .size(70.dp)
-                        .clip(CircleShape)
-                        .background(Color(0x99000000))
+                        .squircleSurface(
+                            color = actionColors.container,
+                            cornerRadius = 35.dp,
+                            extension = 1f,
+                        )
                         .clickable(
                             onClickLabel = stringResource(R.string.guide_continue),
                             role = Role.Button,
@@ -536,15 +540,41 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                         val end = size.width * 0.96f
                         val start = size.width * 0.04f
                         val wing = size.height * 0.42f
-                        drawLine(Color.White, Offset(start, middle), Offset(end, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
-                        drawLine(Color.White, Offset(end - wing, middle - wing), Offset(end, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
-                        drawLine(Color.White, Offset(end - wing, middle + wing), Offset(end, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                        drawLine(actionColors.content, Offset(start, middle), Offset(end, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                        drawLine(actionColors.content, Offset(end - wing, middle - wing), Offset(end, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                        drawLine(actionColors.content, Offset(end - wing, middle + wing), Offset(end, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
                     }
                 }
                 Spacer(Modifier.weight(0.28f))
             }
         }
     }
+}
+
+private data class GuideActionColors(val container: Color, val content: Color)
+
+// The branded actions retain the reference geometry, while their material follows
+// the same MIUIX theme tokens used by the About surface and animated identity.
+@Composable
+private fun guideActionColors(): GuideActionColors {
+    val surface = MiuixTheme.colorScheme.surface
+    val onSurface = MiuixTheme.colorScheme.onSurface
+    val accent = MiuixTheme.colorScheme.primary
+    val tint = lerp(onSurface, accent, 0.10f)
+    // Respect the MIUIX theme palette; preserve the translucent style where
+    // the chosen foreground has sufficient contrast over the theme surface.
+    val opacities = listOf(0.60f, 0.68f, 0.76f, 0.84f, 0.92f, 1f)
+    val opacity = opacities.firstOrNull { opacity ->
+        val composite = tint.copy(alpha = opacity).compositeOver(surface)
+        val foreground = surface.luminance()
+        val background = composite.luminance()
+        (maxOf(foreground, background) + 0.05f) /
+            (minOf(foreground, background) + 0.05f) >= 4.5f
+    } ?: 1f
+    return GuideActionColors(
+        container = tint.copy(alpha = opacity),
+        content = surface,
+    )
 }
 
 @Composable
