@@ -66,6 +66,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.LinkInteractionListener
@@ -130,11 +131,8 @@ import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Help
-import top.yukonga.miuix.kmp.icon.extended.Info
-import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Refresh
-import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 
@@ -282,9 +280,9 @@ internal fun OnboardingFlow(
             else -> stringResource(R.string.guide_basic_title)
         }
         val illustration = when (step) {
-            1 -> MiuixIcons.Regular.Lock
-            2 -> MiuixIcons.Regular.Info
-            else -> MiuixIcons.Regular.Settings
+            1 -> R.drawable.ic_material_symbol_security
+            2 -> R.drawable.ic_material_symbol_contract
+            else -> R.drawable.ic_material_symbol_settings
         }
         val scrollBehavior = MiuixScrollBehavior()
         val scroll = rememberScrollState()
@@ -360,7 +358,7 @@ internal fun OnboardingFlow(
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            imageVector = illustration,
+                            painter = painterResource(illustration),
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
                             tint = MiuixTheme.colorScheme.primary,
@@ -484,7 +482,7 @@ internal fun OnboardingFlow(
                                         title = stringResource(R.string.guide_terms_link_text),
                                         summary = stringResource(R.string.guide_terms_summary),
                                         startAction = {
-                                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_info)
+                                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_privacy_tip)
                                         },
                                         endActions = {
                                             Icon(
@@ -506,7 +504,7 @@ internal fun OnboardingFlow(
                                         title = stringResource(R.string.guide_policy_link_text),
                                         summary = stringResource(R.string.guide_policy_summary),
                                         startAction = {
-                                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_shield)
+                                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_privacy_tip)
                                         },
                                         endActions = {
                                             Icon(
