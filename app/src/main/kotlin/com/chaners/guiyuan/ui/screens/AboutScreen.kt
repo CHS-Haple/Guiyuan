@@ -481,8 +481,7 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
         Section(R.string.section_embedded_assets) {
             ArrowPreference(
                 title = "Material Symbols",
-                summary = stringResource(R.string.about_embedded_asset_summary) +
-                    "\n" + stringResource(R.string.about_dependency_maintainer, "Google"),
+                summary = stringResource(R.string.about_embedded_asset_summary),
                 onClick = {
                     uriHandler.openUri("https://github.com/google/material-design-icons")
                 },
@@ -504,16 +503,15 @@ private fun AboutDependencyPreference(
     dependency: AboutDependency,
     onClick: () -> Unit,
 ) {
-    val maintainerLabel = stringResource(R.string.about_dependency_maintainer, dependency.maintainer)
     val summary =
         buildString {
             dependency.version?.let {
                 append(it)
                 append('\n')
             }
+            append(dependency.maintainer)
+            append('｜')
             append(dependency.license)
-            append(" · ")
-            append(maintainerLabel)
         }
     ArrowPreference(
         title = dependency.name,
