@@ -628,7 +628,8 @@
     <string name="guide_purpose_label">作用说明</string>
     <string name="guide_guidance_label">处理建议</string>
     <string name="guide_refresh_status">刷新权限状态</string>
-    <string name="guide_permission_indicator_hint">红色感叹号表示权限未就绪或状态无法确认。点击右侧状态图标可刷新。</string>
+    <string name="guide_details_expand">展开说明</string>
+    <string name="guide_details_collapse">收起说明</string>
     <string name="privacy_choice_body_3">在适用法律规定的范围内，您可以就相关个人信息提出查阅、复制、更正、删除或其他权利请求。归元不设用户账户，也没有集中保存用户资料的服务端系统；维护者通常无法直接访问或删除仅保存在您设备上的信息。对于已提交至第三方平台的信息，您可能需要向相应接收方提出请求。</string>
     <string name="privacy_last_updated">最后更新：2026-10-31</string>
     <string name="terms_last_updated">最后更新：2026-10-31</string>
