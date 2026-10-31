@@ -161,11 +161,17 @@ internal fun OnboardingFlow(
         null -> 0
     }
     fun advance() {
-        when (step) {
-            0, 1, 2 -> pages.add(GuidePage.Stage(step + 1))
-            3 -> pages.add(GuidePage.Complete)
-            else -> onComplete()
+        val next = when (step) {
+            0, 1, 2 -> GuidePage.Stage(step + 1)
+            3 -> GuidePage.Complete
+            else -> {
+                onComplete()
+                return
+            }
         }
+        // MIUIX rejects duplicate content keys. Guard fast repeated taps before
+        // the new page has had a chance to recompose.
+        if (next !in pages) pages.add(next)
     }
     fun back() {
         if (pages.size > 1) pages.removeLastOrNull() else onExit?.invoke()
@@ -280,6 +286,17 @@ internal fun OnboardingFlow(
                     when (step) {
                         1 -> {
                             GuidePermissionItem(
+                                title = stringResource(R.string.guide_framework),
+                                status = when (framework) {
+                                    XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
+                                    XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_offline)
+                                    XposedStatus.QueryUnavailable -> stringResource(R.string.guide_status_unknown)
+                                    is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
+                                },
+                                checked = connected != null,
+                            )
+                            Spacer(Modifier.height(10.dp))
+                            GuidePermissionItem(
                                 title = stringResource(R.string.guide_sysui_scope),
                                 status = when {
                                     sysUiInScope -> stringResource(R.string.guide_scope_ready)
@@ -297,13 +314,9 @@ internal fun OnboardingFlow(
                                     }
                                 } else null,
                             )
-                            Text(
+                            SmallTitle(
                                 text = stringResource(R.string.guide_permission_later),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
                             )
                             GuidePermissionItem(
                                 title = stringResource(R.string.guide_root_title),
@@ -331,17 +344,6 @@ internal fun OnboardingFlow(
                                         }
                                     }
                                 },
-                            )
-                            Spacer(Modifier.height(10.dp))
-                            GuidePermissionItem(
-                                title = stringResource(R.string.guide_framework),
-                                status = when (framework) {
-                                    XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
-                                    XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_offline)
-                                    XposedStatus.QueryUnavailable -> stringResource(R.string.guide_status_unknown)
-                                    is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
-                                },
-                                checked = connected != null,
                             )
                             if (scopeBusy || scopeRequestFailed) {
                                 Text(
