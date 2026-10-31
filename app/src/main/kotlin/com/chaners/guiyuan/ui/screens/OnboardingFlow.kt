@@ -903,14 +903,14 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                             minHeight = 70.dp,
                         ) {
                             Canvas(Modifier.width(31.dp).height(22.dp)) {
-                            val middle = size.height / 2f
-                            val tip = size.width * if (arrowRtl) 0.04f else 0.96f
-                            val tail = size.width * if (arrowRtl) 0.96f else 0.04f
-                            val wing = size.height * 0.42f
-                            val base = tip + if (arrowRtl) wing else -wing
-                            drawLine(actionColors.content, Offset(tail, middle), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
-                            drawLine(actionColors.content, Offset(base, middle - wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
-                            drawLine(actionColors.content, Offset(base, middle + wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                                val middle = size.height / 2f
+                                val tip = size.width * if (arrowRtl) 0.04f else 0.96f
+                                val tail = size.width * if (arrowRtl) 0.96f else 0.04f
+                                val wing = size.height * 0.42f
+                                val base = tip + if (arrowRtl) wing else -wing
+                                drawLine(actionColors.content, Offset(tail, middle), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                                drawLine(actionColors.content, Offset(base, middle - wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                                drawLine(actionColors.content, Offset(base, middle + wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
                             }
                         }
                     }
