@@ -24,16 +24,19 @@ class GuideActionContrastTest {
         )
         for ((surface, onSurface, accent) in themes) {
             val action = resolveGuideActionColors(surface, onSurface, accent)
-            assertEquals(1f, action.container.alpha, 0.00001f)
-            assertTrue(action.materialAlpha in 0f..0.30f)
+            assertTrue(action.container.alpha in 0.82f..1f)
+            assertTrue(action.materialAlpha in 0f..0.22f)
             for (position in listOf(0f, 0.25f, 0.5f, 0.75f, 1f)) {
                 val stop = androidx.compose.ui.graphics.lerp(action.container, action.gradientEnd, position)
-                for (extreme in listOf(Color.Black, Color.White)) {
-                    val mixed = extreme.copy(alpha = action.materialAlpha).compositeOver(stop)
-                    assertTrue(
-                        "Foreground contrast is below 4.5 in theme $surface at $position",
-                        contrast(action.content, mixed) >= 4.5f,
-                    )
+                for (background in listOf(Color.Black, Color.White)) {
+                    val resolved = stop.compositeOver(background)
+                    for (extreme in listOf(Color.Black, Color.White)) {
+                        val mixed = extreme.copy(alpha = action.materialAlpha).compositeOver(resolved)
+                        assertTrue(
+                            "Foreground contrast is below 4.5 in theme $surface at $position",
+                            contrast(action.content, mixed) >= 4.5f,
+                        )
+                    }
                 }
             }
         }

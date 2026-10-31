@@ -767,6 +767,15 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
         colors = BlurColors(blendColors = blend),
         contentBlendMode = BlendMode.DstIn,
     )
+    // The action is much smaller than the mark; use a local sample of the same
+    // backdrop and blend rather than flattening the full 150dp region.
+    val actionMaterial = if (!blurSupported) Modifier else Modifier.textureBlur(
+        backdrop = backdrop,
+        shape = RoundedCornerShape(0.dp),
+        blurRadius = 56f,
+        colors = BlurColors(blendColors = blend),
+        contentBlendMode = BlendMode.DstIn,
+    )
     val wave = remember { Animatable(0f) }
     var wavePhase by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
@@ -867,7 +876,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                         cornerRadius = 16.dp,
                         container = actionColors.container,
                         gradientEnd = actionColors.gradientEnd,
-                        material = identityMaterial,
+                        material = actionMaterial,
                         materialAlpha = actionColors.materialAlpha,
                         enabled = blurSupported,
                     )
@@ -896,7 +905,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                             cornerRadius = 35.dp,
                             container = actionColors.container,
                             gradientEnd = actionColors.gradientEnd,
-                            material = identityMaterial,
+                            material = actionMaterial,
                             materialAlpha = actionColors.materialAlpha,
                             enabled = blurSupported,
                         )
@@ -966,24 +975,30 @@ private fun guideContrastRatio(foreground: Color, background: Color): Float {
 }
 
 internal fun resolveGuideActionColors(surface: Color, onSurface: Color, logoTint: Color): GuideActionColors {
-    // Use the actual logo foreground tint, not the separately resolved primary accent.
-    // The logo's own MIUIX brand blend is still applied as the upper material layer.
-    for (baseMix in listOf(0.40f, 0.32f, 0.24f, 0.16f, 0.08f, 0f)) {
-        val container = lerp(logoTint, onSurface, baseMix)
-        for (endMix in listOf(0f, 0.10f, 0.20f, 0.30f)) {
-            val gradientEnd = lerp(logoTint, onSurface, endMix)
-            for (materialAlpha in listOf(0.30f, 0.26f, 0.22f, 0.18f, 0.14f, 0.10f, 0f)) {
-                val contrastSafe = listOf(0f, 0.25f, 0.5f, 0.75f, 1f).all { position ->
-                    val stop = lerp(container, gradientEnd, position)
-                    listOf(Color.Black, Color.White).all { pigment ->
-                        guideContrastRatio(
-                            surface,
-                            pigment.copy(alpha = materialAlpha).compositeOver(stop),
-                        ) >= 4.5f
+    // Match the actual logo tint while letting the guide's animated backdrop
+    // show through. Check the two limiting backdrop colors as well as the
+    // strongest possible light/dark pigment before accepting a translucent stop.
+    for (opacity in listOf(0.82f, 0.86f, 0.90f, 0.94f, 1f)) {
+        for (baseMix in listOf(0.24f, 0.16f, 0.08f, 0f)) {
+            val container = lerp(logoTint, onSurface, baseMix).copy(alpha = opacity)
+            for (endMix in listOf(0f, 0.10f, 0.20f)) {
+                val gradientEnd = lerp(logoTint, onSurface, endMix).copy(alpha = opacity)
+                for (materialAlpha in listOf(0.22f, 0.18f, 0.14f, 0.10f, 0.06f, 0f)) {
+                    val contrastSafe = listOf(0f, 0.25f, 0.5f, 0.75f, 1f).all { position ->
+                        val stop = lerp(container, gradientEnd, position)
+                        listOf(Color.Black, Color.White).all { background ->
+                            val resolved = stop.compositeOver(background)
+                            listOf(Color.Black, Color.White).all { pigment ->
+                                guideContrastRatio(
+                                    surface,
+                                    pigment.copy(alpha = materialAlpha).compositeOver(resolved),
+                                ) >= 4.5f
+                            }
+                        }
                     }
-                }
-                if (contrastSafe) {
-                    return GuideActionColors(container, gradientEnd, surface, materialAlpha)
+                    if (contrastSafe) {
+                        return GuideActionColors(container, gradientEnd, surface, materialAlpha)
+                    }
                 }
             }
         }
