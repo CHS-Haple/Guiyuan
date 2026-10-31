@@ -63,6 +63,7 @@ internal fun AboutScreen(
     onBack: () -> Unit,
     onOpenThirdParty: () -> Unit,
     onOpenPrivacy: () -> Unit,
+    onOpenTerms: () -> Unit,
     onOpenGuide: () -> Unit,
     onOpenScopes: () -> Unit,
 ) {
@@ -239,6 +240,14 @@ internal fun AboutScreen(
                                 if (BuildConfig.REPO_LINK_ENABLED) ABOUT_LICENSE_URL else GPL_LICENSE_URL,
                             )
                         },
+                    )
+                    ArrowPreference(
+                        title = stringResource(R.string.terms_title),
+                        summary = stringResource(R.string.about_terms_summary),
+                        startAction = {
+                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_license)
+                        },
+                        onClick = onOpenTerms,
                     )
                     ArrowPreference(
                         title = stringResource(R.string.privacy_title),

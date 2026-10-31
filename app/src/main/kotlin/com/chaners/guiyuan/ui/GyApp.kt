@@ -26,6 +26,7 @@ import com.chaners.guiyuan.ui.screens.AboutScreen
 import com.chaners.guiyuan.ui.screens.AboutThirdPartyScreen
 import com.chaners.guiyuan.ui.screens.OnboardingFlow
 import com.chaners.guiyuan.ui.screens.PrivacyPolicyScreen
+import com.chaners.guiyuan.ui.screens.TermsOfUseScreen
 import com.chaners.guiyuan.ui.screens.StaticScopeScreen
 import com.chaners.guiyuan.ui.screens.AppearanceScreen
 import com.chaners.guiyuan.ui.screens.DiagnosticsScreen
@@ -337,6 +338,7 @@ internal fun GyApp(
                     onBack = ::navigateBack,
                     onOpenThirdParty = { navigate(AppRoute.AboutThirdParty) },
                     onOpenPrivacy = { navigate(AppRoute.PrivacyPolicy) },
+                    onOpenTerms = { navigate(AppRoute.TermsOfUse) },
                     onOpenGuide = { navigate(AppRoute.Onboarding) },
                     onOpenScopes = { navigate(AppRoute.StaticScopes) },
                 )
@@ -353,6 +355,9 @@ internal fun GyApp(
             }
             entry<AppRoute.PrivacyPolicy>(swipeDismiss = swipeBackDirection) {
                 PrivacyPolicyScreen(onBack = ::navigateBack)
+            }
+            entry<AppRoute.TermsOfUse>(swipeDismiss = swipeBackDirection) {
+                TermsOfUseScreen(onBack = ::navigateBack)
             }
             entry<AppRoute.AboutThirdParty>(swipeDismiss = swipeBackDirection) {
                 AboutThirdPartyScreen(onBack = ::navigateBack)

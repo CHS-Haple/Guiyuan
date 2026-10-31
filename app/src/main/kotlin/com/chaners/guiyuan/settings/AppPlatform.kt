@@ -37,7 +37,8 @@ internal object AppPlatform {
     fun completeOnboarding(ctx: Context) {
         ctx.getSharedPreferences(GUIDE_PREFS, Context.MODE_PRIVATE)
             .edit()
-            .putInt("privacy_ack_version", 1)
+            .putInt("privacy_ack_version", 2)
+            .putInt("terms_ack_version", 1)
             .putBoolean(GUIDE_COMPLETED, true)
             .apply()
     }

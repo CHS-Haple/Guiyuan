@@ -58,6 +58,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.LinkInteractionListener
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
@@ -117,7 +120,7 @@ internal fun OnboardingFlow(
 
     // 0 Welcome, 1 permissions, 2 privacy, 3 basic settings, 4 complete.
     var step by rememberSaveable { mutableIntStateOf(0) }
-    var policyOpen by rememberSaveable { mutableStateOf(false) }
+    var openDocument by rememberSaveable { mutableStateOf<AgreementDocument?>(null) }
     var policyAccepted by rememberSaveable { mutableStateOf(false) }
     var scopeRequestFailed by remember { mutableStateOf(false) }
     var rootChecking by remember { mutableStateOf(false) }
@@ -127,9 +130,9 @@ internal fun OnboardingFlow(
     val scroll = rememberScrollState()
 
     LaunchedEffect(step) { scroll.scrollTo(0) }
-    BackHandler(enabled = policyOpen || step > 0 || onExit != null) {
+    BackHandler(enabled = openDocument != null || step > 0 || onExit != null) {
         when {
-            policyOpen -> policyOpen = false
+            openDocument != null -> openDocument = null
             step > 0 -> step--
             else -> onExit?.invoke()
         }
@@ -294,22 +297,45 @@ internal fun OnboardingFlow(
                             )
                         }
                         2 -> {
-                            Card(modifier = Modifier.fillMaxWidth()) {
-                                Column(Modifier.padding(18.dp)) {
-                                    Text(
-                                        text = stringResource(R.string.guide_privacy_brief),
-                                        style = MiuixTheme.textStyles.body2,
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    )
-                                    Spacer(Modifier.height(12.dp))
-                                    TextButton(
-                                        text = stringResource(R.string.guide_read_policy),
-                                        onClick = { policyOpen = true },
-                                        modifier = Modifier.fillMaxWidth(),
-                                    )
-                                }
+                            val intro = stringResource(R.string.guide_agreement_prefix)
+                            val divider = stringResource(R.string.guide_agreement_separator)
+                            val ending = stringResource(R.string.guide_agreement_suffix)
+                            val termsLabel = stringResource(R.string.guide_terms_link_text)
+                            val privacyLabel = stringResource(R.string.guide_policy_link_text)
+                            val linkedText = buildAnnotatedString {
+                                append(intro)
+                                pushLink(LinkAnnotation.Clickable(
+                                    tag = "terms",
+                                    linkInteractionListener = LinkInteractionListener {
+                                        openDocument = AgreementDocument.Terms
+                                    },
+                                ))
+                                append(termsLabel)
+                                pop()
+                                append(divider)
+                                pushLink(LinkAnnotation.Clickable(
+                                    tag = "privacy",
+                                    linkInteractionListener = LinkInteractionListener {
+                                        openDocument = AgreementDocument.Privacy
+                                    },
+                                ))
+                                append(privacyLabel)
+                                pop()
+                                append(ending)
                             }
-                            Spacer(Modifier.height(14.dp))
+                            Text(
+                                text = linkedText,
+                                modifier = Modifier.fillMaxWidth(),
+                                style = MiuixTheme.textStyles.body2.copy(lineHeight = 26.sp),
+                                color = MiuixTheme.colorScheme.onSurface,
+                            )
+                            Spacer(Modifier.height(24.dp))
+                            Text(
+                                text = stringResource(R.string.guide_privacy_brief),
+                                style = MiuixTheme.textStyles.body2.copy(lineHeight = 26.sp),
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                            Spacer(Modifier.height(20.dp))
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -362,14 +388,14 @@ internal fun OnboardingFlow(
             // Both overlays require the composition locals owned by this Scaffold.
             AppSettingsEntryDialogs(entryState)
             UiOverlayBottomSheet(
-                show = policyOpen,
+                show = openDocument != null,
                 modifier = Modifier.fillMaxHeight(0.85f),
-                title = stringResource(R.string.privacy_title),
+                title = stringResource((openDocument ?: AgreementDocument.Privacy).titleRes()),
                 backgroundColor = MiuixTheme.colorScheme.background,
                 insideMargin = DpSize(0.dp, 0.dp),
-                onDismissRequest = { policyOpen = false },
+                onDismissRequest = { openDocument = null },
             ) {
-                PrivacyPolicySheetBody()
+                openDocument?.let { AgreementSheetBody(it) }
             }
         }
     }
