@@ -262,6 +262,8 @@ After a dev-to-main merge, verify that long-lived `dev` still exists; recreate i
 
 Pure docs/metadata/governance may use the shortest safe path. Keep shared policy/current-state documents aligned across long-lived branches when divergence would mislead development.
 
+For shared build/signing workflow, pinned-action or contribution-rule changes, compare `main`, `dev` and `it` during the same review. Promptly carry validated common changes through branch-targeted PRs, preserving each branch's triggers, trust boundaries and IT-only restrictions; document deliberate differences instead of blindly copying whole workflows. Do not bump Build identities or merge unrelated branch histories solely to synchronize governance.
+
 CI/build/release workflow changes require Full validation because they change the validation mechanism; device testing is needed only if APK/runtime behavior also changes.
 
 ### Hotfix
