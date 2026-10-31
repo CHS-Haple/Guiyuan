@@ -151,15 +151,15 @@ internal fun OnboardingFlow(
                 Column(
                     modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(scroll),
                 ) {
-                    Spacer(Modifier.height(32.dp))
+                    Spacer(Modifier.height(36.dp))
                     Box(
-                        modifier = Modifier.fillMaxWidth().height(126.dp),
+                        modifier = Modifier.fillMaxWidth().height(88.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Image(
                             painter = painterResource(illustration),
                             contentDescription = null,
-                            modifier = Modifier.size(100.dp),
+                            modifier = Modifier.size(70.dp),
                             colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
                         )
                     }
@@ -170,7 +170,7 @@ internal fun OnboardingFlow(
                         fontWeight = FontWeight.Medium,
                         textAlign = TextAlign.Center,
                     )
-                    Spacer(Modifier.height(40.dp))
+                    Spacer(Modifier.height(30.dp))
                     when (step) {
                         1 -> {
                             GuideGroupLabel(stringResource(R.string.guide_module_group))
@@ -341,7 +341,7 @@ internal fun OnboardingFlow(
                     enabled = step != 2 || policyAccepted,
                     onClick = { step++ },
                 )
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(44.dp))
             }
         }
         AppSettingsEntryDialogs(entryState)
@@ -403,7 +403,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     GuiyuanAnimatedIdentityMark(
-                        markSize = 106.dp,
+                        markSize = 90.dp,
                         wave = wave,
                         wavePhase = 0f,
                         onWaveRelease = {},
