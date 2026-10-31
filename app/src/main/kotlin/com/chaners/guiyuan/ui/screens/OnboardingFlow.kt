@@ -31,9 +31,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -101,7 +101,6 @@ import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
-import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
@@ -197,11 +196,12 @@ internal fun OnboardingFlow(
     var scopeRequestFailed by remember { mutableStateOf(false) }
     var rootChecking by remember { mutableStateOf(false) }
     var rootAccess by remember { mutableStateOf<Boolean?>(null) }
+    var rootRefresh by remember { mutableIntStateOf(0) }
     val entryState = rememberAppSettingsEntryState(runtimeBusy = false)
-    val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(step) {
-        // Only visiting Permissions triggers a Root status query, never app launch.
+    // Both the initial check and explicit refresh belong to the Permissions step.
+    // Leaving it cancels RootShell.execute and destroys its temporary su process.
+    LaunchedEffect(step, rootRefresh) {
         if (step == 1) {
             rootChecking = true
             try {
@@ -381,21 +381,7 @@ internal fun OnboardingFlow(
                                     checked = rootAccess == true,
                                     guidance = if (rootAccess == false) stringResource(R.string.guide_root_help) else null,
                                     onClick = if (rootChecking) null else {
-                                        {
-                                            coroutineScope.launch {
-                                                rootChecking = true
-                                                try {
-                                                    val result = RootShell.execute(
-                                                        context = context,
-                                                        command = "id -u",
-                                                        timeoutSeconds = 15L,
-                                                    )
-                                                    rootAccess = result.isSuccess && result.output.trim() == "0"
-                                                } finally {
-                                                    rootChecking = false
-                                                }
-                                            }
-                                        }
+                                        { rootRefresh++ }
                                     },
                                 )
                             }
