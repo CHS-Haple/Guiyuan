@@ -178,6 +178,7 @@ internal fun SettingsPage(
     glassActions: Boolean = false,
     titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     titleAlpha: Float = 1f,
+    compactTopBar: Boolean = false,
     keepCompactTitle: Boolean = false,
     userScrollEnabled: Boolean = true,
     listState: LazyListState? = null,
@@ -223,6 +224,7 @@ internal fun SettingsPage(
                     backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
                     titleAlpha = { titleAlpha },
+                    compact = compactTopBar,
                     titlePadding = titlePadding,
                     navigationIcon = navigationIcon,
                     actions = {
