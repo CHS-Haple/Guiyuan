@@ -507,7 +507,7 @@ internal fun OnboardingFlow(
                     text = stringResource(
                         if (step == 2) R.string.guide_agree_continue else R.string.guide_continue,
                     ),
-                    modifier = Modifier.widthIn(max = 336.dp).fillMaxWidth().height(50.dp),
+                    modifier = Modifier.widthIn(max = 336.dp).fillMaxWidth().heightIn(min = 50.dp),
                     cornerRadius = 16.dp,
                     textStyle = MiuixTheme.textStyles.button,
                     colors = ButtonDefaults.textButtonColorsPrimary(),
@@ -675,7 +675,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
             if (completed) {
                 TextButton(
                     text = stringResource(R.string.guide_start),
-                    modifier = Modifier.widthIn(max = 336.dp).fillMaxWidth().height(50.dp),
+                    modifier = Modifier.widthIn(max = 336.dp).fillMaxWidth().heightIn(min = 50.dp),
                     cornerRadius = 16.dp,
                     textStyle = MiuixTheme.textStyles.button,
                     colors = ButtonDefaults.textButtonColors(
