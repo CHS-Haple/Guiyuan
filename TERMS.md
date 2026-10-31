@@ -24,9 +24,9 @@ Root 并非全部功能的必要条件。进入首次引导的权限页面时，
 
 ### 免责声明与责任限制
 
-归元作为免费开源软件，按“现状”和“可获得”状态提供。除适用法律另有规定或项目维护者作出有效书面承诺外，维护者不对软件的持续可用性、无错误性、特定用途适用性、设备及系统兼容性或预期效果作出明示或默示保证。系统环境的变化可能使此前正常工作的功能无法继续使用。
+归元是依据 GPL-3.0-only 许可证提供的免费开源软件，按“现状”提供。在适用法律允许的范围内，除另有有效书面约定外，项目维护者及贡献者不对软件作出任何明示或默示担保，包括对适销性、特定用途适用性、持续可用性、系统兼容性或特定效果的担保。
 
-在适用法律允许的范围内，除另有有效书面约定外，项目维护者和贡献者不对因使用或无法使用归元而产生的间接、附带、特殊或后果性损失承担责任。对于设备异常、配置损坏、数据丢失等其他损害，相关责任仍须依据适用法律和具体事实确定。本条款不排除或限制法律规定不得免除的责任，包括造成人身损害的责任，以及因故意或重大过失造成对方财产损失的责任；也不限制 GPL-3.0-only 等适用开源许可证授予的权利。
+在适用法律允许的范围内，除另有有效书面约定外，项目维护者及贡献者不承担因使用或无法使用归元而产生的损害赔偿责任。本声明不排除依法不得排除的权利或责任，也不对 GPL-3.0-only 许可证授予的权利施加额外限制。
 
 ### 开源许可与第三方组件
 
@@ -64,9 +64,9 @@ System updates, conflicting modules, or device differences may cause display def
 
 ### Disclaimer of warranty and limitation of liability
 
-Guiyuan is free and open-source software provided on an “as is” and “as available” basis. Unless applicable law requires otherwise or the maintainers make an enforceable written commitment, they make no express or implied warranty of uninterrupted operation, error-free performance, fitness for a particular purpose, device or system compatibility, or any particular outcome. Changes to the system environment may prevent previously working features from continuing to function.
+Guiyuan is free and open-source software provided “as is” under GPL-3.0-only. To the extent permitted by applicable law and unless otherwise agreed in a valid written agreement, the maintainers and contributors provide no express or implied warranties, including merchantability, fitness for a particular purpose, continued availability, system compatibility, or particular results.
 
-To the extent permitted by applicable law, and unless otherwise agreed in an enforceable written agreement, the maintainers and contributors are not liable for indirect, incidental, special, or consequential losses arising from the use of or inability to use Guiyuan. Responsibility for device malfunction, damaged configuration, lost data, or other harm remains subject to applicable law and the particular facts. Nothing in these Terms excludes or limits liability that cannot lawfully be excluded, including liability for personal injury or for property loss caused by intentional misconduct or gross negligence; nor does it restrict rights granted under GPL-3.0-only or other applicable open-source licenses.
+To the extent permitted by applicable law and unless otherwise agreed in a valid written agreement, the maintainers and contributors are not liable for damages arising from the use of or inability to use Guiyuan. This disclaimer does not exclude any right or liability that cannot lawfully be excluded or impose additional restrictions on rights granted by GPL-3.0-only.
 
 ### Open-source license and third-party components
 
