@@ -67,6 +67,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.LinkInteractionListener
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -571,8 +574,33 @@ internal fun OnboardingFlow(
                             state = ToggleableState(policyAccepted),
                             onClick = null,
                         )
+                        val acknowledgment = stringResource(R.string.guide_privacy_ack)
+                        val terms = stringResource(R.string.guide_terms_link_text)
+                        val privacy = stringResource(R.string.guide_policy_link_text)
+                        val linkedAcknowledgment = buildAnnotatedString {
+                            append(acknowledgment)
+                            listOf(
+                                Triple(terms, AgreementDocument.Terms, "terms"),
+                                Triple(privacy, AgreementDocument.Privacy, "privacy"),
+                            ).forEach { (label, document, tag) ->
+                                val start = acknowledgment.indexOf(label)
+                                if (start >= 0) {
+                                    addLink(
+                                        LinkAnnotation.Clickable(
+                                            tag = tag,
+                                            linkInteractionListener = LinkInteractionListener {
+                                                openDocument = document
+                                                documentVisible = true
+                                            },
+                                        ),
+                                        start,
+                                        start + label.length,
+                                    )
+                                }
+                            }
+                        }
                         Text(
-                            text = stringResource(R.string.guide_privacy_ack),
+                            text = linkedAcknowledgment,
                             modifier = Modifier.weight(1f),
                             style = MiuixTheme.textStyles.body1.copy(lineHeight = 1.4f.em),
                             color = MiuixTheme.colorScheme.onSurface,
