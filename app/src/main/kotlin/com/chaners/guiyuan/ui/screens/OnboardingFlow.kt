@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -41,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
@@ -53,6 +55,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import top.yukonga.miuix.kmp.blur.BlurColors
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.textureBlur
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
@@ -386,11 +393,22 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
             lerp(surface, accent, 0.19f),
         ),
     )
+    val blurSupported = remember { isRuntimeShaderSupported() }
+    val backdrop = rememberLayerBackdrop()
+    val blend = rememberBrandLogoBlend()
+    val identityMaterial = if (!blurSupported) Modifier else Modifier.textureBlur(
+        backdrop = backdrop,
+        shape = RoundedCornerShape(0.dp),
+        blurRadius = 150f,
+        colors = BlurColors(blendColors = blend),
+        contentBlendMode = BlendMode.DstIn,
+    )
     val wave = remember { Animatable(0f) }
     Box(modifier = Modifier.fillMaxSize().background(fallback)) {
         BgEffectBackground(
             dynamicBackground = resumed,
             modifier = Modifier.fillMaxSize(),
+            bgModifier = if (blurSupported) Modifier.layerBackdrop(backdrop) else Modifier,
             isFullSize = true,
         ) {}
         Column(
@@ -403,20 +421,22 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     GuiyuanAnimatedIdentityMark(
-                        markSize = 90.dp,
+                        markSize = 100.dp,
                         wave = wave,
                         wavePhase = 0f,
                         onWaveRelease = {},
                         interactive = false,
                         active = resumed,
+                        effectModifier = identityMaterial,
                     )
-                    Spacer(Modifier.height(22.dp))
+                    Spacer(Modifier.height(12.dp))
                     Text(
                         text = stringResource(R.string.product_name),
-                        fontSize = 43.sp,
+                        modifier = identityMaterial,
+                        fontSize = 35.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
-                        color = MiuixTheme.colorScheme.onSurface,
+                        color = MiuixTheme.colorScheme.onBackground,
                     )
                     if (completed) {
                         Spacer(Modifier.height(36.dp))
