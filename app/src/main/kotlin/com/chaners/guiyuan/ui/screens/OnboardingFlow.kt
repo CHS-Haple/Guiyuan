@@ -319,7 +319,7 @@ internal fun OnboardingFlow(
                             navigationIcon = { UiTopBarNavigationIcon(onBack = ::back) },
                             actions = refreshAction,
                             unclippedNavigationIcon = true,
-                            unclippedActions = true,
+                            unclippedActions = step == 1,
                         )
                     } else {
                         MiuixBlurredTopBar(
