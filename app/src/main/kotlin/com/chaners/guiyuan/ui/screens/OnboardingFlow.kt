@@ -90,6 +90,7 @@ import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -362,6 +363,10 @@ internal fun OnboardingFlow(
                             }
                         }
                         3 -> {
+                            SmallTitle(
+                                text = stringResource(R.string.section_app),
+                                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            )
                             Card(modifier = Modifier.fillMaxWidth()) {
                                 AppSettingsRows(
                                     lang = lang,

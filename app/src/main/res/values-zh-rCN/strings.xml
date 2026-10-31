@@ -564,7 +564,6 @@
     <string name="guide_basic_title">基础设置</string>
     <string name="guide_module_group">模块</string>
     <string name="guide_permissions_note">SystemUI 作用域与 Root 权限都可以稍后设置。</string>
-    <string name="guide_basic_group">应用</string>
     <string name="guide_desktop_icon">显示桌面图标</string>
     <string name="terms_intro">本条款适用于归元应用及模块的安装、配置和使用，说明使用条件、权限边界、兼容性风险和开源许可。有关设备信息和诊断数据的处理方式，请另阅《隐私政策》。</string>
     <string name="privacy_local_body_2">应用不提供用户账户，不申请 Android 的 INTERNET 权限，并且关闭了 Android 自动应用备份。</string>

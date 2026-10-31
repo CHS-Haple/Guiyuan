@@ -565,7 +565,6 @@
     <string name="guide_basic_title">Basic settings</string>
     <string name="guide_module_group">Module</string>
     <string name="guide_permissions_note">You can set up SystemUI and optional Root access later.</string>
-    <string name="guide_basic_group">Application</string>
     <string name="guide_desktop_icon">Show launcher icon</string>
     <string name="terms_intro">These Terms of Use apply to installing, configuring, and using the Guiyuan app and module. They explain operating requirements, privileges, compatibility risks, and open-source licensing. For device information and diagnostics, see the separate Privacy Policy.</string>
     <string name="privacy_local_body_2">The app has no user-account system, does not request Android\'s INTERNET permission, and disables Android automatic app backup.</string>
