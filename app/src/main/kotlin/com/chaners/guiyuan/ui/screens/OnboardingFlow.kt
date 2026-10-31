@@ -206,6 +206,7 @@ internal fun OnboardingFlow(
         if (pages.size > 1) pages.removeLastOrNull() else onExit?.invoke()
     }
     var openDocument by rememberSaveable { mutableStateOf<AgreementDocument?>(null) }
+    var documentVisible by rememberSaveable { mutableStateOf(false) }
     var policyAccepted by rememberSaveable { mutableStateOf(false) }
     var scopeRequestFailed by remember { mutableStateOf(false) }
     var rootChecking by remember { mutableStateOf(false) }
@@ -247,7 +248,8 @@ internal fun OnboardingFlow(
             }
         }
     }
-    BackHandler(enabled = openDocument != null) { openDocument = null }
+    // Keep the selected document mounted through MIUIX's native sheet exit.
+    BackHandler(enabled = documentVisible) { documentVisible = false }
 
     NavDisplay(
         backStack = pages,
@@ -491,7 +493,10 @@ internal fun OnboardingFlow(
                                                 tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                             )
                                         },
-                                        onClick = { openDocument = AgreementDocument.Terms },
+                                        onClick = {
+                                            openDocument = AgreementDocument.Terms
+                                            documentVisible = true
+                                        },
                                     )
                                 }
                                 Spacer(Modifier.height(12.dp))
@@ -515,7 +520,10 @@ internal fun OnboardingFlow(
                                                 tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                             )
                                         },
-                                        onClick = { openDocument = AgreementDocument.Privacy },
+                                        onClick = {
+                                            openDocument = AgreementDocument.Privacy
+                                            documentVisible = true
+                                        },
                                     )
                                 }
                                 Spacer(Modifier.height(24.dp))
@@ -643,12 +651,15 @@ internal fun OnboardingFlow(
                         }
                     }
                     2 -> UiOverlayBottomSheet(
-                        show = openDocument != null,
+                        show = documentVisible,
                         modifier = Modifier.fillMaxHeight(0.85f),
                         title = stringResource((openDocument ?: AgreementDocument.Privacy).titleRes()),
                         backgroundColor = MiuixTheme.colorScheme.background,
                         insideMargin = DpSize(0.dp, 0.dp),
-                        onDismissRequest = { openDocument = null },
+                        onDismissRequest = { documentVisible = false },
+                        onDismissFinished = {
+                            if (!documentVisible) openDocument = null
+                        },
                     ) {
                         openDocument?.let { AgreementSheetBody(it) }
                     }
