@@ -2,11 +2,12 @@ package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.background
@@ -958,22 +959,38 @@ private fun GuidePermissionItem(
                 style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
                 color = MiuixTheme.colorScheme.onBackground,
             )
+            val questionPress = remember { MutableInteractionSource() }
             TooltipBox(text = detailsLabel) {
-                IconButton(onClick = onToggleDetails, modifier = Modifier.size(40.dp)) {
-                    Icon(
-                        imageVector = MiuixIcons.Regular.Help,
-                        contentDescription = detailsLabel,
-                        modifier = Modifier.size(20.dp),
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    )
+                Box(
+                    modifier = Modifier.size(40.dp).clickable(
+                        interactionSource = questionPress,
+                        indication = null,
+                        onClickLabel = detailsLabel,
+                        role = Role.Button,
+                        onClick = onToggleDetails,
+                    ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        modifier = Modifier.size(28.dp)
+                            .indication(questionPress, LocalIndication.current),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Regular.Help,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                        )
+                    }
                 }
             }
         }
     }
     AnimatedVisibility(
         visible = expanded,
-        enter = expandVertically() + fadeIn(),
-        exit = shrinkVertically() + fadeOut(),
+        enter = expandVertically(expandFrom = Alignment.Top),
+        exit = shrinkVertically(shrinkTowards = Alignment.Top),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
