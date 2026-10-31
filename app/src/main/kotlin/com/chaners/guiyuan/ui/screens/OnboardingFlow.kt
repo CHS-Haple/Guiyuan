@@ -251,7 +251,8 @@ internal fun OnboardingFlow(
 
     NavDisplay(
         backStack = pages,
-        onBack = ::back,
+        // The sheet owns live Back gestures; block page navigation until its exit completes.
+        onBack = { if (openDocument == null) back() },
         transition = guideStepTransition,
         effects = NavDisplayEffects(
             enableCornerClip = false,
