@@ -27,6 +27,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.annotation.DrawableRes
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -59,6 +60,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.res.stringResource
@@ -72,6 +74,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.em
 import top.yukonga.miuix.kmp.blur.BlurColors
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -88,12 +91,10 @@ import top.yukonga.miuix.kmp.nav.core.NavKey
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
 import top.yukonga.miuix.kmp.nav.core.rememberNavBackStack
-import top.yukonga.miuix.kmp.nav.core.rememberNavSystemCornerRadius
-import top.yukonga.miuix.kmp.nav.transition.NavTransitions
+import top.yukonga.miuix.kmp.nav.transition.navGraphicsTransition
 import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
-import top.yukonga.miuix.kmp.basic.TooltipBox
 import com.chaners.guiyuan.system.RootShell
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
@@ -103,6 +104,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Icon
@@ -113,9 +116,15 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Check
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.PressFeedbackType
+
+// Guide steps are peers, not push-overlay destinations. Share MIUIX's motion and
+// gesture driver while both pages translate the entire width in opposite directions.
+private val guideStepTransition = navGraphicsTransition { scope ->
+    val offset = (-scope.relativeDepth).coerceIn(-1f, 1f)
+    val direction = if (scope.layoutDirection == LayoutDirection.Rtl) -1f else 1f
+    translationX = (offset * direction * scope.layoutSize.width.toFloat()).fastRoundToInt().toFloat()
+}
 
 @Serializable
 private sealed interface GuidePage : NavKey {
@@ -201,9 +210,11 @@ internal fun OnboardingFlow(
     NavDisplay(
         backStack = pages,
         onBack = ::back,
-        transition = NavTransitions.MiuixDefault,
+        transition = guideStepTransition,
         effects = NavDisplayEffects(
-            cornerClipRadius = rememberNavSystemCornerRadius(),
+            enableCornerClip = false,
+            dimAmount = 0f,
+            blockInputDuringTransition = true,
             backdropColor = MiuixTheme.colorScheme.surface,
         ),
     ) {
@@ -238,13 +249,7 @@ internal fun OnboardingFlow(
                         title = "",
                         color = barColor,
                         scrollBehavior = scrollBehavior,
-                        navigationIcon = {
-                            TooltipBox(text = stringResource(R.string.back)) {
-                                IconButton(onClick = ::back) {
-                                    Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
-                                }
-                            }
-                        },
+                        navigationIcon = { SettingsNavigationIcon(onBack = ::back) },
                     )
                 }
             },
@@ -277,7 +282,7 @@ internal fun OnboardingFlow(
                     ) {
                         Text(
                             text = title,
-                            style = MiuixTheme.textStyles.title2,
+                            style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Medium),
                             textAlign = TextAlign.Center,
                             color = MiuixTheme.colorScheme.onBackground,
                         )
@@ -285,66 +290,70 @@ internal fun OnboardingFlow(
                     Spacer(Modifier.height(30.dp))
                     when (step) {
                         1 -> {
-                            GuidePermissionItem(
-                                title = stringResource(R.string.guide_framework),
-                                status = when (framework) {
-                                    XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
-                                    XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_offline)
-                                    XposedStatus.QueryUnavailable -> stringResource(R.string.guide_status_unknown)
-                                    is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
-                                },
-                                checked = connected != null,
-                            )
-                            Spacer(Modifier.height(10.dp))
-                            GuidePermissionItem(
-                                title = stringResource(R.string.guide_sysui_scope),
-                                status = when {
-                                    sysUiInScope -> stringResource(R.string.guide_scope_ready)
-                                    connected == null -> stringResource(R.string.guide_status_unknown)
-                                    connected.apiVersion < 102 -> stringResource(R.string.guide_api_unsupported)
-                                    else -> stringResource(R.string.guide_scope_not_ready)
-                                },
-                                checked = sysUiInScope,
-                                onClick = if (!sysUiInScope && canRequestScope) {
-                                    {
-                                        scopeRequestFailed = false
-                                        if (!app.requestSysUiScope { approved ->
-                                                scopeRequestFailed = !approved
-                                            }) scopeRequestFailed = true
-                                    }
-                                } else null,
-                            )
-                            SmallTitle(
-                                text = stringResource(R.string.guide_permission_later),
-                                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-                            )
-                            GuidePermissionItem(
-                                title = stringResource(R.string.guide_root_title),
-                                status = when {
-                                    rootChecking -> stringResource(R.string.guide_root_checking)
-                                    rootAccess == true -> stringResource(R.string.guide_root_granted)
-                                    rootAccess == false -> stringResource(R.string.guide_root_unavailable)
-                                    else -> stringResource(R.string.guide_root_not_checked)
-                                },
-                                checked = rootAccess == true,
-                                onClick = if (rootChecking) null else {
-                                    {
-                                        coroutineScope.launch {
-                                            rootChecking = true
-                                            try {
-                                                val result = RootShell.execute(
-                                                    context = context,
-                                                    command = "id -u",
-                                                    timeoutSeconds = 15L,
-                                                )
-                                                rootAccess = result.isSuccess && result.output.trim() == "0"
-                                            } finally {
-                                                rootChecking = false
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                GuidePermissionItem(
+                                    iconRes = R.drawable.ic_material_symbol_extension,
+                                    title = stringResource(R.string.guide_framework),
+                                    status = when (framework) {
+                                        XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
+                                        XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_offline)
+                                        XposedStatus.QueryUnavailable -> stringResource(R.string.guide_status_unknown)
+                                        is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
+                                    },
+                                    checked = connected != null,
+                                )
+                                HorizontalDivider()
+                                GuidePermissionItem(
+                                    iconRes = R.drawable.ic_material_symbol_smartphone,
+                                    title = stringResource(R.string.guide_sysui_scope),
+                                    status = when {
+                                        sysUiInScope -> stringResource(R.string.guide_scope_ready)
+                                        connected == null -> stringResource(R.string.guide_status_unknown)
+                                        connected.apiVersion < 102 -> stringResource(R.string.guide_api_unsupported)
+                                        else -> stringResource(R.string.guide_scope_not_ready)
+                                    },
+                                    checked = sysUiInScope,
+                                    onClick = if (!sysUiInScope && canRequestScope) {
+                                        {
+                                            scopeRequestFailed = false
+                                            if (!app.requestSysUiScope { approved ->
+                                                    scopeRequestFailed = !approved
+                                                }) scopeRequestFailed = true
+                                        }
+                                    } else null,
+                                )
+                            }
+                            SmallTitle(text = stringResource(R.string.guide_permission_later))
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                GuidePermissionItem(
+                                    iconRes = R.drawable.ic_material_symbol_lock,
+                                    title = stringResource(R.string.guide_root_title),
+                                    status = when {
+                                        rootChecking -> stringResource(R.string.guide_root_checking)
+                                        rootAccess == true -> stringResource(R.string.guide_root_granted)
+                                        rootAccess == false -> stringResource(R.string.guide_root_unavailable)
+                                        else -> stringResource(R.string.guide_root_not_checked)
+                                    },
+                                    checked = rootAccess == true,
+                                    onClick = if (rootChecking) null else {
+                                        {
+                                            coroutineScope.launch {
+                                                rootChecking = true
+                                                try {
+                                                    val result = RootShell.execute(
+                                                        context = context,
+                                                        command = "id -u",
+                                                        timeoutSeconds = 15L,
+                                                    )
+                                                    rootAccess = result.isSuccess && result.output.trim() == "0"
+                                                } finally {
+                                                    rootChecking = false
+                                                }
                                             }
                                         }
-                                    }
-                                },
-                            )
+                                    },
+                                )
+                            }
                             if (scopeBusy || scopeRequestFailed) {
                                 Text(
                                     text = stringResource(
@@ -358,81 +367,91 @@ internal fun OnboardingFlow(
                             }
                         }
                         2 -> {
-                            val termsLabel = stringResource(R.string.guide_terms_link_text)
-                            val privacyLabel = stringResource(R.string.guide_policy_link_text)
-                            val line = stringResource(R.string.guide_agreement_line, termsLabel, privacyLabel)
-                            val linkedText = buildAnnotatedString {
-                                append(line)
-                                val termsStart = line.indexOf(termsLabel)
-                                val policyStart = line.indexOf(privacyLabel, termsStart + termsLabel.length)
-                                if (termsStart >= 0) {
-                                    addLink(
-                                        LinkAnnotation.Clickable(
-                                            tag = "terms",
-                                            linkInteractionListener = LinkInteractionListener {
-                                                openDocument = AgreementDocument.Terms
-                                            },
-                                        ),
-                                        termsStart,
-                                        termsStart + termsLabel.length,
-                                    )
-                                }
-                                if (policyStart >= 0) {
-                                    addLink(
-                                        LinkAnnotation.Clickable(
-                                            tag = "privacy",
-                                            linkInteractionListener = LinkInteractionListener {
-                                                openDocument = AgreementDocument.Privacy
-                                            },
-                                        ),
-                                        policyStart,
-                                        policyStart + privacyLabel.length,
-                                    )
-                                }
-                            }
-                            Text(
-                                text = linkedText,
+                            Box(
                                 modifier = Modifier.fillMaxWidth(),
-                                style = MiuixTheme.textStyles.body1,
-                                color = MiuixTheme.colorScheme.onSurface,
-                            )
-                            Spacer(Modifier.height(24.dp))
-                            Text(
-                                text = stringResource(R.string.guide_privacy_brief),
-                                style = MiuixTheme.textStyles.body1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
-                            Spacer(Modifier.height(20.dp))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .toggleable(
-                                        value = policyAccepted,
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null,
-                                        role = Role.Checkbox,
-                                        onValueChange = { policyAccepted = it },
-                                    )
-                                    .padding(vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                contentAlignment = Alignment.TopCenter,
                             ) {
-                                Checkbox(
-                                    state = if (policyAccepted) ToggleableState.On else ToggleableState.Off,
-                                    onClick = null,
-                                )
-                                Text(
-                                    text = stringResource(R.string.guide_privacy_ack),
-                                    style = MiuixTheme.textStyles.body2,
-                                    modifier = Modifier.weight(1f),
-                                )
+                                Column(
+                                    modifier = Modifier.widthIn(max = 440.dp).fillMaxWidth()
+                                        .padding(horizontal = 16.dp),
+                                ) {
+                                    val termsLabel = stringResource(R.string.guide_terms_link_text)
+                                    val privacyLabel = stringResource(R.string.guide_policy_link_text)
+                                    val line = stringResource(R.string.guide_agreement_line, termsLabel, privacyLabel)
+                                    val linkedText = buildAnnotatedString {
+                                        append(line)
+                                        val termsStart = line.indexOf(termsLabel)
+                                        val policyStart = line.indexOf(privacyLabel, termsStart + termsLabel.length)
+                                        if (termsStart >= 0) {
+                                            addLink(
+                                                LinkAnnotation.Clickable(
+                                                    tag = "terms",
+                                                    linkInteractionListener = LinkInteractionListener {
+                                                        openDocument = AgreementDocument.Terms
+                                                    },
+                                                ),
+                                                termsStart,
+                                                termsStart + termsLabel.length,
+                                            )
+                                        }
+                                        if (policyStart >= 0) {
+                                            addLink(
+                                                LinkAnnotation.Clickable(
+                                                    tag = "privacy",
+                                                    linkInteractionListener = LinkInteractionListener {
+                                                        openDocument = AgreementDocument.Privacy
+                                                    },
+                                                ),
+                                                policyStart,
+                                                policyStart + privacyLabel.length,
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = linkedText,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        style = MiuixTheme.textStyles.body1.copy(
+                                            fontWeight = FontWeight.Normal,
+                                            lineHeight = 1.45f.em,
+                                        ),
+                                        color = MiuixTheme.colorScheme.onSurface,
+                                    )
+                                    Spacer(Modifier.height(24.dp))
+                                    Text(
+                                        text = stringResource(R.string.guide_privacy_brief),
+                                        style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.5f.em),
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    )
+                                    Spacer(Modifier.height(20.dp))
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .toggleable(
+                                                value = policyAccepted,
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null,
+                                                role = Role.Checkbox,
+                                                onValueChange = { policyAccepted = it },
+                                            )
+                                            .padding(vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    ) {
+                                        Checkbox(
+                                            state = if (policyAccepted) ToggleableState.On else ToggleableState.Off,
+                                            onClick = null,
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.guide_privacy_ack),
+                                            style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.4f.em),
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                    }
+                                }
                             }
                         }
                         3 -> {
-                            SmallTitle(
-                                text = stringResource(R.string.section_app),
-                                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            )
+                            SmallTitle(text = stringResource(R.string.section_app))
                             Card(modifier = Modifier.fillMaxWidth()) {
                                 AppSettingsRows(
                                     lang = lang,
@@ -679,47 +698,26 @@ private fun guideActionColors(): GuideActionColors {
 
 @Composable
 private fun GuidePermissionItem(
+    @DrawableRes iconRes: Int,
     title: String,
     status: String,
     checked: Boolean,
     onClick: (() -> Unit)? = null,
 ) {
-    val checkColor = MiuixTheme.colorScheme.primary
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        insideMargin = PaddingValues(0.dp),
-        pressFeedbackType = if (onClick != null) PressFeedbackType.Sink else PressFeedbackType.None,
-        showIndication = false,
+    BasicComponent(
+        title = title,
+        summary = status,
+        startAction = { SemanticLeadingIcon(iconRes = iconRes) },
         onClick = onClick,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 64.dp)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurfaceContainer,
-                )
-                Text(
-                    text = status,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
+        endActions = {
             if (checked) {
                 Icon(
                     imageVector = MiuixIcons.Basic.Check,
                     contentDescription = null,
                     modifier = Modifier.size(22.dp),
-                    tint = checkColor,
+                    tint = MiuixTheme.colorScheme.primary,
                 )
             }
-        }
-    }
+        },
+    )
 }

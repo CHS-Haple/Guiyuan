@@ -15,6 +15,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import top.yukonga.miuix.kmp.basic.Text
@@ -84,15 +86,15 @@ private fun AgreementArticle(document: AgreementDocument) {
     val sections = if (document == AgreementDocument.Terms) termsSections else privacySections
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         Column(
-            modifier = Modifier.widthIn(max = 600.dp).fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+            modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth()
+                .padding(horizontal = 28.dp, vertical = 16.dp),
         ) {
         AgreementParagraph(intro)
         sections.forEach { section ->
             Spacer(Modifier.height(24.dp))
             Text(
                 text = stringResource(section.title),
-                style = MiuixTheme.textStyles.title3,
+                style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight.Medium),
                 color = MiuixTheme.colorScheme.onSurface,
             )
             Spacer(Modifier.height(10.dp))
@@ -110,7 +112,10 @@ private fun AgreementParagraph(@StringRes textRes: Int) {
     Text(
         text = stringResource(textRes),
         modifier = Modifier.fillMaxWidth(),
-        style = MiuixTheme.textStyles.paragraph,
+        style = MiuixTheme.textStyles.body1.copy(
+            fontWeight = FontWeight.Normal,
+            lineHeight = 1.45f.em,
+        ),
         color = MiuixTheme.colorScheme.onSurface,
     )
 }
