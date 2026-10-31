@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.Animatable
@@ -360,7 +361,7 @@ internal fun OnboardingFlow(
 
 @Composable
 private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
-    val lifecycle = LocalActivity.current?.lifecycle
+    val lifecycle = (LocalActivity.current as? ComponentActivity)?.lifecycle
     var resumed by remember(lifecycle) {
         mutableStateOf(lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true)
     }
