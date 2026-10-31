@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -52,6 +53,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -153,18 +157,14 @@ internal fun OnboardingFlow(
             2 -> stringResource(R.string.guide_privacy_title)
             else -> stringResource(R.string.guide_basic_title)
         }
-        val illustration = when (step) {
-            1 -> R.drawable.ic_material_symbol_extension
-            2 -> R.drawable.ic_material_symbol_lock
-            else -> R.drawable.ic_material_symbol_language
-        }
         Scaffold { scaffoldPadding ->
             Column(
-                modifier = Modifier.fillMaxSize().padding(scaffoldPadding).padding(horizontal = if (step == 1) 12.dp else 24.dp),
+                modifier = Modifier.fillMaxSize().padding(scaffoldPadding).padding(horizontal = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                Spacer(Modifier.height(50.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(onClick = { step-- }) {
@@ -174,25 +174,38 @@ internal fun OnboardingFlow(
                 Column(
                     modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(scroll),
                 ) {
-                    Spacer(Modifier.height(36.dp))
+                    Spacer(Modifier.height(10.dp))
                     Box(
-                        modifier = Modifier.fillMaxWidth().height(88.dp),
+                        modifier = Modifier.fillMaxWidth().height(70.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Image(
-                            painter = painterResource(illustration),
-                            contentDescription = null,
-                            modifier = Modifier.size(70.dp),
-                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
+                        if (step == 1) {
+                            GuidePermissionIllustration()
+                        } else {
+                            Image(
+                                painter = painterResource(
+                                    if (step == 2) R.drawable.ic_material_symbol_lock
+                                    else R.drawable.ic_material_symbol_language,
+                                ),
+                                contentDescription = null,
+                                modifier = Modifier.size(70.dp),
+                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 42.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = title,
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Normal,
+                            textAlign = TextAlign.Center,
+                            color = MiuixTheme.colorScheme.onBackground,
                         )
                     }
-                    Text(
-                        text = title,
-                        modifier = Modifier.fillMaxWidth(),
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center,
-                    )
                     Spacer(Modifier.height(30.dp))
                     when (step) {
                         1 -> {
@@ -218,21 +231,10 @@ internal fun OnboardingFlow(
                                 text = stringResource(R.string.guide_permission_later),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 8.dp),
+                                    .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
                                 style = MiuixTheme.textStyles.body2.copy(fontSize = 13.sp),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
-                            GuidePermissionItem(
-                                title = stringResource(R.string.guide_framework),
-                                status = when (framework) {
-                                    XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
-                                    XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_offline)
-                                    XposedStatus.QueryUnavailable -> stringResource(R.string.guide_status_unknown)
-                                    is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
-                                },
-                                checked = connected != null,
-                            )
-                            Spacer(Modifier.height(10.dp))
                             GuidePermissionItem(
                                 title = stringResource(R.string.guide_root_title),
                                 status = when {
@@ -260,25 +262,35 @@ internal fun OnboardingFlow(
                                     }
                                 },
                             )
+                            Spacer(Modifier.height(10.dp))
+                            GuidePermissionItem(
+                                title = stringResource(R.string.guide_framework),
+                                status = when (framework) {
+                                    XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
+                                    XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_offline)
+                                    XposedStatus.QueryUnavailable -> stringResource(R.string.guide_status_unknown)
+                                    is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
+                                },
+                                checked = connected != null,
+                            )
                             Text(
                                 text = stringResource(R.string.guide_permission_hint),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(start = 12.dp, end = 12.dp, top = 16.dp),
+                                    .padding(start = 16.dp, end = 16.dp, top = 16.dp),
                                 style = MiuixTheme.textStyles.body2.copy(fontSize = 13.sp),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
                             if (scopeBusy || scopeRequestFailed || rootChecking || rootAccess == false) {
+                                val hint = when {
+                                    scopeBusy -> R.string.guide_scope_requesting
+                                    scopeRequestFailed -> R.string.guide_scope_request_failed
+                                    rootChecking -> R.string.guide_root_checking
+                                    else -> R.string.guide_root_unavailable
+                                }
                                 Text(
-                                    text = stringResource(
-                                        when {
-                                            scopeBusy -> R.string.guide_scope_requesting
-                                            scopeRequestFailed -> R.string.guide_scope_request_failed
-                                            rootChecking -> R.string.guide_root_checking
-                                            else -> R.string.guide_root_unavailable,
-                                        },
-                                    ),
-                                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp),
+                                    text = stringResource(hint),
+                                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
                                     style = MiuixTheme.textStyles.body2.copy(fontSize = 13.sp),
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
@@ -373,6 +385,8 @@ internal fun OnboardingFlow(
                         if (step == 2) R.string.guide_agree_continue else R.string.guide_continue,
                     ),
                     modifier = Modifier.fillMaxWidth().widthIn(max = 336.dp).height(50.dp),
+                    cornerRadius = 16.dp,
+                    textStyle = MiuixTheme.textStyles.button.copy(fontSize = 17.sp),
                     colors = ButtonDefaults.textButtonColorsPrimary(),
                     enabled = step != 2 || policyAccepted,
                     onClick = { step++ },
@@ -571,6 +585,41 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
     }
 }
 
+// Drawn from Guiyuan's theme palette; the guide has no reference-project artwork.
+@Composable
+private fun GuidePermissionIllustration() {
+    val accent = MiuixTheme.colorScheme.primary
+    Canvas(Modifier.size(70.dp)) {
+        val u = size.minDimension / 100f
+        val outline = Stroke(width = 5.5f * u, cap = StrokeCap.Round, join = StrokeJoin.Round)
+        val horn = Path().apply {
+            moveTo(37f * u, 35f * u)
+            cubicTo(55f * u, 33f * u, 64f * u, 24f * u, 78f * u, 18f * u)
+            quadraticBezierTo(86f * u, 14f * u, 87f * u, 24f * u)
+            quadraticBezierTo(91f * u, 47f * u, 87f * u, 70f * u)
+            quadraticBezierTo(85f * u, 79f * u, 77f * u, 75f * u)
+            cubicTo(61f * u, 67f * u, 53f * u, 59f * u, 37f * u, 59f * u)
+        }
+        drawPath(horn, accent, style = outline)
+        val mouth = Path().apply {
+            moveTo(36f * u, 35f * u)
+            lineTo(25f * u, 35f * u)
+            cubicTo(17f * u, 35f * u, 12f * u, 40f * u, 12f * u, 47f * u)
+            cubicTo(12f * u, 54f * u, 17f * u, 59f * u, 25f * u, 59f * u)
+            lineTo(37f * u, 59f * u)
+        }
+        drawPath(mouth, accent, style = outline)
+        val grip = Path().apply {
+            moveTo(25f * u, 60f * u)
+            lineTo(28f * u, 82f * u)
+            quadraticBezierTo(29f * u, 88f * u, 35f * u, 87f * u)
+            quadraticBezierTo(40f * u, 86f * u, 39f * u, 80f * u)
+            lineTo(36f * u, 60f * u)
+        }
+        drawPath(grip, accent, style = outline)
+    }
+}
+
 private data class GuideActionColors(val container: Color, val content: Color)
 
 // The branded actions retain the reference geometry, while their material follows
@@ -627,7 +676,7 @@ private fun GuidePermissionItem(
                 .fillMaxWidth()
                 .height(56.dp)
                 .semantics { stateDescription = status }
-                .padding(start = 18.dp, end = 18.dp),
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -635,6 +684,7 @@ private fun GuidePermissionItem(
                 text = title,
                 modifier = Modifier.weight(1f),
                 style = MiuixTheme.textStyles.body1.copy(fontSize = 18.sp),
+                color = MiuixTheme.colorScheme.onSurfaceContainer,
             )
             if (checked) {
                 Canvas(Modifier.size(26.dp)) {
