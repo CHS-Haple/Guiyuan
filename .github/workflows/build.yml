@@ -532,7 +532,7 @@ jobs:
           fi
 
   sign-canary:
-    name: ${{ github.event_name == 'push' && github.ref == 'refs/heads/dev' && format('Sign {0} Canary', github.ref_name) || 'Canary signing via trusted branch workflow' }}
+    name: Sign Canary
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && needs.build.outputs.run_canary == 'true'
     runs-on: ubuntu-latest

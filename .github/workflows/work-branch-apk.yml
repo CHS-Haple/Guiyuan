@@ -80,7 +80,6 @@ jobs:
     timeout-minutes: 90
     outputs:
       ready: ${{ steps.identity.outputs.ready }}
-      source_branch: ${{ steps.source.outputs.branch }}
       source_sha: ${{ steps.source.outputs.sha }}
       version_name: ${{ steps.identity.outputs.version_name }}
       version_code: ${{ steps.identity.outputs.version_code }}
@@ -371,7 +370,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   sign:
-    name: ${{ format('Sign {0} Canary', needs.build.outputs.source_branch) }}
+    name: Sign Canary
     needs: build
     if: needs.build.outputs.ready == 'true'
     runs-on: ubuntu-latest
