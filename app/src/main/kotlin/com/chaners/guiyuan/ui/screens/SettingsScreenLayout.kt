@@ -45,18 +45,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.ui.icons.Os4GlassBack
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.components.UiTopBarNavigationIcon
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
-import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.RefreshState
@@ -64,10 +61,7 @@ import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
-import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -168,33 +162,6 @@ private fun badgeCutout(badge: ImageBitmap, gap: Int): ImageBitmap {
     return result.asImageBitmap()
 }
 
-// Shared by ordinary Settings pages and the OS3 first-run guide.
-// This is the sole owner of the in-app back glyph, hit target and feedback.
-@Composable
-internal fun SettingsNavigationIcon(
-    onBack: () -> Unit,
-    navigationActions: @Composable RowScope.() -> Unit = {},
-) {
-    val os4 = LocalUiStyle.current == UiStyle.OS4
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = if (os4) Arrangement.spacedBy(8.dp) else Arrangement.Start,
-    ) {
-        TooltipBox(text = stringResource(R.string.back)) {
-            if (os4) {
-                GlassIconButton(onClick = onBack) {
-                    Icon(Os4GlassBack, contentDescription = stringResource(R.string.back))
-                }
-            } else {
-                IconButton(onClick = onBack) {
-                    Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
-                }
-            }
-        }
-        navigationActions()
-    }
-}
-
 internal data class SettingsPullToRefresh(
     val refreshing: Boolean,
     val onRefresh: () -> Unit,
@@ -230,7 +197,7 @@ internal fun SettingsPage(
         }
     }
     val navigationIcon: @Composable () -> Unit = {
-        SettingsNavigationIcon(onBack = onBack, navigationActions = navigationActions)
+        UiTopBarNavigationIcon(onBack = onBack, navigationActions = navigationActions)
     }
 
     CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {

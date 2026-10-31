@@ -83,7 +83,9 @@ import top.yukonga.miuix.kmp.blur.textureBlur
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
+import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
+import com.chaners.guiyuan.ui.components.UiTopBarNavigationIcon
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import kotlinx.serialization.Serializable
@@ -249,7 +251,7 @@ internal fun OnboardingFlow(
                         title = "",
                         color = barColor,
                         scrollBehavior = scrollBehavior,
-                        navigationIcon = { SettingsNavigationIcon(onBack = ::back) },
+                        navigationIcon = { UiTopBarNavigationIcon(onBack = ::back, styleOverride = UiStyle.OS3) },
                     )
                 }
             },
