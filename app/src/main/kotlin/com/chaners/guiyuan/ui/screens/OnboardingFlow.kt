@@ -1011,13 +1011,24 @@ private fun GuidePermissionItem(
                 color = MiuixTheme.colorScheme.onBackground,
             )
             TooltipBox(text = detailsLabel) {
-                IconButton(onClick = onToggleDetails, modifier = Modifier.size(40.dp)) {
-                    Icon(
-                        imageVector = MiuixIcons.Regular.Help,
-                        contentDescription = detailsLabel,
-                        modifier = Modifier.size(20.dp),
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    )
+                Box(
+                    modifier = Modifier.size(40.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    IconButton(
+                        onClick = onToggleDetails,
+                        modifier = Modifier.size(32.dp),
+                        minWidth = 32.dp,
+                        minHeight = 32.dp,
+                        cornerRadius = 16.dp,
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Regular.Help,
+                            contentDescription = detailsLabel,
+                            modifier = Modifier.size(20.dp),
+                            tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                        )
+                    }
                 }
             }
         }
