@@ -629,7 +629,8 @@
     <string name="guide_purpose_label">Purpose</string>
     <string name="guide_guidance_label">How to proceed</string>
     <string name="guide_refresh_status">Refresh permission status</string>
-    <string name="guide_permission_indicator_hint">A red warning icon means authorization is not ready or cannot be confirmed. Tap the status icon to refresh.</string>
+    <string name="guide_details_expand">Show details</string>
+    <string name="guide_details_collapse">Hide details</string>
     <string name="privacy_choice_body_3">Where provided by applicable law, you may request access to, copies of, correction of, or deletion of relevant personal information, or exercise other applicable rights. Guiyuan has no user accounts or centralized server-side store of user profiles; maintainers generally cannot directly access or delete information stored only on your device. For information submitted to third-party platforms, you may need to contact the relevant recipient.</string>
     <string name="privacy_last_updated">Last updated: 2026-10-31</string>
     <string name="terms_last_updated">Last updated: 2026-10-31</string>
