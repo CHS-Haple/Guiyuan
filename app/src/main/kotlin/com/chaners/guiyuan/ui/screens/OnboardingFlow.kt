@@ -976,13 +976,15 @@ private fun GuidePermissionItem(
             }
         }
     }
+    if (expanded) {
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+    }
     AnimatedVisibility(
         visible = expanded,
         enter = expandVertically(expandFrom = Alignment.Top),
         exit = shrinkVertically(shrinkTowards = Alignment.Top),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
             Column(
                 modifier = Modifier.fillMaxWidth()
                     .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
