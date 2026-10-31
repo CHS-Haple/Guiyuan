@@ -872,36 +872,26 @@ private fun GuidePermissionItem(
                     )
                 }
             }
-            if (checked) {
-                Icon(
-                    imageVector = MiuixIcons.Regular.Ok,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MiuixTheme.colorScheme.primary,
-                )
-            } else if (checking) {
+            val statusSymbol = when {
+                checked -> "✓"
+                checking -> "…"
+                else -> "!"
+            }
+            val statusColor = when {
+                checked -> MiuixTheme.colorScheme.primary
+                checking -> MiuixTheme.colorScheme.onSurfaceVariantSummary
+                else -> MiuixTheme.colorScheme.error
+            }
+            Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
                 Text(
-                    text = "…",
-                    fontSize = 22.sp,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    text = statusSymbol,
+                    style = MiuixTheme.textStyles.headline1.copy(
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                    ),
+                    color = statusColor,
                 )
-            } else {
-                val warningColor = MiuixTheme.colorScheme.error
-                Canvas(Modifier.size(24.dp)) {
-                    val x = size.width / 2f
-                    drawLine(
-                        color = warningColor,
-                        start = Offset(x, size.height * 0.20f),
-                        end = Offset(x, size.height * 0.60f),
-                        strokeWidth = 2.6.dp.toPx(),
-                        cap = StrokeCap.Round,
-                    )
-                    drawCircle(
-                        color = warningColor,
-                        radius = 1.4.dp.toPx(),
-                        center = Offset(x, size.height * 0.79f),
-                    )
-                }
             }
         },
     ) {
