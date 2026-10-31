@@ -86,6 +86,7 @@ import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
+import com.chaners.guiyuan.ui.icons.Os4GlassRefresh
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.UiTopBarNavigationIcon
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
@@ -288,7 +289,7 @@ internal fun OnboardingFlow(
                     if (os4) {
                         GlassIconButton(onClick = ::refreshPermissionStatus) {
                             Icon(
-                                imageVector = MiuixIcons.Regular.Refresh,
+                                imageVector = Os4GlassRefresh,
                                 contentDescription = label,
                             )
                         }
@@ -318,6 +319,7 @@ internal fun OnboardingFlow(
                             navigationIcon = { UiTopBarNavigationIcon(onBack = ::back) },
                             actions = refreshAction,
                             unclippedNavigationIcon = true,
+                            unclippedActions = true,
                         )
                     } else {
                         MiuixBlurredTopBar(
