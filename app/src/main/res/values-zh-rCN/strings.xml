@@ -528,7 +528,7 @@
     <string name="guide_agree_continue">同意并继续</string>
     <string name="guide_scope_title">模块设置</string>
     <string name="guide_scope_description">归元通过 LSPosed 实现状态信息的整合显示。</string>
-    <string name="guide_framework">LSPosed 服务</string>
+    <string name="guide_framework">框架服务</string>
     <string name="guide_framework_checking">检查中</string>
     <string name="guide_framework_offline">未连接</string>
     <string name="guide_framework_connected">已连接</string>

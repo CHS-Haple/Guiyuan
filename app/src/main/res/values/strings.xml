@@ -529,7 +529,7 @@
     <string name="guide_agree_continue">Agree and continue</string>
     <string name="guide_scope_title">Set up the module</string>
     <string name="guide_scope_description">Guiyuan uses LSPosed to display combined status information.</string>
-    <string name="guide_framework">LSPosed service</string>
+    <string name="guide_framework">Framework service</string>
     <string name="guide_framework_checking">Checking</string>
     <string name="guide_framework_offline">Not connected</string>
     <string name="guide_framework_connected">Connected</string>
