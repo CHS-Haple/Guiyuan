@@ -138,6 +138,23 @@ class AppearanceTest {
     }
 
     @Test
+    fun existingNavigationLabelPreferencesRemainSeparateAcrossMigration() {
+        val regularKey = stringPreferencesKey("floating_navigation_content")
+        val liquidKey = stringPreferencesKey("floating_navigation_liquid_content")
+        val prefs = mutablePreferencesOf(
+            regularKey to NavContent.IconOnly.name,
+            liquidKey to NavContent.IconAndText.name,
+        )
+
+        migrateOs4Appearance(prefs)
+
+        assertEquals(NavContent.IconOnly.name, prefs[regularKey])
+        assertEquals(NavContent.IconAndText.name, prefs[liquidKey])
+        assertEquals(NavContent.IconOnly, decodeNavContent(prefs[regularKey]))
+        assertEquals(NavContent.IconAndText, decodeNavContent(prefs[liquidKey], NavContent.IconAndText))
+    }
+
+    @Test
     fun missingLegacyNavigationContentStillDefaultsToIconOnly() {
         assertEquals(NavContent.IconOnly, decodeNavContent(null))
         assertEquals(NavContent.IconAndText, decodeNavContent(NavContent.IconAndText.name))
