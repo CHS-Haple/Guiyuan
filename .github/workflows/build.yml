@@ -532,7 +532,7 @@ jobs:
           fi
 
   sign-canary:
-    name: Signed dev Canary
+    name: Sign Canary
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && needs.build.outputs.run_canary == 'true'
     runs-on: ubuntu-latest
