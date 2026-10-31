@@ -56,6 +56,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -304,6 +305,7 @@ internal fun OnboardingFlow(
                     ) {
                         Text(
                             text = title,
+                            modifier = Modifier.semantics { heading() },
                             style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Medium),
                             textAlign = TextAlign.Center,
                             color = MiuixTheme.colorScheme.onBackground,
@@ -466,7 +468,8 @@ internal fun OnboardingFlow(
                                 Spacer(Modifier.height(20.dp))
                                 Text(
                                     text = stringResource(R.string.guide_important_note),
-                                    modifier = Modifier.padding(horizontal = 12.dp),
+                                    modifier = Modifier.padding(horizontal = 12.dp)
+                                        .semantics { heading() },
                                     style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
                                     color = MiuixTheme.colorScheme.onSurface,
                                 )
@@ -546,7 +549,10 @@ internal fun OnboardingFlow(
                             UiDialogButton(
                                 text = stringResource(R.string.guide_permission_return),
                                 modifier = Modifier.weight(1f),
-                                onClick = { showPermissionWarning = false },
+                                onClick = {
+                                    advanceAfterWarning = false
+                                    showPermissionWarning = false
+                                },
                             )
                             Spacer(Modifier.width(dialogActionGap()))
                             UiDialogButton(
