@@ -177,8 +177,8 @@ internal fun AboutHero(
                 }
                 .waveGlint(wave, titleDistance, markDiameter, wavePhase, glint, accent)
                 .then(blur),
-            fontSize = 35.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 40.sp,
+            fontWeight = FontWeight.ExtraBold,
             color = MiuixTheme.colorScheme.onBackground,
         )
         Text(
@@ -201,7 +201,8 @@ internal fun AboutHero(
                 }
                 .waveGlint(wave, versionDistance, markDiameter, wavePhase, glint, accent),
             textAlign = TextAlign.Center,
-            fontSize = 14.sp,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Medium,
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
     }
