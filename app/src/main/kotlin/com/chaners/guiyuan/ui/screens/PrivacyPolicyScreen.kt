@@ -37,7 +37,7 @@ private val privacySections = listOf(
     AgreementSection(R.string.privacy_diagnostics_title, listOf(R.string.privacy_diagnostics_body, R.string.privacy_diagnostics_body_2)),
     AgreementSection(R.string.privacy_retention_title, listOf(R.string.privacy_retention_body, R.string.privacy_retention_body_2)),
     AgreementSection(R.string.privacy_sharing_title, listOf(R.string.privacy_sharing_body, R.string.privacy_sharing_body_2)),
-    AgreementSection(R.string.privacy_choice_title, listOf(R.string.privacy_choice_body, R.string.privacy_choice_body_2)),
+    AgreementSection(R.string.privacy_choice_title, listOf(R.string.privacy_choice_body, R.string.privacy_choice_body_2, R.string.privacy_choice_body_3)),
     AgreementSection(R.string.privacy_contact_title, listOf(R.string.privacy_contact_body)),
 )
 
@@ -86,11 +86,18 @@ internal fun AgreementSheetBody(document: AgreementDocument) {
 private fun AgreementArticle(document: AgreementDocument) {
     val intro = if (document == AgreementDocument.Terms) R.string.terms_intro else R.string.privacy_intro
     val sections = if (document == AgreementDocument.Terms) termsSections else privacySections
+    val lastUpdated = if (document == AgreementDocument.Terms) R.string.terms_last_updated else R.string.privacy_last_updated
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         Column(
             modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth()
                 .padding(horizontal = 28.dp).padding(top = 20.dp, bottom = 28.dp),
         ) {
+            Text(
+                text = stringResource(lastUpdated),
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+            Spacer(Modifier.height(12.dp))
             AgreementParagraph(intro)
             sections.forEach { section ->
                 Spacer(Modifier.height(28.dp))
