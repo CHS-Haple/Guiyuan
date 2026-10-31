@@ -558,8 +558,8 @@
     <string name="guide_root_check_action">检测 Root 权限</string>
     <string name="guide_root_explanation">进入权限页会检测 Root 状态，可能出现授权提示。</string>
     <string name="guide_diagnostics_optional">Root 权限 · 可选</string>
-    <string name="guide_revisit_title">使用引导</string>
-    <string name="guide_revisit_summary">重新查看语言、隐私与模块设置</string>
+    <string name="guide_revisit_title">设置向导</string>
+    <string name="guide_revisit_summary">重新查看权限、协议与基础设置</string>
     <string name="guide_permissions_title">权限设置</string>
     <string name="guide_basic_title">基础设置</string>
     <string name="guide_module_group">模块</string>

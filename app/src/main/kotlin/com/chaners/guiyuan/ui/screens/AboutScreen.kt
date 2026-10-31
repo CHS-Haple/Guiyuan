@@ -228,24 +228,20 @@ internal fun AboutScreen(
                         },
                     )
                     ArrowPreference(
-                        title = stringResource(R.string.about_open_source_license_title),
-                        summary = stringResource(R.string.about_open_source_license_summary),
+                        title = stringResource(R.string.guide_revisit_title),
+                        summary = stringResource(R.string.guide_revisit_summary),
                         startAction = {
                             SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_license,
+                                iconRes = R.drawable.ic_material_symbol_format_list_bulleted,
                             )
                         },
-                        onClick = {
-                            uriHandler.openUri(
-                                if (BuildConfig.REPO_LINK_ENABLED) ABOUT_LICENSE_URL else GPL_LICENSE_URL,
-                            )
-                        },
+                        onClick = onOpenGuide,
                     )
                     ArrowPreference(
                         title = stringResource(R.string.terms_title),
                         summary = stringResource(R.string.about_terms_summary),
                         startAction = {
-                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_license)
+                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_fact_check)
                         },
                         onClick = onOpenTerms,
                     )
@@ -260,14 +256,18 @@ internal fun AboutScreen(
                         onClick = onOpenPrivacy,
                     )
                     ArrowPreference(
-                        title = stringResource(R.string.guide_revisit_title),
-                        summary = stringResource(R.string.guide_revisit_summary),
+                        title = stringResource(R.string.about_open_source_license_title),
+                        summary = stringResource(R.string.about_open_source_license_summary),
                         startAction = {
                             SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_language,
+                                iconRes = R.drawable.ic_material_symbol_license,
                             )
                         },
-                        onClick = onOpenGuide,
+                        onClick = {
+                            uriHandler.openUri(
+                                if (BuildConfig.REPO_LINK_ENABLED) ABOUT_LICENSE_URL else GPL_LICENSE_URL,
+                            )
+                        },
                     )
                     ArrowPreference(
                         title = stringResource(R.string.about_third_party_title),
