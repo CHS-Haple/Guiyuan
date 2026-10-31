@@ -130,6 +130,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.extended.Help
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -977,17 +978,16 @@ private fun GuidePermissionItem(
     onToggleDetails: () -> Unit,
     guidance: String? = null,
 ) {
-    val detailsLabel = stringResource(
-        if (expanded) R.string.guide_details_collapse else R.string.guide_details_expand,
-    )
+    val detailsLabel = stringResource(R.string.guide_permission_details)
     BasicComponent(
         startAction = { SemanticLeadingIcon(iconRes = iconRes) },
         endActions = {
             if (checked) {
-                Checkbox(
-                    state = ToggleableState.On,
-                    onClick = null,
-                    modifier = Modifier.semantics { contentDescription = status },
+                Icon(
+                    imageVector = MiuixIcons.Basic.Check,
+                    contentDescription = status,
+                    modifier = Modifier.size(26.dp),
+                    tint = MiuixTheme.colorScheme.primary,
                 )
             } else {
                 Text(
