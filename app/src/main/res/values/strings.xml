@@ -524,11 +524,11 @@
     <string name="guide_continue">Continue</string>
     <string name="guide_privacy_title">Terms and statements</string>
     <string name="guide_privacy_description">Read the Terms of Use and Privacy Policy to understand the app and data handling.</string>
-    <string name="guide_privacy_brief">Guiyuan processes system status information, including battery and connectivity states, locally and stores user preferences on the device. This information is not automatically uploaded to project maintainers.</string>
-    <string name="guide_privacy_note_scope">Proper display of Guiyuan indicators depends on a compatible module framework and valid SystemUI scope authorization. The scope can be configured in the module manager. Without authorization, related functionality may not take effect.</string>
-    <string name="guide_privacy_note_root">Root access is not required to display Guiyuan indicators. Entering the Permissions page checks Root status and may prompt for authorization. Withholding Root access does not prevent completion of initial setup, but some diagnostic and process-maintenance features may be limited.</string>
-    <string name="guide_privacy_note_diagnostics">Diagnostics may read module logs or, if that source is unavailable, read system logs and filter entries associated with Guiyuan. Generated reports may contain device model, system environment, and runtime information and are not automatically submitted to project maintainers.</string>
-    <string name="guide_privacy_note_sharing">Exporting or sharing configuration backups and diagnostic reports requires an explicit user action. Review files before sharing to avoid disclosing personal information, device identifiers, or other sensitive content.</string>
+    <string name="guide_privacy_brief">Guiyuan processes battery and network status locally and stores preferences on the device. This information is not automatically uploaded to maintainers.</string>
+    <string name="guide_privacy_note_scope">Guiyuan indicators depend on a compatible module framework and SystemUI scope authorization. Without it, related features may not work.</string>
+    <string name="guide_privacy_note_root">Root is optional. Opening the Permissions page may prompt for access. Setup can finish without Root, though some diagnostic and process-maintenance functions may be limited.</string>
+    <string name="guide_privacy_note_diagnostics">Diagnostics may read module logs or, if unavailable, read and filter system logs. Reports may contain device and runtime details, but are not uploaded automatically.</string>
+    <string name="guide_privacy_note_sharing">Users must initiate the export or sharing of configuration backups and diagnostic reports. Review files for personal information or device identifiers before sharing.</string>
     <string name="guide_privacy_ack">I have read and agree to the Terms of Use and Privacy Policy</string>
     <string name="guide_agree_continue">Agree and continue</string>
     <string name="guide_scope_title">Set up the module</string>
