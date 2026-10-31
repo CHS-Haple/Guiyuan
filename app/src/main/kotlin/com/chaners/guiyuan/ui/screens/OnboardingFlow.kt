@@ -847,69 +847,123 @@ private fun GuidePermissionItem(
     status: String,
     purpose: String,
     checked: Boolean,
+    checking: Boolean,
+    expanded: Boolean,
+    onToggleDetails: () -> Unit,
     guidance: String? = null,
     onClick: (() -> Unit)? = null,
     refreshLabel: String,
     onRefresh: () -> Unit,
 ) {
+    val detailsLabel = stringResource(
+        if (expanded) R.string.guide_details_collapse else R.string.guide_details_expand,
+    )
     BasicComponent(
         startAction = { SemanticLeadingIcon(iconRes = iconRes) },
         onClick = onClick,
         endActions = {
-            IconButton(
-                onClick = onRefresh,
-                modifier = Modifier.size(40.dp).semantics { contentDescription = refreshLabel },
-            ) {
+            if (!checked && !checking) {
+                IconButton(onClick = onRefresh, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        imageVector = MiuixIcons.Regular.Refresh,
+                        contentDescription = refreshLabel,
+                        modifier = Modifier.size(22.dp),
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                }
+            }
+            if (checked) {
                 Icon(
-                    imageVector = if (checked) MiuixIcons.Regular.Ok else MiuixIcons.Regular.Report,
+                    imageVector = MiuixIcons.Regular.Ok,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
-                    tint = if (checked) MiuixTheme.colorScheme.primary
-                        else MiuixTheme.colorScheme.error,
+                    tint = MiuixTheme.colorScheme.primary,
                 )
+            } else if (checking) {
+                Text(
+                    text = "…",
+                    fontSize = 22.sp,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            } else {
+                val warningColor = MiuixTheme.colorScheme.error
+                Canvas(Modifier.size(24.dp)) {
+                    val x = size.width / 2f
+                    drawLine(
+                        color = warningColor,
+                        start = Offset(x, size.height * 0.20f),
+                        end = Offset(x, size.height * 0.60f),
+                        strokeWidth = 2.6.dp.toPx(),
+                        cap = StrokeCap.Round,
+                    )
+                    drawCircle(
+                        color = warningColor,
+                        radius = 1.4.dp.toPx(),
+                        center = Offset(x, size.height * 0.79f),
+                    )
+                }
             }
         },
     ) {
-        Text(
-            text = title,
-            style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
-            color = MiuixTheme.colorScheme.onBackground,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = title,
+                modifier = Modifier.weight(1f, fill = false),
+                style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
+                color = MiuixTheme.colorScheme.onBackground,
+            )
+            IconButton(onClick = onToggleDetails, modifier = Modifier.size(40.dp)) {
+                Icon(
+                    imageVector = MiuixIcons.Regular.Help,
+                    contentDescription = detailsLabel,
+                    modifier = Modifier.size(20.dp),
+                    tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                )
+            }
+        }
         Text(
             text = status,
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
     }
-    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-    Column(
-        modifier = Modifier.fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+    AnimatedVisibility(
+        visible = expanded,
+        enter = expandVertically() + fadeIn(),
+        exit = shrinkVertically() + fadeOut(),
     ) {
-        Text(
-            text = stringResource(R.string.guide_purpose_label),
-            style = MiuixTheme.textStyles.subtitle,
-            color = MiuixTheme.colorScheme.onSurface,
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = purpose,
-            style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.4f.em),
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
-        if (guidance != null) {
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = stringResource(R.string.guide_guidance_label),
-                style = MiuixTheme.textStyles.subtitle,
-                color = MiuixTheme.colorScheme.onSurface,
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = guidance,
-                style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.4f.em),
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
+        Column(modifier = Modifier.fillMaxWidth()) {
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            Column(
+                modifier = Modifier.fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.guide_purpose_label),
+                    style = MiuixTheme.textStyles.subtitle,
+                    color = MiuixTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = purpose,
+                    style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.4f.em),
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+                if (guidance != null) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(R.string.guide_guidance_label),
+                        style = MiuixTheme.textStyles.subtitle,
+                        color = MiuixTheme.colorScheme.onSurface,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = guidance,
+                        style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.4f.em),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+            }
         }
     }
 }
