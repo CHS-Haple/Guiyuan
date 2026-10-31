@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -112,6 +113,8 @@ import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
+import com.chaners.guiyuan.ui.screens.about.BgEffectConfig
+import com.chaners.guiyuan.ui.screens.about.DeviceType
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
@@ -974,32 +977,66 @@ private fun guideContrastRatio(foreground: Color, background: Color): Float {
     return (light + 0.05f) / (dark + 0.05f)
 }
 
-internal fun resolveGuideActionColors(surface: Color, onSurface: Color, logoTint: Color): GuideActionColors {
-    // Match the actual logo tint while letting the guide's animated backdrop
-    // show through. Check the two limiting backdrop colors as well as the
-    // strongest possible light/dark pigment before accepting a translucent stop.
-    for (opacity in listOf(0.82f, 0.86f, 0.90f, 0.94f, 1f)) {
-        // Retain the strongest safe live brand material before falling back to
-        // a purely static translucent color.
-        for (materialAlpha in listOf(0.22f, 0.18f, 0.14f, 0.10f, 0.06f, 0f)) {
-            for (baseMix in listOf(0.24f, 0.16f, 0.08f, 0f)) {
-                val container = lerp(logoTint, onSurface, baseMix).copy(alpha = opacity)
-                for (endMix in listOf(0f, 0.10f, 0.20f)) {
-                    val gradientEnd = lerp(logoTint, onSurface, endMix).copy(alpha = opacity)
-                    val contrastSafe = listOf(0f, 0.25f, 0.5f, 0.75f, 1f).all { position ->
-                        val stop = lerp(container, gradientEnd, position)
-                        listOf(Color.Black, Color.White).all { background ->
-                            val resolved = stop.compositeOver(background)
-                            listOf(Color.Black, Color.White).all { pigment ->
-                                guideContrastRatio(
-                                    surface,
-                                    pigment.copy(alpha = materialAlpha).compositeOver(resolved),
-                                ) >= 4.5f
+internal fun guideBackdropColors(config: BgEffectConfig.Config): List<Color> =
+    listOf(config.colors1, config.colors2, config.colors3).flatMap { colors ->
+        (0 until 4).map { index ->
+            val offset = index * 4
+            Color(
+                red = colors[offset],
+                green = colors[offset + 1],
+                blue = colors[offset + 2],
+                alpha = colors[offset + 3],
+            )
+        }
+    }
+
+internal fun resolveGuideActionColors(
+    surface: Color,
+    onSurface: Color,
+    logoTint: Color,
+    backdropColors: List<Color>,
+): GuideActionColors {
+    if (backdropColors.isEmpty()) return GuideActionColors(onSurface, onSurface, surface, 0f)
+
+    // Read the same light/dark background palette as BgEffectBackground, not an
+    // unrelated primary accent or black/white underlays that this page never uses.
+    val warm = backdropColors.maxByOrNull { it.red - it.blue }!!.copy(alpha = 1f)
+    val cool = backdropColors.minByOrNull { it.red - it.blue }!!.copy(alpha = 1f)
+    val chromaSpan = maxOf(
+        kotlin.math.abs(warm.red - cool.red),
+        kotlin.math.abs(warm.green - cool.green),
+        kotlin.math.abs(warm.blue - cool.blue),
+    )
+    val underlays = backdropColors.map { it.compositeOver(surface) } + surface
+    val positions = listOf(0f, 0.25f, 0.5f, 0.75f, 1f)
+
+    // A usable tinted button must have a visible warm/cool separation. Prefer
+    // a small live Logo material when it is safe; keep an opaque fallback.
+    for (minSeparation in listOf(0.10f, 0.07f, 0f)) {
+        for (minMaterial in listOf(0.06f, 0.02f, 0f)) {
+            for (opacity in listOf(0.90f, 0.94f, 0.86f, 1f)) {
+                for (paletteMix in listOf(0.40f, 0.35f, 0.30f, 0.25f)) {
+                    if (chromaSpan * paletteMix * opacity < minSeparation) continue
+                    for (shade in listOf(0.30f, 0.40f, 0.50f, 0.60f, 0.70f)) {
+                        val base = lerp(logoTint, onSurface, shade)
+                        val start = lerp(base, warm, paletteMix).copy(alpha = opacity)
+                        val end = lerp(base, cool, paletteMix).copy(alpha = opacity)
+                        for (materialAlpha in listOf(0.12f, 0.10f, 0.08f, 0.06f, 0.04f, 0.02f, 0f)) {
+                            if (materialAlpha < minMaterial) continue
+                            val safe = positions.all { position ->
+                                val stop = lerp(start, end, position)
+                                underlays.all { underlay ->
+                                    val resolved = stop.compositeOver(underlay)
+                                    listOf(Color.Black, Color.White).all { pigment ->
+                                        guideContrastRatio(
+                                            surface,
+                                            pigment.copy(alpha = materialAlpha).compositeOver(resolved),
+                                        ) >= 4.5f
+                                    }
+                                }
                             }
+                            if (safe) return GuideActionColors(start, end, surface, materialAlpha)
                         }
-                    }
-                    if (contrastSafe) {
-                        return GuideActionColors(container, gradientEnd, surface, materialAlpha)
                     }
                 }
             }
@@ -1014,8 +1051,14 @@ private fun guideActionColors(): GuideActionColors {
     val onSurface = MiuixTheme.colorScheme.onSurface
     // Same semantic color used by GuiyuanAnimatedIdentityMark before brand blending.
     val logoTint = MiuixTheme.colorScheme.onSurfaceContainer
-    return remember(surface, onSurface, logoTint) {
-        resolveGuideActionColors(surface, onSurface, logoTint)
+    val deviceType = if (LocalConfiguration.current.screenWidthDp >= 600) DeviceType.PAD else DeviceType.PHONE
+    val isDarkTheme = surface.luminance() < 0.5f
+    val preset = remember(deviceType, isDarkTheme) {
+        BgEffectConfig.get(deviceType, isDarkTheme)
+    }
+    val backdropColors = remember(preset) { guideBackdropColors(preset) }
+    return remember(surface, onSurface, logoTint, backdropColors) {
+        resolveGuideActionColors(surface, onSurface, logoTint, backdropColors)
     }
 }
 
