@@ -620,7 +620,7 @@
     <string name="guide_scope_help_busy">Another framework operation is in progress. Try again after it finishes.</string>
     <string name="guide_scope_help_request">Tap the item above to request SystemUI scope, or configure it in the module manager.</string>
     <string name="guide_root_help">Root is optional. You can grant access in a Root manager and check again.</string>
-    <string name="guide_permission_warning_title">Core setup is incomplete</string>
+    <string name="guide_permission_warning_title">Review module authorization</string>
     <string name="guide_permission_warning_summary">The module framework or SystemUI scope is not yet confirmed as ready. Guiyuan status indicators may not take effect until you configure them. Root is optional and does not block setup.</string>
     <string name="guide_permission_return">Return to setup</string>
     <string name="guide_permission_continue">Continue anyway</string>

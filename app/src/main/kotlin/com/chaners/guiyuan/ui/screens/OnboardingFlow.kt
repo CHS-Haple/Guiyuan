@@ -1,8 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -22,8 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.annotation.DrawableRes
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -62,8 +58,6 @@ import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
@@ -104,13 +98,14 @@ import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Checkbox
+import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -179,6 +174,7 @@ internal fun OnboardingFlow(
         else -> 0 // NavBackStack stores NavKey, not GuidePage.
     }
     var showPermissionWarning by rememberSaveable { mutableStateOf(false) }
+    var advanceAfterWarning by remember { mutableStateOf(false) }
     fun advance() {
         val next = when (step) {
             0, 1, 2 -> GuidePage.Stage(step + 1)
@@ -483,30 +479,11 @@ internal fun OnboardingFlow(
                                 )
                                 Spacer(Modifier.height(20.dp))
                                 Card(modifier = Modifier.fillMaxWidth()) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .toggleable(
-                                                value = policyAccepted,
-                                                interactionSource = remember { MutableInteractionSource() },
-                                                indication = null,
-                                                role = Role.Checkbox,
-                                                onValueChange = { policyAccepted = it },
-                                            )
-                                            .padding(horizontal = 16.dp, vertical = 18.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    ) {
-                                        Checkbox(
-                                            state = if (policyAccepted) ToggleableState.On else ToggleableState.Off,
-                                            onClick = null,
-                                        )
-                                        Text(
-                                            text = stringResource(R.string.guide_privacy_ack),
-                                            style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.4f.em),
-                                            modifier = Modifier.weight(1f),
-                                        )
-                                    }
+                                    CheckboxPreference(
+                                        title = stringResource(R.string.guide_privacy_ack),
+                                        checked = policyAccepted,
+                                        onCheckedChange = { policyAccepted = it },
+                                    )
                                 }
                             }
                         }
@@ -551,7 +528,16 @@ internal fun OnboardingFlow(
                         show = showPermissionWarning,
                         title = stringResource(R.string.guide_permission_warning_title),
                         summary = stringResource(R.string.guide_permission_warning_summary),
-                        onDismissRequest = { showPermissionWarning = false },
+                        onDismissRequest = {
+                            advanceAfterWarning = false
+                            showPermissionWarning = false
+                        },
+                        onDismissFinished = {
+                            if (advanceAfterWarning) {
+                                advanceAfterWarning = false
+                                advance()
+                            }
+                        },
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -568,8 +554,8 @@ internal fun OnboardingFlow(
                                 modifier = Modifier.weight(1f),
                                 role = GlassDialogButtonRole.Primary,
                                 onClick = {
+                                    advanceAfterWarning = true
                                     showPermissionWarning = false
-                                    advance()
                                 },
                             )
                         }
@@ -596,7 +582,8 @@ internal fun OnboardingFlow(
 
 @Composable
 private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
-    val lifecycle = (LocalActivity.current as? ComponentActivity)?.lifecycle
+    // The MIUIX navigation entry lifecycle pauses covered pages below RESUMED.
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     var resumed by remember(lifecycle) {
         mutableStateOf(lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true)
     }
