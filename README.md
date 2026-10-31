@@ -6,7 +6,7 @@
 [![License: GPL-3.0-only](https://img.shields.io/badge/License-GPL--3.0--only-blue.svg)](LICENSE)
 ![Status: pre-release](https://img.shields.io/badge/status-pre--release-orange)
 
-An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and Wi-Fi information into a compact status bar indicator.
+An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and Wi-Fi into a compact status bar indicator. The verified framework baseline is LSPosed; other frameworks require separate compatibility checks.
 
 [English](#english) | [简体中文](#简体中文)
 
@@ -42,7 +42,7 @@ Compatibility is established against the actual target SystemUI. Other HyperOS b
 - Light/dark appearance, dynamic color, and standard, floating, or Liquid Glass navigation options.
 - English and Simplified Chinese with Android 13+ per-app language selection.
 - Optional launcher-icon hiding while retaining a non-launcher app entry point.
-- Optional shortcut in Settings, with a separate Xposed scope requested only when enabled.
+- Optional shortcut in Settings, with a separate module scope requested only when enabled.
 
 **Diagnostics**
 - General and Detailed diagnostic levels.
@@ -61,6 +61,7 @@ The project is still under active development, so broader device, system-version
 **Project / user-facing**
 - [CHANGELOG.md](CHANGELOG.md) — unreleased net changes and future release history.
 - [PRIVACY.md](PRIVACY.md) — local data, diagnostics, Root, export, and sharing.
+- [TERMS.md](TERMS.md) — usage requirements, compatibility, and open-source licensing.
 - [SECURITY.md](SECURITY.md) — private security-reporting policy.
 - [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) — direct dependencies and license notices.
 - [LICENSE](LICENSE) — GNU General Public License v3.0 only (`GPL-3.0-only`).
@@ -86,7 +87,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ## 简体中文
 
-面向 Xiaomi HyperOS 的 LSPosed 模块，将电量、移动网络与 Wi-Fi 信息整合为一个紧凑的状态栏图标。
+面向 Xiaomi HyperOS 的 LSPosed 模块，将电量、移动网络与 Wi-Fi 信息整合为紧凑的状态栏图标。目前以经过验证的 LSPosed 环境为适配基线，其他框架需单独验证。
 
 ### 项目状态
 
@@ -116,7 +117,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 - 支持亮色/深色、动态取色，以及标准、悬浮或液态玻璃导航。
 - 支持英文、简体中文和 Android 13+ 应用级语言选择。
 - 可隐藏桌面图标，同时保留非桌面入口。
-- 可选在「设置」中显示归元快捷入口，启用时才按需申请对应 Xposed 作用域。
+- 可选在「设置」中显示归元快捷入口，仅在启用时按需申请对应的模块作用域。
 
 **诊断**
 - 提供一般与详细两档诊断模式。
@@ -135,6 +136,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 **项目 / 用户**
 - [CHANGELOG.md](CHANGELOG.md) — 当前未发布净变化与未来发布历史。
 - [PRIVACY.md](PRIVACY.md) — 本地数据、诊断、Root、导出与分享说明。
+- [TERMS.md](TERMS.md) — 使用条件、兼容性与开源许可说明。
 - [SECURITY.md](SECURITY.md) — 安全问题私密报告规则。
 - [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) — 直接依赖与许可证说明。
 - [LICENSE](LICENSE) — GNU 通用公共许可证 v3.0（仅第 3 版）（`GPL-3.0-only`）。

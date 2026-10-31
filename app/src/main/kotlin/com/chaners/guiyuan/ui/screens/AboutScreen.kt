@@ -19,8 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.Modifier
@@ -41,8 +39,6 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
-import top.yukonga.miuix.kmp.blur.BlendColorEntry
-import top.yukonga.miuix.kmp.blur.BlurBlendMode
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -59,6 +55,7 @@ private data class AboutDependency(
     val name: String,
     val version: String?,
     val license: String,
+    val maintainer: String,
     val upstreamUrl: String,
 )
 
@@ -66,6 +63,9 @@ private data class AboutDependency(
 internal fun AboutScreen(
     onBack: () -> Unit,
     onOpenThirdParty: () -> Unit,
+    onOpenPrivacy: () -> Unit,
+    onOpenTerms: () -> Unit,
+    onOpenGuide: () -> Unit,
     onOpenScopes: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -78,22 +78,7 @@ internal fun AboutScreen(
     val density = LocalDensity.current
     val backdrop = rememberLayerBackdrop()
     val blur = remember { isRuntimeShaderSupported() }
-    val isDark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
-    val logoBlend = remember(isDark) {
-        if (isDark) {
-            listOf(
-                BlendColorEntry(Color(0xe6a1a1a1), BlurBlendMode.ColorDodge),
-                BlendColorEntry(Color(0x4de6e6e6), BlurBlendMode.LinearLight),
-                BlendColorEntry(Color(0xff1af500), BlurBlendMode.Lab),
-            )
-        } else {
-            listOf(
-                BlendColorEntry(Color(0xcc4a4a4a), BlurBlendMode.ColorBurn),
-                BlendColorEntry(Color(0xff4f4f4f), BlurBlendMode.LinearLight),
-                BlendColorEntry(Color(0xff1af200), BlurBlendMode.Lab),
-            )
-        }
-    }
+    val logoBlend = rememberBrandLogoBlend()
     var heroHeight by remember { mutableStateOf(200.dp) }
     var spacerBottom by remember { mutableFloatStateOf(0f) }
     var iconBottom by remember { mutableFloatStateOf(0f) }
@@ -244,6 +229,24 @@ internal fun AboutScreen(
                         },
                     )
                     ArrowPreference(
+                        title = stringResource(R.string.terms_title),
+                        summary = stringResource(R.string.about_terms_summary),
+                        startAction = {
+                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_fact_check)
+                        },
+                        onClick = onOpenTerms,
+                    )
+                    ArrowPreference(
+                        title = stringResource(R.string.privacy_title),
+                        summary = stringResource(R.string.about_privacy_summary),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_lock,
+                            )
+                        },
+                        onClick = onOpenPrivacy,
+                    )
+                    ArrowPreference(
                         title = stringResource(R.string.about_open_source_license_title),
                         summary = stringResource(R.string.about_open_source_license_summary),
                         startAction = {
@@ -266,6 +269,16 @@ internal fun AboutScreen(
                             )
                         },
                         onClick = onOpenThirdParty,
+                    )
+                    ArrowPreference(
+                        title = stringResource(R.string.guide_revisit_title),
+                        summary = stringResource(R.string.guide_revisit_summary),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_format_list_bulleted,
+                            )
+                        },
+                        onClick = onOpenGuide,
                     )
                 }
                 SmallTitle(stringResource(R.string.section_device_system))
@@ -372,54 +385,63 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     name = "MIUIX",
                     version = miuixVersion,
                     license = "Apache-2.0",
+                    maintainer = "compose-miuix-ui",
                     upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
                 ),
                 AboutDependency(
                     name = "libxposed API",
                     version = BuildConfig.LIBXPOSED_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "libxposed",
                     upstreamUrl = "https://github.com/libxposed/api",
                 ),
                 AboutDependency(
                     name = "libxposed service",
                     version = BuildConfig.LIBXPOSED_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "libxposed",
                     upstreamUrl = "https://github.com/libxposed/service",
                 ),
                 AboutDependency(
                     name = "AndroidX Core",
                     version = BuildConfig.ANDROIDX_CORE_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "AndroidX",
                     upstreamUrl = "https://github.com/androidx/androidx",
                 ),
                 AboutDependency(
                     name = "AndroidX Activity Compose",
                     version = BuildConfig.ACTIVITY_COMPOSE_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "AndroidX",
                     upstreamUrl = "https://github.com/androidx/androidx",
                 ),
                 AboutDependency(
                     name = "AndroidX Navigation Event Compose",
                     version = BuildConfig.NAVIGATION_EVENT_COMPOSE_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "AndroidX",
                     upstreamUrl = "https://github.com/androidx/androidx",
                 ),
                 AboutDependency(
                     name = "AndroidX DataStore Preferences",
                     version = BuildConfig.DATASTORE_PREFERENCES_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "AndroidX",
                     upstreamUrl = "https://github.com/androidx/androidx",
                 ),
                 AboutDependency(
                     name = "kotlinx.serialization core",
                     version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "Kotlin",
                     upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
                 ),
                 AboutDependency(
                     name = "kotlinx.serialization JSON",
                     version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "Kotlin",
                     upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
                 ),
             )
@@ -431,12 +453,14 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     name = "Gradle Wrapper",
                     version = BuildConfig.GRADLE_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "Gradle",
                     upstreamUrl = "https://github.com/gradle/gradle",
                 ),
                 AboutDependency(
                     name = "JUnit 4",
                     version = BuildConfig.JUNIT_VERSION,
                     license = "EPL-1.0",
+                    maintainer = "junit-team",
                     upstreamUrl = "https://github.com/junit-team/junit4",
                 ),
             )
@@ -485,6 +509,8 @@ private fun AboutDependencyPreference(
                 append(it)
                 append('\n')
             }
+            append(dependency.maintainer)
+            append('｜')
             append(dependency.license)
         }
     ArrowPreference(

@@ -16,6 +16,35 @@ internal enum class AppLang(
 
 internal object AppPlatform {
     private const val ALIAS_SUFFIX = ".LauncherAlias"
+    private const val GUIDE_PREFS = "guiyuan_first_run"
+    private const val GUIDE_COMPLETED = "completed"
+    private const val GUIDE_STARTED = "started"
+
+    fun needsOnboarding(ctx: Context): Boolean {
+        val prefs = ctx.getSharedPreferences(GUIDE_PREFS, Context.MODE_PRIVATE)
+        if (prefs.contains(GUIDE_COMPLETED)) {
+            return !prefs.getBoolean(GUIDE_COMPLETED, false)
+        }
+        // A guide already started must stay pending across app updates.
+        prefs.edit().putBoolean(GUIDE_STARTED, true).apply()
+        return true
+    }
+
+    fun markExistingInstall(ctx: Context) {
+        val prefs = ctx.getSharedPreferences(GUIDE_PREFS, Context.MODE_PRIVATE)
+        if (!prefs.contains(GUIDE_COMPLETED) && !prefs.contains(GUIDE_STARTED)) {
+            prefs.edit().putBoolean(GUIDE_COMPLETED, true).apply()
+        }
+    }
+
+    fun completeOnboarding(ctx: Context) {
+        ctx.getSharedPreferences(GUIDE_PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putInt("privacy_ack_version", 2)
+            .putInt("terms_ack_version", 1)
+            .putBoolean(GUIDE_COMPLETED, true)
+            .apply()
+    }
 
     fun language(ctx: Context): AppLang {
         val locales = ctx.getSystemService(LocaleManager::class.java).applicationLocales

@@ -343,6 +343,8 @@ Runtime-sensitive work: review ownership/writer conflicts, lifecycle/cleanup, fa
 
 UI work: review hierarchy, MIUIX behavior, themes, localization, accessibility and interaction.
 
+Formal privacy and terms documents are not subject to ordinary UI copy-shortening or semicolon-avoidance rules. Preserve necessary legal qualifications and precise meanings. For substantive changes, verify disclosures against actual source/runtime behavior, keep Chinese/English meaning equivalent, and synchronize in-app articles with the public `PRIVACY.md` and `TERMS.md`. Never invent maintainer identities, private contact methods, consent mechanisms, retention guarantees, or legal assurances. Respect the IT channel's project-link restriction.
+
 Repository/CI work: review triggers, secret boundaries, artifact semantics and branch protection.
 
 All non-trivial code work: complete the pre-commit maintainability review and resolve deterministic findings before the final commit/CI checkpoint.
