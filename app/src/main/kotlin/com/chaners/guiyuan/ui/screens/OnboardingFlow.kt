@@ -314,7 +314,7 @@ internal fun OnboardingFlow(
                         Text(
                             text = title,
                             modifier = Modifier.semantics { heading() },
-                            style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Medium),
+                            style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.SemiBold),
                             textAlign = TextAlign.Center,
                             color = MiuixTheme.colorScheme.onBackground,
                         )
@@ -473,7 +473,7 @@ internal fun OnboardingFlow(
                                     text = stringResource(R.string.guide_important_note),
                                     modifier = Modifier.padding(horizontal = 12.dp)
                                         .semantics { heading() },
-                                    style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
+                                    style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.SemiBold),
                                     color = MiuixTheme.colorScheme.onSurface,
                                 )
                                 Spacer(Modifier.height(10.dp))
