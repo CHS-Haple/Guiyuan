@@ -14,6 +14,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
@@ -87,22 +89,22 @@ private fun AgreementArticle(document: AgreementDocument) {
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         Column(
             modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth()
-                .padding(horizontal = 28.dp, vertical = 16.dp),
+                .padding(horizontal = 28.dp).padding(top = 20.dp, bottom = 28.dp),
         ) {
         AgreementParagraph(intro)
         sections.forEach { section ->
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(28.dp))
             Text(
                 text = stringResource(section.title),
-                style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight.Medium),
+                modifier = Modifier.semantics { heading() },
+                style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Medium),
                 color = MiuixTheme.colorScheme.onSurface,
             )
-            Spacer(Modifier.height(10.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Spacer(Modifier.height(12.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 section.paragraphs.forEach { AgreementParagraph(it) }
             }
         }
-        Spacer(Modifier.height(16.dp))
         }
     }
 }
@@ -114,7 +116,7 @@ private fun AgreementParagraph(@StringRes textRes: Int) {
         modifier = Modifier.fillMaxWidth(),
         style = MiuixTheme.textStyles.body1.copy(
             fontWeight = FontWeight.Normal,
-            lineHeight = 1.45f.em,
+            lineHeight = 1.5f.em,
         ),
         color = MiuixTheme.colorScheme.onSurface,
     )
