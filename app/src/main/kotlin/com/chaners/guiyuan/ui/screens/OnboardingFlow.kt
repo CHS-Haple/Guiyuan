@@ -478,12 +478,7 @@ internal fun OnboardingFlow(
                                         title = stringResource(R.string.guide_terms_link_text),
                                         summary = stringResource(R.string.guide_terms_summary),
                                         startAction = {
-                                            Icon(
-                                                imageVector = MiuixIcons.Regular.Info,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(24.dp),
-                                                tint = MiuixTheme.colorScheme.primary,
-                                            )
+                                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_info)
                                         },
                                         endActions = {
                                             Icon(
@@ -505,12 +500,7 @@ internal fun OnboardingFlow(
                                         title = stringResource(R.string.guide_policy_link_text),
                                         summary = stringResource(R.string.guide_policy_summary),
                                         startAction = {
-                                            Icon(
-                                                imageVector = MiuixIcons.Regular.Lock,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(24.dp),
-                                                tint = MiuixTheme.colorScheme.primary,
-                                            )
+                                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_lock)
                                         },
                                         endActions = {
                                             Icon(
