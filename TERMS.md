@@ -10,13 +10,13 @@
 
 ### 软件性质与适用范围
 
-归元是一款基于 LSPosed 的免费开源模块，用于调整 Android/HyperOS 的状态信息显示。目前已验证的框架运行基线为 LSPosed；其他模块框架的兼容性需要分别验证。归元并非系统厂商、Android 或 LSPosed 的官方产品。
+归元是一款基于 LSPosed 的免费开源模块，用于调整 Android/HyperOS 的状态信息显示。目前已验证的运行基线为 LSPosed，其他模块框架的兼容性需分别验证。归元不是设备厂商、Android 或 LSPosed 的官方产品。
 
 ### 运行条件与授权
 
 兼容性取决于 Android、HyperOS、SystemUI、模块框架版本及实际作用域状态。当前框架服务显示已连接，不代表所有功能或其他框架已经验证兼容。仅在您拥有或获准管理的设备上启用模块与系统权限。
 
-Root 不属于全部功能的必要条件。进入权限设置页面时可能触发 Root 检测及授权提示；日志读取和进程维护仍由您主动发起或确认。
+Root 并非所有功能的必要条件。进入权限设置页会检测 Root 状态，可能出现授权提示。日志读取和进程维护仍需您主动操作或确认。未授予 Root 也可以完成引导。
 
 ### 兼容性与风险
 
@@ -26,7 +26,7 @@ Root 不属于全部功能的必要条件。进入权限设置页面时可能触
 
 ### 开源许可与第三方组件
 
-归元源代码采用 GPL-3.0-only 许可。复制、修改或分发代码时，请遵守仓库 LICENSE；第三方组件还可能有各自的许可证和声明。
+归元源代码采用 GPL-3.0-only 许可。复制、修改或分发代码时，请遵守仓库 LICENSE。第三方组件可能适用各自的许可证和声明。
 
 系统、框架及品牌名称仅用于兼容性说明，不表示其权利人认可或赞助归元。
 
@@ -36,7 +36,7 @@ Root 不属于全部功能的必要条件。进入权限设置页面时可能触
 
 ### 条款更新与联系
 
-当功能或兼容性范围发生变化时，本条款可能相应更新，重要变更会写入项目文档或版本说明。普通问题可通过项目仓库反馈；涉及安全漏洞或私人资料时，请按 SECURITY.md 的指引私密提交。
+本条款可能随功能或兼容性变化而更新，重要变更会写入项目文档或版本说明。普通问题可通过项目仓库反馈。涉及安全漏洞或私人资料时，请按 SECURITY.md 的指引私密提交。
 
 ---
 
@@ -46,13 +46,13 @@ These Terms of Use apply to installing, configuring, and using the Guiyuan app a
 
 ### Nature and scope of the software
 
-Guiyuan is a free, open-source LSPosed module for customizing status information on Android/HyperOS. Its currently verified framework runtime baseline is LSPosed; compatibility with other module frameworks requires separate validation. Guiyuan is not an official product of a device manufacturer, Android, or LSPosed.
+Guiyuan is a free, open-source LSPosed module for customizing status information on Android/HyperOS. Its verified runtime baseline is LSPosed. Compatibility with other module frameworks requires separate validation. Guiyuan is not an official product of a device manufacturer, Android, or LSPosed.
 
 ### Environment and authorization
 
 Compatibility depends on Android, HyperOS, SystemUI, the module framework's version, and the actual scope state. A connected framework service does not mean that all features or alternative frameworks have been validated. Enable the module and system privileges only on devices you own or are authorized to administer.
 
-Root is not required for every feature. Opening the Permissions step may check Root and prompt for authorization. Log access and process maintenance remain user-initiated.
+Root is not required for every feature. Opening Permissions checks Root status and may prompt for authorization. Log access and process maintenance still require your action or confirmation. Setup can be completed without granting Root.
 
 ### Compatibility and risk
 
@@ -64,7 +64,7 @@ The software is provided as available, without a guarantee of compatibility with
 
 Guiyuan source code is available under GPL-3.0-only. When copying, modifying, or distributing it, follow the repository LICENSE. Third-party components may have separate licenses and notices.
 
-System, framework, and brand names are used only to explain compatibility; they do not imply endorsement or sponsorship.
+System, framework, and brand names are used only to explain compatibility. They do not imply endorsement or sponsorship.
 
 ### Responsible use and feedback
 
