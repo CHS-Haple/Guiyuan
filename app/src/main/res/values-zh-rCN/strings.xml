@@ -523,11 +523,11 @@
     <string name="guide_continue">继续</string>
     <string name="guide_privacy_title">协议与声明</string>
     <string name="guide_privacy_description">请阅读使用条款与隐私政策，了解使用责任和数据处理方式。</string>
-    <string name="guide_privacy_brief">归元在本机处理电量、网络等状态信息，并保存用户设置。相关信息不会自动上传至项目维护者。</string>
-    <string name="guide_privacy_note_scope">归元图标的显示依赖兼容的模块框架及 SystemUI 作用域授权。未完成授权时，相关功能可能无法生效。</string>
-    <string name="guide_privacy_note_root">Root 为可选权限，进入权限页可能触发授权提示。未授权仍可完成引导，但部分诊断与进程维护功能可能受限。</string>
-    <string name="guide_privacy_note_diagnostics">诊断可能读取模块日志，来源不可用时可能读取并筛选系统日志。报告可能包含设备及运行信息，不会自动上传。</string>
-    <string name="guide_privacy_note_sharing">配置备份和诊断报告须由用户主动导出或分享。分享前应核查是否包含个人信息、设备标识等敏感内容。</string>
+    <string name="guide_privacy_brief">归元在本机处理状态信息及用户设置，不会自动上传。</string>
+    <string name="guide_privacy_note_scope">状态图标需要兼容的模块框架及 SystemUI 作用域授权。</string>
+    <string name="guide_privacy_note_root">Root 为可选权限。未授权时，部分诊断和维护功能可能受限。</string>
+    <string name="guide_privacy_note_diagnostics">诊断可能读取模块或系统日志。报告可能包含设备及运行信息，不会自动上传。</string>
+    <string name="guide_privacy_note_sharing">备份和诊断报告须由用户主动导出或分享。分享前请核查敏感信息。</string>
     <string name="guide_privacy_ack">我已阅读并同意《使用条款》和《隐私政策》</string>
     <string name="guide_agree_continue">同意并继续</string>
     <string name="guide_scope_title">模块设置</string>
@@ -623,7 +623,8 @@
     <string name="guide_scope_help_offline">请先连接框架服务并启用归元，再配置 SystemUI 作用域。</string>
     <string name="guide_scope_help_api">当前框架不支持所需的 API 102 作用域申请。</string>
     <string name="guide_scope_help_busy">正在处理其他框架操作，请完成后再尝试。</string>
-    <string name="guide_scope_help_request">点击上方项目申请 SystemUI 作用域，或前往模块管理器配置。</string>
+    <string name="guide_scope_help_request">点击“申请作用域”，或前往模块管理器配置。</string>
+    <string name="guide_scope_request_action">申请作用域</string>
     <string name="guide_root_help">Root 是可选权限，可在 Root 管理器授权后重新检测。</string>
     <string name="guide_permission_warning_title">请确认模块授权</string>
     <string name="guide_permission_warning_summary">框架服务或 SystemUI 作用域尚未确认就绪，归元图标可能无法生效。您可以稍后完成配置。Root 为可选权限。</string>

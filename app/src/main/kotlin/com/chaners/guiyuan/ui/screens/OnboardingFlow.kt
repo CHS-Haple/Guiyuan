@@ -5,9 +5,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.background
@@ -132,7 +129,6 @@ import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Help
-import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
@@ -287,6 +283,7 @@ internal fun OnboardingFlow(
         }
         val scrollBehavior = MiuixScrollBehavior()
         val scroll = rememberScrollState()
+        val importantScroll = rememberScrollState()
         val topBarBackdrop = rememberTopBarBackdrop()
         val os4 = LocalUiStyle.current == UiStyle.OS4
         val refreshAction: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {
@@ -319,7 +316,7 @@ internal fun OnboardingFlow(
                     if (os4) {
                         GlassTopAppBar(
                             title = "",
-                            isContentScrolled = scroll.value > 0,
+                            isContentScrolled = step != 2 && scroll.value > 0,
                             backdrop = topBarBackdrop,
                             scrollBehavior = scrollBehavior,
                             compact = true,
@@ -350,18 +347,20 @@ internal fun OnboardingFlow(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Column(
-                    modifier = Modifier.weight(1f).fillMaxWidth()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection).verticalScroll(scroll),
+                    modifier = Modifier.weight(1f).fillMaxWidth().then(
+                        if (step == 2) Modifier
+                        else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).verticalScroll(scroll),
+                    ),
                 ) {
                     Spacer(Modifier.height(10.dp))
                     Box(
-                        modifier = Modifier.fillMaxWidth().height(70.dp),
+                        modifier = Modifier.fillMaxWidth().height(82.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             painter = painterResource(illustration),
                             contentDescription = null,
-                            modifier = Modifier.size(48.dp),
+                            modifier = Modifier.size(64.dp),
                             tint = MiuixTheme.colorScheme.primary,
                         )
                     }
@@ -431,15 +430,22 @@ internal fun OnboardingFlow(
                                         !canRequestScope -> stringResource(R.string.guide_scope_help_busy)
                                         else -> stringResource(R.string.guide_scope_help_request)
                                     },
-                                    onClick = if (!sysUiInScope && canRequestScope) {
-                                        {
+                                )
+                                if (!sysUiInScope) {
+                                    TextButton(
+                                        text = stringResource(R.string.guide_scope_request_action),
+                                        modifier = Modifier.fillMaxWidth()
+                                            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                                        enabled = canRequestScope,
+                                        onClick = {
                                             scopeRequestFailed = false
                                             if (!app.requestSysUiScope { approved ->
                                                     scopeRequestFailed = !approved
                                                 }) scopeRequestFailed = true
-                                        }
-                                    } else null,
-                                )
+                                        },
+                                    )
+                                }
                             }
                             SmallTitle(text = stringResource(R.string.guide_permission_later))
                             Card(modifier = Modifier.fillMaxWidth()) {
@@ -476,7 +482,7 @@ internal fun OnboardingFlow(
                         2 -> {
                             Column(
                                 modifier = Modifier.widthIn(max = 440.dp).fillMaxWidth()
-                                    .padding(horizontal = 4.dp),
+                                    .weight(1f).padding(horizontal = 4.dp),
                             ) {
                                 Card(modifier = Modifier.fillMaxWidth()) {
                                     BasicComponent(
@@ -533,7 +539,9 @@ internal fun OnboardingFlow(
                                 )
                                 Spacer(Modifier.height(16.dp))
                                 Column(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                                    modifier = Modifier.weight(1f).fillMaxWidth()
+                                        .verticalScroll(importantScroll)
+                                        .padding(horizontal = 12.dp, bottom = 12.dp),
                                     verticalArrangement = Arrangement.spacedBy(16.dp),
                                 ) {
                                     listOf(
@@ -577,7 +585,7 @@ internal fun OnboardingFlow(
                             }
                         }
                     }
-                    Spacer(Modifier.height(24.dp))
+                    if (step != 2) Spacer(Modifier.height(24.dp))
                 }
                 if (step == 2) {
                     Row(
@@ -925,21 +933,18 @@ private fun GuidePermissionItem(
     expanded: Boolean,
     onToggleDetails: () -> Unit,
     guidance: String? = null,
-    onClick: (() -> Unit)? = null,
 ) {
     val detailsLabel = stringResource(
         if (expanded) R.string.guide_details_collapse else R.string.guide_details_expand,
     )
     BasicComponent(
         startAction = { SemanticLeadingIcon(iconRes = iconRes) },
-        onClick = onClick,
         endActions = {
             if (checked) {
-                Icon(
-                    imageVector = MiuixIcons.Regular.Ok,
-                    contentDescription = status,
-                    modifier = Modifier.size(24.dp),
-                    tint = MiuixTheme.colorScheme.primary,
+                Checkbox(
+                    state = ToggleableState.On,
+                    onClick = null,
+                    modifier = Modifier.semantics { contentDescription = status },
                 )
             } else {
                 Text(
@@ -959,30 +964,14 @@ private fun GuidePermissionItem(
                 style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
                 color = MiuixTheme.colorScheme.onBackground,
             )
-            val questionPress = remember { MutableInteractionSource() }
             TooltipBox(text = detailsLabel) {
-                Box(
-                    modifier = Modifier.size(40.dp).clickable(
-                        interactionSource = questionPress,
-                        indication = null,
-                        onClickLabel = detailsLabel,
-                        role = Role.Button,
-                        onClick = onToggleDetails,
-                    ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(
-                        modifier = Modifier.size(28.dp)
-                            .indication(questionPress, LocalIndication.current),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Regular.Help,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                        )
-                    }
+                IconButton(onClick = onToggleDetails, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        imageVector = MiuixIcons.Regular.Help,
+                        contentDescription = detailsLabel,
+                        modifier = Modifier.size(20.dp),
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
                 }
             }
         }

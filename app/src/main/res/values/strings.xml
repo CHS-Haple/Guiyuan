@@ -524,11 +524,11 @@
     <string name="guide_continue">Continue</string>
     <string name="guide_privacy_title">Terms and statements</string>
     <string name="guide_privacy_description">Read the Terms of Use and Privacy Policy to understand the app and data handling.</string>
-    <string name="guide_privacy_brief">Guiyuan processes battery and network status locally and stores preferences on the device. This information is not automatically uploaded to maintainers.</string>
-    <string name="guide_privacy_note_scope">Guiyuan indicators depend on a compatible module framework and SystemUI scope authorization. Without it, related features may not work.</string>
-    <string name="guide_privacy_note_root">Root is optional. Opening the Permissions page may prompt for access. Setup can finish without Root, though some diagnostic and process-maintenance functions may be limited.</string>
-    <string name="guide_privacy_note_diagnostics">Diagnostics may read module logs or, if unavailable, read and filter system logs. Reports may contain device and runtime details, but are not uploaded automatically.</string>
-    <string name="guide_privacy_note_sharing">Users must initiate the export or sharing of configuration backups and diagnostic reports. Review files for personal information or device identifiers before sharing.</string>
+    <string name="guide_privacy_brief">Guiyuan processes status and settings locally and does not upload them automatically.</string>
+    <string name="guide_privacy_note_scope">Status indicators require a compatible module framework and SystemUI scope authorization.</string>
+    <string name="guide_privacy_note_root">Root is optional. Without it, some diagnostic and maintenance functions may be limited.</string>
+    <string name="guide_privacy_note_diagnostics">Diagnostics may read module or system logs. Reports may contain device and runtime information but are not uploaded automatically.</string>
+    <string name="guide_privacy_note_sharing">Users must initiate backup or report export and sharing. Check files for sensitive information before sharing.</string>
     <string name="guide_privacy_ack">I have read and agree to the Terms of Use and Privacy Policy</string>
     <string name="guide_agree_continue">Agree and continue</string>
     <string name="guide_scope_title">Set up the module</string>
@@ -624,7 +624,8 @@
     <string name="guide_scope_help_offline">Connect the framework and enable Guiyuan before configuring SystemUI.</string>
     <string name="guide_scope_help_api">This framework does not support the required API 102 scope request.</string>
     <string name="guide_scope_help_busy">Another framework operation is in progress. Try again after it finishes.</string>
-    <string name="guide_scope_help_request">Tap the item above to request SystemUI scope, or configure it in the module manager.</string>
+    <string name="guide_scope_help_request">Select Request scope, or configure SystemUI in the module manager.</string>
+    <string name="guide_scope_request_action">Request scope</string>
     <string name="guide_root_help">Root is optional. You can grant access in a Root manager and check again.</string>
     <string name="guide_permission_warning_title">Review module authorization</string>
     <string name="guide_permission_warning_summary">The framework service or SystemUI scope is not confirmed ready. Guiyuan indicators may not work until setup is complete. You can finish setup later. Root is optional.</string>
