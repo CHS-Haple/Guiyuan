@@ -69,12 +69,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.LinkInteractionListener
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -407,12 +404,6 @@ internal fun OnboardingFlow(
                                     val termsLabel = stringResource(R.string.guide_terms_link_text)
                                     val privacyLabel = stringResource(R.string.guide_policy_link_text)
                                     val line = stringResource(R.string.guide_agreement_line, termsLabel, privacyLabel)
-                                    val linkStyles = TextLinkStyles(
-                                        style = SpanStyle(
-                                            color = MiuixTheme.colorScheme.primary,
-                                            textDecoration = TextDecoration.Underline,
-                                        ),
-                                    )
                                     val linkedText = buildAnnotatedString {
                                         append(line)
                                         val termsStart = line.indexOf(termsLabel)
@@ -421,7 +412,6 @@ internal fun OnboardingFlow(
                                             addLink(
                                                 LinkAnnotation.Clickable(
                                                     tag = "terms",
-                                                    styles = linkStyles,
                                                     linkInteractionListener = LinkInteractionListener {
                                                         openDocument = AgreementDocument.Terms
                                                     },
@@ -434,7 +424,6 @@ internal fun OnboardingFlow(
                                             addLink(
                                                 LinkAnnotation.Clickable(
                                                     tag = "privacy",
-                                                    styles = linkStyles,
                                                     linkInteractionListener = LinkInteractionListener {
                                                         openDocument = AgreementDocument.Privacy
                                                     },
