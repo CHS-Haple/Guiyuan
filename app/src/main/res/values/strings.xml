@@ -605,7 +605,19 @@
     <string name="guide_policy_link_text">Privacy Policy</string>
     <string name="terms_title">Terms of Use</string>
     <string name="about_terms_summary">Read about usage and compatibility</string>
-    <string name="guide_agreement_line">Before using Guiyuan, read the %1$s and %2$s to understand the terms, permissions, and data-handling practices.</string>
     <string name="guide_permission_later">Optional permissions</string>
     <string name="guide_permission_hint">Authorized items show a checkmark.</string>
+    <string name="guide_terms_summary">Read how Guiyuan may be used and your responsibilities</string>
+    <string name="guide_policy_summary">Review device data, logs and export handling</string>
+    <string name="guide_important_note">Important notes</string>
+    <string name="guide_framework_read_failed">Status unavailable</string>
+    <string name="guide_framework_help">Enable Guiyuan in your module manager and check that the framework is running.</string>
+    <string name="guide_framework_read_help">Unable to read framework information. Check module manager access and reopen this page.</string>
+    <string name="guide_scope_wait_framework">Waiting for framework</string>
+    <string name="guide_scope_read_failed">Scope status unavailable</string>
+    <string name="guide_scope_help_offline">Connect the framework and enable Guiyuan before configuring SystemUI.</string>
+    <string name="guide_scope_help_api">This framework does not support the required API 102 scope request.</string>
+    <string name="guide_scope_help_busy">Another framework operation is in progress. Try again after it finishes.</string>
+    <string name="guide_scope_help_request">Tap the item above to request SystemUI scope, or configure it in the module manager.</string>
+    <string name="guide_root_help">Root is optional. You can grant access in a Root manager and check again.</string>
 </resources>

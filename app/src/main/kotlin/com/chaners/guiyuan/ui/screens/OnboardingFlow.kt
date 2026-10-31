@@ -24,9 +24,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.Image
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.res.painterResource
 import androidx.annotation.DrawableRes
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -67,9 +64,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.LinkInteractionListener
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
@@ -112,6 +106,7 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -121,6 +116,10 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Check
+import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Lock
+import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Guide steps are peers, not push-overlay destinations. Share MIUIX's motion and
@@ -237,9 +236,9 @@ internal fun OnboardingFlow(
             else -> stringResource(R.string.guide_basic_title)
         }
         val illustration = when (step) {
-            1 -> R.drawable.ic_material_symbol_shield
-            2 -> R.drawable.ic_material_symbol_lock
-            else -> R.drawable.ic_material_symbol_settings_applications
+            1 -> MiuixIcons.Regular.Lock
+            2 -> MiuixIcons.Regular.Info
+            else -> MiuixIcons.Regular.Settings
         }
         val scrollBehavior = MiuixScrollBehavior()
         val scroll = rememberScrollState()
@@ -289,11 +288,11 @@ internal fun OnboardingFlow(
                         modifier = Modifier.fillMaxWidth().height(70.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Image(
-                            painter = painterResource(illustration),
+                        Icon(
+                            imageVector = illustration,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
-                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
+                            tint = MiuixTheme.colorScheme.primary,
                         )
                     }
                     Spacer(Modifier.height(8.dp))
@@ -319,10 +318,15 @@ internal fun OnboardingFlow(
                                     status = when (framework) {
                                         XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
                                         XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_offline)
-                                        XposedStatus.QueryUnavailable -> stringResource(R.string.guide_status_unknown)
+                                        XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_failed)
                                         is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
                                     },
                                     checked = connected != null,
+                                    guidance = when (framework) {
+                                        XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_help)
+                                        XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_help)
+                                        else -> null
+                                    },
                                 )
                             }
                             Spacer(Modifier.height(12.dp))
@@ -333,11 +337,22 @@ internal fun OnboardingFlow(
                                     purpose = stringResource(R.string.guide_sysui_scope_purpose),
                                     status = when {
                                         sysUiInScope -> stringResource(R.string.guide_scope_ready)
-                                        connected == null -> stringResource(R.string.guide_status_unknown)
+                                        framework == XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
+                                        framework == XposedStatus.QueryUnavailable -> stringResource(R.string.guide_scope_read_failed)
+                                        connected == null -> stringResource(R.string.guide_scope_wait_framework)
                                         connected.apiVersion < 102 -> stringResource(R.string.guide_api_unsupported)
+                                        scopeBusy -> stringResource(R.string.guide_scope_requesting)
                                         else -> stringResource(R.string.guide_scope_not_ready)
                                     },
                                     checked = sysUiInScope,
+                                    guidance = when {
+                                        sysUiInScope -> null
+                                        framework == XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_help)
+                                        connected == null -> stringResource(R.string.guide_scope_help_offline)
+                                        connected.apiVersion < 102 -> stringResource(R.string.guide_scope_help_api)
+                                        !canRequestScope -> stringResource(R.string.guide_scope_help_busy)
+                                        else -> stringResource(R.string.guide_scope_help_request)
+                                    },
                                     onClick = if (!sysUiInScope && canRequestScope) {
                                         {
                                             scopeRequestFailed = false
@@ -361,6 +376,7 @@ internal fun OnboardingFlow(
                                         else -> stringResource(R.string.guide_root_not_checked)
                                     },
                                     checked = rootAccess == true,
+                                    guidance = if (rootAccess == false) stringResource(R.string.guide_root_help) else null,
                                     onClick = if (rootChecking) null else {
                                         {
                                             coroutineScope.launch {
@@ -393,63 +409,75 @@ internal fun OnboardingFlow(
                             }
                         }
                         2 -> {
-                            Box(
-                                modifier = Modifier.fillMaxWidth(),
-                                contentAlignment = Alignment.TopCenter,
+                            Column(
+                                modifier = Modifier.widthIn(max = 440.dp).fillMaxWidth()
+                                    .padding(horizontal = 4.dp),
                             ) {
-                                Column(
-                                    modifier = Modifier.widthIn(max = 440.dp).fillMaxWidth()
-                                        .padding(horizontal = 16.dp),
-                                ) {
-                                    val termsLabel = stringResource(R.string.guide_terms_link_text)
-                                    val privacyLabel = stringResource(R.string.guide_policy_link_text)
-                                    val line = stringResource(R.string.guide_agreement_line, termsLabel, privacyLabel)
-                                    val linkedText = buildAnnotatedString {
-                                        append(line)
-                                        val termsStart = line.indexOf(termsLabel)
-                                        val policyStart = line.indexOf(privacyLabel, termsStart + termsLabel.length)
-                                        if (termsStart >= 0) {
-                                            addLink(
-                                                LinkAnnotation.Clickable(
-                                                    tag = "terms",
-                                                    linkInteractionListener = LinkInteractionListener {
-                                                        openDocument = AgreementDocument.Terms
-                                                    },
-                                                ),
-                                                termsStart,
-                                                termsStart + termsLabel.length,
+                                Card(modifier = Modifier.fillMaxWidth()) {
+                                    BasicComponent(
+                                        title = stringResource(R.string.guide_terms_link_text),
+                                        summary = stringResource(R.string.guide_terms_summary),
+                                        startAction = {
+                                            Icon(
+                                                imageVector = MiuixIcons.Regular.Info,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(24.dp),
+                                                tint = MiuixTheme.colorScheme.primary,
                                             )
-                                        }
-                                        if (policyStart >= 0) {
-                                            addLink(
-                                                LinkAnnotation.Clickable(
-                                                    tag = "privacy",
-                                                    linkInteractionListener = LinkInteractionListener {
-                                                        openDocument = AgreementDocument.Privacy
-                                                    },
-                                                ),
-                                                policyStart,
-                                                policyStart + privacyLabel.length,
+                                        },
+                                        endActions = {
+                                            Icon(
+                                                imageVector = MiuixIcons.Regular.ChevronForward,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp),
+                                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                             )
-                                        }
-                                    }
-                                    Text(
-                                        text = linkedText,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        style = MiuixTheme.textStyles.body1.copy(
-                                            fontWeight = FontWeight.Normal,
-                                            lineHeight = 1.45f.em,
-                                        ),
-                                        color = MiuixTheme.colorScheme.onSurface,
+                                        },
+                                        onClick = { openDocument = AgreementDocument.Terms },
                                     )
-                                    Spacer(Modifier.height(24.dp))
-                                    Text(
-                                        text = stringResource(R.string.guide_privacy_brief),
-                                        modifier = Modifier.fillMaxWidth(),
-                                        style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.5f.em),
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                }
+                                Spacer(Modifier.height(12.dp))
+                                Card(modifier = Modifier.fillMaxWidth()) {
+                                    BasicComponent(
+                                        title = stringResource(R.string.guide_policy_link_text),
+                                        summary = stringResource(R.string.guide_policy_summary),
+                                        startAction = {
+                                            Icon(
+                                                imageVector = MiuixIcons.Regular.Lock,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(24.dp),
+                                                tint = MiuixTheme.colorScheme.primary,
+                                            )
+                                        },
+                                        endActions = {
+                                            Icon(
+                                                imageVector = MiuixIcons.Regular.ChevronForward,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp),
+                                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                            )
+                                        },
+                                        onClick = { openDocument = AgreementDocument.Privacy },
                                     )
-                                    Spacer(Modifier.height(20.dp))
+                                }
+                                Spacer(Modifier.height(24.dp))
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+                                Spacer(Modifier.height(20.dp))
+                                Text(
+                                    text = stringResource(R.string.guide_important_note),
+                                    modifier = Modifier.padding(horizontal = 12.dp),
+                                    style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
+                                    color = MiuixTheme.colorScheme.onSurface,
+                                )
+                                Spacer(Modifier.height(10.dp))
+                                Text(
+                                    text = stringResource(R.string.guide_privacy_brief),
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                                    style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.5f.em),
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                )
+                                Spacer(Modifier.height(20.dp))
+                                Card(modifier = Modifier.fillMaxWidth()) {
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -460,7 +488,7 @@ internal fun OnboardingFlow(
                                                 role = Role.Checkbox,
                                                 onValueChange = { policyAccepted = it },
                                             )
-                                            .padding(vertical = 10.dp),
+                                            .padding(horizontal = 16.dp, vertical = 18.dp),
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     ) {
@@ -734,6 +762,7 @@ private fun GuidePermissionItem(
     status: String,
     purpose: String,
     checked: Boolean,
+    guidance: String? = null,
     onClick: (() -> Unit)? = null,
 ) {
     BasicComponent(
@@ -760,11 +789,24 @@ private fun GuidePermissionItem(
             style = MiuixTheme.textStyles.body2.copy(fontWeight = FontWeight.Medium),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
-        Spacer(Modifier.height(4.dp))
+    }
+    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+    ) {
         Text(
             text = purpose,
             style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.4f.em),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
+        if (guidance != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = guidance,
+                style = MiuixTheme.textStyles.footnote1.copy(lineHeight = 1.35f.em),
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+        }
     }
 }

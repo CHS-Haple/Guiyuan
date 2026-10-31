@@ -604,7 +604,19 @@
     <string name="guide_policy_link_text">《隐私政策》</string>
     <string name="terms_title">使用条款</string>
     <string name="about_terms_summary">了解使用责任与兼容性说明</string>
-    <string name="guide_agreement_line">使用归元前，请阅读%1$s与%2$s，了解软件使用条件、权限与数据处理方式。</string>
     <string name="guide_permission_later">以下为可选权限</string>
     <string name="guide_permission_hint">已授权的项目会显示勾号。</string>
+    <string name="guide_terms_summary">查看软件使用条件与使用责任</string>
+    <string name="guide_policy_summary">了解本地数据、日志和导出方式</string>
+    <string name="guide_important_note">重要提示</string>
+    <string name="guide_framework_read_failed">状态读取失败</string>
+    <string name="guide_framework_help">请在模块管理器中启用归元，并确认框架服务正常运行。</string>
+    <string name="guide_framework_read_help">无法读取框架信息，请检查模块管理器权限后重新进入此页面。</string>
+    <string name="guide_scope_wait_framework">等待框架连接</string>
+    <string name="guide_scope_read_failed">作用域状态读取失败</string>
+    <string name="guide_scope_help_offline">请先连接框架服务并启用归元，再配置 SystemUI 作用域。</string>
+    <string name="guide_scope_help_api">当前框架不支持所需的 API 102 作用域申请。</string>
+    <string name="guide_scope_help_busy">正在处理其他框架操作，请完成后再尝试。</string>
+    <string name="guide_scope_help_request">点击上方项目申请 SystemUI 作用域，或前往模块管理器配置。</string>
+    <string name="guide_root_help">Root 是可选权限，可在 Root 管理器授权后重新检测。</string>
 </resources>
