@@ -67,6 +67,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -872,25 +873,24 @@ private fun GuidePermissionItem(
                     )
                 }
             }
-            val statusSymbol = when {
-                checked -> "✓"
-                checking -> "…"
-                else -> "!"
-            }
-            val statusColor = when {
-                checked -> MiuixTheme.colorScheme.primary
-                checking -> MiuixTheme.colorScheme.onSurfaceVariantSummary
-                else -> MiuixTheme.colorScheme.error
-            }
-            Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
-                Text(
-                    text = statusSymbol,
-                    style = MiuixTheme.textStyles.headline1.copy(
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center,
+            if (checking) {
+                Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "…",
+                        style = MiuixTheme.textStyles.headline1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+            } else {
+                Icon(
+                    painter = painterResource(
+                        if (checked) R.drawable.ic_material_symbol_check
+                        else R.drawable.ic_material_symbol_priority_high,
                     ),
-                    color = statusColor,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = if (checked) MiuixTheme.colorScheme.primary
+                        else MiuixTheme.colorScheme.error,
                 )
             }
         },
