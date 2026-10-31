@@ -572,7 +572,7 @@
     <string name="privacy_local_body_2">应用不提供用户账户，不申请 Android 的 INTERNET 权限，并且关闭了 Android 自动应用备份。</string>
     <string name="privacy_scope_title">权限与系统访问</string>
     <string name="privacy_scope_body">归元通过兼容的模块框架获取 SystemUI 作用域，用于调整状态信息显示。授权和实际生效情况由当前框架服务决定，您可以在对应的模块管理器中启用、调整或停用作用域。Root 不是首次启动的强制要求，仅用于部分诊断与进程维护操作。</string>
-    <string name="privacy_scope_body_2">进入首次引导权限页时，归元会检测 Root 状态，可能出现授权提示。日志读取、报告生成和进程维护仍需您主动操作或确认。阅读或同意本政策不会执行这些操作。</string>
+    <string name="privacy_scope_body_2">进入首次引导权限页时，归元会检测 Root 状态，可能出现授权提示。日志读取、报告生成和进程维护仍需您主动操作或确认。阅读本政策或完成引导确认不会自动执行这些操作。</string>
     <string name="privacy_diagnostics_body_2">您主动生成的报告可能包含版本、设备型号、系统环境、运行状态和相关日志。归元不会自动提交报告。导出或分享前，请检查是否含有设备标识等敏感信息。</string>
     <string name="privacy_retention_title">保存、备份与清理</string>
     <string name="privacy_retention_body">设置保存在应用私有区域。配置备份或恢复由您通过 Android 文件选择器发起。卸载应用通常会移除应用私有数据，但不会删除您另存或传出的副本。</string>
