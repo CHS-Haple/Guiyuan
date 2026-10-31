@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -248,8 +247,7 @@ internal fun OnboardingFlow(
             }
         }
     }
-    // Keep the selected document mounted through MIUIX's native sheet exit.
-    BackHandler(enabled = documentVisible) { documentVisible = false }
+    // MIUIX's BottomSheetContentLayout owns Back/drag dismissal and predictive motion.
 
     NavDisplay(
         backStack = pages,
