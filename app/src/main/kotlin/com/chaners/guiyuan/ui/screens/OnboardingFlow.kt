@@ -297,31 +297,37 @@ internal fun OnboardingFlow(
                             )
                         }
                         2 -> {
-                            val intro = stringResource(R.string.guide_agreement_prefix)
-                            val divider = stringResource(R.string.guide_agreement_separator)
-                            val ending = stringResource(R.string.guide_agreement_suffix)
                             val termsLabel = stringResource(R.string.guide_terms_link_text)
                             val privacyLabel = stringResource(R.string.guide_policy_link_text)
+                            val line = stringResource(R.string.guide_agreement_line, termsLabel, privacyLabel)
                             val linkedText = buildAnnotatedString {
-                                append(intro)
-                                pushLink(LinkAnnotation.Clickable(
-                                    tag = "terms",
-                                    linkInteractionListener = LinkInteractionListener {
-                                        openDocument = AgreementDocument.Terms
-                                    },
-                                ))
-                                append(termsLabel)
-                                pop()
-                                append(divider)
-                                pushLink(LinkAnnotation.Clickable(
-                                    tag = "privacy",
-                                    linkInteractionListener = LinkInteractionListener {
-                                        openDocument = AgreementDocument.Privacy
-                                    },
-                                ))
-                                append(privacyLabel)
-                                pop()
-                                append(ending)
+                                append(line)
+                                val termsStart = line.indexOf(termsLabel)
+                                val policyStart = line.indexOf(privacyLabel, termsStart + termsLabel.length)
+                                if (termsStart >= 0) {
+                                    addLink(
+                                        LinkAnnotation.Clickable(
+                                            tag = "terms",
+                                            linkInteractionListener = LinkInteractionListener {
+                                                openDocument = AgreementDocument.Terms
+                                            },
+                                        ),
+                                        termsStart,
+                                        termsStart + termsLabel.length,
+                                    )
+                                }
+                                if (policyStart >= 0) {
+                                    addLink(
+                                        LinkAnnotation.Clickable(
+                                            tag = "privacy",
+                                            linkInteractionListener = LinkInteractionListener {
+                                                openDocument = AgreementDocument.Privacy
+                                            },
+                                        ),
+                                        policyStart,
+                                        policyStart + privacyLabel.length,
+                                    )
+                                }
                             }
                             Text(
                                 text = linkedText,

@@ -6,21 +6,21 @@
 
 ## 简体中文
 
-本《使用条款》说明归元的运行条件、系统权限、兼容性风险和开源许可。使用前请阅读，数据处理方式请另见《隐私政策》。
+本条款适用于归元应用及模块的安装、配置和使用，说明使用条件、权限边界、兼容性风险和开源许可。有关设备信息和诊断数据的处理方式，请另阅《隐私政策》。
 
 ### 软件性质与适用范围
 
-归元是使用 LSPosed 修改 Android/HyperOS 状态信息显示的免费开源模块，不是系统厂商、Android 或 LSPosed 的官方产品。安装前请了解修改系统界面所需的环境与限制。
+归元是一款基于 LSPosed 的免费开源模块，用于调整 Android/HyperOS 的状态信息显示。它并非系统厂商、Android 或 LSPosed 的官方产品，也不提供系统版本或框架兼容性的保证。
 
 ### 运行条件与授权
 
 兼容性取决于 Android、HyperOS、SystemUI、LSPosed 的实际版本及作用域状态。仅在你拥有或获准管理的设备上启用模块与系统权限。
 
-Root 并非所有功能所必需；部分日志读取及进程维护需要单独授权或确认。请仔细查看权限提示，不必为了继续引导而授权可选操作。
+Root 不属于全部功能的必要条件。日志读取和部分进程维护可能需要 Root，但这些操作应由你主动发起或确认；完成初始设置不要求提前授予可选 Root 权限。
 
 ### 兼容性与风险
 
-系统更新、第三方模块冲突或设备差异可能引起显示异常、功能失效或 SystemUI 重新启动。进行系统级修改前，建议保留可用的恢复途径和必要的配置备份。
+系统更新、第三方模块冲突或设备差异可能造成显示异常、功能失效、SystemUI 重启等问题。启用或更新模块前，建议保留必要的配置备份，并确保你知道如何在框架管理器中停用模块以恢复原生显示。
 
 软件按现有状态提供，不保证适用于每一台设备或系统版本。本说明不限制适用法律规定的不可排除权利，也不改变开源许可证的规定。
 
@@ -36,27 +36,27 @@ Root 并非所有功能所必需；部分日志读取及进程维护需要单独
 
 ### 条款更新与联系
 
-功能及适配范围变化时，本条款可能更新，重要变化会反映在项目文档或版本说明中。有关数据处理请另阅《隐私政策》；一般问题可通过项目仓库提出，安全问题请按 SECURITY.md 私密报告。
+当功能或兼容性范围发生变化时，本条款可能相应更新，重要变更会写入项目文档或版本说明。普通问题可通过项目仓库反馈；涉及安全漏洞或私人资料时，请按 SECURITY.md 的指引私密提交。
 
 ---
 
 ## English
 
-These Terms of Use explain Guiyuan's operating requirements, system privileges, compatibility risks, and open-source license. Please read them before use and consult the separate Privacy Policy for data handling.
+These Terms of Use apply to installing, configuring, and using the Guiyuan app and module. They explain operating requirements, privileges, compatibility risks, and open-source licensing. For device information and diagnostics, see the separate Privacy Policy.
 
 ### Nature and scope of the software
 
-Guiyuan is free, open-source software using LSPosed to change Android/HyperOS status information presentation. It is not an official product of a device manufacturer, Android, or LSPosed. Review the environment and limitations of system UI modifications before installation.
+Guiyuan is a free, open-source LSPosed module for customizing status information on Android/HyperOS. It is not an official product of a device manufacturer, Android, or LSPosed, and does not guarantee compatibility with every system or framework version.
 
 ### Environment and authorization
 
 Compatibility depends on the actual versions of Android, HyperOS, SystemUI, LSPosed, and configured scopes. Enable the module and system privileges only on devices you own or are authorized to administer.
 
-Root is not required for every feature; some log access and process maintenance require separate permission or confirmation. Review authorization prompts. You need not grant optional access simply to complete setup.
+Root is not required for every feature. Log access and certain process maintenance actions may require Root, but should be initiated or confirmed by you. Completing setup does not require granting optional Root access in advance.
 
 ### Compatibility and risk
 
-System updates, conflicting modules, or device differences may cause display issues, unavailable features, or SystemUI restarts. Keep a practical recovery path and any needed configuration backup before system-level changes.
+System updates, conflicting modules, or device differences may cause display defects, unavailable features, or SystemUI restarts. Before enabling or updating the module, keep any needed settings backup and know how to disable the module in your framework manager to restore native presentation.
 
 The software is provided as available, without a guarantee of compatibility with every device or system version. This notice does not limit rights that applicable law does not permit to be excluded or change the open-source license.
 
@@ -72,5 +72,4 @@ Comply with applicable laws, device authorization, and third-party licenses. Do 
 
 ### Changes and contact
 
-These terms may change as functionality and compatibility evolve; important changes will appear in project documentation or release notes. See the Privacy Policy for data handling. Raise general questions through the project repository and report security issues privately as directed by SECURITY.md.
-
+These terms may be updated as features or compatibility change. Significant revisions will be described in project documentation or release notes. Use the project repository for general questions and the private channel in SECURITY.md for vulnerabilities or private information.
