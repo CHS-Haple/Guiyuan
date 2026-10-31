@@ -91,20 +91,20 @@ private fun AgreementArticle(document: AgreementDocument) {
             modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth()
                 .padding(horizontal = 28.dp).padding(top = 20.dp, bottom = 28.dp),
         ) {
-        AgreementParagraph(intro)
-        sections.forEach { section ->
-            Spacer(Modifier.height(28.dp))
-            Text(
-                text = stringResource(section.title),
-                modifier = Modifier.semantics { heading() },
-                style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Medium),
-                color = MiuixTheme.colorScheme.onSurface,
-            )
-            Spacer(Modifier.height(12.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                section.paragraphs.forEach { AgreementParagraph(it) }
+            AgreementParagraph(intro)
+            sections.forEach { section ->
+                Spacer(Modifier.height(28.dp))
+                Text(
+                    text = stringResource(section.title),
+                    modifier = Modifier.semantics { heading() },
+                    style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.SemiBold),
+                    color = MiuixTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.height(12.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    section.paragraphs.forEach { AgreementParagraph(it) }
+                }
             }
-        }
         }
     }
 }

@@ -111,7 +111,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Icon
@@ -316,6 +315,7 @@ internal fun OnboardingFlow(
                                 GuidePermissionItem(
                                     iconRes = R.drawable.ic_material_symbol_extension,
                                     title = stringResource(R.string.guide_framework),
+                                    purpose = stringResource(R.string.guide_framework_purpose),
                                     status = when (framework) {
                                         XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
                                         XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_offline)
@@ -324,10 +324,13 @@ internal fun OnboardingFlow(
                                     },
                                     checked = connected != null,
                                 )
-                                HorizontalDivider()
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Card(modifier = Modifier.fillMaxWidth()) {
                                 GuidePermissionItem(
-                                    iconRes = R.drawable.ic_material_symbol_smartphone,
+                                    iconRes = R.drawable.ic_material_symbol_target,
                                     title = stringResource(R.string.guide_sysui_scope),
+                                    purpose = stringResource(R.string.guide_sysui_scope_purpose),
                                     status = when {
                                         sysUiInScope -> stringResource(R.string.guide_scope_ready)
                                         connected == null -> stringResource(R.string.guide_status_unknown)
@@ -348,8 +351,9 @@ internal fun OnboardingFlow(
                             SmallTitle(text = stringResource(R.string.guide_permission_later))
                             Card(modifier = Modifier.fillMaxWidth()) {
                                 GuidePermissionItem(
-                                    iconRes = R.drawable.ic_material_symbol_lock,
+                                    iconRes = R.drawable.ic_material_symbol_admin_panel_settings,
                                     title = stringResource(R.string.guide_root_title),
+                                    purpose = stringResource(R.string.guide_root_purpose),
                                     status = when {
                                         rootChecking -> stringResource(R.string.guide_root_checking)
                                         rootAccess == true -> stringResource(R.string.guide_root_granted)
@@ -543,6 +547,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
     val surface = MiuixTheme.colorScheme.surface
     val accent = MiuixTheme.colorScheme.primary
     val actionColors = guideActionColors()
+    val arrowRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     // The established About shader owns the mixed colors. Keep a bounded
     // theme-color fallback for devices without RuntimeShader support.
     val fallback = Brush.linearGradient(
@@ -679,12 +684,13 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                 ) {
                     Canvas(Modifier.width(31.dp).height(22.dp)) {
                         val middle = size.height / 2f
-                        val end = size.width * 0.96f
-                        val start = size.width * 0.04f
+                        val tip = size.width * if (arrowRtl) 0.04f else 0.96f
+                        val tail = size.width * if (arrowRtl) 0.96f else 0.04f
                         val wing = size.height * 0.42f
-                        drawLine(actionColors.content, Offset(start, middle), Offset(end, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
-                        drawLine(actionColors.content, Offset(end - wing, middle - wing), Offset(end, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
-                        drawLine(actionColors.content, Offset(end - wing, middle + wing), Offset(end, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                        val base = tip + if (arrowRtl) wing else -wing
+                        drawLine(actionColors.content, Offset(tail, middle), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                        drawLine(actionColors.content, Offset(base, middle - wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                        drawLine(actionColors.content, Offset(base, middle + wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
                     }
                 }
                 Spacer(Modifier.weight(0.28f))
@@ -724,12 +730,11 @@ private fun GuidePermissionItem(
     @DrawableRes iconRes: Int,
     title: String,
     status: String,
+    purpose: String,
     checked: Boolean,
     onClick: (() -> Unit)? = null,
 ) {
     BasicComponent(
-        title = title,
-        summary = status,
         startAction = { SemanticLeadingIcon(iconRes = iconRes) },
         onClick = onClick,
         endActions = {
@@ -742,5 +747,22 @@ private fun GuidePermissionItem(
                 )
             }
         },
-    )
+    ) {
+        Text(
+            text = title,
+            style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
+            color = MiuixTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = status,
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = purpose,
+            style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.4f.em),
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+    }
 }
