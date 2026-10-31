@@ -9,6 +9,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -55,6 +56,8 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
@@ -94,6 +97,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
 // The guide owns only temporary navigation state; existing preferences and
 // framework services remain the authoritative writers for settings and scope.
@@ -192,85 +196,54 @@ internal fun OnboardingFlow(
                     Spacer(Modifier.height(30.dp))
                     when (step) {
                         1 -> {
-                            GuideGroupLabel(stringResource(R.string.guide_module_group))
-                            Card(modifier = Modifier.fillMaxWidth()) {
-                                Box(Modifier.padding(horizontal = 18.dp, vertical = 19.dp)) {
-                                    GuideStatusRow(
-                                        title = stringResource(R.string.guide_framework),
-                                        detail = when (framework) {
-                                            XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
-                                            XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_offline)
-                                            XposedStatus.QueryUnavailable -> stringResource(R.string.guide_status_unknown)
-                                            is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
-                                        },
-                                        active = connected != null,
-                                    )
-                                }
-                            }
-                            Spacer(Modifier.height(12.dp))
-                            Card(modifier = Modifier.fillMaxWidth()) {
-                                Box(Modifier.padding(horizontal = 18.dp, vertical = 19.dp)) {
-                                    GuideStatusRow(
-                                        title = stringResource(R.string.guide_sysui_scope),
-                                        detail = when {
-                                            sysUiInScope -> stringResource(R.string.guide_scope_ready)
-                                            connected == null -> stringResource(R.string.guide_status_unknown)
-                                            connected.apiVersion < 102 -> stringResource(R.string.guide_api_unsupported)
-                                            else -> stringResource(R.string.guide_scope_not_ready)
-                                        },
-                                        active = sysUiInScope,
-                                    )
-                                }
-                            }
-                            if (!sysUiInScope) {
-                                TextButton(
-                                    text = stringResource(R.string.guide_request_scope),
-                                    onClick = {
+                            GuidePermissionItem(
+                                title = stringResource(R.string.guide_sysui_scope),
+                                status = when {
+                                    sysUiInScope -> stringResource(R.string.guide_scope_ready)
+                                    connected == null -> stringResource(R.string.guide_status_unknown)
+                                    connected.apiVersion < 102 -> stringResource(R.string.guide_api_unsupported)
+                                    else -> stringResource(R.string.guide_scope_not_ready)
+                                },
+                                checked = sysUiInScope,
+                                onClick = if (!sysUiInScope && canRequestScope) {
+                                    {
                                         scopeRequestFailed = false
                                         if (!app.requestSysUiScope { approved ->
                                                 scopeRequestFailed = !approved
                                             }) scopeRequestFailed = true
-                                    },
-                                    enabled = canRequestScope,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                            }
-                            if (scopeBusy || scopeRequestFailed) {
-                                Text(
-                                    text = stringResource(
-                                        if (scopeBusy) R.string.guide_scope_requesting
-                                        else R.string.guide_scope_request_failed,
-                                    ),
-                                    modifier = Modifier.padding(vertical = 8.dp),
-                                    style = MiuixTheme.textStyles.body2,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                )
-                            }
-                            GuideGroupLabel(stringResource(R.string.guide_diagnostics_optional))
-                            Card(modifier = Modifier.fillMaxWidth()) {
-                                Column(Modifier.padding(18.dp)) {
-                                    GuideStatusRow(
-                                        title = stringResource(R.string.guide_root_title),
-                                        detail = when {
-                                            rootChecking -> stringResource(R.string.guide_root_checking)
-                                            rootAccess == true -> stringResource(R.string.guide_root_granted)
-                                            rootAccess == false -> stringResource(R.string.guide_root_unavailable)
-                                            else -> stringResource(R.string.guide_root_not_checked)
-                                        },
-                                        active = rootAccess == true,
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                    Text(
-                                        text = stringResource(R.string.guide_root_explanation),
-                                        style = MiuixTheme.textStyles.body2,
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    )
-                                }
-                            }
-                            TextButton(
-                                text = stringResource(R.string.guide_root_check_action),
-                                onClick = {
-                                    if (!rootChecking) {
+                                    }
+                                } else null,
+                            )
+                            Text(
+                                text = stringResource(R.string.guide_permission_later),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 8.dp),
+                                style = MiuixTheme.textStyles.body2.copy(fontSize = 13.sp),
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                            GuidePermissionItem(
+                                title = stringResource(R.string.guide_framework),
+                                status = when (framework) {
+                                    XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
+                                    XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_offline)
+                                    XposedStatus.QueryUnavailable -> stringResource(R.string.guide_status_unknown)
+                                    is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
+                                },
+                                checked = connected != null,
+                            )
+                            Spacer(Modifier.height(10.dp))
+                            GuidePermissionItem(
+                                title = stringResource(R.string.guide_root_title),
+                                status = when {
+                                    rootChecking -> stringResource(R.string.guide_root_checking)
+                                    rootAccess == true -> stringResource(R.string.guide_root_granted)
+                                    rootAccess == false -> stringResource(R.string.guide_root_unavailable)
+                                    else -> stringResource(R.string.guide_root_not_checked)
+                                },
+                                checked = rootAccess == true,
+                                onClick = if (rootChecking) null else {
+                                    {
                                         coroutineScope.launch {
                                             rootChecking = true
                                             try {
@@ -286,15 +259,30 @@ internal fun OnboardingFlow(
                                         }
                                     }
                                 },
-                                enabled = !rootChecking,
-                                modifier = Modifier.fillMaxWidth(),
                             )
                             Text(
-                                text = stringResource(R.string.guide_permissions_note),
-                                modifier = Modifier.padding(top = 4.dp),
-                                style = MiuixTheme.textStyles.body2,
+                                text = stringResource(R.string.guide_permission_hint),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 12.dp, end = 12.dp, top = 16.dp),
+                                style = MiuixTheme.textStyles.body2.copy(fontSize = 13.sp),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
+                            if (scopeBusy || scopeRequestFailed || rootChecking || rootAccess == false) {
+                                Text(
+                                    text = stringResource(
+                                        when {
+                                            scopeBusy -> R.string.guide_scope_requesting
+                                            scopeRequestFailed -> R.string.guide_scope_request_failed
+                                            rootChecking -> R.string.guide_root_checking
+                                            else -> R.string.guide_root_unavailable,
+                                        },
+                                    ),
+                                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp),
+                                    style = MiuixTheme.textStyles.body2.copy(fontSize = 13.sp),
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                )
+                            }
                         }
                         2 -> {
                             val termsLabel = stringResource(R.string.guide_terms_link_text)
@@ -620,20 +608,52 @@ private fun GuideGroupLabel(text: String) {
 }
 
 @Composable
-private fun GuideStatusRow(title: String, detail: String, active: Boolean) {
-    Row(
+private fun GuidePermissionItem(
+    title: String,
+    status: String,
+    checked: Boolean,
+    onClick: (() -> Unit)? = null,
+) {
+    val checkColor = MiuixTheme.colorScheme.primary
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+        insideMargin = PaddingValues(0.dp),
+        pressFeedbackType = PressFeedbackType.Sink,
+        showIndication = onClick != null,
+        onClick = onClick,
     ) {
-        Text(text = title, modifier = Modifier.weight(1f), style = MiuixTheme.textStyles.body1)
-        Spacer(Modifier.width(12.dp))
-        Text(
-            text = detail,
-            textAlign = TextAlign.End,
-            style = MiuixTheme.textStyles.body2,
-            color = if (active) MiuixTheme.colorScheme.primary
-                else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .semantics { stateDescription = status }
+                .padding(start = 22.dp, end = 18.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                modifier = Modifier.weight(1f),
+                style = MiuixTheme.textStyles.body1.copy(fontSize = 18.sp),
+            )
+            if (checked) {
+                Canvas(Modifier.size(26.dp)) {
+                    drawLine(
+                        checkColor,
+                        Offset(size.width * 0.19f, size.height * 0.52f),
+                        Offset(size.width * 0.42f, size.height * 0.75f),
+                        strokeWidth = 2.6.dp.toPx(),
+                        cap = StrokeCap.Round,
+                    )
+                    drawLine(
+                        checkColor,
+                        Offset(size.width * 0.42f, size.height * 0.75f),
+                        Offset(size.width * 0.82f, size.height * 0.29f),
+                        strokeWidth = 2.6.dp.toPx(),
+                        cap = StrokeCap.Round,
+                    )
+                }
+            }
+        }
     }
 }

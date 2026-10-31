@@ -603,4 +603,6 @@
     <string name="terms_title">使用条款</string>
     <string name="about_terms_summary">了解使用责任与兼容性说明</string>
     <string name="guide_agreement_line">使用归元前，请阅读%1$s与%2$s，了解软件使用条件、权限与数据处理方式。</string>
+    <string name="guide_permission_later">以</string>
+    <string name="guide_permission_hint">勾</string>
 </resources>

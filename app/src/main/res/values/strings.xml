@@ -604,4 +604,6 @@
     <string name="terms_title">Terms of Use</string>
     <string name="about_terms_summary">Read about usage and compatibility</string>
     <string name="guide_agreement_line">Before using Guiyuan, read the %1$s and %2$s to understand the terms, permissions, and data-handling practices.</string>
+    <string name="guide_permission_later">下</string>
+    <string name="guide_permission_hint">号</string>
 </resources>
