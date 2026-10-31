@@ -1,6 +1,11 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -118,10 +123,11 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.Help
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.icon.extended.Report
+import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
@@ -201,14 +207,31 @@ internal fun OnboardingFlow(
     var rootChecking by remember { mutableStateOf(false) }
     var rootAccess by remember { mutableStateOf<Boolean?>(null) }
     var rootRefresh by remember { mutableIntStateOf(0) }
+    var expandedPermission by rememberSaveable { mutableIntStateOf(0) }
     fun refreshPermissionStatus() {
         app.refreshXposedStatus()
         rootRefresh++
     }
     val entryState = rememberAppSettingsEntryState(runtimeBusy = false)
 
-    // Both the initial check and explicit refresh belong to the Permissions step.
-    // Leaving it cancels RootShell.execute and destroys its temporary su process.
+    val activityLifecycle = LocalLifecycleOwner.current.lifecycle
+    // MainActivity refreshes framework status on resume. Returning from an
+    // external manager also retries Root without adding a polling loop.
+    DisposableEffect(activityLifecycle, step) {
+        if (step == 1) {
+            val observer = LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) rootRefresh++
+            }
+            activityLifecycle.addObserver(observer)
+            onDispose { activityLifecycle.removeObserver(observer) }
+        } else {
+            onDispose {}
+        }
+    }
+    LaunchedEffect(step) {
+        if (step == 1) app.refreshXposedStatus()
+    }
+    // Leaving the step cancels RootShell.execute and its temporary su process.
     LaunchedEffect(step, rootRefresh) {
         if (step == 1) {
             rootChecking = true
@@ -334,6 +357,11 @@ internal fun OnboardingFlow(
                                         is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
                                     },
                                     checked = connected != null,
+                                    checking = framework == XposedStatus.Checking,
+                                    expanded = expandedPermission == 1,
+                                    onToggleDetails = {
+                                        expandedPermission = if (expandedPermission == 1) 0 else 1
+                                    },
                                     guidance = when (framework) {
                                         XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_help)
                                         XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_help)
@@ -358,6 +386,11 @@ internal fun OnboardingFlow(
                                         else -> stringResource(R.string.runtime_scope_disabled)
                                     },
                                     checked = sysUiInScope,
+                                    checking = framework == XposedStatus.Checking || scopeBusy,
+                                    expanded = expandedPermission == 2,
+                                    onToggleDetails = {
+                                        expandedPermission = if (expandedPermission == 2) 0 else 2
+                                    },
                                     guidance = when {
                                         sysUiInScope -> null
                                         framework == XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_help)
@@ -378,12 +411,6 @@ internal fun OnboardingFlow(
                                     onRefresh = ::refreshPermissionStatus,
                                 )
                             }
-                            Text(
-                                text = stringResource(R.string.guide_permission_indicator_hint),
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
                             SmallTitle(text = stringResource(R.string.guide_permission_later))
                             Card(modifier = Modifier.fillMaxWidth()) {
                                 GuidePermissionItem(
@@ -397,6 +424,11 @@ internal fun OnboardingFlow(
                                         else -> stringResource(R.string.guide_root_not_checked)
                                     },
                                     checked = rootAccess == true,
+                                    checking = rootChecking || rootAccess == null,
+                                    expanded = expandedPermission == 3,
+                                    onToggleDetails = {
+                                        expandedPermission = if (expandedPermission == 3) 0 else 3
+                                    },
                                     guidance = if (rootAccess == false) stringResource(R.string.guide_root_help) else null,
                                     refreshLabel = stringResource(R.string.guide_refresh_status),
                                     onRefresh = ::refreshPermissionStatus,
