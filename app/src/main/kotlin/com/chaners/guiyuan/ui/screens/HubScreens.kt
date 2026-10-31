@@ -1110,11 +1110,11 @@ internal fun SettingsHubScreen(
                 startAction = {
                     SemanticLeadingIcon(
                         iconRes = R.drawable.ic_material_symbol_restart_alt,
-                        enabled = !runtimeBusy && scopeApplying == null,
+                        enabled = !entryState.busy,
                     )
                 },
                 summary = stringResource(R.string.restart_scope_summary),
-                enabled = !runtimeBusy && scopeApplying == null,
+                enabled = !entryState.busy,
                 onClick = onRestart,
             )
 
