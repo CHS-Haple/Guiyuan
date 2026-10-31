@@ -5,7 +5,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -52,14 +51,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.res.stringResource
@@ -100,6 +94,9 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Check
+import top.yukonga.miuix.kmp.icon.extended.Tasks
+import top.yukonga.miuix.kmp.icon.extended.Lock
+import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
@@ -158,6 +155,11 @@ internal fun OnboardingFlow(
             2 -> stringResource(R.string.guide_privacy_title)
             else -> stringResource(R.string.guide_basic_title)
         }
+        val illustration = when (step) {
+            1 -> MiuixIcons.Tasks
+            2 -> MiuixIcons.Lock
+            else -> MiuixIcons.Settings
+        }
         Scaffold { scaffoldPadding ->
             Column(
                 modifier = Modifier.fillMaxSize().padding(scaffoldPadding).padding(horizontal = 12.dp),
@@ -180,19 +182,12 @@ internal fun OnboardingFlow(
                         modifier = Modifier.fillMaxWidth().height(70.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        if (step == 1) {
-                            GuidePermissionIllustration()
-                        } else {
-                            Image(
-                                painter = painterResource(
-                                    if (step == 2) R.drawable.ic_material_symbol_lock
-                                    else R.drawable.ic_material_symbol_language,
-                                ),
-                                contentDescription = null,
-                                modifier = Modifier.size(70.dp),
-                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
-                            )
-                        }
+                        Icon(
+                            imageVector = illustration,
+                            contentDescription = null,
+                            modifier = Modifier.size(70.dp),
+                            tint = MiuixTheme.colorScheme.primary,
+                        )
                     }
                     Spacer(Modifier.height(8.dp))
                     Box(
@@ -583,41 +578,6 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                 Spacer(Modifier.weight(0.28f))
             }
         }
-    }
-}
-
-// Drawn from Guiyuan's theme palette; the guide has no reference-project artwork.
-@Composable
-private fun GuidePermissionIllustration() {
-    val accent = MiuixTheme.colorScheme.primary
-    Canvas(Modifier.size(70.dp)) {
-        val u = size.minDimension / 100f
-        val outline = Stroke(width = 5.5f * u, cap = StrokeCap.Round, join = StrokeJoin.Round)
-        val horn = Path().apply {
-            moveTo(37f * u, 35f * u)
-            cubicTo(55f * u, 33f * u, 64f * u, 24f * u, 78f * u, 18f * u)
-            quadraticBezierTo(86f * u, 14f * u, 87f * u, 24f * u)
-            quadraticBezierTo(91f * u, 47f * u, 87f * u, 70f * u)
-            quadraticBezierTo(85f * u, 79f * u, 77f * u, 75f * u)
-            cubicTo(61f * u, 67f * u, 53f * u, 59f * u, 37f * u, 59f * u)
-        }
-        drawPath(horn, accent, style = outline)
-        val mouth = Path().apply {
-            moveTo(36f * u, 35f * u)
-            lineTo(25f * u, 35f * u)
-            cubicTo(17f * u, 35f * u, 12f * u, 40f * u, 12f * u, 47f * u)
-            cubicTo(12f * u, 54f * u, 17f * u, 59f * u, 25f * u, 59f * u)
-            lineTo(37f * u, 59f * u)
-        }
-        drawPath(mouth, accent, style = outline)
-        val grip = Path().apply {
-            moveTo(25f * u, 60f * u)
-            lineTo(28f * u, 82f * u)
-            quadraticBezierTo(29f * u, 88f * u, 35f * u, 87f * u)
-            quadraticBezierTo(40f * u, 86f * u, 39f * u, 80f * u)
-            lineTo(36f * u, 60f * u)
-        }
-        drawPath(grip, accent, style = outline)
     }
 }
 
