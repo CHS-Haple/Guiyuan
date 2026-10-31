@@ -549,7 +549,7 @@
     <string name="guide_scope_requesting">Requesting authorization…</string>
     <string name="guide_scope_request_failed">The scope request was not completed. Check the framework service and module manager, then try again.</string>
     <string name="guide_scope_note">Enable Guiyuan in the compatible module framework manager and add SystemUI to its scope. You can finish this later if setup is unavailable.</string>
-    <string name="guide_done_title">Guide complete</string>
+    <string name="guide_done_title">Welcome</string>
     <string name="guide_start">Launch Guiyuan</string>
     <string name="privacy_title">Privacy policy</string>
     <string name="about_privacy_summary">Read about data handling and privacy choices</string>
