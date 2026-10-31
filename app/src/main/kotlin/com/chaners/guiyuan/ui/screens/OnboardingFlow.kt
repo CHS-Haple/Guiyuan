@@ -459,17 +459,22 @@ internal fun OnboardingFlow(
                 )
                 Spacer(Modifier.height(44.dp))
             }
-            // Both overlays require the composition locals owned by this Scaffold.
-            AppSettingsEntryDialogs(entryState)
-            UiOverlayBottomSheet(
-                show = openDocument != null,
-                modifier = Modifier.fillMaxHeight(0.85f),
-                title = stringResource((openDocument ?: AgreementDocument.Privacy).titleRes()),
-                backgroundColor = MiuixTheme.colorScheme.background,
-                insideMargin = DpSize(0.dp, 0.dp),
-                onDismissRequest = { openDocument = null },
-            ) {
-                openDocument?.let { AgreementSheetBody(it) }
+            // Navigation keeps covered entries alive. Only the top stage hosts popups.
+            if (pages.lastOrNull() == page) {
+                when (step) {
+                    2 -> UiOverlayBottomSheet(
+                        show = openDocument != null,
+                        modifier = Modifier.fillMaxHeight(0.85f),
+                        title = stringResource((openDocument ?: AgreementDocument.Privacy).titleRes()),
+                        backgroundColor = MiuixTheme.colorScheme.background,
+                        insideMargin = DpSize(0.dp, 0.dp),
+                        onDismissRequest = { openDocument = null },
+                    ) {
+                        openDocument?.let { AgreementSheetBody(it) }
+                    }
+                    3 -> AppSettingsEntryDialogs(entryState)
+                    else -> Unit
+                }
             }
         }
         }
