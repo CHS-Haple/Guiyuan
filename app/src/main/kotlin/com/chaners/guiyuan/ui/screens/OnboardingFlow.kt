@@ -134,6 +134,7 @@ import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.extended.Help
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.squircle.squircleClip
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 
@@ -865,6 +866,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                         modifier = Modifier.matchParentSize(),
                         cornerRadius = 16.dp,
                         container = actionColors.container,
+                        gradientEnd = actionColors.gradientEnd,
                         material = identityMaterial,
                         materialAlpha = actionColors.materialAlpha,
                         enabled = blurSupported,
@@ -893,6 +895,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                             modifier = Modifier.matchParentSize(),
                             cornerRadius = 35.dp,
                             container = actionColors.container,
+                            gradientEnd = actionColors.gradientEnd,
                             material = identityMaterial,
                             materialAlpha = actionColors.materialAlpha,
                             enabled = blurSupported,
@@ -929,12 +932,17 @@ private fun GuideBrandedActionBackdrop(
     modifier: Modifier,
     cornerRadius: Dp,
     container: Color,
+    gradientEnd: Color,
     material: Modifier,
     materialAlpha: Float,
     enabled: Boolean,
 ) {
     Box(modifier) {
-        Box(Modifier.matchParentSize().squircleSurface(color = container, cornerRadius = cornerRadius))
+        Box(
+            Modifier.matchParentSize()
+                .squircleClip(cornerRadius)
+                .background(Brush.linearGradient(listOf(gradientEnd, container))),
+        )
         if (enabled && materialAlpha > 0f) {
             Box(
                 Modifier.matchParentSize().then(material)
@@ -944,7 +952,12 @@ private fun GuideBrandedActionBackdrop(
     }
 }
 
-internal data class GuideActionColors(val container: Color, val content: Color, val materialAlpha: Float)
+internal data class GuideActionColors(
+    val container: Color,
+    val gradientEnd: Color,
+    val content: Color,
+    val materialAlpha: Float,
+)
 
 private fun guideContrastRatio(foreground: Color, background: Color): Float {
     val light = maxOf(foreground.luminance(), background.luminance())
@@ -954,25 +967,29 @@ private fun guideContrastRatio(foreground: Color, background: Color): Float {
 
 internal fun resolveGuideActionColors(surface: Color, onSurface: Color, accent: Color): GuideActionColors {
     val tint = lerp(onSurface, accent, 0.10f)
-    val baseOpacities = listOf(0.60f, 0.68f, 0.76f, 0.84f, 0.92f, 1f)
-    // The blended backdrop is not a predictable solid color. Bound both possible
-    // luminance extremes so the plain button text/arrow stays readable.
-    for (materialAlpha in listOf(0.30f, 0.26f, 0.22f, 0.18f, 0.14f, 0.10f, 0f)) {
-        for (baseOpacity in baseOpacities) {
-            val container = tint.copy(alpha = baseOpacity).compositeOver(surface)
-            val darkExtreme = Color.Black.copy(alpha = materialAlpha).compositeOver(container)
-            val lightExtreme = Color.White.copy(alpha = materialAlpha).compositeOver(container)
-            if (minOf(
-                    guideContrastRatio(surface, darkExtreme),
-                    guideContrastRatio(surface, lightExtreme),
-                ) >= 4.5f
-            ) {
-                return GuideActionColors(container, surface, materialAlpha)
+    // A heavily blurred local backdrop has very little color variation inside a 70dp button.
+    // Add a static, theme-derived tonal span beneath the existing live brand material.
+    for (baseOpacity in listOf(1f, 0.92f, 0.84f, 0.76f, 0.68f, 0.60f)) {
+        val container = tint.copy(alpha = baseOpacity).compositeOver(surface)
+        for (accentMix in listOf(0.55f, 0.45f, 0.35f, 0.25f, 0.15f, 0f)) {
+            val gradientEnd = lerp(container, accent, accentMix)
+            for (materialAlpha in listOf(0.30f, 0.26f, 0.22f, 0.18f, 0.14f, 0.10f, 0f)) {
+                val contrastSafe = listOf(0f, 0.25f, 0.5f, 0.75f, 1f).all { position ->
+                    val stop = lerp(container, gradientEnd, position)
+                    listOf(Color.Black, Color.White).all { pigment ->
+                        guideContrastRatio(
+                            surface,
+                            pigment.copy(alpha = materialAlpha).compositeOver(stop),
+                        ) >= 4.5f
+                    }
+                }
+                if (contrastSafe) {
+                    return GuideActionColors(container, gradientEnd, surface, materialAlpha)
+                }
             }
         }
     }
-    // Preserve the theme's solid foreground contrast if no blend is safe.
-    return GuideActionColors(onSurface, surface, 0f)
+    return GuideActionColors(onSurface, onSurface, surface, 0f)
 }
 
 @Composable

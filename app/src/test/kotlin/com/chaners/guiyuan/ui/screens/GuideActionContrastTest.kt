@@ -26,12 +26,15 @@ class GuideActionContrastTest {
             val action = resolveGuideActionColors(surface, onSurface, accent)
             assertEquals(1f, action.container.alpha, 0.00001f)
             assertTrue(action.materialAlpha in 0f..0.30f)
-            for (extreme in listOf(Color.Black, Color.White)) {
-                val mixed = extreme.copy(alpha = action.materialAlpha).compositeOver(action.container)
-                assertTrue(
-                    "Foreground contrast is below 4.5 in theme $surface",
-                    contrast(action.content, mixed) >= 4.5f,
-                )
+            for (position in listOf(0f, 0.25f, 0.5f, 0.75f, 1f)) {
+                val stop = androidx.compose.ui.graphics.lerp(action.container, action.gradientEnd, position)
+                for (extreme in listOf(Color.Black, Color.White)) {
+                    val mixed = extreme.copy(alpha = action.materialAlpha).compositeOver(stop)
+                    assertTrue(
+                        "Foreground contrast is below 4.5 in theme $surface at $position",
+                        contrast(action.content, mixed) >= 4.5f,
+                    )
+                }
             }
         }
     }
@@ -40,6 +43,7 @@ class GuideActionContrastTest {
     fun accessibleThemeCanShowBrandedMixWithoutChangingSolidForeground() {
         val action = resolveGuideActionColors(Color.White, Color.Black, Color(0xff4c8c61))
         assertTrue(action.materialAlpha > 0f)
+        assertTrue("The branded background should have visible tonal variation", action.container != action.gradientEnd)
         assertEquals(Color.White, action.content)
     }
 }
