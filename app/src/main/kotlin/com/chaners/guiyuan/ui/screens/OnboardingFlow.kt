@@ -69,9 +69,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.LinkInteractionListener
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -404,6 +407,12 @@ internal fun OnboardingFlow(
                                     val termsLabel = stringResource(R.string.guide_terms_link_text)
                                     val privacyLabel = stringResource(R.string.guide_policy_link_text)
                                     val line = stringResource(R.string.guide_agreement_line, termsLabel, privacyLabel)
+                                    val linkStyles = TextLinkStyles(
+                                        style = SpanStyle(
+                                            color = MiuixTheme.colorScheme.primary,
+                                            textDecoration = TextDecoration.Underline,
+                                        ),
+                                    )
                                     val linkedText = buildAnnotatedString {
                                         append(line)
                                         val termsStart = line.indexOf(termsLabel)
@@ -412,6 +421,7 @@ internal fun OnboardingFlow(
                                             addLink(
                                                 LinkAnnotation.Clickable(
                                                     tag = "terms",
+                                                    styles = linkStyles,
                                                     linkInteractionListener = LinkInteractionListener {
                                                         openDocument = AgreementDocument.Terms
                                                     },
@@ -424,6 +434,7 @@ internal fun OnboardingFlow(
                                             addLink(
                                                 LinkAnnotation.Clickable(
                                                     tag = "privacy",
+                                                    styles = linkStyles,
                                                     linkInteractionListener = LinkInteractionListener {
                                                         openDocument = AgreementDocument.Privacy
                                                     },
@@ -445,6 +456,7 @@ internal fun OnboardingFlow(
                                     Spacer(Modifier.height(24.dp))
                                     Text(
                                         text = stringResource(R.string.guide_privacy_brief),
+                                        modifier = Modifier.fillMaxWidth(),
                                         style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.5f.em),
                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                     )
@@ -495,7 +507,7 @@ internal fun OnboardingFlow(
                     text = stringResource(
                         if (step == 2) R.string.guide_agree_continue else R.string.guide_continue,
                     ),
-                    modifier = Modifier.fillMaxWidth().widthIn(max = 336.dp).height(50.dp),
+                    modifier = Modifier.widthIn(max = 336.dp).fillMaxWidth().height(50.dp),
                     cornerRadius = 16.dp,
                     textStyle = MiuixTheme.textStyles.button,
                     colors = ButtonDefaults.textButtonColorsPrimary(),
@@ -654,6 +666,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                                 }
                                 .waveGlint(wave, completionDistance, diameter, wavePhase, glint, accent),
                             fontSize = 24.sp,
+                            textAlign = TextAlign.Center,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
                     }
@@ -662,7 +675,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
             if (completed) {
                 TextButton(
                     text = stringResource(R.string.guide_start),
-                    modifier = Modifier.fillMaxWidth().widthIn(max = 336.dp).height(50.dp),
+                    modifier = Modifier.widthIn(max = 336.dp).fillMaxWidth().height(50.dp),
                     cornerRadius = 16.dp,
                     textStyle = MiuixTheme.textStyles.button,
                     colors = ButtonDefaults.textButtonColors(
