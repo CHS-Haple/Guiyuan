@@ -385,7 +385,7 @@ private fun AppearanceThemePreview(
         ) {
             Text(
                 text = stringResource(R.string.theme_preview),
-                style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
+                style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
                 color = MiuixTheme.colorScheme.onSurfaceContainer,
             )
             Text(
