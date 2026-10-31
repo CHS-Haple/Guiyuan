@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">归元</string>
-    <string name="app_description">面向 Xiaomi HyperOS 的模块化状态栏扩展，将电量、移动网络与 Wi-Fi 信息整合为一个紧凑的状态栏图标。</string>
+    <string name="app_description">面向 Xiaomi HyperOS 的 LSPosed 模块，将电量、移动网络与 Wi-Fi 信息整合为一个紧凑的状态栏图标。</string>
     <string name="home_title">归元</string>
     <string name="hot_reload">热重载归元</string>
     <string name="nav_home">首页</string>
@@ -549,7 +549,7 @@
     <string name="privacy_local_title">本地设置和运行数据</string>
     <string name="privacy_local_body">归元在设备本地处理 SystemUI 的电量、网络等状态以呈现界面，不会自动向项目维护者上传这些运行信息。外观、语言、桌面图标与诊断偏好等设置也保存在本机。</string>
     <string name="privacy_diagnostics_title">诊断日志与报告</string>
-    <string name="privacy_diagnostics_body">在支持的运行环境中，归元可能通过 Root 读取模块框架的共享日志（当前实现包括 LSPosed 模块日志路径），必要时读取系统日志，并筛选与归元有关的记录。底层读取过程可能接触其他应用的日志；诊断页面及报告使用筛选后的记录。</string>
+    <string name="privacy_diagnostics_body">诊断功能当前可通过 Root 读取 LSPosed 模块日志路径的相关记录；无法使用该来源时，可能读取系统日志并筛选归元的记录。读取系统日志时底层可能接触其他应用的日志；诊断页面及报告仅使用筛选后的记录。</string>
     <string name="guide_root_title">Root 权限</string>
     <string name="guide_root_checking">检测中…</string>
     <string name="guide_root_granted">已授权</string>
@@ -584,9 +584,9 @@
     <string name="privacy_contact_title">政策更新与联系</string>
     <string name="privacy_contact_body">数据处理方式如发生重要变化，项目会更新应用说明或公开文档。可通过项目仓库提交隐私问题；涉及敏感漏洞或私人资料时，请使用 SECURITY.md 中的私密报告渠道。</string>
     <string name="terms_scope_title">软件性质与适用范围</string>
-    <string name="terms_scope_body">归元是用于调整 Android/HyperOS 状态信息显示的免费开源模块，需要与当前实现兼容的模块框架才能运行。归元并非系统厂商、Android 或任何模块框架项目的官方产品，也不保证适用于所有框架及系统版本。</string>
+    <string name="terms_scope_body">归元是一款基于 LSPosed 的免费开源模块，用于调整 Android/HyperOS 的状态信息显示。目前已验证的框架运行基线为 LSPosed；其他模块框架的兼容性需要分别验证。归元并非系统厂商、Android 或 LSPosed 的官方产品。</string>
     <string name="terms_access_title">运行条件与授权</string>
-    <string name="terms_access_body">兼容性取决于 Android、HyperOS、SystemUI、所用模块框架的实现及实际作用域状态。框架服务显示已连接，不代表所有功能均已验证兼容。仅在你拥有或获准管理的设备上启用模块与系统权限。</string>
+    <string name="terms_access_body">兼容性取决于 Android、HyperOS、SystemUI、模块框架版本及实际作用域状态。当前框架服务显示已连接，不代表所有功能或其他框架已经验证兼容。仅在你拥有或获准管理的设备上启用模块与系统权限。</string>
     <string name="terms_access_body_2">Root 不属于全部功能的必要条件。日志读取和部分进程维护可能需要 Root，但这些操作应由你主动发起或确认；完成初始设置不要求提前授予可选 Root 权限。</string>
     <string name="terms_risk_title">兼容性与风险</string>
     <string name="terms_risk_body">系统更新、第三方模块冲突或设备差异可能造成显示异常、功能失效、SystemUI 重启等问题。启用或更新模块前，建议保留必要的配置备份，并确保你知道如何在框架管理器中停用模块以恢复原生显示。</string>

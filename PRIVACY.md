@@ -22,7 +22,7 @@
 
 ### 诊断日志与报告
 
-在支持的运行环境中，归元可能通过 Root 读取模块框架的共享日志（当前实现包括 LSPosed 模块日志路径），必要时读取系统日志，并筛选与归元有关的记录。底层读取过程可能接触其他应用的日志；诊断页面及报告使用筛选后的记录。
+诊断功能当前可通过 Root 读取 LSPosed 模块日志路径的相关记录；无法使用该来源时，可能读取系统日志并筛选归元的记录。读取系统日志时底层可能接触其他应用的日志；诊断页面及报告仅使用筛选后的记录。
 
 你主动生成的报告可能包含版本、设备型号、系统环境、运行状态及相关日志。归元不会自动提交报告；导出或分享前，请检查是否含有设备标识或其他敏感信息。
 
@@ -68,7 +68,7 @@ Guiyuan performs these actions only when you request log viewing, refresh, or re
 
 ### Diagnostic logs and reports
 
-In supported environments, Guiyuan may use Root to read shared module-framework logs (the current implementation includes LSPosed module log paths), or system logs as needed, and filter entries related to Guiyuan. The underlying read may encounter other apps' logs; the diagnostics view and reports use filtered entries.
+Diagnostics can currently use Root to read relevant entries from LSPosed module log paths. If that source is unavailable, Guiyuan may read system logs and filter entries related to the module. Reading system logs may encounter entries from other apps; the diagnostics view and reports use only filtered records.
 
 Reports you choose to generate may contain version, device model, system environment, runtime state, and relevant logs. Guiyuan does not submit reports automatically. Review them for device identifiers or other sensitive details before exporting or sharing.
 

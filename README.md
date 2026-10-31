@@ -6,7 +6,7 @@
 [![License: GPL-3.0-only](https://img.shields.io/badge/License-GPL--3.0--only-blue.svg)](LICENSE)
 ![Status: pre-release](https://img.shields.io/badge/status-pre--release-orange)
 
-A status-bar module for Xiaomi HyperOS that combines battery, mobile network, and Wi-Fi into a compact indicator. It requires a compatible module framework.
+An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and Wi-Fi into a compact status bar indicator. The verified framework baseline is LSPosed; other frameworks require separate compatibility checks.
 
 [English](#english) | [简体中文](#简体中文)
 
@@ -87,7 +87,7 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ## 简体中文
 
-面向 Xiaomi HyperOS 的状态栏模块，将电量、移动网络与 Wi-Fi 信息整合为一个紧凑图标，需配合兼容的模块框架使用。
+面向 Xiaomi HyperOS 的 LSPosed 模块，将电量、移动网络与 Wi-Fi 信息整合为紧凑的状态栏图标。目前以经过验证的 LSPosed 环境为适配基线，其他框架需单独验证。
 
 ### 项目状态
 
@@ -162,6 +162,6 @@ Guiyuan is free software licensed under version 3 of the GNU General Public Lice
 
 ## Disclaimer / 免责声明
 
-Guiyuan is an independent community project and is not affiliated with or endorsed by Xiaomi, module-framework maintainers, or the MIUIX project.
+Guiyuan is an independent community project and is not affiliated with or endorsed by Xiaomi, LSPosed, or the MIUIX project.
 
-归元是独立的社区项目，与 Xiaomi、模块框架维护方或 MIUIX 项目不存在官方隶属或背书关系。
+归元是独立的社区项目，与 Xiaomi、LSPosed 或 MIUIX 项目不存在官方隶属或背书关系。

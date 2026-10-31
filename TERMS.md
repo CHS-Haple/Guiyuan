@@ -10,11 +10,11 @@
 
 ### 软件性质与适用范围
 
-归元是用于调整 Android/HyperOS 状态信息显示的免费开源模块，需要与当前实现兼容的模块框架才能运行。归元并非系统厂商、Android 或任何模块框架项目的官方产品，也不保证适用于所有框架及系统版本。
+归元是一款基于 LSPosed 的免费开源模块，用于调整 Android/HyperOS 的状态信息显示。目前已验证的框架运行基线为 LSPosed；其他模块框架的兼容性需要分别验证。归元并非系统厂商、Android 或 LSPosed 的官方产品。
 
 ### 运行条件与授权
 
-兼容性取决于 Android、HyperOS、SystemUI、所用模块框架的实现及实际作用域状态。框架服务显示已连接，不代表所有功能均已验证兼容。仅在你拥有或获准管理的设备上启用模块与系统权限。
+兼容性取决于 Android、HyperOS、SystemUI、模块框架版本及实际作用域状态。当前框架服务显示已连接，不代表所有功能或其他框架已经验证兼容。仅在你拥有或获准管理的设备上启用模块与系统权限。
 
 Root 不属于全部功能的必要条件。日志读取和部分进程维护可能需要 Root，但这些操作应由你主动发起或确认；完成初始设置不要求提前授予可选 Root 权限。
 
@@ -46,11 +46,11 @@ These Terms of Use apply to installing, configuring, and using the Guiyuan app a
 
 ### Nature and scope of the software
 
-Guiyuan is a free, open-source module for customizing status information on Android/HyperOS. It requires a module framework compatible with the current implementation. Guiyuan is not an official product of a device manufacturer, Android, or any module-framework project, and does not guarantee compatibility with every framework or system version.
+Guiyuan is a free, open-source LSPosed module for customizing status information on Android/HyperOS. Its currently verified framework runtime baseline is LSPosed; compatibility with other module frameworks requires separate validation. Guiyuan is not an official product of a device manufacturer, Android, or LSPosed.
 
 ### Environment and authorization
 
-Compatibility depends on Android, HyperOS, SystemUI, the selected module framework's implementation, and the actual scope state. A connected framework service does not establish that all features are compatible. Enable the module and system privileges only on devices you own or are authorized to administer.
+Compatibility depends on Android, HyperOS, SystemUI, the module framework's version, and the actual scope state. A connected framework service does not mean that all features or alternative frameworks have been validated. Enable the module and system privileges only on devices you own or are authorized to administer.
 
 Root is not required for every feature. Log access and certain process maintenance actions may require Root, but should be initiated or confirmed by you. Completing setup does not require granting optional Root access in advance.
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Guiyuan</string>
-    <string name="app_description">A status-bar extension for Xiaomi HyperOS that combines battery, mobile network, and Wi-Fi information into a compact indicator using a compatible module framework.</string>
+    <string name="app_description">An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and Wi-Fi information into a compact status bar indicator.</string>
 
     <string name="home_title">Guiyuan</string>
     <string name="hot_reload">Hot reload Guiyuan</string>
@@ -550,7 +550,7 @@
     <string name="privacy_local_title">Local preferences and runtime data</string>
     <string name="privacy_local_body">Guiyuan processes SystemUI information, including battery and connectivity states, locally to render its interface. It does not automatically upload this runtime information to maintainers. Appearance, language, launcher icon, and diagnostic preferences are also stored locally.</string>
     <string name="privacy_diagnostics_title">Diagnostic logs and reports</string>
-    <string name="privacy_diagnostics_body">In supported environments, Guiyuan may use Root to read shared module-framework logs (the current implementation includes LSPosed module log paths), or system logs as needed, and filter entries related to Guiyuan. The underlying read may encounter other apps\' logs; the diagnostics view and reports use filtered entries.</string>
+    <string name="privacy_diagnostics_body">Diagnostics can currently use Root to read relevant entries from LSPosed module log paths. If that source is unavailable, Guiyuan may read system logs and filter entries related to the module. Reading system logs may encounter entries from other apps; the diagnostics view and reports use only filtered records.</string>
     <string name="guide_root_title">Root access</string>
     <string name="guide_root_checking">Checking…</string>
     <string name="guide_root_granted">Authorized</string>
@@ -585,9 +585,9 @@
     <string name="privacy_contact_title">Updates and contact</string>
     <string name="privacy_contact_body">Material changes in data handling will be reflected in updated app disclosures or public documentation. Privacy questions can be raised through the project repository; use the private reporting channel in SECURITY.md for sensitive vulnerabilities or private material.</string>
     <string name="terms_scope_title">Nature and scope of the software</string>
-    <string name="terms_scope_body">Guiyuan is a free, open-source module for customizing status information on Android/HyperOS. It requires a module framework compatible with the current implementation. Guiyuan is not an official product of a device manufacturer, Android, or any module-framework project, and does not guarantee compatibility with every framework or system version.</string>
+    <string name="terms_scope_body">Guiyuan is a free, open-source LSPosed module for customizing status information on Android/HyperOS. Its currently verified framework runtime baseline is LSPosed; compatibility with other module frameworks requires separate validation. Guiyuan is not an official product of a device manufacturer, Android, or LSPosed.</string>
     <string name="terms_access_title">Environment and authorization</string>
-    <string name="terms_access_body">Compatibility depends on Android, HyperOS, SystemUI, the selected module framework\'s implementation, and the actual scope state. A connected framework service does not establish that all features are compatible. Enable the module and system privileges only on devices you own or are authorized to administer.</string>
+    <string name="terms_access_body">Compatibility depends on Android, HyperOS, SystemUI, the module framework\'s version, and the actual scope state. A connected framework service does not mean that all features or alternative frameworks have been validated. Enable the module and system privileges only on devices you own or are authorized to administer.</string>
     <string name="terms_access_body_2">Root is not required for every feature. Log access and certain process maintenance actions may require Root, but should be initiated or confirmed by you. Completing setup does not require granting optional Root access in advance.</string>
     <string name="terms_risk_title">Compatibility and risk</string>
     <string name="terms_risk_body">System updates, conflicting modules, or device differences may cause display defects, unavailable features, or SystemUI restarts. Before enabling or updating the module, keep any needed settings backup and know how to disable the module in your framework manager to restore native presentation.</string>
