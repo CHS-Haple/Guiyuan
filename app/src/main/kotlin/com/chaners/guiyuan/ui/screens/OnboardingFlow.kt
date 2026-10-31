@@ -1000,7 +1000,10 @@ private fun GuidePermissionItem(
             }
         },
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Text(
                 text = title,
                 modifier = Modifier.weight(1f, fill = false),
