@@ -506,7 +506,7 @@ internal fun OnboardingFlow(
                                         title = stringResource(R.string.guide_policy_link_text),
                                         summary = stringResource(R.string.guide_policy_summary),
                                         startAction = {
-                                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_lock)
+                                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_shield)
                                         },
                                         endActions = {
                                             Icon(
@@ -602,7 +602,7 @@ internal fun OnboardingFlow(
                         Text(
                             text = linkedAcknowledgment,
                             modifier = Modifier.weight(1f),
-                            style = MiuixTheme.textStyles.body1.copy(lineHeight = 1.4f.em),
+                            style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.4f.em),
                             color = MiuixTheme.colorScheme.onSurface,
                         )
                     }
