@@ -585,7 +585,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
     // The MIUIX navigation entry lifecycle pauses covered pages below RESUMED.
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var resumed by remember(lifecycle) {
-        mutableStateOf(lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true)
+        mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
     }
     DisposableEffect(lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
@@ -595,8 +595,8 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                 else -> Unit
             }
         }
-        lifecycle?.addObserver(observer)
-        onDispose { lifecycle?.removeObserver(observer) }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
     }
     val surface = MiuixTheme.colorScheme.surface
     val accent = MiuixTheme.colorScheme.primary
