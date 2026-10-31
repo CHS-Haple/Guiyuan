@@ -525,7 +525,7 @@
     <string name="guide_privacy_title">Terms and statements</string>
     <string name="guide_privacy_description">Read the Terms of Use and Privacy Policy to understand the app and data handling.</string>
     <string name="guide_privacy_brief">Guiyuan runs mainly on your device. Diagnostics may read system logs, but reports are not uploaded automatically. You decide whether to export or share.</string>
-    <string name="guide_privacy_ack">I have read and agree to the Terms of Use and Privacy Policy</string>
+    <string name="guide_privacy_ack">I have read and understood the Privacy Policy and agree to the Terms of Use</string>
     <string name="guide_agree_continue">Agree and continue</string>
     <string name="guide_scope_title">Set up the module</string>
     <string name="guide_scope_description">Guiyuan customizes system status information through a compatible module framework.</string>
@@ -624,4 +624,8 @@
     <string name="guide_permission_warning_summary">The module framework or SystemUI scope is not yet confirmed as ready. Guiyuan status indicators may not take effect until you configure them. Root is optional and does not block setup.</string>
     <string name="guide_permission_return">Return to setup</string>
     <string name="guide_permission_continue">Continue anyway</string>
+    <string name="guide_purpose_label">Purpose</string>
+    <string name="guide_guidance_label">How to proceed</string>
+    <string name="guide_refresh_status">Refresh permission status</string>
+    <string name="guide_permission_indicator_hint">A red warning icon means authorization is not ready or cannot be confirmed. Tap a status icon to refresh.</string>
 </resources>

@@ -524,7 +524,7 @@
     <string name="guide_privacy_title">协议与声明</string>
     <string name="guide_privacy_description">请阅读使用条款与隐私政策，了解使用责任和数据处理方式。</string>
     <string name="guide_privacy_brief">归元主要在设备本地运行。诊断可能读取系统日志，但报告不会自动上传；是否导出或分享由您决定。</string>
-    <string name="guide_privacy_ack">我已阅读并同意《使用条款》与《隐私政策》</string>
+    <string name="guide_privacy_ack">我已阅读并了解《隐私政策》，并同意《使用条款》</string>
     <string name="guide_agree_continue">同意并继续</string>
     <string name="guide_scope_title">模块设置</string>
     <string name="guide_scope_description">归元通过兼容的模块框架调整系统状态信息的显示方式。</string>
@@ -623,4 +623,8 @@
     <string name="guide_permission_warning_summary">框架服务或 SystemUI 作用域尚未确认就绪，归元状态图标可能无法生效。您可以稍后完成配置；Root 为可选权限。</string>
     <string name="guide_permission_return">返回配置</string>
     <string name="guide_permission_continue">仍然继续</string>
+    <string name="guide_purpose_label">作用说明</string>
+    <string name="guide_guidance_label">处理建议</string>
+    <string name="guide_refresh_status">刷新权限状态</string>
+    <string name="guide_permission_indicator_hint">红色感叹号表示权限尚未就绪或状态无法确认；点击右侧状态图标可刷新。</string>
 </resources>

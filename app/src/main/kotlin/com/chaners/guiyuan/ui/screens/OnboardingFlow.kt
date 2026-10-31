@@ -3,6 +3,8 @@ package com.chaners.guiyuan.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -57,6 +59,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -105,7 +109,7 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.preference.CheckboxPreference
+import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -113,10 +117,10 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Lock
+import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -197,6 +201,10 @@ internal fun OnboardingFlow(
     var rootChecking by remember { mutableStateOf(false) }
     var rootAccess by remember { mutableStateOf<Boolean?>(null) }
     var rootRefresh by remember { mutableIntStateOf(0) }
+    fun refreshPermissionStatus() {
+        app.refreshXposedStatus()
+        rootRefresh++
+    }
     val entryState = rememberAppSettingsEntryState(runtimeBusy = false)
 
     // Both the initial check and explicit refresh belong to the Permissions step.
@@ -331,6 +339,8 @@ internal fun OnboardingFlow(
                                         XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_help)
                                         else -> null
                                     },
+                                    refreshLabel = stringResource(R.string.guide_refresh_status),
+                                    onRefresh = ::refreshPermissionStatus,
                                 )
                             }
                             Spacer(Modifier.height(12.dp))
@@ -364,8 +374,16 @@ internal fun OnboardingFlow(
                                                 }) scopeRequestFailed = true
                                         }
                                     } else null,
+                                    refreshLabel = stringResource(R.string.guide_refresh_status),
+                                    onRefresh = ::refreshPermissionStatus,
                                 )
                             }
+                            Text(
+                                text = stringResource(R.string.guide_permission_indicator_hint),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
                             SmallTitle(text = stringResource(R.string.guide_permission_later))
                             Card(modifier = Modifier.fillMaxWidth()) {
                                 GuidePermissionItem(
@@ -380,9 +398,8 @@ internal fun OnboardingFlow(
                                     },
                                     checked = rootAccess == true,
                                     guidance = if (rootAccess == false) stringResource(R.string.guide_root_help) else null,
-                                    onClick = if (rootChecking) null else {
-                                        { rootRefresh++ }
-                                    },
+                                    refreshLabel = stringResource(R.string.guide_refresh_status),
+                                    onRefresh = ::refreshPermissionStatus,
                                 )
                             }
                             if (scopeBusy || scopeRequestFailed) {
@@ -466,14 +483,6 @@ internal fun OnboardingFlow(
                                     style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.5f.em),
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
-                                Spacer(Modifier.height(20.dp))
-                                Card(modifier = Modifier.fillMaxWidth()) {
-                                    CheckboxPreference(
-                                        title = stringResource(R.string.guide_privacy_ack),
-                                        checked = policyAccepted,
-                                        onCheckedChange = { policyAccepted = it },
-                                    )
-                                }
                             }
                         }
                         3 -> {
@@ -490,6 +499,33 @@ internal fun OnboardingFlow(
                         }
                     }
                     Spacer(Modifier.height(24.dp))
+                }
+                if (step == 2) {
+                    Row(
+                        modifier = Modifier.widthIn(max = 440.dp).fillMaxWidth()
+                            .toggleable(
+                                value = policyAccepted,
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                role = Role.Checkbox,
+                                onValueChange = { policyAccepted = it },
+                            )
+                            .padding(horizontal = 20.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Checkbox(
+                            state = ToggleableState(policyAccepted),
+                            onClick = null,
+                        )
+                        Text(
+                            text = stringResource(R.string.guide_privacy_ack),
+                            modifier = Modifier.weight(1f),
+                            style = MiuixTheme.textStyles.body1.copy(lineHeight = 1.4f.em),
+                            color = MiuixTheme.colorScheme.onSurface,
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
                 }
                 TextButton(
                     text = stringResource(
@@ -781,18 +817,25 @@ private fun GuidePermissionItem(
     checked: Boolean,
     guidance: String? = null,
     onClick: (() -> Unit)? = null,
+    refreshLabel: String,
+    onRefresh: () -> Unit,
 ) {
     BasicComponent(
         startAction = { SemanticLeadingIcon(iconRes = iconRes) },
         onClick = onClick,
         endActions = {
-            Icon(
-                imageVector = if (checked) MiuixIcons.Basic.Check else MiuixIcons.Regular.Report,
-                contentDescription = null,
-                modifier = Modifier.size(22.dp),
-                tint = if (checked) MiuixTheme.colorScheme.primary
-                    else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
+            IconButton(
+                onClick = onRefresh,
+                modifier = Modifier.size(40.dp).semantics { contentDescription = refreshLabel },
+            ) {
+                Icon(
+                    imageVector = if (checked) MiuixIcons.Regular.Ok else MiuixIcons.Regular.Report,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = if (checked) MiuixTheme.colorScheme.primary
+                        else MiuixTheme.colorScheme.error,
+                )
+            }
         },
     ) {
         Text(
@@ -802,7 +845,7 @@ private fun GuidePermissionItem(
         )
         Text(
             text = status,
-            style = MiuixTheme.textStyles.body2.copy(fontWeight = FontWeight.Medium),
+            style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
     }
@@ -812,15 +855,27 @@ private fun GuidePermissionItem(
             .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
     ) {
         Text(
+            text = stringResource(R.string.guide_purpose_label),
+            style = MiuixTheme.textStyles.subtitle,
+            color = MiuixTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
             text = purpose,
             style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.4f.em),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
         if (guidance != null) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.guide_guidance_label),
+                style = MiuixTheme.textStyles.subtitle,
+                color = MiuixTheme.colorScheme.onSurface,
+            )
+            Spacer(Modifier.height(6.dp))
             Text(
                 text = guidance,
-                style = MiuixTheme.textStyles.footnote1.copy(lineHeight = 1.35f.em),
+                style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.4f.em),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
         }
