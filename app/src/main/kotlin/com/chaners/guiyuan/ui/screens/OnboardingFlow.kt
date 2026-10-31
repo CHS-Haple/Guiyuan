@@ -362,7 +362,6 @@ internal fun OnboardingFlow(
                             }
                         }
                         3 -> {
-                            GuideGroupLabel(stringResource(R.string.guide_basic_group))
                             Card(modifier = Modifier.fillMaxWidth()) {
                                 AppSettingsRows(
                                     lang = lang,
@@ -604,16 +603,6 @@ private fun guideActionColors(): GuideActionColors {
     return GuideActionColors(
         container = tint.copy(alpha = opacity),
         content = surface,
-    )
-}
-
-@Composable
-private fun GuideGroupLabel(text: String) {
-    Text(
-        text = text,
-        modifier = Modifier.padding(start = 10.dp, top = 10.dp, bottom = 10.dp),
-        style = MiuixTheme.textStyles.body2,
-        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
     )
 }
 
