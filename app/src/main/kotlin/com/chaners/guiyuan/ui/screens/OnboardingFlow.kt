@@ -811,23 +811,25 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                 Spacer(Modifier.height(44.dp))
             } else {
                 val continueLabel = stringResource(R.string.guide_continue)
-                IconButton(
-                    onClick = onNext,
-                    modifier = Modifier.size(70.dp).semantics { contentDescription = continueLabel },
-                    backgroundColor = actionColors.container,
-                    cornerRadius = 35.dp,
-                    minWidth = 70.dp,
-                    minHeight = 70.dp,
-                ) {
-                    Canvas(Modifier.width(31.dp).height(22.dp)) {
-                        val middle = size.height / 2f
-                        val tip = size.width * if (arrowRtl) 0.04f else 0.96f
-                        val tail = size.width * if (arrowRtl) 0.96f else 0.04f
-                        val wing = size.height * 0.42f
-                        val base = tip + if (arrowRtl) wing else -wing
-                        drawLine(actionColors.content, Offset(tail, middle), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
-                        drawLine(actionColors.content, Offset(base, middle - wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
-                        drawLine(actionColors.content, Offset(base, middle + wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                TooltipBox(text = continueLabel) {
+                    IconButton(
+                        onClick = onNext,
+                        modifier = Modifier.size(70.dp).semantics { contentDescription = continueLabel },
+                        backgroundColor = actionColors.container,
+                        cornerRadius = 35.dp,
+                        minWidth = 70.dp,
+                        minHeight = 70.dp,
+                    ) {
+                        Canvas(Modifier.width(31.dp).height(22.dp)) {
+                            val middle = size.height / 2f
+                            val tip = size.width * if (arrowRtl) 0.04f else 0.96f
+                            val tail = size.width * if (arrowRtl) 0.96f else 0.04f
+                            val wing = size.height * 0.42f
+                            val base = tip + if (arrowRtl) wing else -wing
+                            drawLine(actionColors.content, Offset(tail, middle), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                            drawLine(actionColors.content, Offset(base, middle - wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                            drawLine(actionColors.content, Offset(base, middle + wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                        }
                     }
                 }
                 Spacer(Modifier.weight(0.28f))
@@ -906,13 +908,15 @@ private fun GuidePermissionItem(
                 style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
                 color = MiuixTheme.colorScheme.onBackground,
             )
-            IconButton(onClick = onToggleDetails, modifier = Modifier.size(40.dp)) {
-                Icon(
-                    imageVector = MiuixIcons.Regular.Help,
-                    contentDescription = detailsLabel,
-                    modifier = Modifier.size(20.dp),
-                    tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                )
+            TooltipBox(text = detailsLabel) {
+                IconButton(onClick = onToggleDetails, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        imageVector = MiuixIcons.Regular.Help,
+                        contentDescription = detailsLabel,
+                        modifier = Modifier.size(20.dp),
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                }
             }
         }
     }
