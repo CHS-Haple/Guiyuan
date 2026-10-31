@@ -145,10 +145,8 @@
     <string name="floating_navigation_liquid_mode_blur">Blurred</string>
     <string name="floating_navigation_liquid_mode_balanced">Balanced</string>
     <string name="floating_navigation_liquid_mode_clear">Clear</string>
-    <string name="floating_navigation_content">Floating navigation content</string>
-    <string name="floating_navigation_content_summary">Choose whether floating navigation items show icons only or icons with labels</string>
-    <string name="floating_navigation_content_icon_only">Icons only</string>
-    <string name="floating_navigation_content_icon_and_text">Icons &amp; labels</string>
+    <string name="floating_navigation_content">Floating navigation labels</string>
+    <string name="floating_navigation_content_summary">Show text labels beneath navigation icons</string>
     <string name="swipe_back">Page swipe back</string>
     <string name="swipe_back_summary">Swipe horizontally on a page to go back</string>
     <string name="section_about_project">Project</string>

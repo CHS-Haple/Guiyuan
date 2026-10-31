@@ -128,11 +128,6 @@ internal fun AppearanceScreen(
             ),
             stringResource(R.string.floating_navigation_style_liquid),
         )
-    val floatingContentOptions =
-        listOf(
-            stringResource(R.string.floating_navigation_content_icon_only),
-            stringResource(R.string.floating_navigation_content_icon_and_text),
-        )
     val liquidModeOptions =
         listOf(
             stringResource(R.string.floating_navigation_liquid_mode_blur),
@@ -332,23 +327,18 @@ internal fun AppearanceScreen(
                         },
                     )
                 }
-                UiDropdownPreference(
-                    items = floatingContentOptions,
-                    selectedIndex = appearance.activeNavContent.ordinal,
+                SwitchPreference(
                     title = stringResource(R.string.floating_navigation_content),
                     summary = stringResource(R.string.floating_navigation_content_summary),
                     startAction = {
                         SemanticLeadingIcon(
-                            iconRes = R.drawable.ic_material_symbol_format_list_bulleted,
+                            iconRes = R.drawable.ic_material_symbol_text_fields,
                         )
                     },
-                    showValue = true,
-                    onSelectedIndexChange = { index ->
-                        NavContent.entries.getOrNull(index)?.let { content ->
-                            if (content != appearance.activeNavContent) {
-                                onNavContentChange(content)
-                            }
-                        }
+                    checked = appearance.activeNavContent == NavContent.IconAndText,
+                    onCheckedChange = { showLabels ->
+                        val content = if (showLabels) NavContent.IconAndText else NavContent.IconOnly
+                        if (content != appearance.activeNavContent) onNavContentChange(content)
                     },
                 )
                 SwitchPreference(
