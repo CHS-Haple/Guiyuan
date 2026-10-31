@@ -523,11 +523,11 @@
     <string name="guide_continue">继续</string>
     <string name="guide_privacy_title">协议与声明</string>
     <string name="guide_privacy_description">请阅读使用条款与隐私政策，了解使用责任和数据处理方式。</string>
-    <string name="guide_privacy_brief">归元在设备本地处理电量、网络等状态信息，相关设置也保存在本机。这些信息不会自动发送给项目维护者。</string>
-    <string name="guide_privacy_note_scope">归元图标需要兼容的模块框架及 SystemUI 作用域才能正常显示。尚未完成配置时，您可以稍后授权。</string>
-    <string name="guide_privacy_note_root">Root 并非图标显示的必要条件。权限页面会检测 Root 状态，可能出现授权提示。不授权仍可完成引导，但部分诊断与进程维护功能可能受限。</string>
-    <string name="guide_privacy_note_diagnostics">诊断可能读取模块日志，必要时读取系统日志并筛选归元相关记录。报告可能包含设备、系统及运行信息，但不会自动上传。</string>
-    <string name="guide_privacy_note_sharing">配置备份和诊断报告的导出与分享均由您主动发起。分享前，请检查文件是否包含个人信息、设备标识等敏感内容。</string>
+    <string name="guide_privacy_brief">归元在设备本地处理电量、网络等系统状态信息，并在本机保存用户设置。上述信息不会自动上传至项目维护者。</string>
+    <string name="guide_privacy_note_scope">归元图标的正常显示依赖兼容的模块框架及有效的 SystemUI 作用域授权。相关配置可在模块管理器中完成，未完成授权可能影响功能生效。</string>
+    <string name="guide_privacy_note_root">Root 权限并非归元图标显示的必要条件。进入权限设置页面时，应用会检测 Root 状态，并可能触发授权提示。未授予该权限不影响首次引导的完成，但部分诊断与进程维护功能可能受限。</string>
+    <string name="guide_privacy_note_diagnostics">诊断功能可能读取模块日志，或在该来源不可用时读取系统日志并筛选与归元有关的记录。生成的报告可能包含设备型号、系统环境及运行信息，不会自动提交给项目维护者。</string>
+    <string name="guide_privacy_note_sharing">配置备份与诊断报告的导出、分享均须由用户主动发起。分享前请核查文件内容，避免披露个人信息、设备标识或其他敏感信息。</string>
     <string name="guide_privacy_ack">我已阅读并同意《使用条款》和《隐私政策》</string>
     <string name="guide_agree_continue">同意并继续</string>
     <string name="guide_scope_title">模块设置</string>
