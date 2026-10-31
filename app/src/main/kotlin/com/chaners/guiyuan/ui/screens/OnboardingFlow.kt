@@ -372,7 +372,7 @@ internal fun OnboardingFlow(
                         Text(
                             text = title,
                             modifier = Modifier.semantics { heading() },
-                            style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.SemiBold),
+                            style = MiuixTheme.textStyles.title1.copy(fontWeight = FontWeight.Bold),
                             textAlign = TextAlign.Center,
                             color = MiuixTheme.colorScheme.onBackground,
                         )
@@ -821,8 +821,8 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                             }
                             .waveGlint(wave, titleDistance, diameter, wavePhase, glint, accent)
                             .then(identityMaterial),
-                        fontSize = 35.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontSize = 40.sp,
+                        fontWeight = FontWeight.ExtraBold,
                         textAlign = TextAlign.Center,
                         color = MiuixTheme.colorScheme.onBackground,
                     )
