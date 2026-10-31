@@ -866,6 +866,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                         cornerRadius = 16.dp,
                         container = actionColors.container,
                         material = identityMaterial,
+                        materialAlpha = actionColors.materialAlpha,
                         enabled = blurSupported,
                     )
                     Button(
@@ -893,6 +894,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                             cornerRadius = 35.dp,
                             container = actionColors.container,
                             material = identityMaterial,
+                            materialAlpha = actionColors.materialAlpha,
                             enabled = blurSupported,
                         )
                         IconButton(
@@ -928,43 +930,59 @@ private fun GuideBrandedActionBackdrop(
     cornerRadius: Dp,
     container: Color,
     material: Modifier,
+    materialAlpha: Float,
     enabled: Boolean,
 ) {
     Box(modifier) {
         Box(Modifier.matchParentSize().squircleSurface(color = container, cornerRadius = cornerRadius))
-        if (enabled) {
+        if (enabled && materialAlpha > 0f) {
             Box(
                 Modifier.matchParentSize().then(material)
-                    .squircleSurface(color = Color.White.copy(alpha = 0.20f), cornerRadius = cornerRadius),
+                    .squircleSurface(color = Color.White.copy(alpha = materialAlpha), cornerRadius = cornerRadius),
             )
         }
     }
 }
 
-private data class GuideActionColors(val container: Color, val content: Color)
+internal data class GuideActionColors(val container: Color, val content: Color, val materialAlpha: Float)
 
-// The branded actions retain the reference geometry, while their material follows
-// the same MIUIX theme tokens used by the About surface and animated identity.
+private fun guideContrastRatio(foreground: Color, background: Color): Float {
+    val light = maxOf(foreground.luminance(), background.luminance())
+    val dark = minOf(foreground.luminance(), background.luminance())
+    return (light + 0.05f) / (dark + 0.05f)
+}
+
+internal fun resolveGuideActionColors(surface: Color, onSurface: Color, accent: Color): GuideActionColors {
+    val tint = lerp(onSurface, accent, 0.10f)
+    val baseOpacities = listOf(0.60f, 0.68f, 0.76f, 0.84f, 0.92f, 1f)
+    // The blended backdrop is not a predictable solid color. Bound both possible
+    // luminance extremes so the plain button text/arrow stays readable.
+    for (materialAlpha in listOf(0.30f, 0.26f, 0.22f, 0.18f, 0.14f, 0.10f, 0f)) {
+        for (baseOpacity in baseOpacities) {
+            val container = tint.copy(alpha = baseOpacity).compositeOver(surface)
+            val darkExtreme = Color.Black.copy(alpha = materialAlpha).compositeOver(container)
+            val lightExtreme = Color.White.copy(alpha = materialAlpha).compositeOver(container)
+            if (minOf(
+                    guideContrastRatio(surface, darkExtreme),
+                    guideContrastRatio(surface, lightExtreme),
+                ) >= 4.5f
+            ) {
+                return GuideActionColors(container, surface, materialAlpha)
+            }
+        }
+    }
+    // Preserve the theme's solid foreground contrast if no blend is safe.
+    return GuideActionColors(onSurface, surface, 0f)
+}
+
 @Composable
 private fun guideActionColors(): GuideActionColors {
     val surface = MiuixTheme.colorScheme.surface
     val onSurface = MiuixTheme.colorScheme.onSurface
     val accent = MiuixTheme.colorScheme.primary
-    val tint = lerp(onSurface, accent, 0.10f)
-    // Respect the MIUIX theme palette; preserve the translucent style where
-    // the chosen foreground has sufficient contrast over the theme surface.
-    val opacities = listOf(0.60f, 0.68f, 0.76f, 0.84f, 0.92f, 1f)
-    val opacity = opacities.firstOrNull { opacity ->
-        val composite = tint.copy(alpha = opacity).compositeOver(surface)
-        val foreground = surface.luminance()
-        val background = composite.luminance()
-        (maxOf(foreground, background) + 0.05f) /
-            (minOf(foreground, background) + 0.05f) >= 4.5f
-    } ?: 1f
-    return GuideActionColors(
-        container = tint.copy(alpha = opacity),
-        content = surface,
-    )
+    return remember(surface, onSurface, accent) {
+        resolveGuideActionColors(surface, onSurface, accent)
+    }
 }
 
 @Composable
