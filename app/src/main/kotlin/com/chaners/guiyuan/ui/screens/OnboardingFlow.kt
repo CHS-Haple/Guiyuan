@@ -126,8 +126,11 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
+import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.extended.Help
@@ -159,6 +162,7 @@ private enum class PermissionWarningPhase {
 
 // The guide owns only temporary navigation state; existing preferences and
 // framework services remain the authoritative writers for settings and scope.
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun OnboardingFlow(
     lang: AppLang,
@@ -547,37 +551,47 @@ internal fun OnboardingFlow(
                                     color = MiuixTheme.colorScheme.onSurface,
                                 )
                                 Spacer(Modifier.height(16.dp))
-                                Column(
-                                    modifier = Modifier.weight(1f).fillMaxWidth()
-                                        .verticalScroll(importantScroll)
-                                        .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                                Box(
+                                    modifier = Modifier.weight(1f).fillMaxWidth(),
                                 ) {
-                                    listOf(
-                                        R.string.guide_privacy_brief,
-                                        R.string.guide_privacy_note_scope,
-                                        R.string.guide_privacy_note_root,
-                                        R.string.guide_privacy_note_diagnostics,
-                                        R.string.guide_privacy_note_sharing,
-                                    ).forEach { note ->
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            verticalAlignment = Alignment.Top,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        ) {
-                                            Text(
-                                                text = "•",
-                                                style = MiuixTheme.textStyles.body2,
-                                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                            )
-                                            Text(
-                                                text = stringResource(note),
-                                                modifier = Modifier.weight(1f),
-                                                style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.5f.em),
-                                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                            )
+                                    Column(
+                                        modifier = Modifier.fillMaxSize()
+                                            .verticalScroll(importantScroll)
+                                            .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                                    ) {
+                                        listOf(
+                                            R.string.guide_privacy_brief,
+                                            R.string.guide_privacy_note_scope,
+                                            R.string.guide_privacy_note_root,
+                                            R.string.guide_privacy_note_diagnostics,
+                                            R.string.guide_privacy_note_sharing,
+                                        ).forEach { note ->
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.Top,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            ) {
+                                                Text(
+                                                    text = "•",
+                                                    style = MiuixTheme.textStyles.body2,
+                                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                )
+                                                Text(
+                                                    text = stringResource(note),
+                                                    modifier = Modifier.weight(1f),
+                                                    style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.5f.em),
+                                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                )
+                                            }
                                         }
                                     }
+                                    // The accepted MIUIX scrollbar uses this ScrollState,
+                                    // appears during a scroll and auto-fades afterwards.
+                                    VerticalScrollBar(
+                                        adapter = rememberScrollBarAdapter(importantScroll),
+                                        modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                                    )
                                 }
                             }
                         }
