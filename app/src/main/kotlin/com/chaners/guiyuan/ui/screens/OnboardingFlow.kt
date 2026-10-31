@@ -31,6 +31,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,12 +41,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -404,6 +412,17 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
         contentBlendMode = BlendMode.DstIn,
     )
     val wave = remember { Animatable(0f) }
+    var wavePhase by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
+    val diameter = with(density) { 100.dp.toPx() }
+    val radius = diameter / 2f
+    val glint = if (surface.luminance() < 0.5f) {
+        lerp(accent, Color.Black, 0.35f)
+    } else {
+        lerp(accent, Color.White, 0.70f)
+    }
+    var titleDistance by remember { mutableFloatStateOf(0f) }
+    var completionDistance by remember { mutableFloatStateOf(0f) }
     Box(modifier = Modifier.fillMaxSize().background(fallback)) {
         BgEffectBackground(
             dynamicBackground = resumed,
@@ -423,16 +442,34 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                     GuiyuanAnimatedIdentityMark(
                         markSize = 100.dp,
                         wave = wave,
-                        wavePhase = 0f,
-                        onWaveRelease = {},
-                        interactive = false,
+                        wavePhase = wavePhase,
+                        onWaveRelease = { wavePhase = it },
+                        interactive = true,
                         active = resumed,
                         effectModifier = identityMaterial,
                     )
                     Spacer(Modifier.height(12.dp))
                     Text(
                         text = stringResource(R.string.product_name),
-                        modifier = identityMaterial,
+                        modifier = Modifier
+                            .onGloballyPositioned { coords ->
+                                val measured = coords.positionInParent().y +
+                                    coords.size.height / 2f - radius
+                                if (titleDistance != measured) titleDistance = measured
+                            }
+                            .graphicsLayer {
+                                val lift = waveLift(wave.value, titleDistance, diameter, wavePhase)
+                                compositingStrategy = if (wave.isRunning) {
+                                    CompositingStrategy.Offscreen
+                                } else {
+                                    CompositingStrategy.Auto
+                                }
+                                scaleX = 1f + lift * 0.055f
+                                scaleY = 1f + lift * 0.035f
+                                translationY = -lift * 7.dp.toPx()
+                            }
+                            .waveGlint(wave, titleDistance, diameter, wavePhase, glint, accent)
+                            .then(identityMaterial),
                         fontSize = 35.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
@@ -442,6 +479,24 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                         Spacer(Modifier.height(36.dp))
                         Text(
                             text = stringResource(R.string.guide_done_title),
+                            modifier = Modifier
+                                .onGloballyPositioned { coords ->
+                                    val measured = coords.positionInParent().y +
+                                        coords.size.height / 2f - radius
+                                    if (completionDistance != measured) completionDistance = measured
+                                }
+                                .graphicsLayer {
+                                    val lift = waveLift(wave.value, completionDistance, diameter, wavePhase)
+                                    compositingStrategy = if (wave.isRunning) {
+                                        CompositingStrategy.Offscreen
+                                    } else {
+                                        CompositingStrategy.Auto
+                                    }
+                                    scaleX = 1f + lift * 0.045f
+                                    scaleY = 1f + lift * 0.025f
+                                    translationY = -lift * 5.dp.toPx()
+                                }
+                                .waveGlint(wave, completionDistance, diameter, wavePhase, glint, accent),
                             fontSize = 24.sp,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )

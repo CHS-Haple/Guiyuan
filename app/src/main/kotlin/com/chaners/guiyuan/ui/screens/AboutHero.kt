@@ -361,7 +361,7 @@ private fun flowRadius(progress: Float, angle: Float, diameter: Float, phase: Fl
 }
 
 // Two-tone refraction stays inside the text strokes and follows the same displaced front.
-private fun Modifier.waveGlint(
+internal fun Modifier.waveGlint(
     wave: Animatable<Float, AnimationVector1D>,
     distance: Float,
     diameter: Float,
@@ -413,7 +413,7 @@ private fun DrawScope.drawGlint(
     )
 }
 
-private fun waveLift(progress: Float, distance: Float, diameter: Float, phase: Float): Float {
+internal fun waveLift(progress: Float, distance: Float, diameter: Float, phase: Float): Float {
     if (distance <= 0f || diameter <= 0f) return 0f
     return maxOf(
         wavefrontLift(progress, distance, diameter, phase),
