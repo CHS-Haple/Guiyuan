@@ -532,13 +532,37 @@ internal fun OnboardingFlow(
                                     style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.SemiBold),
                                     color = MiuixTheme.colorScheme.onSurface,
                                 )
-                                Spacer(Modifier.height(10.dp))
-                                Text(
-                                    text = stringResource(R.string.guide_privacy_brief),
+                                Spacer(Modifier.height(16.dp))
+                                Column(
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-                                    style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.5f.em),
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                )
+                                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                                ) {
+                                    listOf(
+                                        R.string.guide_privacy_brief,
+                                        R.string.guide_privacy_note_scope,
+                                        R.string.guide_privacy_note_root,
+                                        R.string.guide_privacy_note_diagnostics,
+                                        R.string.guide_privacy_note_sharing,
+                                    ).forEach { note ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.Top,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        ) {
+                                            Text(
+                                                text = "•",
+                                                style = MiuixTheme.textStyles.body2,
+                                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                            )
+                                            Text(
+                                                text = stringResource(note),
+                                                modifier = Modifier.weight(1f),
+                                                style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.5f.em),
+                                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                         3 -> {

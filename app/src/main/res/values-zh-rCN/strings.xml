@@ -523,7 +523,11 @@
     <string name="guide_continue">继续</string>
     <string name="guide_privacy_title">协议与声明</string>
     <string name="guide_privacy_description">请阅读使用条款与隐私政策，了解使用责任和数据处理方式。</string>
-    <string name="guide_privacy_brief">归元主要在设备本地运行。诊断可能读取系统日志，但不会自动上传报告。导出和分享由您决定。</string>
+    <string name="guide_privacy_brief">归元在本地处理电量、网络等状态信息，并将设置保存在设备上，不会自动向维护者上传这些内容。</string>
+    <string name="guide_privacy_note_scope">状态图标能否生效取决于模块框架和 SystemUI 作用域。您可以在模块管理器中配置授权，也可以稍后完成。</string>
+    <string name="guide_privacy_note_root">Root 权限为可选项，仅用于部分诊断和系统进程维护。未授予 Root 也可以完成首次引导。</string>
+    <string name="guide_privacy_note_diagnostics">诊断可能读取模块或系统日志。报告可能包含设备、系统及运行信息，但归元不会自动发送报告。</string>
+    <string name="guide_privacy_note_sharing">导出或分享报告、配置备份由您主动决定。分享前请检查文件是否包含个人信息或设备标识。</string>
     <string name="guide_privacy_ack">我已阅读并同意《使用条款》和《隐私政策》</string>
     <string name="guide_agree_continue">同意并继续</string>
     <string name="guide_scope_title">模块设置</string>
