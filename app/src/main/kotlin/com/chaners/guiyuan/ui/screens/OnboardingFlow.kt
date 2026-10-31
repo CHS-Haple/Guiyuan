@@ -344,18 +344,17 @@ internal fun OnboardingFlow(
                 Spacer(Modifier.height(24.dp))
             }
         }
-    }
-
-    AppSettingsEntryDialogs(entryState)
-    UiOverlayBottomSheet(
-        show = policyOpen,
-        modifier = Modifier.fillMaxHeight(0.85f),
-        title = stringResource(R.string.privacy_title),
-        backgroundColor = MiuixTheme.colorScheme.background,
-        insideMargin = DpSize(0.dp, 0.dp),
-        onDismissRequest = { policyOpen = false },
-    ) {
-        PrivacyPolicySheetBody()
+        AppSettingsEntryDialogs(entryState)
+        UiOverlayBottomSheet(
+            show = policyOpen,
+            modifier = Modifier.fillMaxHeight(0.85f),
+            title = stringResource(R.string.privacy_title),
+            backgroundColor = MiuixTheme.colorScheme.background,
+            insideMargin = DpSize(0.dp, 0.dp),
+            onDismissRequest = { policyOpen = false },
+        ) {
+            PrivacyPolicySheetBody()
+        }
     }
 }
 
