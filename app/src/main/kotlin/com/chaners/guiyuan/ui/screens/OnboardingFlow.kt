@@ -541,7 +541,7 @@ internal fun OnboardingFlow(
                                 Column(
                                     modifier = Modifier.weight(1f).fillMaxWidth()
                                         .verticalScroll(importantScroll)
-                                        .padding(horizontal = 12.dp, bottom = 12.dp),
+                                        .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
                                     verticalArrangement = Arrangement.spacedBy(16.dp),
                                 ) {
                                     listOf(
