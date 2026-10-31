@@ -582,7 +582,11 @@ internal fun OnboardingFlow(
                     modifier = Modifier.widthIn(max = 336.dp).fillMaxWidth().heightIn(min = 50.dp),
                     cornerRadius = 16.dp,
                     textStyle = MiuixTheme.textStyles.button,
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    colors = if (step == 1 && !sysUiInScope) {
+                        ButtonDefaults.textButtonColors()
+                    } else {
+                        ButtonDefaults.textButtonColorsPrimary()
+                    },
                     enabled = step != 2 || policyAccepted,
                     onClick = {
                         if (step == 1 && !sysUiInScope) {
@@ -619,6 +623,7 @@ internal fun OnboardingFlow(
                             UiDialogButton(
                                 text = stringResource(R.string.guide_permission_return),
                                 modifier = Modifier.weight(1f),
+                                role = GlassDialogButtonRole.Primary,
                                 onClick = {
                                     advanceAfterWarning = false
                                     showPermissionWarning = false
@@ -628,7 +633,6 @@ internal fun OnboardingFlow(
                             UiDialogButton(
                                 text = stringResource(R.string.guide_permission_continue),
                                 modifier = Modifier.weight(1f),
-                                role = GlassDialogButtonRole.Primary,
                                 onClick = {
                                     advanceAfterWarning = true
                                     showPermissionWarning = false
