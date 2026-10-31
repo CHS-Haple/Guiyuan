@@ -965,14 +965,13 @@ private fun guideContrastRatio(foreground: Color, background: Color): Float {
     return (light + 0.05f) / (dark + 0.05f)
 }
 
-internal fun resolveGuideActionColors(surface: Color, onSurface: Color, accent: Color): GuideActionColors {
-    val tint = lerp(onSurface, accent, 0.10f)
-    // A heavily blurred local backdrop has very little color variation inside a 70dp button.
-    // Add a static, theme-derived tonal span beneath the existing live brand material.
-    for (baseOpacity in listOf(1f, 0.92f, 0.84f, 0.76f, 0.68f, 0.60f)) {
-        val container = tint.copy(alpha = baseOpacity).compositeOver(surface)
-        for (accentMix in listOf(0.55f, 0.45f, 0.35f, 0.25f, 0.15f, 0f)) {
-            val gradientEnd = lerp(container, accent, accentMix)
+internal fun resolveGuideActionColors(surface: Color, onSurface: Color, logoTint: Color): GuideActionColors {
+    // Use the actual logo foreground tint, not the separately resolved primary accent.
+    // The logo's own MIUIX brand blend is still applied as the upper material layer.
+    for (baseMix in listOf(0.40f, 0.32f, 0.24f, 0.16f, 0.08f, 0f)) {
+        val container = lerp(logoTint, onSurface, baseMix)
+        for (endMix in listOf(0f, 0.10f, 0.20f, 0.30f)) {
+            val gradientEnd = lerp(logoTint, onSurface, endMix)
             for (materialAlpha in listOf(0.30f, 0.26f, 0.22f, 0.18f, 0.14f, 0.10f, 0f)) {
                 val contrastSafe = listOf(0f, 0.25f, 0.5f, 0.75f, 1f).all { position ->
                     val stop = lerp(container, gradientEnd, position)
@@ -996,9 +995,10 @@ internal fun resolveGuideActionColors(surface: Color, onSurface: Color, accent: 
 private fun guideActionColors(): GuideActionColors {
     val surface = MiuixTheme.colorScheme.surface
     val onSurface = MiuixTheme.colorScheme.onSurface
-    val accent = MiuixTheme.colorScheme.primary
-    return remember(surface, onSurface, accent) {
-        resolveGuideActionColors(surface, onSurface, accent)
+    // Same semantic color used by GuiyuanAnimatedIdentityMark before brand blending.
+    val logoTint = MiuixTheme.colorScheme.onSurfaceContainer
+    return remember(surface, onSurface, logoTint) {
+        resolveGuideActionColors(surface, onSurface, logoTint)
     }
 }
 
