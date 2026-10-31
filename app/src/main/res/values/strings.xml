@@ -525,7 +525,7 @@
     <string name="guide_privacy_title">Terms and statements</string>
     <string name="guide_privacy_description">Read the Terms of Use and Privacy Policy to understand the app and data handling.</string>
     <string name="guide_privacy_brief">Guiyuan runs mainly on your device. Diagnostics may read system logs, but reports are not uploaded automatically. You decide whether to export or share.</string>
-    <string name="guide_privacy_ack">I have read and understood the Privacy Policy and agree to the Terms of Use</string>
+    <string name="guide_privacy_ack">I have read the Privacy Policy and agree to the Terms of Use</string>
     <string name="guide_agree_continue">Agree and continue</string>
     <string name="guide_scope_title">Set up the module</string>
     <string name="guide_scope_description">Guiyuan customizes system status information through a compatible module framework.</string>
