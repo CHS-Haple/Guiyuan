@@ -524,11 +524,11 @@
     <string name="guide_continue">Continue</string>
     <string name="guide_privacy_title">Terms and statements</string>
     <string name="guide_privacy_description">Read the Terms of Use and Privacy Policy to understand the app and data handling.</string>
-    <string name="guide_privacy_brief">Guiyuan processes battery and network status locally and stores preferences on your device. It does not automatically upload this information to maintainers.</string>
-    <string name="guide_privacy_note_scope">Status indicators depend on a compatible module framework and SystemUI scope. You can configure authorization in your module manager now or later.</string>
-    <string name="guide_privacy_note_root">Root is optional and is used only for certain diagnostics and system process maintenance. You can finish setup without granting Root.</string>
-    <string name="guide_privacy_note_diagnostics">Diagnostics may read module or system logs. Reports may include device, system, and runtime details, but Guiyuan does not send reports automatically.</string>
-    <string name="guide_privacy_note_sharing">Exporting or sharing reports and settings backups is your choice. Check files for personal information or device identifiers before sharing.</string>
+    <string name="guide_privacy_brief">Guiyuan processes battery and network status locally, and keeps related preferences on your device. It does not automatically send this information to project maintainers.</string>
+    <string name="guide_privacy_note_scope">Guiyuan indicators require a compatible module framework and the SystemUI scope to display properly. You can finish authorization later if setup is incomplete.</string>
+    <string name="guide_privacy_note_root">Root is not required to display Guiyuan indicators. The Permissions page checks Root status and may prompt for authorization. You can finish setup without Root, but some diagnostics and process maintenance features may be unavailable.</string>
+    <string name="guide_privacy_note_diagnostics">Diagnostics may read module logs and, when needed, system logs filtered for Guiyuan entries. Reports may contain device, system, and runtime information, but are not uploaded automatically.</string>
+    <string name="guide_privacy_note_sharing">Exporting or sharing settings backups and diagnostic reports requires your action. Before sharing, check files for personal information, device identifiers, or other sensitive content.</string>
     <string name="guide_privacy_ack">I have read and agree to the Terms of Use and Privacy Policy</string>
     <string name="guide_agree_continue">Agree and continue</string>
     <string name="guide_scope_title">Set up the module</string>
