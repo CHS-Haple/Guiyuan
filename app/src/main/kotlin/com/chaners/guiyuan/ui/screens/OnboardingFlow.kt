@@ -150,6 +150,10 @@ private sealed interface GuidePage : NavKey {
     @Serializable data object Complete : GuidePage
 }
 
+private enum class PermissionWarningPhase {
+    Hidden, Visible, Dismissing, Advancing,
+}
+
 // The guide owns only temporary navigation state; existing preferences and
 // framework services remain the authoritative writers for settings and scope.
 @Composable
@@ -186,8 +190,7 @@ internal fun OnboardingFlow(
         GuidePage.Complete -> 4
         else -> 0 // NavBackStack stores NavKey, not GuidePage.
     }
-    var showPermissionWarning by rememberSaveable { mutableStateOf(false) }
-    var advanceAfterWarning by remember { mutableStateOf(false) }
+    var permissionWarning by rememberSaveable { mutableStateOf(PermissionWarningPhase.Hidden) }
     fun advance() {
         val next = when (step) {
             0, 1, 2 -> GuidePage.Stage(step + 1)
@@ -211,7 +214,7 @@ internal fun OnboardingFlow(
     var expandedPermission by rememberSaveable { mutableIntStateOf(0) }
     fun back() {
         // Let the active MIUIX overlay own Back until its dismissal finishes.
-        if (openDocument != null || showPermissionWarning || advanceAfterWarning) return
+        if (openDocument != null || permissionWarning != PermissionWarningPhase.Hidden) return
         if (pages.size > 1) pages.removeLastOrNull() else onExit?.invoke()
     }
     fun refreshPermissionStatus() {
@@ -590,7 +593,7 @@ internal fun OnboardingFlow(
                     enabled = step != 2 || policyAccepted,
                     onClick = {
                         if (step == 1 && !sysUiInScope) {
-                            showPermissionWarning = true
+                            permissionWarning = PermissionWarningPhase.Visible
                         } else {
                             advance()
                         }
@@ -602,18 +605,16 @@ internal fun OnboardingFlow(
             if (pages.lastOrNull() == page) {
                 when (step) {
                     1 -> UiOverlayDialog(
-                        show = showPermissionWarning,
+                        show = permissionWarning == PermissionWarningPhase.Visible,
                         title = stringResource(R.string.guide_permission_warning_title),
                         summary = stringResource(R.string.guide_permission_warning_summary),
                         onDismissRequest = {
-                            advanceAfterWarning = false
-                            showPermissionWarning = false
+                            permissionWarning = PermissionWarningPhase.Dismissing
                         },
                         onDismissFinished = {
-                            if (advanceAfterWarning) {
-                                advanceAfterWarning = false
-                                advance()
-                            }
+                            val proceed = permissionWarning == PermissionWarningPhase.Advancing
+                            permissionWarning = PermissionWarningPhase.Hidden
+                            if (proceed) advance()
                         },
                     ) {
                         Row(
@@ -625,8 +626,7 @@ internal fun OnboardingFlow(
                                 modifier = Modifier.weight(1f),
                                 role = GlassDialogButtonRole.Primary,
                                 onClick = {
-                                    advanceAfterWarning = false
-                                    showPermissionWarning = false
+                                    permissionWarning = PermissionWarningPhase.Dismissing
                                 },
                             )
                             Spacer(Modifier.width(dialogActionGap()))
@@ -634,8 +634,7 @@ internal fun OnboardingFlow(
                                 text = stringResource(R.string.guide_permission_continue),
                                 modifier = Modifier.weight(1f),
                                 onClick = {
-                                    advanceAfterWarning = true
-                                    showPermissionWarning = false
+                                    permissionWarning = PermissionWarningPhase.Advancing
                                 },
                             )
                         }
