@@ -52,9 +52,7 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -113,8 +111,6 @@ import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
-import com.chaners.guiyuan.ui.screens.about.BgEffectConfig
-import com.chaners.guiyuan.ui.screens.about.DeviceType
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
@@ -754,7 +750,13 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
     }
     val surface = MiuixTheme.colorScheme.surface
     val accent = MiuixTheme.colorScheme.primary
-    val actionColors = guideActionColors()
+    // A shared, theme-aware scrim establishes inversion; the live MIUIX logo blend
+    // provides the actual animated button color, rather than a static gradient.
+    val actionPalette = guideActionPalette(
+        surface = surface,
+        onSurface = MiuixTheme.colorScheme.onSurface,
+        logoTint = MiuixTheme.colorScheme.onSurfaceContainer,
+    )
     val arrowRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     // The established About shader owns the mixed colors. Keep a bounded
     // theme-color fallback for devices without RuntimeShader support.
@@ -775,8 +777,8 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
         colors = BlurColors(blendColors = blend),
         contentBlendMode = BlendMode.DstIn,
     )
-    // The action is much smaller than the mark; use a local sample of the same
-    // backdrop and blend rather than flattening the full 150dp region.
+    // The action samples the same animated backdrop and brand blend as the mark.
+    // A smaller capture preserves motion at the action's own screen position.
     val actionMaterial = if (!blurSupported) Modifier else Modifier.textureBlur(
         backdrop = backdrop,
         shape = RoundedCornerShape(0.dp),
@@ -882,10 +884,8 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                     GuideBrandedActionBackdrop(
                         modifier = Modifier.matchParentSize(),
                         cornerRadius = 16.dp,
-                        container = actionColors.container,
-                        gradientEnd = actionColors.gradientEnd,
+                        palette = actionPalette,
                         material = actionMaterial,
-                        materialAlpha = actionColors.materialAlpha,
                         enabled = blurSupported,
                     )
                     Button(
@@ -893,7 +893,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                         cornerRadius = 16.dp,
                         colors = ButtonDefaults.buttonColors(
                             color = Color.Transparent,
-                            contentColor = actionColors.content,
+                            contentColor = actionPalette.content,
                         ),
                         onClick = onNext,
                     ) {
@@ -911,10 +911,8 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                         GuideBrandedActionBackdrop(
                             modifier = Modifier.matchParentSize(),
                             cornerRadius = 35.dp,
-                            container = actionColors.container,
-                            gradientEnd = actionColors.gradientEnd,
+                            palette = actionPalette,
                             material = actionMaterial,
-                            materialAlpha = actionColors.materialAlpha,
                             enabled = blurSupported,
                         )
                         IconButton(
@@ -931,9 +929,9 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                                 val tail = size.width * if (arrowRtl) 0.96f else 0.04f
                                 val wing = size.height * 0.42f
                                 val base = tip + if (arrowRtl) wing else -wing
-                                drawLine(actionColors.content, Offset(tail, middle), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
-                                drawLine(actionColors.content, Offset(base, middle - wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
-                                drawLine(actionColors.content, Offset(base, middle + wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                                drawLine(actionPalette.content, Offset(tail, middle), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                                drawLine(actionPalette.content, Offset(base, middle - wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                                drawLine(actionPalette.content, Offset(base, middle + wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
                             }
                         }
                     }
@@ -948,124 +946,50 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
 private fun GuideBrandedActionBackdrop(
     modifier: Modifier,
     cornerRadius: Dp,
-    container: Color,
-    gradientEnd: Color,
+    palette: GuideActionPalette,
     material: Modifier,
-    materialAlpha: Float,
     enabled: Boolean,
 ) {
     Box(modifier) {
-        Box(
-            Modifier.matchParentSize()
-                .squircleClip(cornerRadius)
-                .background(Brush.linearGradient(listOf(gradientEnd, container))),
-        )
-        if (enabled && materialAlpha > 0f) {
+        if (enabled) {
+            // Keep live captured MIUIX material as the main fill, just as on the Logo.
+            // The original nearly opaque gradient concealed 88%+ of the animation.
             Box(
-                Modifier.matchParentSize().then(material)
-                    .squircleSurface(color = Color.White.copy(alpha = materialAlpha), cornerRadius = cornerRadius),
+                Modifier.matchParentSize()
+                    .then(material)
+                    .squircleSurface(color = Color.White, cornerRadius = cornerRadius),
+            )
+            // Scrim is translucent, not a second animated color owner.
+            Box(
+                Modifier.matchParentSize()
+                    .squircleClip(cornerRadius)
+                    .background(palette.scrim),
+            )
+        } else {
+            // Shader-off devices fall back to an ordinary high-contrast theme pair.
+            Box(
+                Modifier.matchParentSize()
+                    .squircleSurface(color = palette.fallback, cornerRadius = cornerRadius),
             )
         }
     }
 }
 
-internal data class GuideActionColors(
-    val container: Color,
-    val gradientEnd: Color,
+internal data class GuideActionPalette(
+    val scrim: Color,
+    val fallback: Color,
     val content: Color,
-    val materialAlpha: Float,
 )
 
-private fun guideContrastRatio(foreground: Color, background: Color): Float {
-    val light = maxOf(foreground.luminance(), background.luminance())
-    val dark = minOf(foreground.luminance(), background.luminance())
-    return (light + 0.05f) / (dark + 0.05f)
-}
-
-internal fun guideBackdropColors(config: BgEffectConfig.Config): List<Color> =
-    listOf(config.colors1, config.colors2, config.colors3).flatMap { colors ->
-        (0 until 4).map { index ->
-            val offset = index * 4
-            Color(
-                red = colors[offset],
-                green = colors[offset + 1],
-                blue = colors[offset + 2],
-                alpha = colors[offset + 3],
-            )
-        }
-    }
-
-internal fun resolveGuideActionColors(
+internal fun guideActionPalette(
     surface: Color,
     onSurface: Color,
     logoTint: Color,
-    backdropColors: List<Color>,
-): GuideActionColors {
-    if (backdropColors.isEmpty()) return GuideActionColors(onSurface, onSurface, surface, 0f)
-
-    // Read the same light/dark background palette as BgEffectBackground, not an
-    // unrelated primary accent or black/white underlays that this page never uses.
-    val warm = backdropColors.maxByOrNull { it.red - it.blue }!!.copy(alpha = 1f)
-    val cool = backdropColors.minByOrNull { it.red - it.blue }!!.copy(alpha = 1f)
-    val chromaSpan = maxOf(
-        kotlin.math.abs(warm.red - cool.red),
-        kotlin.math.abs(warm.green - cool.green),
-        kotlin.math.abs(warm.blue - cool.blue),
-    )
-    val underlays = backdropColors.map { it.compositeOver(surface) } + surface
-    val positions = listOf(0f, 0.25f, 0.5f, 0.75f, 1f)
-
-    // A usable tinted button must have a visible warm/cool separation. Prefer
-    // a small live Logo material when it is safe; keep an opaque fallback.
-    for (minSeparation in listOf(0.10f, 0.07f, 0f)) {
-        for (minMaterial in listOf(0.06f, 0.02f, 0f)) {
-            for (opacity in listOf(0.90f, 0.94f, 0.86f, 1f)) {
-                for (paletteMix in listOf(0.40f, 0.35f, 0.30f, 0.25f)) {
-                    if (chromaSpan * paletteMix * opacity < minSeparation) continue
-                    for (shade in listOf(0.30f, 0.40f, 0.50f, 0.60f, 0.70f)) {
-                        val base = lerp(logoTint, onSurface, shade)
-                        val start = lerp(base, warm, paletteMix).copy(alpha = opacity)
-                        val end = lerp(base, cool, paletteMix).copy(alpha = opacity)
-                        for (materialAlpha in listOf(0.12f, 0.10f, 0.08f, 0.06f, 0.04f, 0.02f, 0f)) {
-                            if (materialAlpha < minMaterial) continue
-                            val safe = positions.all { position ->
-                                val stop = lerp(start, end, position)
-                                underlays.all { underlay ->
-                                    val resolved = stop.compositeOver(underlay)
-                                    listOf(Color.Black, Color.White).all { pigment ->
-                                        guideContrastRatio(
-                                            surface,
-                                            pigment.copy(alpha = materialAlpha).compositeOver(resolved),
-                                        ) >= 4.5f
-                                    }
-                                }
-                            }
-                            if (safe) return GuideActionColors(start, end, surface, materialAlpha)
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return GuideActionColors(onSurface, onSurface, surface, 0f)
-}
-
-@Composable
-private fun guideActionColors(): GuideActionColors {
-    val surface = MiuixTheme.colorScheme.surface
-    val onSurface = MiuixTheme.colorScheme.onSurface
-    // Same semantic color used by GuiyuanAnimatedIdentityMark before brand blending.
-    val logoTint = MiuixTheme.colorScheme.onSurfaceContainer
-    val deviceType = if (LocalConfiguration.current.screenWidthDp >= 600) DeviceType.PAD else DeviceType.PHONE
-    val isDarkTheme = surface.luminance() < 0.5f
-    val preset = remember(deviceType, isDarkTheme) {
-        BgEffectConfig.get(deviceType, isDarkTheme)
-    }
-    val backdropColors = remember(preset) { guideBackdropColors(preset) }
-    return remember(surface, onSurface, logoTint, backdropColors) {
-        resolveGuideActionColors(surface, onSurface, logoTint, backdropColors)
-    }
-}
+): GuideActionPalette = GuideActionPalette(
+    scrim = lerp(onSurface, logoTint, 0.35f).copy(alpha = 0.34f),
+    fallback = onSurface,
+    content = surface,
+)
 
 @Composable
 private fun GuidePermissionItem(
