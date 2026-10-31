@@ -114,6 +114,7 @@ import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
@@ -856,17 +857,21 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                 }
             }
             if (completed) {
-                TextButton(
-                    text = stringResource(R.string.guide_start),
+                Button(
                     modifier = Modifier.widthIn(max = 336.dp).fillMaxWidth().heightIn(min = 50.dp),
                     cornerRadius = 16.dp,
-                    textStyle = MiuixTheme.textStyles.button,
-                    colors = ButtonDefaults.textButtonColors(
+                    colors = ButtonDefaults.buttonColors(
                         color = actionColors.container,
-                        textColor = actionColors.content,
+                        contentColor = actionColors.content,
                     ),
                     onClick = onNext,
-                )
+                ) {
+                    Text(
+                        text = stringResource(R.string.guide_start),
+                        modifier = identityMaterial,
+                        style = MiuixTheme.textStyles.button,
+                    )
+                }
                 Spacer(Modifier.height(44.dp))
             } else {
                 val continueLabel = stringResource(R.string.guide_continue)
@@ -879,7 +884,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                         minWidth = 70.dp,
                         minHeight = 70.dp,
                     ) {
-                        Canvas(Modifier.width(31.dp).height(22.dp)) {
+                        Canvas(Modifier.width(31.dp).height(22.dp).then(identityMaterial)) {
                             val middle = size.height / 2f
                             val tip = size.width * if (arrowRtl) 0.04f else 0.96f
                             val tail = size.width * if (arrowRtl) 0.96f else 0.04f
