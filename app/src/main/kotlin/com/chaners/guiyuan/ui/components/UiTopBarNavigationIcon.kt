@@ -18,14 +18,13 @@ import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 
-/** Shared back control for top bars. Pages specify OS3 when their top bar is OS3-only. */
+/** Shared in-app top bar back control, following the active MIUIX UI style. */
 @Composable
 internal fun UiTopBarNavigationIcon(
     onBack: () -> Unit,
     navigationActions: @Composable RowScope.() -> Unit = {},
-    styleOverride: UiStyle? = null,
 ) {
-    val os4 = (styleOverride ?: LocalUiStyle.current) == UiStyle.OS4
+    val os4 = LocalUiStyle.current == UiStyle.OS4
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = if (os4) Arrangement.spacedBy(8.dp) else Arrangement.Start,

@@ -32,6 +32,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -84,6 +85,8 @@ import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.UiTopBarNavigationIcon
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
@@ -97,6 +100,7 @@ import top.yukonga.miuix.kmp.nav.transition.navGraphicsTransition
 import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import com.chaners.guiyuan.system.RootShell
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
@@ -241,21 +245,37 @@ internal fun OnboardingFlow(
         val scrollBehavior = MiuixScrollBehavior()
         val scroll = rememberScrollState()
         val topBarBackdrop = rememberTopBarBackdrop()
-        Scaffold(
-            topBar = {
-                MiuixBlurredTopBar(
-                    backdrop = topBarBackdrop,
-                    scrollBehavior = scrollBehavior,
-                ) { barColor ->
-                    SmallTopAppBar(
-                        title = "",
-                        color = barColor,
-                        scrollBehavior = scrollBehavior,
-                        navigationIcon = { UiTopBarNavigationIcon(onBack = ::back, styleOverride = UiStyle.OS3) },
-                    )
-                }
-            },
-        ) { scaffoldPadding ->
+        val os4 = LocalUiStyle.current == UiStyle.OS4
+        // Match the in-app Settings top bar instead of mixing a glass back control
+        // into the OS3 bar. The guide has its own content heading, hence compact.
+        CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
+            Scaffold(
+                topBar = {
+                    if (os4) {
+                        GlassTopAppBar(
+                            title = "",
+                            isContentScrolled = scroll.value > 0,
+                            backdrop = topBarBackdrop,
+                            scrollBehavior = scrollBehavior,
+                            compact = true,
+                            navigationIcon = { UiTopBarNavigationIcon(onBack = ::back) },
+                            unclippedNavigationIcon = true,
+                        )
+                    } else {
+                        MiuixBlurredTopBar(
+                            backdrop = topBarBackdrop,
+                            scrollBehavior = scrollBehavior,
+                        ) { barColor ->
+                            SmallTopAppBar(
+                                title = "",
+                                color = barColor,
+                                scrollBehavior = scrollBehavior,
+                                navigationIcon = { UiTopBarNavigationIcon(onBack = ::back) },
+                            )
+                        }
+                    }
+                },
+            ) { scaffoldPadding ->
             Column(
                 modifier = Modifier.fillMaxSize().topBarBackdropSource(topBarBackdrop)
                     .padding(scaffoldPadding).padding(horizontal = 12.dp),
@@ -497,6 +517,7 @@ internal fun OnboardingFlow(
                     else -> Unit
                 }
             }
+        }
         }
         }
     }
