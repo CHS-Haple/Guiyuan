@@ -160,7 +160,7 @@ internal fun OnboardingFlow(
         }
         Scaffold { scaffoldPadding ->
             Column(
-                modifier = Modifier.fillMaxSize().padding(scaffoldPadding).padding(horizontal = 24.dp),
+                modifier = Modifier.fillMaxSize().padding(scaffoldPadding).padding(horizontal = if (step == 1) 12.dp else 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Row(
@@ -618,7 +618,7 @@ private fun GuidePermissionItem(
     Card(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(0.dp),
-        pressFeedbackType = PressFeedbackType.Sink,
+        pressFeedbackType = if (onClick != null) PressFeedbackType.Sink else PressFeedbackType.None,
         showIndication = onClick != null,
         onClick = onClick,
     ) {
@@ -627,7 +627,7 @@ private fun GuidePermissionItem(
                 .fillMaxWidth()
                 .height(56.dp)
                 .semantics { stateDescription = status }
-                .padding(start = 22.dp, end = 18.dp),
+                .padding(start = 18.dp, end = 18.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
