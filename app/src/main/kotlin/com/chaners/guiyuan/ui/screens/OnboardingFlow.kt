@@ -99,6 +99,9 @@ import com.chaners.guiyuan.system.RootShell
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.components.UiOverlayBottomSheet
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
+import com.chaners.guiyuan.ui.components.UiDialogButton
+import com.chaners.guiyuan.ui.components.dialogActionGap
 import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -119,8 +122,10 @@ import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Lock
+import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 
 // Guide steps are peers, not push-overlay destinations. Share MIUIX's motion and
 // gesture driver while both pages translate the entire width in opposite directions.
@@ -173,6 +178,7 @@ internal fun OnboardingFlow(
         GuidePage.Complete -> 4
         else -> 0 // NavBackStack stores NavKey, not GuidePage.
     }
+    var showPermissionWarning by rememberSaveable { mutableStateOf(false) }
     fun advance() {
         val next = when (step) {
             0, 1, 2 -> GuidePage.Stage(step + 1)
@@ -336,13 +342,12 @@ internal fun OnboardingFlow(
                                     title = stringResource(R.string.guide_sysui_scope),
                                     purpose = stringResource(R.string.guide_sysui_scope_purpose),
                                     status = when {
-                                        sysUiInScope -> stringResource(R.string.guide_scope_ready)
+                                        sysUiInScope -> stringResource(R.string.runtime_scope_authorized)
                                         framework == XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
                                         framework == XposedStatus.QueryUnavailable -> stringResource(R.string.guide_scope_read_failed)
                                         connected == null -> stringResource(R.string.guide_scope_wait_framework)
-                                        connected.apiVersion < 102 -> stringResource(R.string.guide_api_unsupported)
                                         scopeBusy -> stringResource(R.string.guide_scope_requesting)
-                                        else -> stringResource(R.string.guide_scope_not_ready)
+                                        else -> stringResource(R.string.runtime_scope_disabled)
                                     },
                                     checked = sysUiInScope,
                                     guidance = when {
@@ -529,13 +534,46 @@ internal fun OnboardingFlow(
                     textStyle = MiuixTheme.textStyles.button,
                     colors = ButtonDefaults.textButtonColorsPrimary(),
                     enabled = step != 2 || policyAccepted,
-                    onClick = ::advance,
+                    onClick = {
+                        if (step == 1 && !sysUiInScope) {
+                            showPermissionWarning = true
+                        } else {
+                            advance()
+                        }
+                    },
                 )
                 Spacer(Modifier.height(44.dp))
             }
             // Navigation keeps covered entries alive. Only the top stage hosts popups.
             if (pages.lastOrNull() == page) {
                 when (step) {
+                    1 -> UiOverlayDialog(
+                        show = showPermissionWarning,
+                        title = stringResource(R.string.guide_permission_warning_title),
+                        summary = stringResource(R.string.guide_permission_warning_summary),
+                        onDismissRequest = { showPermissionWarning = false },
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            UiDialogButton(
+                                text = stringResource(R.string.guide_permission_return),
+                                modifier = Modifier.weight(1f),
+                                onClick = { showPermissionWarning = false },
+                            )
+                            Spacer(Modifier.width(dialogActionGap()))
+                            UiDialogButton(
+                                text = stringResource(R.string.guide_permission_continue),
+                                modifier = Modifier.weight(1f),
+                                role = GlassDialogButtonRole.Primary,
+                                onClick = {
+                                    showPermissionWarning = false
+                                    advance()
+                                },
+                            )
+                        }
+                    }
                     2 -> UiOverlayBottomSheet(
                         show = openDocument != null,
                         modifier = Modifier.fillMaxHeight(0.85f),
@@ -769,14 +807,13 @@ private fun GuidePermissionItem(
         startAction = { SemanticLeadingIcon(iconRes = iconRes) },
         onClick = onClick,
         endActions = {
-            if (checked) {
-                Icon(
-                    imageVector = MiuixIcons.Basic.Check,
-                    contentDescription = null,
-                    modifier = Modifier.size(22.dp),
-                    tint = MiuixTheme.colorScheme.primary,
-                )
-            }
+            Icon(
+                imageVector = if (checked) MiuixIcons.Basic.Check else MiuixIcons.Regular.Report,
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+                tint = if (checked) MiuixTheme.colorScheme.primary
+                    else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
         },
     ) {
         Text(

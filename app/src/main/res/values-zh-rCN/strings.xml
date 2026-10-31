@@ -619,4 +619,8 @@
     <string name="guide_scope_help_busy">正在处理其他框架操作，请完成后再尝试。</string>
     <string name="guide_scope_help_request">点击上方项目申请 SystemUI 作用域，或前往模块管理器配置。</string>
     <string name="guide_root_help">Root 是可选权限，可在 Root 管理器授权后重新检测。</string>
+    <string name="guide_permission_warning_title">核心授权尚未完成</string>
+    <string name="guide_permission_warning_summary">框架服务或 SystemUI 作用域尚未确认就绪，归元状态图标可能无法生效。你可以稍后完成配置；Root 为可选权限。</string>
+    <string name="guide_permission_return">返回配置</string>
+    <string name="guide_permission_continue">仍然继续</string>
 </resources>
