@@ -340,7 +340,6 @@ internal fun GyApp(
                     onOpenThirdParty = { navigate(AppRoute.AboutThirdParty) },
                     onOpenPrivacy = { navigate(AppRoute.PrivacyPolicy) },
                     onOpenTerms = { navigate(AppRoute.TermsOfUse) },
-                    onOpenGuide = { navigate(AppRoute.Onboarding) },
                     onOpenScopes = { navigate(AppRoute.StaticScopes) },
                 )
             }

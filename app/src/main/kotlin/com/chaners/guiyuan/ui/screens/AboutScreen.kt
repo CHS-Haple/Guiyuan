@@ -67,7 +67,6 @@ internal fun AboutScreen(
     onOpenThirdParty: () -> Unit,
     onOpenPrivacy: () -> Unit,
     onOpenTerms: () -> Unit,
-    onOpenGuide: () -> Unit,
     onOpenScopes: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -236,7 +235,7 @@ internal fun AboutScreen(
                         title = stringResource(R.string.terms_title),
                         summary = stringResource(R.string.about_terms_summary),
                         startAction = {
-                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_fact_check)
+                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_contract)
                         },
                         onClick = onOpenTerms,
                     )
@@ -245,7 +244,7 @@ internal fun AboutScreen(
                         summary = stringResource(R.string.about_privacy_summary),
                         startAction = {
                             SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_lock,
+                                iconRes = R.drawable.ic_material_symbol_policy,
                             )
                         },
                         onClick = onOpenPrivacy,
@@ -273,16 +272,6 @@ internal fun AboutScreen(
                             )
                         },
                         onClick = onOpenThirdParty,
-                    )
-                    ArrowPreference(
-                        title = stringResource(R.string.guide_revisit_title),
-                        summary = stringResource(R.string.guide_revisit_summary),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_format_list_bulleted,
-                            )
-                        },
-                        onClick = onOpenGuide,
                     )
                 }
                 SmallTitle(stringResource(R.string.section_device_system))

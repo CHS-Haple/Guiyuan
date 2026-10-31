@@ -1083,6 +1083,16 @@ internal fun SettingsHubScreen(
                 onIconHiddenChange = onIconHiddenChange,
                 entryState = entryState,
             )
+            ArrowPreference(
+                title = stringResource(R.string.guide_revisit_title),
+                summary = stringResource(R.string.guide_revisit_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_format_list_bulleted,
+                    )
+                },
+                onClick = { onNavigate(AppRoute.Onboarding) },
+            )
         }
         Section(R.string.section_diagnostics_maintenance) {
             ArrowPreference(

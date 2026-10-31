@@ -282,7 +282,7 @@ internal fun OnboardingFlow(
         }
         val illustration = when (step) {
             1 -> R.drawable.ic_material_symbol_security
-            2 -> R.drawable.ic_material_symbol_contract
+            2 -> R.drawable.ic_material_symbol_balance
             else -> R.drawable.ic_material_symbol_settings
         }
         val scrollBehavior = MiuixScrollBehavior()
@@ -490,10 +490,10 @@ internal fun OnboardingFlow(
                             ) {
                                 Card(modifier = Modifier.fillMaxWidth()) {
                                     BasicComponent(
-                                        title = stringResource(R.string.guide_terms_link_text),
-                                        summary = stringResource(R.string.guide_terms_summary),
+                                        title = stringResource(R.string.terms_title),
+                                        summary = stringResource(R.string.about_terms_summary),
                                         startAction = {
-                                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_privacy_tip)
+                                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_contract)
                                         },
                                         endActions = {
                                             Icon(
@@ -512,10 +512,10 @@ internal fun OnboardingFlow(
                                 Spacer(Modifier.height(12.dp))
                                 Card(modifier = Modifier.fillMaxWidth()) {
                                     BasicComponent(
-                                        title = stringResource(R.string.guide_policy_link_text),
-                                        summary = stringResource(R.string.guide_policy_summary),
+                                        title = stringResource(R.string.privacy_title),
+                                        summary = stringResource(R.string.about_privacy_summary),
                                         startAction = {
-                                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_privacy_tip)
+                                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_policy)
                                         },
                                         endActions = {
                                             Icon(
