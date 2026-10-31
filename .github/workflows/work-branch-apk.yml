@@ -1,7 +1,7 @@
 name: Work Branch APK
 run-name: >-
   ${{ github.event_name == 'workflow_run'
-      && format('canary: Check {0} | Canary', github.event.workflow_run.head_branch)
+      && format('canary: Verify {0} | Canary', github.event.workflow_run.head_branch)
       || github.event_name == 'workflow_dispatch'
       && format('canary: Sign {0} | B{1} Canary', inputs.source_branch, inputs.build_number)
       || (github.event.issue.pull_request != null
@@ -11,6 +11,12 @@ run-name: >-
                   && endsWith(github.event.comment.body, ' Canary')))
           && format('{0} | {1} #{2}', github.event.issue.title,
               github.event.comment.body, github.event.issue.number))
+      || (github.event_name == 'issue_comment'
+          && github.event.issue.pull_request != null
+          && github.actor == github.repository_owner
+          && startsWith(github.event.comment.body, 'B')
+          && contains(github.event.comment.body, ' Canary SHA '))
+          && format('canary: Authorization note | PR #{0}', github.event.issue.number)
       || format('canary: Ignore comment | Canary #{0}', github.event.issue.number) }}
 
 on:
@@ -74,6 +80,7 @@ jobs:
     timeout-minutes: 90
     outputs:
       ready: ${{ steps.identity.outputs.ready }}
+      source_branch: ${{ steps.source.outputs.branch }}
       source_sha: ${{ steps.source.outputs.sha }}
       version_name: ${{ steps.identity.outputs.version_name }}
       version_code: ${{ steps.identity.outputs.version_code }}
@@ -364,7 +371,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   sign:
-    name: Sign reviewed Canary
+    name: ${{ format('Sign {0} Canary', needs.build.outputs.source_branch) }}
     needs: build
     if: needs.build.outputs.ready == 'true'
     runs-on: ubuntu-latest
