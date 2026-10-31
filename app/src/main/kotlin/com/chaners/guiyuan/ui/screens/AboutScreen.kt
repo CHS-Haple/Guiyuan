@@ -55,6 +55,7 @@ private data class AboutDependency(
     val name: String,
     val version: String?,
     val license: String,
+    val maintainer: String,
     val upstreamUrl: String,
 )
 
@@ -384,54 +385,63 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     name = "MIUIX",
                     version = miuixVersion,
                     license = "Apache-2.0",
+                    maintainer = "compose-miuix-ui",
                     upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
                 ),
                 AboutDependency(
                     name = "libxposed API",
                     version = BuildConfig.LIBXPOSED_VERSION,
                     license = "Apache-2.0",
-                    upstreamUrl = "https://github.com/libxposed/api",
+                    maintainer = "JingMatrix",
+                    upstreamUrl = "https://github.com/JingMatrix/libxposed-api",
                 ),
                 AboutDependency(
                     name = "libxposed service",
                     version = BuildConfig.LIBXPOSED_VERSION,
                     license = "Apache-2.0",
-                    upstreamUrl = "https://github.com/libxposed/service",
+                    maintainer = "JingMatrix",
+                    upstreamUrl = "https://github.com/JingMatrix/libxposed-service",
                 ),
                 AboutDependency(
                     name = "AndroidX Core",
                     version = BuildConfig.ANDROIDX_CORE_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "AndroidX",
                     upstreamUrl = "https://github.com/androidx/androidx",
                 ),
                 AboutDependency(
                     name = "AndroidX Activity Compose",
                     version = BuildConfig.ACTIVITY_COMPOSE_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "AndroidX",
                     upstreamUrl = "https://github.com/androidx/androidx",
                 ),
                 AboutDependency(
                     name = "AndroidX Navigation Event Compose",
                     version = BuildConfig.NAVIGATION_EVENT_COMPOSE_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "AndroidX",
                     upstreamUrl = "https://github.com/androidx/androidx",
                 ),
                 AboutDependency(
                     name = "AndroidX DataStore Preferences",
                     version = BuildConfig.DATASTORE_PREFERENCES_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "AndroidX",
                     upstreamUrl = "https://github.com/androidx/androidx",
                 ),
                 AboutDependency(
                     name = "kotlinx.serialization core",
                     version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "Kotlin",
                     upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
                 ),
                 AboutDependency(
                     name = "kotlinx.serialization JSON",
                     version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "Kotlin",
                     upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
                 ),
             )
@@ -443,12 +453,14 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     name = "Gradle Wrapper",
                     version = BuildConfig.GRADLE_VERSION,
                     license = "Apache-2.0",
+                    maintainer = "Gradle",
                     upstreamUrl = "https://github.com/gradle/gradle",
                 ),
                 AboutDependency(
                     name = "JUnit 4",
                     version = BuildConfig.JUNIT_VERSION,
                     license = "EPL-1.0",
+                    maintainer = "junit-team",
                     upstreamUrl = "https://github.com/junit-team/junit4",
                 ),
             )
@@ -469,7 +481,8 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
         Section(R.string.section_embedded_assets) {
             ArrowPreference(
                 title = "Material Symbols",
-                summary = stringResource(R.string.about_embedded_asset_summary),
+                summary = stringResource(R.string.about_embedded_asset_summary) +
+                    "\n" + stringResource(R.string.about_dependency_maintainer, "Google"),
                 onClick = {
                     uriHandler.openUri("https://github.com/google/material-design-icons")
                 },
@@ -491,6 +504,7 @@ private fun AboutDependencyPreference(
     dependency: AboutDependency,
     onClick: () -> Unit,
 ) {
+    val maintainerLabel = stringResource(R.string.about_dependency_maintainer, dependency.maintainer)
     val summary =
         buildString {
             dependency.version?.let {
@@ -498,6 +512,8 @@ private fun AboutDependencyPreference(
                 append('\n')
             }
             append(dependency.license)
+            append(" · ")
+            append(maintainerLabel)
         }
     ArrowPreference(
         title = dependency.name,
