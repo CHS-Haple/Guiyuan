@@ -72,6 +72,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -132,6 +133,7 @@ import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Help
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 
 // Guide steps are peers, not push-overlay destinations. Share MIUIX's motion and
@@ -857,34 +859,50 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                 }
             }
             if (completed) {
-                Button(
-                    modifier = Modifier.widthIn(max = 336.dp).fillMaxWidth().heightIn(min = 50.dp),
-                    cornerRadius = 16.dp,
-                    colors = ButtonDefaults.buttonColors(
-                        color = actionColors.container,
-                        contentColor = actionColors.content,
-                    ),
-                    onClick = onNext,
-                ) {
-                    Text(
-                        text = stringResource(R.string.guide_start),
-                        modifier = identityMaterial,
-                        style = MiuixTheme.textStyles.button,
+                Box(Modifier.widthIn(max = 336.dp).fillMaxWidth().heightIn(min = 50.dp)) {
+                    GuideBrandedActionBackdrop(
+                        modifier = Modifier.matchParentSize(),
+                        cornerRadius = 16.dp,
+                        container = actionColors.container,
+                        material = identityMaterial,
+                        enabled = blurSupported,
                     )
+                    Button(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
+                        cornerRadius = 16.dp,
+                        colors = ButtonDefaults.buttonColors(
+                            color = Color.Transparent,
+                            contentColor = actionColors.content,
+                        ),
+                        onClick = onNext,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.guide_start),
+                            style = MiuixTheme.textStyles.button,
+                        )
+                    }
                 }
                 Spacer(Modifier.height(44.dp))
             } else {
                 val continueLabel = stringResource(R.string.guide_continue)
                 TooltipBox(text = continueLabel) {
-                    IconButton(
-                        onClick = onNext,
-                        modifier = Modifier.size(70.dp).semantics { contentDescription = continueLabel },
-                        backgroundColor = actionColors.container,
-                        cornerRadius = 35.dp,
-                        minWidth = 70.dp,
-                        minHeight = 70.dp,
-                    ) {
-                        Canvas(Modifier.width(31.dp).height(22.dp).then(identityMaterial)) {
+                    Box(Modifier.size(70.dp)) {
+                        GuideBrandedActionBackdrop(
+                            modifier = Modifier.matchParentSize(),
+                            cornerRadius = 35.dp,
+                            container = actionColors.container,
+                            material = identityMaterial,
+                            enabled = blurSupported,
+                        )
+                        IconButton(
+                            onClick = onNext,
+                            modifier = Modifier.size(70.dp).semantics { contentDescription = continueLabel },
+                            backgroundColor = Color.Transparent,
+                            cornerRadius = 35.dp,
+                            minWidth = 70.dp,
+                            minHeight = 70.dp,
+                        ) {
+                            Canvas(Modifier.width(31.dp).height(22.dp)) {
                             val middle = size.height / 2f
                             val tip = size.width * if (arrowRtl) 0.04f else 0.96f
                             val tail = size.width * if (arrowRtl) 0.96f else 0.04f
@@ -893,11 +911,31 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                             drawLine(actionColors.content, Offset(tail, middle), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
                             drawLine(actionColors.content, Offset(base, middle - wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
                             drawLine(actionColors.content, Offset(base, middle + wing), Offset(tip, middle), strokeWidth = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                            }
                         }
                     }
                 }
                 Spacer(Modifier.weight(0.28f))
             }
+        }
+    }
+}
+
+@Composable
+private fun GuideBrandedActionBackdrop(
+    modifier: Modifier,
+    cornerRadius: Dp,
+    container: Color,
+    material: Modifier,
+    enabled: Boolean,
+) {
+    Box(modifier) {
+        Box(Modifier.matchParentSize().squircleSurface(color = container, cornerRadius = cornerRadius))
+        if (enabled) {
+            Box(
+                Modifier.matchParentSize().then(material)
+                    .squircleSurface(color = Color.White.copy(alpha = 0.20f), cornerRadius = cornerRadius),
+            )
         }
     }
 }
