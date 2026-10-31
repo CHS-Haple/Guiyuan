@@ -530,9 +530,9 @@
     <string name="guide_scope_title">Set up the module</string>
     <string name="guide_scope_description">Guiyuan customizes system status information through a compatible module framework.</string>
     <string name="guide_framework">Framework service</string>
-    <string name="guide_framework_purpose">Checks the connection between Guiyuan and the module framework.</string>
-    <string name="guide_sysui_scope_purpose">Lets Guiyuan customize status information in the status bar, lock screen, always-on display, and related system surfaces.</string>
-    <string name="guide_root_purpose">Used for some diagnostic logs and process maintenance; not required for everyday use.</string>
+    <string name="guide_framework_purpose">Checks framework availability and reads module and scope status.</string>
+    <string name="guide_sysui_scope_purpose">When authorized, lets Guiyuan customize status indicators in the status bar, lock screen, always-on display, and Control Center.</string>
+    <string name="guide_root_purpose">Used to read diagnostic logs and restart related system processes; the Guiyuan indicator does not require Root.</string>
     <string name="guide_framework_checking">Checking</string>
     <string name="guide_framework_offline">Not connected</string>
     <string name="guide_framework_connected">Connected</string>

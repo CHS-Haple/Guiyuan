@@ -529,9 +529,9 @@
     <string name="guide_scope_title">模块设置</string>
     <string name="guide_scope_description">归元通过兼容的模块框架调整系统状态信息的显示方式。</string>
     <string name="guide_framework">框架服务</string>
-    <string name="guide_framework_purpose">用于检查归元与模块框架的连接状态。</string>
-    <string name="guide_sysui_scope_purpose">用于调整状态栏、锁屏、息屏显示等系统界面的状态信息。</string>
-    <string name="guide_root_purpose">用于部分诊断日志读取和进程维护，日常使用无需授权。</string>
+    <string name="guide_framework_purpose">用于确认模块框架是否可用，并读取模块与作用域状态。</string>
+    <string name="guide_sysui_scope_purpose">授权后可调整状态栏、锁屏、息屏显示及控制中心的状态图标。</string>
+    <string name="guide_root_purpose">用于读取诊断日志和重启相关系统进程；归元图标显示无需 Root。</string>
     <string name="guide_framework_checking">检查中</string>
     <string name="guide_framework_offline">未连接</string>
     <string name="guide_framework_connected">已连接</string>

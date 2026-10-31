@@ -751,11 +751,11 @@ private fun GuidePermissionItem(
         Text(
             text = title,
             style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
-            color = MiuixTheme.colorScheme.onSurface,
+            color = MiuixTheme.colorScheme.onBackground,
         )
         Text(
             text = status,
-            style = MiuixTheme.textStyles.body2,
+            style = MiuixTheme.textStyles.body2.copy(fontWeight = FontWeight.Medium),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
         Spacer(Modifier.height(4.dp))
