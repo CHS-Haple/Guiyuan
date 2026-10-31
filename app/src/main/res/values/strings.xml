@@ -554,10 +554,10 @@
     <string name="guide_root_title">Root access</string>
     <string name="guide_root_checking">Checking…</string>
     <string name="guide_root_granted">Authorized</string>
-    <string name="guide_root_unavailable">Unavailable</string>
-    <string name="guide_root_not_checked">Not checked</string>
+    <string name="guide_root_unavailable">Not authorized or unavailable</string>
+    <string name="guide_root_not_checked">Pending check</string>
     <string name="guide_root_check_action">Check Root access</string>
-    <string name="guide_root_explanation">Optional. Root is needed to read diagnostic logs and restart SystemUI. Checking may request authorization in your Root manager.</string>
+    <string name="guide_root_explanation">Opening Permissions checks Root and may prompt for authorization.</string>
     <string name="guide_diagnostics_optional">Root access · optional</string>
     <string name="guide_revisit_title">Setup guide</string>
     <string name="guide_revisit_summary">Review language, privacy and module setup</string>
@@ -570,7 +570,7 @@
     <string name="privacy_local_body_2">The app has no user-account system, does not request Android\'s INTERNET permission, and disables Android automatic app backup.</string>
     <string name="privacy_scope_title">Permissions and system access</string>
     <string name="privacy_scope_body">Guiyuan uses the SystemUI scope granted by a compatible module framework to adjust status information. Authorization and effective scope depend on the current framework service. You can enable, change, or disable the scope in the corresponding module manager. Root is not mandatory during initial setup and is used for certain diagnostics and process maintenance operations.</string>
-    <string name="privacy_scope_body_2">Guiyuan performs these actions only when you request log viewing, refresh, or report generation, or confirm a relevant process restart. Root may be used where required. Reading or accepting this policy does not start those actions.</string>
+    <string name="privacy_scope_body_2">Opening the first-run Permissions page checks Root status and may show an authorization prompt. Reading logs, generating reports, and maintaining processes still require your action or confirmation. Reading or accepting this policy does not perform those actions.</string>
     <string name="privacy_diagnostics_body_2">Reports you choose to generate may contain version, device model, system environment, runtime state, and relevant logs. Guiyuan does not submit reports automatically. Review them for device identifiers or other sensitive details before exporting or sharing.</string>
     <string name="privacy_retention_title">Storage, backup, and deletion</string>
     <string name="privacy_retention_body">Preferences are stored in the app\'s private area. Backing up or restoring settings requires your action through the Android file picker and a destination you select. Uninstalling normally removes app-private data, but not copies you have saved or transferred elsewhere.</string>
@@ -587,7 +587,7 @@
     <string name="terms_scope_body">Guiyuan is a free, open-source LSPosed module for customizing status information on Android/HyperOS. Its currently verified framework runtime baseline is LSPosed; compatibility with other module frameworks requires separate validation. Guiyuan is not an official product of a device manufacturer, Android, or LSPosed.</string>
     <string name="terms_access_title">Environment and authorization</string>
     <string name="terms_access_body">Compatibility depends on Android, HyperOS, SystemUI, the module framework\'s version, and the actual scope state. A connected framework service does not mean that all features or alternative frameworks have been validated. Enable the module and system privileges only on devices you own or are authorized to administer.</string>
-    <string name="terms_access_body_2">Root is not required for every feature. Log access and certain process maintenance actions may require Root, but should be initiated or confirmed by you. Completing setup does not require granting optional Root access in advance.</string>
+    <string name="terms_access_body_2">Root is not required for every feature. Opening Permissions checks Root status and may prompt for authorization; log access and process maintenance remain user-initiated. Setup can be completed without granting Root.</string>
     <string name="terms_risk_title">Compatibility and risk</string>
     <string name="terms_risk_body">System updates, conflicting modules, or device differences may cause display defects, unavailable features, or SystemUI restarts. Before enabling or updating the module, keep any needed settings backup and know how to disable the module in your framework manager to restore native presentation.</string>
     <string name="terms_risk_body_2">The software is provided as available, without a guarantee of compatibility with every device or system version. This notice does not limit rights that applicable law does not permit to be excluded or change the open-source license.</string>
@@ -603,6 +603,6 @@
     <string name="terms_title">Terms of Use</string>
     <string name="about_terms_summary">Read about usage and compatibility</string>
     <string name="guide_agreement_line">Before using Guiyuan, read the %1$s and %2$s to understand the terms, permissions, and data-handling practices.</string>
-    <string name="guide_permission_later">The following items can be configured later</string>
-    <string name="guide_permission_hint">A checkmark indicates a confirmed state. Tap SystemUI scope to request authorization or Root access to check its status; the check may prompt for authorization.</string>
+    <string name="guide_permission_later">Optional permissions</string>
+    <string name="guide_permission_hint">Authorized items show a checkmark.</string>
 </resources>

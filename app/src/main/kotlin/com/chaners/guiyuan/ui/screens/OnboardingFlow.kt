@@ -6,7 +6,6 @@ import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
@@ -24,6 +23,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -32,7 +36,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -54,8 +57,10 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
@@ -68,7 +73,6 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import top.yukonga.miuix.kmp.blur.BlurColors
-import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -76,6 +80,20 @@ import top.yukonga.miuix.kmp.blur.textureBlur
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
+import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
+import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
+import com.chaners.guiyuan.ui.components.topBarBackdropSource
+import kotlinx.serialization.Serializable
+import top.yukonga.miuix.kmp.nav.core.NavKey
+import top.yukonga.miuix.kmp.nav.core.NavDisplay
+import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
+import top.yukonga.miuix.kmp.nav.core.rememberNavBackStack
+import top.yukonga.miuix.kmp.nav.core.rememberNavSystemCornerRadius
+import top.yukonga.miuix.kmp.nav.transition.NavTransitions
+import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.TooltipBox
 import com.chaners.guiyuan.system.RootShell
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
@@ -95,12 +113,16 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Check
-import top.yukonga.miuix.kmp.icon.extended.Tasks
-import top.yukonga.miuix.kmp.icon.extended.Lock
-import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
+
+@Serializable
+private sealed interface GuidePage : NavKey {
+    @Serializable data object Welcome : GuidePage
+    @Serializable data class Stage(val number: Int) : GuidePage
+    @Serializable data object Complete : GuidePage
+}
 
 // The guide owns only temporary navigation state; existing preferences and
 // framework services remain the authoritative writers for settings and scope.
@@ -110,6 +132,7 @@ internal fun OnboardingFlow(
     onLangChange: (AppLang) -> Unit,
     iconHidden: Boolean,
     onIconHiddenChange: (Boolean) -> Unit,
+    swipeBackEnabled: Boolean,
     onComplete: () -> Unit,
     onExit: (() -> Unit)? = null,
 ) {
@@ -124,9 +147,29 @@ internal fun OnboardingFlow(
     val sysUiInScope = connected?.sysUiInScope == true
     val canRequestScope = connected != null && connected.apiVersion >= 102 &&
         !scopeBusy && !reloadBusy && !restartBusy
+    val swipeBackDirection = when {
+        !swipeBackEnabled -> NavSwipeDirection.None
+        LocalLayoutDirection.current == LayoutDirection.Ltr -> NavSwipeDirection.LeftToRight
+        else -> NavSwipeDirection.RightToLeft
+    }
 
-    // 0 Welcome, 1 permissions, 2 privacy, 3 basic settings, 4 complete.
-    var step by rememberSaveable { mutableIntStateOf(0) }
+    val pages = rememberNavBackStack<GuidePage>(GuidePage.Welcome)
+    val step = when (val current = pages.lastOrNull()) {
+        GuidePage.Welcome -> 0
+        is GuidePage.Stage -> current.number
+        GuidePage.Complete -> 4
+        null -> 0
+    }
+    fun advance() {
+        when (step) {
+            0, 1, 2 -> pages.add(GuidePage.Stage(step + 1))
+            3 -> pages.add(GuidePage.Complete)
+            else -> onComplete()
+        }
+    }
+    fun back() {
+        if (pages.size > 1) pages.removeLastOrNull() else onExit?.invoke()
+    }
     var openDocument by rememberSaveable { mutableStateOf<AgreementDocument?>(null) }
     var policyAccepted by rememberSaveable { mutableStateOf(false) }
     var scopeRequestFailed by remember { mutableStateOf(false) }
@@ -134,60 +177,91 @@ internal fun OnboardingFlow(
     var rootAccess by remember { mutableStateOf<Boolean?>(null) }
     val entryState = rememberAppSettingsEntryState(runtimeBusy = false)
     val coroutineScope = rememberCoroutineScope()
-    val scroll = rememberScrollState()
 
-    LaunchedEffect(step) { scroll.scrollTo(0) }
-    BackHandler(enabled = openDocument != null || step > 0 || onExit != null) {
-        when {
-            openDocument != null -> openDocument = null
-            step > 0 -> step--
-            else -> onExit?.invoke()
+    LaunchedEffect(step) {
+        // Only visiting Permissions triggers a Root status query, never app launch.
+        if (step == 1) {
+            rootChecking = true
+            try {
+                val result = RootShell.execute(context, "id -u", 15L)
+                rootAccess = result.isSuccess && result.output.trim() == "0"
+            } finally {
+                rootChecking = false
+            }
         }
     }
+    BackHandler(enabled = openDocument != null) { openDocument = null }
 
-    if (step == 0 || step == 4) {
-        GuiyuanBrandGuide(
-            completed = step == 4,
-            onNext = { if (step == 4) onComplete() else step++ },
-        )
-    } else {
+    NavDisplay(
+        backStack = pages,
+        onBack = ::back,
+        transition = NavTransitions.MiuixDefault,
+        effects = NavDisplayEffects(
+            cornerClipRadius = rememberNavSystemCornerRadius(),
+            backdropColor = MiuixTheme.colorScheme.surface,
+        ),
+    ) {
+        entry<GuidePage.Welcome> {
+            GuiyuanBrandGuide(completed = false, onNext = ::advance)
+        }
+        entry<GuidePage.Complete>(swipeDismiss = swipeBackDirection) {
+            GuiyuanBrandGuide(completed = true, onNext = onComplete)
+        }
+        entry<GuidePage.Stage>(swipeDismiss = if (openDocument == null) swipeBackDirection else NavSwipeDirection.None) { page ->
+        val step = page.number
         val title = when (step) {
             1 -> stringResource(R.string.guide_permissions_title)
             2 -> stringResource(R.string.guide_privacy_title)
             else -> stringResource(R.string.guide_basic_title)
         }
         val illustration = when (step) {
-            1 -> MiuixIcons.Tasks
-            2 -> MiuixIcons.Lock
-            else -> MiuixIcons.Settings
+            1 -> R.drawable.ic_material_symbol_fact_check
+            2 -> R.drawable.ic_material_symbol_lock
+            else -> R.drawable.ic_material_symbol_settings_applications
         }
-        Scaffold { scaffoldPadding ->
+        val scrollBehavior = MiuixScrollBehavior()
+        val scroll = rememberScrollState()
+        val topBarBackdrop = rememberTopBarBackdrop()
+        Scaffold(
+            topBar = {
+                MiuixBlurredTopBar(
+                    backdrop = topBarBackdrop,
+                    scrollBehavior = scrollBehavior,
+                ) { barColor ->
+                    SmallTopAppBar(
+                        title = "",
+                        color = barColor,
+                        scrollBehavior = scrollBehavior,
+                        navigationIcon = {
+                            TooltipBox(text = stringResource(R.string.back)) {
+                                IconButton(onClick = ::back) {
+                                    Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
+                                }
+                            }
+                        },
+                    )
+                }
+            },
+        ) { scaffoldPadding ->
             Column(
-                modifier = Modifier.fillMaxSize().padding(scaffoldPadding).padding(horizontal = 12.dp),
+                modifier = Modifier.fillMaxSize().topBarBackdropSource(topBarBackdrop)
+                    .padding(scaffoldPadding).padding(horizontal = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Spacer(Modifier.height(50.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(onClick = { step-- }) {
-                        Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
-                    }
-                }
                 Column(
-                    modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(scroll),
+                    modifier = Modifier.weight(1f).fillMaxWidth()
+                        .nestedScroll(scrollBehavior.nestedScrollConnection).verticalScroll(scroll),
                 ) {
                     Spacer(Modifier.height(10.dp))
                     Box(
                         modifier = Modifier.fillMaxWidth().height(70.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
-                            imageVector = illustration,
+                        Image(
+                            painter = painterResource(illustration),
                             contentDescription = null,
-                            modifier = Modifier.size(70.dp),
-                            tint = MiuixTheme.colorScheme.primary,
+                            modifier = Modifier.size(48.dp),
+                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
                         )
                     }
                     Spacer(Modifier.height(8.dp))
@@ -197,8 +271,7 @@ internal fun OnboardingFlow(
                     ) {
                         Text(
                             text = title,
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Normal,
+                            style = MiuixTheme.textStyles.title2,
                             textAlign = TextAlign.Center,
                             color = MiuixTheme.colorScheme.onBackground,
                         )
@@ -229,7 +302,7 @@ internal fun OnboardingFlow(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
-                                style = MiuixTheme.textStyles.body2.copy(fontSize = 13.sp),
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
                             GuidePermissionItem(
@@ -270,25 +343,14 @@ internal fun OnboardingFlow(
                                 },
                                 checked = connected != null,
                             )
-                            Text(
-                                text = stringResource(R.string.guide_permission_hint),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(start = 16.dp, end = 16.dp, top = 16.dp),
-                                style = MiuixTheme.textStyles.body2.copy(fontSize = 13.sp),
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
-                            if (scopeBusy || scopeRequestFailed || rootChecking || rootAccess == false) {
-                                val hint = when {
-                                    scopeBusy -> R.string.guide_scope_requesting
-                                    scopeRequestFailed -> R.string.guide_scope_request_failed
-                                    rootChecking -> R.string.guide_root_checking
-                                    else -> R.string.guide_root_unavailable
-                                }
+                            if (scopeBusy || scopeRequestFailed) {
                                 Text(
-                                    text = stringResource(hint),
-                                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
-                                    style = MiuixTheme.textStyles.body2.copy(fontSize = 13.sp),
+                                    text = stringResource(
+                                        if (scopeBusy) R.string.guide_scope_requesting
+                                        else R.string.guide_scope_request_failed,
+                                    ),
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
                             }
@@ -329,13 +391,13 @@ internal fun OnboardingFlow(
                             Text(
                                 text = linkedText,
                                 modifier = Modifier.fillMaxWidth(),
-                                style = MiuixTheme.textStyles.body2.copy(lineHeight = 26.sp),
+                                style = MiuixTheme.textStyles.body1,
                                 color = MiuixTheme.colorScheme.onSurface,
                             )
                             Spacer(Modifier.height(24.dp))
                             Text(
                                 text = stringResource(R.string.guide_privacy_brief),
-                                style = MiuixTheme.textStyles.body2.copy(lineHeight = 26.sp),
+                                style = MiuixTheme.textStyles.body1,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
                             Spacer(Modifier.height(20.dp))
@@ -344,6 +406,8 @@ internal fun OnboardingFlow(
                                     .fillMaxWidth()
                                     .toggleable(
                                         value = policyAccepted,
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null,
                                         role = Role.Checkbox,
                                         onValueChange = { policyAccepted = it },
                                     )
@@ -386,10 +450,10 @@ internal fun OnboardingFlow(
                     ),
                     modifier = Modifier.fillMaxWidth().widthIn(max = 336.dp).height(50.dp),
                     cornerRadius = 16.dp,
-                    textStyle = MiuixTheme.textStyles.button.copy(fontSize = 17.sp),
+                    textStyle = MiuixTheme.textStyles.button,
                     colors = ButtonDefaults.textButtonColorsPrimary(),
                     enabled = step != 2 || policyAccepted,
-                    onClick = { step++ },
+                    onClick = ::advance,
                 )
                 Spacer(Modifier.height(44.dp))
             }
@@ -405,6 +469,7 @@ internal fun OnboardingFlow(
             ) {
                 openDocument?.let { AgreementSheetBody(it) }
             }
+        }
         }
     }
 }
@@ -545,7 +610,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                     text = stringResource(R.string.guide_start),
                     modifier = Modifier.fillMaxWidth().widthIn(max = 336.dp).height(50.dp),
                     cornerRadius = 16.dp,
-                    textStyle = MiuixTheme.textStyles.button.copy(fontSize = 17.sp),
+                    textStyle = MiuixTheme.textStyles.button,
                     colors = ButtonDefaults.textButtonColors(
                         color = actionColors.container,
                         textColor = actionColors.content,
@@ -554,20 +619,14 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                 )
                 Spacer(Modifier.height(44.dp))
             } else {
-                Box(
-                    modifier = Modifier
-                        .size(70.dp)
-                        .squircleSurface(
-                            color = actionColors.container,
-                            cornerRadius = 35.dp,
-                            extension = 1f,
-                        )
-                        .clickable(
-                            onClickLabel = stringResource(R.string.guide_continue),
-                            role = Role.Button,
-                            onClick = onNext,
-                        ),
-                    contentAlignment = Alignment.Center,
+                val continueLabel = stringResource(R.string.guide_continue)
+                IconButton(
+                    onClick = onNext,
+                    modifier = Modifier.size(70.dp).semantics { contentDescription = continueLabel },
+                    backgroundColor = actionColors.container,
+                    cornerRadius = 35.dp,
+                    minWidth = 70.dp,
+                    minHeight = 70.dp,
                 ) {
                     Canvas(Modifier.width(31.dp).height(22.dp)) {
                         val middle = size.height / 2f
@@ -623,29 +682,34 @@ private fun GuidePermissionItem(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(0.dp),
         pressFeedbackType = if (onClick != null) PressFeedbackType.Sink else PressFeedbackType.None,
-        showIndication = onClick != null,
+        showIndication = false,
         onClick = onClick,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
-                .semantics { stateDescription = status }
-                .padding(horizontal = 16.dp),
+                .heightIn(min = 64.dp)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = title,
-                modifier = Modifier.weight(1f),
-                style = MiuixTheme.textStyles.body1.copy(fontSize = 18.sp),
-                color = MiuixTheme.colorScheme.onSurfaceContainer,
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurfaceContainer,
+                )
+                Text(
+                    text = status,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            }
             if (checked) {
                 Icon(
                     imageVector = MiuixIcons.Basic.Check,
                     contentDescription = null,
-                    modifier = Modifier.size(26.dp),
+                    modifier = Modifier.size(22.dp),
                     tint = checkColor,
                 )
             }

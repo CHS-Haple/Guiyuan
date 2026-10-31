@@ -14,13 +14,13 @@
 
 ### 运行条件与授权
 
-兼容性取决于 Android、HyperOS、SystemUI、模块框架版本及实际作用域状态。当前框架服务显示已连接，不代表所有功能或其他框架已经验证兼容。仅在你拥有或获准管理的设备上启用模块与系统权限。
+兼容性取决于 Android、HyperOS、SystemUI、模块框架版本及实际作用域状态。当前框架服务显示已连接，不代表所有功能或其他框架已经验证兼容。仅在您拥有或获准管理的设备上启用模块与系统权限。
 
-Root 不属于全部功能的必要条件。日志读取和部分进程维护可能需要 Root，但这些操作应由你主动发起或确认；完成初始设置不要求提前授予可选 Root 权限。
+Root 不属于全部功能的必要条件。进入权限设置页面时可能触发 Root 检测及授权提示；日志读取和进程维护仍由您主动发起或确认。
 
 ### 兼容性与风险
 
-系统更新、第三方模块冲突或设备差异可能造成显示异常、功能失效、SystemUI 重启等问题。启用或更新模块前，建议保留必要的配置备份，并确保你知道如何在框架管理器中停用模块以恢复原生显示。
+系统更新、第三方模块冲突或设备差异可能造成显示异常、功能失效、SystemUI 重启等问题。启用或更新模块前，建议保留必要的配置备份，并确保您知道如何在框架管理器中停用模块以恢复原生显示。
 
 软件按现有状态提供，不保证适用于每一台设备或系统版本。本说明不限制适用法律规定的不可排除权利，也不改变开源许可证的规定。
 
@@ -52,7 +52,7 @@ Guiyuan is a free, open-source LSPosed module for customizing status information
 
 Compatibility depends on Android, HyperOS, SystemUI, the module framework's version, and the actual scope state. A connected framework service does not mean that all features or alternative frameworks have been validated. Enable the module and system privileges only on devices you own or are authorized to administer.
 
-Root is not required for every feature. Log access and certain process maintenance actions may require Root, but should be initiated or confirmed by you. Completing setup does not require granting optional Root access in advance.
+Root is not required for every feature. Opening the Permissions step may check Root and prompt for authorization. Log access and process maintenance remain user-initiated.
 
 ### Compatibility and risk
 

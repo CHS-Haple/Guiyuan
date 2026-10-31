@@ -91,6 +91,7 @@ internal fun GyApp(
                 onLangChange = onLangChange,
                 iconHidden = iconHidden,
                 onIconHiddenChange = onIconHiddenChange,
+                swipeBackEnabled = appearance.swipeBack,
                 onComplete = {
                     AppPlatform.completeOnboarding(context)
                     guideDone = true
@@ -349,6 +350,7 @@ internal fun GyApp(
                     onLangChange = onLangChange,
                     iconHidden = iconHidden,
                     onIconHiddenChange = onIconHiddenChange,
+                    swipeBackEnabled = appearance.swipeBack,
                     onComplete = ::navigateBack,
                     onExit = ::navigateBack,
                 )

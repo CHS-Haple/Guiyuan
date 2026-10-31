@@ -6,7 +6,7 @@
 
 ## 简体中文
 
-本政策说明归元在运行、诊断和文件分享过程中会访问哪些信息、如何使用这些信息，以及你可以如何管理。它仅适用于归元本身；Android、模块框架及其他应用的独立行为，应以各自的说明为准。
+本政策说明归元在运行、诊断和文件分享过程中会访问哪些信息、如何使用这些信息，以及您可以如何管理。它仅适用于归元本身；Android、模块框架及其他应用的独立行为，应以各自的说明为准。
 
 ### 本地设置和运行数据
 
@@ -16,31 +16,31 @@
 
 ### 权限与系统访问
 
-归元通过兼容的模块框架获取 SystemUI 作用域，用于调整状态信息显示。授权和实际生效情况由当前框架服务决定，你可以在对应的模块管理器中启用、调整或停用作用域。Root 不是首次启动的强制要求，仅用于部分诊断与进程维护操作。
+归元通过兼容的模块框架获取 SystemUI 作用域，用于调整状态信息显示。授权和实际生效情况由当前框架服务决定，您可以在对应的模块管理器中启用、调整或停用作用域。Root 不是首次启动的强制要求，仅用于部分诊断与进程维护操作。
 
-只有当你主动查看或刷新日志、生成诊断报告，或者确认重启相关进程时，归元才会尝试执行相应操作，并在需要时使用 Root 权限。阅读或同意本政策本身不会触发这些操作。
+进入首次引导的权限设置页面时，归元会检测 Root 状态，可能出现 Root 管理器授权提示。日志读取、报告生成和进程维护仍由您主动发起或确认；阅读或同意本政策本身不会触发这些操作。
 
 ### 诊断日志与报告
 
 诊断功能当前可通过 Root 读取 LSPosed 模块日志路径的相关记录；无法使用该来源时，可能读取系统日志并筛选归元的记录。读取系统日志时底层可能接触其他应用的日志；诊断页面及报告仅使用筛选后的记录。
 
-你主动生成的报告可能包含版本、设备型号、系统环境、运行状态及相关日志。归元不会自动提交报告；导出或分享前，请检查是否含有设备标识或其他敏感信息。
+您主动生成的报告可能包含版本、设备型号、系统环境、运行状态及相关日志。归元不会自动提交报告；导出或分享前，请检查是否含有设备标识或其他敏感信息。
 
 ### 保存、备份与清理
 
-设置保存在应用私有区域；配置备份或恢复由你通过 Android 文件选择器发起并选择位置。卸载应用通常会移除应用私有数据，但不能删除你已经另行保存或传出的副本。
+设置保存在应用私有区域；配置备份或恢复由您通过 Android 文件选择器发起并选择位置。卸载应用通常会移除应用私有数据，但不能删除您已经另行保存或传出的副本。
 
 使用“清空日志”后，归元会以清空时间作为界限，隐藏此前的诊断记录，并在后续报告中排除这些记录；模块框架和系统日志原文件不会被删除。分享报告时生成的文本附件可能保存在 Download/Guiyuan，下一次准备分享时会清理较早的同类附件。此前手动保存或发出的副本不受影响。
 
 ### 分享与第三方平台
 
-归元不会自动向项目维护者发送设置、系统状态或诊断报告。只有当你主动导出文件、使用系统分享功能，或者向 GitHub 等平台提交反馈时，相关信息才会进入你选择的位置或服务。保存后的文件和第三方平台上的内容由相应接收方管理。
+归元不会自动向项目维护者发送设置、系统状态或诊断报告。只有当您主动导出文件、使用系统分享功能，或者向 GitHub 等平台提交反馈时，相关信息才会进入您选择的位置或服务。保存后的文件和第三方平台上的内容由相应接收方管理。
 
 Android、模块框架、设备厂商及其他应用的独立数据处理行为不属于归元控制范围；本政策不替代它们各自的隐私说明。
 
-### 你的选择与安全提示
+### 您的选择与安全提示
 
-你可以在归元中修改或恢复设置，在对应的模块管理器中停用作用域，并决定是否授予可选 Root 权限、生成诊断报告或分享文件。关闭某项权限可能使对应功能不可用；已经发送至其他应用或平台的资料，需要到相应位置管理。
+您可以在归元中修改或恢复设置，在对应的模块管理器中停用作用域，并决定是否授予可选 Root 权限、生成诊断报告或分享文件。关闭某项权限可能使对应功能不可用；已经发送至其他应用或平台的资料，需要到相应位置管理。
 
 请避免公开发布包含个人信息的日志或配置。归元不能承诺删除其他程序保留的日志，也不能保证第三方接收环境绝对安全。
 
@@ -64,7 +64,7 @@ The app has no user-account system, does not request Android's INTERNET permissi
 
 Guiyuan uses the SystemUI scope granted by a compatible module framework to adjust status information. Authorization and effective scope depend on the current framework service. You can enable, change, or disable the scope in the corresponding module manager. Root is not mandatory during initial setup and is used for certain diagnostics and process maintenance operations.
 
-Guiyuan performs these actions only when you request log viewing, refresh, or report generation, or confirm a relevant process restart. Root may be used where required. Reading or accepting this policy does not start those actions.
+Opening the Permissions step of first-run setup checks Root status and may display an authorization prompt. Log viewing, report generation, and process maintenance remain user-initiated. Reading or accepting this policy does not start these actions.
 
 ### Diagnostic logs and reports
 
