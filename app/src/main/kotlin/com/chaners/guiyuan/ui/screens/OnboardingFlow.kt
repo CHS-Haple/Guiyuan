@@ -201,9 +201,6 @@ internal fun OnboardingFlow(
         // the new page has had a chance to recompose.
         if (next !in pages) pages.add(next)
     }
-    fun back() {
-        if (pages.size > 1) pages.removeLastOrNull() else onExit?.invoke()
-    }
     var openDocument by rememberSaveable { mutableStateOf<AgreementDocument?>(null) }
     var documentVisible by rememberSaveable { mutableStateOf(false) }
     var policyAccepted by rememberSaveable { mutableStateOf(false) }
@@ -212,6 +209,11 @@ internal fun OnboardingFlow(
     var rootAccess by remember { mutableStateOf<Boolean?>(null) }
     var rootRefresh by remember { mutableIntStateOf(0) }
     var expandedPermission by rememberSaveable { mutableIntStateOf(0) }
+    fun back() {
+        // Let the active MIUIX overlay own Back until its dismissal finishes.
+        if (openDocument != null || showPermissionWarning || advanceAfterWarning) return
+        if (pages.size > 1) pages.removeLastOrNull() else onExit?.invoke()
+    }
     fun refreshPermissionStatus() {
         app.refreshXposedStatus()
         rootRefresh++
@@ -251,8 +253,7 @@ internal fun OnboardingFlow(
 
     NavDisplay(
         backStack = pages,
-        // The sheet owns live Back gestures; block page navigation until its exit completes.
-        onBack = { if (openDocument == null) back() },
+        onBack = ::back,
         transition = guideStepTransition,
         effects = NavDisplayEffects(
             enableCornerClip = false,
