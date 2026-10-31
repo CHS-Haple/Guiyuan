@@ -524,7 +524,7 @@
     <string name="guide_privacy_title">协议与声明</string>
     <string name="guide_privacy_description">请阅读使用条款与隐私政策，了解使用责任和数据处理方式。</string>
     <string name="guide_privacy_brief">归元主要在设备本地运行。诊断可能读取系统日志，但不会自动上传报告。导出和分享由您决定。</string>
-    <string name="guide_privacy_ack">我已阅读并了解《隐私政策》，并同意《使用条款》</string>
+    <string name="guide_privacy_ack">我已阅读《隐私政策》，并同意《使用条款》</string>
     <string name="guide_agree_continue">同意并继续</string>
     <string name="guide_scope_title">模块设置</string>
     <string name="guide_scope_description">归元通过兼容的模块框架调整系统状态信息的显示方式。</string>
