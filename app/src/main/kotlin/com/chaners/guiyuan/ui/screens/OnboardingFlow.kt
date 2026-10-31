@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -24,6 +25,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -58,6 +60,8 @@ import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.components.UiOverlayBottomSheet
 import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
@@ -356,6 +360,21 @@ internal fun OnboardingFlow(
 
 @Composable
 private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
+    val lifecycle = LocalActivity.current?.lifecycle
+    var resumed by remember(lifecycle) {
+        mutableStateOf(lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true)
+    }
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> resumed = true
+                Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> resumed = false
+                else -> Unit
+            }
+        }
+        lifecycle?.addObserver(observer)
+        onDispose { lifecycle?.removeObserver(observer) }
+    }
     val surface = MiuixTheme.colorScheme.surface
     val accent = MiuixTheme.colorScheme.primary
     // The established About shader owns the mixed colors. Keep a bounded
@@ -370,7 +389,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
     val wave = remember { Animatable(0f) }
     Box(modifier = Modifier.fillMaxSize().background(fallback)) {
         BgEffectBackground(
-            dynamicBackground = true,
+            dynamicBackground = resumed,
             modifier = Modifier.fillMaxSize(),
             isFullSize = true,
         ) {}
@@ -389,6 +408,7 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                         wavePhase = 0f,
                         onWaveRelease = {},
                         interactive = false,
+                        active = resumed,
                     )
                     Spacer(Modifier.height(22.dp))
                     Text(
