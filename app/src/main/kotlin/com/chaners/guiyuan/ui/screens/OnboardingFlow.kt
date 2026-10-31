@@ -237,7 +237,7 @@ internal fun OnboardingFlow(
             else -> stringResource(R.string.guide_basic_title)
         }
         val illustration = when (step) {
-            1 -> R.drawable.ic_material_symbol_fact_check
+            1 -> R.drawable.ic_material_symbol_shield
             2 -> R.drawable.ic_material_symbol_lock
             else -> R.drawable.ic_material_symbol_settings_applications
         }
