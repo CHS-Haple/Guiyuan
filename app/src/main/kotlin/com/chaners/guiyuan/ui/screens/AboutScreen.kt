@@ -32,6 +32,8 @@ import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.system.RuntimeEnv
 import com.chaners.guiyuan.system.XposedStatus
+import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
@@ -75,6 +77,7 @@ internal fun AboutScreen(
     val xposedStatus by app.xposedStatus.collectAsState()
     val uriHandler = LocalUriHandler.current
     val listState = rememberLazyListState()
+    val os4 = LocalUiStyle.current == UiStyle.OS4
     val density = LocalDensity.current
     val backdrop = rememberLayerBackdrop()
     val blur = remember { isRuntimeShaderSupported() }
@@ -156,7 +159,16 @@ internal fun AboutScreen(
                 versionProgress = collapse.first,
                 nameProgress = collapse.second,
                 iconProgress = collapse.third,
-                onHeight = { if (heroHeight != it) heroHeight = it },
+                onHeight = { measuredHeight ->
+                    // The OS4 bar already owns its changing top inset in LazyColumn's padding.
+                    // Do not feed that inset back into the About spacer on each scroll frame.
+                    val spacerContentHeight = if (os4) {
+                        (measuredHeight - padding.calculateTopPadding()).coerceAtLeast(0.dp)
+                    } else {
+                        measuredHeight
+                    }
+                    if (heroHeight != spacerContentHeight) heroHeight = spacerContentHeight
+                },
                 onIconBottom = {
                     if (listState.firstVisibleItemIndex == 0 &&
                         listState.firstVisibleItemScrollOffset == 0 && iconBottom != it
