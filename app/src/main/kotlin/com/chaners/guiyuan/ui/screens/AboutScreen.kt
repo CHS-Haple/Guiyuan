@@ -228,16 +228,6 @@ internal fun AboutScreen(
                         },
                     )
                     ArrowPreference(
-                        title = stringResource(R.string.guide_revisit_title),
-                        summary = stringResource(R.string.guide_revisit_summary),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_format_list_bulleted,
-                            )
-                        },
-                        onClick = onOpenGuide,
-                    )
-                    ArrowPreference(
                         title = stringResource(R.string.terms_title),
                         summary = stringResource(R.string.about_terms_summary),
                         startAction = {
@@ -278,6 +268,16 @@ internal fun AboutScreen(
                             )
                         },
                         onClick = onOpenThirdParty,
+                    )
+                    ArrowPreference(
+                        title = stringResource(R.string.guide_revisit_title),
+                        summary = stringResource(R.string.guide_revisit_summary),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_format_list_bulleted,
+                            )
+                        },
+                        onClick = onOpenGuide,
                     )
                 }
                 SmallTitle(stringResource(R.string.section_device_system))
