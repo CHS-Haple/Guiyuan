@@ -140,6 +140,7 @@ internal fun AboutScreen(
         title = stringResource(R.string.about_title),
         onBack = onBack,
         listState = listState,
+        compactTopBar = os4,
         titleAlpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
         background = {
             BgEffectBackground(
@@ -159,16 +160,7 @@ internal fun AboutScreen(
                 versionProgress = collapse.first,
                 nameProgress = collapse.second,
                 iconProgress = collapse.third,
-                onHeight = { measuredHeight ->
-                    // The OS4 bar already owns its changing top inset in LazyColumn's padding.
-                    // Do not feed that inset back into the About spacer on each scroll frame.
-                    val spacerContentHeight = if (os4) {
-                        (measuredHeight - padding.calculateTopPadding()).coerceAtLeast(0.dp)
-                    } else {
-                        measuredHeight
-                    }
-                    if (heroHeight != spacerContentHeight) heroHeight = spacerContentHeight
-                },
+                onHeight = { if (heroHeight != it) heroHeight = it },
                 onIconBottom = {
                     if (listState.firstVisibleItemIndex == 0 &&
                         listState.firstVisibleItemScrollOffset == 0 && iconBottom != it
