@@ -44,7 +44,8 @@ private val privacySections = listOf(
 private val termsSections = listOf(
     AgreementSection(R.string.terms_scope_title, listOf(R.string.terms_scope_body)),
     AgreementSection(R.string.terms_access_title, listOf(R.string.terms_access_body, R.string.terms_access_body_2)),
-    AgreementSection(R.string.terms_risk_title, listOf(R.string.terms_risk_body, R.string.terms_risk_body_2)),
+    AgreementSection(R.string.terms_risk_title, listOf(R.string.terms_risk_body)),
+    AgreementSection(R.string.terms_disclaimer_title, listOf(R.string.terms_disclaimer_body, R.string.terms_disclaimer_body_2)),
     AgreementSection(R.string.terms_license_title, listOf(R.string.terms_license_body, R.string.terms_license_body_2)),
     AgreementSection(R.string.terms_conduct_title, listOf(R.string.terms_conduct_body)),
     AgreementSection(R.string.terms_updates_title, listOf(R.string.terms_updates_body)),
