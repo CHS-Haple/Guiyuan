@@ -979,11 +979,13 @@ internal fun resolveGuideActionColors(surface: Color, onSurface: Color, logoTint
     // show through. Check the two limiting backdrop colors as well as the
     // strongest possible light/dark pigment before accepting a translucent stop.
     for (opacity in listOf(0.82f, 0.86f, 0.90f, 0.94f, 1f)) {
-        for (baseMix in listOf(0.24f, 0.16f, 0.08f, 0f)) {
-            val container = lerp(logoTint, onSurface, baseMix).copy(alpha = opacity)
-            for (endMix in listOf(0f, 0.10f, 0.20f)) {
-                val gradientEnd = lerp(logoTint, onSurface, endMix).copy(alpha = opacity)
-                for (materialAlpha in listOf(0.22f, 0.18f, 0.14f, 0.10f, 0.06f, 0f)) {
+        // Retain the strongest safe live brand material before falling back to
+        // a purely static translucent color.
+        for (materialAlpha in listOf(0.22f, 0.18f, 0.14f, 0.10f, 0.06f, 0f)) {
+            for (baseMix in listOf(0.24f, 0.16f, 0.08f, 0f)) {
+                val container = lerp(logoTint, onSurface, baseMix).copy(alpha = opacity)
+                for (endMix in listOf(0f, 0.10f, 0.20f)) {
+                    val gradientEnd = lerp(logoTint, onSurface, endMix).copy(alpha = opacity)
                     val contrastSafe = listOf(0f, 0.25f, 0.5f, 0.75f, 1f).all { position ->
                         val stop = lerp(container, gradientEnd, position)
                         listOf(Color.Black, Color.White).all { background ->

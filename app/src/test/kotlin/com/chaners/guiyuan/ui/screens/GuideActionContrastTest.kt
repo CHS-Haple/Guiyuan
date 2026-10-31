@@ -48,7 +48,8 @@ class GuideActionContrastTest {
         val action = resolveGuideActionColors(Color.White, Color.Black, logoTint)
         assertTrue(action.materialAlpha > 0f)
         assertTrue("The branded background should have visible tonal variation", action.container != action.gradientEnd)
-        assertEquals("The bright end must use the logo's actual tint", logoTint, action.gradientEnd)
+        assertEquals("The gradient must keep the logo tint's alpha", action.container.alpha, action.gradientEnd.alpha, 0.00001f)
+        assertTrue("The light-glass base must actually remain translucent", action.container.alpha < 1f)
         assertEquals(Color.White, action.content)
     }
 }
