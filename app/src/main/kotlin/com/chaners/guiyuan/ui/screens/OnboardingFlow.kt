@@ -67,10 +67,10 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -100,6 +100,7 @@ import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import top.yukonga.miuix.kmp.glass.GlassIconButton
 import com.chaners.guiyuan.system.RootShell
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
@@ -122,6 +123,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Help
@@ -279,6 +281,28 @@ internal fun OnboardingFlow(
         val scroll = rememberScrollState()
         val topBarBackdrop = rememberTopBarBackdrop()
         val os4 = LocalUiStyle.current == UiStyle.OS4
+        val refreshAction: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {
+            if (step == 1) {
+                val label = stringResource(R.string.guide_refresh_status)
+                TooltipBox(text = label) {
+                    if (os4) {
+                        GlassIconButton(onClick = ::refreshPermissionStatus) {
+                            Icon(
+                                imageVector = MiuixIcons.Regular.Refresh,
+                                contentDescription = label,
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = ::refreshPermissionStatus) {
+                            Icon(
+                                imageVector = MiuixIcons.Regular.Refresh,
+                                contentDescription = label,
+                            )
+                        }
+                    }
+                }
+            }
+        }
         // Match the in-app Settings top bar instead of mixing a glass back control
         // into the OS3 bar. The guide has its own content heading, hence compact.
         CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
@@ -292,6 +316,7 @@ internal fun OnboardingFlow(
                             scrollBehavior = scrollBehavior,
                             compact = true,
                             navigationIcon = { UiTopBarNavigationIcon(onBack = ::back) },
+                            actions = refreshAction,
                             unclippedNavigationIcon = true,
                         )
                     } else {
@@ -304,6 +329,7 @@ internal fun OnboardingFlow(
                                 color = barColor,
                                 scrollBehavior = scrollBehavior,
                                 navigationIcon = { UiTopBarNavigationIcon(onBack = ::back) },
+                                actions = refreshAction,
                             )
                         }
                     }
@@ -368,8 +394,6 @@ internal fun OnboardingFlow(
                                         XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_help)
                                         else -> null
                                     },
-                                    refreshLabel = stringResource(R.string.guide_refresh_status),
-                                    onRefresh = ::refreshPermissionStatus,
                                 )
                             }
                             Spacer(Modifier.height(12.dp))
@@ -408,8 +432,6 @@ internal fun OnboardingFlow(
                                                 }) scopeRequestFailed = true
                                         }
                                     } else null,
-                                    refreshLabel = stringResource(R.string.guide_refresh_status),
-                                    onRefresh = ::refreshPermissionStatus,
                                 )
                             }
                             SmallTitle(text = stringResource(R.string.guide_permission_later))
@@ -431,8 +453,6 @@ internal fun OnboardingFlow(
                                         expandedPermission = if (expandedPermission == 3) 0 else 3
                                     },
                                     guidance = if (rootAccess == false) stringResource(R.string.guide_root_help) else null,
-                                    refreshLabel = stringResource(R.string.guide_refresh_status),
-                                    onRefresh = ::refreshPermissionStatus,
                                 )
                             }
                             if (scopeBusy || scopeRequestFailed) {
@@ -853,8 +873,6 @@ private fun GuidePermissionItem(
     onToggleDetails: () -> Unit,
     guidance: String? = null,
     onClick: (() -> Unit)? = null,
-    refreshLabel: String,
-    onRefresh: () -> Unit,
 ) {
     val detailsLabel = stringResource(
         if (expanded) R.string.guide_details_collapse else R.string.guide_details_expand,
@@ -863,34 +881,20 @@ private fun GuidePermissionItem(
         startAction = { SemanticLeadingIcon(iconRes = iconRes) },
         onClick = onClick,
         endActions = {
-            if (!checked && !checking) {
-                IconButton(onClick = onRefresh, modifier = Modifier.size(40.dp)) {
-                    Icon(
-                        imageVector = MiuixIcons.Regular.Refresh,
-                        contentDescription = refreshLabel,
-                        modifier = Modifier.size(22.dp),
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    )
-                }
-            }
-            if (checking) {
-                Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "…",
-                        style = MiuixTheme.textStyles.headline1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-            } else {
+            if (checked) {
                 Icon(
-                    painter = painterResource(
-                        if (checked) R.drawable.ic_material_symbol_check
-                        else R.drawable.ic_material_symbol_priority_high,
-                    ),
-                    contentDescription = null,
+                    imageVector = MiuixIcons.Regular.Ok,
+                    contentDescription = status,
                     modifier = Modifier.size(24.dp),
-                    tint = if (checked) MiuixTheme.colorScheme.primary
-                        else MiuixTheme.colorScheme.error,
+                    tint = MiuixTheme.colorScheme.primary,
+                )
+            } else {
+                Text(
+                    text = status,
+                    style = MiuixTheme.textStyles.body2,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
         },
@@ -911,11 +915,6 @@ private fun GuidePermissionItem(
                 )
             }
         }
-        Text(
-            text = status,
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
     }
     AnimatedVisibility(
         visible = expanded,
