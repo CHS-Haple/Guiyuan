@@ -1,0 +1,470 @@
+package com.chaners.guiyuan.ui.screens
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.chaners.guiyuan.GyApplication
+import com.chaners.guiyuan.R
+import com.chaners.guiyuan.settings.AppLang
+import com.chaners.guiyuan.system.RootShell
+import com.chaners.guiyuan.system.ScopeRestart
+import com.chaners.guiyuan.system.XposedStatus
+import com.chaners.guiyuan.ui.components.UiOverlayBottomSheet
+import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
+import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Checkbox
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+// The guide owns only temporary navigation state; existing preferences and
+// framework services remain the authoritative writers for settings and scope.
+@Composable
+internal fun OnboardingFlow(
+    lang: AppLang,
+    onLangChange: (AppLang) -> Unit,
+    iconHidden: Boolean,
+    onIconHiddenChange: (Boolean) -> Unit,
+    onComplete: () -> Unit,
+    onExit: (() -> Unit)? = null,
+) {
+    val context = LocalContext.current.applicationContext
+    val app = remember(context) { context as GyApplication }
+    val framework by app.xposedStatus.collectAsState()
+    val scopeBusy by app.scopeRequestInFlight.collectAsState(initial = app.scopeRequestActive)
+    val reloadBusy by app.hotReloadInFlight.collectAsState(initial = app.hotReloadActive)
+    val restartState by ScopeRestart.state.collectAsState()
+    val restartBusy = restartState is ScopeRestart.State.Running
+    val connected = framework as? XposedStatus.Connected
+    val sysUiInScope = connected?.sysUiInScope == true
+    val canRequestScope = connected != null && connected.apiVersion >= 102 &&
+        !scopeBusy && !reloadBusy && !restartBusy
+
+    // 0 Welcome, 1 permissions, 2 privacy, 3 basic settings, 4 complete.
+    var step by rememberSaveable { mutableIntStateOf(0) }
+    var policyOpen by rememberSaveable { mutableStateOf(false) }
+    var policyAccepted by rememberSaveable { mutableStateOf(false) }
+    var scopeRequestFailed by remember { mutableStateOf(false) }
+    var rootChecking by remember { mutableStateOf(false) }
+    var rootAccess by remember { mutableStateOf<Boolean?>(null) }
+    val entryState = rememberAppSettingsEntryState(runtimeBusy = false)
+    val coroutineScope = rememberCoroutineScope()
+    val scroll = rememberScrollState()
+
+    LaunchedEffect(step) { scroll.scrollTo(0) }
+    BackHandler(enabled = policyOpen || step > 0 || onExit != null) {
+        when {
+            policyOpen -> policyOpen = false
+            step > 0 -> step--
+            else -> onExit?.invoke()
+        }
+    }
+
+    if (step == 0 || step == 4) {
+        GuiyuanBrandGuide(
+            completed = step == 4,
+            onNext = { if (step == 4) onComplete() else step++ },
+        )
+    } else {
+        val title = when (step) {
+            1 -> stringResource(R.string.guide_permissions_title)
+            2 -> stringResource(R.string.guide_privacy_title)
+            else -> stringResource(R.string.guide_basic_title)
+        }
+        val illustration = when (step) {
+            1 -> R.drawable.ic_material_symbol_extension
+            2 -> R.drawable.ic_material_symbol_lock
+            else -> R.drawable.ic_material_symbol_language
+        }
+        Scaffold { scaffoldPadding ->
+            Column(
+                modifier = Modifier.fillMaxSize().padding(scaffoldPadding).padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = { step-- }) {
+                        Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
+                    }
+                }
+                Column(
+                    modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(scroll),
+                ) {
+                    Spacer(Modifier.height(32.dp))
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(126.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Image(
+                            painter = painterResource(illustration),
+                            contentDescription = null,
+                            modifier = Modifier.size(100.dp),
+                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.primary),
+                        )
+                    }
+                    Text(
+                        text = title,
+                        modifier = Modifier.fillMaxWidth(),
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(40.dp))
+                    when (step) {
+                        1 -> {
+                            GuideGroupLabel(stringResource(R.string.guide_module_group))
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Box(Modifier.padding(horizontal = 18.dp, vertical = 19.dp)) {
+                                    GuideStatusRow(
+                                        title = stringResource(R.string.guide_framework),
+                                        detail = when (framework) {
+                                            XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
+                                            XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_offline)
+                                            XposedStatus.QueryUnavailable -> stringResource(R.string.guide_status_unknown)
+                                            is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
+                                        },
+                                        active = connected != null,
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Box(Modifier.padding(horizontal = 18.dp, vertical = 19.dp)) {
+                                    GuideStatusRow(
+                                        title = stringResource(R.string.guide_sysui_scope),
+                                        detail = when {
+                                            sysUiInScope -> stringResource(R.string.guide_scope_ready)
+                                            connected == null -> stringResource(R.string.guide_status_unknown)
+                                            connected.apiVersion < 102 -> stringResource(R.string.guide_api_unsupported)
+                                            else -> stringResource(R.string.guide_scope_not_ready)
+                                        },
+                                        active = sysUiInScope,
+                                    )
+                                }
+                            }
+                            if (!sysUiInScope) {
+                                TextButton(
+                                    text = stringResource(R.string.guide_request_scope),
+                                    onClick = {
+                                        scopeRequestFailed = false
+                                        if (!app.requestSysUiScope { approved ->
+                                                scopeRequestFailed = !approved
+                                            }) scopeRequestFailed = true
+                                    },
+                                    enabled = canRequestScope,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                            if (scopeBusy || scopeRequestFailed) {
+                                Text(
+                                    text = stringResource(
+                                        if (scopeBusy) R.string.guide_scope_requesting
+                                        else R.string.guide_scope_request_failed,
+                                    ),
+                                    modifier = Modifier.padding(vertical = 8.dp),
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                )
+                            }
+                            GuideGroupLabel(stringResource(R.string.guide_diagnostics_optional))
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(18.dp)) {
+                                    GuideStatusRow(
+                                        title = stringResource(R.string.guide_root_title),
+                                        detail = when {
+                                            rootChecking -> stringResource(R.string.guide_root_checking)
+                                            rootAccess == true -> stringResource(R.string.guide_root_granted)
+                                            rootAccess == false -> stringResource(R.string.guide_root_unavailable)
+                                            else -> stringResource(R.string.guide_root_not_checked)
+                                        },
+                                        active = rootAccess == true,
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = stringResource(R.string.guide_root_explanation),
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    )
+                                }
+                            }
+                            TextButton(
+                                text = stringResource(R.string.guide_root_check_action),
+                                onClick = {
+                                    if (!rootChecking) {
+                                        coroutineScope.launch {
+                                            rootChecking = true
+                                            try {
+                                                val result = RootShell.execute(
+                                                    context = context,
+                                                    command = "id -u",
+                                                    timeoutSeconds = 15L,
+                                                )
+                                                rootAccess = result.isSuccess && result.output.trim() == "0"
+                                            } finally {
+                                                rootChecking = false
+                                            }
+                                        }
+                                    }
+                                },
+                                enabled = !rootChecking,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Text(
+                                text = stringResource(R.string.guide_permissions_note),
+                                modifier = Modifier.padding(top = 4.dp),
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                        }
+                        2 -> {
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(18.dp)) {
+                                    Text(
+                                        text = stringResource(R.string.guide_privacy_brief),
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    TextButton(
+                                        text = stringResource(R.string.guide_read_policy),
+                                        onClick = { policyOpen = true },
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(14.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .toggleable(
+                                        value = policyAccepted,
+                                        role = Role.Checkbox,
+                                        onValueChange = { policyAccepted = it },
+                                    )
+                                    .padding(vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Checkbox(
+                                    state = if (policyAccepted) ToggleableState.On else ToggleableState.Off,
+                                    onClick = null,
+                                )
+                                Text(
+                                    text = stringResource(R.string.guide_privacy_ack),
+                                    style = MiuixTheme.textStyles.body2,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                        }
+                        3 -> {
+                            GuideGroupLabel(stringResource(R.string.guide_basic_group))
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                AppSettingsRows(
+                                    lang = lang,
+                                    iconHidden = iconHidden,
+                                    onLangChange = onLangChange,
+                                    onIconHiddenChange = onIconHiddenChange,
+                                    entryState = entryState,
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(24.dp))
+                }
+                TextButton(
+                    text = stringResource(
+                        if (step == 2) R.string.guide_agree_continue else R.string.guide_continue,
+                    ),
+                    modifier = Modifier.fillMaxWidth().widthIn(max = 336.dp).height(50.dp),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    enabled = step != 2 || policyAccepted,
+                    onClick = { step++ },
+                )
+                Spacer(Modifier.height(24.dp))
+            }
+        }
+    }
+
+    AppSettingsEntryDialogs(entryState)
+    UiOverlayBottomSheet(
+        show = policyOpen,
+        modifier = Modifier.fillMaxHeight(0.85f),
+        title = stringResource(R.string.privacy_title),
+        backgroundColor = MiuixTheme.colorScheme.background,
+        insideMargin = DpSize(0.dp, 0.dp),
+        onDismissRequest = { policyOpen = false },
+    ) {
+        PrivacyPolicySheetBody()
+    }
+}
+
+@Composable
+private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
+    val surface = MiuixTheme.colorScheme.surface
+    val accent = MiuixTheme.colorScheme.primary
+    // The established About shader owns the mixed colors. Keep a bounded
+    // theme-color fallback for devices without RuntimeShader support.
+    val fallback = Brush.linearGradient(
+        listOf(
+            lerp(surface, accent, 0.25f),
+            lerp(surface, accent, 0.06f),
+            lerp(surface, accent, 0.19f),
+        ),
+    )
+    val wave = remember { Animatable(0f) }
+    Box(modifier = Modifier.fillMaxSize().background(fallback)) {
+        BgEffectBackground(
+            dynamicBackground = true,
+            modifier = Modifier.fillMaxSize(),
+            isFullSize = true,
+        ) {}
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    GuiyuanAnimatedIdentityMark(
+                        markSize = 106.dp,
+                        wave = wave,
+                        wavePhase = 0f,
+                        onWaveRelease = {},
+                        interactive = false,
+                    )
+                    Spacer(Modifier.height(22.dp))
+                    Text(
+                        text = stringResource(R.string.product_name),
+                        fontSize = 43.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        color = MiuixTheme.colorScheme.onSurface,
+                    )
+                    if (completed) {
+                        Spacer(Modifier.height(36.dp))
+                        Text(
+                            text = stringResource(R.string.guide_done_title),
+                            fontSize = 24.sp,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                    }
+                }
+            }
+            if (completed) {
+                TextButton(
+                    text = stringResource(R.string.guide_start),
+                    modifier = Modifier.fillMaxWidth().widthIn(max = 336.dp).height(50.dp),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    onClick = onNext,
+                )
+                Spacer(Modifier.height(44.dp))
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(70.dp)
+                        .clip(CircleShape)
+                        .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.67f))
+                        .clickable(onClickLabel = stringResource(R.string.guide_continue), onClick = onNext),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    val arrowColor = MiuixTheme.colorScheme.background
+                    Canvas(Modifier.size(32.dp)) {
+                        val middle = size.height / 2f
+                        val end = size.width * 0.87f
+                        drawLine(arrowColor, Offset(size.width * 0.12f, middle), Offset(end, middle), strokeWidth = 3.dp.toPx())
+                        drawLine(arrowColor, Offset(end - size.width * 0.30f, middle - size.width * 0.30f), Offset(end, middle), strokeWidth = 3.dp.toPx())
+                        drawLine(arrowColor, Offset(end - size.width * 0.30f, middle + size.width * 0.30f), Offset(end, middle), strokeWidth = 3.dp.toPx())
+                    }
+                }
+                Spacer(Modifier.height(154.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun GuideGroupLabel(text: String) {
+    Text(
+        text = text,
+        modifier = Modifier.padding(start = 10.dp, top = 10.dp, bottom = 10.dp),
+        style = MiuixTheme.textStyles.body2,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+    )
+}
+
+@Composable
+private fun GuideStatusRow(title: String, detail: String, active: Boolean) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = title, modifier = Modifier.weight(1f), style = MiuixTheme.textStyles.body1)
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = detail,
+            textAlign = TextAlign.End,
+            style = MiuixTheme.textStyles.body2,
+            color = if (active) MiuixTheme.colorScheme.primary
+                else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+    }
+}

@@ -66,6 +66,8 @@ private data class AboutDependency(
 internal fun AboutScreen(
     onBack: () -> Unit,
     onOpenThirdParty: () -> Unit,
+    onOpenPrivacy: () -> Unit,
+    onOpenGuide: () -> Unit,
     onOpenScopes: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -256,6 +258,26 @@ internal fun AboutScreen(
                                 if (BuildConfig.REPO_LINK_ENABLED) ABOUT_LICENSE_URL else GPL_LICENSE_URL,
                             )
                         },
+                    )
+                    ArrowPreference(
+                        title = stringResource(R.string.privacy_title),
+                        summary = stringResource(R.string.about_privacy_summary),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_lock,
+                            )
+                        },
+                        onClick = onOpenPrivacy,
+                    )
+                    ArrowPreference(
+                        title = stringResource(R.string.guide_revisit_title),
+                        summary = stringResource(R.string.guide_revisit_summary),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_language,
+                            )
+                        },
+                        onClick = onOpenGuide,
                     )
                     ArrowPreference(
                         title = stringResource(R.string.about_third_party_title),
