@@ -158,7 +158,7 @@ internal fun OnboardingFlow(
         GuidePage.Welcome -> 0
         is GuidePage.Stage -> current.number
         GuidePage.Complete -> 4
-        null -> 0
+        else -> 0 // NavBackStack stores NavKey, not GuidePage.
     }
     fun advance() {
         val next = when (step) {
