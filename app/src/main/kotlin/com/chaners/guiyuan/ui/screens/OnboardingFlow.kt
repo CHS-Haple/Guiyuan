@@ -507,7 +507,12 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                 TextButton(
                     text = stringResource(R.string.guide_start),
                     modifier = Modifier.fillMaxWidth().widthIn(max = 336.dp).height(50.dp),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    cornerRadius = 16.dp,
+                    textStyle = MiuixTheme.textStyles.button.copy(fontSize = 17.sp),
+                    colors = ButtonDefaults.textButtonColors(
+                        color = Color(0x99000000),
+                        textColor = Color.White,
+                    ),
                     onClick = onNext,
                 )
                 Spacer(Modifier.height(44.dp))
@@ -516,20 +521,21 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
                     modifier = Modifier
                         .size(70.dp)
                         .clip(CircleShape)
-                        .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.67f))
+                        .background(Color(0x99000000))
                         .clickable(onClickLabel = stringResource(R.string.guide_continue), onClick = onNext),
                     contentAlignment = Alignment.Center,
                 ) {
-                    val arrowColor = MiuixTheme.colorScheme.background
-                    Canvas(Modifier.size(32.dp)) {
+                    Canvas(Modifier.width(31.dp).height(22.dp)) {
                         val middle = size.height / 2f
-                        val end = size.width * 0.87f
-                        drawLine(arrowColor, Offset(size.width * 0.12f, middle), Offset(end, middle), strokeWidth = 3.dp.toPx())
-                        drawLine(arrowColor, Offset(end - size.width * 0.30f, middle - size.width * 0.30f), Offset(end, middle), strokeWidth = 3.dp.toPx())
-                        drawLine(arrowColor, Offset(end - size.width * 0.30f, middle + size.width * 0.30f), Offset(end, middle), strokeWidth = 3.dp.toPx())
+                        val end = size.width * 0.96f
+                        val start = size.width * 0.04f
+                        val wing = size.height * 0.42f
+                        drawLine(Color.White, Offset(start, middle), Offset(end, middle), strokeWidth = 2.6.dp.toPx())
+                        drawLine(Color.White, Offset(end - wing, middle - wing), Offset(end, middle), strokeWidth = 2.6.dp.toPx())
+                        drawLine(Color.White, Offset(end - wing, middle + wing), Offset(end, middle), strokeWidth = 2.6.dp.toPx())
                     }
                 }
-                Spacer(Modifier.height(154.dp))
+                Spacer(Modifier.weight(0.28f))
             }
         }
     }
