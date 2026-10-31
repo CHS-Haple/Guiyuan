@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Guiyuan</string>
-    <string name="app_description">An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and Wi-Fi information into a compact status bar indicator.</string>
+    <string name="app_description">A status-bar extension for Xiaomi HyperOS that combines battery, mobile network, and Wi-Fi information into a compact indicator using a compatible module framework.</string>
 
     <string name="home_title">Guiyuan</string>
     <string name="hot_reload">Hot reload Guiyuan</string>
@@ -528,7 +528,7 @@
     <string name="guide_privacy_ack">I have read and agree to the Terms of Use and Privacy Policy</string>
     <string name="guide_agree_continue">Agree and continue</string>
     <string name="guide_scope_title">Set up the module</string>
-    <string name="guide_scope_description">Guiyuan uses LSPosed to display combined status information.</string>
+    <string name="guide_scope_description">Guiyuan customizes system status information through a compatible module framework.</string>
     <string name="guide_framework">Framework service</string>
     <string name="guide_framework_checking">Checking</string>
     <string name="guide_framework_offline">Not connected</string>
@@ -540,17 +540,17 @@
     <string name="guide_api_unsupported">API incompatible</string>
     <string name="guide_request_scope">Request SystemUI scope</string>
     <string name="guide_scope_requesting">Requesting authorization…</string>
-    <string name="guide_scope_request_failed">The scope request was not completed. Check your LSPosed manager and try again.</string>
-    <string name="guide_scope_note">Enable Guiyuan in your LSPosed manager and add SystemUI to its scope. You can finish this later if setup is not available now.</string>
+    <string name="guide_scope_request_failed">The scope request was not completed. Check the framework service and module manager, then try again.</string>
+    <string name="guide_scope_note">Enable Guiyuan in the compatible module framework manager and add SystemUI to its scope. You can finish this later if setup is unavailable.</string>
     <string name="guide_done_title">Guide complete</string>
     <string name="guide_start">Launch Guiyuan</string>
     <string name="privacy_title">Privacy policy</string>
     <string name="about_privacy_summary">Read about data handling and privacy choices</string>
-    <string name="privacy_intro">This policy explains what information Guiyuan accesses during normal operation, diagnostics, and file sharing; how it uses that information; and what you can control. It covers Guiyuan itself. Android, LSPosed, and other apps have their own practices.</string>
+    <string name="privacy_intro">This policy explains what information Guiyuan accesses during normal operation, diagnostics, and file sharing; how it uses that information; and what you can control. It covers Guiyuan itself. Android, module frameworks, and other apps have their own practices.</string>
     <string name="privacy_local_title">Local preferences and runtime data</string>
     <string name="privacy_local_body">Guiyuan processes SystemUI information, including battery and connectivity states, locally to render its interface. It does not automatically upload this runtime information to maintainers. Appearance, language, launcher icon, and diagnostic preferences are also stored locally.</string>
     <string name="privacy_diagnostics_title">Diagnostic logs and reports</string>
-    <string name="privacy_diagnostics_body">Guiyuan may use Root to read shared LSPosed logs or system logs and filter for related entries. The underlying read may encounter other apps\' logs; the diagnostics view and reports use filtered entries.</string>
+    <string name="privacy_diagnostics_body">In supported environments, Guiyuan may use Root to read shared module-framework logs (the current implementation includes LSPosed module log paths), or system logs as needed, and filter entries related to Guiyuan. The underlying read may encounter other apps\' logs; the diagnostics view and reports use filtered entries.</string>
     <string name="guide_root_title">Root access</string>
     <string name="guide_root_checking">Checking…</string>
     <string name="guide_root_granted">Authorized</string>
@@ -570,24 +570,24 @@
     <string name="terms_intro">These Terms of Use apply to installing, configuring, and using the Guiyuan app and module. They explain operating requirements, privileges, compatibility risks, and open-source licensing. For device information and diagnostics, see the separate Privacy Policy.</string>
     <string name="privacy_local_body_2">The app has no user-account system, does not request Android\'s INTERNET permission, and disables Android automatic app backup.</string>
     <string name="privacy_scope_title">Permissions and system access</string>
-    <string name="privacy_scope_body">Guiyuan depends on the SystemUI scope granted through LSPosed. You can enable, change, or disable that scope through the framework manager. Root is not mandatory for first-run setup; it is used for certain diagnostics and process maintenance operations.</string>
+    <string name="privacy_scope_body">Guiyuan uses the SystemUI scope granted by a compatible module framework to adjust status information. Authorization and effective scope depend on the current framework service. You can enable, change, or disable the scope in the corresponding module manager. Root is not mandatory during initial setup and is used for certain diagnostics and process maintenance operations.</string>
     <string name="privacy_scope_body_2">Guiyuan performs these actions only when you request log viewing, refresh, or report generation, or confirm a relevant process restart. Root may be used where required. Reading or accepting this policy does not start those actions.</string>
     <string name="privacy_diagnostics_body_2">Reports you choose to generate may contain version, device model, system environment, runtime state, and relevant logs. Guiyuan does not submit reports automatically. Review them for device identifiers or other sensitive details before exporting or sharing.</string>
     <string name="privacy_retention_title">Storage, backup, and deletion</string>
     <string name="privacy_retention_body">Preferences are stored in the app\'s private area. Backing up or restoring settings requires your action through the Android file picker and a destination you select. Uninstalling normally removes app-private data, but not copies you have saved or transferred elsewhere.</string>
-    <string name="privacy_retention_body_2">When you clear logs, Guiyuan records a time boundary so earlier entries are omitted from the diagnostics view and subsequent reports. Original LSPosed and system log files are not deleted. Report attachments prepared for sharing may remain in Download/Guiyuan; older attachments of that kind are cleaned up before a later share. Copies you previously saved or sent are unaffected.</string>
+    <string name="privacy_retention_body_2">When you clear logs, Guiyuan records a time boundary so earlier entries are omitted from the diagnostics view and subsequent reports. Original module-framework and system log files are not deleted. Report attachments prepared for sharing may remain in Download/Guiyuan; older attachments of that kind are cleaned up before a later share. Copies you previously saved or sent are unaffected.</string>
     <string name="privacy_sharing_title">Sharing and third-party platforms</string>
     <string name="privacy_sharing_body">Guiyuan does not automatically send preferences, system state, or diagnostic reports to maintainers. Information reaches a destination or service you choose only when you export a file, use system sharing, or submit feedback through a platform such as GitHub. Saved copies and third-party submissions are managed by their respective recipients.</string>
-    <string name="privacy_sharing_body_2">Independent data processing by LSPosed, Android, device manufacturers, and other apps is outside Guiyuan\'s control. This policy does not replace their privacy notices.</string>
+    <string name="privacy_sharing_body_2">Independent data processing by Android, module frameworks, device manufacturers, and other apps is outside Guiyuan\'s control. This policy does not replace their privacy notices.</string>
     <string name="privacy_choice_title">Your choices and security considerations</string>
-    <string name="privacy_choice_body">You can change or restore settings in Guiyuan, disable its scope in your LSPosed manager, and decide whether to grant optional Root access, generate reports, or share files. Disabling access may prevent a related feature from working. Information already sent to other apps or platforms must be managed at its destination.</string>
+    <string name="privacy_choice_body">You can change or restore settings in Guiyuan, disable its scope in the corresponding module manager, and decide whether to grant optional Root access, generate reports, or share files. Disabling access may prevent a related feature from working. Information already sent to other apps or platforms must be managed at its destination.</string>
     <string name="privacy_choice_body_2">Avoid publishing logs or configuration files containing personal information. Guiyuan cannot guarantee deletion of logs held by other software or the absolute security of third-party destinations.</string>
     <string name="privacy_contact_title">Updates and contact</string>
     <string name="privacy_contact_body">Material changes in data handling will be reflected in updated app disclosures or public documentation. Privacy questions can be raised through the project repository; use the private reporting channel in SECURITY.md for sensitive vulnerabilities or private material.</string>
     <string name="terms_scope_title">Nature and scope of the software</string>
-    <string name="terms_scope_body">Guiyuan is a free, open-source LSPosed module for customizing status information on Android/HyperOS. It is not an official product of a device manufacturer, Android, or LSPosed, and does not guarantee compatibility with every system or framework version.</string>
+    <string name="terms_scope_body">Guiyuan is a free, open-source module for customizing status information on Android/HyperOS. It requires a module framework compatible with the current implementation. Guiyuan is not an official product of a device manufacturer, Android, or any module-framework project, and does not guarantee compatibility with every framework or system version.</string>
     <string name="terms_access_title">Environment and authorization</string>
-    <string name="terms_access_body">Compatibility depends on the actual versions of Android, HyperOS, SystemUI, LSPosed, and configured scopes. Enable the module and system privileges only on devices you own or are authorized to administer.</string>
+    <string name="terms_access_body">Compatibility depends on Android, HyperOS, SystemUI, the selected module framework\'s implementation, and the actual scope state. A connected framework service does not establish that all features are compatible. Enable the module and system privileges only on devices you own or are authorized to administer.</string>
     <string name="terms_access_body_2">Root is not required for every feature. Log access and certain process maintenance actions may require Root, but should be initiated or confirmed by you. Completing setup does not require granting optional Root access in advance.</string>
     <string name="terms_risk_title">Compatibility and risk</string>
     <string name="terms_risk_body">System updates, conflicting modules, or device differences may cause display defects, unavailable features, or SystemUI restarts. Before enabling or updating the module, keep any needed settings backup and know how to disable the module in your framework manager to restore native presentation.</string>
@@ -604,6 +604,6 @@
     <string name="terms_title">Terms of Use</string>
     <string name="about_terms_summary">Read about usage and compatibility</string>
     <string name="guide_agreement_line">Before using Guiyuan, read the %1$s and %2$s to understand the terms, permissions, and data-handling practices.</string>
-    <string name="guide_permission_later">下</string>
-    <string name="guide_permission_hint">号</string>
+    <string name="guide_permission_later">The following items can be configured later</string>
+    <string name="guide_permission_hint">A checkmark indicates a confirmed state. Tap SystemUI scope to request authorization or Root access to check its status; the check may prompt for authorization.</string>
 </resources>
