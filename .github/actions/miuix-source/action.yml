@@ -85,9 +85,9 @@ runs:
         git -C miuix-upstream apply --check "$patch_file"
         git -C miuix-upstream apply "$patch_file"
         test "$(git -C miuix-upstream diff --name-only -- "$source_path")" = "$source_path"
-        test "$(git -C miuix-upstream diff --numstat -- "$source_path")" = "$(printf '2\\t1\\t%s' "$source_path")"
+        test "$(git -C miuix-upstream diff --numstat -- "$source_path")" = "$(printf '2\t1\t%s' "$source_path")"
         test "$(grep -Fc 'initialVelocity = released.coerceIn(floor, 0f),' "miuix-upstream/$source_path")" = 1
-        test "$(git -C miuix-upstream diff --name-only)" = "$(printf 'gradle/libs.versions.toml\\n%s' "$source_path")"
+        test "$(git -C miuix-upstream diff --name-only)" = "$(printf 'gradle/libs.versions.toml\n%s' "$source_path")"
         git -C miuix-upstream diff --check
         echo "MIUIX_SOURCE_NAV_PATCH=predictive-back-commit-direction-v1" >> "$GITHUB_ENV"
         {

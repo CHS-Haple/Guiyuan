@@ -63,12 +63,18 @@ class PredictiveBackCommitDirectionTest {
     @Test
     fun sourceBuiltMiuixCheckoutContainsExactlyTheReviewedExpression() {
         val sourceDir = System.getenv("MIUIX_SOURCE_DIR") ?: return
-        val source = File(
-            sourceDir,
-            "miuix-nav/src/commonMain/kotlin/top/yukonga/miuix/kmp/nav/core/NavDisplay.kt",
+        val relativePath =
+            "miuix-nav/src/commonMain/kotlin/top/yukonga/miuix/kmp/nav/core/NavDisplay.kt"
+        // Gradle's JUnit working directory is the :app module, while GitHub's
+        // action checks out MIUIX at the repository root.
+        val candidates = listOf(
+            File(sourceDir, relativePath),
+            File(File(System.getenv("GITHUB_WORKSPACE") ?: ".", sourceDir), relativePath),
+            File("../$sourceDir", relativePath),
         )
-        assertTrue("CI source-built MIUIX navigation file is missing", source.isFile)
-        val contents = source.readText()
+        val source = candidates.firstOrNull(File::isFile)
+        assertTrue("CI source-built MIUIX navigation file is missing", source != null)
+        val contents = requireNotNull(source).readText()
         assertEquals(
             1,
             contents.windowed("initialVelocity = released.coerceIn(floor, 0f),".length)
