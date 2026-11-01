@@ -1,4 +1,6 @@
-# OS4 interface conformance matrix (experimental)
+# OS4 interface conformance matrix (historical evidence)
+
+> This record preserves source/CI observations from earlier OS4 integration checkpoints. It is not the current build specification or release-acceptance status. For the supported pinned integration and licensed provenance see [README](README.md); for current release gates see [RELEASE_READINESS](../../docs/development/RELEASE_READINESS.md). Do not extrapolate dated findings or obsolete workflow names to the current version.
 
 Source of truth: compose-miuix-ui/miuix [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423), pinned `b9f70838509fbc3f63f1a972777a7e6ce07f578f`. This inventory covers **visual and behavioral contracts**, not merely class names. The pending PR is not a published full dependency set.
 

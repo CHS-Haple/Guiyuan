@@ -353,8 +353,11 @@ fun GlassTopAppBar(
     val navigationHeight = if (navigationSize.height > 0) with(density) { navigationSize.height.toDp() } else buttonSize
     val actionWidth = if (actionSize.width > 0) with(density) { actionSize.width.toDp() } else buttonSize
     val actionHeight = if (actionSize.height > 0) with(density) { actionSize.height.toDp() } else buttonSize
-    val overlayNavigation = unclippedNavigationIcon && !NativeTitleLocalClip
-    val overlayActions = unclippedActions && !NativeTitleLocalClip
+    // The accepted OS4 native title clips only title layers, but compact mode
+    // still delegates to SmallTopAppBar, which clips protruding glass controls.
+    val useUnclippedSlots = compact || !NativeTitleLocalClip
+    val overlayNavigation = unclippedNavigationIcon && useUnclippedSlots
+    val overlayActions = unclippedActions && useUnclippedSlots
 
     Box(modifier = modifier.onGloballyPositioned { barOrigin = it.positionInRoot() }) {
         val overhangPx = with(LocalDensity.current) { bandOverhang.toPx() }

@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Constraints
@@ -374,7 +375,7 @@ private fun AppearanceThemePreview(
         ) {
             Text(
                 text = stringResource(R.string.theme_preview),
-                style = MiuixTheme.textStyles.body1,
+                style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
                 color = MiuixTheme.colorScheme.onSurfaceContainer,
             )
             Text(

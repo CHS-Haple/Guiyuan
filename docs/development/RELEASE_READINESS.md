@@ -1,16 +1,26 @@
 # 1.0.0 Release Qualification — evidence and remaining acceptance
 
-**Status:** Source-based preflight recorded on 2026-10-31; **NOT a completed 1.0.0 release acceptance**.
+**Status:** Historical source preflight recorded on 2026-10-31; B1714 CI, Canary signing and bounded device feedback recorded on 2026-11-02. The maintainer approved formal 1.0.0 promotion with **HyperOS 4 as the sole advertised OS family**, subject to a final repository cleanup, protected-branch CI, isolated Release signature verification and actual publication. This record must not claim publication until the signed Release and tag are verified.
 **Authority:** [CONTRIBUTING](../../CONTRIBUTING.md) for engineering rules, [ROADMAP](ROADMAP.md#100-qualification) for formal release gates, [CURRENT](CURRENT.md) for accepted product/runtime state. This record tracks proof and open acceptance work; it is not a new CI workflow, a Build history, an alternative roadmap or a version-promotion instruction. Refresh each item against the final candidate SHA rather than copying today's results forward.
 
-## Source and branch checkpoint
+## Current B1714 device checkpoint — 2026-11-02
+
+- **Candidate runtime:** `feat/1.0.0-release-qualification` at `956779f67e0212df49b7b4d3ecfd2d07ec1c5b20`, versionName `1.0.0`, versionCode `261102714`, Build `20261102-1714`. Its [exact-source CI](https://github.com/CHS-Haple/Guiyuan/actions/runs/41353388437) succeeded and the isolated [Canary signer](https://github.com/CHS-Haple/Guiyuan/actions/runs/41354068914) produced a verified signed artifact. A later documentation-only commit is not a new installable Build or a distinct runtime-acceptance result.
+- **Onboarding defect:** B1713 one-off device trace established that successive warm Back-to-Home resumes preserved the live Welcome navigation stack but stale retained callbacks advanced to later stages. B1714 binds continuation to its originating page and verifies that page is current. The maintainer explicitly confirmed “1714引导页正常了”. Temporary diagnostic PR [#1161](https://github.com/CHS-Haple/Guiyuan/pull/1161) was closed without merge; its logging is not present in B1714.
+- **Maintainer smoke feedback:** After the grouped inspection of guide/Terms/Privacy sheets and scrollbars, Home/Keyguard/AOD/CC and network/battery presentation, ordinary hot reload/lifecycle, OS3/OS4 settings, diagnostics and backup, the maintainer said “以上这些暂时都没发现问题”. Record this as **no observed issue in the exercised paths**, not proof of every offset, SIM topology, Root failure, accessibility variant or abnormal native ownership interleaving.
+- **Open evidence/scope:** [#1151](https://github.com/CHS-Haple/Guiyuan/issues/1151) documents a measured Wi-Fi-to-ring clearance variation under vertical offsets; the existing rounded-corner analytic source and tests are integrated, but its full glyph/offset acceptance matrix remains open. [#758](https://github.com/CHS-Haple/Guiyuan/issues/758) exceptional native setter ownership is not a reproduced failure. Third-party variable fonts [#769](https://github.com/CHS-Haple/Guiyuan/issues/769), elective MIUIX effects [#954](https://github.com/CHS-Haple/Guiyuan/issues/954), and source refresh [#1047](https://github.com/CHS-Haple/Guiyuan/issues/1047) must not be claimed as verified compatibility or silently adopted.
+- **Release decision:** The maintainer selected **HyperOS 4 only** for advertised OS support and authorized first-stable promotion following repository cleanup. The 1.0.0 changelog is dated on the chosen 2026-11-02 release day. Protected `dev` integration, `dev → main` full CI, isolated signed **Release** (not Canary), final package/signature/version/upgrade checks and stable GitHub Release remain separate technical gates; do not claim them complete until run. The OS3 UI option is not a HyperOS 3 support claim. No `it` synchronization without instruction.
+
+The older source inventory and matrix below are historical **2026-10-31** evidence, not statements that current `dev/main/it` still have those SHA values.
+
+## Historical source and branch checkpoint — 2026-10-31
 
 - Reviewed `dev` source: `ff72623b65448eda959feb0b8f4d17c9831cd1a4`, 0.9.2/B1674; `main` `c90130e68367009c6a633b6698993a3c6e7d9037`, 0.9.2/B1673; independent `it` `61c9948080f2e211db2d41b7de6c122d99be0b44`, 0.9.2-IT/B1672. Main/dev intentionally diverge; no blanket merge of protected branches.
 - The current exact `dev` commit passed [CI 41135233166](https://github.com/CHS-Haple/Guiyuan/actions/runs/41135233166), but this was **documentation-only/light** validation. It is **not** full Runtime/Release CI for a 1.0.0 candidate. Earlier runtime PR and main release CI evidence must not be mislabeled as testing the future 1.0.0 APK.
 - Reviewed the open-issue set [#758](https://github.com/CHS-Haple/Guiyuan/issues/758), [#769](https://github.com/CHS-Haple/Guiyuan/issues/769), [#954](https://github.com/CHS-Haple/Guiyuan/issues/954), [#1047](https://github.com/CHS-Haple/Guiyuan/issues/1047); no open PRs at checkpoint. The old B1676 test-only PR #1121 was **closed unmerged** because the latest `dev` text is newer than that signed APK. Do not use B1676 to certify current source.
 - Checked source boundaries for `SysUiPresentationOwner`, `SysUiPresentationRuntime`, `RetirementGate`, `GyModule`, Home/Keyguard/CC render sessions, native network/battery/tint/AOD sources, API 102 `HotReloadTransfer`, callback/observer owners, diagnostics, configuration backup, Manifest, build variants, signing workflows and associated existing tests. This is a scoped static audit, **not** a claim of exhaustive full-project formal verification or native exception injection.
 
-## Qualification matrix
+## Historical source-only qualification matrix — 2026-10-31
 
 | Gate | Current supported evidence | Release exit requirement | State |
 | --- | --- | --- | --- |

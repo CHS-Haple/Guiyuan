@@ -1,4 +1,6 @@
-# OS4 UI conformance and upstream adoption audit
+# OS4 UI conformance and upstream adoption audit (historical record)
+
+> Dated source, CI and device investigations are retained for traceability. This is not a second current-state document, does not grant permission to revive obsolete workflows, and should not be treated as evidence for untested device variants. Current source boundaries: [README](README.md). Release acceptance: [RELEASE_READINESS](../../docs/development/RELEASE_READINESS.md).
 
 Accepted source baseline: Guiyuan `dev` after merged PR #861, based on B1536 (exact-source signed Canary, configured unit/assemble/sign checks and the maintainer's focused device acceptance). Post-merge matched-source Canary succeeded; #946 subsequently changed documentation only. B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
 MIUIX pinned published: `8972f941c194bd3c4e14c34543d5ebc7b39e40da` (`0.9.4-8972f941-SNAPSHOT`).

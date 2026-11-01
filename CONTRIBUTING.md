@@ -183,7 +183,7 @@ For app UI, prefer current MIUIX components and conventions. Persist real user p
 
 Before UI changes, inspect applicable MIUIX upstream code, examples and PRs/issues. Explain **before editing** whether an upstream solution exists, its source, rules, applicable scenarios, current differences and intended approach. Adapt the full affected UI chain (layout, states, interactions, motion/glass, navigation, lifecycle and relevant OS3/OS4 behavior), not just controls. Recheck after editing, resolve deterministic issues and record evidence.
 
-For every MIUIX UI change, record an OS3 / OS4 / both / neither style-impact decision, including shared components and style switching. For each affected style, verify the **corresponding** upstream revision and relevant layout, material, state, motion, interaction and lifecycle rules before editing, then compare the final implementation against them. Do not apply one style's rules to another. Cite the source and outcome in the PR; missing or unpublished guidance is an explicit evidence gap, not an invented upstream standard. Keep verification proportional to the affected call paths.
+For every MIUIX UI change, record an OS3 / OS4 / both / neither **UI-style** impact decision, including shared components and style switching. These style names do not broaden 1.0.0's HyperOS 4-only runtime support. For each affected style, verify the **corresponding** upstream revision and relevant layout, material, state, motion, interaction and lifecycle rules before editing, then compare the final implementation against them. Do not apply one style's rules to another. Cite the source and outcome in the PR; missing or unpublished guidance is an explicit evidence gap, not an invented upstream standard. Keep verification proportional to the affected call paths.
 
 For OS4-related changes, also classify the upstream surface as the accepted pinned implementation or a new/materially revised PR or component. Explore promising improvements, but assess practical benefit, maturity, transitive dependencies/ABI, compatibility, performance, UI regression, rollback and maintenance cost before adopting new upstream code. Record an adopt / isolated experiment / defer decision. An upstream update never automatically advances the accepted revision; experimental work stays in ordinary feat/fix branches until focused source-matched CI and any necessary device validation pass. This adds a risk gate, not a separate OS4 development or release pipeline.
 
@@ -342,6 +342,8 @@ Apply only checks relevant to the change.
 Runtime-sensitive work: review ownership/writer conflicts, lifecycle/cleanup, fail-native behavior, compatibility, performance, geometry/motion ownership and focused device evidence.
 
 UI work: review hierarchy, MIUIX behavior, themes, localization, accessibility and interaction.
+
+Formal privacy and terms documents are not subject to ordinary UI copy-shortening or semicolon-avoidance rules. Preserve necessary legal qualifications and precise meanings. For substantive changes, verify disclosures against actual source/runtime behavior, keep Chinese/English meaning equivalent, and synchronize in-app articles with the public `PRIVACY.md` and `TERMS.md`. Never invent maintainer identities, private contact methods, consent mechanisms, retention guarantees, or legal assurances. Respect the IT channel's project-link restriction.
 
 Repository/CI work: review triggers, secret boundaries, artifact semantics and branch protection.
 
