@@ -83,6 +83,7 @@ internal fun GyApp(
         colorSpec = appearance.colorSpec,
         paletteStyle = appearance.paletteStyle,
     ) {
+        val hostActivity = LocalContext.current as? android.app.Activity
         val context = LocalContext.current.applicationContext
         val agreementReviewOnly = remember(context) { AppPlatform.needsAgreementReview(context) }
         var guideDone by remember(context) { mutableStateOf(!AppPlatform.needsOnboarding(context)) }
@@ -98,6 +99,8 @@ internal fun GyApp(
                     AppPlatform.completeOnboarding(context)
                     guideDone = true
                 },
+                // Declining acknowledgment exits without writing agreement versions.
+                onExit = { hostActivity?.finish() },
             )
             return@GyTheme
         }
