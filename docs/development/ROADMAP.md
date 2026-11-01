@@ -58,6 +58,8 @@ Compatibility expansion must not weaken the current target's ownership and resto
 
 ## 1.0.0 qualification
 
+1.0.0 advertises **HyperOS 4 only**; the OS3 UI-style setting does not imply support for HyperOS 3. Broader ROM/SystemUI compatibility requires separate evidence.
+
 Before the first formal release:
 
 - define and document the supported SystemUI/device scope;

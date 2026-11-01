@@ -6,6 +6,8 @@ The project follows a Keep a Changelog-style structure. `[Unreleased]` contains 
 
 Failed experiments, CI-by-CI adjustments and investigation history belong in Git history or engineering decision records, not this file.
 
+## [Unreleased]
+
 ## [1.0.0] - 2026-11-02
 
 ### Added
