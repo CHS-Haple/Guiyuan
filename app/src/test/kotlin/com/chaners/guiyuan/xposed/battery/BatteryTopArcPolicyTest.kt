@@ -223,6 +223,58 @@ class BatteryTopArcPolicyTest {
         assertTrue(result.sweepDegrees > 0f)
     }
 
+    @Test
+    fun roundedClearanceKeepsTheSingleNotchButDoesNotReserveSquareCorners() {
+        val gap =
+            gapFor(
+                left = 43.4f,
+                top = 15.7f,
+                right = 79.1f,
+                bottom = 26.2f,
+            )
+
+        // The rectangular expansion cuts a much larger left shoulder here.
+        assertTrue(gap.centerDegrees > 285f)
+        assertTrue(gap.sweepDegrees in 2f..12f)
+    }
+
+    @Test
+    fun squareOnlyCornerIntersectionDoesNotCutTheRing() {
+        val gap =
+            gapFor(
+                left = 8f,
+                top = 30.16f,
+                right = 11.05f,
+                bottom = 33.52f,
+            )
+
+        assertEquals(0f, gap.sweepDegrees, 0.0001f)
+    }
+
+    @Test
+    fun roundedGapEndpointsRetainTheRequestedOpticalClearance() {
+        val left = 43.4f
+        val top = 15.7f
+        val right = 79.1f
+        val bottom = 26.2f
+        val gap = gapFor(left, top, right, bottom)
+        val angles =
+            listOf(
+                gap.centerDegrees - gap.sweepDegrees / 2f,
+                gap.centerDegrees + gap.sweepDegrees / 2f,
+            )
+
+        angles.forEach { degrees ->
+            val radians = Math.toRadians(degrees.toDouble())
+            val x = 60f + 50f * kotlin.math.cos(radians).toFloat()
+            val y = 58f + 50f * kotlin.math.sin(radians).toFloat()
+            val dx = maxOf(left - x, 0f, x - right)
+            val dy = maxOf(top - y, 0f, y - bottom)
+            // 2px optical gap plus half of the 4px ring stroke.
+            assertEquals(4f, kotlin.math.sqrt(dx * dx + dy * dy), 0.02f)
+        }
+    }
+
     private fun gapFor(
         left: Float,
         top: Float,
