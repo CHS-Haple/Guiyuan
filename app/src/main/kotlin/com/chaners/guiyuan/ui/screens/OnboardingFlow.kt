@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.annotation.DrawableRes
 import android.widget.Toast
+import android.util.Log
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -171,6 +172,11 @@ private enum class PermissionWarningPhase {
     Hidden, Visible, Dismissing, Advancing,
 }
 
+// Temporary, source-only probe: remove after the warm-resume trace is reviewed.
+private fun traceGuide(event: String, pages: List<NavKey>) {
+    Log.i("GuiyuanGuideTrace", "$event stack=${pages.joinToString(separator = ">")}")
+}
+
 // The guide owns only temporary navigation state; existing preferences and
 // framework services remain the authoritative writers for settings and scope.
 @OptIn(ExperimentalScrollBarApi::class)
@@ -217,10 +223,12 @@ internal fun OnboardingFlow(
     }
     var permissionWarning by remember { mutableStateOf(PermissionWarningPhase.Hidden) }
     fun advance() {
+        traceGuide("advance.request", pages)
         val next = when (val nextStep = nextGuideStage(step)) {
             1, 2, 3 -> GuidePage.Stage(nextStep)
             4 -> GuidePage.Complete
             else -> {
+                traceGuide("advance.complete", pages)
                 onComplete()
                 return
             }
@@ -228,6 +236,7 @@ internal fun OnboardingFlow(
         // MIUIX rejects duplicate content keys. Guard fast repeated taps before
         // the new page has had a chance to recompose.
         if (next !in pages) pages.add(next)
+        traceGuide("advance.result", pages)
     }
     val requiredReading = remember(context) { AppPlatform.readingRequirements(context) }
     var termsViewed by remember { mutableStateOf(false) }
@@ -269,6 +278,7 @@ internal fun OnboardingFlow(
     // Returning to this page clears consent, not document views.
     // NavDisplay retains the outgoing page through its transition.
     LaunchedEffect(step) {
+        traceGuide("route.top=$step", pages)
         if (step == 2) policyAccepted = false
     }
     var scopeRequestFailed by remember { mutableStateOf(false) }
@@ -277,9 +287,19 @@ internal fun OnboardingFlow(
     var rootRefresh by remember { mutableIntStateOf(0) }
     var expandedPermission by remember { mutableIntStateOf(0) }
     fun back() {
+        traceGuide("back.request", pages)
         // Let the active MIUIX overlay own Back until its dismissal finishes.
-        if (documentVisible || documentDismissing || permissionWarning != PermissionWarningPhase.Hidden) return
-        if (pages.size > 1) pages.removeLastOrNull() else onExit?.invoke()
+        if (documentVisible || documentDismissing || permissionWarning != PermissionWarningPhase.Hidden) {
+            traceGuide("back.overlayBlocked", pages)
+            return
+        }
+        if (pages.size > 1) {
+            pages.removeLastOrNull()
+            traceGuide("back.result", pages)
+        } else {
+            traceGuide("back.exitCallback", pages)
+            onExit?.invoke()
+        }
     }
     fun refreshPermissionStatus() {
         app.refreshXposedStatus()
@@ -288,6 +308,15 @@ internal fun OnboardingFlow(
     val entryState = rememberAppSettingsEntryState(runtimeBusy = false)
 
     val activityLifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(activityLifecycle, pages) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP || event == Lifecycle.Event.ON_RESUME) {
+                traceGuide("guide.$event", pages)
+            }
+        }
+        activityLifecycle.addObserver(observer)
+        onDispose { activityLifecycle.removeObserver(observer) }
+    }
     // MainActivity refreshes framework status on resume. Returning from an
     // external manager also retries Root without adding a polling loop.
     DisposableEffect(activityLifecycle, step) {
@@ -330,15 +359,27 @@ internal fun OnboardingFlow(
         ),
     ) {
         entry<GuidePage.Welcome> {
+            DisposableEffect(Unit) {
+                traceGuide("entry.welcome.attach", pages)
+                onDispose { traceGuide("entry.welcome.dispose", pages) }
+            }
             GuiyuanBrandGuide(completed = false, onNext = ::advance)
         }
         entry<GuidePage.Complete>(swipeDismiss = swipeBackDirection) {
+            DisposableEffect(Unit) {
+                traceGuide("entry.complete.attach", pages)
+                onDispose { traceGuide("entry.complete.dispose", pages) }
+            }
             GuiyuanBrandGuide(completed = true, onNext = onComplete)
         }
         entry<GuidePage.Stage>(
             swipeDismiss = if (documentVisible || documentDismissing) NavSwipeDirection.None else swipeBackDirection,
         ) { page ->
         val step = page.number
+        DisposableEffect(page) {
+            traceGuide("entry.stage.$step.attach", pages)
+            onDispose { traceGuide("entry.stage.$step.dispose", pages) }
+        }
         val title = when (step) {
             1 -> stringResource(R.string.guide_permissions_title)
             2 -> stringResource(R.string.guide_privacy_title)

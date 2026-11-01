@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.ui
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -96,11 +97,15 @@ internal fun GyApp(
                 swipeBackEnabled = appearance.swipeBack,
                 agreementReviewOnly = agreementReviewOnly,
                 onComplete = {
+                    Log.i("GuiyuanGuideTrace", "app.complete.persist")
                     AppPlatform.completeOnboarding(context)
                     guideDone = true
                 },
                 // Declining acknowledgment exits without writing agreement versions.
-                onExit = { hostActivity?.finish() },
+                onExit = {
+                    Log.i("GuiyuanGuideTrace", "app.exit.finish")
+                    hostActivity?.finish()
+                },
             )
             return@GyTheme
         }

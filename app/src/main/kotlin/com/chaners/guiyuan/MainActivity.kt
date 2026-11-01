@@ -3,6 +3,7 @@ package com.chaners.guiyuan
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.WindowInsetsController
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -38,19 +39,35 @@ import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private fun traceLifecycle(event: String) {
+        Log.i(
+            "GuiyuanGuideTrace",
+            "activity.$event instance=${System.identityHashCode(this)} " +
+                "finishing=$isFinishing configChange=$isChangingConfigurations",
+        )
+    }
+
+    override fun onDestroy() {
+        traceLifecycle("destroy")
+        super.onDestroy()
+    }
+
     // The shade can pause but does not stop the Activity.
     override fun onStop() {
+        traceLifecycle("stop")
         (application as GyApplication).stopSandbox()
         super.onStop()
     }
 
     override fun onResume() {
         super.onResume()
+        traceLifecycle("resume")
         (application as GyApplication).refreshXposedStatus()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        traceLifecycle("create(saved=${savedInstanceState != null})")
 
         val initialDark =
             resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
