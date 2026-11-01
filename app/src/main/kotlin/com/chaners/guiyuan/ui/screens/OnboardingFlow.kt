@@ -263,9 +263,9 @@ internal fun OnboardingFlow(
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
-    // This visit's transient acknowledgment never persists through navigation.
+    // Reset on entry, not exit: NavDisplay keeps the outgoing page visible during transitions.
     LaunchedEffect(step) {
-        if (step != 2) {
+        if (step == 2) {
             termsViewed = false
             privacyViewed = false
             policyAccepted = false
