@@ -89,6 +89,7 @@ jobs:
                 echo "::error::Device checkpoint versionCode must increase relative to its branch base."
                 exit 1
               }
+
               # An installable checkpoint must also upgrade the other protected channels.
               local channel channel_props channel_code channel_build
               for channel in main dev it; do
@@ -385,7 +386,7 @@ jobs:
             -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
             -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
             -Pgy.os4.dialogSurfaces=true \
-            "${TASKS[@]}" --no-daemon --max-workers=2 --stacktrace
+            "${TASKS[@]}" --no-daemon --max-workers=3 --stacktrace
 
       - name: Resolve built APK paths
         if: steps.scope.outputs.run_android == 'true'

@@ -74,9 +74,13 @@ import com.chaners.guiyuan.settings.DiagRepo
 import com.chaners.guiyuan.system.LogCategory
 import com.chaners.guiyuan.system.LogEntry
 import com.chaners.guiyuan.system.LogLevel
+import com.chaners.guiyuan.system.DiagLogReader
 import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.system.DiagReport
 import com.chaners.guiyuan.system.DiagFiles
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
+import com.chaners.guiyuan.ui.components.UiDialogButton
+import com.chaners.guiyuan.ui.components.dialogActionGap
 import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -97,6 +101,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.IconButtonDefaults
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
@@ -151,7 +156,8 @@ internal fun DiagnosticsScreen(
     val risePx = with(LocalDensity.current) { 28.dp.toPx() }
     var loading by remember { mutableStateOf(true) }
     var refreshing by remember { mutableStateOf(false) }
-    var viewCleared by rememberSaveable { mutableStateOf(false) }
+    var clearConfirmOpen by rememberSaveable { mutableStateOf(false) }
+    var clearingHistory by remember { mutableStateOf(false) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var reportBusy by remember { mutableStateOf(false) }
     var exportOpen by rememberSaveable { mutableStateOf(false) }
@@ -166,6 +172,9 @@ internal fun DiagnosticsScreen(
     val exportFailMsg = stringResource(R.string.diagnostic_report_export_failed)
     val shareFailMsg = stringResource(R.string.diagnostic_report_share_failed)
     val shareTitle = stringResource(R.string.share_diagnostic_report)
+    val clearedMsg = stringResource(R.string.diagnostics_history_cleared)
+    val clearFailedMsg = stringResource(R.string.diagnostics_history_clear_failed)
+    val refreshFailedMsg = stringResource(R.string.diagnostics_history_refresh_failed)
     val exportTitle = stringResource(R.string.export_diagnostic_report)
     val menuTitle = stringResource(R.string.diagnostics_more_actions)
     val filterTitle = stringResource(R.string.diagnostics_filter)
@@ -188,7 +197,6 @@ internal fun DiagnosticsScreen(
             snapshot = captured
             onSnapshot(captured)
             expandedKey = null
-            viewCleared = false
         } finally {
             loading = false
             refreshing = false
@@ -261,36 +269,34 @@ internal fun DiagnosticsScreen(
             CAT_DISPLAY -> LogCategory.Display
             else -> null
         }
-    val entries = remember(snapshot, viewCleared, focusedCategory) {
-        if (viewCleared) emptyList()
-        else snapshot?.entries.orEmpty().asReversed().filter { isRuntimeLog(it, focusedCategory) }
+    val entries = remember(snapshot, focusedCategory) {
+        snapshot?.entries.orEmpty().asReversed().filter { isRuntimeLog(it, focusedCategory) }
     }
     val filteredEntries = remember(entries, levelFilter, categoryFilter) {
         entries.filter { matchesFilter(it, levelFilter, categoryFilter) }
     }
-    var visibleLimit by remember(snapshot, viewCleared, levelFilter, categoryFilter) {
-        mutableIntStateOf(EVENT_PAGE_SIZE)
-    }
-    val visibleEntries = remember(filteredEntries, visibleLimit) { filteredEntries.take(visibleLimit) }
     val filterActive =
         levelFilter != LEVEL_ALL ||
             categoryFilter != CAT_ALL
     val collectionFailed = snapshot?.log?.result?.isSuccess == false
     val hasCapturedSessionLines = snapshot?.log?.sessionLines?.isNotEmpty() == true
-    val captureTruncated = snapshot?.log?.result?.truncated == true
+    val captureTruncated = snapshot?.log?.result?.truncated == true && hasCapturedSessionLines
     val omittedEarlierLines = snapshot?.let(DiagReport::omittedEarlierLines) ?: 0
-    val showRootGuide = !viewCleared && !hasCapturedSessionLines && collectionFailed
+    val showRootGuide = !hasCapturedSessionLines && collectionFailed
     val integrityNotice =
         listOfNotNull(
             if (collectionFailed && hasCapturedSessionLines) {
                 stringResource(R.string.diagnostics_collection_incomplete)
             } else null,
-            if (captureTruncated) {
-                stringResource(R.string.diagnostics_capture_truncated)
-            } else null,
-            if (omittedEarlierLines > 0) {
-                stringResource(R.string.diagnostics_report_lines_omitted, omittedEarlierLines)
-            } else null,
+            when {
+                captureTruncated && omittedEarlierLines > 0 ->
+                    stringResource(R.string.diagnostics_capture_and_report_limited, omittedEarlierLines)
+                captureTruncated ->
+                    stringResource(R.string.diagnostics_capture_truncated)
+                omittedEarlierLines > 0 ->
+                    stringResource(R.string.diagnostics_report_lines_omitted, omittedEarlierLines)
+                else -> null
+            },
         ).joinToString("\n")
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
@@ -374,10 +380,11 @@ internal fun DiagnosticsScreen(
             DiagMenu(
                 title = menuTitle,
                 diagnosticsLevel = diagSettings.level,
-                canChangeLevel = !loading,
-                canScrollTop = !loading && !viewCleared && listState.canScrollBackward,
-                canScrollBottom = !loading && !viewCleared && listState.canScrollForward,
-                canClear = snapshot != null && !viewCleared,
+                canChangeLevel = !loading && !clearingHistory,
+                canScrollTop = !loading && listState.canScrollBackward,
+                canScrollBottom = !loading && listState.canScrollForward,
+                canClear = !loading && !clearingHistory && !reportBusy && !exportOpen &&
+                    snapshot?.log?.sessionLines?.isNotEmpty() == true,
                 onDiagLevelChange = { level ->
                     if (!loading && level != diagSettings.level) {
                         diagRepo.setLevel(level)
@@ -393,11 +400,7 @@ internal fun DiagnosticsScreen(
                         if (lastIndex >= 0) listState.animateScrollToItem(lastIndex)
                     }
                 },
-                onClear = {
-                    viewCleared = true
-                    expandedKey = null
-                    scope.launch { listState.scrollToItem(0) }
-                },
+                onClear = { clearConfirmOpen = true },
             )
         },
         listState = listState,
@@ -413,8 +416,56 @@ internal fun DiagnosticsScreen(
                     texts = refreshTexts,
                 )
             },
+        overlay = {
+            UiOverlayDialog(
+                show = clearConfirmOpen,
+                title = stringResource(R.string.diagnostics_clear_history),
+                summary = stringResource(R.string.diagnostics_history_clear_confirm),
+                onDismissRequest = { if (!clearingHistory) clearConfirmOpen = false },
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(dialogActionGap()),
+                ) {
+                    UiDialogButton(
+                        text = stringResource(R.string.cancel),
+                        modifier = Modifier.weight(1f),
+                        enabled = !clearingHistory,
+                        onClick = { clearConfirmOpen = false },
+                    )
+                    UiDialogButton(
+                        text = stringResource(R.string.diagnostics_clear_history_action),
+                        modifier = Modifier.weight(1f),
+                        enabled = !clearingHistory,
+                        role = GlassDialogButtonRole.Destructive,
+                        onClick = {
+                            if (!clearingHistory && !loading) {
+                                scope.launch {
+                                    clearingHistory = true
+                                    val cleared = runCatching {
+                                        DiagLogReader.clearHistory(context.applicationContext)
+                                    }.getOrDefault(false)
+                                    clearConfirmOpen = false
+                                    val feedback =
+                                        if (cleared) {
+                                            loading = true
+                                            val refreshed = runCatching { captureSnapshot() }.isSuccess
+                                            listState.scrollToItem(0)
+                                            if (refreshed) clearedMsg else refreshFailedMsg
+                                        } else {
+                                            clearFailedMsg
+                                        }
+                                    clearingHistory = false
+                                    snackbarHostState.showSnackbar(feedback)
+                                }
+                            }
+                        },
+                    )
+                }
+            }
+        },
     ) {
-        if (!viewCleared && !showRootGuide && integrityNotice.isNotEmpty()) {
+        if (!showRootGuide && integrityNotice.isNotEmpty()) {
             item(key = "diagnostics-log-integrity") {
                 Text(
                     text = integrityNotice,
@@ -425,14 +476,6 @@ internal fun DiagnosticsScreen(
             }
         }
         when {
-            viewCleared -> {
-                item(key = "diagnostics-state-cleared") {
-                    LogStateCard(
-                        text = stringResource(R.string.diagnostics_view_cleared),
-                        modifier = Modifier,
-                    )
-                }
-            }
             snapshot == null -> {
                 item(key = "diagnostics-loading") {
                     if (loading) {
@@ -453,19 +496,10 @@ internal fun DiagnosticsScreen(
                     }
                 }
             }
-            visibleEntries.isNotEmpty() -> {
+            filteredEntries.isNotEmpty() -> {
                 item(key = "diagnostics-summary") {
                     Text(
-                        text =
-                            if (filteredEntries.size > visibleEntries.size) {
-                                stringResource(
-                                    R.string.diagnostics_events_summary_limited,
-                                    visibleEntries.size,
-                                    filteredEntries.size,
-                                )
-                            } else {
-                                stringResource(R.string.diagnostics_events_summary, visibleEntries.size)
-                            },
+                        text = stringResource(R.string.diagnostics_events_summary, filteredEntries.size),
                         modifier =
                             Modifier
                                 .fillMaxWidth()
@@ -481,7 +515,7 @@ internal fun DiagnosticsScreen(
                     )
                 }
                 itemsIndexed(
-                    items = visibleEntries,
+                    items = filteredEntries,
                     key = { index, entry -> logRowKey(entry, index) },
                 ) { index, entry ->
                     val rowKey = logRowKey(entry, index)
@@ -511,26 +545,20 @@ internal fun DiagnosticsScreen(
                                 },
                     )
                 }
-                if (filteredEntries.size > visibleEntries.size) {
-                    item(key = "diagnostics-load-earlier") {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Button(
-                                onClick = {
-                                    visibleLimit =
-                                        (visibleLimit + EVENT_PAGE_SIZE).coerceAtMost(filteredEntries.size)
-                                },
-                                colors = ButtonDefaults.buttonColors(),
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.diagnostics_events_load_earlier),
-                                    style = MiuixTheme.textStyles.button,
-                                )
-                            }
-                        }
-                    }
+                item(key = "diagnostics-history-end") {
+                    Text(
+                        text = stringResource(
+                            when {
+                                captureTruncated -> R.string.diagnostics_events_end_truncated
+                                filterActive -> R.string.diagnostics_events_end_filtered
+                                else -> R.string.diagnostics_events_end
+                            },
+                        ),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        textAlign = TextAlign.Center,
+                    )
                 }
             }
             showRootGuide -> {
@@ -558,7 +586,13 @@ internal fun DiagnosticsScreen(
                 item(key = "diagnostics-no-events") {
                     LogEmptyGuide(
                         title = stringResource(R.string.diagnostics_events_empty),
-                        description = stringResource(R.string.diagnostics_no_events_hint),
+                        description = stringResource(
+                            if (snapshot?.log?.clearedAt != null) {
+                                R.string.diagnostics_history_empty
+                            } else {
+                                R.string.diagnostics_no_events_hint
+                            },
+                        ),
                         note = null,
                         icon = MiuixIcons.Info,
                         busy = loading,
@@ -576,8 +610,6 @@ internal fun DiagnosticsScreen(
     }
 
 }
-
-internal const val EVENT_PAGE_SIZE = 100
 
 // The same raw line can appear more than once in a capture.
 internal fun logRowKey(entry: LogEntry, index: Int): String = "${entry.key}:$index"
@@ -895,7 +927,7 @@ private fun DiagMenu(
                 items =
                     listOf(
                         DropdownItem(
-                            text = stringResource(R.string.diagnostics_clear_view),
+                            text = stringResource(R.string.diagnostics_clear_history),
                             enabled = canClear,
                             onClick = onClear,
                         ),

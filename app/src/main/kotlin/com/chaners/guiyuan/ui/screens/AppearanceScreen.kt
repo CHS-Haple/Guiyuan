@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Constraints
@@ -127,11 +128,6 @@ internal fun AppearanceScreen(
                 else R.string.floating_navigation_style_glass,
             ),
             stringResource(R.string.floating_navigation_style_liquid),
-        )
-    val floatingContentOptions =
-        listOf(
-            stringResource(R.string.floating_navigation_content_icon_only),
-            stringResource(R.string.floating_navigation_content_icon_and_text),
         )
     val liquidModeOptions =
         listOf(
@@ -332,23 +328,18 @@ internal fun AppearanceScreen(
                         },
                     )
                 }
-                UiDropdownPreference(
-                    items = floatingContentOptions,
-                    selectedIndex = appearance.activeNavContent.ordinal,
+                SwitchPreference(
                     title = stringResource(R.string.floating_navigation_content),
                     summary = stringResource(R.string.floating_navigation_content_summary),
                     startAction = {
                         SemanticLeadingIcon(
-                            iconRes = R.drawable.ic_material_symbol_format_list_bulleted,
+                            iconRes = R.drawable.ic_material_symbol_text_fields,
                         )
                     },
-                    showValue = true,
-                    onSelectedIndexChange = { index ->
-                        NavContent.entries.getOrNull(index)?.let { content ->
-                            if (content != appearance.activeNavContent) {
-                                onNavContentChange(content)
-                            }
-                        }
+                    checked = appearance.activeNavContent == NavContent.IconAndText,
+                    onCheckedChange = { showLabels ->
+                        val content = if (showLabels) NavContent.IconAndText else NavContent.IconOnly
+                        if (content != appearance.activeNavContent) onNavContentChange(content)
                     },
                 )
                 SwitchPreference(
@@ -384,7 +375,7 @@ private fun AppearanceThemePreview(
         ) {
             Text(
                 text = stringResource(R.string.theme_preview),
-                style = MiuixTheme.textStyles.body1,
+                style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
                 color = MiuixTheme.colorScheme.onSurfaceContainer,
             )
             Text(

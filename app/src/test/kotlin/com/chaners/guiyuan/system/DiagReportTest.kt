@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.system
 
 import com.chaners.guiyuan.settings.DiagLevel
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -168,6 +169,17 @@ class DiagReportTest {
     }
 
     @Test
+    fun scopedHistoryClearIsDeclaredWithoutClaimingSourceDeletion() {
+        val output = report(
+            "new-event",
+            clearedAt = LocalDateTime.parse("2026-10-30T23:00:10"),
+        )
+        assertTrue(output.contains("visibleHistorySince=2026-10-30T23:00:10"))
+        assertTrue(output.contains("historyClearScope=guiyuan-view-and-report-only"))
+        assertTrue(output.contains("\nnew-event\n"))
+    }
+
+    @Test
     fun failedRootLogCollectionIsDistinguishedFromEmptyLog() {
         val report = report(collection = RootShell.Result(1, "", false, null))
         assertTrue(report.contains("Runtime logs were not collected."))
@@ -180,6 +192,7 @@ class DiagReportTest {
         truncated: Boolean = false,
         collection: RootShell.Result? = null,
         level: DiagLevel = DiagLevel.Detailed,
+        clearedAt: LocalDateTime? = null,
     ): String {
         val recorded = lines.toList()
         return DiagReport.build(
@@ -201,6 +214,7 @@ class DiagReportTest {
                     result = collection ?: RootShell.Result(0, recorded.joinToString("\n"), false, null, truncated),
                     lines = recorded,
                     sessionLines = recorded,
+                    clearedAt = clearedAt,
                 ),
                 runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
                 entries = recorded.map(DiagLogParser::parse),

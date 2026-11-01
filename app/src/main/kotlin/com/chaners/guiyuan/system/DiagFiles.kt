@@ -179,10 +179,12 @@ internal object DiagFiles {
         )
         val selection =
             "${MediaStore.MediaColumns.RELATIVE_PATH}=? AND " +
-                "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ?"
+                "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ? AND " +
+                "${MediaStore.MediaColumns.OWNER_PACKAGE_NAME}=?"
         val args = arrayOf(
             SHARE_PATH,
             "$NAME_PREFIX%",
+            context.packageName,
         )
         val reports = mutableListOf<StoredShare>()
 

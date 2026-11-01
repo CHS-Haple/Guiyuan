@@ -1,35 +1,24 @@
-# Documentation
+# Documentation / 开发文档
 
-Guiyuan keeps current policy, current development state, durable decisions, and platform evidence separate.
+The repository root [README](../README.md) is the **user-facing project homepage**. User policies live at the repository root. Developer records are grouped here by ownership, not by build number.
 
-For normal development, start with:
-
-1. [CONTRIBUTING.md](../CONTRIBUTING.md) — engineering and workflow rules.
-2. [development/CURRENT.md](development/CURRENT.md) — the current accepted development state.
-
-Load the rest only when the task needs it:
-
-- [development/ROADMAP.md](development/ROADMAP.md) — future direction and release exit criteria.
-- [development/DECISIONS.md](development/DECISIONS.md) — durable engineering decisions and the reasons behind them.
-- [architecture/README.md](architecture/README.md) — current runtime ownership and scene/layout policy.
-- [reference/systemui-contracts.md](reference/systemui-contracts.md) — reusable target SystemUI evidence and integration constraints.
-- [reference/lsposed-7927-hot-reload.md](reference/lsposed-7927-hot-reload.md) — binary-verified LSPosed generation handoff and lifecycle limits.
-- [reference/lsposed-7930-compatibility.md](reference/lsposed-7930-compatibility.md) — bounded 7930 device Hot Reload evidence, archive integrity and remaining compatibility gates.
-- [reference/lsposed-7936-compatibility.md](reference/lsposed-7936-compatibility.md) — source-verified 7936 versus 7930 framework changes and evidence gates before upgrading the tested LSPosed runtime.
-- [CHANGELOG.md](../CHANGELOG.md) — public release-level changes.
-- [OS4 integration audit](../third_party/miuix-glass/UI_AUDIT.md) — source-backed OS4 UI conformance, B1536 matched-source acceptance and remaining variant-specific visual/evidence limits. The ordinary published-MIUIX fallback is not equivalent to the accepted source-built Canary.
-
-## Authority
-
-| Question | Source |
+| Document | Responsibility |
 | --- | --- |
-| How should code/workflow be handled? | `CONTRIBUTING.md` |
-| What is the current accepted development state? | `development/CURRENT.md` |
-| What is planned next? | `development/ROADMAP.md` |
-| Why is a durable architecture choice in place? | `development/DECISIONS.md` |
-| What is the current runtime ownership/layout policy? | `architecture/` |
-| What target SystemUI behavior has been verified? | `reference/systemui-contracts.md` |
-| What changed for users or releases? | `CHANGELOG.md` |
-| What version/build is authoritative? | Gradle project configuration |
+| [CONTRIBUTING](../CONTRIBUTING.md) | Contribution rules, code review, CI, branching, and device-evidence requirements |
+| [Current state](development/CURRENT.md) | The accepted runtime architecture, verified constraints and outstanding work (not a build diary) |
+| [Decisions](development/DECISIONS.md) | Stable design decisions and their technical rationale |
+| [Roadmap](development/ROADMAP.md) | Future capabilities and release qualification criteria |
+| [Release readiness](development/RELEASE_READINESS.md) | Bounded evidence, release gates, sign-off and remaining checks |
+| [Architecture](architecture/README.md) | Runtime ownership, layout, scene, and native fallback contracts |
+| [SystemUI reference](reference/systemui-contracts.md) | Public and reusable host contracts; sensitive binary analysis remains private |
+| [Framework references](reference/lsposed-7927-hot-reload.md) | Framework compatibility evidence (see related 7930 and 7936 files) |
+| [OS4 glass integration](../third_party/miuix-glass/README.md) | Pinned upstream provenance, adaptation boundary and license upkeep |
 
-Do not copy the same fact into several documents. Current source and verified runtime evidence override stale prose; when a durable rule changes, update the one document that owns that rule.
+User-facing policies: [CHANGELOG](../CHANGELOG.md), [TERMS](../TERMS.md), [PRIVACY](../PRIVACY.md), [SECURITY](../SECURITY.md), [THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES.md), [Support](SUPPORT.md).
+
+## Maintenance rules
+
+- Do not repeat long history across README, CURRENT, ROADMAP and RELEASE_READINESS. Build-by-build logs belong in commits, PRs or CI.
+- A verified source or host observation takes precedence over stale documentation; update the **owning** document when behavior changes.
+- Keep real dependency attribution and licenses. Keep private ROM binaries, raw logs and local analysis tools out of this public repository.
+- The detailed [OS4 conformance matrix](../third_party/miuix-glass/CONFORMANCE.md) and [UI audit](../third_party/miuix-glass/UI_AUDIT.md) are **historical engineering evidence**, not app-level documentation or a checklist that overrides current source. Use their dated context before reusing an observation.

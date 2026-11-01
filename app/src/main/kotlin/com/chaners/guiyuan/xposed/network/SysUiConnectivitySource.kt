@@ -46,6 +46,7 @@ internal object SysUiConnectivitySource {
             context.getSystemService(ConnectivityManager::class.java)
                 ?: return false
         val handler = Handler(Looper.getMainLooper())
+        var lastLoggedState: State? = null
 
         fun publish(
             source: String,
@@ -78,14 +79,18 @@ internal object SysUiConnectivitySource {
                 }
                 return
             }
-            readOrNull {
-                onEvent?.invoke(
-                    "connectivity source=" + source +
-                        " transport=" + state.transport.name +
-                        " validated=" + state.validated +
-                        " internetCapability=" + state.hasInternetCapability +
-                        " mobileDataEnabled=" + (state.mobileDataEnabled?.toString() ?: "unknown"),
-                )
+            // Native observers still receive every callback; only log new effective states.
+            if (onEvent != null && state != lastLoggedState) {
+                lastLoggedState = state
+                readOrNull {
+                    onEvent.invoke(
+                        "connectivity source=" + source +
+                            " transport=" + state.transport.name +
+                            " validated=" + state.validated +
+                            " internetCapability=" + state.hasInternetCapability +
+                            " mobileDataEnabled=" + (state.mobileDataEnabled?.toString() ?: "unknown"),
+                    )
+                }
             }
         }
 
