@@ -39,7 +39,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -98,7 +97,7 @@ import kotlinx.serialization.Serializable
 import top.yukonga.miuix.kmp.nav.core.NavKey
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
-import top.yukonga.miuix.kmp.nav.core.rememberNavBackStack
+import top.yukonga.miuix.kmp.nav.core.navBackStackOf
 import top.yukonga.miuix.kmp.nav.transition.navGraphicsTransition
 import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -203,16 +202,20 @@ internal fun OnboardingFlow(
         else -> NavSwipeDirection.RightToLeft
     }
 
-    val pages = rememberNavBackStack<GuidePage>(
-        if (agreementReviewOnly) GuidePage.Stage(2) else GuidePage.Welcome,
-    )
+    // An unfinished guide begins at its entry page on each new app session.
+    // Save settings and agreement completion, not the partial page stack.
+    val pages = remember(agreementReviewOnly) {
+        navBackStackOf<GuidePage>(
+            if (agreementReviewOnly) GuidePage.Stage(2) else GuidePage.Welcome,
+        )
+    }
     val step = when (val current = pages.lastOrNull()) {
         GuidePage.Welcome -> 0
         is GuidePage.Stage -> current.number
         GuidePage.Complete -> 4
         else -> 0 // NavBackStack stores NavKey, not GuidePage.
     }
-    var permissionWarning by rememberSaveable { mutableStateOf(PermissionWarningPhase.Hidden) }
+    var permissionWarning by remember { mutableStateOf(PermissionWarningPhase.Hidden) }
     fun advance() {
         val next = when (val nextStep = nextGuideStage(step)) {
             1, 2, 3 -> GuidePage.Stage(nextStep)
@@ -272,7 +275,7 @@ internal fun OnboardingFlow(
     var rootChecking by remember { mutableStateOf(false) }
     var rootAccess by remember { mutableStateOf<Boolean?>(null) }
     var rootRefresh by remember { mutableIntStateOf(0) }
-    var expandedPermission by rememberSaveable { mutableIntStateOf(0) }
+    var expandedPermission by remember { mutableIntStateOf(0) }
     fun back() {
         // Let the active MIUIX overlay own Back until its dismissal finishes.
         if (documentVisible || documentDismissing || permissionWarning != PermissionWarningPhase.Hidden) return
