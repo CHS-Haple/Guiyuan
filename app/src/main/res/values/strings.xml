@@ -147,8 +147,8 @@
     <string name="floating_navigation_liquid_mode_clear">Clear</string>
     <string name="floating_navigation_content">Floating navigation labels</string>
     <string name="floating_navigation_content_summary">Show text labels beneath navigation icons</string>
-    
-    
+
+
     <string name="swipe_back">Page swipe back</string>
     <string name="swipe_back_summary">Swipe horizontally on a page to go back</string>
     <string name="section_about_project">Project</string>
