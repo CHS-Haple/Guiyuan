@@ -263,13 +263,10 @@ internal fun OnboardingFlow(
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
-    // Reset on entry, not exit: NavDisplay keeps the outgoing page visible during transitions.
+    // Returning to this page clears consent, not document views.
+    // NavDisplay retains the outgoing page through its transition.
     LaunchedEffect(step) {
-        if (step == 2) {
-            termsViewed = false
-            privacyViewed = false
-            policyAccepted = false
-        }
+        if (step == 2) policyAccepted = false
     }
     var scopeRequestFailed by remember { mutableStateOf(false) }
     var rootChecking by remember { mutableStateOf(false) }
