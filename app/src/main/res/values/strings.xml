@@ -566,8 +566,6 @@
     <string name="guide_root_check_action">Check Root access</string>
     <string name="guide_root_explanation">Opening Permissions checks Root and may prompt for authorization.</string>
     <string name="guide_diagnostics_optional">Root access · optional</string>
-    <string name="guide_revisit_title">Setup guide</string>
-    <string name="guide_revisit_summary">Review the setup steps from your first launch</string>
     <string name="guide_permissions_title">Permissions</string>
     <string name="guide_basic_title">Basic settings</string>
     <string name="guide_module_group">Module</string>
