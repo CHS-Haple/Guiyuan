@@ -11,7 +11,10 @@ class AgreementVersionTest {
         assertFalse(AppPlatform.hasCurrentAgreementAcknowledgment(2, 1))
         assertFalse(AppPlatform.hasCurrentAgreementAcknowledgment(3, 1))
         assertFalse(AppPlatform.hasCurrentAgreementAcknowledgment(2, 2))
-        assertTrue(AppPlatform.hasCurrentAgreementAcknowledgment(3, 2))
+        // B1700 acknowledged the privacy notice, but did not agree to it.
+        assertFalse(AppPlatform.hasCurrentAgreementAcknowledgment(3, 2))
+        assertFalse(AppPlatform.hasCurrentAgreementAcknowledgment(4, 1))
+        assertTrue(AppPlatform.hasCurrentAgreementAcknowledgment(4, 2))
         assertTrue(AppPlatform.hasCurrentAgreementAcknowledgment(4, 3))
     }
 }

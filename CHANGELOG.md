@@ -12,6 +12,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ### Added
 - Introduced a first-run guide for language, framework and SystemUI permissions, separate Terms of Use and Privacy Policy, and an explicit bilingual acknowledgment to both documents. Root remains optional; users can reopen the guide from About.
+- Existing installations whose previous checkbox did not explicitly agree to the Privacy Policy receive a one-time acknowledgment review; the stored Terms acceptance, app preferences and device setup remain intact.
 - Added standalone Terms and Privacy access from About, with an offline document viewer and links in the acknowledgment text.
 
 ### Improved
