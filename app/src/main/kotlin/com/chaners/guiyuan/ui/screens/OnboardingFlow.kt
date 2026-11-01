@@ -757,12 +757,15 @@ internal fun OnboardingFlow(
                     },
                     enabled = step != 2 || policyAccepted,
                     onClick = {
-                        if (step == 1 && !sysUiInScope) {
-                            permissionWarning = PermissionWarningPhase.Visible
-                        } else if (agreementReviewOnly && step == 2) {
-                            if (pages.lastOrNull() == page) onComplete()
-                        } else {
-                            advanceFrom(page)
+                        // A covered page's retained click handler must not act on the new top.
+                        if (pages.lastOrNull() == page) {
+                            if (step == 1 && !sysUiInScope) {
+                                permissionWarning = PermissionWarningPhase.Visible
+                            } else if (agreementReviewOnly && step == 2) {
+                                onComplete()
+                            } else {
+                                advanceFrom(page)
+                            }
                         }
                     },
                 )
