@@ -2,7 +2,8 @@
 
 # 归元 · Guiyuan
 
-**为 HyperOS 4 打造的一体化状态栏图标**  
+**为 HyperOS 4 打造的一体化状态栏图标**
+
 *A unified battery, cellular and Wi-Fi indicator for HyperOS 4.*
 
 [![Release](https://img.shields.io/github/v/release/CHS-Haple/Guiyuan?label=release)](https://github.com/CHS-Haple/Guiyuan/releases)
