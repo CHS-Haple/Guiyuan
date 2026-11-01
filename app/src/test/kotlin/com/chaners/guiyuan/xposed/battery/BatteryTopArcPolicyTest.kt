@@ -77,6 +77,14 @@ class BatteryTopArcPolicyTest {
     }
 
     @Test
+    fun readoutMovedBelowTheTopArcDoesNotLeaveAStaleCenteredGap() {
+        val nearTop = gapFor(left = 43f, top = -2f, right = 77f, bottom = 20f)
+        val shiftedBelow = gapFor(left = 43f, top = 30f, right = 77f, bottom = 52f)
+        assertTrue(nearTop.sweepDegrees > 0f)
+        assertEquals(0f, shiftedBelow.sweepDegrees, 0.0001f)
+    }
+
+    @Test
     fun extraVisibleHeightOrLowerPositionWidensGapUntilWidthBecomesLimit() {
         val compact =
             gapFor(

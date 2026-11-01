@@ -282,6 +282,13 @@ internal fun topOffsetYRaw(uiOffset: Float): Float =
         BATTERY_TOP_VERTICAL_OFFSET_MAX,
     )
 
+internal fun topOffsetYDefault(layout: ContentLayout): Float =
+    if (layout == ContentLayout.NETWORK_CENTER) {
+        topOffsetYRaw(3f)
+    } else {
+        BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
+    }
+
 
 internal const val COMBINED_SCALE_DEFAULT = 1f
 internal const val COMBINED_SCALE_MIN = 0.60f

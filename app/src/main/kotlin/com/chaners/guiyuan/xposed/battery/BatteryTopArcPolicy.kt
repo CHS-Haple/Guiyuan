@@ -73,8 +73,8 @@ internal object BatteryTopArcPolicy {
             return Gap(TOP_DEGREES, 0f)
         }
 
-        if (right <= ringCenterX || left >= ringCenterX) {
-            return resolveOffCenterGap(
+        if (right <= ringCenterX || left >= ringCenterX || top > ringTop) {
+            return resolveRectangleIntersectionGap(
                 left = left,
                 top = top,
                 right = right,
@@ -129,7 +129,7 @@ internal object BatteryTopArcPolicy {
         )
     }
 
-    private fun resolveOffCenterGap(
+    private fun resolveRectangleIntersectionGap(
         left: Float,
         top: Float,
         right: Float,
