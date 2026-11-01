@@ -6,7 +6,7 @@ The project follows a Keep a Changelog-style structure. `[Unreleased]` contains 
 
 Failed experiments, CI-by-CI adjustments and investigation history belong in Git history or engineering decision records, not this file.
 
-## [Unreleased]
+## [1.0.0] - 2026-11-02
 
 ### Added
 - Introduced a first-run guide for language, framework and SystemUI permissions, separate Terms of Use and Privacy Policy, and an explicit bilingual acknowledgment to both documents. Root remains optional; the guide opens automatically on first launch or when updated agreements require acknowledgment.
@@ -19,8 +19,11 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 - Simplified the floating navigation text-label option to a switch, and aligned its outlined Material Symbols icon weight with neighboring settings.
 - Continued the 0.9.x improvements to runtime ownership, native-safe restoration, diagnostics, configuration backup, dual-SIM presentation and API 102 Hot Reload.
 
+### Fixed
+- Prevented first-run guide pages from being skipped after repeated Back-to-Home and warm relaunch by validating the originating page before continuing.
+
 ### Compatibility and scope
-- The verified target remains the supported Xiaomi HyperOS/SystemUI baseline, with the fully expanded Control Center owned by SystemUI and unsupported or ambiguous presentations falling back to native behavior.
+- The officially supported operating-system family for 1.0.0 is **Xiaomi HyperOS 4 only**. The device-tested baseline is Xiaomi 15 Pro, HyperOS `OS4.0.0.19.XOBCNXM`, SystemUI `17.03.260226.r`; other HyperOS 4 devices and builds are not individually certified. The optional OS3 setting is a visual style, not a HyperOS 3 compatibility claim. The fully expanded Control Center remains SystemUI-owned, with unsupported or ambiguous presentations falling back to native behavior.
 - Other framework implementations, different SystemUI builds and third-party variable-font rendering require separate device evidence. Unreproduced exceptional native setter failure paths and optional MIUIX/AGP upgrades remain outside this release qualification.
 
 ## [0.9.2] - 2026-10-30
