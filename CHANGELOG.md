@@ -2,11 +2,27 @@
 
 All notable changes to Guiyuan are documented here.
 
-The project follows a Keep a Changelog-style structure. `[Unreleased]` contains durable net changes after the latest promoted checkpoint. Pre-1.0 versions are validated development checkpoints; **1.0.0 remains the first planned formal release**.
+The project follows a Keep a Changelog-style structure. `[Unreleased]` contains durable net changes after the latest promoted checkpoint. Pre-1.0 versions are validated development checkpoints; **1.0.0 is being prepared as the first formal release; release acceptance and publishing remain separate gates**.
 
 Failed experiments, CI-by-CI adjustments and investigation history belong in Git history or engineering decision records, not this file.
 
 ## [Unreleased]
+
+## [1.0.0] - 2026-11-01
+
+### Added
+- Introduced a first-run guide for language, framework and SystemUI permissions, separate Terms of Use and Privacy Policy, and an explicit bilingual acknowledgment to both documents. Root remains optional; users can reopen the guide from About.
+- Added standalone Terms and Privacy access from About, with an offline document viewer and links in the acknowledgment text.
+
+### Improved
+- Matched the optional HyperOS 4 visual experience to the accepted source-pinned MIUIX glass controls, with coordinated navigation, sheet, search and permission-screen presentation while retaining the HyperOS 3 option.
+- Refined the battery-ring top cutout to respect the optical clearance around curved network glyphs, and corrected the new network-centered top offset default while preserving saved single/dual layout settings.
+- Simplified the floating navigation text-label option to a switch, and aligned its outlined Material Symbols icon weight with neighboring settings.
+- Continued the 0.9.x improvements to runtime ownership, native-safe restoration, diagnostics, configuration backup, dual-SIM presentation and API 102 Hot Reload.
+
+### Compatibility and scope
+- The verified target remains the supported Xiaomi HyperOS/SystemUI baseline, with the fully expanded Control Center owned by SystemUI and unsupported or ambiguous presentations falling back to native behavior.
+- Other framework implementations, different SystemUI builds and third-party variable-font rendering require separate device evidence. Unreproduced exceptional native setter failure paths and optional MIUIX/AGP upgrades remain outside this release qualification.
 
 ## [0.9.2] - 2026-10-30
 

@@ -36,6 +36,7 @@ internal fun UiNativeTitleBar(
             title = title,
             modifier = modifier,
             color = Color.Transparent,
+            titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = titleAlpha()),
             scrollBehavior = scrollBehavior,
             defaultWindowInsetsPadding = defaultWindowInsetsPadding,
             titlePadding = titlePadding,
