@@ -231,10 +231,11 @@ internal fun OnboardingFlow(
     var privacyViewed by remember { mutableStateOf(false) }
     var openDocument by remember { mutableStateOf<AgreementDocument?>(null) }
     var documentVisible by remember { mutableStateOf(false) }
+    var documentDismissing by remember { mutableStateOf(false) }
     var policyAccepted by remember { mutableStateOf(false) }
 
     fun showAgreement(document: AgreementDocument) {
-        if (documentVisible) return
+        if (documentVisible || documentDismissing) return
         when (document) {
             AgreementDocument.Terms -> termsViewed = true
             AgreementDocument.Privacy -> privacyViewed = true
@@ -277,7 +278,7 @@ internal fun OnboardingFlow(
     var expandedPermission by rememberSaveable { mutableIntStateOf(0) }
     fun back() {
         // Let the active MIUIX overlay own Back until its dismissal finishes.
-        if (openDocument != null || permissionWarning != PermissionWarningPhase.Hidden) return
+        if (documentVisible || documentDismissing || permissionWarning != PermissionWarningPhase.Hidden) return
         if (pages.size > 1) pages.removeLastOrNull() else onExit?.invoke()
     }
     fun refreshPermissionStatus() {
@@ -565,7 +566,7 @@ internal fun OnboardingFlow(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                             ) {
-                                                if (requiredReading.terms && !termsViewed) Badge()
+                                                if (requiredReading.terms && !termsViewed) Badge(modifier = Modifier.size(8.dp))
                                                 Icon(
                                                     imageVector = MiuixIcons.Regular.ChevronForward,
                                                     contentDescription = null,
@@ -593,7 +594,7 @@ internal fun OnboardingFlow(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                             ) {
-                                                if (requiredReading.privacy && !privacyViewed) Badge()
+                                                if (requiredReading.privacy && !privacyViewed) Badge(modifier = Modifier.size(8.dp))
                                                 Icon(
                                                     imageVector = MiuixIcons.Regular.ChevronForward,
                                                     contentDescription = null,
@@ -798,9 +799,15 @@ internal fun OnboardingFlow(
                         title = stringResource((openDocument ?: AgreementDocument.Privacy).titleRes()),
                         backgroundColor = MiuixTheme.colorScheme.background,
                         insideMargin = DpSize(0.dp, 0.dp),
-                        onDismissRequest = { documentVisible = false },
+                        onDismissRequest = {
+                            if (documentVisible) {
+                                documentDismissing = true
+                                documentVisible = false
+                            }
+                        },
                         onDismissFinished = {
-                            if (!documentVisible) openDocument = null
+                            // Keep the rendered document stable while MIUIX retires its popup host.
+                            documentDismissing = false
                         },
                     ) {
                         openDocument?.let { AgreementSheetBody(it) }
