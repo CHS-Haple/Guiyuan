@@ -54,10 +54,10 @@ class PredictiveBackCommitDirectionTest {
     @Test
     fun normalCommitKeepsVelocityWhileExcessSpeedRetainsNoOvershootFloor() {
         assertEquals(-0.6f, completedBackVelocity(0.6f, 0.3f), 0.0001f)
-        assertEquals(0f, completedBackVelocity(0f, 0.3f))
+        assertEquals(0f, completedBackVelocity(0f, 0.3f), 0.0001f)
         val floor = -springFrequency.toFloat() * 0.3f
         assertEquals(floor, completedBackVelocity(100f, 0.3f), 0.0001f)
-        assertEquals(0f, completedBackVelocity(-0.5f, 0.3f))
+        assertEquals(0f, completedBackVelocity(-0.5f, 0.3f), 0.0001f)
     }
 
     @Test
