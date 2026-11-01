@@ -205,7 +205,7 @@ internal fun OnboardingFlow(
     // An unfinished guide begins at its entry page on each new app session.
     // Save settings and agreement completion, not the partial page stack.
     val pages = remember(agreementReviewOnly) {
-        navBackStackOf<GuidePage>(
+        navBackStackOf(
             if (agreementReviewOnly) GuidePage.Stage(2) else GuidePage.Welcome,
         )
     }
