@@ -204,8 +204,8 @@ internal object BatteryTopArcPolicy {
             val radians = Math.toRadians(((segmentStart + segmentEnd) / 2f).toDouble())
             val x = ringCenterX + ringRadius * cos(radians).toFloat()
             val y = ringCenterY + ringRadius * sin(radians).toFloat()
-            val dx = kotlin.math.max(left - x, 0f, x - right)
-            val dy = kotlin.math.max(top - y, 0f, y - bottom)
+            val dx = maxOf(left - x, 0f, x - right)
+            val dy = maxOf(top - y, 0f, y - bottom)
             if (dx * dx + dy * dy <= clearance * clearance + POSITION_EPSILON) {
                 gapStart = kotlin.math.min(gapStart, segmentStart)
                 gapEnd = kotlin.math.max(gapEnd, segmentEnd)
@@ -223,7 +223,7 @@ internal object BatteryTopArcPolicy {
         )
     }
 
-        fun mergeGaps(
+    fun mergeGaps(
         gaps: List<Gap>,
     ): Gap {
         val visible =
