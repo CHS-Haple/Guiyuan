@@ -528,7 +528,7 @@
     <string name="guide_privacy_note_root">Root 为可选权限。未授权时，部分诊断和维护功能可能受限。</string>
     <string name="guide_privacy_note_diagnostics">诊断可能读取模块或系统日志。报告可能包含设备及运行信息，不会自动上传。</string>
     <string name="guide_privacy_note_sharing">备份和诊断报告须由用户主动导出或分享。分享前请核查敏感信息。</string>
-    <string name="guide_privacy_ack">我已阅读《隐私政策》，并同意《使用条款》</string>
+    <string name="guide_privacy_ack">我已阅读并同意《使用条款》和《隐私政策》</string>
     <string name="guide_agree_continue">同意并继续</string>
     <string name="guide_scope_title">模块设置</string>
     <string name="guide_scope_description">归元通过兼容的模块框架调整系统状态信息的显示方式。</string>

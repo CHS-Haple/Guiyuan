@@ -529,7 +529,7 @@
     <string name="guide_privacy_note_root">Root is optional. Without it, some diagnostic and maintenance functions may be limited.</string>
     <string name="guide_privacy_note_diagnostics">Diagnostics may read module or system logs. Reports may contain device and runtime information but are not uploaded automatically.</string>
     <string name="guide_privacy_note_sharing">Users must initiate backup or report export and sharing. Check files for sensitive information before sharing.</string>
-    <string name="guide_privacy_ack">I have read the Privacy Policy and agree to the Terms of Use</string>
+    <string name="guide_privacy_ack">I have read and agree to the Terms of Use and Privacy Policy</string>
     <string name="guide_agree_continue">Agree and continue</string>
     <string name="guide_scope_title">Set up the module</string>
     <string name="guide_scope_description">Guiyuan customizes system status information through a compatible module framework.</string>
