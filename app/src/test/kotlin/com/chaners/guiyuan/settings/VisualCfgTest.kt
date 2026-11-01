@@ -283,6 +283,26 @@ class VisualCfgTest {
     }
 
     @Test
+    fun networkCenteredTopOffsetDefaultsToPlusThreeWithoutChangingBatteryCenteredReference() {
+        val network = VisualCfg()
+        assertEquals(ContentLayout.NETWORK_CENTER, network.layout)
+        assertEquals(false, network.showTopReadout)
+        assertEquals(3f, topOffsetYUi(network.topOffsetY), 0f)
+        assertEquals(6f, network.topOffsetY, 0f)
+
+        val battery = VisualCfg(layout = ContentLayout.BATTERY_CENTER)
+        assertEquals(0f, topOffsetYUi(battery.topOffsetY), 0f)
+        assertEquals(3f, battery.topOffsetY, 0f)
+        assertEquals(6f, Float.NaN.finiteIn(
+            BATTERY_TOP_VERTICAL_OFFSET_MIN,
+            BATTERY_TOP_VERTICAL_OFFSET_MAX,
+            topOffsetYDefault(ContentLayout.NETWORK_CENTER),
+        ), 0f)
+        assertEquals(6f, network.copy(topOffsetY = Float.NaN).normalized().topOffsetY, 0f)
+        assertEquals(3f, battery.copy(topOffsetY = Float.NaN).normalized().topOffsetY, 0f)
+    }
+
+    @Test
     fun userFacingOffsetRangeIsPlusMinusTenAroundPhysicalReference() {
         assertEquals(-10f, BATTERY_TOP_VERTICAL_OFFSET_UI_MIN, 0.0001f)
         assertEquals(10f, BATTERY_TOP_VERTICAL_OFFSET_UI_MAX, 0.0001f)
