@@ -1,10 +1,10 @@
 package com.chaners.guiyuan.xposed.battery
 
-import kotlin.math.acos
-import kotlin.math.asin
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 internal object BatteryTopArcPolicy {
     internal data class Arc(
@@ -54,178 +54,176 @@ internal object BatteryTopArcPolicy {
         val clearance =
             visualClearance.coerceAtLeast(0f) +
                 ringStroke.coerceAtLeast(0f) / 2f
-        val left = contentLeft - clearance
-        val top = contentTop - clearance
-        val right = contentRight + clearance
-        val bottom = contentBottom + clearance
-        val ringTop = ringCenterY - ringRadius
-        val ringBottom = ringCenterY + ringRadius
-
-        // If the visible content envelope cannot intersect the ring at all,
-        // no ring cutout is needed.
         if (
-            top > bottom ||
-            bottom <= ringTop ||
-            top >= ringBottom ||
-            right <= ringCenterX - ringRadius ||
-            left >= ringCenterX + ringRadius
+            !clearance.isFinite() ||
+            contentLeft >= contentRight ||
+            contentTop >= contentBottom
         ) {
             return Gap(TOP_DEGREES, 0f)
         }
 
-        if (right <= ringCenterX || left >= ringCenterX) {
-            return resolveOffCenterGap(
-                left = left,
-                top = top,
-                right = right,
-                bottom = bottom,
-                ringCenterX = ringCenterX,
-                ringCenterY = ringCenterY,
-                ringRadius = ringRadius,
-                startDegrees = startDegrees,
-                maxSweep = maxSweep,
-            )
-        }
-
-        val availableLeft =
-            (TOP_DEGREES - startDegrees)
-                .coerceAtLeast(0f)
-        val availableRight =
-            (startDegrees + maxSweep - TOP_DEGREES)
-                .coerceAtLeast(0f)
-
-        val leftRatio =
-            ((ringCenterX - left) / ringRadius)
-                .coerceIn(0f, 1f)
-        val rightRatio =
-            ((right - ringCenterX) / ringRadius)
-                .coerceIn(0f, 1f)
-        val verticalRatio =
-            ((ringCenterY - bottom) / ringRadius)
-                .coerceIn(-1f, 1f)
-
-        val verticalHalf =
-            Math.toDegrees(acos(verticalRatio).toDouble()).toFloat()
-        val leftHalf =
-            min(
-                Math.toDegrees(asin(leftRatio).toDouble()).toFloat(),
-                verticalHalf,
-            ).coerceAtMost(availableLeft)
-        val rightHalf =
-            min(
-                Math.toDegrees(asin(rightRatio).toDouble()).toFloat(),
-                verticalHalf,
-            ).coerceAtMost(availableRight)
-
-        if (leftHalf <= 0f && rightHalf <= 0f) {
+        // The expanded rectangle is only a conservative early-out. Its square
+        // corners are not part of the requested optical clearance.
+        if (
+            contentBottom + clearance <= ringCenterY - ringRadius ||
+            contentTop - clearance >= ringCenterY + ringRadius ||
+            contentRight + clearance <= ringCenterX - ringRadius ||
+            contentLeft - clearance >= ringCenterX + ringRadius
+        ) {
             return Gap(TOP_DEGREES, 0f)
         }
 
-        val gapStart = TOP_DEGREES - leftHalf
-        val gapEnd = TOP_DEGREES + rightHalf
-        return Gap(
-            centerDegrees = (gapStart + gapEnd) / 2f,
-            sweepDegrees = (gapEnd - gapStart).coerceAtLeast(0f),
+        return resolveRoundedRectangleGap(
+            left = contentLeft,
+            top = contentTop,
+            right = contentRight,
+            bottom = contentBottom,
+            clearance = clearance,
+            ringCenterX = ringCenterX,
+            ringCenterY = ringCenterY,
+            ringRadius = ringRadius,
+            startDegrees = startDegrees,
+            maxSweep = maxSweep,
         )
     }
 
-    private fun resolveOffCenterGap(
+    private fun resolveRoundedRectangleGap(
         left: Float,
         top: Float,
         right: Float,
         bottom: Float,
+        clearance: Float,
         ringCenterX: Float,
         ringCenterY: Float,
         ringRadius: Float,
         startDegrees: Float,
         maxSweep: Float,
     ): Gap {
-        val arcStart = startDegrees
         val arcEnd = startDegrees + maxSweep
-        val boundaries = ArrayList<Float>(10)
-        boundaries += arcStart
+        val radiusSquared = ringRadius * ringRadius
+        val boundaries = ArrayList<Float>(32)
+        boundaries += startDegrees
         boundaries += arcEnd
 
-        fun addEquivalentAngles(rawDegrees: Float) {
-            if (!rawDegrees.isFinite()) return
+        fun addAngle(x: Float, y: Float) {
+            val angle =
+                Math.toDegrees(
+                    atan2((y - ringCenterY).toDouble(), (x - ringCenterX).toDouble()),
+                ).toFloat()
             for (turn in -2..2) {
-                val candidate = rawDegrees + turn * FULL_TURN_DEGREES
-                if (candidate >= arcStart - ANGLE_EPSILON && candidate <= arcEnd + ANGLE_EPSILON) {
-                    boundaries += candidate.coerceIn(arcStart, arcEnd)
+                val candidate = angle + turn * FULL_TURN_DEGREES
+                if (candidate >= startDegrees - ANGLE_EPSILON &&
+                    candidate <= arcEnd + ANGLE_EPSILON
+                ) {
+                    boundaries += candidate.coerceIn(startDegrees, arcEnd)
                 }
             }
         }
 
-        fun addCosBoundary(x: Float) {
-            val ratio = ((x - ringCenterX) / ringRadius)
-            if (ratio < -1f || ratio > 1f) return
-            val base =
-                Math.toDegrees(
-                    acos(ratio.coerceIn(-1f, 1f)).toDouble(),
-                ).toFloat()
-            addEquivalentAngles(base)
-            addEquivalentAngles(FULL_TURN_DEGREES - base)
+        fun addVerticalEdge(x: Float) {
+            val dx = x - ringCenterX
+            val remaining = radiusSquared - dx * dx
+            if (remaining < 0f) return
+            val dy = sqrt(remaining)
+            val y1 = ringCenterY - dy
+            val y2 = ringCenterY + dy
+            if (y1 >= top - POSITION_EPSILON && y1 <= bottom + POSITION_EPSILON) {
+                addAngle(x, y1)
+            }
+            if (y2 >= top - POSITION_EPSILON && y2 <= bottom + POSITION_EPSILON) {
+                addAngle(x, y2)
+            }
         }
 
-        fun addSinBoundary(y: Float) {
-            val ratio = ((y - ringCenterY) / ringRadius)
-            if (ratio < -1f || ratio > 1f) return
-            val base =
-                Math.toDegrees(
-                    asin(ratio.coerceIn(-1f, 1f)).toDouble(),
-                ).toFloat()
-            addEquivalentAngles(base)
-            addEquivalentAngles(HALF_TURN_DEGREES - base)
+        fun addHorizontalEdge(y: Float) {
+            val dy = y - ringCenterY
+            val remaining = radiusSquared - dy * dy
+            if (remaining < 0f) return
+            val dx = sqrt(remaining)
+            val x1 = ringCenterX - dx
+            val x2 = ringCenterX + dx
+            if (x1 >= left - POSITION_EPSILON && x1 <= right + POSITION_EPSILON) {
+                addAngle(x1, y)
+            }
+            if (x2 >= left - POSITION_EPSILON && x2 <= right + POSITION_EPSILON) {
+                addAngle(x2, y)
+            }
         }
 
-        addCosBoundary(left)
-        addCosBoundary(right)
-        addSinBoundary(top)
-        addSinBoundary(bottom)
+        fun addCorner(x: Float, y: Float) {
+            if (clearance <= 0f) return
+            val dx = x - ringCenterX
+            val dy = y - ringCenterY
+            val distance = sqrt(dx * dx + dy * dy)
+            if (distance <= POSITION_EPSILON ||
+                distance > ringRadius + clearance ||
+                distance + clearance < ringRadius ||
+                distance + ringRadius < clearance
+            ) return
+
+            // Circle-circle intersections are the round-corner boundaries.
+            val projection =
+                (radiusSquared - clearance * clearance + distance * distance) /
+                    (2f * distance)
+            val heightSquared = radiusSquared - projection * projection
+            if (heightSquared < -POSITION_EPSILON) return
+            val height = sqrt(heightSquared.coerceAtLeast(0f))
+            val unitX = dx / distance
+            val unitY = dy / distance
+            val baseX = ringCenterX + projection * unitX
+            val baseY = ringCenterY + projection * unitY
+            addAngle(baseX - height * unitY, baseY + height * unitX)
+            addAngle(baseX + height * unitY, baseY - height * unitX)
+        }
+
+        addVerticalEdge(left - clearance)
+        addVerticalEdge(right + clearance)
+        addHorizontalEdge(top - clearance)
+        addHorizontalEdge(bottom + clearance)
+        addCorner(left, top)
+        addCorner(right, top)
+        addCorner(left, bottom)
+        addCorner(right, bottom)
 
         val ordered =
             boundaries
                 .sorted()
-                .fold(ArrayList<Float>()) { result, value ->
-                    if (result.isEmpty() || kotlin.math.abs(result.last() - value) > ANGLE_EPSILON) {
-                        result += value
+                .fold(ArrayList<Float>(boundaries.size)) { result, angle ->
+                    if (result.isEmpty() || kotlin.math.abs(result.last() - angle) > ANGLE_EPSILON) {
+                        result += angle
                     }
                     result
                 }
-        if (ordered.size < 2) return Gap(TOP_DEGREES, 0f)
 
-        val covered = ArrayList<Arc>()
+        var gapStart = Float.POSITIVE_INFINITY
+        var gapEnd = Float.NEGATIVE_INFINITY
         for (index in 0 until ordered.lastIndex) {
             val segmentStart = ordered[index]
             val segmentEnd = ordered[index + 1]
             if (segmentEnd - segmentStart <= ANGLE_EPSILON) continue
-            val midpoint = (segmentStart + segmentEnd) / 2f
-            val radians = Math.toRadians(midpoint.toDouble())
+            val radians = Math.toRadians(((segmentStart + segmentEnd) / 2f).toDouble())
             val x = ringCenterX + ringRadius * cos(radians).toFloat()
             val y = ringCenterY + ringRadius * sin(radians).toFloat()
-            if (
-                x >= left - POSITION_EPSILON &&
-                x <= right + POSITION_EPSILON &&
-                y >= top - POSITION_EPSILON &&
-                y <= bottom + POSITION_EPSILON
-            ) {
-                covered += Arc(segmentStart, segmentEnd - segmentStart)
+            val dx = kotlin.math.max(left - x, 0f, x - right)
+            val dy = kotlin.math.max(top - y, 0f, y - bottom)
+            if (dx * dx + dy * dy <= clearance * clearance + POSITION_EPSILON) {
+                gapStart = kotlin.math.min(gapStart, segmentStart)
+                gapEnd = kotlin.math.max(gapEnd, segmentEnd)
             }
         }
-        if (covered.isEmpty()) return Gap(TOP_DEGREES, 0f)
 
-        val gapStart = covered.first().startDegrees
-        val gapEnd =
-            covered.last().let { arc ->
-                arc.startDegrees + arc.sweepDegrees
-            }
+        if (!gapStart.isFinite() || !gapEnd.isFinite() || gapEnd <= gapStart) {
+            return Gap(TOP_DEGREES, 0f)
+        }
+        // Preserve one intentional top notch even when separate glyph parts
+        // intersect both shoulders, rather than drawing a third arc above Wi-Fi.
         return Gap(
             centerDegrees = (gapStart + gapEnd) / 2f,
-            sweepDegrees = (gapEnd - gapStart).coerceAtLeast(0f),
+            sweepDegrees = gapEnd - gapStart,
         )
     }
 
-    fun mergeGaps(
+        fun mergeGaps(
         gaps: List<Gap>,
     ): Gap {
         val visible =
