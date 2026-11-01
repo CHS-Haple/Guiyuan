@@ -144,10 +144,10 @@
     <string name="floating_navigation_liquid_mode_blur">模糊</string>
     <string name="floating_navigation_liquid_mode_balanced">均衡</string>
     <string name="floating_navigation_liquid_mode_clear">通透</string>
-    <string name="floating_navigation_content">悬浮导航栏内容</string>
-    <string name="floating_navigation_content_summary">选择悬浮导航项仅显示图标，或同时显示文字</string>
-    <string name="floating_navigation_content_icon_only">仅图标</string>
-    <string name="floating_navigation_content_icon_and_text">图标与文字</string>
+    <string name="floating_navigation_content">悬浮导航栏文字标签</string>
+    <string name="floating_navigation_content_summary">在导航图标下方显示文字标签</string>
+    
+    
     <string name="swipe_back">页面滑动返回</string>
     <string name="swipe_back_summary">横向滑动页面返回上一级</string>
     <string name="section_about_project">项目</string>
