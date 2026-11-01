@@ -77,6 +77,14 @@ class BatteryTopArcPolicyTest {
     }
 
     @Test
+    fun readoutMovedBelowTheTopArcDoesNotLeaveAStaleCenteredGap() {
+        val nearTop = gapFor(left = 43f, top = -2f, right = 77f, bottom = 20f)
+        val shiftedBelow = gapFor(left = 43f, top = 30f, right = 77f, bottom = 52f)
+        assertTrue(nearTop.sweepDegrees > 0f)
+        assertEquals(0f, shiftedBelow.sweepDegrees, 0.0001f)
+    }
+
+    @Test
     fun extraVisibleHeightOrLowerPositionWidensGapUntilWidthBecomesLimit() {
         val compact =
             gapFor(
@@ -249,6 +257,37 @@ class BatteryTopArcPolicyTest {
             )
 
         assertEquals(0f, gap.sweepDegrees, 0.0001f)
+    }
+
+    @Test
+    fun translatingTopContentNeverLeavesAnIntersectingRingPointVisible() {
+        val left = 36f
+        val right = 84f
+        val ringRadius = 50f
+        val clearance = 4f
+        val offsets = listOf(-10f, -5f, -1f, 0f, 3f, 5f, 10f)
+
+        offsets.forEach { offset ->
+            val top = -1f - offset
+            val bottom = 15f - offset
+            val gap = gapFor(left = left, top = top, right = right, bottom = bottom)
+            val gapStart = gap.centerDegrees - gap.sweepDegrees / 2f
+            val gapEnd = gap.centerDegrees + gap.sweepDegrees / 2f
+
+            for (step in 0..480) {
+                val degrees = 150f + step * 0.5f
+                if (degrees >= gapStart - 0.001f && degrees <= gapEnd + 0.001f) continue
+                val radians = Math.toRadians(degrees.toDouble())
+                val x = 60f + ringRadius * kotlin.math.cos(radians).toFloat()
+                val y = 58f + ringRadius * kotlin.math.sin(radians).toFloat()
+                val dx = maxOf(left - x, 0f, x - right)
+                val dy = maxOf(top - y, 0f, y - bottom)
+                assertTrue(
+                    "Offset $offset: visible ring intersects optical clearance at $degrees",
+                    dx * dx + dy * dy >= clearance * clearance - 0.002f,
+                )
+            }
+        }
     }
 
     @Test
