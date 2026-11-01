@@ -203,7 +203,7 @@ internal data class VisualCfg(
     val ccTintTransition: Boolean = true,
     val topTextScale: Float = topTextScaleDefault(layout),
     val topTextWeight: Int = BATTERY_TOP_TEXT_WEIGHT_DEFAULT,
-    val topOffsetY: Float = BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
+    val topOffsetY: Float = topOffsetYDefault(layout),
     val wifiOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val mobileTypeOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val dualDefaultOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
@@ -250,7 +250,7 @@ internal fun VisualCfg.normalized(): VisualCfg =
             topOffsetY.finiteIn(
                 BATTERY_TOP_VERTICAL_OFFSET_MIN,
                 BATTERY_TOP_VERTICAL_OFFSET_MAX,
-                BATTERY_TOP_VERTICAL_OFFSET_DEFAULT,
+                topOffsetYDefault(layout),
             ),
         wifiOffsetY =
             wifiOffsetY.finiteIn(
