@@ -528,7 +528,7 @@
     <string name="guide_privacy_note_root">Root 为可选权限。未授权时，部分诊断和维护功能可能受限。</string>
     <string name="guide_privacy_note_diagnostics">诊断可能读取模块或系统日志。报告可能包含设备及运行信息，不会自动上传。</string>
     <string name="guide_privacy_note_sharing">备份和诊断报告须由用户主动导出或分享。分享前请核查敏感信息。</string>
-    <string name="guide_privacy_ack">我已阅读并同意《使用条款》和《隐私政策》</string>
+    <string name="guide_privacy_ack">我已阅读《隐私政策》，并同意《使用条款》</string>
     <string name="guide_agree_continue">同意并继续</string>
     <string name="guide_scope_title">模块设置</string>
     <string name="guide_scope_description">归元通过兼容的模块框架调整系统状态信息的显示方式。</string>
@@ -588,7 +588,7 @@
     <string name="privacy_choice_body">您可以在归元中修改或恢复设置，在对应的模块管理器中调整或停用 SystemUI 作用域，并自行决定是否授予可选 Root 权限、生成诊断报告或分享文件。撤销相关权限可能导致对应功能不可用。您也可以通过 Android 系统设置清除归元的应用数据或卸载应用。</string>
     <string name="privacy_choice_body_2">导出或分享诊断日志、配置文件前，请检查其中是否包含个人信息、设备标识或其他敏感内容。归元无法控制其他软件已接收或保存的数据，也不保证第三方存储环境的绝对安全。</string>
     <string name="privacy_contact_title">第七条 政策更新与联系</string>
-    <string name="privacy_contact_body">归元是由项目 GitHub 仓库所列维护者维护的开源项目。隐私咨询、数据处理疑问及相关权利请求可先通过该仓库的 Issues 提出；Issues 为公开渠道，请勿提交个人信息、私人日志或其他敏感材料。如请求需要非公开核验，请先在不披露敏感资料的情况下与维护者商议适当方式。安全漏洞请按 SECURITY.md 的说明使用 GitHub 私密漏洞报告渠道，该渠道不作为一般隐私咨询的私信入口。数据处理方式发生重大变化时，项目将更新本政策及相关说明。</string>
+    <string name="privacy_contact_body">归元是由项目 GitHub 仓库所列维护者维护的开源项目。隐私咨询、数据处理疑问及相关权利请求可先通过该仓库的 Issues 提出；Issues 为公开渠道，请勿提交个人信息、私人日志或其他敏感材料。如需非公开核验，请先在公开 Issues 中提出不包含个人信息的联系请求，由维护者确认是否有合适的非公开沟通方式。在确认安全渠道前，请勿发送敏感资料。安全漏洞请按 SECURITY.md 的说明使用 GitHub 私密漏洞报告渠道，该渠道不作为一般隐私咨询的私信入口。若处理目的、方式、信息种类或其他重要告知事项发生变化，项目将更新本政策并在应用内提示；依法需要重新取得同意的，将另行请求相应确认。</string>
     <string name="terms_scope_title">第一条 软件性质与适用范围</string>
     <string name="terms_scope_body">归元是用于调整 Android/HyperOS 系统状态信息显示的免费开源 LSPosed 模块。目前已验证的框架运行基线为 LSPosed；其他框架、设备及系统版本的兼容性须另行验证。归元并非设备厂商、Android 或 LSPosed 的官方产品；相关名称仅用于说明运行环境与兼容性。</string>
     <string name="terms_access_title">第二条 运行条件与授权</string>
@@ -605,7 +605,7 @@
     <string name="terms_conduct_title">第六条 合理使用与反馈</string>
     <string name="terms_conduct_body">请遵守适用法律、设备授权及第三方许可，不要使用归元的权限干扰他人的设备或数据。反馈问题时仅提交必要信息，避免公开密码、私人日志或安全漏洞细节。</string>
     <string name="terms_updates_title">第七条 条款更新与联系</string>
-    <string name="terms_updates_body">因功能、兼容性或相关规则发生变化，本使用条款可能适时更新；对用户权益有重要影响的变更将通过项目文档或版本说明告知。普通问题可通过项目仓库 Issues 反馈；涉及安全漏洞时，请按 SECURITY.md 的说明使用私密漏洞报告渠道。有关个人信息处理的问题，请参阅《隐私政策》。</string>
+    <string name="terms_updates_body">因功能、兼容性或相关规则发生变化，本使用条款可能适时更新；对用户权利义务有重要影响的变更将通过项目文档或版本说明告知，并在需要时通过应用内页面请求重新确认。普通问题可通过项目仓库 Issues 反馈；涉及安全漏洞时，请按 SECURITY.md 的说明使用私密漏洞报告渠道。有关个人信息处理的问题，请参阅《隐私政策》。</string>
     <string name="guide_terms_link_text">《使用条款》</string>
     <string name="guide_policy_link_text">《隐私政策》</string>
     <string name="terms_title">使用条款</string>
@@ -635,6 +635,6 @@
     <string name="guide_refresh_status">刷新权限状态</string>
     <string name="guide_permission_details">权限说明</string>
     <string name="privacy_choice_body_3">在适用法律规定的范围内，您可以就相关个人信息提出查阅、复制、更正、删除或其他权利请求。归元不设用户账户，也没有集中保存用户资料的服务端系统；维护者通常无法直接访问或删除仅保存在您设备上的信息。对于已提交至第三方平台的信息，您可能需要向相应接收方提出请求。</string>
-    <string name="privacy_last_updated">最后更新：2026-10-31</string>
-    <string name="terms_last_updated">最后更新：2026-10-31</string>
+    <string name="privacy_last_updated">最后更新：2026-11-01</string>
+    <string name="terms_last_updated">最后更新：2026-11-01</string>
 </resources>

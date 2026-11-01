@@ -150,6 +150,15 @@ private val guideStepTransition = navGraphicsTransition { scope ->
 }
 
 @Serializable
+// Page identity is unchanged; only the onboarding visit order is adjusted.
+internal fun nextGuideStage(step: Int): Int? = when (step) {
+    0 -> 2 // Present privacy and terms before any optional Root status check.
+    2 -> 1
+    1 -> 3
+    3 -> 4
+    else -> null
+}
+
 private sealed interface GuidePage : NavKey {
     @Serializable data object Welcome : GuidePage
     @Serializable data class Stage(val number: Int) : GuidePage
@@ -172,6 +181,7 @@ internal fun OnboardingFlow(
     swipeBackEnabled: Boolean,
     onComplete: () -> Unit,
     onExit: (() -> Unit)? = null,
+    agreementReviewOnly: Boolean = false,
 ) {
     val context = LocalContext.current.applicationContext
     val app = remember(context) { context as GyApplication }
@@ -190,7 +200,9 @@ internal fun OnboardingFlow(
         else -> NavSwipeDirection.RightToLeft
     }
 
-    val pages = rememberNavBackStack<GuidePage>(GuidePage.Welcome)
+    val pages = rememberNavBackStack<GuidePage>(
+        if (agreementReviewOnly) GuidePage.Stage(2) else GuidePage.Welcome,
+    )
     val step = when (val current = pages.lastOrNull()) {
         GuidePage.Welcome -> 0
         is GuidePage.Stage -> current.number
@@ -199,9 +211,9 @@ internal fun OnboardingFlow(
     }
     var permissionWarning by rememberSaveable { mutableStateOf(PermissionWarningPhase.Hidden) }
     fun advance() {
-        val next = when (step) {
-            0, 1, 2 -> GuidePage.Stage(step + 1)
-            3 -> GuidePage.Complete
+        val next = when (val nextStep = nextGuideStage(step)) {
+            1, 2, 3 -> GuidePage.Stage(nextStep)
+            4 -> GuidePage.Complete
             else -> {
                 onComplete()
                 return
@@ -663,7 +675,9 @@ internal fun OnboardingFlow(
                     Spacer(Modifier.height(8.dp))
                 }
                 TextButton(
-                    text = stringResource(R.string.guide_continue),
+                    text = stringResource(
+                        if (step == 2) R.string.guide_agree_continue else R.string.guide_continue,
+                    ),
                     modifier = Modifier.widthIn(max = 336.dp).fillMaxWidth().heightIn(min = 50.dp),
                     cornerRadius = 16.dp,
                     textStyle = MiuixTheme.textStyles.button,
@@ -676,6 +690,8 @@ internal fun OnboardingFlow(
                     onClick = {
                         if (step == 1 && !sysUiInScope) {
                             permissionWarning = PermissionWarningPhase.Visible
+                        } else if (agreementReviewOnly && step == 2) {
+                            onComplete()
                         } else {
                             advance()
                         }

@@ -2,7 +2,7 @@
 
 [使用条款 / Terms of Use](TERMS.md)
 
-**最后更新 / Last updated: 2026-10-31**
+**最后更新 / Last updated: 2026-11-01**
 
 ## 简体中文
 
@@ -48,7 +48,7 @@ Android、模块框架、设备厂商及其他应用的独立数据处理行为�
 
 ### 第七条 政策更新与联系
 
-归元是由项目 GitHub 仓库所列维护者维护的开源项目。隐私咨询、数据处理疑问及相关权利请求可先通过该仓库的 [Issues](https://github.com/CHS-Haple/Guiyuan/issues) 提出；Issues 为公开渠道，请勿提交个人信息、私人日志或其他敏感材料。如请求需要非公开核验，请先在不披露敏感资料的情况下与维护者商议适当方式。安全漏洞请按 SECURITY.md 的说明使用 GitHub 私密漏洞报告渠道，该渠道不作为一般隐私咨询的私信入口。数据处理方式发生重大变化时，项目将更新本政策及相关说明。
+归元是由项目 GitHub 仓库所列维护者维护的开源项目。隐私咨询、数据处理疑问及相关权利请求可先通过该仓库的 [Issues](https://github.com/CHS-Haple/Guiyuan/issues) 提出；Issues 为公开渠道，请勿提交个人信息、私人日志或其他敏感材料。如需非公开核验，请先在公开 Issues 中提出不包含个人信息的联系请求，由维护者确认是否有合适的非公开沟通方式。在确认安全渠道前，请勿发送敏感资料。安全漏洞请按 SECURITY.md 的说明使用 GitHub 私密漏洞报告渠道，该渠道不作为一般隐私咨询的私信入口。若处理目的、方式、信息种类或其他重要告知事项发生变化，项目将更新本政策并在应用内提示；依法需要重新取得同意的，将另行请求相应确认。
 
 ---
 
@@ -96,4 +96,4 @@ Where provided by applicable law, you may request access to, copies of, correcti
 
 ### Article 7 — Updates and contact
 
-Guiyuan is an open-source project maintained by the maintainers listed in its GitHub repository. For privacy inquiries, data-handling questions, or relevant rights requests, first use the repository [Issues](https://github.com/CHS-Haple/Guiyuan/issues). Issues are public: do not submit personal information, private logs, or other sensitive material. If a request requires private verification, agree on a suitable method with the maintainers without posting sensitive material publicly. Report security vulnerabilities privately as described in SECURITY.md; that channel is not a general private inbox for privacy inquiries. Material changes in data handling will be reflected in this policy and related disclosures.
+Guiyuan is an open-source project maintained by the maintainers listed in its GitHub repository. For privacy inquiries, data-handling questions, or relevant rights requests, first use the repository [Issues](https://github.com/CHS-Haple/Guiyuan/issues). Issues are public: do not submit personal information, private logs, or other sensitive material. For requests requiring private verification, first open an Issue without personal information so maintainers can establish whether a suitable non-public contact method is available. Do not send sensitive material until a secure route has been confirmed. Report security vulnerabilities privately as described in SECURITY.md; that channel is not a general private inbox for privacy inquiries. Changes to processing purposes, methods, categories of information, or other material disclosures will be reflected in this policy and notified in the app; where the law requires fresh consent, a separate confirmation will be requested.

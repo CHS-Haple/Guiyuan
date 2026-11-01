@@ -529,7 +529,7 @@
     <string name="guide_privacy_note_root">Root is optional. Without it, some diagnostic and maintenance functions may be limited.</string>
     <string name="guide_privacy_note_diagnostics">Diagnostics may read module or system logs. Reports may contain device and runtime information but are not uploaded automatically.</string>
     <string name="guide_privacy_note_sharing">Users must initiate backup or report export and sharing. Check files for sensitive information before sharing.</string>
-    <string name="guide_privacy_ack">I have read and agree to the Terms of Use and Privacy Policy</string>
+    <string name="guide_privacy_ack">I have read the Privacy Policy and agree to the Terms of Use</string>
     <string name="guide_agree_continue">Agree and continue</string>
     <string name="guide_scope_title">Set up the module</string>
     <string name="guide_scope_description">Guiyuan customizes system status information through a compatible module framework.</string>
@@ -589,7 +589,7 @@
     <string name="privacy_choice_body">You can change or restore Guiyuan settings, modify or disable the SystemUI scope in the relevant module manager, and decide whether to grant optional Root access, generate diagnostic reports, or share files. Revoking a permission may make related features unavailable. You can also clear Guiyuan app data or uninstall the app through Android system settings.</string>
     <string name="privacy_choice_body_2">Before exporting or sharing diagnostic logs or configuration files, review them for personal information, device identifiers, or other sensitive content. Guiyuan cannot control data already received or retained by other software, or guarantee the absolute security of third-party storage.</string>
     <string name="privacy_contact_title">Article 7 — Updates and contact</string>
-    <string name="privacy_contact_body">Guiyuan is an open-source project maintained by the maintainers listed in its GitHub repository. For privacy inquiries, data-handling questions, or relevant rights requests, first use the repository Issues. Issues are public: do not submit personal information, private logs, or other sensitive material. If a request requires private verification, agree on a suitable method with the maintainers without posting sensitive material publicly. Report security vulnerabilities privately as described in SECURITY.md; that channel is not a general private inbox for privacy inquiries. Material changes in data handling will be reflected in this policy and related disclosures.</string>
+    <string name="privacy_contact_body">Guiyuan is an open-source project maintained by the maintainers listed in its GitHub repository. For privacy inquiries, data-handling questions, or relevant rights requests, first use the repository Issues. Issues are public: do not submit personal information, private logs, or other sensitive material. For requests requiring private verification, first open an Issue without personal information so maintainers can establish whether a suitable non-public contact method is available. Do not send sensitive material until a secure route has been confirmed. Report security vulnerabilities privately as described in SECURITY.md; that channel is not a general private inbox for privacy inquiries. Changes to processing purposes, methods, categories of information, or other material disclosures will be reflected in this policy and notified in the app; where the law requires fresh consent, a separate confirmation will be requested.</string>
     <string name="terms_scope_title">Article 1 — Nature and scope of the software</string>
     <string name="terms_scope_body">Guiyuan is a free and open-source LSPosed module for customizing Android/HyperOS system status information. Its verified framework baseline is LSPosed; compatibility with other frameworks, devices, and system versions requires separate verification. Guiyuan is not an official product of a device manufacturer, Android, or LSPosed; these names are used only to describe its operating environment and compatibility.</string>
     <string name="terms_access_title">Article 2 — Environment and authorization</string>
@@ -606,7 +606,7 @@
     <string name="terms_conduct_title">Article 6 — Responsible use and feedback</string>
     <string name="terms_conduct_body">Comply with applicable laws, device authorization, and third-party licenses. Do not use Guiyuan\'s privileges to interfere with others\' devices or data. Share only necessary details when reporting issues, not passwords, private logs, or vulnerability details.</string>
     <string name="terms_updates_title">Article 7 — Changes and contact</string>
-    <string name="terms_updates_body">These Terms may be updated when features, compatibility, or relevant requirements change; material changes affecting users will be disclosed through project documentation or release notes. General questions may be raised through the repository Issues; report security vulnerabilities through the private reporting channel described in SECURITY.md. For personal-data matters, see the Privacy Policy.</string>
+    <string name="terms_updates_body">These Terms may be updated when features, compatibility, or relevant requirements change; material changes affecting users will be disclosed through project documentation or release notes and, when necessary, presented in the app for renewed acknowledgment. General questions may be raised through the repository Issues; report security vulnerabilities through the private reporting channel described in SECURITY.md. For personal-data matters, see the Privacy Policy.</string>
     <string name="guide_terms_link_text">Terms of Use</string>
     <string name="guide_policy_link_text">Privacy Policy</string>
     <string name="terms_title">Terms of Use</string>
@@ -636,6 +636,6 @@
     <string name="guide_refresh_status">Refresh permission status</string>
     <string name="guide_permission_details">Permission details</string>
     <string name="privacy_choice_body_3">Where provided by applicable law, you may request access to, copies of, correction of, or deletion of relevant personal information, or exercise other applicable rights. Guiyuan has no user accounts or centralized server-side store of user profiles; maintainers generally cannot directly access or delete information stored only on your device. For information submitted to third-party platforms, you may need to contact the relevant recipient.</string>
-    <string name="privacy_last_updated">Last updated: 2026-10-31</string>
-    <string name="terms_last_updated">Last updated: 2026-10-31</string>
+    <string name="privacy_last_updated">Last updated: 2026-11-01</string>
+    <string name="terms_last_updated">Last updated: 2026-11-01</string>
 </resources>

@@ -84,6 +84,7 @@ internal fun GyApp(
         paletteStyle = appearance.paletteStyle,
     ) {
         val context = LocalContext.current.applicationContext
+        val agreementReviewOnly = remember(context) { AppPlatform.needsAgreementReview(context) }
         var guideDone by remember(context) { mutableStateOf(!AppPlatform.needsOnboarding(context)) }
         if (!guideDone) {
             OnboardingFlow(
@@ -92,6 +93,7 @@ internal fun GyApp(
                 iconHidden = iconHidden,
                 onIconHiddenChange = onIconHiddenChange,
                 swipeBackEnabled = appearance.swipeBack,
+                agreementReviewOnly = agreementReviewOnly,
                 onComplete = {
                     AppPlatform.completeOnboarding(context)
                     guideDone = true
