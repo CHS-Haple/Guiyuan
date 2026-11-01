@@ -17,6 +17,7 @@ Failed experiments, CI-by-CI adjustments and investigation history belong in Git
 
 ### Improved
 - Matched the optional HyperOS 4 visual experience to the accepted source-pinned MIUIX glass controls, with coordinated navigation, sheet, search and permission-screen presentation while retaining the HyperOS 3 option.
+- Constrained the system predictive-back completion's spring velocity to the exit direction, preserving normal forward motion and the independent cancellation path (pending final target-device gesture acceptance).
 - Refined the battery-ring top cutout to respect the optical clearance around curved network glyphs, and corrected the new network-centered top offset default while preserving saved single/dual layout settings.
 - Simplified the floating navigation text-label option to a switch, and aligned its outlined Material Symbols icon weight with neighboring settings.
 - Continued the 0.9.x improvements to runtime ownership, native-safe restoration, diagnostics, configuration backup, dual-SIM presentation and API 102 Hot Reload.
