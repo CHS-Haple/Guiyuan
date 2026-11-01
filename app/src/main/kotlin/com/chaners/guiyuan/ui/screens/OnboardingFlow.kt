@@ -332,7 +332,9 @@ internal fun OnboardingFlow(
         entry<GuidePage.Complete>(swipeDismiss = swipeBackDirection) {
             GuiyuanBrandGuide(completed = true, onNext = onComplete)
         }
-        entry<GuidePage.Stage>(swipeDismiss = if (openDocument == null) swipeBackDirection else NavSwipeDirection.None) { page ->
+        entry<GuidePage.Stage>(
+            swipeDismiss = if (documentVisible || documentDismissing) NavSwipeDirection.None else swipeBackDirection,
+        ) { page ->
         val step = page.number
         val title = when (step) {
             1 -> stringResource(R.string.guide_permissions_title)
