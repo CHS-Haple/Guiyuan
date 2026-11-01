@@ -436,7 +436,7 @@ private fun HomeRuntimeCardBody(
                     context.getString(title) to context.getString(summary)
                 }
             }
-            val titleStyle = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Medium)
+            val titleStyle = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.SemiBold)
             val bodyStyle = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium)
             val summaryStyle = MiuixTheme.textStyles.body2
             val versionText = stringResource(R.string.home_version_line, BuildConfig.VERSION_NAME)
@@ -542,7 +542,7 @@ private fun HomePreviewSandboxCard(
                 text = stringResource(R.string.home_preview_open_title),
                 style =
                     MiuixTheme.textStyles.title3.copy(
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.SemiBold,
                     ),
                 color = MiuixTheme.colorScheme.onSurfaceContainer,
             )
