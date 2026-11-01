@@ -216,17 +216,20 @@ internal fun OnboardingFlow(
         else -> 0 // NavBackStack stores NavKey, not GuidePage.
     }
     var permissionWarning by remember { mutableStateOf(PermissionWarningPhase.Hidden) }
-    fun advance() {
-        val next = when (val nextStep = nextGuideStage(step)) {
+    fun advanceFrom(source: GuidePage) {
+        // A retained page can invoke an older callback after navigation changes.
+        // Only the page currently on top may advance the guide.
+        if (pages.lastOrNull() != source) return
+        val sourceStep = when (source) {
+            GuidePage.Welcome -> 0
+            is GuidePage.Stage -> source.number
+            GuidePage.Complete -> return
+        }
+        val next = when (val nextStep = nextGuideStage(sourceStep)) {
             1, 2, 3 -> GuidePage.Stage(nextStep)
             4 -> GuidePage.Complete
-            else -> {
-                onComplete()
-                return
-            }
+            else -> return
         }
-        // MIUIX rejects duplicate content keys. Guard fast repeated taps before
-        // the new page has had a chance to recompose.
         if (next !in pages) pages.add(next)
     }
     val requiredReading = remember(context) { AppPlatform.readingRequirements(context) }
@@ -330,10 +333,18 @@ internal fun OnboardingFlow(
         ),
     ) {
         entry<GuidePage.Welcome> {
-            GuiyuanBrandGuide(completed = false, onNext = ::advance)
+            GuiyuanBrandGuide(
+                completed = false,
+                onNext = { advanceFrom(GuidePage.Welcome) },
+            )
         }
         entry<GuidePage.Complete>(swipeDismiss = swipeBackDirection) {
-            GuiyuanBrandGuide(completed = true, onNext = onComplete)
+            GuiyuanBrandGuide(
+                completed = true,
+                onNext = {
+                    if (pages.lastOrNull() == GuidePage.Complete) onComplete()
+                },
+            )
         }
         entry<GuidePage.Stage>(
             swipeDismiss = if (documentVisible || documentDismissing) NavSwipeDirection.None else swipeBackDirection,
@@ -749,9 +760,9 @@ internal fun OnboardingFlow(
                         if (step == 1 && !sysUiInScope) {
                             permissionWarning = PermissionWarningPhase.Visible
                         } else if (agreementReviewOnly && step == 2) {
-                            onComplete()
+                            if (pages.lastOrNull() == page) onComplete()
                         } else {
-                            advance()
+                            advanceFrom(page)
                         }
                     },
                 )
@@ -770,7 +781,7 @@ internal fun OnboardingFlow(
                         onDismissFinished = {
                             val proceed = permissionWarning == PermissionWarningPhase.Advancing
                             permissionWarning = PermissionWarningPhase.Hidden
-                            if (proceed) advance()
+                            if (proceed) advanceFrom(page)
                         },
                     ) {
                         Row(
