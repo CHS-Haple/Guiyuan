@@ -9,8 +9,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import com.chaners.guiyuan.settings.AppPlatform
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.LiquidMode
@@ -22,6 +24,9 @@ import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.AboutScreen
 import com.chaners.guiyuan.ui.screens.AboutThirdPartyScreen
+import com.chaners.guiyuan.ui.screens.OnboardingFlow
+import com.chaners.guiyuan.ui.screens.PrivacyPolicyScreen
+import com.chaners.guiyuan.ui.screens.TermsOfUseScreen
 import com.chaners.guiyuan.ui.screens.StaticScopeScreen
 import com.chaners.guiyuan.ui.screens.AppearanceScreen
 import com.chaners.guiyuan.ui.screens.DiagnosticsScreen
@@ -78,6 +83,27 @@ internal fun GyApp(
         colorSpec = appearance.colorSpec,
         paletteStyle = appearance.paletteStyle,
     ) {
+        val hostActivity = LocalContext.current as? android.app.Activity
+        val context = LocalContext.current.applicationContext
+        val agreementReviewOnly = remember(context) { AppPlatform.needsAgreementReview(context) }
+        var guideDone by remember(context) { mutableStateOf(!AppPlatform.needsOnboarding(context)) }
+        if (!guideDone) {
+            OnboardingFlow(
+                lang = lang,
+                onLangChange = onLangChange,
+                iconHidden = iconHidden,
+                onIconHiddenChange = onIconHiddenChange,
+                swipeBackEnabled = appearance.swipeBack,
+                agreementReviewOnly = agreementReviewOnly,
+                onComplete = {
+                    AppPlatform.completeOnboarding(context)
+                    guideDone = true
+                },
+                // Declining acknowledgment exits without writing agreement versions.
+                onExit = { hostActivity?.finish() },
+            )
+            return@GyTheme
+        }
         var lastDiagSnapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
         var previewSimPresent by rememberSaveable { mutableStateOf(true) }
         var previewAirplaneMode by rememberSaveable { mutableStateOf(false) }
@@ -317,8 +343,27 @@ internal fun GyApp(
                 AboutScreen(
                     onBack = ::navigateBack,
                     onOpenThirdParty = { navigate(AppRoute.AboutThirdParty) },
+                    onOpenPrivacy = { navigate(AppRoute.PrivacyPolicy) },
+                    onOpenTerms = { navigate(AppRoute.TermsOfUse) },
                     onOpenScopes = { navigate(AppRoute.StaticScopes) },
                 )
+            }
+            entry<AppRoute.Onboarding>(swipeDismiss = swipeBackDirection) {
+                OnboardingFlow(
+                    lang = lang,
+                    onLangChange = onLangChange,
+                    iconHidden = iconHidden,
+                    onIconHiddenChange = onIconHiddenChange,
+                    swipeBackEnabled = appearance.swipeBack,
+                    onComplete = ::navigateBack,
+                    onExit = ::navigateBack,
+                )
+            }
+            entry<AppRoute.PrivacyPolicy>(swipeDismiss = swipeBackDirection) {
+                PrivacyPolicyScreen(onBack = ::navigateBack)
+            }
+            entry<AppRoute.TermsOfUse>(swipeDismiss = swipeBackDirection) {
+                TermsOfUseScreen(onBack = ::navigateBack)
             }
             entry<AppRoute.AboutThirdParty>(swipeDismiss = swipeBackDirection) {
                 AboutThirdPartyScreen(onBack = ::navigateBack)

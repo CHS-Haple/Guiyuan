@@ -16,6 +16,50 @@ internal enum class AppLang(
 
 internal object AppPlatform {
     private const val ALIAS_SUFFIX = ".LauncherAlias"
+    private const val GUIDE_PREFS = "guiyuan_first_run"
+    private const val GUIDE_COMPLETED = "completed"
+    private const val GUIDE_STARTED = "started"
+    // Increment only when a substantive agreement revision requires fresh acknowledgment.
+    private const val PRIVACY_ACK_VERSION = 3
+    private const val TERMS_ACK_VERSION = 2
+
+    internal fun hasCurrentAgreementAcknowledgment(privacy: Int, terms: Int): Boolean =
+        privacy >= PRIVACY_ACK_VERSION && terms >= TERMS_ACK_VERSION
+
+    fun needsAgreementReview(ctx: Context): Boolean {
+        val prefs = ctx.getSharedPreferences(GUIDE_PREFS, Context.MODE_PRIVATE)
+        return prefs.getBoolean(GUIDE_COMPLETED, false) &&
+            !hasCurrentAgreementAcknowledgment(
+                prefs.getInt("privacy_ack_version", 0),
+                prefs.getInt("terms_ack_version", 0),
+            )
+    }
+
+    fun needsOnboarding(ctx: Context): Boolean {
+        val prefs = ctx.getSharedPreferences(GUIDE_PREFS, Context.MODE_PRIVATE)
+        if (prefs.contains(GUIDE_COMPLETED)) {
+            return !prefs.getBoolean(GUIDE_COMPLETED, false) || needsAgreementReview(ctx)
+        }
+        // A guide already started must stay pending across app updates.
+        prefs.edit().putBoolean(GUIDE_STARTED, true).apply()
+        return true
+    }
+
+    fun markExistingInstall(ctx: Context) {
+        val prefs = ctx.getSharedPreferences(GUIDE_PREFS, Context.MODE_PRIVATE)
+        if (!prefs.contains(GUIDE_COMPLETED) && !prefs.contains(GUIDE_STARTED)) {
+            prefs.edit().putBoolean(GUIDE_COMPLETED, true).apply()
+        }
+    }
+
+    fun completeOnboarding(ctx: Context) {
+        ctx.getSharedPreferences(GUIDE_PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putInt("privacy_ack_version", PRIVACY_ACK_VERSION)
+            .putInt("terms_ack_version", TERMS_ACK_VERSION)
+            .putBoolean(GUIDE_COMPLETED, true)
+            .apply()
+    }
 
     fun language(ctx: Context): AppLang {
         val locales = ctx.getSystemService(LocaleManager::class.java).applicationLocales
