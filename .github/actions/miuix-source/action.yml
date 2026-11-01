@@ -63,7 +63,39 @@ runs:
         {
           echo "### MIUIX composite-build provenance"
           echo "- Upstream source commit: $expected (unchanged)"
-          echo "- Source code/UI: unchanged"
+          echo "- Source code/UI before the separately tracked navigation patch: unchanged"
           echo "- Build-only version catalog adjustment: $catalog_patch"
           echo "- Effective AGP in app and MIUIX: $app_agp"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    # Temporary, exact-source patch for the upstream predictive-back completion
+    # handoff. Remove this when a separately qualified pinned upstream revision
+    # contains an equivalent tested fix. Neither the SystemUI binary nor the
+    # app's independent swipe-dismiss gesture owner is modified.
+    - name: Enforce directional commit velocity on pinned MIUIX navigation
+      shell: bash
+      run: |
+        set -euo pipefail
+        expected="$(sed -n 's/^miuix.upstream.revision=//p' gradle.properties)"
+        test "$expected" = "b9f70838509fbc3f63f1a972777a7e6ce07f578f"
+        test "$(git -C miuix-upstream rev-parse HEAD)" = "$expected"
+        source_path="miuix-nav/src/commonMain/kotlin/top/yukonga/miuix/kmp/nav/core/NavDisplay.kt"
+        test "$(git -C miuix-upstream rev-parse "HEAD:$source_path")" = "c6f6c28f0efa33866e743ec26447683b0c19b09b"
+        patch_file="$GITHUB_WORKSPACE/third_party/miuix-nav/patches/0001-commit-backward-velocity.patch"
+        git -C miuix-upstream apply --check "$patch_file"
+        git -C miuix-upstream apply "$patch_file"
+        test "$(git -C miuix-upstream diff --name-only -- "$source_path")" = "$source_path"
+        test "$(git -C miuix-upstream diff --numstat -- "$source_path")" = "$(printf '2\\t1\\t%s' "$source_path")"
+        test "$(grep -Fc 'initialVelocity = released.coerceIn(floor, 0f),' "miuix-upstream/$source_path")" = 1
+        test "$(git -C miuix-upstream diff --name-only)" = "$(printf 'gradle/libs.versions.toml\\n%s' "$source_path")"
+        git -C miuix-upstream diff --check
+        echo "MIUIX_SOURCE_NAV_PATCH=predictive-back-commit-direction-v1" >> "$GITHUB_ENV"
+        {
+          echo "### Predictive-back completion direction"
+          echo "- Original upstream revision: $expected (source revision pinned)"
+          echo "- Patched file: $source_path"
+          echo "- Original Git blob: c6f6c28f0efa33866e743ec26447683b0c19b09b"
+          echo "- Change: prevent a committed back from starting with reverse-direction velocity"
+          echo "- Separate app swipe-dismiss and platform cancel callbacks: unchanged"
+          echo "- See Guiyuan issue #1159; patch is removable after qualified upstream replacement"
         } >> "$GITHUB_STEP_SUMMARY"
