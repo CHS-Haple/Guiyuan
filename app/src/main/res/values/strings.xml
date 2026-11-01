@@ -636,4 +636,8 @@
     <string name="privacy_choice_body_3">Where provided by applicable law, you may request access to, copies of, correction of, or deletion of relevant personal information, or exercise other applicable rights. Guiyuan has no user accounts or centralized server-side store of user profiles; maintainers generally cannot directly access or delete information stored only on your device. For information submitted to third-party platforms, you may need to contact the relevant recipient.</string>
     <string name="privacy_last_updated">Last updated: 2026-11-01</string>
     <string name="terms_last_updated">Last updated: 2026-11-01</string>
+    <string name="guide_read_both_first">View the Terms of Use and Privacy Policy first</string>
+    <string name="guide_read_terms_first">View the Terms of Use first</string>
+    <string name="guide_read_privacy_first">View the Privacy Policy first</string>
+    <string name="guide_open_required_document">View required document</string>
 </resources>

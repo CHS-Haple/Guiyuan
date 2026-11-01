@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.annotation.DrawableRes
+import android.widget.Toast
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -84,6 +85,7 @@ import top.yukonga.miuix.kmp.blur.textureBlur
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
+import com.chaners.guiyuan.settings.AppPlatform
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
@@ -116,6 +118,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -223,9 +226,50 @@ internal fun OnboardingFlow(
         // the new page has had a chance to recompose.
         if (next !in pages) pages.add(next)
     }
-    var openDocument by rememberSaveable { mutableStateOf<AgreementDocument?>(null) }
-    var documentVisible by rememberSaveable { mutableStateOf(false) }
-    var policyAccepted by rememberSaveable { mutableStateOf(false) }
+    val requiredReading = remember(context) { AppPlatform.readingRequirements(context) }
+    var termsViewed by remember { mutableStateOf(false) }
+    var privacyViewed by remember { mutableStateOf(false) }
+    var openDocument by remember { mutableStateOf<AgreementDocument?>(null) }
+    var documentVisible by remember { mutableStateOf(false) }
+    var policyAccepted by remember { mutableStateOf(false) }
+
+    fun showAgreement(document: AgreementDocument) {
+        if (documentVisible) return
+        when (document) {
+            AgreementDocument.Terms -> termsViewed = true
+            AgreementDocument.Privacy -> privacyViewed = true
+        }
+        openDocument = document
+        documentVisible = true
+    }
+
+    fun requestAcknowledgment(checked: Boolean) {
+        if (!checked) {
+            policyAccepted = false
+            return
+        }
+        val termsPending = requiredReading.terms && !termsViewed
+        val privacyPending = requiredReading.privacy && !privacyViewed
+        if (requiredReading.canAcknowledge(termsViewed, privacyViewed)) {
+            policyAccepted = true
+            return
+        }
+        val message = when {
+            termsPending && privacyPending -> R.string.guide_read_both_first
+            termsPending -> R.string.guide_read_terms_first
+            else -> R.string.guide_read_privacy_first
+        }
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+
+    // This visit's transient acknowledgment never persists through navigation.
+    LaunchedEffect(step) {
+        if (step != 2) {
+            termsViewed = false
+            privacyViewed = false
+            policyAccepted = false
+        }
+    }
     var scopeRequestFailed by remember { mutableStateOf(false) }
     var rootChecking by remember { mutableStateOf(false) }
     var rootAccess by remember { mutableStateOf<Boolean?>(null) }
@@ -517,17 +561,23 @@ internal fun OnboardingFlow(
                                             SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_contract)
                                         },
                                         endActions = {
-                                            Icon(
-                                                imageVector = MiuixIcons.Regular.ChevronForward,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(20.dp),
-                                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            ) {
+                                                if (requiredReading.terms && !termsViewed) Badge()
+                                                Icon(
+                                                    imageVector = MiuixIcons.Regular.ChevronForward,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp),
+                                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                )
+                                            }
                                         },
-                                        onClick = {
-                                            openDocument = AgreementDocument.Terms
-                                            documentVisible = true
-                                        },
+                                        onClickLabel = if (requiredReading.terms && !termsViewed) {
+                                            stringResource(R.string.guide_open_required_document)
+                                        } else null,
+                                        onClick = { showAgreement(AgreementDocument.Terms) },
                                     )
                                 }
                                 Spacer(Modifier.height(12.dp))
@@ -539,17 +589,23 @@ internal fun OnboardingFlow(
                                             SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_policy)
                                         },
                                         endActions = {
-                                            Icon(
-                                                imageVector = MiuixIcons.Regular.ChevronForward,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(20.dp),
-                                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            ) {
+                                                if (requiredReading.privacy && !privacyViewed) Badge()
+                                                Icon(
+                                                    imageVector = MiuixIcons.Regular.ChevronForward,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp),
+                                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                )
+                                            }
                                         },
-                                        onClick = {
-                                            openDocument = AgreementDocument.Privacy
-                                            documentVisible = true
-                                        },
+                                        onClickLabel = if (requiredReading.privacy && !privacyViewed) {
+                                            stringResource(R.string.guide_open_required_document)
+                                        } else null,
+                                        onClick = { showAgreement(AgreementDocument.Privacy) },
                                     )
                                 }
                                 Spacer(Modifier.height(24.dp))
@@ -630,7 +686,7 @@ internal fun OnboardingFlow(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
                                 role = Role.Checkbox,
-                                onValueChange = { policyAccepted = it },
+                                onValueChange = ::requestAcknowledgment,
                             )
                             .padding(horizontal = 20.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -655,8 +711,7 @@ internal fun OnboardingFlow(
                                         LinkAnnotation.Clickable(
                                             tag = tag,
                                             linkInteractionListener = LinkInteractionListener {
-                                                openDocument = document
-                                                documentVisible = true
+                                                showAgreement(document)
                                             },
                                         ),
                                         start,

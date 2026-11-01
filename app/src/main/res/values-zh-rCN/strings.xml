@@ -635,4 +635,8 @@
     <string name="privacy_choice_body_3">在适用法律规定的范围内，您可以就相关个人信息提出查阅、复制、更正、删除或其他权利请求。归元不设用户账户，也没有集中保存用户资料的服务端系统；维护者通常无法直接访问或删除仅保存在您设备上的信息。对于已提交至第三方平台的信息，您可能需要向相应接收方提出请求。</string>
     <string name="privacy_last_updated">最后更新：2026-11-01</string>
     <string name="terms_last_updated">最后更新：2026-11-01</string>
+    <string name="guide_read_both_first">请先查看使用条款和隐私政策</string>
+    <string name="guide_read_terms_first">请先查看使用条款</string>
+    <string name="guide_read_privacy_first">请先查看隐私政策</string>
+    <string name="guide_open_required_document">查看待阅读文件</string>
 </resources>

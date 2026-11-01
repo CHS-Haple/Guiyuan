@@ -14,6 +14,14 @@ internal enum class AppLang(
     SimplifiedChinese("zh-CN"),
 }
 
+internal data class AgreementReadingRequirements(
+    val terms: Boolean,
+    val privacy: Boolean,
+) {
+    fun canAcknowledge(termsViewed: Boolean, privacyViewed: Boolean): Boolean =
+        (!terms || termsViewed) && (!privacy || privacyViewed)
+}
+
 internal object AppPlatform {
     private const val ALIAS_SUFFIX = ".LauncherAlias"
     private const val GUIDE_PREFS = "guiyuan_first_run"
@@ -25,6 +33,20 @@ internal object AppPlatform {
 
     internal fun hasCurrentAgreementAcknowledgment(privacy: Int, terms: Int): Boolean =
         privacy >= PRIVACY_ACK_VERSION && terms >= TERMS_ACK_VERSION
+
+    internal fun readingRequirements(privacyVersion: Int, termsVersion: Int) =
+        AgreementReadingRequirements(
+            terms = termsVersion < TERMS_ACK_VERSION,
+            privacy = privacyVersion < PRIVACY_ACK_VERSION,
+        )
+
+    fun readingRequirements(ctx: Context): AgreementReadingRequirements {
+        val prefs = ctx.getSharedPreferences(GUIDE_PREFS, Context.MODE_PRIVATE)
+        return readingRequirements(
+            prefs.getInt("privacy_ack_version", 0),
+            prefs.getInt("terms_ack_version", 0),
+        )
+    }
 
     fun needsAgreementReview(ctx: Context): Boolean {
         val prefs = ctx.getSharedPreferences(GUIDE_PREFS, Context.MODE_PRIVATE)
