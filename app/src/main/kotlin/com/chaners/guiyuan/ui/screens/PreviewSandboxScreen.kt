@@ -446,7 +446,7 @@ internal fun PreviewSandboxScreen(
                     ) {
                         Text(
                             text = stringResource(R.string.home_preview_live_title),
-                            style = MiuixTheme.textStyles.body1,
+                            style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
                             color = MiuixTheme.colorScheme.onSurfaceContainer,
                         )
                         SandboxFullPreview(state, renderModel, visual)

@@ -62,6 +62,7 @@ import com.chaners.guiyuan.R
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
+import top.yukonga.miuix.kmp.blur.BlurBlendMode
 import top.yukonga.miuix.kmp.blur.BlurColors
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
@@ -72,6 +73,26 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
+
+@Composable
+internal fun rememberBrandLogoBlend(): List<BlendColorEntry> {
+    val isDark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
+    return remember(isDark) {
+        if (isDark) {
+            listOf(
+                BlendColorEntry(Color(0xe6a1a1a1), BlurBlendMode.ColorDodge),
+                BlendColorEntry(Color(0x4de6e6e6), BlurBlendMode.LinearLight),
+                BlendColorEntry(Color(0xff1af500), BlurBlendMode.Lab),
+            )
+        } else {
+            listOf(
+                BlendColorEntry(Color(0xcc4a4a4a), BlurBlendMode.ColorBurn),
+                BlendColorEntry(Color(0xff4f4f4f), BlurBlendMode.LinearLight),
+                BlendColorEntry(Color(0xff1af200), BlurBlendMode.Lab),
+            )
+        }
+    }
+}
 
 @Composable
 internal fun AboutHero(
@@ -156,8 +177,8 @@ internal fun AboutHero(
                 }
                 .waveGlint(wave, titleDistance, markDiameter, wavePhase, glint, accent)
                 .then(blur),
-            fontSize = 35.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 40.sp,
+            fontWeight = FontWeight.ExtraBold,
             color = MiuixTheme.colorScheme.onBackground,
         )
         Text(
@@ -180,7 +201,8 @@ internal fun AboutHero(
                 }
                 .waveGlint(wave, versionDistance, markDiameter, wavePhase, glint, accent),
             textAlign = TextAlign.Center,
-            fontSize = 14.sp,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Medium,
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
     }
@@ -340,7 +362,7 @@ private fun flowRadius(progress: Float, angle: Float, diameter: Float, phase: Fl
 }
 
 // Two-tone refraction stays inside the text strokes and follows the same displaced front.
-private fun Modifier.waveGlint(
+internal fun Modifier.waveGlint(
     wave: Animatable<Float, AnimationVector1D>,
     distance: Float,
     diameter: Float,
@@ -392,7 +414,7 @@ private fun DrawScope.drawGlint(
     )
 }
 
-private fun waveLift(progress: Float, distance: Float, diameter: Float, phase: Float): Float {
+internal fun waveLift(progress: Float, distance: Float, diameter: Float, phase: Float): Float {
     if (distance <= 0f || diameter <= 0f) return 0f
     return maxOf(
         wavefrontLift(progress, distance, diameter, phase),

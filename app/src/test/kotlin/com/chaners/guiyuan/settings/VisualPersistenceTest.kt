@@ -187,6 +187,33 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun unconfiguredNetworkTopOffsetIsPlusThreeForBothSignalProfiles() {
+        val prefs = MemoryPreferences()
+        for (dual in listOf(false, true)) {
+            val network = prefs.readVisualCfg(dual = dual, layoutOverride = ContentLayout.NETWORK_CENTER)
+            assertFalse(network.showTopReadout)
+            assertEquals(3f, topOffsetYUi(network.topOffsetY), 0f)
+            assertEquals(0f, topOffsetYUi(
+                prefs.readVisualCfg(dual = dual, layoutOverride = ContentLayout.BATTERY_CENTER).topOffsetY
+            ), 0f)
+        }
+        val saved = topOffsetYRaw(-2f)
+        prefs.edit()
+            .putFloat(visualProfileKey(ContentLayout.NETWORK_CENTER, BATTERY_TOP_VERTICAL_OFFSET_KEY), saved)
+            .apply()
+        assertEquals(
+            -2f,
+            topOffsetYUi(prefs.readVisualCfg(dual = false, layoutOverride = ContentLayout.NETWORK_CENTER).topOffsetY),
+            0f,
+        )
+        assertEquals(
+            3f,
+            topOffsetYUi(prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER).topOffsetY),
+            0f,
+        )
+    }
+
+    @Test
     fun batteryReadoutDefaultsOnOnlyForUnconfiguredBatteryCenteredProfiles() {
         val prefs = MemoryPreferences()
         for (dual in listOf(false, true)) {

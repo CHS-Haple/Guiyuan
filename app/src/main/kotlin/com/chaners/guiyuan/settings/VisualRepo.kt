@@ -289,6 +289,7 @@ internal class VisualRepo(context: Context) {
         val offsetKey = visualProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY, dual)
         val editor = preferences.edit().putBoolean(readoutKey, enabled)
         if (
+            layout == ContentLayout.BATTERY_CENTER &&
             enabled &&
             !preferences.profileBoolean(layout, BATTERY_TOP_READOUT_ENABLED_KEY, false, dual) &&
             !preferences.contains(offsetKey) &&
@@ -655,7 +656,7 @@ internal fun SharedPreferences.readVisualCfg(
     fun flag(key: String, default: Boolean) = profileBoolean(layout, key, default, dual)
     fun size(key: String, default: Float) = profileFloat(layout, key, default, dual)
     fun weight(key: String, default: Int) = profileInt(layout, key, default, dual)
-    val topOffset = size(BATTERY_TOP_VERTICAL_OFFSET_KEY, BATTERY_TOP_VERTICAL_OFFSET_DEFAULT)
+    val topOffset = size(BATTERY_TOP_VERTICAL_OFFSET_KEY, topOffsetYDefault(layout))
     // Preserve existing battery-centered network position when split keys are first read.
     val oldNetworkOffset =
         if (layout == ContentLayout.BATTERY_CENTER) topOffsetYUi(topOffset) else 0f
