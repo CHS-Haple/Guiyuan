@@ -149,7 +149,6 @@ private val guideStepTransition = navGraphicsTransition { scope ->
     translationX = (offset * direction * scope.layoutSize.width.toFloat()).fastRoundToInt().toFloat()
 }
 
-@Serializable
 // Page identity is unchanged; only the onboarding visit order is adjusted.
 internal fun nextGuideStage(step: Int): Int? = when (step) {
     0 -> 2 // Present privacy and terms before any optional Root status check.
@@ -159,6 +158,7 @@ internal fun nextGuideStage(step: Int): Int? = when (step) {
     else -> null
 }
 
+@Serializable
 private sealed interface GuidePage : NavKey {
     @Serializable data object Welcome : GuidePage
     @Serializable data class Stage(val number: Int) : GuidePage
