@@ -437,7 +437,7 @@ internal class StatusPainter(
                         aggregateRows = mobileAggregateRows,
                         row = mobileRow,
                         style = visual.effectiveContentStyle,
-                        mobileOffsetY = visual.effectiveDualMobileOffsetY,
+                        mobileOffsetY = visual.effectiveSignalDotOffsetY,
                         centered = visual.centeredMobileSignal &&
                             model.centerIndicator is CenterIndicator.MobileType &&
                             !model.mobileUnavailableMark,
@@ -455,7 +455,7 @@ internal class StatusPainter(
                         opacity = opacity,
                         geometry = outerGeometry,
                         style = visual.effectiveContentStyle,
-                        mobileOffsetY = visual.effectiveDualMobileOffsetY,
+                        mobileOffsetY = visual.effectiveSignalDotOffsetY,
                     )
                 }
             }
@@ -766,8 +766,8 @@ internal class StatusPainter(
             when {
                 centeredMobile -> centeredMobileBounds(outerGeometry, model.dualMobileLevels != null)
                 model.dualMobileLevels != null ->
-                    dualMobileTransitionBounds(outerGeometry, visual.effectiveContentStyle, visual.effectiveDualMobileOffsetY)
-                else -> resolveMobileSignalTransitionLayout(outerGeometry, model, visual.effectiveContentStyle, visual.effectiveDualMobileOffsetY).bounds
+                    dualMobileTransitionBounds(outerGeometry, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY)
+                else -> resolveMobileSignalTransitionLayout(outerGeometry, model, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY).bounds
             }
         specs +=
             TransitionComponentSpec(
@@ -800,11 +800,11 @@ internal class StatusPainter(
         val centered = visual.centeredMobileSignal &&
             model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
         val group = if (centered) centeredMobileBounds(geometry, true)
-            else dualMobileTransitionBounds(geometry, visual.effectiveContentStyle, visual.effectiveDualMobileOffsetY)
+            else dualMobileTransitionBounds(geometry, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY)
         if (group.width <= 0f || group.height <= 0f) return emptyList()
         return (0..1).map { row ->
             val local = if (centered) centeredMobileRowBounds(geometry, row)
-                else dualMobileRowBounds(geometry, row, visual.effectiveContentStyle, visual.effectiveDualMobileOffsetY)
+                else dualMobileRowBounds(geometry, row, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY)
             fun x(value: Float) = source.sourceBounds.left +
                 (value - group.left) / group.width * source.sourceBounds.width
             fun y(value: Float) = source.sourceBounds.top +
@@ -3802,12 +3802,12 @@ internal class StatusPainter(
                     } else MOBILE_CENTER_X + geometry.dualDotX(index)
                     val outerY = if (dual == null) {
                         MOBILE_CENTER_Y + geometry.singleDotY(
-                            index, visual.effectiveContentStyle, visual.effectiveDualMobileOffsetY,
+                            index, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY,
                         )
                     } else {
                         MOBILE_CENTER_Y + geometry.dualDotY(
                             index, row, visual.effectiveContentStyle,
-                            visual.effectiveDualMobileOffsetY,
+                            visual.effectiveSignalDotOffsetY,
                         )
                     }
                     fill(
@@ -3833,7 +3833,7 @@ internal class StatusPainter(
         } else {
             drawMobile(
                 canvas, model, tint, opacity, geometry,
-                visual.effectiveContentStyle, visual.effectiveDualMobileOffsetY,
+                visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY,
             )
         }
     }
