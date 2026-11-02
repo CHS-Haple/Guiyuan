@@ -158,7 +158,12 @@ class VisualCfgTest {
                     )
                     assertEquals(
                         if (style == SignalDotArrangement.HORIZONTAL) 5f else 2f,
-                        visual.effectiveSignalDotOffsetY,
+                        visual.signalDotOffsetY,
+                        0f,
+                    )
+                    assertEquals(
+                        if (style == SignalDotArrangement.HORIZONTAL && horizontal) 5f else 2f,
+                        visual.singleRowDotOffsetY,
                         0f,
                     )
                 }

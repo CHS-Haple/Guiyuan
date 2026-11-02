@@ -464,7 +464,7 @@ internal class StatusPainter(
                         row = mobileRow,
                         style = if (model.dualMobileLevels == null) visual.effectiveSingleRowArrangement
                             else visual.effectiveDualRowArrangement,
-                        mobileOffsetY = visual.effectiveSignalDotOffsetY,
+                        mobileOffsetY = if (model.dualMobileLevels == null) visual.singleRowDotOffsetY else visual.signalDotOffsetY,
                         centered = visual.centeredMobileSignal &&
                             model.centerIndicator is CenterIndicator.MobileType &&
                             !model.mobileUnavailableMark,
@@ -483,7 +483,7 @@ internal class StatusPainter(
                         geometry = outerGeometry,
                         style = if (model.dualMobileLevels == null) visual.effectiveSingleRowArrangement
                             else visual.effectiveDualRowArrangement,
-                        mobileOffsetY = visual.effectiveSignalDotOffsetY,
+                        mobileOffsetY = if (model.dualMobileLevels == null) visual.singleRowDotOffsetY else visual.signalDotOffsetY,
                     )
                 }
             }
@@ -794,8 +794,8 @@ internal class StatusPainter(
             when {
                 centeredMobile -> centeredMobileBounds(outerGeometry, model.dualMobileLevels != null)
                 model.dualMobileLevels != null ->
-                    dualMobileTransitionBounds(outerGeometry, visual.effectiveDualRowArrangement, visual.effectiveSignalDotOffsetY)
-                else -> resolveMobileSignalTransitionLayout(outerGeometry, model, visual.effectiveSingleRowArrangement, visual.effectiveSignalDotOffsetY).bounds
+                    dualMobileTransitionBounds(outerGeometry, visual.effectiveDualRowArrangement, visual.signalDotOffsetY)
+                else -> resolveMobileSignalTransitionLayout(outerGeometry, model, visual.effectiveSingleRowArrangement, visual.singleRowDotOffsetY).bounds
             }
         specs +=
             TransitionComponentSpec(
@@ -828,11 +828,11 @@ internal class StatusPainter(
         val centered = visual.centeredMobileSignal &&
             model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
         val group = if (centered) centeredMobileBounds(geometry, true)
-            else dualMobileTransitionBounds(geometry, visual.effectiveDualRowArrangement, visual.effectiveSignalDotOffsetY)
+            else dualMobileTransitionBounds(geometry, visual.effectiveDualRowArrangement, visual.signalDotOffsetY)
         if (group.width <= 0f || group.height <= 0f) return emptyList()
         return (0..1).map { row ->
             val local = if (centered) centeredMobileRowBounds(geometry, row)
-                else dualMobileRowBounds(geometry, row, visual.effectiveDualRowArrangement, visual.effectiveSignalDotOffsetY)
+                else dualMobileRowBounds(geometry, row, visual.effectiveDualRowArrangement, visual.signalDotOffsetY)
             fun x(value: Float) = source.sourceBounds.left +
                 (value - group.left) / group.width * source.sourceBounds.width
             fun y(value: Float) = source.sourceBounds.top +
@@ -1557,11 +1557,11 @@ internal class StatusPainter(
                     }
                     val outerY = if (dual) {
                         MOBILE_CENTER_Y + outerGeometry.dualDotY(
-                            index, row, visual.effectiveDualRowArrangement, visual.effectiveSignalDotOffsetY,
+                            index, row, visual.effectiveDualRowArrangement, visual.signalDotOffsetY,
                         )
                     } else {
                         MOBILE_CENTER_Y + outerGeometry.singleDotY(
-                            index, visual.effectiveSingleRowArrangement, visual.effectiveSignalDotOffsetY,
+                            index, visual.effectiveSingleRowArrangement, visual.singleRowDotOffsetY,
                         )
                     }
                     val x = MobileDotRelocationPolicy.coordinate(
@@ -1586,11 +1586,11 @@ internal class StatusPainter(
         } else if (!centeredNow) {
             val bounds = if (model.dualMobileLevels != null && !model.mobileUnavailableMark) {
                 dualMobileTransitionBounds(
-                    outerGeometry, visual.effectiveDualRowArrangement, visual.effectiveSignalDotOffsetY,
+                    outerGeometry, visual.effectiveDualRowArrangement, visual.signalDotOffsetY,
                 )
             } else {
                 resolveMobileSignalTransitionLayout(
-                    outerGeometry, model, visual.effectiveSingleRowArrangement, visual.effectiveSignalDotOffsetY,
+                    outerGeometry, model, visual.effectiveSingleRowArrangement, visual.singleRowDotOffsetY,
                 ).bounds
             }
             avoidance = singleTopSlotAvoidance(bounds)
@@ -3948,12 +3948,12 @@ internal class StatusPainter(
                     } else MOBILE_CENTER_X + geometry.horizontalDotX(index)
                     val outerY = if (dual == null) {
                         MOBILE_CENTER_Y + geometry.singleDotY(
-                            index, visual.effectiveSingleRowArrangement, visual.effectiveSignalDotOffsetY,
+                            index, visual.effectiveSingleRowArrangement, visual.singleRowDotOffsetY,
                         )
                     } else {
                         MOBILE_CENTER_Y + geometry.dualDotY(
                             index, row, visual.effectiveDualRowArrangement,
-                            visual.effectiveSignalDotOffsetY,
+                            visual.signalDotOffsetY,
                         )
                     }
                     fill(
@@ -3981,7 +3981,7 @@ internal class StatusPainter(
                 canvas, model, tint, opacity, geometry,
                 if (model.dualMobileLevels == null) visual.effectiveSingleRowArrangement
                     else visual.effectiveDualRowArrangement,
-                visual.effectiveSignalDotOffsetY,
+                if (model.dualMobileLevels == null) visual.singleRowDotOffsetY else visual.signalDotOffsetY,
             )
         }
     }

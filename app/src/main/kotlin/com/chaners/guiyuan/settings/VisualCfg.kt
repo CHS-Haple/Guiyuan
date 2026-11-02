@@ -259,8 +259,8 @@ internal data class VisualCfg(
     val signalDotOffsetY: Float
         get() = if (signalDotArrangement == SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
 
-    val effectiveSignalDotOffsetY: Float
-        get() = if (effectiveDualRowArrangement == SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
+    val singleRowDotOffsetY: Float
+        get() = if (effectiveSingleRowArrangement == SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
 }
 
 internal fun Float.finiteIn(min: Float, max: Float, fallback: Float): Float =
