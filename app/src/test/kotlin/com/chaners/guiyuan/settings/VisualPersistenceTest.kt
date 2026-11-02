@@ -99,6 +99,71 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun signalDotOffsetSliderWritesVisibleDualRowBankInBatteryCenteredLayout() {
+        val prefs = MemoryPreferences()
+        for (layout in listOf(ContentLayout.NETWORK_CENTER, ContentLayout.BATTERY_CENTER)) {
+            for (dual in listOf(false, true)) {
+                prefs.edit().putVisualCfg(
+                    VisualCfg(
+                        layout = layout,
+                        dualSignal = dual,
+                        contentStyle = ContentStyle.DUO,
+                        defaultSignalDotOffsetY = 1f,
+                        duoSignalDotOffsetY = 2f,
+                    ),
+                ).apply()
+            }
+        }
+
+        // Reproduce B1726: current layout uses a profile-scoped Duo setting,
+        // but the retired global style preference is absent.
+        prefs.edit()
+            .putString(CONTENT_LAYOUT_KEY, ContentLayout.BATTERY_CENTER.persistedValue)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .apply()
+        assertFalse(prefs.contains(CONTENT_STYLE_KEY))
+        assertEquals(ContentStyle.DUO, prefs.readVisualCfg().contentStyle)
+        prefs.writeSignalDotOffsetY(-6f)
+
+        val batteryDual = prefs.readVisualCfg()
+        assertEquals(-6f, batteryDual.signalDotOffsetY, 0f)
+        assertEquals(-6f, batteryDual.duoSignalDotOffsetY, 0f)
+        assertEquals(1f, batteryDual.defaultSignalDotOffsetY, 0f)
+        assertEquals(2f, prefs.readVisualCfg(
+            dual = true,
+            layoutOverride = ContentLayout.NETWORK_CENTER,
+        ).duoSignalDotOffsetY, 0f)
+        assertEquals(2f, prefs.readVisualCfg(
+            dual = false,
+            layoutOverride = ContentLayout.BATTERY_CENTER,
+        ).duoSignalDotOffsetY, 0f)
+
+        // The default shape in a single-SIM profile still has a separate value.
+        prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
+            .putString(
+                visualProfileKey(ContentLayout.BATTERY_CENTER, CONTENT_STYLE_KEY),
+                ContentStyle.DEFAULT.persistedValue,
+            ).apply()
+        prefs.writeSignalDotOffsetY(4f)
+        val batterySingle = prefs.readVisualCfg()
+        assertEquals(4f, batterySingle.signalDotOffsetY, 0f)
+        assertEquals(2f, batterySingle.duoSignalDotOffsetY, 0f)
+        assertEquals(-6f, prefs.readVisualCfg(dual = true).duoSignalDotOffsetY, 0f)
+
+        // Switching back to the other layout cannot overwrite the battery bank.
+        prefs.edit()
+            .putString(CONTENT_LAYOUT_KEY, ContentLayout.NETWORK_CENTER.persistedValue)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .apply()
+        prefs.writeSignalDotOffsetY(7f)
+        assertEquals(7f, prefs.readVisualCfg().signalDotOffsetY, 0f)
+        assertEquals(-6f, prefs.readVisualCfg(
+            dual = true,
+            layoutOverride = ContentLayout.BATTERY_CENTER,
+        ).duoSignalDotOffsetY, 0f)
+    }
+
+    @Test
     fun unconfiguredNetworkTopOffsetIsPlusThreeForBothSignalProfiles() {
         val prefs = MemoryPreferences()
         for (dual in listOf(false, true)) {

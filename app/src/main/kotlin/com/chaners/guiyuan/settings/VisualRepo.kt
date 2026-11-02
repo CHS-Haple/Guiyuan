@@ -318,17 +318,7 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setSignalDotOffsetY(offset: Float) {
-        val style = ContentStyle.fromPersisted(
-            preferences.getString(CONTENT_STYLE_KEY, null),
-        )
-        val key = if (style == ContentStyle.DUO) DUO_SIGNAL_DOT_OFFSET_Y_KEY else DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(key),
-                offset.takeIf(Float::isFinite)
-                    ?.coerceIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX)
-                    ?: NETWORK_TOP_OFFSET_DEFAULT,
-            ).apply()
+        preferences.writeSignalDotOffsetY(offset)
     }
 
     fun setCombinedScale(scale: Float) {
@@ -497,6 +487,23 @@ internal class VisualRepo(context: Context) {
 
 internal fun visualModeKey(dual: Boolean, key: String): String =
     if (dual) "dual.$key" else key
+
+internal fun SharedPreferences.writeSignalDotOffsetY(offset: Float) {
+    val visual = readVisualCfg()
+    val key = if (visual.contentStyle == ContentStyle.DUO) {
+        DUO_SIGNAL_DOT_OFFSET_Y_KEY
+    } else {
+        DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY
+    }
+    edit().putFloat(
+        visualProfileKey(visual.layout, key, visual.dualSignal),
+        offset.finiteIn(
+            NETWORK_TOP_OFFSET_MIN,
+            NETWORK_TOP_OFFSET_MAX,
+            NETWORK_TOP_OFFSET_DEFAULT,
+        ),
+    ).apply()
+}
 
 internal fun SharedPreferences.dualSignalEnabled(): Boolean =
     getBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
