@@ -200,7 +200,7 @@ class VisualPersistenceTest {
             mobileSignalCentered = true,
             mobileTypeBottomOffsetY = 4f,
             contentStyle = ContentStyle.DEFAULT,
-            dualDuoOffsetY = -6f,
+            duoSignalDotOffsetY = -6f,
         )).apply()
         val regular = prefs.readVisualCfg(dual = false)
         val dual = prefs.readVisualCfg(dual = true)
@@ -210,8 +210,8 @@ class VisualPersistenceTest {
         assertEquals(ContentStyle.DUO, regular.effectiveContentStyle)
         assertEquals(4f, regular.mobileTypeBottomOffsetY, 0f)
         assertEquals(4f, dual.mobileTypeBottomOffsetY, 0f)
-        assertEquals(-6f, regular.dualDuoOffsetY, 0f)
-        assertEquals(0f, dual.dualDuoOffsetY, 0f)
+        assertEquals(-6f, regular.duoSignalDotOffsetY, 0f)
+        assertEquals(0f, dual.duoSignalDotOffsetY, 0f)
         assertEquals(ContentStyle.DEFAULT,
             regular.copy(mobileSignalCentered = false).effectiveContentStyle)
     }
@@ -221,29 +221,29 @@ class VisualPersistenceTest {
         val prefs = MemoryPreferences()
         val dual = VisualCfg(
             dualSignal = true,
-            dualDefaultOffsetY = 4f,
-            dualDuoOffsetY = -7f,
+            defaultSignalDotOffsetY = 4f,
+            duoSignalDotOffsetY = -7f,
         )
         prefs.edit().putVisualCfg(dual).apply()
         val network = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
-        assertEquals(4f, network.dualMobileOffsetY, 0f)
-        assertEquals(-7f, network.copy(contentStyle = ContentStyle.DUO).dualMobileOffsetY, 0f)
+        assertEquals(4f, network.signalDotOffsetY, 0f)
+        assertEquals(-7f, network.copy(contentStyle = ContentStyle.DUO).signalDotOffsetY, 0f)
 
         prefs.edit().putVisualCfg(
             dual.copy(
                 layout = ContentLayout.BATTERY_CENTER,
                 contentStyle = ContentStyle.DUO,
-                dualDefaultOffsetY = -2f,
-                dualDuoOffsetY = 5f,
+                defaultSignalDotOffsetY = -2f,
+                duoSignalDotOffsetY = 5f,
             ),
         ).apply()
         val battery = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.BATTERY_CENTER)
-        assertEquals(5f, battery.dualMobileOffsetY, 0f)
-        assertEquals(-2f, battery.copy(contentStyle = ContentStyle.DEFAULT).dualMobileOffsetY, 0f)
+        assertEquals(5f, battery.signalDotOffsetY, 0f)
+        assertEquals(-2f, battery.copy(contentStyle = ContentStyle.DEFAULT).signalDotOffsetY, 0f)
         val original = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
-        assertEquals(4f, original.dualDefaultOffsetY, 0f)
-        assertEquals(-7f, original.dualDuoOffsetY, 0f)
-        assertEquals(0f, prefs.readVisualCfg(dual = false).dualMobileOffsetY, 0f)
+        assertEquals(4f, original.defaultSignalDotOffsetY, 0f)
+        assertEquals(-7f, original.duoSignalDotOffsetY, 0f)
+        assertEquals(0f, prefs.readVisualCfg(dual = false).signalDotOffsetY, 0f)
     }
 
     @Test
