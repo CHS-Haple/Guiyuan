@@ -141,7 +141,7 @@ class ConfigBackupTest {
         val json = ConfigBackupFormat.encode(sample())
             .replace("\"dualDotStyle\":\"DEFAULT\",", "")
         assertTrue(ConfigBackupFormat.decode(json).visual.profiles.all {
-            it.dualDotStyle == DualDotStyle.DEFAULT
+            it.contentStyle == ContentStyle.DEFAULT
         })
     }
 
@@ -167,13 +167,13 @@ class ConfigBackupTest {
         val source = sample()
         val valid = source.copy(visual = source.visual.copy(profiles =
             source.visual.profiles.map { cfg ->
-                if (cfg.dualSignal) cfg.copy(dualDotStyle = DualDotStyle.DUO) else cfg
+                if (cfg.dualSignal) cfg.copy(contentStyle = ContentStyle.DUO) else cfg
             },
         ))
         assertEquals(valid, ConfigBackupFormat.decode(ConfigBackupFormat.encode(valid)))
         val invalid = valid.copy(visual = valid.visual.copy(
             profiles = valid.visual.profiles.mapIndexed { index, cfg ->
-                if (index == 2) cfg.copy(dualDotStyle = DualDotStyle.DEFAULT) else cfg
+                if (index == 2) cfg.copy(contentStyle = ContentStyle.DEFAULT) else cfg
             },
         ))
         assertThrows(IllegalArgumentException::class.java) {
