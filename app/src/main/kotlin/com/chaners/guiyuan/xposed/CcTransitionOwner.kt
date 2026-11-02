@@ -1458,6 +1458,9 @@ internal object CcTransitionOwner {
                                 nativeTargetAvailable =
                                     matchedTargetGeometry != null &&
                                         witness?.opticalView != null && nativeTypeMatch == true,
+                                mobileTypeBottom =
+                                    currentSnapshot.visual.centeredMobileSignal &&
+                                        !model.mobileUnavailableMark,
                                 visual = currentSnapshot.visual,
                             ) ?: spec.sourceBounds
 

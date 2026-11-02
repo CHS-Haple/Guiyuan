@@ -2024,6 +2024,7 @@ internal class StatusPainter(
         targetStyle: TransitionTextStyle?,
         progress: Float,
         nativeTargetAvailable: Boolean = false,
+        mobileTypeBottom: Boolean = false,
         visual: VisualCfg = VisualCfg(),
     ): TransitionBounds? {
         if (width <= 0 || height <= 0) return null
@@ -2043,7 +2044,7 @@ internal class StatusPainter(
                 progress = progress,
             )
         val current = base.copy(mobileTypeWeight = weight)
-        val baseLocal =
+        val textLayout =
             resolveMobileTypeLayout(
                 indicator = indicator,
                 scale = scale,
@@ -2052,7 +2053,13 @@ internal class StatusPainter(
                 targetStyle = targetStyle,
                 transitionProgress = progress,
                 nativeTargetAvailable = nativeTargetAvailable,
-            ).bounds
+            )
+        val baseLocal =
+            if (mobileTypeBottom) {
+                shiftBoundsY(textLayout.bounds, mobileTypeBottomTranslation(visual, textLayout))
+            } else {
+                textLayout.bounds
+            }
         val local =
             if (visual.layout == ContentLayout.BATTERY_CENTER) {
                 shiftBoundsY(baseLocal, networkTopTranslationY(visual, indicator))
