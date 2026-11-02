@@ -3235,6 +3235,57 @@ internal class StatusPainter(
         mobileTypePaint.textSize = textSize
     }
 
+    private fun centeredMobileRowY(geometry: OuterGeometry.Resolved, row: Int?): Float =
+        CENTER_TRANSITION_PIVOT_Y +
+            when (row) {
+                0 -> -geometry.dualRowGap / 2f
+                1 -> geometry.dualRowGap / 2f
+                else -> 0f
+            }
+
+    private fun centeredMobileRowBounds(
+        geometry: OuterGeometry.Resolved,
+        row: Int?,
+    ): TransitionBounds {
+        val radius = if (row == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius
+        val y = centeredMobileRowY(geometry, row)
+        return TransitionBounds(
+            CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(0) - radius,
+            y - radius,
+            CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(MOBILE_DOT_COUNT - 1) + radius,
+            y + radius,
+        )
+    }
+
+    private fun centeredMobileBounds(geometry: OuterGeometry.Resolved, dual: Boolean): TransitionBounds {
+        if (!dual) return centeredMobileRowBounds(geometry, null)
+        val top = centeredMobileRowBounds(geometry, 0)
+        val bottom = centeredMobileRowBounds(geometry, 1)
+        return TransitionBounds(top.left, top.top, top.right, bottom.bottom)
+    }
+
+    private fun resolveCenteredMobileTransitionLayout(
+        geometry: OuterGeometry.Resolved,
+        row: Int?,
+    ): MobileSignalTransitionLayout {
+        val bounds = centeredMobileRowBounds(geometry, row)
+        val radius = if (row == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius
+        val centers = (0 until MOBILE_DOT_COUNT).map { index ->
+            TransitionPoint(CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(index), bounds.centerY)
+        }
+        return MobileSignalTransitionLayout(
+            bounds = bounds,
+            sourceCenters = centers,
+            targetCenters = (0 until MOBILE_DOT_COUNT).map { index ->
+                TransitionPoint(
+                    bounds.left + radius + index * (bounds.width - 2f * radius) /
+                        (MOBILE_DOT_COUNT - 1),
+                    bounds.centerY,
+                )
+            },
+        )
+    }
+
     private fun dualMobileRowBounds(
         geometry: OuterGeometry.Resolved,
         row: Int,
@@ -3656,6 +3707,38 @@ internal class StatusPainter(
         }
     }
 
+    private fun drawCenteredMobile(
+        canvas: Canvas,
+        model: RenderModel,
+        tint: Int,
+        opacity: Float,
+        geometry: OuterGeometry.Resolved,
+    ) {
+        val dual = model.dualMobileLevels
+        val rows = if (dual == null) 1 else 2
+        for (row in 0 until rows) {
+            val level = when (row) {
+                0 -> dual?.sim1 ?: model.mobileLevel
+                else -> dual?.sim2
+            }
+            val y = centeredMobileRowY(geometry, if (dual == null) null else row)
+            val radius = if (dual == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius
+            for (index in 0 until MOBILE_DOT_COUNT) {
+                fill(
+                    color = tint,
+                    alpha = if (level != null && level > index) 255 else 48,
+                    opacity = opacity,
+                )
+                canvas.drawCircle(
+                    CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(index),
+                    y,
+                    radius,
+                    paint,
+                )
+            }
+        }
+    }
+
     private fun drawMobile(
         canvas: Canvas,
         model: RenderModel,
@@ -3854,6 +3937,8 @@ internal class StatusPainter(
         const val CENTER_TRANSITION_PIVOT_Y = 60f
         const val MOBILE_TYPE_CENTER_X = 60f
         const val MOBILE_TYPE_CENTER_Y = 60f
+        // Use the native bottom mobile slot rather than creating another layout owner.
+        const val MOBILE_TYPE_BOTTOM_CENTER_Y = 103f
         const val MOBILE_TYPE_SUFFIX_GAP = 2f
         const val MOBILE_TYPE_SUFFIX_EM_CLEARANCE = 0.08f
         const val NATIVE_CENTER_CACHE_SIZE = 8
