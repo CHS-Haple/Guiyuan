@@ -507,11 +507,7 @@ internal fun FeaturesScreen(
                     search.matches(R.string.single_row_flat_dots)) {
                     SwitchPreference(
                         title = stringResource(R.string.single_row_flat_dots),
-                        summary = stringResource(
-                            if (visual.centeredMobileSignal)
-                                R.string.single_row_flat_dots_summary_centered
-                            else R.string.single_row_flat_dots_summary,
-                        ),
+                        summary = stringResource(R.string.single_row_flat_dots_summary),
                         startAction = {
                             SemanticLeadingIcon(
                                 R.drawable.ic_material_symbol_signal_cellular_alt,
