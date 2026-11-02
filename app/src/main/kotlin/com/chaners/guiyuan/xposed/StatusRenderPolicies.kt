@@ -339,8 +339,6 @@ internal object CenterGeometry {
     }
 }
 
-// Keep the source network-type ink inside the lower canvas opening while
-// avoiding the inner signal rows. Use measured ink, never a fixed font height.
 internal object MobileDotRelocationPolicy {
     fun shouldInterpolate(
         previous: CenterIndicator?,
@@ -356,24 +354,13 @@ internal object MobileDotRelocationPolicy {
 }
 
 internal object CenteredMobileTypePositionPolicy {
+    // Only dot clearance limits upward motion; overflow is handled by the render surface.
     fun translation(
         sourceTop: Float,
-        sourceBottom: Float,
         mobileBottom: Float,
         requested: Float,
-        canvasBottom: Float,
         clearance: Float,
-    ): Float {
-        val minTranslation = mobileBottom + clearance - sourceTop
-        val maxTranslation = canvasBottom - clearance - sourceBottom
-        return if (minTranslation <= maxTranslation) {
-            requested.coerceIn(minTranslation, maxTranslation)
-        } else {
-            // A very large type cannot fit in the remaining opening. Preserve
-            // the canvas edge first; do not push the glyph out of the icon view.
-            maxTranslation
-        }
-    }
+    ): Float = max(requested, mobileBottom + clearance - sourceTop)
 }
 
 internal object OuterGeometry {

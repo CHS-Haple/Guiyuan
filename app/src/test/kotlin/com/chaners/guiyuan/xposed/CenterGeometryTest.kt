@@ -15,17 +15,18 @@ class CenterGeometryTest {
     fun centeredMobileTypeUsesMeasuredInkBoundsForLowerOpening() {
         val policy = CenteredMobileTypePositionPolicy
         fun translation(requested: Float) = policy.translation(
-            sourceTop = 45f, sourceBottom = 75f, mobileBottom = 80f,
-            requested = requested, canvasBottom = 120f, clearance = 2f,
+            sourceTop = 45f, mobileBottom = 80f,
+            requested = requested, clearance = 2f,
         )
         assertEquals(43f, translation(43f), 0f)
-        assertEquals(43f, translation(53f), 0f)
+        assertEquals(53f, translation(53f), 0f)
         assertEquals(37f, translation(20f), 0f)
         assertEquals(82f, 45f + translation(20f), 0f)
-        assertEquals(118f, 75f + translation(53f), 0f)
+        // The paint may extend past the canonical bottom; the physical View must expand.
+        assertEquals(128f, 75f + translation(53f), 0f)
         assertEquals(
-            28f,
-            policy.translation(40f, 90f, 80f, 53f, 120f, 2f),
+            42f,
+            policy.translation(40f, 80f, 20f, 2f),
             0f,
         )
     }

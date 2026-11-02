@@ -286,6 +286,33 @@ internal class StatusPainter(
         )
     }
 
+    fun requiredBottomOverflowPx(
+        width: Int,
+        height: Int,
+        model: RenderModel,
+        visual: VisualCfg,
+        previousCenterIndicator: CenterIndicator? = null,
+        scaleMobileTypeWithCanvas: Boolean = false,
+    ): Int {
+        if (!visual.centeredMobileSignal || model.mobileUnavailableMark) return 0
+        val transform = resolveCanvasTransform(width, height, visual) ?: return 0
+        val geometry = resolveCenterGeometry(visual)
+        return listOfNotNull(
+            model.centerIndicator as? CenterIndicator.MobileType,
+            previousCenterIndicator as? CenterIndicator.MobileType,
+        ).maxOfOrNull { type ->
+            val layout = resolveMobileTypeLayout(
+                indicator = type,
+                scale = transform.scale,
+                geometry = geometry,
+                scaleWithCanvas = scaleMobileTypeWithCanvas,
+            )
+            val bottom = transform.offsetY +
+                (layout.bounds.bottom + mobileTypeBottomTranslation(visual, layout)) * transform.scale
+            if (bottom.isFinite() && bottom > height) ceil(bottom - height).toInt() + 1 else 0
+        } ?: 0
+    }
+
     fun drawTransitionComponent(
         canvas: Canvas,
         width: Int,
@@ -3012,10 +3039,8 @@ internal class StatusPainter(
         val innerBottom = centeredMobileBounds(resolveOuterGeometry(visual.outerWeightScale), true).bottom
         return CenteredMobileTypePositionPolicy.translation(
             sourceTop = layout.bounds.top,
-            sourceBottom = layout.bounds.bottom,
             mobileBottom = innerBottom,
             requested = MOBILE_TYPE_BOTTOM_CENTER_Y - MOBILE_TYPE_CENTER_Y - visual.mobileTypeBottomOffsetY,
-            canvasBottom = CANONICAL_SIZE,
             clearance = BATTERY_TOP_RING_VISUAL_CLEARANCE,
         )
     }
