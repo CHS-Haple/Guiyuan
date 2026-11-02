@@ -17,7 +17,7 @@ import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX as SETTINGS_WIFI_SIZE_SC
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN as SETTINGS_WIFI_SIZE_SCALE_MIN
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.DualDotStyle
+import com.chaners.guiyuan.settings.ContentStyle
 import com.chaners.guiyuan.settings.topOffsetYUi
 import kotlin.math.cos
 import kotlin.math.max
@@ -429,10 +429,10 @@ internal object OuterGeometry {
         fun dualDotY(
             index: Int,
             row: Int,
-            style: DualDotStyle = DualDotStyle.DEFAULT,
+            style: ContentStyle = ContentStyle.DEFAULT,
             offsetY: Float = 0f,
         ): Float {
-            val x = if (style == DualDotStyle.DUO) dualDotSpan / 6f else dualDotX(index)
+            val x = if (style == ContentStyle.DUO) dualDotSpan / 6f else dualDotX(index)
             val offset = if (row == 0) -dualRowGap / 2f else dualRowGap / 2f
             return sqrt(RING_RADIUS * RING_RADIUS - x * x) +
                 offset - dualOpticalRise - offsetY
