@@ -68,6 +68,8 @@ internal object FeatureSearchIds {
         R.string.content_layout_title,
         R.string.dual_signal_title,
         R.string.dual_dot_style_title,
+        R.string.mobile_signal_centered_title,
+        R.string.mobile_type_bottom_offset,
         R.string.dual_mobile_vertical_offset,
         R.string.combined_size,
         R.string.outer_weight,
