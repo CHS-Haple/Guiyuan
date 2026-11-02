@@ -3760,10 +3760,8 @@ internal class StatusPainter(
         val dual = model.dualMobileLevels
         val rows = if (dual == null) 1 else 2
         for (row in 0 until rows) {
-            val level = when (row) {
-                0 -> dual?.sim1 ?: model.mobileLevel
-                else -> dual?.sim2
-            }
+            val level = if (dual == null) model.mobileLevel
+                else if (row == 0) dual.sim1 else dual.sim2
             val y = centeredMobileRowY(geometry, if (dual == null) null else row)
             val radius = if (dual == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius
             for (index in 0 until MOBILE_DOT_COUNT) {
