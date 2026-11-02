@@ -84,7 +84,7 @@ class VisualCfgTest {
         assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.dualDefaultOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.dualDuoOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.dualMobileOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(dualDotStyle = DualDotStyle.DUO).dualMobileOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(contentStyle = ContentStyle.DUO).dualMobileOffsetY, 0f)
         val invalidOffsets = settings.copy(
             dualDefaultOffsetY = Float.NaN,
             dualDuoOffsetY = Float.POSITIVE_INFINITY,
@@ -109,18 +109,18 @@ class VisualCfgTest {
 
     @Test
     fun centeredMobileSignalForcesEffectiveDuoWithoutChangingSavedStyle() {
-        val saved = VisualCfg(dualDotStyle = DualDotStyle.DEFAULT, mobileSignalCentered = true)
-        assertEquals(DualDotStyle.DEFAULT, saved.dualDotStyle)
-        assertEquals(DualDotStyle.DUO, saved.effectiveContentStyle)
+        val saved = VisualCfg(contentStyle = ContentStyle.DEFAULT, mobileSignalCentered = true)
+        assertEquals(ContentStyle.DEFAULT, saved.contentStyle)
+        assertEquals(ContentStyle.DUO, saved.effectiveContentStyle)
         assertEquals(true, saved.centeredMobileSignal)
         val preserved = saved.copy(dualDefaultOffsetY = 3f, dualDuoOffsetY = -4f)
         assertEquals(3f, preserved.dualMobileOffsetY, 0f)
         assertEquals(-4f, preserved.effectiveDualMobileOffsetY, 0f)
         assertEquals(3f, preserved.copy(mobileSignalCentered = false).effectiveDualMobileOffsetY, 0f)
-        assertEquals(DualDotStyle.DEFAULT, saved.copy(mobileSignalCentered = false).effectiveContentStyle)
+        assertEquals(ContentStyle.DEFAULT, saved.copy(mobileSignalCentered = false).effectiveContentStyle)
         val battery = saved.copy(layout = ContentLayout.BATTERY_CENTER)
         assertEquals(false, battery.centeredMobileSignal)
-        assertEquals(DualDotStyle.DEFAULT, battery.effectiveContentStyle)
+        assertEquals(ContentStyle.DEFAULT, battery.effectiveContentStyle)
         assertEquals(true, battery.mobileSignalCentered)
         assertEquals(0f, saved.mobileTypeBottomOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MAX,
