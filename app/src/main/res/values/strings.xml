@@ -18,7 +18,6 @@
     <string name="single_row_flat_dots_summary">Arrange the lower signal dots in a straight row instead of an arc</string>
     <string name="mobile_signal_centered_title">Centered mobile signal</string>
     <string name="mobile_signal_centered_summary">Center the signal dots with the network type below</string>
-    <string name="centered_mobile_style_locked">Fixed to Duo while centered mobile signal is enabled</string>
     <string name="mobile_type_bottom_offset">Network type vertical offset</string>
     <string name="dual_dot_style_title">Content style</string>
     <string name="dual_dot_style_default">Default</string>

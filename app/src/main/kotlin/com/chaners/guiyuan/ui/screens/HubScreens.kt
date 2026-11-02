@@ -473,20 +473,17 @@ internal fun FeaturesScreen(
                         },
                     )
                 }
-                if (search.matches(R.string.dual_dot_style_title)) {
+                if (!visual.centeredMobileSignal && search.matches(R.string.dual_dot_style_title)) {
                     UiDropdownPreference(
                         title = stringResource(R.string.dual_dot_style_title),
                         items = contentStyles,
-                        selectedIndex = visual.effectiveContentStyle.ordinal,
-                        summary = if (visual.centeredMobileSignal) {
-                            stringResource(R.string.centered_mobile_style_locked)
-                        } else null,
+                        selectedIndex = visual.contentStyle.ordinal,
                         showValue = true,
-                        enabled = featureCfg.enabled && !visual.centeredMobileSignal,
+                        enabled = featureCfg.enabled,
                         startAction = {
                             SemanticLeadingIcon(
                                 R.drawable.ic_material_symbol_layers,
-                                featureCfg.enabled && !visual.centeredMobileSignal,
+                                featureCfg.enabled,
                             )
                         },
                         onSelectedIndexChange = { index ->
