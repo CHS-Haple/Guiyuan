@@ -804,12 +804,17 @@ internal class StatusPainter(
     internal fun dualMobileRowSpecs(
         source: TransitionComponentSpec,
         visual: VisualCfg,
+        model: RenderModel,
     ): List<TransitionComponentSpec> {
         val geometry = resolveOuterGeometry(visual.outerWeightScale)
-        val group = dualMobileTransitionBounds(geometry, visual.dualDotStyle, visual.dualMobileOffsetY)
+        val centered = visual.centeredMobileSignal &&
+            model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
+        val group = if (centered) centeredMobileBounds(geometry, true)
+            else dualMobileTransitionBounds(geometry, visual.dualDotStyle, visual.dualMobileOffsetY)
         if (group.width <= 0f || group.height <= 0f) return emptyList()
         return (0..1).map { row ->
-            val local = dualMobileRowBounds(geometry, row, visual.dualDotStyle, visual.dualMobileOffsetY)
+            val local = if (centered) centeredMobileRowBounds(geometry, row)
+                else dualMobileRowBounds(geometry, row, visual.dualDotStyle, visual.dualMobileOffsetY)
             fun x(value: Float) = source.sourceBounds.left +
                 (value - group.left) / group.width * source.sourceBounds.width
             fun y(value: Float) = source.sourceBounds.top +
