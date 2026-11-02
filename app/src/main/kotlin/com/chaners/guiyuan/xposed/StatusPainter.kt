@@ -773,7 +773,7 @@ internal class StatusPainter(
                 centeredMobile -> centeredMobileBounds(outerGeometry, model.dualMobileLevels != null)
                 model.dualMobileLevels != null ->
                     dualMobileTransitionBounds(outerGeometry, visual.effectiveContentStyle, visual.effectiveDualMobileOffsetY)
-                else -> resolveMobileSignalTransitionLayout(outerGeometry, model).bounds
+                else -> resolveMobileSignalTransitionLayout(outerGeometry, model, visual.effectiveContentStyle, visual.effectiveDualMobileOffsetY).bounds
             }
         specs +=
             TransitionComponentSpec(
@@ -3387,6 +3387,8 @@ internal class StatusPainter(
     private fun resolveMobileSignalTransitionLayout(
         geometry: OuterGeometry.Resolved,
         model: RenderModel,
+        style: ContentStyle,
+        mobileOffsetY: Float,
     ): MobileSignalTransitionLayout {
         val sourceCenters = ArrayList<TransitionPoint>(MOBILE_DOT_COUNT)
         var left = Float.POSITIVE_INFINITY
@@ -3394,13 +3396,8 @@ internal class StatusPainter(
         var right = Float.NEGATIVE_INFINITY
         var bottom = Float.NEGATIVE_INFINITY
         for (index in 0 until MOBILE_DOT_COUNT) {
-            val angle = geometry.bottomDotAngle(index)
-            val x =
-                MOBILE_CENTER_X +
-                    cos(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS
-            val y =
-                MOBILE_CENTER_Y +
-                    sin(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS
+            val x = MOBILE_CENTER_X + geometry.singleDotX(index, style)
+            val y = MOBILE_CENTER_Y + geometry.singleDotY(index, style, mobileOffsetY)
             sourceCenters += TransitionPoint(x, y)
             left = min(left, x - geometry.mobileDotRadius)
             top = min(top, y - geometry.mobileDotRadius)
@@ -3486,7 +3483,7 @@ internal class StatusPainter(
             when {
                 centered -> resolveCenteredMobileTransitionLayout(geometry, row)
                 row != null -> resolveDualMobileSignalTransitionLayout(geometry, row, style, mobileOffsetY)
-                else -> resolveMobileSignalTransitionLayout(geometry, model)
+                else -> resolveMobileSignalTransitionLayout(geometry, model, style, mobileOffsetY)
             }
         val radius =
             (if (row == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius) *
@@ -3844,12 +3841,9 @@ internal class StatusPainter(
                 alpha = if (level != null && level > index) 255 else 48,
                 opacity = opacity,
             )
-            val angle = geometry.bottomDotAngle(index)
             canvas.drawCircle(
-                MOBILE_CENTER_X +
-                    cos(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS,
-                MOBILE_CENTER_Y +
-                    sin(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS,
+                MOBILE_CENTER_X + geometry.singleDotX(index, style),
+                MOBILE_CENTER_Y + geometry.singleDotY(index, style, mobileOffsetY),
                 geometry.mobileDotRadius,
                 paint,
             )
