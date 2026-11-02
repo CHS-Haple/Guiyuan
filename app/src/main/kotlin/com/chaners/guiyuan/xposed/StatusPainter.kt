@@ -442,7 +442,15 @@ internal class StatusPainter(
                         row = mobileRow,
                         style = visual.dualDotStyle,
                         mobileOffsetY = visual.dualMobileOffsetY,
+                        centered = visual.centeredMobileSignal &&
+                            model.centerIndicator is CenterIndicator.MobileType &&
+                            !model.mobileUnavailableMark,
                     )
+                } else if (visual.centeredMobileSignal &&
+                    model.centerIndicator is CenterIndicator.MobileType &&
+                    !model.mobileUnavailableMark
+                ) {
+                    drawCenteredMobile(canvas, model, colors.mobileTint, opacity, outerGeometry)
                 } else {
                     drawMobile(
                         canvas = canvas,
@@ -3447,10 +3455,14 @@ internal class StatusPainter(
         row: Int?,
         style: DualDotStyle,
         mobileOffsetY: Float,
+        centered: Boolean = false,
     ) {
         val layout =
-            if (row != null) resolveDualMobileSignalTransitionLayout(geometry, row, style, mobileOffsetY)
-            else resolveMobileSignalTransitionLayout(geometry, model)
+            when {
+                centered -> resolveCenteredMobileTransitionLayout(geometry, row)
+                row != null -> resolveDualMobileSignalTransitionLayout(geometry, row, style, mobileOffsetY)
+                else -> resolveMobileSignalTransitionLayout(geometry, model)
+            }
         val radius =
             if (row == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius
         val level = when (row) {
@@ -3465,7 +3477,8 @@ internal class StatusPainter(
         val barProgress = MobileSignalMorphPolicy.barProgress(phase)
         val diameter = radius * 2f
         if (row == null && model.dualMobileLevels != null && aggregateRows != null) {
-            val bounds = dualMobileTransitionBounds(geometry, style, mobileOffsetY)
+            val bounds = if (centered) centeredMobileBounds(geometry, true)
+                else dualMobileTransitionBounds(geometry, style, mobileOffsetY)
             val top = aggregateRows.top
             val bottom = aggregateRows.bottom
             val outerScale = MobileSignalMorphPolicy.outerSimilarityScale(
@@ -3495,7 +3508,8 @@ internal class StatusPainter(
                     TransitionNormalizedBounds(rect.left, rect.top, rect.right, rect.bottom)
                 }
                 val rowLayout =
-                    resolveDualMobileSignalTransitionLayout(geometry, index, style, mobileOffsetY)
+                    (if (centered) resolveCenteredMobileTransitionLayout(geometry, index)
+                     else resolveDualMobileSignalTransitionLayout(geometry, index, style, mobileOffsetY))
                         .copy(bounds = bounds)
                 drawMobileSignalTransitionToExactBars(
                     canvas = canvas,
