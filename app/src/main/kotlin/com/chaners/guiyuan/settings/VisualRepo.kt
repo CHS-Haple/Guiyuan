@@ -440,7 +440,6 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setSignalDotOffsetY(offset: Float) {
-        if (!preferences.dualSignalEnabled()) return
         val style = ContentStyle.fromPersisted(
             preferences.getString(CONTENT_STYLE_KEY, null),
         )
