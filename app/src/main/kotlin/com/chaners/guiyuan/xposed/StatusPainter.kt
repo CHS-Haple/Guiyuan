@@ -226,22 +226,16 @@ internal class StatusPainter(
             visual = visual,
             mobileTypeBottom = visual.centeredMobileSignal && !model.mobileUnavailableMark,
         )
-        if (visual.centeredMobileSignal &&
-            model.centerIndicator is CenterIndicator.MobileType &&
-            !model.mobileUnavailableMark
-        ) {
-            drawCenteredMobile(canvas, model, colors.mobileTint, opacity, outerGeometry)
-        } else {
-            drawMobile(
-                canvas = canvas,
-                model = model,
-                tint = colors.mobileTint,
-                opacity = opacity,
-                geometry = outerGeometry,
-                style = visual.effectiveContentStyle,
-                mobileOffsetY = visual.effectiveDualMobileOffsetY,
-            )
-        }
+        drawNetworkSwitchMobile(
+            canvas = canvas,
+            model = model,
+            tint = colors.mobileTint,
+            opacity = opacity,
+            geometry = outerGeometry,
+            visual = visual,
+            previousCenter = previousCenterIndicator,
+            progress = centerEnterAmount,
+        )
         canvas.restoreToCount(save)
     }
 
@@ -3767,6 +3761,79 @@ internal class StatusPainter(
                 cornerRadius,
                 cornerRadius,
                 paint,
+            )
+        }
+    }
+
+    // The center glyph already owns a short family-transition animator. Project
+    // the signal dots through the same progress instead of snapping positions
+    // when the active display changes between mobile type and Wi-Fi.
+    private fun drawNetworkSwitchMobile(
+        canvas: Canvas,
+        model: RenderModel,
+        tint: Int,
+        opacity: Float,
+        geometry: OuterGeometry.Resolved,
+        visual: VisualCfg,
+        previousCenter: CenterIndicator?,
+        progress: Float,
+    ) {
+        val centeredNow = visual.centeredMobileSignal &&
+            model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
+        val centeredBefore = visual.centeredMobileSignal &&
+            previousCenter is CenterIndicator.MobileType && !model.mobileUnavailableMark
+        if (previousCenter != null && previousCenter != model.centerIndicator &&
+            centeredBefore != centeredNow
+        ) {
+            val dual = model.dualMobileLevels
+            val scale = geometry.centeredScale(dual != null)
+            val fraction = progress.coerceIn(0f, 1f)
+            val count = if (dual == null) 1 else 2
+            for (row in 0 until count) {
+                val level = if (dual == null) model.mobileLevel
+                    else if (row == 0) dual.sim1 else dual.sim2
+                val centeredY = centeredMobileRowY(geometry, if (dual == null) null else row)
+                val outerRadius = if (dual == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius
+                val innerRadius = outerRadius * scale
+                for (index in 0 until MOBILE_DOT_COUNT) {
+                    val innerX = CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(index) * scale
+                    val outerX = if (dual == null) {
+                        MOBILE_CENTER_X + geometry.singleDotX(index, visual.effectiveContentStyle)
+                    } else MOBILE_CENTER_X + geometry.dualDotX(index)
+                    val outerY = if (dual == null) {
+                        MOBILE_CENTER_Y + geometry.singleDotY(
+                            index, visual.effectiveContentStyle, visual.effectiveDualMobileOffsetY,
+                        )
+                    } else {
+                        MOBILE_CENTER_Y + geometry.dualDotY(
+                            index, row, visual.effectiveContentStyle,
+                            visual.effectiveDualMobileOffsetY,
+                        )
+                    }
+                    fill(
+                        color = tint,
+                        alpha = if (level != null && level > index) 255 else 48,
+                        opacity = opacity,
+                    )
+                    canvas.drawCircle(
+                        lerp(if (centeredBefore) innerX else outerX,
+                            if (centeredNow) innerX else outerX, fraction),
+                        lerp(if (centeredBefore) centeredY else outerY,
+                            if (centeredNow) centeredY else outerY, fraction),
+                        lerp(if (centeredBefore) innerRadius else outerRadius,
+                            if (centeredNow) innerRadius else outerRadius, fraction),
+                        paint,
+                    )
+                }
+            }
+            return
+        }
+        if (centeredNow) {
+            drawCenteredMobile(canvas, model, tint, opacity, geometry)
+        } else {
+            drawMobile(
+                canvas, model, tint, opacity, geometry,
+                visual.effectiveContentStyle, visual.effectiveDualMobileOffsetY,
             )
         }
     }
