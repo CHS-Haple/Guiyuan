@@ -211,8 +211,10 @@ internal data class VisualCfg(
     val topOffsetY: Float = topOffsetYDefault(layout),
     val wifiOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val mobileTypeOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
-    val dualDefaultOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
-    val dualDuoOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    @SerialName("dualDefaultOffsetY") // Backward-compatible V1 backup field.
+    val defaultSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    @SerialName("dualDuoOffsetY") // Backward-compatible V1 backup field.
+    val duoSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val topChargingIconScale: Float =
         topChargingIconScaleDefault(layout),
     val combinedScale: Float = COMBINED_SCALE_DEFAULT,
@@ -237,11 +239,11 @@ internal data class VisualCfg(
     val effectiveContentStyle: ContentStyle
         get() = if (centeredMobileSignal) ContentStyle.DUO else contentStyle
 
-    val dualMobileOffsetY: Float
-        get() = if (contentStyle == ContentStyle.DUO) dualDuoOffsetY else dualDefaultOffsetY
+    val signalDotOffsetY: Float
+        get() = if (contentStyle == ContentStyle.DUO) duoSignalDotOffsetY else defaultSignalDotOffsetY
 
-    val effectiveDualMobileOffsetY: Float
-        get() = if (effectiveContentStyle == ContentStyle.DUO) dualDuoOffsetY else dualDefaultOffsetY
+    val effectiveSignalDotOffsetY: Float
+        get() = if (effectiveContentStyle == ContentStyle.DUO) duoSignalDotOffsetY else defaultSignalDotOffsetY
 }
 
 internal fun Float.finiteIn(min: Float, max: Float, fallback: Float): Float =
@@ -278,8 +280,8 @@ internal fun VisualCfg.normalized(): VisualCfg =
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,
             ),
-        dualDefaultOffsetY =
-            dualDefaultOffsetY.finiteIn(
+        defaultSignalDotOffsetY =
+            defaultSignalDotOffsetY.finiteIn(
                 NETWORK_TOP_OFFSET_MIN,
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,
@@ -290,8 +292,8 @@ internal fun VisualCfg.normalized(): VisualCfg =
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,
             ),
-        dualDuoOffsetY =
-            dualDuoOffsetY.finiteIn(
+        duoSignalDotOffsetY =
+            duoSignalDotOffsetY.finiteIn(
                 NETWORK_TOP_OFFSET_MIN,
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,
