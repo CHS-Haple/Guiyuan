@@ -543,8 +543,8 @@ internal fun FeaturesScreen(
                     } else if (visual.dualSignal &&
                         search.matches(R.string.dual_mobile_vertical_offset)) {
                         SliderPreference(
-                            value = visual.dualMobileOffsetY,
-                            onValueChange = visualRepo::setDualMobileOffsetY,
+                            value = visual.signalDotOffsetY,
+                            onValueChange = visualRepo::setSignalDotOffsetY,
                             title = stringResource(R.string.dual_mobile_vertical_offset),
                             startAction = {
                                 SemanticLeadingIcon(
@@ -555,7 +555,7 @@ internal fun FeaturesScreen(
                             },
                             valueText = stringResource(
                                 R.string.battery_top_offset_value,
-                                visual.dualMobileOffsetY.roundToInt(),
+                                visual.signalDotOffsetY.roundToInt(),
                             ),
                             valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
                             steps = 19,
