@@ -535,7 +535,7 @@ internal fun FeaturesScreen(
                 }
                 AnimatedPreferenceGroup(
                     visible = visual.dualSignal || visual.centeredMobileSignal ||
-                        visual.effectiveContentStyle == ContentStyle.DUO,
+                        visual.effectiveSingleRowStyle == ContentStyle.DUO,
                 ) {
                     if (visual.centeredMobileSignal &&
                         search.matches(R.string.mobile_type_bottom_offset)) {
@@ -562,7 +562,7 @@ internal fun FeaturesScreen(
                             magnetThreshold = 0.035f,
                             enabled = featureCfg.enabled,
                         )
-                    } else if ((visual.dualSignal || visual.effectiveContentStyle == ContentStyle.DUO) &&
+                    } else if ((visual.dualSignal || visual.effectiveSingleRowStyle == ContentStyle.DUO) &&
                         search.matches(R.string.signal_dot_vertical_offset)) {
                         SliderPreference(
                             value = visual.signalDotOffsetY,
