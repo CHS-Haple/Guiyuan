@@ -423,6 +423,17 @@ internal object OuterGeometry {
             return (inner / outer).coerceIn(0f, 1f)
         }
 
+        fun singleDotX(index: Int, style: ContentStyle): Float =
+            if (style == ContentStyle.DUO) dualDotX(index)
+            else cos(bottomDotAngle(index)).toFloat() * MOBILE_ORBIT_RADIUS
+
+        fun singleDotY(index: Int, style: ContentStyle, offsetY: Float): Float =
+            if (style == ContentStyle.DUO) {
+                // Flat optical row: same x reference and baseline as the dual Duo layout.
+                sqrt(RING_RADIUS * RING_RADIUS -
+                    (dualDotSpan / 6f) * (dualDotSpan / 6f)) - dualOpticalRise - offsetY
+            } else sin(bottomDotAngle(index)).toFloat() * MOBILE_ORBIT_RADIUS
+
         fun dualDotX(index: Int): Float =
             (index - (DOT_COUNT - 1) / 2f) * (dualDotSpan / (DOT_COUNT - 1))
 
