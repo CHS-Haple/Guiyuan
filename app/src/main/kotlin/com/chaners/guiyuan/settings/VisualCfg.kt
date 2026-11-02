@@ -236,6 +236,9 @@ internal data class VisualCfg(
 
     val dualMobileOffsetY: Float
         get() = if (dualDotStyle == DualDotStyle.DUO) dualDuoOffsetY else dualDefaultOffsetY
+
+    val effectiveDualMobileOffsetY: Float
+        get() = if (effectiveContentStyle == DualDotStyle.DUO) dualDuoOffsetY else dualDefaultOffsetY
 }
 
 internal fun Float.finiteIn(min: Float, max: Float, fallback: Float): Float =
