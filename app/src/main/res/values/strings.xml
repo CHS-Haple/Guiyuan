@@ -20,8 +20,8 @@
     <string name="mobile_signal_centered_summary">Center the signal dots with the network type below</string>
     <string name="mobile_type_bottom_offset">Network type vertical offset</string>
     <string name="dual_dot_style_title">Signal dot style</string>
-    <string name="dual_dot_style_default">Default</string>
-    <string name="dual_dot_style_duo">Duo</string>
+    <string name="dual_dot_style_default">Curved arrangement</string>
+    <string name="dual_dot_style_duo">Horizontal arrangement</string>
     <string name="signal_dot_vertical_offset">Signal dots vertical offset</string>
     <string name="section_battery">Battery &amp; charging</string>
     <string name="section_management">Configuration management</string>
