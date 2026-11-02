@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.DualDotStyle
+import com.chaners.guiyuan.settings.ContentStyle
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -154,9 +154,9 @@ class OuterGeometryTest {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
             for (row in 0..1) {
-                val baseline = geometry.dualDotY(0, row, DualDotStyle.DUO)
+                val baseline = geometry.dualDotY(0, row, ContentStyle.DUO)
                 for (index in 1..3) {
-                    assertEquals(baseline, geometry.dualDotY(index, row, DualDotStyle.DUO), 0.0001f)
+                    assertEquals(baseline, geometry.dualDotY(index, row, ContentStyle.DUO), 0.0001f)
                     assertEquals(
                         geometry.dualDotSpan / 3f,
                         geometry.dualDotX(index) - geometry.dualDotX(index - 1),
@@ -167,8 +167,8 @@ class OuterGeometryTest {
             }
             assertEquals(
                 geometry.dualRowGap,
-                geometry.dualDotY(0, 1, DualDotStyle.DUO) -
-                    geometry.dualDotY(0, 0, DualDotStyle.DUO),
+                geometry.dualDotY(0, 1, ContentStyle.DUO) -
+                    geometry.dualDotY(0, 0, ContentStyle.DUO),
                 0.0002f,
             )
         }
@@ -178,7 +178,7 @@ class OuterGeometryTest {
     fun bothDualStylesApplyTheSameSignedVerticalOffset() {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
-            for (style in DualDotStyle.entries) {
+            for (style in ContentStyle.entries) {
                 for (row in 0..1) {
                     for (index in 0..3) {
                         val original = geometry.dualDotY(index, row, style)
