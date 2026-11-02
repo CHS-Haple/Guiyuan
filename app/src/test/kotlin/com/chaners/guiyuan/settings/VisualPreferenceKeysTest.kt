@@ -13,6 +13,7 @@ class VisualPreferenceKeysTest {
         assertTrue(isVisualPreferenceKey(DUAL_SIGNAL_ENABLED_KEY))
         assertTrue(isVisualPreferenceKey(SHARED_CONTENT_STYLE_SCHEMA_KEY))
         assertTrue(isVisualPreferenceKey(MOBILE_SIGNAL_CENTERED_KEY))
+        assertTrue(isVisualPreferenceKey(SINGLE_ROW_FLAT_DOTS_KEY))
         assertTrue(isVisualPreferenceKey(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY))
         assertTrue(isVisualPreferenceKey(DUAL_PROFILES_INITIALIZED_KEY))
         assertTrue(isVisualPreferenceKey(visualModeKey(true, CONTENT_LAYOUT_KEY)))
