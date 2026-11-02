@@ -341,6 +341,20 @@ internal object CenterGeometry {
 
 // Keep the source network-type ink inside the lower canvas opening while
 // avoiding the inner signal rows. Use measured ink, never a fixed font height.
+internal object MobileDotRelocationPolicy {
+    fun shouldInterpolate(
+        previous: CenterIndicator?,
+        current: CenterIndicator,
+        centeredBefore: Boolean,
+        centeredNow: Boolean,
+    ): Boolean =
+        previous != null && previous != current && centeredBefore != centeredNow
+
+    // The caller reuses the center content's enter progress. No second clock.
+    fun coordinate(from: Float, to: Float, progress: Float): Float =
+        from + (to - from) * progress.coerceIn(0f, 1f)
+}
+
 internal object CenteredMobileTypePositionPolicy {
     fun translation(
         sourceTop: Float,
