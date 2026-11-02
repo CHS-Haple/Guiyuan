@@ -481,6 +481,24 @@ internal fun FeaturesScreen(
                         },
                     )
                 }
+                // A lower single row is curved by default. Centered signals
+                // stay horizontal regardless of this optional presentation setting.
+                if (visual.contentStyle == ContentStyle.DUO && !visual.centeredMobileSignal &&
+                    search.matches(R.string.single_row_flat_dots)) {
+                    SwitchPreference(
+                        title = stringResource(R.string.single_row_flat_dots),
+                        summary = stringResource(R.string.single_row_flat_dots_summary),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                R.drawable.ic_material_symbol_signal_cellular_alt,
+                                featureCfg.enabled,
+                            )
+                        },
+                        checked = visual.singleRowFlatDots,
+                        enabled = featureCfg.enabled,
+                        onCheckedChange = visualRepo::setSingleRowFlatDots,
+                    )
+                }
                 if (visual.layout == ContentLayout.NETWORK_CENTER &&
                     search.matches(R.string.mobile_signal_centered_title)) {
                     SwitchPreference(
