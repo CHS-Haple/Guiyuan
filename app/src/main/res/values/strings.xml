@@ -14,6 +14,8 @@
     <string name="section_network">Network &amp; signal</string>
     <string name="dual_signal_title">Dual-row signal</string>
     <string name="dual_signal_summary">Show two rows when both SIM cards are detected\nKeep the content layout and remember other visual settings separately</string>
+    <string name="single_row_flat_dots">Horizontal single-row signal</string>
+    <string name="single_row_flat_dots_summary">Arrange a lower single row in a straight line instead of an arc. Centered signals always stay horizontal</string>
     <string name="mobile_signal_centered_title">Centered mobile signal</string>
     <string name="mobile_signal_centered_summary">Center the signal dots with the network type below</string>
     <string name="centered_mobile_style_locked">Fixed to Duo while centered mobile signal is enabled</string>
