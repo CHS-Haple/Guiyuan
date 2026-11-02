@@ -439,12 +439,12 @@ internal class VisualRepo(context: Context) {
             ).apply()
     }
 
-    fun setDualMobileOffsetY(offset: Float) {
+    fun setSignalDotOffsetY(offset: Float) {
         if (!preferences.dualSignalEnabled()) return
         val style = ContentStyle.fromPersisted(
             preferences.getString(CONTENT_STYLE_KEY, null),
         )
-        val key = if (style == ContentStyle.DUO) DUAL_DUO_OFFSET_Y_KEY else DUAL_DEFAULT_OFFSET_Y_KEY
+        val key = if (style == ContentStyle.DUO) DUO_SIGNAL_DOT_OFFSET_Y_KEY else DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY
         preferences.edit()
             .putFloat(
                 activeProfileKey(key),
@@ -727,8 +727,8 @@ internal fun SharedPreferences.readVisualCfg(
         topOffsetY = topOffset,
         wifiOffsetY = size(WIFI_VERTICAL_OFFSET_KEY, oldNetworkOffset),
         mobileTypeOffsetY = size(MOBILE_TYPE_VERTICAL_OFFSET_KEY, oldNetworkOffset),
-        dualDefaultOffsetY = size(DUAL_DEFAULT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
-        dualDuoOffsetY = size(DUAL_DUO_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
+        defaultSignalDotOffsetY = size(DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
+        duoSignalDotOffsetY = size(DUO_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
         topChargingIconScale = size(BATTERY_TOP_CHARGING_ICON_SCALE_KEY, topChargingIconScaleDefault(layout)),
         combinedScale = size(COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),
         outerWeightScale = size(OUTER_WEIGHT_SCALE_KEY, OUTER_WEIGHT_SCALE_DEFAULT),
@@ -851,11 +851,11 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         visualProfileKey(layout, MOBILE_TYPE_VERTICAL_OFFSET_KEY, normalized.dualSignal),
         normalized.mobileTypeOffsetY,
     ).putFloat(
-        visualProfileKey(layout, DUAL_DEFAULT_OFFSET_Y_KEY, normalized.dualSignal),
-        normalized.dualDefaultOffsetY,
+        visualProfileKey(layout, DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY, normalized.dualSignal),
+        normalized.defaultSignalDotOffsetY,
     ).putFloat(
-        visualProfileKey(layout, DUAL_DUO_OFFSET_Y_KEY, normalized.dualSignal),
-        normalized.dualDuoOffsetY,
+        visualProfileKey(layout, DUO_SIGNAL_DOT_OFFSET_Y_KEY, normalized.dualSignal),
+        normalized.duoSignalDotOffsetY,
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY, normalized.dualSignal),
         normalized.topChargingIconScale,
