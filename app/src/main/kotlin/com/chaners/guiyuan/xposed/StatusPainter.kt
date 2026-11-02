@@ -225,15 +225,22 @@ internal class StatusPainter(
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
             visual = visual,
         )
-        drawMobile(
-            canvas = canvas,
-            model = model,
-            tint = colors.mobileTint,
-            opacity = opacity,
-            geometry = outerGeometry,
-            style = visual.dualDotStyle,
-            mobileOffsetY = visual.dualMobileOffsetY,
-        )
+        if (visual.centeredMobileSignal &&
+            model.centerIndicator is CenterIndicator.MobileType &&
+            !model.mobileUnavailableMark
+        ) {
+            drawCenteredMobile(canvas, model, colors.mobileTint, opacity, outerGeometry)
+        } else {
+            drawMobile(
+                canvas = canvas,
+                model = model,
+                tint = colors.mobileTint,
+                opacity = opacity,
+                geometry = outerGeometry,
+                style = visual.dualDotStyle,
+                mobileOffsetY = visual.dualMobileOffsetY,
+            )
+        }
         canvas.restoreToCount(save)
     }
 
@@ -651,12 +658,25 @@ internal class StatusPainter(
                         component = TransitionComponent.CENTER,
                         sourceBounds =
                             toViewBounds(
-                                resolveMobileTypeLayout(
-                                    indicator = model.centerIndicator,
-                                    scale = scale,
-                                    geometry = centerGeometry,
-                                    scaleWithCanvas = false,
-                                ).bounds,
+                                if (visual.centeredMobileSignal && !model.mobileUnavailableMark) {
+                                    shiftBoundsY(
+                                        resolveMobileTypeLayout(
+                                            indicator = model.centerIndicator,
+                                            scale = scale,
+                                            geometry = centerGeometry,
+                                            scaleWithCanvas = false,
+                                        ).bounds,
+                                        MOBILE_TYPE_BOTTOM_CENTER_Y - MOBILE_TYPE_CENTER_Y -
+                                            visual.mobileTypeBottomOffsetY,
+                                    )
+                                } else {
+                                    resolveMobileTypeLayout(
+                                        indicator = model.centerIndicator,
+                                        scale = scale,
+                                        geometry = centerGeometry,
+                                        scaleWithCanvas = false,
+                                    ).bounds
+                                },
                             ),
                         target =
                             TransitionTarget.Slots(
@@ -742,14 +762,14 @@ internal class StatusPainter(
                 }
         }
 
+        val centeredMobile = visual.centeredMobileSignal &&
+            model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
         val mobileBounds =
-            if (model.dualMobileLevels != null && !model.mobileUnavailableMark) {
-                dualMobileTransitionBounds(outerGeometry, visual.dualDotStyle, visual.dualMobileOffsetY)
-            } else {
-                resolveMobileSignalTransitionLayout(
-                    geometry = outerGeometry,
-                    model = model,
-                ).bounds
+            when {
+                centeredMobile -> centeredMobileBounds(outerGeometry, model.dualMobileLevels != null)
+                model.dualMobileLevels != null ->
+                    dualMobileTransitionBounds(outerGeometry, visual.dualDotStyle, visual.dualMobileOffsetY)
+                else -> resolveMobileSignalTransitionLayout(outerGeometry, model).bounds
             }
         specs +=
             TransitionComponentSpec(
@@ -2309,6 +2329,10 @@ internal class StatusPainter(
             CENTER_TRANSITION_PIVOT_X,
             CENTER_TRANSITION_PIVOT_Y,
         )
+        if (visual.centeredMobileSignal && indicator is CenterIndicator.MobileType) {
+            canvas.translate(0f, MOBILE_TYPE_BOTTOM_CENTER_Y - MOBILE_TYPE_CENTER_Y -
+                visual.mobileTypeBottomOffsetY)
+        }
         // Match StatusBarIconView's iconAppearAmount contract:
         // center content scales with appearance progress while tint alpha remains native.
         val animatedOpacity = opacity
