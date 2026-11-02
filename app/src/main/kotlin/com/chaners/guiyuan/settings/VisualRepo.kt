@@ -684,7 +684,10 @@ internal fun SharedPreferences.readVisualCfg(
     return VisualCfg(
         layout = layout,
         dualSignal = dual,
-        dualDotStyle = DualDotStyle.fromPersisted(getString(DUAL_DOT_STYLE_KEY, null)),
+        dualDotStyle = DualDotStyle.fromPersisted(
+            getString(DUAL_DOT_STYLE_KEY, null)
+                ?: if (dual) getString(visualModeKey(true, DUAL_DOT_STYLE_KEY), null) else null,
+        ),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
         centerFollowsBatteryColor = flag(CENTER_FOLLOWS_BATTERY_COLOR_KEY, false),
         showTopReadout = flag(BATTERY_TOP_READOUT_ENABLED_KEY, topReadoutDefault(layout)),
