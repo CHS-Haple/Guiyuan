@@ -17,7 +17,7 @@ import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX as SETTINGS_WIFI_SIZE_SC
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN as SETTINGS_WIFI_SIZE_SCALE_MIN
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.ContentStyle
+import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.settings.topOffsetYUi
 import kotlin.math.cos
 import kotlin.math.max
@@ -424,13 +424,13 @@ internal object OuterGeometry {
             return (inner / outer).coerceIn(0f, 1f)
         }
 
-        fun singleDotX(index: Int, style: ContentStyle): Float =
-            if (style == ContentStyle.DUO) dualDotX(index)
+        fun singleDotX(index: Int, style: SignalDotArrangement): Float =
+            if (style == SignalDotArrangement.HORIZONTAL) dualDotX(index)
             else cos(bottomDotAngle(index)).toFloat() * MOBILE_ORBIT_RADIUS
 
-        fun singleDotY(index: Int, style: ContentStyle, offsetY: Float): Float =
-            if (style == ContentStyle.DUO) {
-                // Flat optical row: same x reference and baseline as the dual Duo layout.
+        fun singleDotY(index: Int, style: SignalDotArrangement, offsetY: Float): Float =
+            if (style == SignalDotArrangement.HORIZONTAL) {
+                // Horizontal row: same x reference and baseline as the paired horizontal layout.
                 sqrt(RING_RADIUS * RING_RADIUS -
                     (dualDotSpan / 6f) * (dualDotSpan / 6f)) - dualOpticalRise - offsetY
             } else sin(bottomDotAngle(index)).toFloat() * MOBILE_ORBIT_RADIUS
@@ -441,10 +441,10 @@ internal object OuterGeometry {
         fun dualDotY(
             index: Int,
             row: Int,
-            style: ContentStyle = ContentStyle.DEFAULT,
+            style: SignalDotArrangement = SignalDotArrangement.CURVED,
             offsetY: Float = 0f,
         ): Float {
-            val x = if (style == ContentStyle.DUO) dualDotSpan / 6f else dualDotX(index)
+            val x = if (style == SignalDotArrangement.HORIZONTAL) dualDotSpan / 6f else dualDotX(index)
             val offset = if (row == 0) -dualRowGap / 2f else dualRowGap / 2f
             return sqrt(RING_RADIUS * RING_RADIUS - x * x) +
                 offset - dualOpticalRise - offsetY

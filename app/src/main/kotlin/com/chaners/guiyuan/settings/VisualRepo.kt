@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 
 private val visualPreferenceKeys = buildSet {
-    add(SHARED_CONTENT_STYLE_SCHEMA_KEY)
+    add(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY)
     add(CONTENT_LAYOUT_KEY)
     add(DUAL_SIGNAL_ENABLED_KEY)
     add(DUAL_PROFILES_INITIALIZED_KEY)
@@ -59,27 +59,27 @@ internal fun SharedPreferences.rollbackBackupVisuals(snapshot: Map<String, Any?>
 
 // v1.0.0 stored dot style per SIM mode. Split that released setting into
 // independent layout profiles once. Unreleased Canary settings are not imported.
-internal fun migrateLayoutContentStylesIfNeeded(prefs: SharedPreferences) {
-    if (prefs.getInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 0) >= 3) return
+internal fun migrateSignalDotArrangementsIfNeeded(prefs: SharedPreferences) {
+    if (prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0) >= 3) return
     val editor = prefs.edit()
     for (dual in listOf(false, true)) {
         val releasedKey = visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY)
-        val releasedStyle = ContentStyle.fromPersisted(prefs.getString(releasedKey, null))
+        val releasedStyle = SignalDotArrangement.fromPersisted(prefs.getString(releasedKey, null))
         for (layout in ContentLayout.entries) {
-            val target = visualProfileKey(layout, CONTENT_STYLE_KEY, dual)
+            val target = visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, dual)
             if (!prefs.contains(target)) editor.putString(target, releasedStyle.persistedValue)
         }
         editor.remove(releasedKey)
     }
-    editor.remove(CONTENT_STYLE_KEY)
-        .remove(SINGLE_ROW_FLAT_DOTS_KEY)
-        .putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 3)
+    editor.remove(SIGNAL_DOT_ARRANGEMENT_KEY)
+        .remove(HORIZONTAL_LOWER_SINGLE_ROW_KEY)
+        .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3)
         .apply()
 }
 
 // Migrations must finish before the app mirrors its first runtime snapshot.
 internal fun migrateVisualPrefsIfNeeded(preferences: SharedPreferences) {
-    migrateLayoutContentStylesIfNeeded(preferences)
+    migrateSignalDotArrangementsIfNeeded(preferences)
 }
 
 // Reset visual choices without deleting user-created battery schemes.
@@ -152,12 +152,12 @@ internal class VisualRepo(context: Context) {
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, enabled).apply()
     }
 
-    fun setContentStyle(style: ContentStyle) {
-        preferences.edit().putString(activeProfileKey(CONTENT_STYLE_KEY), style.persistedValue).apply()
+    fun setSignalDotArrangement(style: SignalDotArrangement) {
+        preferences.edit().putString(activeProfileKey(SIGNAL_DOT_ARRANGEMENT_KEY), style.persistedValue).apply()
     }
 
     fun setSingleRowFlatDots(enabled: Boolean) {
-        preferences.edit().putBoolean(activeProfileKey(SINGLE_ROW_FLAT_DOTS_KEY), enabled).apply()
+        preferences.edit().putBoolean(activeProfileKey(HORIZONTAL_LOWER_SINGLE_ROW_KEY), enabled).apply()
     }
 
     fun setMobileTypeBottomOffsetY(offset: Float) {
@@ -450,7 +450,7 @@ internal class VisualRepo(context: Context) {
             editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
         }
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
-        editor.putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 3)
+        editor.putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3)
         // Restored physical charging scales use the current reference.
         return editor.commit()
     }
@@ -485,10 +485,10 @@ internal fun visualModeKey(dual: Boolean, key: String): String =
 
 internal fun SharedPreferences.writeSignalDotOffsetY(offset: Float) {
     val visual = readVisualCfg()
-    val key = if (visual.contentStyle == ContentStyle.DUO) {
-        DUO_SIGNAL_DOT_OFFSET_Y_KEY
+    val key = if (visual.signalDotArrangement == SignalDotArrangement.HORIZONTAL) {
+        HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY
     } else {
-        DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY
+        CURVED_SIGNAL_DOT_OFFSET_Y_KEY
     }
     edit().putFloat(
         visualProfileKey(visual.layout, key, visual.dualSignal),
@@ -589,11 +589,11 @@ internal fun SharedPreferences.readVisualCfg(
     return VisualCfg(
         layout = layout,
         dualSignal = dual,
-        contentStyle = ContentStyle.fromPersisted(
-            profileString(layout, CONTENT_STYLE_KEY, null, dual)
+        signalDotArrangement = SignalDotArrangement.fromPersisted(
+            profileString(layout, SIGNAL_DOT_ARRANGEMENT_KEY, null, dual)
                 ?: getString(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY), null),
         ),
-        singleRowFlatDots = flag(SINGLE_ROW_FLAT_DOTS_KEY, false),
+        horizontalLowerSingleRow = flag(HORIZONTAL_LOWER_SINGLE_ROW_KEY, false),
         mobileTypeBottomOffsetY = size(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, mobileTypeBottomOffsetDefault(layout)),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
         centerFollowsBatteryColor = flag(CENTER_FOLLOWS_BATTERY_COLOR_KEY, false),
@@ -608,8 +608,8 @@ internal fun SharedPreferences.readVisualCfg(
         topOffsetY = topOffset,
         wifiOffsetY = size(WIFI_VERTICAL_OFFSET_KEY, oldNetworkOffset),
         mobileTypeOffsetY = size(MOBILE_TYPE_VERTICAL_OFFSET_KEY, oldNetworkOffset),
-        defaultSignalDotOffsetY = size(DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
-        duoSignalDotOffsetY = size(DUO_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
+        curvedSignalDotOffsetY = size(CURVED_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
+        horizontalSignalDotOffsetY = size(HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
         topChargingIconScale = size(BATTERY_TOP_CHARGING_ICON_SCALE_KEY, topChargingIconScaleDefault(layout)),
         combinedScale = size(COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),
         outerWeightScale = size(OUTER_WEIGHT_SCALE_KEY, OUTER_WEIGHT_SCALE_DEFAULT),
@@ -684,11 +684,11 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         CONTENT_LAYOUT_KEY,
         layout.persistedValue,
     ).putString(
-        visualProfileKey(layout, CONTENT_STYLE_KEY, normalized.dualSignal),
-        normalized.contentStyle.persistedValue,
+        visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, normalized.dualSignal),
+        normalized.signalDotArrangement.persistedValue,
     ).putBoolean(
-        visualProfileKey(layout, SINGLE_ROW_FLAT_DOTS_KEY, normalized.dualSignal),
-        normalized.singleRowFlatDots,
+        visualProfileKey(layout, HORIZONTAL_LOWER_SINGLE_ROW_KEY, normalized.dualSignal),
+        normalized.horizontalLowerSingleRow,
     ).putFloat(
         visualProfileKey(layout, MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, normalized.dualSignal),
         normalized.mobileTypeBottomOffsetY,
@@ -732,11 +732,11 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         visualProfileKey(layout, MOBILE_TYPE_VERTICAL_OFFSET_KEY, normalized.dualSignal),
         normalized.mobileTypeOffsetY,
     ).putFloat(
-        visualProfileKey(layout, DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY, normalized.dualSignal),
-        normalized.defaultSignalDotOffsetY,
+        visualProfileKey(layout, CURVED_SIGNAL_DOT_OFFSET_Y_KEY, normalized.dualSignal),
+        normalized.curvedSignalDotOffsetY,
     ).putFloat(
-        visualProfileKey(layout, DUO_SIGNAL_DOT_OFFSET_Y_KEY, normalized.dualSignal),
-        normalized.duoSignalDotOffsetY,
+        visualProfileKey(layout, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY, normalized.dualSignal),
+        normalized.horizontalSignalDotOffsetY,
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY, normalized.dualSignal),
         normalized.topChargingIconScale,

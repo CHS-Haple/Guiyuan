@@ -15,7 +15,7 @@ import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.ContentStyle
+import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import com.chaners.guiyuan.xposed.battery.BatteryTopArcPolicy
@@ -462,8 +462,8 @@ internal class StatusPainter(
                         targetBars = mobileTargetBars,
                         aggregateRows = mobileAggregateRows,
                         row = mobileRow,
-                        style = if (model.dualMobileLevels == null) visual.effectiveSingleRowStyle
-                            else visual.effectiveContentStyle,
+                        style = if (model.dualMobileLevels == null) visual.effectiveSingleRowArrangement
+                            else visual.effectiveDualRowArrangement,
                         mobileOffsetY = visual.effectiveSignalDotOffsetY,
                         centered = visual.centeredMobileSignal &&
                             model.centerIndicator is CenterIndicator.MobileType &&
@@ -481,8 +481,8 @@ internal class StatusPainter(
                         tint = colors.mobileTint,
                         opacity = opacity,
                         geometry = outerGeometry,
-                        style = if (model.dualMobileLevels == null) visual.effectiveSingleRowStyle
-                            else visual.effectiveContentStyle,
+                        style = if (model.dualMobileLevels == null) visual.effectiveSingleRowArrangement
+                            else visual.effectiveDualRowArrangement,
                         mobileOffsetY = visual.effectiveSignalDotOffsetY,
                     )
                 }
@@ -794,8 +794,8 @@ internal class StatusPainter(
             when {
                 centeredMobile -> centeredMobileBounds(outerGeometry, model.dualMobileLevels != null)
                 model.dualMobileLevels != null ->
-                    dualMobileTransitionBounds(outerGeometry, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY)
-                else -> resolveMobileSignalTransitionLayout(outerGeometry, model, visual.effectiveSingleRowStyle, visual.effectiveSignalDotOffsetY).bounds
+                    dualMobileTransitionBounds(outerGeometry, visual.effectiveDualRowArrangement, visual.effectiveSignalDotOffsetY)
+                else -> resolveMobileSignalTransitionLayout(outerGeometry, model, visual.effectiveSingleRowArrangement, visual.effectiveSignalDotOffsetY).bounds
             }
         specs +=
             TransitionComponentSpec(
@@ -828,11 +828,11 @@ internal class StatusPainter(
         val centered = visual.centeredMobileSignal &&
             model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
         val group = if (centered) centeredMobileBounds(geometry, true)
-            else dualMobileTransitionBounds(geometry, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY)
+            else dualMobileTransitionBounds(geometry, visual.effectiveDualRowArrangement, visual.effectiveSignalDotOffsetY)
         if (group.width <= 0f || group.height <= 0f) return emptyList()
         return (0..1).map { row ->
             val local = if (centered) centeredMobileRowBounds(geometry, row)
-                else dualMobileRowBounds(geometry, row, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY)
+                else dualMobileRowBounds(geometry, row, visual.effectiveDualRowArrangement, visual.effectiveSignalDotOffsetY)
             fun x(value: Float) = source.sourceBounds.left +
                 (value - group.left) / group.width * source.sourceBounds.width
             fun y(value: Float) = source.sourceBounds.top +
@@ -1553,15 +1553,15 @@ internal class StatusPainter(
                     val outerX = if (dual) {
                         MOBILE_CENTER_X + outerGeometry.dualDotX(index)
                     } else {
-                        MOBILE_CENTER_X + outerGeometry.singleDotX(index, visual.effectiveSingleRowStyle)
+                        MOBILE_CENTER_X + outerGeometry.singleDotX(index, visual.effectiveSingleRowArrangement)
                     }
                     val outerY = if (dual) {
                         MOBILE_CENTER_Y + outerGeometry.dualDotY(
-                            index, row, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY,
+                            index, row, visual.effectiveDualRowArrangement, visual.effectiveSignalDotOffsetY,
                         )
                     } else {
                         MOBILE_CENTER_Y + outerGeometry.singleDotY(
-                            index, visual.effectiveSingleRowStyle, visual.effectiveSignalDotOffsetY,
+                            index, visual.effectiveSingleRowArrangement, visual.effectiveSignalDotOffsetY,
                         )
                     }
                     val x = MobileDotRelocationPolicy.coordinate(
@@ -1586,11 +1586,11 @@ internal class StatusPainter(
         } else if (!centeredNow) {
             val bounds = if (model.dualMobileLevels != null && !model.mobileUnavailableMark) {
                 dualMobileTransitionBounds(
-                    outerGeometry, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY,
+                    outerGeometry, visual.effectiveDualRowArrangement, visual.effectiveSignalDotOffsetY,
                 )
             } else {
                 resolveMobileSignalTransitionLayout(
-                    outerGeometry, model, visual.effectiveSingleRowStyle, visual.effectiveSignalDotOffsetY,
+                    outerGeometry, model, visual.effectiveSingleRowArrangement, visual.effectiveSignalDotOffsetY,
                 ).bounds
             }
             avoidance = singleTopSlotAvoidance(bounds)
@@ -1679,9 +1679,9 @@ internal class StatusPainter(
             ) BATTERY_BOTTOM_RING_VISUAL_CLEARANCE else BATTERY_TOP_RING_VISUAL_CLEARANCE,
         )
         val curvedBottom = if (model.dualMobileLevels != null) {
-            visual.effectiveContentStyle == ContentStyle.DEFAULT
+            visual.effectiveDualRowArrangement == SignalDotArrangement.CURVED
         } else {
-            visual.effectiveSingleRowStyle == ContentStyle.DEFAULT
+            visual.effectiveSingleRowArrangement == SignalDotArrangement.CURVED
         }
         val centeredNow = visual.centeredMobileSignal &&
             model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
@@ -3485,7 +3485,7 @@ internal class StatusPainter(
     private fun dualMobileRowBounds(
         geometry: OuterGeometry.Resolved,
         row: Int,
-        style: ContentStyle,
+        style: SignalDotArrangement,
         mobileOffsetY: Float,
     ): TransitionBounds {
         val radius = geometry.dualMobileDotRadius
@@ -3502,7 +3502,7 @@ internal class StatusPainter(
 
     private fun dualMobileTransitionBounds(
         geometry: OuterGeometry.Resolved,
-        style: ContentStyle,
+        style: SignalDotArrangement,
         mobileOffsetY: Float,
     ): TransitionBounds {
         val radius = geometry.dualMobileDotRadius
@@ -3526,7 +3526,7 @@ internal class StatusPainter(
     private fun resolveMobileSignalTransitionLayout(
         geometry: OuterGeometry.Resolved,
         model: RenderModel,
-        style: ContentStyle,
+        style: SignalDotArrangement,
         mobileOffsetY: Float,
     ): MobileSignalTransitionLayout {
         val sourceCenters = ArrayList<TransitionPoint>(MOBILE_DOT_COUNT)
@@ -3578,7 +3578,7 @@ internal class StatusPainter(
     private fun resolveDualMobileSignalTransitionLayout(
         geometry: OuterGeometry.Resolved,
         row: Int,
-        style: ContentStyle,
+        style: SignalDotArrangement,
         mobileOffsetY: Float,
     ): MobileSignalTransitionLayout {
         val bounds = dualMobileRowBounds(geometry, row, style, mobileOffsetY)
@@ -3614,7 +3614,7 @@ internal class StatusPainter(
         targetBars: List<TransitionNormalizedBounds>?,
         aggregateRows: ParticipantVisualSnapshot.DualMobileRows?,
         row: Int?,
-        style: ContentStyle,
+        style: SignalDotArrangement,
         mobileOffsetY: Float,
         centered: Boolean = false,
     ) {
@@ -3944,15 +3944,15 @@ internal class StatusPainter(
                 for (index in 0 until MOBILE_DOT_COUNT) {
                     val innerX = CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(index) * scale
                     val outerX = if (dual == null) {
-                        MOBILE_CENTER_X + geometry.singleDotX(index, visual.effectiveSingleRowStyle)
+                        MOBILE_CENTER_X + geometry.singleDotX(index, visual.effectiveSingleRowArrangement)
                     } else MOBILE_CENTER_X + geometry.dualDotX(index)
                     val outerY = if (dual == null) {
                         MOBILE_CENTER_Y + geometry.singleDotY(
-                            index, visual.effectiveSingleRowStyle, visual.effectiveSignalDotOffsetY,
+                            index, visual.effectiveSingleRowArrangement, visual.effectiveSignalDotOffsetY,
                         )
                     } else {
                         MOBILE_CENTER_Y + geometry.dualDotY(
-                            index, row, visual.effectiveContentStyle,
+                            index, row, visual.effectiveDualRowArrangement,
                             visual.effectiveSignalDotOffsetY,
                         )
                     }
@@ -3979,8 +3979,8 @@ internal class StatusPainter(
         } else {
             drawMobile(
                 canvas, model, tint, opacity, geometry,
-                if (model.dualMobileLevels == null) visual.effectiveSingleRowStyle
-                    else visual.effectiveContentStyle,
+                if (model.dualMobileLevels == null) visual.effectiveSingleRowArrangement
+                    else visual.effectiveDualRowArrangement,
                 visual.effectiveSignalDotOffsetY,
             )
         }
@@ -4023,7 +4023,7 @@ internal class StatusPainter(
         tint: Int,
         opacity: Float,
         geometry: OuterGeometry.Resolved,
-        style: ContentStyle,
+        style: SignalDotArrangement,
         mobileOffsetY: Float,
     ) {
         val dualLevels = model.dualMobileLevels

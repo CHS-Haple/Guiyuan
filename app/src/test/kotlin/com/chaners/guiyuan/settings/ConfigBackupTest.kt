@@ -66,11 +66,34 @@ class ConfigBackupTest {
         assertEquals(independent, ConfigBackupFormat.decode(ConfigBackupFormat.encode(independent)))
     }
 
+    @Test fun descriptiveNamesKeepReleasedBackupJsonStable() {
+        val original = sample().let { backup ->
+            backup.copy(visual = backup.visual.copy(profiles = backup.visual.profiles.map { profile ->
+                profile.copy(
+                    signalDotArrangement = SignalDotArrangement.HORIZONTAL,
+                    horizontalLowerSingleRow = true,
+                    curvedSignalDotOffsetY = 2f,
+                    horizontalSignalDotOffsetY = -3f,
+                )
+            }))
+        }
+        val encoded = ConfigBackupFormat.encode(original)
+        assertTrue(encoded.contains("\"dualDotStyle\":\"DUO\""))
+        assertTrue(encoded.contains("\"singleRowFlatDots\":true"))
+        assertTrue(encoded.contains("\"dualDefaultOffsetY\":2.0"))
+        assertTrue(encoded.contains("\"dualDuoOffsetY\":-3.0"))
+        assertFalse(encoded.contains("\"signalDotArrangement\""))
+        assertFalse(encoded.contains("\"horizontalLowerSingleRow\""))
+        assertEquals(original, ConfigBackupFormat.decode(encoded))
+        assertEquals(SignalDotArrangement.HORIZONTAL, SignalDotArrangement.fromPersisted("duo"))
+        assertEquals(SignalDotArrangement.CURVED, SignalDotArrangement.fromPersisted("default"))
+    }
+
     @Test fun legacyArchivesDefaultToOriginalDotStyle() {
         val json = ConfigBackupFormat.encode(sample())
             .replace("\"dualDotStyle\":\"DEFAULT\",", "")
         assertTrue(ConfigBackupFormat.decode(json).visual.profiles.all {
-            it.contentStyle == ContentStyle.DEFAULT
+            it.signalDotArrangement == SignalDotArrangement.CURVED
         })
     }
 
@@ -80,8 +103,8 @@ class ConfigBackupTest {
             profiles = original.visual.profiles.map { cfg ->
                 if (cfg.dualSignal) {
                     cfg.copy(
-                        defaultSignalDotOffsetY = if (cfg.layout == ContentLayout.NETWORK_CENTER) 4f else -3f,
-                        duoSignalDotOffsetY = if (cfg.layout == ContentLayout.NETWORK_CENTER) -8f else 6f,
+                        curvedSignalDotOffsetY = if (cfg.layout == ContentLayout.NETWORK_CENTER) 4f else -3f,
+                        horizontalSignalDotOffsetY = if (cfg.layout == ContentLayout.NETWORK_CENTER) -8f else 6f,
                     )
                 } else cfg
             },
@@ -89,7 +112,7 @@ class ConfigBackupTest {
         assertEquals(changed, ConfigBackupFormat.decode(ConfigBackupFormat.encode(changed)))
         val corrupt = changed.copy(visual = changed.visual.copy(
             profiles = changed.visual.profiles.mapIndexed { index, cfg ->
-                if (index == 2) cfg.copy(duoSignalDotOffsetY = 11f) else cfg
+                if (index == 2) cfg.copy(horizontalSignalDotOffsetY = 11f) else cfg
             },
         ))
         assertThrows(IllegalArgumentException::class.java) {
@@ -328,8 +351,8 @@ class ConfigBackupTest {
                     topOffsetY = 900f,
                     wifiOffsetY = -500f,
                     mobileTypeOffsetY = 500f,
-                    defaultSignalDotOffsetY = -500f,
-                    duoSignalDotOffsetY = 500f,
+                    curvedSignalDotOffsetY = -500f,
+                    horizontalSignalDotOffsetY = 500f,
                     mobileTypeBottomOffsetY = -500f,
                     topChargingIconScale = 500f,
                     combinedScale = 500f,
@@ -352,8 +375,8 @@ class ConfigBackupTest {
         assertEquals(BATTERY_TOP_VERTICAL_OFFSET_MAX, visual.topOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MIN, visual.wifiOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MAX, visual.mobileTypeOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MIN, visual.defaultSignalDotOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MAX, visual.duoSignalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, visual.curvedSignalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, visual.horizontalSignalDotOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MIN, visual.mobileTypeBottomOffsetY, 0f)
         assertEquals(BATTERY_TOP_CHARGING_ICON_SCALE_MAX, visual.topChargingIconScale, 0f)
         assertEquals(COMBINED_SCALE_MAX, visual.combinedScale, 0f)
@@ -411,8 +434,8 @@ class ConfigBackupTest {
         val varied = source.copy(visual = source.visual.copy(profiles =
             source.visual.profiles.mapIndexed { index, cfg ->
                 cfg.copy(
-                    contentStyle = if (index % 2 == 0) ContentStyle.DUO else ContentStyle.DEFAULT,
-                    singleRowFlatDots = index % 2 == 1,
+                    signalDotArrangement = if (index % 2 == 0) SignalDotArrangement.HORIZONTAL else SignalDotArrangement.CURVED,
+                    horizontalLowerSingleRow = index % 2 == 1,
                     mobileTypeBottomOffsetY = (index - 3).toFloat(),
                     mobileTypeScale = 0.75f + index * 0.05f,
                 )

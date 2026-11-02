@@ -110,7 +110,7 @@ internal object ConfigBackupFormat {
                         layout = ContentLayout.MOBILE_CENTER,
                         mobileTypeScale = mobileTypeScaleDefault(ContentLayout.MOBILE_CENTER),
                         mobileTypeBottomOffsetY = MOBILE_TYPE_BOTTOM_OFFSET_DEFAULT,
-                        singleRowFlatDots = false,
+                        horizontalLowerSingleRow = false,
                     )
                 }
             decoded.copy(visual = decoded.visual.copy(profiles = profiles + mobileProfiles))
@@ -168,7 +168,7 @@ internal object ConfigBackupFormat {
             }) { "Invalid visual battery color" }
             require(listOf(
                 cfg.topTextScale, cfg.topOffsetY, cfg.wifiOffsetY, cfg.mobileTypeOffsetY,
-                cfg.defaultSignalDotOffsetY, cfg.duoSignalDotOffsetY, cfg.mobileTypeBottomOffsetY,
+                cfg.curvedSignalDotOffsetY, cfg.horizontalSignalDotOffsetY, cfg.mobileTypeBottomOffsetY,
                 cfg.topChargingIconScale, cfg.combinedScale, cfg.outerWeightScale,
                 cfg.wifiScale, cfg.airplaneScale, cfg.noSimScale, cfg.mobileTypeScale,
             ).all(Float::isFinite)) { "Nonfinite visual setting" }
@@ -221,7 +221,7 @@ internal object ConfigBackupFormat {
         profiles.forEach { cfg ->
             val values = listOf(
                 cfg.topTextScale, cfg.topOffsetY, cfg.wifiOffsetY, cfg.mobileTypeOffsetY,
-                cfg.defaultSignalDotOffsetY, cfg.duoSignalDotOffsetY,
+                cfg.curvedSignalDotOffsetY, cfg.horizontalSignalDotOffsetY,
                 cfg.mobileTypeBottomOffsetY,
                 cfg.topChargingIconScale, cfg.combinedScale, cfg.outerWeightScale,
                 cfg.wifiScale, cfg.airplaneScale, cfg.noSimScale, cfg.mobileTypeScale,

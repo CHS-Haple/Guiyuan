@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.ContentStyle
+import com.chaners.guiyuan.settings.SignalDotArrangement
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -13,23 +13,23 @@ class OuterGeometryTest {
     fun contentStyleAppliesToSingleSimAndTransitionSourceGeometry() {
         for (step in 0..28) {
             val geometry = OuterGeometry.resolve(0.6f + step * 0.05f)
-            val duoY = geometry.singleDotY(0, ContentStyle.DUO, 0f)
+            val duoY = geometry.singleDotY(0, SignalDotArrangement.HORIZONTAL, 0f)
             for (index in 0..3) {
                 val angle = geometry.bottomDotAngle(index)
                 assertEquals(
                     cos(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS,
-                    geometry.singleDotX(index, ContentStyle.DEFAULT), 0.0001f,
+                    geometry.singleDotX(index, SignalDotArrangement.CURVED), 0.0001f,
                 )
                 assertEquals(
                     sin(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS,
-                    geometry.singleDotY(index, ContentStyle.DEFAULT, 0f), 0.0001f,
+                    geometry.singleDotY(index, SignalDotArrangement.CURVED, 0f), 0.0001f,
                 )
                 assertEquals(geometry.dualDotX(index),
-                    geometry.singleDotX(index, ContentStyle.DUO), 0f)
+                    geometry.singleDotX(index, SignalDotArrangement.HORIZONTAL), 0f)
                 assertEquals("flat Duo row at every weight", duoY,
-                    geometry.singleDotY(index, ContentStyle.DUO, 0f), 0.0001f)
+                    geometry.singleDotY(index, SignalDotArrangement.HORIZONTAL, 0f), 0.0001f)
                 assertEquals(duoY - 3f,
-                    geometry.singleDotY(index, ContentStyle.DUO, 3f), 0.0001f)
+                    geometry.singleDotY(index, SignalDotArrangement.HORIZONTAL, 3f), 0.0001f)
             }
             val radius = geometry.mobileDotRadius
             assertTrue(58f + duoY + radius < 120f)
@@ -181,9 +181,9 @@ class OuterGeometryTest {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
             for (row in 0..1) {
-                val baseline = geometry.dualDotY(0, row, ContentStyle.DUO)
+                val baseline = geometry.dualDotY(0, row, SignalDotArrangement.HORIZONTAL)
                 for (index in 1..3) {
-                    assertEquals(baseline, geometry.dualDotY(index, row, ContentStyle.DUO), 0.0001f)
+                    assertEquals(baseline, geometry.dualDotY(index, row, SignalDotArrangement.HORIZONTAL), 0.0001f)
                     assertEquals(
                         geometry.dualDotSpan / 3f,
                         geometry.dualDotX(index) - geometry.dualDotX(index - 1),
@@ -194,8 +194,8 @@ class OuterGeometryTest {
             }
             assertEquals(
                 geometry.dualRowGap,
-                geometry.dualDotY(0, 1, ContentStyle.DUO) -
-                    geometry.dualDotY(0, 0, ContentStyle.DUO),
+                geometry.dualDotY(0, 1, SignalDotArrangement.HORIZONTAL) -
+                    geometry.dualDotY(0, 0, SignalDotArrangement.HORIZONTAL),
                 0.0002f,
             )
         }
@@ -205,7 +205,7 @@ class OuterGeometryTest {
     fun bothDualStylesApplyTheSameSignedVerticalOffset() {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
-            for (style in ContentStyle.entries) {
+            for (style in SignalDotArrangement.entries) {
                 for (row in 0..1) {
                     for (index in 0..3) {
                         val original = geometry.dualDotY(index, row, style)

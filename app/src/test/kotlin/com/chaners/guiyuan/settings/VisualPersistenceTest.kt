@@ -73,28 +73,28 @@ class VisualPersistenceTest {
         val prefs = MemoryPreferences()
         val dual = VisualCfg(
             dualSignal = true,
-            defaultSignalDotOffsetY = 4f,
-            duoSignalDotOffsetY = -7f,
+            curvedSignalDotOffsetY = 4f,
+            horizontalSignalDotOffsetY = -7f,
         )
         prefs.edit().putVisualCfg(dual).apply()
         val network = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
         assertEquals(4f, network.signalDotOffsetY, 0f)
-        assertEquals(-7f, network.copy(contentStyle = ContentStyle.DUO).signalDotOffsetY, 0f)
+        assertEquals(-7f, network.copy(signalDotArrangement = SignalDotArrangement.HORIZONTAL).signalDotOffsetY, 0f)
 
         prefs.edit().putVisualCfg(
             dual.copy(
                 layout = ContentLayout.BATTERY_CENTER,
-                contentStyle = ContentStyle.DUO,
-                defaultSignalDotOffsetY = -2f,
-                duoSignalDotOffsetY = 5f,
+                signalDotArrangement = SignalDotArrangement.HORIZONTAL,
+                curvedSignalDotOffsetY = -2f,
+                horizontalSignalDotOffsetY = 5f,
             ),
         ).apply()
         val battery = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.BATTERY_CENTER)
         assertEquals(5f, battery.signalDotOffsetY, 0f)
-        assertEquals(-2f, battery.copy(contentStyle = ContentStyle.DEFAULT).signalDotOffsetY, 0f)
+        assertEquals(-2f, battery.copy(signalDotArrangement = SignalDotArrangement.CURVED).signalDotOffsetY, 0f)
         val original = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
-        assertEquals(4f, original.defaultSignalDotOffsetY, 0f)
-        assertEquals(-7f, original.duoSignalDotOffsetY, 0f)
+        assertEquals(4f, original.curvedSignalDotOffsetY, 0f)
+        assertEquals(-7f, original.horizontalSignalDotOffsetY, 0f)
         assertEquals(0f, prefs.readVisualCfg(dual = false).signalDotOffsetY, 0f)
     }
 
@@ -107,9 +107,9 @@ class VisualPersistenceTest {
                     VisualCfg(
                         layout = layout,
                         dualSignal = dual,
-                        contentStyle = ContentStyle.DUO,
-                        defaultSignalDotOffsetY = 1f,
-                        duoSignalDotOffsetY = 2f,
+                        signalDotArrangement = SignalDotArrangement.HORIZONTAL,
+                        curvedSignalDotOffsetY = 1f,
+                        horizontalSignalDotOffsetY = 2f,
                     ),
                 ).apply()
             }
@@ -121,34 +121,34 @@ class VisualPersistenceTest {
             .putString(CONTENT_LAYOUT_KEY, ContentLayout.BATTERY_CENTER.persistedValue)
             .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
             .apply()
-        assertFalse(prefs.contains(CONTENT_STYLE_KEY))
-        assertEquals(ContentStyle.DUO, prefs.readVisualCfg().contentStyle)
+        assertFalse(prefs.contains(SIGNAL_DOT_ARRANGEMENT_KEY))
+        assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg().signalDotArrangement)
         prefs.writeSignalDotOffsetY(-6f)
 
         val batteryDual = prefs.readVisualCfg()
         assertEquals(-6f, batteryDual.signalDotOffsetY, 0f)
-        assertEquals(-6f, batteryDual.duoSignalDotOffsetY, 0f)
-        assertEquals(1f, batteryDual.defaultSignalDotOffsetY, 0f)
+        assertEquals(-6f, batteryDual.horizontalSignalDotOffsetY, 0f)
+        assertEquals(1f, batteryDual.curvedSignalDotOffsetY, 0f)
         assertEquals(2f, prefs.readVisualCfg(
             dual = true,
             layoutOverride = ContentLayout.NETWORK_CENTER,
-        ).duoSignalDotOffsetY, 0f)
+        ).horizontalSignalDotOffsetY, 0f)
         assertEquals(2f, prefs.readVisualCfg(
             dual = false,
             layoutOverride = ContentLayout.BATTERY_CENTER,
-        ).duoSignalDotOffsetY, 0f)
+        ).horizontalSignalDotOffsetY, 0f)
 
         // The default shape in a single-SIM profile still has a separate value.
         prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
             .putString(
-                visualProfileKey(ContentLayout.BATTERY_CENTER, CONTENT_STYLE_KEY),
-                ContentStyle.DEFAULT.persistedValue,
+                visualProfileKey(ContentLayout.BATTERY_CENTER, SIGNAL_DOT_ARRANGEMENT_KEY),
+                SignalDotArrangement.CURVED.persistedValue,
             ).apply()
         prefs.writeSignalDotOffsetY(4f)
         val batterySingle = prefs.readVisualCfg()
         assertEquals(4f, batterySingle.signalDotOffsetY, 0f)
-        assertEquals(2f, batterySingle.duoSignalDotOffsetY, 0f)
-        assertEquals(-6f, prefs.readVisualCfg(dual = true).duoSignalDotOffsetY, 0f)
+        assertEquals(2f, batterySingle.horizontalSignalDotOffsetY, 0f)
+        assertEquals(-6f, prefs.readVisualCfg(dual = true).horizontalSignalDotOffsetY, 0f)
 
         // Switching back to the other layout cannot overwrite the battery bank.
         prefs.edit()
@@ -160,7 +160,7 @@ class VisualPersistenceTest {
         assertEquals(-6f, prefs.readVisualCfg(
             dual = true,
             layoutOverride = ContentLayout.BATTERY_CENTER,
-        ).duoSignalDotOffsetY, 0f)
+        ).horizontalSignalDotOffsetY, 0f)
     }
 
     @Test
@@ -480,39 +480,39 @@ class VisualPersistenceTest {
     fun releasedVersionDotStyleMigratesIntoEachLayoutWithoutLosingSimChoice() {
         val prefs = MemoryPreferences()
         prefs.edit()
-            .putString(visualModeKey(false, LEGACY_DUAL_DOT_STYLE_KEY), ContentStyle.DEFAULT.persistedValue)
-            .putString(visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY), ContentStyle.DUO.persistedValue)
+            .putString(visualModeKey(false, LEGACY_DUAL_DOT_STYLE_KEY), SignalDotArrangement.CURVED.persistedValue)
+            .putString(visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY), SignalDotArrangement.HORIZONTAL.persistedValue)
             .apply()
-        migrateLayoutContentStylesIfNeeded(prefs)
+        migrateSignalDotArrangementsIfNeeded(prefs)
         for (layout in ContentLayout.entries) {
-            assertEquals(ContentStyle.DEFAULT, prefs.readVisualCfg(false, layout).contentStyle)
-            assertEquals(ContentStyle.DUO, prefs.readVisualCfg(true, layout).contentStyle)
+            assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg(false, layout).signalDotArrangement)
+            assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(true, layout).signalDotArrangement)
         }
-        assertEquals(3, prefs.getInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 0))
+        assertEquals(3, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
         assertFalse(prefs.contains(visualModeKey(false, LEGACY_DUAL_DOT_STYLE_KEY)))
         assertFalse(prefs.contains(visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY)))
         val snapshot = prefs.all.toMap()
-        migrateLayoutContentStylesIfNeeded(prefs)
+        migrateSignalDotArrangementsIfNeeded(prefs)
         assertEquals(snapshot, prefs.all)
     }
 
     @Test
     fun threeLayoutsRememberSizesOffsetsAndStylesIndependently() {
         val prefs = MemoryPreferences()
-        migrateLayoutContentStylesIfNeeded(prefs)
+        migrateSignalDotArrangementsIfNeeded(prefs)
         assertEquals(0.85f, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).mobileTypeScale, 0f)
         assertEquals(-3f, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).mobileTypeBottomOffsetY, 0f)
         val centered = VisualCfg(
             layout = ContentLayout.MOBILE_CENTER,
-            contentStyle = ContentStyle.DUO,
+            signalDotArrangement = SignalDotArrangement.HORIZONTAL,
             mobileTypeScale = 0.92f,
             mobileTypeBottomOffsetY = 6f,
-            singleRowFlatDots = true,
+            horizontalLowerSingleRow = true,
         )
         prefs.edit().putVisualCfg(centered).apply()
         val battery = VisualCfg(
             layout = ContentLayout.BATTERY_CENTER,
-            contentStyle = ContentStyle.DEFAULT,
+            signalDotArrangement = SignalDotArrangement.CURVED,
             mobileTypeScale = 0.77f,
         )
         prefs.edit().putVisualCfg(battery).apply()
@@ -520,20 +520,20 @@ class VisualPersistenceTest {
         val batterySaved = prefs.readVisualCfg(false, ContentLayout.BATTERY_CENTER)
         val normalSaved = prefs.readVisualCfg(false, ContentLayout.NETWORK_CENTER)
         assertTrue(centeredSaved.centeredMobileSignal)
-        assertEquals(ContentStyle.DUO, centeredSaved.contentStyle)
+        assertEquals(SignalDotArrangement.HORIZONTAL, centeredSaved.signalDotArrangement)
         assertEquals(0.92f, centeredSaved.mobileTypeScale, 0f)
         assertEquals(6f, centeredSaved.mobileTypeBottomOffsetY, 0f)
-        assertEquals(ContentStyle.DEFAULT, batterySaved.contentStyle)
+        assertEquals(SignalDotArrangement.CURVED, batterySaved.signalDotArrangement)
         assertEquals(0.77f, batterySaved.mobileTypeScale, 0f)
         assertFalse(normalSaved.centeredMobileSignal)
-        assertEquals(ContentStyle.DEFAULT, normalSaved.contentStyle)
+        assertEquals(SignalDotArrangement.CURVED, normalSaved.signalDotArrangement)
         assertEquals(1f, normalSaved.mobileTypeScale, 0f)
     }
 
     @Test
     fun bottomLabelOffsetAndStyleAreIsolatedAcrossSingleAndDualBanks() {
         val prefs = MemoryPreferences()
-        migrateLayoutContentStylesIfNeeded(prefs)
+        migrateSignalDotArrangementsIfNeeded(prefs)
         prefs.edit().putVisualCfg(
             VisualCfg(layout = ContentLayout.MOBILE_CENTER, mobileTypeBottomOffsetY = 2f),
         ).apply()
@@ -542,13 +542,13 @@ class VisualPersistenceTest {
                 layout = ContentLayout.MOBILE_CENTER,
                 dualSignal = true,
                 mobileTypeBottomOffsetY = -7f,
-                contentStyle = ContentStyle.DUO,
+                signalDotArrangement = SignalDotArrangement.HORIZONTAL,
             ),
         ).apply()
         assertEquals(2f, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).mobileTypeBottomOffsetY, 0f)
         assertEquals(-7f, prefs.readVisualCfg(true, ContentLayout.MOBILE_CENTER).mobileTypeBottomOffsetY, 0f)
-        assertEquals(ContentStyle.DEFAULT, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).contentStyle)
-        assertEquals(ContentStyle.DUO, prefs.readVisualCfg(true, ContentLayout.MOBILE_CENTER).contentStyle)
+        assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).signalDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(true, ContentLayout.MOBILE_CENTER).signalDotArrangement)
     }
 
 

@@ -5,14 +5,14 @@ internal const val COMBINED_STATUS_VISUAL_PREFS_NAME = "combined_status_visual"
 internal const val CONTENT_LAYOUT_KEY = "content_layout"
 internal const val DUAL_SIGNAL_ENABLED_KEY = "dual_signal_enabled"
 internal const val DUAL_PROFILES_INITIALIZED_KEY = "dual_profiles_initialized"
-internal const val CONTENT_STYLE_KEY = "content_style"
-internal const val SINGLE_ROW_FLAT_DOTS_KEY = "single_row_flat_dots"
+internal const val SIGNAL_DOT_ARRANGEMENT_KEY = "content_style"
+internal const val HORIZONTAL_LOWER_SINGLE_ROW_KEY = "single_row_flat_dots"
 // v1.0.0 released key, consumed once when introducing three layout profiles.
 internal const val LEGACY_DUAL_DOT_STYLE_KEY = "dual_dot_style"
-internal const val SHARED_CONTENT_STYLE_SCHEMA_KEY = "shared_content_style_schema"
+internal const val SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY = "shared_content_style_schema"
 // Keep the original persisted names; these offsets now serve both SIM modes.
-internal const val DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY = "dual_default_offset_y"
-internal const val DUO_SIGNAL_DOT_OFFSET_Y_KEY = "dual_duo_offset_y"
+internal const val CURVED_SIGNAL_DOT_OFFSET_Y_KEY = "dual_default_offset_y"
+internal const val HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY = "dual_duo_offset_y"
 internal const val MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY = "mobile_type_bottom_offset_y"
 internal const val MOBILE_TYPE_BOTTOM_OFFSET_DEFAULT = -3f
 internal const val MOBILE_TYPE_BOTTOM_ZERO_REFERENCE = 3f
@@ -75,11 +75,11 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         BATTERY_TOP_VERTICAL_OFFSET_KEY,
         WIFI_VERTICAL_OFFSET_KEY,
         MOBILE_TYPE_VERTICAL_OFFSET_KEY,
-        CONTENT_STYLE_KEY,
-        SINGLE_ROW_FLAT_DOTS_KEY,
+        SIGNAL_DOT_ARRANGEMENT_KEY,
+        HORIZONTAL_LOWER_SINGLE_ROW_KEY,
         MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
-        DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY,
-        DUO_SIGNAL_DOT_OFFSET_Y_KEY,
+        CURVED_SIGNAL_DOT_OFFSET_Y_KEY,
+        HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY,
         BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
         COMBINED_SCALE_KEY,
         OUTER_WEIGHT_SCALE_KEY,
