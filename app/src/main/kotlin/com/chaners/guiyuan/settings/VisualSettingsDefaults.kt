@@ -6,10 +6,6 @@ internal const val CONTENT_LAYOUT_KEY = "content_layout"
 internal const val DUAL_SIGNAL_ENABLED_KEY = "dual_signal_enabled"
 internal const val DUAL_PROFILES_INITIALIZED_KEY = "dual_profiles_initialized"
 internal const val CONTENT_STYLE_KEY = "content_style"
-internal const val BATTERY_AVOIDANCE_MODE_KEY = "battery_avoidance_mode"
-internal fun batteryAvoidanceModeDefault(layout: ContentLayout): BatteryAvoidanceMode =
-    if (layout == ContentLayout.MOBILE_CENTER) BatteryAvoidanceMode.INDEPENDENT
-    else BatteryAvoidanceMode.ORIGINAL
 internal const val SINGLE_ROW_FLAT_DOTS_KEY = "single_row_flat_dots"
 // v1.0.0 released key, consumed once when introducing three layout profiles.
 internal const val LEGACY_DUAL_DOT_STYLE_KEY = "dual_dot_style"
@@ -80,7 +76,6 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         WIFI_VERTICAL_OFFSET_KEY,
         MOBILE_TYPE_VERTICAL_OFFSET_KEY,
         CONTENT_STYLE_KEY,
-        BATTERY_AVOIDANCE_MODE_KEY,
         SINGLE_ROW_FLAT_DOTS_KEY,
         MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
         DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY,

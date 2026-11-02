@@ -108,7 +108,6 @@ internal object ConfigBackupFormat {
                 .map { network ->
                     network.copy(
                         layout = ContentLayout.MOBILE_CENTER,
-                        batteryAvoidanceMode = batteryAvoidanceModeDefault(ContentLayout.MOBILE_CENTER),
                         mobileTypeScale = mobileTypeScaleDefault(ContentLayout.MOBILE_CENTER),
                         mobileTypeBottomOffsetY = MOBILE_TYPE_BOTTOM_OFFSET_DEFAULT,
                         singleRowFlatDots = false,

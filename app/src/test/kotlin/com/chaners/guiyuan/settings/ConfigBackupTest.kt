@@ -311,7 +311,6 @@ class ConfigBackupTest {
             }
             assertEquals(0.85f, third.mobileTypeScale, 0f)
             assertEquals(-3f, third.mobileTypeBottomOffsetY, 0f)
-            assertEquals(BatteryAvoidanceMode.INDEPENDENT, third.batteryAvoidanceMode)
             assertTrue(third.centeredMobileSignal)
         }
         assertEquals(imported, ConfigBackupFormat.decode(ConfigBackupFormat.encode(imported)))
@@ -413,7 +412,6 @@ class ConfigBackupTest {
             source.visual.profiles.mapIndexed { index, cfg ->
                 cfg.copy(
                     contentStyle = if (index % 2 == 0) ContentStyle.DUO else ContentStyle.DEFAULT,
-                    batteryAvoidanceMode = BatteryAvoidanceMode.entries[index % BatteryAvoidanceMode.entries.size],
                     singleRowFlatDots = index % 2 == 1,
                     mobileTypeBottomOffsetY = (index - 3).toFloat(),
                     mobileTypeScale = 0.75f + index * 0.05f,
@@ -446,15 +444,10 @@ class ConfigBackupTest {
     }
 
     @Test
-    fun missingOptionalNewControlsUseThirdLayoutDefaults() {
+    fun missingBottomOffsetUsesThirdLayoutDefault() {
         val third = ConfigBackupFormat.encode(sample())
             .replace(",\"mobileTypeBottomOffsetY\":-3.0", "")
-            .replace(",\"batteryAvoidanceMode\":\"INDEPENDENT\"", "")
-            .replace(",\"batteryAvoidanceMode\":\"ORIGINAL\"", "")
         val imported = ConfigBackupFormat.decode(third)
-        assertTrue(imported.visual.profiles.all { it ->
-            it.batteryAvoidanceMode == batteryAvoidanceModeDefault(it.layout)
-        })
         assertTrue(imported.visual.profiles.filter { it.layout == ContentLayout.MOBILE_CENTER }
             .all { it.mobileTypeBottomOffsetY == -3f })
     }

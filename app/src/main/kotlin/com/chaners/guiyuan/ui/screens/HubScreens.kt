@@ -111,7 +111,6 @@ import com.chaners.guiyuan.settings.WIFI_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.ContentStyle
-import com.chaners.guiyuan.settings.BatteryAvoidanceMode
 import com.chaners.guiyuan.settings.ConfigBackup
 import com.chaners.guiyuan.settings.ConfigBackupFiles
 import com.chaners.guiyuan.settings.FeatureRepo
@@ -227,11 +226,6 @@ internal fun FeaturesScreen(
     val contentStyles = listOf(
         stringResource(R.string.dual_dot_style_default),
         stringResource(R.string.dual_dot_style_duo),
-    )
-    val batteryAvoidanceOptions = listOf(
-        stringResource(R.string.battery_avoidance_original),
-        stringResource(R.string.battery_avoidance_independent),
-        stringResource(R.string.battery_avoidance_symmetric),
     )
     val backupFiles = remember(context.applicationContext) {
         ConfigBackupFiles(context.applicationContext)
@@ -635,26 +629,6 @@ internal fun FeaturesScreen(
                                 enabled = featureCfg.enabled,
                             )
                         }
-                    }
-                    if (search.matches(R.string.battery_avoidance_title)) {
-                        UiDropdownPreference(
-                            items = batteryAvoidanceOptions,
-                            selectedIndex = visual.batteryAvoidanceMode.ordinal,
-                            title = stringResource(R.string.battery_avoidance_title),
-                            summary = stringResource(R.string.battery_avoidance_summary),
-                            showValue = true,
-                            enabled = featureCfg.enabled,
-                            startAction = {
-                                SemanticLeadingIcon(
-                                    R.drawable.ic_material_symbol_donut_large,
-                                    featureCfg.enabled,
-                                )
-                            },
-                            onSelectedIndexChange = { index ->
-                                BatteryAvoidanceMode.entries.getOrNull(index)
-                                    ?.let(visualRepo::setBatteryAvoidanceMode)
-                            },
-                        )
                     }
                     if (search.matches(R.string.outer_weight)) {
                         SliderPreference(

@@ -6,6 +6,22 @@ import org.junit.Test
 
 class BatteryTopArcPolicyTest {
     @Test
+    fun automaticLowerOpeningFollowsDotsRatherThanLayout() {
+        fun gap(curved: Boolean, before: Boolean, now: Boolean, fraction: Float, measured: Float = 18f) =
+            BatteryTopArcPolicy.autoBottomHalfGap(measured, curved, before, now, fraction)
+        assertEquals(60f, gap(true, false, false, 1f), 0f)
+        assertEquals(18f, gap(false, false, false, 1f), 0f)
+        assertEquals(18f, gap(true, true, true, 1f), 0f)
+        assertEquals(60f, gap(true, false, true, 0f), 0f)
+        assertEquals(39f, gap(true, false, true, 0.5f, measured = 39f), 0f)
+        assertEquals(18f, gap(true, false, true, 1f), 0f)
+        assertEquals(18f, gap(true, true, false, 0f), 0f)
+        assertEquals(30f, gap(true, true, false, 0.5f), 0f)
+        assertEquals(60f, gap(true, true, false, 1f), 0f)
+        assertEquals(70f, gap(true, false, false, 1f, measured = 70f), 0f)
+    }
+
+    @Test
     fun lowerMobileTextWithAdditionalOpticalClearanceWidensOnlyItsGap() {
         fun lower(clearance: Float) = BatteryTopArcPolicy.resolveGap(
             contentLeft = 48f,

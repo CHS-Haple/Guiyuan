@@ -19,7 +19,6 @@ import com.chaners.guiyuan.settings.ContentStyle
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import com.chaners.guiyuan.xposed.battery.BatteryTopArcPolicy
-import com.chaners.guiyuan.settings.BatteryAvoidanceMode
 import com.chaners.guiyuan.settings.MOBILE_TYPE_BOTTOM_ZERO_REFERENCE
 import com.chaners.guiyuan.xposed.battery.batteryTopBaseCenterY
 import com.chaners.guiyuan.xposed.battery.batteryTopCenterY
@@ -1637,18 +1636,6 @@ internal class StatusPainter(
         centerExitAmount: Float,
         centerEnterAmount: Float,
     ): List<BatteryTopArcPolicy.Arc> {
-        if (visual.batteryAvoidanceMode == BatteryAvoidanceMode.ORIGINAL) {
-            if (topAvoidance == null) {
-                return listOf(BatteryTopArcPolicy.Arc(BATTERY_START_DEGREES, BATTERY_MAX_SWEEP))
-            }
-            val gap = resolveBatteryTopGap(topAvoidance, outerGeometry.ringStroke)
-            return BatteryTopArcPolicy.drawableArcs(
-                startDegrees = BATTERY_START_DEGREES,
-                maxSweep = BATTERY_MAX_SWEEP,
-                gapCenterDegrees = gap.centerDegrees,
-                gapSweepDegrees = gap.sweepDegrees,
-            )
-        }
         fun halfGap(
             avoidance: TopSlotAvoidance?,
             center: Float,
@@ -1691,12 +1678,24 @@ internal class StatusPainter(
                     previousCenterIndicator is CenterIndicator.MobileType)
             ) BATTERY_BOTTOM_RING_VISUAL_CLEARANCE else BATTERY_TOP_RING_VISUAL_CLEARANCE,
         )
-        val shared = if (visual.batteryAvoidanceMode == BatteryAvoidanceMode.SYMMETRIC) {
-            maxOf(topHalf, bottomHalf)
-        } else null
+        val curvedBottom = if (model.dualMobileLevels != null) {
+            visual.effectiveContentStyle == ContentStyle.DEFAULT
+        } else {
+            visual.effectiveSingleRowStyle == ContentStyle.DEFAULT
+        }
+        val centeredNow = visual.centeredMobileSignal &&
+            model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
+        val centeredBefore = visual.centeredMobileSignal &&
+            previousCenterIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
         return BatteryTopArcPolicy.drawableRingArcs(
-            topHalfDegrees = shared ?: topHalf,
-            bottomHalfDegrees = shared ?: bottomHalf,
+            topHalfDegrees = topHalf,
+            bottomHalfDegrees = BatteryTopArcPolicy.autoBottomHalfGap(
+                measuredHalf = bottomHalf,
+                curvedBottom = curvedBottom,
+                centeredBefore = centeredBefore,
+                centeredNow = centeredNow,
+                motion = centerEnterAmount,
+            ),
         )
     }
 

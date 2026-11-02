@@ -12,7 +12,7 @@
     <string name="section_display_transition">Display &amp; transitions</string>
     <string name="section_layout_size">Layout &amp; size</string>
     <string name="layout_fine_tuning_title">Fine adjustments</string>
-    <string name="layout_fine_tuning_summary">Signal dot style, ring weight, clearance and offsets</string>
+    <string name="layout_fine_tuning_summary">Signal dot style, ring weight and offsets</string>
     <string name="layout_fine_tuning_expand">Expand fine adjustments</string>
     <string name="layout_fine_tuning_collapse">Collapse fine adjustments</string>
     <string name="section_network">Network &amp; signal</string>
@@ -60,11 +60,6 @@
     <string name="hide_launcher_icon_summary">After hiding, you can usually open Guiyuan from the module list in the framework service.</string>
     <string name="battery_fill_follow_retract">Battery fill follows retraction</string>
     <string name="battery_fill_follow_retract_summary">Move the solid battery segment with the retract endpoint, then shorten it when the remaining ring is too short</string>
-    <string name="battery_avoidance_title">Battery ring avoidance</string>
-    <string name="battery_avoidance_summary">Choose how the ring clears content above and below</string>
-    <string name="battery_avoidance_original">Original avoidance</string>
-    <string name="battery_avoidance_independent">Independent avoidance</string>
-    <string name="battery_avoidance_symmetric">Symmetric avoidance</string>
     <string name="battery_top_readout">Show battery level</string>
     <string name="battery_top_readout_summary">Show the current battery level as a number. The ring makes room automatically.</string>
     <string name="battery_top_text_size">Number size</string>

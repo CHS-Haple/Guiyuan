@@ -250,6 +250,24 @@ internal object BatteryTopArcPolicy {
         )
     }
 
+    // Preserve the original 120° lower opening for curved dots without a
+    // second motion owner. Measured clearance remains authoritative.
+    internal fun autoBottomHalfGap(
+        measuredHalf: Float,
+        curvedBottom: Boolean,
+        centeredBefore: Boolean,
+        centeredNow: Boolean,
+        motion: Float,
+    ): Float {
+        if (!curvedBottom) return measuredHalf
+        val outerAmount = when {
+            centeredBefore == centeredNow -> if (centeredNow) 0f else 1f
+            centeredBefore -> motion.coerceIn(0f, 1f)
+            else -> 1f - motion.coerceIn(0f, 1f)
+        }
+        return maxOf(measuredHalf, 60f * outerAmount)
+    }
+
     // Angles follow Android Canvas (90 = bottom, 270 = top).
     // A missing gap joins both shoulders into one arc without overlapping round caps.
     fun drawableRingArcs(topHalfDegrees: Float, bottomHalfDegrees: Float): List<Arc> {
