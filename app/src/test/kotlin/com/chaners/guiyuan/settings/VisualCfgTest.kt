@@ -130,6 +130,24 @@ class VisualCfgTest {
     }
 
     @Test
+    fun singleRowFlatToggleOnlyChangesLowerDuoSingleRow() {
+        val lower = VisualCfg(
+            contentStyle = ContentStyle.DUO,
+            mobileSignalCentered = false,
+            singleRowFlatDots = false,
+        )
+        assertEquals(ContentStyle.DEFAULT, lower.effectiveSingleRowStyle)
+        assertEquals(ContentStyle.DUO, lower.copy(singleRowFlatDots = true).effectiveSingleRowStyle)
+        assertEquals(ContentStyle.DEFAULT,
+            lower.copy(contentStyle = ContentStyle.DEFAULT, singleRowFlatDots = true).effectiveSingleRowStyle)
+        val centered = lower.copy(mobileSignalCentered = true, singleRowFlatDots = true)
+        assertEquals(ContentStyle.DUO, centered.effectiveContentStyle)
+        assertEquals(ContentStyle.DEFAULT, centered.effectiveSingleRowStyle)
+        assertEquals(ContentStyle.DUO,
+            centered.copy(mobileSignalCentered = false).effectiveSingleRowStyle)
+    }
+
+    @Test
     fun nonFiniteGeometryFallsBackToLayoutDefaults() {
         for (invalid in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) {
             val raw =
