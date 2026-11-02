@@ -603,7 +603,7 @@ internal fun FeaturesScreen(
                         enabled = featureCfg.enabled,
                     )
                 }
-                if (search.matches(R.string.battery_avoidance_title)) {
+                if (visual.centeredMobileSignal && search.matches(R.string.battery_avoidance_title)) {
                     UiDropdownPreference(
                         items = batteryAvoidanceOptions,
                         selectedIndex = visual.batteryAvoidanceMode.ordinal,
