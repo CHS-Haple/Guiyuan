@@ -238,7 +238,7 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
     R.string.battery_fill_follow_retract -> listOf("电池段收口", "电量环回收", "电量段动画")
     R.string.content_layout_title -> listOf(
         "排列", "网络居中", "网络信息居中", "电量居中",
-        "移动信号居中", "信号点居中", "网络制式下方", "三种布局",
+        "移动信号居中", "信号强度居中", "信号点居中", "网络制式下方", "三种布局",
     )
     R.string.dual_signal_title -> listOf("双卡", "双 SIM", "双卡信号", "单排信号", "单卡显示")
     R.string.dual_dot_style_title -> listOf("双卡样式", "Duo", "八点")

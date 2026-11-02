@@ -28,7 +28,7 @@
     <string name="content_layout_summary">三种布局分别记忆设置</string>
     <string name="content_layout_network_center">网络信息居中</string>
     <string name="content_layout_battery_center">电量居中</string>
-    <string name="content_layout_mobile_center">信号点居中</string>
+    <string name="content_layout_mobile_center">信号强度居中</string>
     <string name="content_layout_network_center_summary">Wi-Fi 和网络制式位于圆环中央，信号点在下方</string>
     <string name="content_layout_battery_center_summary">电量数字位于圆环中央，网络信息显示在上方</string>
     <string name="content_layout_mobile_center_summary">移动信号点位于圆环中央，网络制式显示在下方</string>
