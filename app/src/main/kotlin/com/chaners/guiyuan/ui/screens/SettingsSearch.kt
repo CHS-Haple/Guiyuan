@@ -70,7 +70,7 @@ internal object FeatureSearchIds {
         R.string.dual_dot_style_title,
         R.string.mobile_signal_centered_title,
         R.string.mobile_type_bottom_offset,
-        R.string.dual_mobile_vertical_offset,
+        R.string.signal_dot_vertical_offset,
         R.string.combined_size,
         R.string.outer_weight,
         R.string.wifi_vertical_offset,
@@ -238,7 +238,7 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
     R.string.content_layout_title -> listOf("排列", "网络居中", "电量居中")
     R.string.dual_signal_title -> listOf("双卡", "双 SIM", "双卡信号", "单排信号", "单卡显示")
     R.string.dual_dot_style_title -> listOf("双卡样式", "Duo", "八点")
-    R.string.dual_mobile_vertical_offset -> listOf("双卡偏移", "双排位置", "双排上下偏移")
+    R.string.signal_dot_vertical_offset -> listOf("双卡偏移", "双排位置", "双排上下偏移")
     R.string.combined_size -> listOf("整体缩放", "总大小", "三合一大小", "三合一缩放")
     R.string.outer_weight -> listOf("环形粗细", "圆环粗细", "外环宽度", "电量环粗细")
     R.string.wifi_vertical_offset -> listOf("WiFi 位置", "WiFi 垂直位置", "无线位置")
