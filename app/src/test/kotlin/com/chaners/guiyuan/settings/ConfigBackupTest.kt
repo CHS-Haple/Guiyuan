@@ -187,8 +187,8 @@ class ConfigBackupTest {
             profiles = original.visual.profiles.map { cfg ->
                 if (cfg.dualSignal) {
                     cfg.copy(
-                        dualDefaultOffsetY = if (cfg.layout == ContentLayout.NETWORK_CENTER) 4f else -3f,
-                        dualDuoOffsetY = if (cfg.layout == ContentLayout.NETWORK_CENTER) -8f else 6f,
+                        defaultSignalDotOffsetY = if (cfg.layout == ContentLayout.NETWORK_CENTER) 4f else -3f,
+                        duoSignalDotOffsetY = if (cfg.layout == ContentLayout.NETWORK_CENTER) -8f else 6f,
                     )
                 } else cfg
             },
@@ -196,7 +196,7 @@ class ConfigBackupTest {
         assertEquals(changed, ConfigBackupFormat.decode(ConfigBackupFormat.encode(changed)))
         val corrupt = changed.copy(visual = changed.visual.copy(
             profiles = changed.visual.profiles.mapIndexed { index, cfg ->
-                if (index == 2) cfg.copy(dualDuoOffsetY = 11f) else cfg
+                if (index == 2) cfg.copy(duoSignalDotOffsetY = 11f) else cfg
             },
         ))
         assertThrows(IllegalArgumentException::class.java) {
