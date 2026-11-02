@@ -460,9 +460,22 @@ internal fun FeaturesScreen(
                         },
                     )
                 }
+                if (search.matches(R.string.dual_dot_style_title)) {
+                    UiDropdownPreference(
+                        title = stringResource(R.string.dual_dot_style_title),
+                        items = dualDotStyles,
+                        selectedIndex = visual.dualDotStyle.ordinal,
+                        showValue = true,
+                        enabled = featureCfg.enabled,
+                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_layers, featureCfg.enabled) },
+                        onSelectedIndexChange = { index ->
+                            DualDotStyle.entries.getOrNull(index)?.let(visualRepo::setDualDotStyle)
+                        },
+                    )
+                }
                 if (search.matches(R.string.dual_signal_title) ||
                     (searching && !visual.dualSignal &&
-                        search.any(R.string.dual_dot_style_title, R.string.dual_mobile_vertical_offset))) {
+                        search.matches(R.string.dual_mobile_vertical_offset))) {
                     SwitchPreference(
                         title = stringResource(R.string.dual_signal_title),
                         startAction = {
@@ -478,19 +491,6 @@ internal fun FeaturesScreen(
                     )
                 }
                 AnimatedPreferenceGroup(visible = visual.dualSignal) {
-                    if (search.matches(R.string.dual_dot_style_title)) {
-                        UiDropdownPreference(
-                            title = stringResource(R.string.dual_dot_style_title),
-                            items = dualDotStyles,
-                            selectedIndex = visual.dualDotStyle.ordinal,
-                            showValue = true,
-                            enabled = featureCfg.enabled,
-                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_layers, featureCfg.enabled) },
-                            onSelectedIndexChange = { index ->
-                                DualDotStyle.entries.getOrNull(index)?.let(visualRepo::setDualDotStyle)
-                            },
-                        )
-                    }
                     if (search.matches(R.string.dual_mobile_vertical_offset)) {
                         SliderPreference(
                             value = visual.dualMobileOffsetY,
