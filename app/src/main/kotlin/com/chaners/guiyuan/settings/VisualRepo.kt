@@ -279,6 +279,22 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
+    fun setMobileSignalCentered(enabled: Boolean) {
+        preferences.edit().putBoolean(MOBILE_SIGNAL_CENTERED_KEY, enabled).apply()
+    }
+
+    fun setMobileTypeBottomOffsetY(offset: Float) {
+        preferences.edit()
+            .putFloat(
+                MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
+                offset.finiteIn(
+                    NETWORK_TOP_OFFSET_MIN,
+                    NETWORK_TOP_OFFSET_MAX,
+                    NETWORK_TOP_OFFSET_DEFAULT,
+                ),
+            ).apply()
+    }
+
     fun setLayout(layout: ContentLayout) {
         preferences
             .edit()
@@ -573,6 +589,8 @@ internal class VisualRepo(context: Context) {
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
         editor.putString(DUAL_DOT_STYLE_KEY, active.dualDotStyle.persistedValue)
             .putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 1)
+            .putBoolean(MOBILE_SIGNAL_CENTERED_KEY, active.mobileSignalCentered)
+            .putFloat(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, active.mobileTypeBottomOffsetY)
         // Restored physical charging scales use the current reference.
         editor.putInt(BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY, 2)
         return editor.commit()
@@ -688,6 +706,8 @@ internal fun SharedPreferences.readVisualCfg(
             getString(DUAL_DOT_STYLE_KEY, null)
                 ?: if (dual) getString(visualModeKey(true, DUAL_DOT_STYLE_KEY), null) else null,
         ),
+        mobileSignalCentered = getBoolean(MOBILE_SIGNAL_CENTERED_KEY, false),
+        mobileTypeBottomOffsetY = getFloat(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
         centerFollowsBatteryColor = flag(CENTER_FOLLOWS_BATTERY_COLOR_KEY, false),
         showTopReadout = flag(BATTERY_TOP_READOUT_ENABLED_KEY, topReadoutDefault(layout)),
@@ -779,6 +799,12 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putString(
         DUAL_DOT_STYLE_KEY,
         normalized.dualDotStyle.persistedValue,
+    ).putBoolean(
+        MOBILE_SIGNAL_CENTERED_KEY,
+        normalized.mobileSignalCentered,
+    ).putFloat(
+        MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
+        normalized.mobileTypeBottomOffsetY,
     ).putBoolean(
         visualProfileKey(layout, MOBILE_FOLLOWS_BATTERY_COLOR_KEY, normalized.dualSignal),
         normalized.mobileFollowsBatteryColor,
