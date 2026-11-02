@@ -492,6 +492,7 @@ internal fun FeaturesScreen(
                             SemanticLeadingIcon(
                                 R.drawable.ic_material_symbol_signal_cellular_alt,
                                 featureCfg.enabled,
+                                R.drawable.ic_material_symbol_swap_horiz_w500,
                             )
                         },
                         checked = visual.singleRowFlatDots,
