@@ -10,10 +10,6 @@
     <string name="features_title">功能</string>
     <string name="section_display_transition">显示与过渡</string>
     <string name="section_layout_size">布局与尺寸</string>
-    <string name="layout_fine_tuning_title">精细调整</string>
-    <string name="layout_fine_tuning_summary">信号点样式、圆环粗细与位置偏移</string>
-    <string name="layout_fine_tuning_expand">展开精细调整</string>
-    <string name="layout_fine_tuning_collapse">收起精细调整</string>
     <string name="section_network">网络与信号</string>
     <string name="dual_signal_title">双排信号</string>
     <string name="dual_signal_summary">同时识别到两张 SIM 卡时显示双排\n内容布局保持不变，其他视觉配置分别记忆</string>
