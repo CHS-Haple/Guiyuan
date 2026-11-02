@@ -197,8 +197,8 @@ class VisualPersistenceTest {
         assertEquals(DualDotStyle.DUO, regular.effectiveContentStyle)
         assertEquals(4f, regular.mobileTypeBottomOffsetY, 0f)
         assertEquals(4f, dual.mobileTypeBottomOffsetY, 0f)
-        assertEquals(0f, regular.dualDuoOffsetY, 0f)
-        assertEquals(-6f, prefs.readVisualCfg(dual = false).dualDuoOffsetY, 0f)
+        assertEquals(-6f, regular.dualDuoOffsetY, 0f)
+        assertEquals(0f, dual.dualDuoOffsetY, 0f)
         assertEquals(DualDotStyle.DEFAULT,
             regular.copy(mobileSignalCentered = false).effectiveContentStyle)
     }
