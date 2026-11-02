@@ -42,7 +42,7 @@ class VisualCfgTest {
         assertEquals(1f, settings.wifiScale, 0.0001f)
         assertEquals(0f, settings.wifiOffsetY, 0f)
         assertEquals(0f, settings.mobileTypeOffsetY, 0f)
-        assertEquals(0f, settings.dualMobileOffsetY, 0f)
+        assertEquals(0f, settings.signalDotOffsetY, 0f)
         assertEquals(1f, settings.airplaneScale, 0.0001f)
         assertEquals(1f, settings.noSimScale, 0.0001f)
         assertEquals(1f, settings.mobileTypeScale, 0.0001f)
@@ -63,8 +63,8 @@ class VisualCfgTest {
                 wifiScale = 9f,
                 wifiOffsetY = -99f,
                 mobileTypeOffsetY = 99f,
-                dualDefaultOffsetY = -99f,
-                dualDuoOffsetY = 99f,
+                defaultSignalDotOffsetY = -99f,
+                duoSignalDotOffsetY = 99f,
                 airplaneScale = 9f,
                 noSimScale = 9f,
                 mobileTypeScale = 9f,
@@ -81,16 +81,16 @@ class VisualCfgTest {
         assertEquals(WIFI_SIZE_SCALE_MAX, normalized.wifiScale, 0.0001f)
         assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.wifiOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.mobileTypeOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.dualDefaultOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.dualDuoOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.dualMobileOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(contentStyle = ContentStyle.DUO).dualMobileOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.defaultSignalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.duoSignalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.signalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(contentStyle = ContentStyle.DUO).signalDotOffsetY, 0f)
         val invalidOffsets = settings.copy(
-            dualDefaultOffsetY = Float.NaN,
-            dualDuoOffsetY = Float.POSITIVE_INFINITY,
+            defaultSignalDotOffsetY = Float.NaN,
+            duoSignalDotOffsetY = Float.POSITIVE_INFINITY,
         ).normalized()
-        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.dualDefaultOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.dualDuoOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.defaultSignalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.duoSignalDotOffsetY, 0f)
         assertEquals(AIRPLANE_SIZE_SCALE_MAX, normalized.airplaneScale, 0.0001f)
         assertEquals(NO_SIM_SIZE_SCALE_MAX, normalized.noSimScale, 0.0001f)
         assertEquals(MOBILE_TYPE_SIZE_SCALE_MAX, normalized.mobileTypeScale, 0.0001f)
@@ -113,10 +113,10 @@ class VisualCfgTest {
         assertEquals(ContentStyle.DEFAULT, saved.contentStyle)
         assertEquals(ContentStyle.DUO, saved.effectiveContentStyle)
         assertEquals(true, saved.centeredMobileSignal)
-        val preserved = saved.copy(dualDefaultOffsetY = 3f, dualDuoOffsetY = -4f)
-        assertEquals(3f, preserved.dualMobileOffsetY, 0f)
-        assertEquals(-4f, preserved.effectiveDualMobileOffsetY, 0f)
-        assertEquals(3f, preserved.copy(mobileSignalCentered = false).effectiveDualMobileOffsetY, 0f)
+        val preserved = saved.copy(defaultSignalDotOffsetY = 3f, duoSignalDotOffsetY = -4f)
+        assertEquals(3f, preserved.signalDotOffsetY, 0f)
+        assertEquals(-4f, preserved.effectiveSignalDotOffsetY, 0f)
+        assertEquals(3f, preserved.copy(mobileSignalCentered = false).effectiveSignalDotOffsetY, 0f)
         assertEquals(ContentStyle.DEFAULT, saved.copy(mobileSignalCentered = false).effectiveContentStyle)
         val battery = saved.copy(layout = ContentLayout.BATTERY_CENTER)
         assertEquals(false, battery.centeredMobileSignal)
@@ -138,8 +138,8 @@ class VisualCfgTest {
                     topOffsetY = invalid,
                     wifiOffsetY = invalid,
                     mobileTypeOffsetY = invalid,
-                    dualDefaultOffsetY = invalid,
-                    dualDuoOffsetY = invalid,
+                    defaultSignalDotOffsetY = invalid,
+                    duoSignalDotOffsetY = invalid,
                     topChargingIconScale = invalid,
                     combinedScale = invalid,
                     outerWeightScale = invalid,
@@ -153,8 +153,8 @@ class VisualCfgTest {
             assertEquals(BATTERY_TOP_VERTICAL_OFFSET_DEFAULT, normalized.topOffsetY, 0f)
             assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.wifiOffsetY, 0f)
             assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.mobileTypeOffsetY, 0f)
-            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.dualDefaultOffsetY, 0f)
-            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.dualDuoOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.defaultSignalDotOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.duoSignalDotOffsetY, 0f)
             assertEquals(topChargingIconScaleDefault(raw.layout), normalized.topChargingIconScale, 0f)
             assertEquals(COMBINED_SCALE_DEFAULT, normalized.combinedScale, 0f)
             assertEquals(OUTER_WEIGHT_SCALE_DEFAULT, normalized.outerWeightScale, 0f)
