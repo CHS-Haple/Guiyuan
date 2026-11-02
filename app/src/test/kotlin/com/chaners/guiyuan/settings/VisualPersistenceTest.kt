@@ -143,14 +143,14 @@ class VisualPersistenceTest {
     @Test
     fun contentStyleIsSharedAcrossSignalModesAndLayouts() {
         val prefs = MemoryPreferences()
-        prefs.edit().putString(DUAL_DOT_STYLE_KEY, DualDotStyle.DUO.persistedValue).apply()
+        prefs.edit().putString(DUAL_DOT_STYLE_KEY, ContentStyle.DUO.persistedValue).apply()
         for (dual in listOf(false, true)) {
             for (layout in ContentLayout.entries) {
-                assertEquals(DualDotStyle.DUO, prefs.readVisualCfg(dual = dual, layoutOverride = layout).dualDotStyle)
+                assertEquals(ContentStyle.DUO, prefs.readVisualCfg(dual = dual, layoutOverride = layout).contentStyle)
             }
         }
         prefs.edit().putString(DUAL_DOT_STYLE_KEY, "invalid").apply()
-        assertEquals(DualDotStyle.DEFAULT, prefs.readVisualCfg(dual = true).dualDotStyle)
+        assertEquals(ContentStyle.DEFAULT, prefs.readVisualCfg(dual = true).contentStyle)
     }
 
     @Test
@@ -159,15 +159,15 @@ class VisualPersistenceTest {
             val prefs = MemoryPreferences()
             prefs.edit()
                 .putBoolean(DUAL_SIGNAL_ENABLED_KEY, dual)
-                .putString(DUAL_DOT_STYLE_KEY, DualDotStyle.DEFAULT.persistedValue)
-                .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), DualDotStyle.DUO.persistedValue)
+                .putString(DUAL_DOT_STYLE_KEY, ContentStyle.DEFAULT.persistedValue)
+                .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), ContentStyle.DUO.persistedValue)
                 .apply()
-            assertEquals(if (dual) DualDotStyle.DUO else DualDotStyle.DEFAULT,
-                prefs.readVisualCfg(dual = dual).dualDotStyle)
+            assertEquals(if (dual) ContentStyle.DUO else ContentStyle.DEFAULT,
+                prefs.readVisualCfg(dual = dual).contentStyle)
             migrateSharedContentStyleIfNeeded(prefs)
-            val expected = if (dual) DualDotStyle.DUO else DualDotStyle.DEFAULT
-            assertEquals(expected, prefs.readVisualCfg(dual = true).dualDotStyle)
-            assertEquals(expected, prefs.readVisualCfg(dual = false).dualDotStyle)
+            val expected = if (dual) ContentStyle.DUO else ContentStyle.DEFAULT
+            assertEquals(expected, prefs.readVisualCfg(dual = true).contentStyle)
+            assertEquals(expected, prefs.readVisualCfg(dual = false).contentStyle)
             assertFalse(prefs.contains(visualModeKey(true, DUAL_DOT_STYLE_KEY)))
             val saved = prefs.all.toMap()
             migrateSharedContentStyleIfNeeded(prefs)
@@ -175,10 +175,10 @@ class VisualPersistenceTest {
         }
         val oldDualOnly = MemoryPreferences()
         oldDualOnly.edit()
-            .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), DualDotStyle.DUO.persistedValue)
+            .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), ContentStyle.DUO.persistedValue)
             .apply()
         migrateSharedContentStyleIfNeeded(oldDualOnly)
-        assertEquals(DualDotStyle.DUO, oldDualOnly.readVisualCfg(dual = false).dualDotStyle)
+        assertEquals(ContentStyle.DUO, oldDualOnly.readVisualCfg(dual = false).contentStyle)
     }
 
     @Test
@@ -188,20 +188,20 @@ class VisualPersistenceTest {
             layout = ContentLayout.NETWORK_CENTER,
             mobileSignalCentered = true,
             mobileTypeBottomOffsetY = 4f,
-            dualDotStyle = DualDotStyle.DEFAULT,
+            contentStyle = ContentStyle.DEFAULT,
             dualDuoOffsetY = -6f,
         )).apply()
         val regular = prefs.readVisualCfg(dual = false)
         val dual = prefs.readVisualCfg(dual = true)
         assertTrue(regular.centeredMobileSignal)
         assertTrue(dual.centeredMobileSignal)
-        assertEquals(DualDotStyle.DEFAULT, regular.dualDotStyle)
-        assertEquals(DualDotStyle.DUO, regular.effectiveContentStyle)
+        assertEquals(ContentStyle.DEFAULT, regular.contentStyle)
+        assertEquals(ContentStyle.DUO, regular.effectiveContentStyle)
         assertEquals(4f, regular.mobileTypeBottomOffsetY, 0f)
         assertEquals(4f, dual.mobileTypeBottomOffsetY, 0f)
         assertEquals(-6f, regular.dualDuoOffsetY, 0f)
         assertEquals(0f, dual.dualDuoOffsetY, 0f)
-        assertEquals(DualDotStyle.DEFAULT,
+        assertEquals(ContentStyle.DEFAULT,
             regular.copy(mobileSignalCentered = false).effectiveContentStyle)
     }
 
@@ -216,19 +216,19 @@ class VisualPersistenceTest {
         prefs.edit().putVisualCfg(dual).apply()
         val network = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
         assertEquals(4f, network.dualMobileOffsetY, 0f)
-        assertEquals(-7f, network.copy(dualDotStyle = DualDotStyle.DUO).dualMobileOffsetY, 0f)
+        assertEquals(-7f, network.copy(contentStyle = ContentStyle.DUO).dualMobileOffsetY, 0f)
 
         prefs.edit().putVisualCfg(
             dual.copy(
                 layout = ContentLayout.BATTERY_CENTER,
-                dualDotStyle = DualDotStyle.DUO,
+                contentStyle = ContentStyle.DUO,
                 dualDefaultOffsetY = -2f,
                 dualDuoOffsetY = 5f,
             ),
         ).apply()
         val battery = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.BATTERY_CENTER)
         assertEquals(5f, battery.dualMobileOffsetY, 0f)
-        assertEquals(-2f, battery.copy(dualDotStyle = DualDotStyle.DEFAULT).dualMobileOffsetY, 0f)
+        assertEquals(-2f, battery.copy(contentStyle = ContentStyle.DEFAULT).dualMobileOffsetY, 0f)
         val original = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
         assertEquals(4f, original.dualDefaultOffsetY, 0f)
         assertEquals(-7f, original.dualDuoOffsetY, 0f)
