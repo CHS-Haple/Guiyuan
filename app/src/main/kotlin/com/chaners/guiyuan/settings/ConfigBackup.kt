@@ -108,6 +108,7 @@ internal object ConfigBackupFormat {
                 .map { network ->
                     network.copy(
                         layout = ContentLayout.MOBILE_CENTER,
+                        batteryAvoidanceMode = batteryAvoidanceModeDefault(ContentLayout.MOBILE_CENTER),
                         mobileTypeScale = mobileTypeScaleDefault(ContentLayout.MOBILE_CENTER),
                         mobileTypeBottomOffsetY = MOBILE_TYPE_BOTTOM_OFFSET_DEFAULT,
                         singleRowFlatDots = false,
@@ -211,8 +212,7 @@ internal object ConfigBackupFormat {
         require(profiles.groupBy { it.dualSignal }.values.all { sameMode ->
             val first = sameMode.first()
             sameMode.all { cfg ->
-                cfg.batteryAvoidanceMode == first.batteryAvoidanceMode &&
-                    cfg.fillFollowsRetract == first.fillFollowsRetract &&
+                cfg.fillFollowsRetract == first.fillFollowsRetract &&
                     cfg.ccTintTransition == first.ccTintTransition &&
                     cfg.batteryColorPreset == first.batteryColorPreset &&
                     cfg.batteryColorModes == first.batteryColorModes &&

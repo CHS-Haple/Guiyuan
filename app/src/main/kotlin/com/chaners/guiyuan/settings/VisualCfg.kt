@@ -37,8 +37,10 @@ internal enum class BatteryAvoidanceMode(val persistedValue: String) {
     SYMMETRIC("symmetric");
 
     companion object {
-        fun fromPersisted(value: String?): BatteryAvoidanceMode =
-            entries.firstOrNull { it.persistedValue == value } ?: INDEPENDENT
+        fun fromPersisted(
+            value: String?,
+            fallback: BatteryAvoidanceMode = INDEPENDENT,
+        ): BatteryAvoidanceMode = entries.firstOrNull { it.persistedValue == value } ?: fallback
     }
 }
 
@@ -210,7 +212,7 @@ internal data class VisualCfg(
     @SerialName("dualDotStyle")
     val contentStyle: ContentStyle = ContentStyle.DEFAULT,
     val singleRowFlatDots: Boolean = false,
-    val batteryAvoidanceMode: BatteryAvoidanceMode = BatteryAvoidanceMode.INDEPENDENT,
+    val batteryAvoidanceMode: BatteryAvoidanceMode = batteryAvoidanceModeDefault(layout),
     val mobileTypeBottomOffsetY: Float = mobileTypeBottomOffsetDefault(layout),
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,

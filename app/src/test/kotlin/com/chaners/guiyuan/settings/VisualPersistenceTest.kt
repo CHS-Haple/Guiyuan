@@ -497,6 +497,61 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun batteryAvoidanceDefaultsAndSelectionsAreIndependentAcrossLayoutsAndSimProfiles() {
+        val prefs = MemoryPreferences()
+        for (dual in listOf(false, true)) {
+            assertEquals(BatteryAvoidanceMode.ORIGINAL,
+                prefs.readVisualCfg(dual, ContentLayout.NETWORK_CENTER).batteryAvoidanceMode)
+            assertEquals(BatteryAvoidanceMode.ORIGINAL,
+                prefs.readVisualCfg(dual, ContentLayout.BATTERY_CENTER).batteryAvoidanceMode)
+            assertEquals(BatteryAvoidanceMode.INDEPENDENT,
+                prefs.readVisualCfg(dual, ContentLayout.MOBILE_CENTER).batteryAvoidanceMode)
+        }
+
+        prefs.edit()
+            .putString(CONTENT_LAYOUT_KEY, ContentLayout.NETWORK_CENTER.persistedValue)
+            .apply()
+        prefs.writeBatteryAvoidanceMode(BatteryAvoidanceMode.SYMMETRIC)
+        assertEquals(BatteryAvoidanceMode.SYMMETRIC, prefs.readVisualCfg().batteryAvoidanceMode)
+        assertEquals(BatteryAvoidanceMode.ORIGINAL,
+            prefs.readVisualCfg(false, ContentLayout.BATTERY_CENTER).batteryAvoidanceMode)
+
+        prefs.edit()
+            .putString(CONTENT_LAYOUT_KEY, ContentLayout.MOBILE_CENTER.persistedValue)
+            .apply()
+        prefs.writeBatteryAvoidanceMode(BatteryAvoidanceMode.ORIGINAL)
+        assertEquals(BatteryAvoidanceMode.ORIGINAL, prefs.readVisualCfg().batteryAvoidanceMode)
+        assertEquals(BatteryAvoidanceMode.SYMMETRIC,
+            prefs.readVisualCfg(false, ContentLayout.NETWORK_CENTER).batteryAvoidanceMode)
+
+        prefs.edit()
+            .putString(CONTENT_LAYOUT_KEY, ContentLayout.NETWORK_CENTER.persistedValue)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .apply()
+        prefs.writeBatteryAvoidanceMode(BatteryAvoidanceMode.INDEPENDENT)
+        assertEquals(BatteryAvoidanceMode.INDEPENDENT, prefs.readVisualCfg().batteryAvoidanceMode)
+        assertEquals(BatteryAvoidanceMode.SYMMETRIC,
+            prefs.readVisualCfg(false, ContentLayout.NETWORK_CENTER).batteryAvoidanceMode)
+        assertEquals(BatteryAvoidanceMode.ORIGINAL,
+            prefs.readVisualCfg(true, ContentLayout.BATTERY_CENTER).batteryAvoidanceMode)
+
+        // The previously global selection only falls back in the mobile layout;
+        // explicit per-layout choices always take precedence.
+        prefs.edit().putString(BATTERY_AVOIDANCE_MODE_KEY,
+            BatteryAvoidanceMode.SYMMETRIC.persistedValue).apply()
+        assertEquals(BatteryAvoidanceMode.SYMMETRIC,
+            prefs.readVisualCfg(true, ContentLayout.MOBILE_CENTER).batteryAvoidanceMode)
+        assertEquals(BatteryAvoidanceMode.ORIGINAL,
+            prefs.readVisualCfg(true, ContentLayout.BATTERY_CENTER).batteryAvoidanceMode)
+        prefs.edit()
+            .putString(CONTENT_LAYOUT_KEY, ContentLayout.MOBILE_CENTER.persistedValue)
+            .apply()
+        prefs.writeBatteryAvoidanceMode(BatteryAvoidanceMode.ORIGINAL)
+        assertEquals(BatteryAvoidanceMode.ORIGINAL,
+            prefs.readVisualCfg(true, ContentLayout.MOBILE_CENTER).batteryAvoidanceMode)
+    }
+
+    @Test
     fun threeLayoutsRememberSizesOffsetsAndStylesIndependently() {
         val prefs = MemoryPreferences()
         migrateLayoutContentStylesIfNeeded(prefs)

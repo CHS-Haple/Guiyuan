@@ -6,15 +6,27 @@ import org.junit.Test
 
 class VisualCfgTest {
     @Test
-    fun avoidanceDefaultsToIndependentAndPreservesSelection() {
-        assertEquals(BatteryAvoidanceMode.INDEPENDENT, VisualCfg().batteryAvoidanceMode)
-        assertEquals(BatteryAvoidanceMode.INDEPENDENT, BatteryAvoidanceMode.fromPersisted(null))
-        assertEquals(BatteryAvoidanceMode.INDEPENDENT, BatteryAvoidanceMode.fromPersisted("unknown"))
-        assertEquals(BatteryAvoidanceMode.ORIGINAL, BatteryAvoidanceMode.fromPersisted("original"))
-        assertEquals(BatteryAvoidanceMode.SYMMETRIC, BatteryAvoidanceMode.fromPersisted("symmetric"))
+    fun batteryAvoidanceDefaultsDependOnLayoutAndSelectionIsPreserved() {
+        assertEquals(BatteryAvoidanceMode.ORIGINAL, VisualCfg().batteryAvoidanceMode)
+        assertEquals(BatteryAvoidanceMode.ORIGINAL,
+            VisualCfg(layout = ContentLayout.BATTERY_CENTER).batteryAvoidanceMode)
+        assertEquals(BatteryAvoidanceMode.INDEPENDENT,
+            VisualCfg(layout = ContentLayout.MOBILE_CENTER).batteryAvoidanceMode)
+        assertEquals(BatteryAvoidanceMode.INDEPENDENT,
+            BatteryAvoidanceMode.fromPersisted(null))
+        assertEquals(BatteryAvoidanceMode.ORIGINAL,
+            BatteryAvoidanceMode.fromPersisted(null, BatteryAvoidanceMode.ORIGINAL))
+        assertEquals(BatteryAvoidanceMode.ORIGINAL,
+            BatteryAvoidanceMode.fromPersisted("unknown", BatteryAvoidanceMode.ORIGINAL))
+        assertEquals(BatteryAvoidanceMode.ORIGINAL,
+            BatteryAvoidanceMode.fromPersisted("original"))
         assertEquals(BatteryAvoidanceMode.SYMMETRIC,
-            VisualCfg(batteryAvoidanceMode = BatteryAvoidanceMode.SYMMETRIC)
-                .normalized().batteryAvoidanceMode)
+            BatteryAvoidanceMode.fromPersisted("symmetric"))
+        assertEquals(BatteryAvoidanceMode.SYMMETRIC,
+            VisualCfg(
+                layout = ContentLayout.BATTERY_CENTER,
+                batteryAvoidanceMode = BatteryAvoidanceMode.SYMMETRIC,
+            ).normalized().batteryAvoidanceMode)
     }
 
     @Test

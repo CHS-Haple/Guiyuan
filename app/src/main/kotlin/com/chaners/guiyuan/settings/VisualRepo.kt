@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 
 private val visualPreferenceKeys = buildSet {
+    // Retired singleton key can be cleared by backup restore; new values are per profile.
+    add(BATTERY_AVOIDANCE_MODE_KEY)
     add(SHARED_CONTENT_STYLE_SCHEMA_KEY)
     add(CONTENT_LAYOUT_KEY)
     add(DUAL_SIGNAL_ENABLED_KEY)
@@ -157,7 +159,7 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setBatteryAvoidanceMode(mode: BatteryAvoidanceMode) {
-        preferences.edit().putString(BATTERY_AVOIDANCE_MODE_KEY, mode.persistedValue).apply()
+        preferences.writeBatteryAvoidanceMode(mode)
     }
 
     fun setSingleRowFlatDots(enabled: Boolean) {
@@ -454,7 +456,6 @@ internal class VisualRepo(context: Context) {
             editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
         }
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
-        editor.putString(BATTERY_AVOIDANCE_MODE_KEY, active.batteryAvoidanceMode.persistedValue)
         editor.putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 3)
         // Restored physical charging scales use the current reference.
         return editor.commit()
@@ -502,6 +503,13 @@ internal fun SharedPreferences.writeSignalDotOffsetY(offset: Float) {
             NETWORK_TOP_OFFSET_MAX,
             NETWORK_TOP_OFFSET_DEFAULT,
         ),
+    ).apply()
+}
+
+internal fun SharedPreferences.writeBatteryAvoidanceMode(mode: BatteryAvoidanceMode) {
+    edit().putString(
+        visualProfileKey(readLayout(), BATTERY_AVOIDANCE_MODE_KEY, dualSignalEnabled()),
+        mode.persistedValue,
     ).apply()
 }
 
@@ -600,7 +608,15 @@ internal fun SharedPreferences.readVisualCfg(
         ),
         singleRowFlatDots = flag(SINGLE_ROW_FLAT_DOTS_KEY, false),
         batteryAvoidanceMode = BatteryAvoidanceMode.fromPersisted(
-            getString(BATTERY_AVOIDANCE_MODE_KEY, null),
+            getString(
+                visualProfileKey(layout, BATTERY_AVOIDANCE_MODE_KEY, dual),
+                // B1727 wrote one global choice; keep that choice only for
+                // signal-centered layout rather than overriding other layouts.
+                if (layout == ContentLayout.MOBILE_CENTER) {
+                    getString(BATTERY_AVOIDANCE_MODE_KEY, null)
+                } else null,
+            ),
+            batteryAvoidanceModeDefault(layout),
         ),
         mobileTypeBottomOffsetY = size(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, mobileTypeBottomOffsetDefault(layout)),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
@@ -695,7 +711,7 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         visualProfileKey(layout, CONTENT_STYLE_KEY, normalized.dualSignal),
         normalized.contentStyle.persistedValue,
     ).putString(
-        BATTERY_AVOIDANCE_MODE_KEY,
+        visualProfileKey(layout, BATTERY_AVOIDANCE_MODE_KEY, normalized.dualSignal),
         normalized.batteryAvoidanceMode.persistedValue,
     ).putBoolean(
         visualProfileKey(layout, SINGLE_ROW_FLAT_DOTS_KEY, normalized.dualSignal),

@@ -12,7 +12,14 @@ class VisualPreferenceKeysTest {
         assertTrue(isVisualPreferenceKey(CONTENT_LAYOUT_KEY))
         assertTrue(isVisualPreferenceKey(DUAL_SIGNAL_ENABLED_KEY))
         assertTrue(isVisualPreferenceKey(SHARED_CONTENT_STYLE_SCHEMA_KEY))
-        assertTrue(isVisualPreferenceKey(BATTERY_AVOIDANCE_MODE_KEY))
+        assertTrue(isVisualPreferenceKey(BATTERY_AVOIDANCE_MODE_KEY)) // retired singleton, cleaned on restore
+        for (dual in listOf(false, true)) {
+            for (layout in ContentLayout.entries) {
+                assertTrue(isVisualPreferenceKey(
+                    visualProfileKey(layout, BATTERY_AVOIDANCE_MODE_KEY, dual),
+                ))
+            }
+        }
         assertTrue(isVisualPreferenceKey(visualProfileKey(ContentLayout.MOBILE_CENTER, SINGLE_ROW_FLAT_DOTS_KEY)))
         assertTrue(isVisualPreferenceKey(visualProfileKey(ContentLayout.MOBILE_CENTER, MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY)))
         assertTrue(isVisualPreferenceKey(DUAL_PROFILES_INITIALIZED_KEY))
