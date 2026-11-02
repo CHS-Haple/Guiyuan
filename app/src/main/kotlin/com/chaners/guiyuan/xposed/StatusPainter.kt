@@ -3782,8 +3782,9 @@ internal class StatusPainter(
             model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
         val centeredBefore = visual.centeredMobileSignal &&
             previousCenter is CenterIndicator.MobileType && !model.mobileUnavailableMark
-        if (previousCenter != null && previousCenter != model.centerIndicator &&
-            centeredBefore != centeredNow
+        if (MobileDotRelocationPolicy.shouldInterpolate(
+                previousCenter, model.centerIndicator, centeredBefore, centeredNow,
+            )
         ) {
             val dual = model.dualMobileLevels
             val scale = geometry.centeredScale(dual != null)
@@ -3816,11 +3817,11 @@ internal class StatusPainter(
                         opacity = opacity,
                     )
                     canvas.drawCircle(
-                        lerp(if (centeredBefore) innerX else outerX,
+                        MobileDotRelocationPolicy.coordinate(if (centeredBefore) innerX else outerX,
                             if (centeredNow) innerX else outerX, fraction),
-                        lerp(if (centeredBefore) centeredY else outerY,
+                        MobileDotRelocationPolicy.coordinate(if (centeredBefore) centeredY else outerY,
                             if (centeredNow) centeredY else outerY, fraction),
-                        lerp(if (centeredBefore) innerRadius else outerRadius,
+                        MobileDotRelocationPolicy.coordinate(if (centeredBefore) innerRadius else outerRadius,
                             if (centeredNow) innerRadius else outerRadius, fraction),
                         paint,
                     )
