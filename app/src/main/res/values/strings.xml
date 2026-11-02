@@ -14,7 +14,7 @@
     <string name="section_network">Network &amp; signal</string>
     <string name="dual_signal_title">Dual-row signal</string>
     <string name="dual_signal_summary">Show two rows when both SIM cards are detected\nKeep the content layout and remember other visual settings separately</string>
-    <string name="dual_dot_style_title">Dual-row style</string>
+    <string name="dual_dot_style_title">Content style</string>
     <string name="dual_dot_style_default">Default</string>
     <string name="dual_dot_style_duo">Duo</string>
     <string name="dual_mobile_vertical_offset">Signal dots vertical offset</string>
