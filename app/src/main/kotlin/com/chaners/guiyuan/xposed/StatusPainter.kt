@@ -238,8 +238,8 @@ internal class StatusPainter(
                 tint = colors.mobileTint,
                 opacity = opacity,
                 geometry = outerGeometry,
-                style = visual.dualDotStyle,
-                mobileOffsetY = visual.dualMobileOffsetY,
+                style = visual.effectiveContentStyle,
+                mobileOffsetY = visual.effectiveDualMobileOffsetY,
             )
         }
         canvas.restoreToCount(save)
@@ -442,8 +442,8 @@ internal class StatusPainter(
                         targetBars = mobileTargetBars,
                         aggregateRows = mobileAggregateRows,
                         row = mobileRow,
-                        style = visual.dualDotStyle,
-                        mobileOffsetY = visual.dualMobileOffsetY,
+                        style = visual.effectiveContentStyle,
+                        mobileOffsetY = visual.effectiveDualMobileOffsetY,
                         centered = visual.centeredMobileSignal &&
                             model.centerIndicator is CenterIndicator.MobileType &&
                             !model.mobileUnavailableMark,
@@ -460,8 +460,8 @@ internal class StatusPainter(
                         tint = colors.mobileTint,
                         opacity = opacity,
                         geometry = outerGeometry,
-                        style = visual.dualDotStyle,
-                        mobileOffsetY = visual.dualMobileOffsetY,
+                        style = visual.effectiveContentStyle,
+                        mobileOffsetY = visual.effectiveDualMobileOffsetY,
                     )
                 }
             }
@@ -778,7 +778,7 @@ internal class StatusPainter(
             when {
                 centeredMobile -> centeredMobileBounds(outerGeometry, model.dualMobileLevels != null)
                 model.dualMobileLevels != null ->
-                    dualMobileTransitionBounds(outerGeometry, visual.dualDotStyle, visual.dualMobileOffsetY)
+                    dualMobileTransitionBounds(outerGeometry, visual.effectiveContentStyle, visual.effectiveDualMobileOffsetY)
                 else -> resolveMobileSignalTransitionLayout(outerGeometry, model).bounds
             }
         specs +=
@@ -812,11 +812,11 @@ internal class StatusPainter(
         val centered = visual.centeredMobileSignal &&
             model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
         val group = if (centered) centeredMobileBounds(geometry, true)
-            else dualMobileTransitionBounds(geometry, visual.dualDotStyle, visual.dualMobileOffsetY)
+            else dualMobileTransitionBounds(geometry, visual.effectiveContentStyle, visual.effectiveDualMobileOffsetY)
         if (group.width <= 0f || group.height <= 0f) return emptyList()
         return (0..1).map { row ->
             val local = if (centered) centeredMobileRowBounds(geometry, row)
-                else dualMobileRowBounds(geometry, row, visual.dualDotStyle, visual.dualMobileOffsetY)
+                else dualMobileRowBounds(geometry, row, visual.effectiveContentStyle, visual.effectiveDualMobileOffsetY)
             fun x(value: Float) = source.sourceBounds.left +
                 (value - group.left) / group.width * source.sourceBounds.width
             fun y(value: Float) = source.sourceBounds.top +
