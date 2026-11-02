@@ -1,7 +1,5 @@
 package com.chaners.guiyuan.settings
 
-import android.content.SharedPreferences
-import kotlin.math.abs
 
 internal const val COMBINED_STATUS_VISUAL_PREFS_NAME = "combined_status_visual"
 internal const val CONTENT_LAYOUT_KEY = "content_layout"
@@ -10,14 +8,18 @@ internal const val DUAL_PROFILES_INITIALIZED_KEY = "dual_profiles_initialized"
 internal const val CONTENT_STYLE_KEY = "content_style"
 internal const val BATTERY_AVOIDANCE_MODE_KEY = "battery_avoidance_mode"
 internal const val SINGLE_ROW_FLAT_DOTS_KEY = "single_row_flat_dots"
-// Only used to import settings saved before content style was shared.
+// v1.0.0 released key, consumed once when introducing three layout profiles.
 internal const val LEGACY_DUAL_DOT_STYLE_KEY = "dual_dot_style"
 internal const val SHARED_CONTENT_STYLE_SCHEMA_KEY = "shared_content_style_schema"
 // Keep the original persisted names; these offsets now serve both SIM modes.
 internal const val DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY = "dual_default_offset_y"
 internal const val DUO_SIGNAL_DOT_OFFSET_Y_KEY = "dual_duo_offset_y"
-internal const val MOBILE_SIGNAL_CENTERED_KEY = "mobile_signal_centered"
 internal const val MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY = "mobile_type_bottom_offset_y"
+internal const val MOBILE_TYPE_BOTTOM_OFFSET_DEFAULT = -3f
+internal const val MOBILE_TYPE_BOTTOM_ZERO_REFERENCE = 3f
+internal fun mobileTypeBottomOffsetDefault(layout: ContentLayout): Float =
+    if (layout == ContentLayout.MOBILE_CENTER) MOBILE_TYPE_BOTTOM_OFFSET_DEFAULT
+    else NETWORK_TOP_OFFSET_DEFAULT
 internal const val MOBILE_FOLLOWS_BATTERY_COLOR_KEY = "mobile_follows_battery_color"
 internal const val CENTER_FOLLOWS_BATTERY_COLOR_KEY = "center_follows_battery_color"
 internal const val BATTERY_TOP_READOUT_ENABLED_KEY = "battery_top_readout_enabled"
@@ -74,6 +76,9 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         BATTERY_TOP_VERTICAL_OFFSET_KEY,
         WIFI_VERTICAL_OFFSET_KEY,
         MOBILE_TYPE_VERTICAL_OFFSET_KEY,
+        CONTENT_STYLE_KEY,
+        SINGLE_ROW_FLAT_DOTS_KEY,
+        MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
         DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY,
         DUO_SIGNAL_DOT_OFFSET_Y_KEY,
         BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
@@ -96,11 +101,7 @@ internal val BATTERY_COLOR_KEYS =
 
 internal val GLOBAL_VISUAL_KEYS =
     setOf(
-        CONTENT_STYLE_KEY,
         BATTERY_AVOIDANCE_MODE_KEY,
-        SINGLE_ROW_FLAT_DOTS_KEY,
-        MOBILE_SIGNAL_CENTERED_KEY,
-        MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
         BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
         CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
     ) + BATTERY_COLOR_KEYS
@@ -132,9 +133,7 @@ internal const val NETWORK_TOP_OFFSET_DEFAULT = 0f
 internal const val NETWORK_TOP_OFFSET_MIN = -10f
 internal const val NETWORK_TOP_OFFSET_MAX = 10f
 
-// Persisted charging scale is physical. UI 100% maps to 1.65x so migrated
-// 1.5x × 110% values keep the same visual size.
-private const val BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE_LEGACY = 1.5f
+// Physical 1.65x reference is the released 1.0.0 representation.
 internal const val BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE = 1.65f
 internal const val BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN = 0.4f
 internal const val BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX = 1.6f
@@ -144,73 +143,6 @@ internal const val BATTERY_TOP_CHARGING_ICON_SCALE_MIN =
     BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE * BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN
 internal const val BATTERY_TOP_CHARGING_ICON_SCALE_MAX =
     BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE * BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX
-private const val BATTERY_COLOR_PRESET_SCHEMA_KEY =
-    "battery_color_preset_schema"
-private const val BATTERY_COLOR_PRESET_SCHEMA_CURRENT = 2
-internal const val BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY =
-    "battery_top_charging_scale_schema"
-private const val BATTERY_TOP_CHARGING_SCALE_SCHEMA_CURRENT = 2
-private const val BATTERY_TOP_SCALE_EPSILON = 0.0001f
-
-internal fun migrateBatteryColorPresetDefaultIfNeeded(
-    preferences: SharedPreferences,
-) {
-    if (
-        preferences.getInt(BATTERY_COLOR_PRESET_SCHEMA_KEY, 0) >=
-            BATTERY_COLOR_PRESET_SCHEMA_CURRENT
-    ) {
-        return
-    }
-
-    val editor = preferences.edit()
-    if (!preferences.contains(BATTERY_COLOR_PRESET_KEY)) {
-        editor.putString(
-            BATTERY_COLOR_PRESET_KEY,
-            BatteryColorPreset.HYPEROS.persistedValue,
-        )
-    }
-    editor
-        .putInt(
-            BATTERY_COLOR_PRESET_SCHEMA_KEY,
-            BATTERY_COLOR_PRESET_SCHEMA_CURRENT,
-        )
-        .apply()
-}
-
-internal fun migrateBatteryTopChargingScaleReferenceIfNeeded(
-    preferences: SharedPreferences,
-) {
-    if (
-        preferences.getInt(BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY, 1) >=
-            BATTERY_TOP_CHARGING_SCALE_SCHEMA_CURRENT
-    ) {
-        return
-    }
-
-    val editor = preferences.edit()
-    if (preferences.contains(BATTERY_TOP_CHARGING_ICON_SCALE_KEY)) {
-        val raw =
-            preferences.getFloat(
-                BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
-                BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE_LEGACY,
-            )
-        if (
-            abs(raw - BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE_LEGACY) <=
-                BATTERY_TOP_SCALE_EPSILON
-        ) {
-            editor.putFloat(
-                BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
-                BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE,
-            )
-        }
-    }
-    editor
-        .putInt(
-            BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY,
-            BATTERY_TOP_CHARGING_SCALE_SCHEMA_CURRENT,
-        )
-        .apply()
-}
 
 internal fun topReadoutDefault(layout: ContentLayout): Boolean =
     layout == ContentLayout.BATTERY_CENTER
@@ -219,7 +151,7 @@ internal fun topTextUiScaleDefault(
     layout: ContentLayout,
 ): Float =
     when (layout) {
-        ContentLayout.NETWORK_CENTER -> 1.2f
+        ContentLayout.NETWORK_CENTER, ContentLayout.MOBILE_CENTER -> 1.2f
         ContentLayout.BATTERY_CENTER -> 1.3f
     }
 
@@ -229,13 +161,14 @@ internal fun mobileTypeScaleDefault(
     when (layout) {
         ContentLayout.NETWORK_CENTER -> MOBILE_TYPE_SIZE_SCALE_DEFAULT
         ContentLayout.BATTERY_CENTER -> 0.8f
+        ContentLayout.MOBILE_CENTER -> 0.85f
     }
 
 internal fun topChargingIconUiScaleDefault(
     layout: ContentLayout,
 ): Float =
     when (layout) {
-        ContentLayout.NETWORK_CENTER -> 1f
+        ContentLayout.NETWORK_CENTER, ContentLayout.MOBILE_CENTER -> 1f
         ContentLayout.BATTERY_CENTER -> 1.1f
     }
 
@@ -295,7 +228,7 @@ internal fun topOffsetYRaw(uiOffset: Float): Float =
     )
 
 internal fun topOffsetYDefault(layout: ContentLayout): Float =
-    if (layout == ContentLayout.NETWORK_CENTER) {
+    if (layout != ContentLayout.BATTERY_CENTER) {
         topOffsetYRaw(3f)
     } else {
         BATTERY_TOP_VERTICAL_OFFSET_DEFAULT

@@ -31,7 +31,7 @@ internal object TopInfoOffsetPolicy {
         layout: ContentLayout,
         rawOffset: Float,
     ): Float =
-        if (layout == ContentLayout.NETWORK_CENTER) {
+        if (layout != ContentLayout.BATTERY_CENTER) {
             rawOffset
         } else {
             BATTERY_TOP_VERTICAL_OFFSET_DEFAULT

@@ -20,6 +20,7 @@ import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import com.chaners.guiyuan.xposed.battery.BatteryTopArcPolicy
 import com.chaners.guiyuan.settings.BatteryAvoidanceMode
+import com.chaners.guiyuan.settings.MOBILE_TYPE_BOTTOM_ZERO_REFERENCE
 import com.chaners.guiyuan.xposed.battery.batteryTopBaseCenterY
 import com.chaners.guiyuan.xposed.battery.batteryTopCenterY
 import com.chaners.guiyuan.xposed.battery.batteryTopOverflowPx
@@ -1814,7 +1815,7 @@ internal class StatusPainter(
         }
 
         if (
-            visual.layout == ContentLayout.NETWORK_CENTER &&
+            visual.layout != ContentLayout.BATTERY_CENTER &&
             readout != null
         ) {
             drawBatteryTopReadout(
@@ -3147,7 +3148,8 @@ internal class StatusPainter(
         return CenteredMobileTypePositionPolicy.translation(
             sourceTop = layout.bounds.top,
             mobileBottom = innerBottom,
-            requested = MOBILE_TYPE_BOTTOM_CENTER_Y - MOBILE_TYPE_CENTER_Y - visual.mobileTypeBottomOffsetY,
+            requested = MOBILE_TYPE_BOTTOM_CENTER_Y - MOBILE_TYPE_CENTER_Y +
+                MOBILE_TYPE_BOTTOM_ZERO_REFERENCE - visual.mobileTypeBottomOffsetY,
             clearance = BATTERY_TOP_RING_VISUAL_CLEARANCE,
         )
     }

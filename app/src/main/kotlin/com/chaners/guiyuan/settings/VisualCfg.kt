@@ -10,7 +10,8 @@ internal enum class ContentLayout(
     val persistedValue: String,
 ) {
     NETWORK_CENTER("network_center"),
-    BATTERY_CENTER("battery_center");
+    BATTERY_CENTER("battery_center"),
+    MOBILE_CENTER("mobile_center");
 
     companion object {
         fun fromPersisted(value: String?): ContentLayout =
@@ -209,9 +210,8 @@ internal data class VisualCfg(
     @SerialName("dualDotStyle")
     val contentStyle: ContentStyle = ContentStyle.DEFAULT,
     val singleRowFlatDots: Boolean = false,
-    val mobileSignalCentered: Boolean = false,
     val batteryAvoidanceMode: BatteryAvoidanceMode = BatteryAvoidanceMode.INDEPENDENT,
-    val mobileTypeBottomOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    val mobileTypeBottomOffsetY: Float = mobileTypeBottomOffsetDefault(layout),
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,
     val showTopReadout: Boolean = topReadoutDefault(layout),
@@ -248,7 +248,7 @@ internal data class VisualCfg(
         BatteryColorOverrides(),
 ) {
     val centeredMobileSignal: Boolean
-        get() = layout == ContentLayout.NETWORK_CENTER && mobileSignalCentered
+        get() = layout == ContentLayout.MOBILE_CENTER
 
     val effectiveContentStyle: ContentStyle
         get() = if (centeredMobileSignal) ContentStyle.DUO else contentStyle
@@ -313,7 +313,7 @@ internal fun VisualCfg.normalized(): VisualCfg =
             mobileTypeBottomOffsetY.finiteIn(
                 NETWORK_TOP_OFFSET_MIN,
                 NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
+                mobileTypeBottomOffsetDefault(layout),
             ),
         duoSignalDotOffsetY =
             duoSignalDotOffsetY.finiteIn(
@@ -362,7 +362,7 @@ internal fun VisualCfg.normalized(): VisualCfg =
             mobileTypeScale.finiteIn(
                 MOBILE_TYPE_SIZE_SCALE_MIN,
                 MOBILE_TYPE_SIZE_SCALE_MAX,
-                MOBILE_TYPE_SIZE_SCALE_DEFAULT,
+                mobileTypeScaleDefault(layout),
             ),
         mobileTypeWeight =
             mobileTypeWeight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX),

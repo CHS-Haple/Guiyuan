@@ -7,20 +7,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-internal const val SHARED_TRANSITIONS_SCHEMA_KEY = "shared_transitions_schema"
-internal const val SHARED_BATTERY_COLORS_SCHEMA_KEY = "shared_battery_colors_schema"
 
 private val visualPreferenceKeys = buildSet {
-    add(SHARED_TRANSITIONS_SCHEMA_KEY)
-    add(SHARED_BATTERY_COLORS_SCHEMA_KEY)
     add(SHARED_CONTENT_STYLE_SCHEMA_KEY)
     add(CONTENT_LAYOUT_KEY)
     add(DUAL_SIGNAL_ENABLED_KEY)
     add(DUAL_PROFILES_INITIALIZED_KEY)
-    add(visualModeKey(true, CONTENT_LAYOUT_KEY))
     addAll(PROFILE_VISUAL_BASE_KEYS)
     addAll(GLOBAL_VISUAL_KEYS)
-    GLOBAL_VISUAL_KEYS.forEach { add(visualModeKey(true, it)) }
     ContentLayout.entries.forEach { layout ->
         PROFILE_VISUAL_BASE_KEYS.forEach { key ->
             add(visualProfileKey(layout, key))
@@ -34,36 +28,7 @@ internal fun isVisualPreferenceKey(key: String?): Boolean =
 
 // A backup owns feature visuals and scheme entries, not the whole preference file.
 internal fun isBackupVisualKey(key: String): Boolean =
-    key in visualPreferenceKeys ||
-        key == BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY ||
-        isBatterySchemeStorageKey(key)
-
-// Rewrite only known old visual keys; remote readers also clamp on read.
-internal fun migrateTextWeightRanges(preferences: SharedPreferences) {
-    val ranges = mapOf(
-        MOBILE_TYPE_WEIGHT_KEY to (MOBILE_TYPE_WEIGHT_MIN..MOBILE_TYPE_WEIGHT_MAX),
-        BATTERY_TOP_TEXT_WEIGHT_KEY to (BATTERY_TOP_TEXT_WEIGHT_MIN..BATTERY_TOP_TEXT_WEIGHT_MAX),
-    )
-    val stored = preferences.all
-    val changes = ranges.flatMap { (baseKey, range) ->
-        val keys = buildList {
-            add(baseKey)
-            ContentLayout.entries.forEach { layout ->
-                add(visualProfileKey(layout, baseKey))
-                add(visualProfileKey(layout, baseKey, dual = true))
-            }
-        }
-        keys.mapNotNull { key ->
-            val previous = stored[key] as? Int ?: return@mapNotNull null
-            val current = previous.coerceIn(range.first, range.last)
-            if (previous != current) key to current else null
-        }
-    }
-    if (changes.isEmpty()) return
-    preferences.edit().apply {
-        changes.forEach { (key, weight) -> putInt(key, weight) }
-    }.apply()
-}
+    key in visualPreferenceKeys || isBatterySchemeStorageKey(key)
 
 internal fun SharedPreferences.editBackupVisuals(): SharedPreferences.Editor =
     edit().also { editor ->
@@ -92,117 +57,29 @@ internal fun SharedPreferences.rollbackBackupVisuals(snapshot: Map<String, Any?>
     return editor.commit()
 }
 
-// Retire the old dual-only layout value. The active layout wins at migration.
-internal fun migrateSharedLayoutIfNeeded(prefs: SharedPreferences) {
-    val legacyKey = visualModeKey(true, CONTENT_LAYOUT_KEY)
-    if (!prefs.contains(legacyKey)) return
+// v1.0.0 stored dot style per SIM mode. Split that released setting into
+// independent layout profiles once. Unreleased Canary settings are not imported.
+internal fun migrateLayoutContentStylesIfNeeded(prefs: SharedPreferences) {
+    if (prefs.getInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 0) >= 3) return
     val editor = prefs.edit()
-    if (prefs.dualSignalEnabled()) {
-        editor.putString(
-            CONTENT_LAYOUT_KEY,
-            ContentLayout.fromPersisted(prefs.getString(legacyKey, null)).persistedValue,
-        )
-    }
-    editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
-        .remove(legacyKey)
-        .apply()
-}
-
-
-// Import both the original per-dual preference and B1718/B1719's global key.
-// A migrated user choice wins, and all obsolete keys are retired atomically.
-internal fun migrateSharedContentStyleIfNeeded(prefs: SharedPreferences) {
-    if (prefs.getInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 0) >= 2 && prefs.contains(CONTENT_STYLE_KEY)) return
-    val legacyDual = visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY)
-    val selected = when {
-        prefs.contains(CONTENT_STYLE_KEY) -> prefs.getString(CONTENT_STYLE_KEY, null)
-        prefs.dualSignalEnabled() && prefs.contains(legacyDual) -> prefs.getString(legacyDual, null)
-        prefs.contains(LEGACY_DUAL_DOT_STYLE_KEY) -> prefs.getString(LEGACY_DUAL_DOT_STYLE_KEY, null)
-        else -> prefs.getString(legacyDual, null)
-    }
-    prefs.edit()
-        .putString(CONTENT_STYLE_KEY, ContentStyle.fromPersisted(selected).persistedValue)
-        .remove(LEGACY_DUAL_DOT_STYLE_KEY)
-        .remove(legacyDual)
-        .putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 2)
-        .apply()
-}
-
-// Show/transition settings use one value for every layout and SIM mode.
-// Keep the current mode on upgrade, then retire the old dual bank.
-internal fun migrateSharedTransitionsIfNeeded(prefs: SharedPreferences) {
-    if (prefs.getInt(SHARED_TRANSITIONS_SCHEMA_KEY, 0) >= 1) return
-    val dual = prefs.dualSignalEnabled()
-    val editor = prefs.edit()
-    for (key in listOf(
-        BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
-        CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
-    )) {
-        val current = visualModeKey(dual, key)
-        val value = when {
-            prefs.contains(current) -> prefs.getBoolean(current, true)
-            prefs.contains(key) -> prefs.getBoolean(key, true)
-            else -> true
+    for (dual in listOf(false, true)) {
+        val releasedKey = visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY)
+        val releasedStyle = ContentStyle.fromPersisted(prefs.getString(releasedKey, null))
+        for (layout in ContentLayout.entries) {
+            val target = visualProfileKey(layout, CONTENT_STYLE_KEY, dual)
+            if (!prefs.contains(target)) editor.putString(target, releasedStyle.persistedValue)
         }
-        editor.putBoolean(key, value)
-            .remove(visualModeKey(true, key))
+        editor.remove(releasedKey)
     }
-    editor.putInt(SHARED_TRANSITIONS_SCHEMA_KEY, 1).apply()
-}
-
-// The currently displayed SIM mode wins once; colors no longer have a dual bank.
-internal fun migrateSharedBatteryColorsIfNeeded(prefs: SharedPreferences) {
-    if (prefs.getInt(SHARED_BATTERY_COLORS_SCHEMA_KEY, 0) >= 1) return
-
-    val dual = prefs.dualSignalEnabled()
-    val stored = prefs.all
-    val editor = prefs.edit()
-    BATTERY_COLOR_KEYS.forEach { key ->
-        val oldDualKey = visualModeKey(true, key)
-        if (dual) {
-            when (val value = stored[oldDualKey]) {
-                is String -> editor.putString(key, value)
-                is Int -> editor.putInt(key, value)
-                null -> editor.remove(key)
-                else -> error("Unexpected saved battery color value")
-            }
-        }
-        editor.remove(oldDualKey)
-    }
-
-    // A prior test build persisted a second applied selection; retire it.
-    val selectedDual = prefs.getString(BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY, null)
-    if (dual && selectedDual != null) {
-        editor.putString(BATTERY_COLOR_SCHEME_ACTIVE_KEY, selectedDual)
-    } else if (dual) {
-        val visual = prefs.readVisualCfg(dual = true)
-        val selected =
-            if (prefs.contains(BATTERY_COLOR_SCHEME_ACTIVE_KEY)) {
-                BatterySchemeRepo(prefs).current().matchingKey(visual)
-            } else {
-                null
-            }
-        val builtIn =
-            if (BatteryColorSlot.entries.all { slot ->
-                    visual.batteryColorModes.modeFor(slot) == BatteryColorMode.PRESET &&
-                        visual.batteryColorOverrides.colorFor(slot) == null
-                }
-            ) BatteryBuiltInColorScheme.fromPreset(visual.batteryColorPreset).key else null
-        (selected ?: builtIn)?.let { editor.putString(BATTERY_COLOR_SCHEME_ACTIVE_KEY, it) }
-    }
-    editor.remove(BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY)
-    editor.putInt(SHARED_BATTERY_COLORS_SCHEMA_KEY, 1).apply()
+    editor.remove(CONTENT_STYLE_KEY)
+        .remove(SINGLE_ROW_FLAT_DOTS_KEY)
+        .putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 3)
+        .apply()
 }
 
 // Migrations must finish before the app mirrors its first runtime snapshot.
 internal fun migrateVisualPrefsIfNeeded(preferences: SharedPreferences) {
-    migrateSharedLayoutIfNeeded(preferences)
-    migrateSharedContentStyleIfNeeded(preferences)
-    migrateSharedTransitionsIfNeeded(preferences)
-    migrateSharedBatteryColorsIfNeeded(preferences)
-    migrateBatteryColorPresetDefaultIfNeeded(preferences)
-    migrateBatteryTopChargingScaleReferenceIfNeeded(preferences)
-    migrateTextWeightRanges(preferences)
+    migrateLayoutContentStylesIfNeeded(preferences)
 }
 
 // Reset visual choices without deleting user-created battery schemes.
@@ -211,7 +88,6 @@ internal fun resetVisualPreferences(
     schemes: BatteryColorSchemeLibrary,
 ) {
     val editor = preferences.edit().clear()
-    editor.putInt(SHARED_BATTERY_COLORS_SCHEMA_KEY, 1)
     writeBatterySchemeLibrary(
         editor,
         schemes.copy(activeSchemeKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY),
@@ -277,9 +153,7 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setContentStyle(style: ContentStyle) {
-        preferences.edit()
-            .putString(CONTENT_STYLE_KEY, style.persistedValue)
-            .apply()
+        preferences.edit().putString(activeProfileKey(CONTENT_STYLE_KEY), style.persistedValue).apply()
     }
 
     fun setBatteryAvoidanceMode(mode: BatteryAvoidanceMode) {
@@ -287,21 +161,17 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setSingleRowFlatDots(enabled: Boolean) {
-        preferences.edit().putBoolean(SINGLE_ROW_FLAT_DOTS_KEY, enabled).apply()
-    }
-
-    fun setMobileSignalCentered(enabled: Boolean) {
-        preferences.edit().putBoolean(MOBILE_SIGNAL_CENTERED_KEY, enabled).apply()
+        preferences.edit().putBoolean(activeProfileKey(SINGLE_ROW_FLAT_DOTS_KEY), enabled).apply()
     }
 
     fun setMobileTypeBottomOffsetY(offset: Float) {
         preferences.edit()
             .putFloat(
-                MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
+                activeProfileKey(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY),
                 offset.finiteIn(
                     NETWORK_TOP_OFFSET_MIN,
                     NETWORK_TOP_OFFSET_MAX,
-                    NETWORK_TOP_OFFSET_DEFAULT,
+                    mobileTypeBottomOffsetDefault(preferences.readLayout()),
                 ),
             ).apply()
     }
@@ -582,13 +452,10 @@ internal class VisualRepo(context: Context) {
         val editor = preferences.editBackupVisuals()
         backup.profiles.filter { !it.dualSignal || backup.dualInitialized }
             .forEach { editor.putVisualCfg(it) }
-        // Old V1 archives may carry separate colors; the active profile wins globally.
         val active = backup.profiles.first { it.dualSignal == backup.dualEnabled }
         editor.putBatteryColors(active)
         editor.putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, active.fillFollowsRetract)
             .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, active.ccTintTransition)
-            .putInt(SHARED_TRANSITIONS_SCHEMA_KEY, 1)
-            .putInt(SHARED_BATTERY_COLORS_SCHEMA_KEY, 1)
         val applied = library.matchingKey(active) ?: library.activeSchemeKey
         writeBatterySchemeLibrary(editor, library.copy(activeSchemeKey = applied))
         val activeLayout = if (backup.dualEnabled) backup.dualLayout else backup.singleLayout
@@ -598,13 +465,8 @@ internal class VisualRepo(context: Context) {
         }
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
         editor.putString(BATTERY_AVOIDANCE_MODE_KEY, active.batteryAvoidanceMode.persistedValue)
-        editor.putString(CONTENT_STYLE_KEY, active.contentStyle.persistedValue)
-            .putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 2)
-            .putBoolean(SINGLE_ROW_FLAT_DOTS_KEY, active.singleRowFlatDots)
-            .putBoolean(MOBILE_SIGNAL_CENTERED_KEY, active.mobileSignalCentered)
-            .putFloat(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, active.mobileTypeBottomOffsetY)
+        editor.putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 3)
         // Restored physical charging scales use the current reference.
-        editor.putInt(BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY, 2)
         return editor.commit()
     }
 
@@ -698,6 +560,17 @@ private fun SharedPreferences.profileInt(
     }
 }
 
+private fun SharedPreferences.profileString(
+    layout: ContentLayout,
+    baseKey: String,
+    defaultValue: String?,
+    dual: Boolean,
+): String? {
+    val profileKey = visualProfileKey(layout, baseKey, dual)
+    return if (contains(profileKey)) getString(profileKey, defaultValue)
+    else getString(baseKey, defaultValue)
+}
+
 internal fun SharedPreferences.readVisualCfg(
     dual: Boolean = dualSignalEnabled(),
     layoutOverride: ContentLayout? = null,
@@ -715,18 +588,14 @@ internal fun SharedPreferences.readVisualCfg(
         layout = layout,
         dualSignal = dual,
         contentStyle = ContentStyle.fromPersisted(
-            getString(CONTENT_STYLE_KEY, null)
-                ?: (if (dual && getInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 0) == 0) {
-                    getString(visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY), null)
-                } else null)
-                ?: getString(LEGACY_DUAL_DOT_STYLE_KEY, null),
+            profileString(layout, CONTENT_STYLE_KEY, null, dual)
+                ?: getString(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY), null),
         ),
-        singleRowFlatDots = getBoolean(SINGLE_ROW_FLAT_DOTS_KEY, false),
+        singleRowFlatDots = flag(SINGLE_ROW_FLAT_DOTS_KEY, false),
         batteryAvoidanceMode = BatteryAvoidanceMode.fromPersisted(
             getString(BATTERY_AVOIDANCE_MODE_KEY, null),
         ),
-        mobileSignalCentered = getBoolean(MOBILE_SIGNAL_CENTERED_KEY, false),
-        mobileTypeBottomOffsetY = getFloat(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
+        mobileTypeBottomOffsetY = size(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, mobileTypeBottomOffsetDefault(layout)),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
         centerFollowsBatteryColor = flag(CENTER_FOLLOWS_BATTERY_COLOR_KEY, false),
         showTopReadout = flag(BATTERY_TOP_READOUT_ENABLED_KEY, topReadoutDefault(layout)),
@@ -816,19 +685,16 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         CONTENT_LAYOUT_KEY,
         layout.persistedValue,
     ).putString(
-        CONTENT_STYLE_KEY,
+        visualProfileKey(layout, CONTENT_STYLE_KEY, normalized.dualSignal),
         normalized.contentStyle.persistedValue,
     ).putString(
         BATTERY_AVOIDANCE_MODE_KEY,
         normalized.batteryAvoidanceMode.persistedValue,
     ).putBoolean(
-        SINGLE_ROW_FLAT_DOTS_KEY,
+        visualProfileKey(layout, SINGLE_ROW_FLAT_DOTS_KEY, normalized.dualSignal),
         normalized.singleRowFlatDots,
-    ).putBoolean(
-        MOBILE_SIGNAL_CENTERED_KEY,
-        normalized.mobileSignalCentered,
     ).putFloat(
-        MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
+        visualProfileKey(layout, MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, normalized.dualSignal),
         normalized.mobileTypeBottomOffsetY,
     ).putBoolean(
         visualProfileKey(layout, MOBILE_FOLLOWS_BATTERY_COLOR_KEY, normalized.dualSignal),

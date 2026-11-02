@@ -220,6 +220,7 @@ internal fun FeaturesScreen(
         listOf(
             stringResource(R.string.content_layout_network_center),
             stringResource(R.string.content_layout_battery_center),
+            stringResource(R.string.content_layout_mobile_center),
         )
     val contentStyles = listOf(
         stringResource(R.string.dual_dot_style_default),
@@ -456,7 +457,13 @@ internal fun FeaturesScreen(
                         selectedIndex = visual.layout.ordinal,
                         title = stringResource(R.string.content_layout_title),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_dashboard, featureCfg.enabled) },
-                        summary = stringResource(R.string.content_layout_summary),
+                        summary = stringResource(
+                            when (visual.layout) {
+                                ContentLayout.NETWORK_CENTER -> R.string.content_layout_network_center_summary
+                                ContentLayout.BATTERY_CENTER -> R.string.content_layout_battery_center_summary
+                                ContentLayout.MOBILE_CENTER -> R.string.content_layout_mobile_center_summary
+                            },
+                        ),
                         showValue = true,
                         enabled = featureCfg.enabled,
                         onSelectedIndexChange = { index ->
@@ -504,22 +511,6 @@ internal fun FeaturesScreen(
                         checked = visual.singleRowFlatDots,
                         enabled = featureCfg.enabled,
                         onCheckedChange = visualRepo::setSingleRowFlatDots,
-                    )
-                }
-                if (visual.layout == ContentLayout.NETWORK_CENTER &&
-                    search.matches(R.string.mobile_signal_centered_title)) {
-                    SwitchPreference(
-                        title = stringResource(R.string.mobile_signal_centered_title),
-                        summary = stringResource(R.string.mobile_signal_centered_summary),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                R.drawable.ic_material_symbol_signal_cellular_alt,
-                                featureCfg.enabled,
-                            )
-                        },
-                        checked = visual.mobileSignalCentered,
-                        enabled = featureCfg.enabled,
-                        onCheckedChange = visualRepo::setMobileSignalCentered,
                     )
                 }
                 if (search.matches(R.string.dual_signal_title) ||

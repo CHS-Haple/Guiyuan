@@ -69,7 +69,6 @@ internal object FeatureSearchIds {
         R.string.dual_signal_title,
         R.string.dual_dot_style_title,
         R.string.single_row_flat_dots,
-        R.string.mobile_signal_centered_title,
         R.string.mobile_type_bottom_offset,
         R.string.signal_dot_vertical_offset,
         R.string.combined_size,
@@ -237,7 +236,10 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
     R.string.aod_combined_status_title -> listOf("息屏显示", "熄屏显示", "常亮显示", "AOD")
     R.string.control_center_tint_transition -> listOf("控制中心变色", "下拉颜色过渡")
     R.string.battery_fill_follow_retract -> listOf("电池段收口", "电量环回收", "电量段动画")
-    R.string.content_layout_title -> listOf("排列", "网络居中", "电量居中")
+    R.string.content_layout_title -> listOf(
+        "排列", "网络居中", "网络信息居中", "电量居中",
+        "移动信号居中", "信号点居中", "网络制式下方", "三种布局",
+    )
     R.string.dual_signal_title -> listOf("双卡", "双 SIM", "双卡信号", "单排信号", "单卡显示")
     R.string.dual_dot_style_title -> listOf("双卡样式", "Duo", "八点")
     R.string.signal_dot_vertical_offset -> listOf("双卡偏移", "双排位置", "双排上下偏移")

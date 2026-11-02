@@ -27,9 +27,13 @@
     <string name="section_battery">Battery &amp; charging</string>
     <string name="section_management">Configuration management</string>
     <string name="content_layout_title">Content layout</string>
-    <string name="content_layout_summary">Each layout remembers its own settings</string>
-    <string name="content_layout_network_center">Network centered</string>
+    <string name="content_layout_summary">Each of the three layouts remembers its settings</string>
+    <string name="content_layout_network_center">Network info centered</string>
     <string name="content_layout_battery_center">Battery centered</string>
+    <string name="content_layout_mobile_center">Signal dots centered</string>
+    <string name="content_layout_network_center_summary">Wi-Fi and network type at center, signal dots below</string>
+    <string name="content_layout_battery_center_summary">Battery level at center, network information above</string>
+    <string name="content_layout_mobile_center_summary">Mobile signal dots at center, network type below; settings are remembered separately</string>
     <string name="battery_charging_icon">Show charging icon</string>
     <string name="battery_charging_icon_summary">Use the native HyperOS charging icon for the current charging state</string>
     <string name="battery_text_follow_battery_color">Match battery number color to ring</string>

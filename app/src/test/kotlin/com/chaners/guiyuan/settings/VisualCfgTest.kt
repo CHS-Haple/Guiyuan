@@ -120,43 +120,30 @@ class VisualCfgTest {
     }
 
     @Test
-    fun centeredMobileSignalForcesEffectiveDuoWithoutChangingSavedStyle() {
-        val saved = VisualCfg(contentStyle = ContentStyle.DEFAULT, mobileSignalCentered = true)
-        assertEquals(ContentStyle.DEFAULT, saved.contentStyle)
-        assertEquals(ContentStyle.DUO, saved.effectiveContentStyle)
-        assertEquals(true, saved.centeredMobileSignal)
-        val preserved = saved.copy(defaultSignalDotOffsetY = 3f, duoSignalDotOffsetY = -4f)
-        assertEquals(3f, preserved.signalDotOffsetY, 0f)
-        assertEquals(-4f, preserved.effectiveSignalDotOffsetY, 0f)
-        assertEquals(3f, preserved.copy(mobileSignalCentered = false).effectiveSignalDotOffsetY, 0f)
-        assertEquals(ContentStyle.DEFAULT, saved.copy(mobileSignalCentered = false).effectiveContentStyle)
-        val battery = saved.copy(layout = ContentLayout.BATTERY_CENTER)
-        assertEquals(false, battery.centeredMobileSignal)
-        assertEquals(ContentStyle.DEFAULT, battery.effectiveContentStyle)
-        assertEquals(true, battery.mobileSignalCentered)
-        assertEquals(0f, saved.mobileTypeBottomOffsetY, 0f)
+    fun mobileCenteredIsAnIndependentLayoutWithOwnDefaults() {
+        val centered = VisualCfg(layout = ContentLayout.MOBILE_CENTER)
+        assertTrue(centered.centeredMobileSignal)
+        assertEquals(ContentStyle.DUO, centered.effectiveContentStyle)
+        assertEquals(ContentStyle.DEFAULT, centered.contentStyle)
+        assertEquals(0.85f, centered.mobileTypeScale, 0f)
+        assertEquals(-3f, centered.mobileTypeBottomOffsetY, 0f)
+        assertEquals(ContentStyle.DEFAULT, centered.effectiveSingleRowStyle)
+        assertEquals(false, centered.copy(layout = ContentLayout.NETWORK_CENTER).centeredMobileSignal)
         assertEquals(NETWORK_TOP_OFFSET_MAX,
-            saved.copy(mobileTypeBottomOffsetY = 99f).normalized().mobileTypeBottomOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_DEFAULT,
-            saved.copy(mobileTypeBottomOffsetY = Float.NaN).normalized().mobileTypeBottomOffsetY, 0f)
+            centered.copy(mobileTypeBottomOffsetY = 99f).normalized().mobileTypeBottomOffsetY, 0f)
+        assertEquals(-3f,
+            centered.copy(mobileTypeBottomOffsetY = Float.NaN).normalized().mobileTypeBottomOffsetY, 0f)
     }
 
     @Test
-    fun singleRowFlatToggleOnlyChangesLowerDuoSingleRow() {
-        val lower = VisualCfg(
-            contentStyle = ContentStyle.DUO,
-            mobileSignalCentered = false,
-            singleRowFlatDots = false,
-        )
-        assertEquals(ContentStyle.DEFAULT, lower.effectiveSingleRowStyle)
-        assertEquals(ContentStyle.DUO, lower.copy(singleRowFlatDots = true).effectiveSingleRowStyle)
-        assertEquals(ContentStyle.DEFAULT,
-            lower.copy(contentStyle = ContentStyle.DEFAULT, singleRowFlatDots = true).effectiveSingleRowStyle)
-        val centered = lower.copy(mobileSignalCentered = true, singleRowFlatDots = true)
+    fun optionalSingleRowStyleDoesNotOverrideCenteredSignalDots() {
+        val lower = VisualCfg(contentStyle = ContentStyle.DUO, singleRowFlatDots = true)
+        assertEquals(ContentStyle.DUO, lower.effectiveSingleRowStyle)
+        val centered = lower.copy(layout = ContentLayout.MOBILE_CENTER)
         assertEquals(ContentStyle.DUO, centered.effectiveContentStyle)
         assertEquals(ContentStyle.DEFAULT, centered.effectiveSingleRowStyle)
         assertEquals(ContentStyle.DUO,
-            centered.copy(mobileSignalCentered = false).effectiveSingleRowStyle)
+            centered.copy(layout = ContentLayout.NETWORK_CENTER).effectiveSingleRowStyle)
     }
 
     @Test
