@@ -8,8 +8,11 @@ internal const val CONTENT_LAYOUT_KEY = "content_layout"
 internal const val DUAL_SIGNAL_ENABLED_KEY = "dual_signal_enabled"
 internal const val DUAL_PROFILES_INITIALIZED_KEY = "dual_profiles_initialized"
 internal const val DUAL_DOT_STYLE_KEY = "dual_dot_style"
+internal const val SHARED_CONTENT_STYLE_SCHEMA_KEY = "shared_content_style_schema"
 internal const val DUAL_DEFAULT_OFFSET_Y_KEY = "dual_default_offset_y"
 internal const val DUAL_DUO_OFFSET_Y_KEY = "dual_duo_offset_y"
+internal const val MOBILE_SIGNAL_CENTERED_KEY = "mobile_signal_centered"
+internal const val MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY = "mobile_type_bottom_offset_y"
 internal const val MOBILE_FOLLOWS_BATTERY_COLOR_KEY = "mobile_follows_battery_color"
 internal const val CENTER_FOLLOWS_BATTERY_COLOR_KEY = "center_follows_battery_color"
 internal const val BATTERY_TOP_READOUT_ENABLED_KEY = "battery_top_readout_enabled"
@@ -89,6 +92,8 @@ internal val BATTERY_COLOR_KEYS =
 internal val GLOBAL_VISUAL_KEYS =
     setOf(
         DUAL_DOT_STYLE_KEY,
+        MOBILE_SIGNAL_CENTERED_KEY,
+        MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
         BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
         CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
     ) + BATTERY_COLOR_KEYS

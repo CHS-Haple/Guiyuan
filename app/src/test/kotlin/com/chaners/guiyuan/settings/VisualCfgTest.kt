@@ -108,6 +108,24 @@ class VisualCfgTest {
     }
 
     @Test
+    fun centeredMobileSignalForcesEffectiveDuoWithoutChangingSavedStyle() {
+        val saved = VisualCfg(dualDotStyle = DualDotStyle.DEFAULT, mobileSignalCentered = true)
+        assertEquals(DualDotStyle.DEFAULT, saved.dualDotStyle)
+        assertEquals(DualDotStyle.DUO, saved.effectiveContentStyle)
+        assertEquals(true, saved.centeredMobileSignal)
+        assertEquals(DualDotStyle.DEFAULT, saved.copy(mobileSignalCentered = false).effectiveContentStyle)
+        val battery = saved.copy(layout = ContentLayout.BATTERY_CENTER)
+        assertEquals(false, battery.centeredMobileSignal)
+        assertEquals(DualDotStyle.DEFAULT, battery.effectiveContentStyle)
+        assertEquals(true, battery.mobileSignalCentered)
+        assertEquals(0f, saved.mobileTypeBottomOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX,
+            saved.copy(mobileTypeBottomOffsetY = 99f).normalized().mobileTypeBottomOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_DEFAULT,
+            saved.copy(mobileTypeBottomOffsetY = Float.NaN).normalized().mobileTypeBottomOffsetY, 0f)
+    }
+
+    @Test
     fun nonFiniteGeometryFallsBackToLayoutDefaults() {
         for (invalid in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) {
             val raw =

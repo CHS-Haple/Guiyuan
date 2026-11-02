@@ -145,6 +145,24 @@ class ConfigBackupTest {
         })
     }
 
+    @Test fun centeredMobileFieldsDefaultForOlderV1Archives() {
+        val base = sample()
+        val source = base.copy(visual = base.visual.copy(profiles =
+            base.visual.profiles.map { cfg ->
+                cfg.copy(mobileSignalCentered = true, mobileTypeBottomOffsetY = 6f)
+            },
+        ))
+        val updated = ConfigBackupFormat.decode(ConfigBackupFormat.encode(source))
+        assertTrue(updated.visual.profiles.all { it.mobileSignalCentered })
+        assertTrue(updated.visual.profiles.all { it.mobileTypeBottomOffsetY == 6f })
+        val legacy = ConfigBackupFormat.encode(source)
+            .replace(",\"mobileSignalCentered\":true", "")
+            .replace(",\"mobileTypeBottomOffsetY\":6.0", "")
+        val restored = ConfigBackupFormat.decode(legacy)
+        assertTrue(restored.visual.profiles.all { !it.mobileSignalCentered })
+        assertTrue(restored.visual.profiles.all { it.mobileTypeBottomOffsetY == 0f })
+    }
+
     @Test fun modeWideDuoStyleMustAgreeAcrossLayouts() {
         val source = sample()
         val valid = source.copy(visual = source.visual.copy(profiles =
