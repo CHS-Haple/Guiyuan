@@ -3519,7 +3519,8 @@ internal class StatusPainter(
                         targetAxisRatio = targetHeightRatio,
                         outerScale = outerScale,
                     ),
-                dotDiameter = geometry.dualMobileDotRadius * 2f,
+                dotDiameter = geometry.dualMobileDotRadius * 2f *
+                    (if (centered) geometry.centeredScale(true) else 1f),
             )
             for ((index, targets) in listOf(top, bottom).withIndex()) {
                 val shapes = targets.map { rect ->
