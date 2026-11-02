@@ -171,6 +171,7 @@ internal object ConfigBackupFormat {
             val first = sameMode.first()
             sameMode.all { cfg ->
                 cfg.contentStyle == first.contentStyle &&
+                    cfg.singleRowFlatDots == first.singleRowFlatDots &&
                     cfg.fillFollowsRetract == first.fillFollowsRetract &&
                     cfg.ccTintTransition == first.ccTintTransition &&
                     cfg.batteryColorPreset == first.batteryColorPreset &&
