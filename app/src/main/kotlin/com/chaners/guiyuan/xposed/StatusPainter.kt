@@ -1489,6 +1489,7 @@ internal class StatusPainter(
         ringStroke: Float,
         startDegrees: Float = BATTERY_START_DEGREES,
         maxSweep: Float = BATTERY_MAX_SWEEP,
+        visualClearance: Float = BATTERY_TOP_RING_VISUAL_CLEARANCE,
     ): BatteryTopArcPolicy.Gap {
         // Preserve disconnected visible shapes (notably Wi-Fi arcs) instead of
         // reserving the empty corners of their union rectangle.
@@ -1505,7 +1506,7 @@ internal class StatusPainter(
                         ringCenterY = batteryRing.centerY(),
                         ringRadius = batteryRing.width() / 2f,
                         ringStroke = ringStroke,
-                        visualClearance = BATTERY_TOP_RING_VISUAL_CLEARANCE,
+                        visualClearance = visualClearance,
                         startDegrees = startDegrees,
                         maxSweep = maxSweep,
                     )
@@ -1647,13 +1648,19 @@ internal class StatusPainter(
                 gapSweepDegrees = gap.sweepDegrees,
             )
         }
-        fun halfGap(avoidance: TopSlotAvoidance?, center: Float, start: Float): Float {
+        fun halfGap(
+            avoidance: TopSlotAvoidance?,
+            center: Float,
+            start: Float,
+            clearance: Float = BATTERY_TOP_RING_VISUAL_CLEARANCE,
+        ): Float {
             if (avoidance == null) return 0f
             val gap = resolveBatteryTopGap(
                 avoidance = avoidance,
                 ringStroke = outerGeometry.ringStroke,
                 startDegrees = start,
                 maxSweep = 180f,
+                visualClearance = clearance,
             )
             if (gap.sweepDegrees <= 0f) return 0f
             val half = gap.sweepDegrees / 2f
@@ -1677,6 +1684,11 @@ internal class StatusPainter(
             ),
             center = 90f,
             start = 0f,
+            clearance = if (
+                visual.centeredMobileSignal && !model.mobileUnavailableMark &&
+                (model.centerIndicator is CenterIndicator.MobileType ||
+                    previousCenterIndicator is CenterIndicator.MobileType)
+            ) BATTERY_BOTTOM_RING_VISUAL_CLEARANCE else BATTERY_TOP_RING_VISUAL_CLEARANCE,
         )
         val shared = if (visual.batteryAvoidanceMode == BatteryAvoidanceMode.SYMMETRIC) {
             maxOf(topHalf, bottomHalf)
@@ -4209,6 +4221,7 @@ internal class StatusPainter(
         const val BATTERY_TOP_CHARGING_ICON_SIZE = 18f
         const val BATTERY_TOP_ICON_TEXT_GAP = 1f
         const val BATTERY_TOP_RING_VISUAL_CLEARANCE = 2f
+        const val BATTERY_BOTTOM_RING_VISUAL_CLEARANCE = 4f
         const val BATTERY_TOP_DEFAULT_OPTICAL_RISE = 1.5f
         const val BATTERY_TOP_CONTENT_CENTER_Y = 16f
         const val TOP_SLOT_CENTER_Y =

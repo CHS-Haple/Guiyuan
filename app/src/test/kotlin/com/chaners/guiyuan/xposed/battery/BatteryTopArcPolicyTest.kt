@@ -6,6 +6,41 @@ import org.junit.Test
 
 class BatteryTopArcPolicyTest {
     @Test
+    fun lowerMobileTextWithAdditionalOpticalClearanceWidensOnlyItsGap() {
+        fun lower(clearance: Float) = BatteryTopArcPolicy.resolveGap(
+            contentLeft = 48f,
+            contentTop = 94f,
+            contentRight = 72f,
+            contentBottom = 112f,
+            ringCenterX = 60f,
+            ringCenterY = 58f,
+            ringRadius = 50f,
+            ringStroke = 4f,
+            visualClearance = clearance,
+            startDegrees = 0f,
+            maxSweep = 180f,
+        )
+        val legacyClearance = lower(2f)
+        val increasedClearance = lower(4f)
+        assertTrue(legacyClearance.sweepDegrees > 0f)
+        assertTrue(increasedClearance.sweepDegrees > legacyClearance.sweepDegrees)
+        val mirroredUpper = BatteryTopArcPolicy.resolveGap(
+            contentLeft = 48f,
+            contentTop = 4f,
+            contentRight = 72f,
+            contentBottom = 22f,
+            ringCenterX = 60f,
+            ringCenterY = 58f,
+            ringRadius = 50f,
+            ringStroke = 4f,
+            visualClearance = 4f,
+            startDegrees = 180f,
+            maxSweep = 180f,
+        )
+        assertEquals(mirroredUpper.sweepDegrees, increasedClearance.sweepDegrees, 0.0002f)
+    }
+
+    @Test
     fun fullRingIndependentAndSymmetricGapsUseMeasuredOpticalAngles() {
         val independent = BatteryTopArcPolicy.drawableRingArcs(22f, 34f)
         assertEquals(
