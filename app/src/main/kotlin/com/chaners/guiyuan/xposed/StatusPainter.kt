@@ -668,24 +668,18 @@ internal class StatusPainter(
                         component = TransitionComponent.CENTER,
                         sourceBounds =
                             toViewBounds(
-                                if (visual.centeredMobileSignal && !model.mobileUnavailableMark) {
-                                    shiftBoundsY(
-                                        resolveMobileTypeLayout(
-                                            indicator = model.centerIndicator,
-                                            scale = scale,
-                                            geometry = centerGeometry,
-                                            scaleWithCanvas = false,
-                                        ).bounds,
-                                        MOBILE_TYPE_BOTTOM_CENTER_Y - MOBILE_TYPE_CENTER_Y -
-                                            visual.mobileTypeBottomOffsetY,
-                                    )
-                                } else {
-                                    resolveMobileTypeLayout(
-                                        indicator = model.centerIndicator,
-                                        scale = scale,
-                                        geometry = centerGeometry,
-                                        scaleWithCanvas = false,
-                                    ).bounds
+                                resolveMobileTypeLayout(
+                                    indicator = model.centerIndicator,
+                                    scale = scale,
+                                    geometry = centerGeometry,
+                                    scaleWithCanvas = false,
+                                ).let { layout ->
+                                    if (visual.centeredMobileSignal && !model.mobileUnavailableMark) {
+                                        shiftBoundsY(
+                                            layout.bounds,
+                                            mobileTypeBottomTranslation(visual, layout),
+                                        )
+                                    } else layout.bounds
                                 },
                             ),
                         target =
@@ -2349,10 +2343,6 @@ internal class StatusPainter(
             CENTER_TRANSITION_PIVOT_X,
             CENTER_TRANSITION_PIVOT_Y,
         )
-        if (mobileTypeBottom && indicator is CenterIndicator.MobileType) {
-            canvas.translate(0f, MOBILE_TYPE_BOTTOM_CENTER_Y - MOBILE_TYPE_CENTER_Y -
-                visual.mobileTypeBottomOffsetY)
-        }
         // Match StatusBarIconView's iconAppearAmount contract:
         // center content scales with appearance progress while tint alpha remains native.
         val animatedOpacity = opacity
@@ -2379,6 +2369,7 @@ internal class StatusPainter(
                     scale = scale,
                     geometry = geometry,
                     scaleWithCanvas = scaleMobileTypeWithCanvas,
+                    bottomVisual = if (mobileTypeBottom) visual else null,
                     targetStyle = mobileTypeTargetStyle,
                     transitionProgress = mobileTypeTransitionProgress,
                     nativeTargetAvailable = mobileTypeNativeTarget,
@@ -2963,6 +2954,7 @@ internal class StatusPainter(
         scale: Float,
         geometry: CenterGeometry.Resolved,
         scaleWithCanvas: Boolean,
+        bottomVisual: VisualCfg? = null,
         targetStyle: TransitionTextStyle? = null,
         transitionProgress: Float = 0f,
         nativeTargetAvailable: Boolean = false,
@@ -2977,6 +2969,10 @@ internal class StatusPainter(
                 transitionProgress = transitionProgress,
                 nativeTargetAvailable = nativeTargetAvailable,
             )
+        val textSave = if (bottomVisual != null) canvas.save() else null
+        if (bottomVisual != null) {
+            canvas.translate(0f, mobileTypeBottomTranslation(bottomVisual, layout))
+        }
 
         // Draw with the text style already used to measure this layout.
         mobileTypePaint.color = tint
@@ -3006,6 +3002,19 @@ internal class StatusPainter(
                 mobileTypePaint,
             )
         }
+        if (textSave != null) canvas.restoreToCount(textSave)
+    }
+
+    private fun mobileTypeBottomTranslation(visual: VisualCfg, layout: MobileTypeLayout): Float {
+        val innerBottom = centeredMobileBounds(resolveOuterGeometry(visual.outerWeightScale), true).bottom
+        return CenteredMobileTypePositionPolicy.translation(
+            sourceTop = layout.bounds.top,
+            sourceBottom = layout.bounds.bottom,
+            mobileBottom = innerBottom,
+            requested = MOBILE_TYPE_BOTTOM_CENTER_Y - MOBILE_TYPE_CENTER_Y - visual.mobileTypeBottomOffsetY,
+            canvasBottom = CANONICAL_SIZE,
+            clearance = BATTERY_TOP_RING_VISUAL_CLEARANCE,
+        )
     }
 
     private fun resolveMobileTypeLayout(
