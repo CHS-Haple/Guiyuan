@@ -15,7 +15,7 @@ import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.DualDotStyle
+import com.chaners.guiyuan.settings.ContentStyle
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.battery.BatteryArcSegments
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
@@ -3346,7 +3346,7 @@ internal class StatusPainter(
     private fun dualMobileRowBounds(
         geometry: OuterGeometry.Resolved,
         row: Int,
-        style: DualDotStyle,
+        style: ContentStyle,
         mobileOffsetY: Float,
     ): TransitionBounds {
         val radius = geometry.dualMobileDotRadius
@@ -3363,7 +3363,7 @@ internal class StatusPainter(
 
     private fun dualMobileTransitionBounds(
         geometry: OuterGeometry.Resolved,
-        style: DualDotStyle,
+        style: ContentStyle,
         mobileOffsetY: Float,
     ): TransitionBounds {
         val radius = geometry.dualMobileDotRadius
@@ -3442,7 +3442,7 @@ internal class StatusPainter(
     private fun resolveDualMobileSignalTransitionLayout(
         geometry: OuterGeometry.Resolved,
         row: Int,
-        style: DualDotStyle,
+        style: ContentStyle,
         mobileOffsetY: Float,
     ): MobileSignalTransitionLayout {
         val bounds = dualMobileRowBounds(geometry, row, style, mobileOffsetY)
@@ -3478,7 +3478,7 @@ internal class StatusPainter(
         targetBars: List<TransitionNormalizedBounds>?,
         aggregateRows: ParticipantVisualSnapshot.DualMobileRows?,
         row: Int?,
-        style: DualDotStyle,
+        style: ContentStyle,
         mobileOffsetY: Float,
         centered: Boolean = false,
     ) {
@@ -3811,7 +3811,7 @@ internal class StatusPainter(
         tint: Int,
         opacity: Float,
         geometry: OuterGeometry.Resolved,
-        style: DualDotStyle,
+        style: ContentStyle,
         mobileOffsetY: Float,
     ) {
         val dualLevels = model.dualMobileLevels
