@@ -163,6 +163,17 @@ class ConfigBackupTest {
         assertTrue(restored.visual.profiles.all { it.mobileTypeBottomOffsetY == 0f })
     }
 
+    @Test fun optionalFlatSingleRowRoundTripsAndLegacyArchivesDefaultToArc() {
+        val base = sample()
+        val enabled = base.copy(visual = base.visual.copy(
+            profiles = base.visual.profiles.map { it.copy(singleRowFlatDots = true) },
+        ))
+        val json = ConfigBackupFormat.encode(enabled)
+        assertEquals(enabled, ConfigBackupFormat.decode(json))
+        val legacy = json.replace(",\\\"singleRowFlatDots\\\":true", "")
+        assertTrue(ConfigBackupFormat.decode(legacy).visual.profiles.all { !it.singleRowFlatDots })
+    }
+
     @Test fun modeWideDuoStyleMustAgreeAcrossLayouts() {
         val source = sample()
         val valid = source.copy(visual = source.visual.copy(profiles =
