@@ -13,6 +13,7 @@ internal const val SHARED_BATTERY_COLORS_SCHEMA_KEY = "shared_battery_colors_sch
 private val visualPreferenceKeys = buildSet {
     add(SHARED_TRANSITIONS_SCHEMA_KEY)
     add(SHARED_BATTERY_COLORS_SCHEMA_KEY)
+    add(SHARED_CONTENT_STYLE_SCHEMA_KEY)
     add(CONTENT_LAYOUT_KEY)
     add(DUAL_SIGNAL_ENABLED_KEY)
     add(DUAL_PROFILES_INITIALIZED_KEY)
@@ -108,6 +109,22 @@ internal fun migrateSharedLayoutIfNeeded(prefs: SharedPreferences) {
 }
 
 
+// Content style is shared across SIM modes; preserve the current selection.
+internal fun migrateSharedContentStyleIfNeeded(prefs: SharedPreferences) {
+    if (prefs.getInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 0) >= 1) return
+    val legacyDual = visualModeKey(true, DUAL_DOT_STYLE_KEY)
+    val selected = when {
+        prefs.dualSignalEnabled() && prefs.contains(legacyDual) -> prefs.getString(legacyDual, null)
+        prefs.contains(DUAL_DOT_STYLE_KEY) -> prefs.getString(DUAL_DOT_STYLE_KEY, null)
+        else -> prefs.getString(legacyDual, null)
+    }
+    prefs.edit()
+        .putString(DUAL_DOT_STYLE_KEY, DualDotStyle.fromPersisted(selected).persistedValue)
+        .remove(legacyDual)
+        .putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 1)
+        .apply()
+}
+
 // Show/transition settings use one value for every layout and SIM mode.
 // Keep the current mode on upgrade, then retire the old dual bank.
 internal fun migrateSharedTransitionsIfNeeded(prefs: SharedPreferences) {
@@ -177,6 +194,7 @@ internal fun migrateSharedBatteryColorsIfNeeded(prefs: SharedPreferences) {
 // Migrations must finish before the app mirrors its first runtime snapshot.
 internal fun migrateVisualPrefsIfNeeded(preferences: SharedPreferences) {
     migrateSharedLayoutIfNeeded(preferences)
+    migrateSharedContentStyleIfNeeded(preferences)
     migrateSharedTransitionsIfNeeded(preferences)
     migrateSharedBatteryColorsIfNeeded(preferences)
     migrateBatteryColorPresetDefaultIfNeeded(preferences)
@@ -257,7 +275,7 @@ internal class VisualRepo(context: Context) {
 
     fun setDualDotStyle(style: DualDotStyle) {
         preferences.edit()
-            .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), style.persistedValue)
+            .putString(DUAL_DOT_STYLE_KEY, style.persistedValue)
             .apply()
     }
 
@@ -553,6 +571,8 @@ internal class VisualRepo(context: Context) {
             editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
         }
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
+        editor.putString(DUAL_DOT_STYLE_KEY, active.dualDotStyle.persistedValue)
+            .putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 1)
         // Restored physical charging scales use the current reference.
         editor.putInt(BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY, 2)
         return editor.commit()
@@ -664,9 +684,7 @@ internal fun SharedPreferences.readVisualCfg(
     return VisualCfg(
         layout = layout,
         dualSignal = dual,
-        dualDotStyle = DualDotStyle.fromPersisted(
-            getString(visualModeKey(dual, DUAL_DOT_STYLE_KEY), null),
-        ),
+        dualDotStyle = DualDotStyle.fromPersisted(getString(DUAL_DOT_STYLE_KEY, null)),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
         centerFollowsBatteryColor = flag(CENTER_FOLLOWS_BATTERY_COLOR_KEY, false),
         showTopReadout = flag(BATTERY_TOP_READOUT_ENABLED_KEY, topReadoutDefault(layout)),
@@ -756,7 +774,7 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         CONTENT_LAYOUT_KEY,
         layout.persistedValue,
     ).putString(
-        visualModeKey(normalized.dualSignal, DUAL_DOT_STYLE_KEY),
+        DUAL_DOT_STYLE_KEY,
         normalized.dualDotStyle.persistedValue,
     ).putBoolean(
         visualProfileKey(layout, MOBILE_FOLLOWS_BATTERY_COLOR_KEY, normalized.dualSignal),
