@@ -172,6 +172,14 @@ class ConfigBackupTest {
         assertEquals(enabled, ConfigBackupFormat.decode(json))
         val legacy = json.replace(",\"singleRowFlatDots\":true", "")
         assertTrue(ConfigBackupFormat.decode(legacy).visual.profiles.all { !it.singleRowFlatDots })
+        val conflicting = enabled.copy(visual = enabled.visual.copy(
+            profiles = enabled.visual.profiles.mapIndexed { index, cfg ->
+                if (index == 1) cfg.copy(singleRowFlatDots = false) else cfg
+            },
+        ))
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.validate(conflicting)
+        }
     }
 
     @Test fun modeWideDuoStyleMustAgreeAcrossLayouts() {
