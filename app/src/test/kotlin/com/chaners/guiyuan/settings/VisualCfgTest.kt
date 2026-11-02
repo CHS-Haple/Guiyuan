@@ -179,7 +179,7 @@ class VisualCfgTest {
             assertEquals(WIFI_SIZE_SCALE_DEFAULT, normalized.wifiScale, 0f)
             assertEquals(AIRPLANE_SIZE_SCALE_DEFAULT, normalized.airplaneScale, 0f)
             assertEquals(NO_SIM_SIZE_SCALE_DEFAULT, normalized.noSimScale, 0f)
-            assertEquals(MOBILE_TYPE_SIZE_SCALE_DEFAULT, normalized.mobileTypeScale, 0f)
+            assertEquals(mobileTypeScaleDefault(raw.layout), normalized.mobileTypeScale, 0f)
         }
     }
 
