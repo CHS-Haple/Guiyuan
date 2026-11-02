@@ -224,6 +224,7 @@ internal class StatusPainter(
             nativeTransform = nativeTransform,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
             visual = visual,
+            mobileTypeBottom = visual.centeredMobileSignal && !model.mobileUnavailableMark,
         )
         if (visual.centeredMobileSignal &&
             model.centerIndicator is CenterIndicator.MobileType &&
@@ -415,6 +416,7 @@ internal class StatusPainter(
                     nativeTransform = nativeTransform,
                     scaleMobileTypeWithCanvas = false,
                     visual = visual,
+                    mobileTypeBottom = visual.centeredMobileSignal && !model.mobileUnavailableMark,
                     mobileTypeTargetStyle = centerTargetTextStyle,
                     mobileTypeTransitionProgress = motion,
                     mobileTypeNativeTarget = centerNativeTarget,
@@ -2269,6 +2271,7 @@ internal class StatusPainter(
         nativeTransform: NativeRenderTransform,
         scaleMobileTypeWithCanvas: Boolean,
         visual: VisualCfg,
+        mobileTypeBottom: Boolean,
     ) {
         if (previous == null || previous == current) {
             drawCenterIndicator(
@@ -2282,6 +2285,7 @@ internal class StatusPainter(
                 nativeTransform = nativeTransform,
                 scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
                 visual = visual,
+                mobileTypeBottom = mobileTypeBottom,
             )
             return
         }
@@ -2297,6 +2301,7 @@ internal class StatusPainter(
             nativeTransform = nativeTransform,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
             visual = visual,
+            mobileTypeBottom = mobileTypeBottom,
         )
         drawCenterIndicator(
             canvas = canvas,
@@ -2309,6 +2314,7 @@ internal class StatusPainter(
             nativeTransform = nativeTransform,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
             visual = visual,
+            mobileTypeBottom = mobileTypeBottom,
         )
     }
 
@@ -2323,6 +2329,7 @@ internal class StatusPainter(
         nativeTransform: NativeRenderTransform,
         scaleMobileTypeWithCanvas: Boolean,
         visual: VisualCfg,
+        mobileTypeBottom: Boolean = visual.centeredMobileSignal,
         mobileTypeTargetStyle: TransitionTextStyle? = null,
         mobileTypeTransitionProgress: Float = 0f,
         mobileTypeNativeTarget: Boolean = false,
@@ -2342,7 +2349,7 @@ internal class StatusPainter(
             CENTER_TRANSITION_PIVOT_X,
             CENTER_TRANSITION_PIVOT_Y,
         )
-        if (visual.centeredMobileSignal && indicator is CenterIndicator.MobileType) {
+        if (mobileTypeBottom && indicator is CenterIndicator.MobileType) {
             canvas.translate(0f, MOBILE_TYPE_BOTTOM_CENTER_Y - MOBILE_TYPE_CENTER_Y -
                 visual.mobileTypeBottomOffsetY)
         }
