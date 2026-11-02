@@ -3282,8 +3282,8 @@ internal class StatusPainter(
     private fun centeredMobileRowY(geometry: OuterGeometry.Resolved, row: Int?): Float =
         CENTER_TRANSITION_PIVOT_Y +
             when (row) {
-                0 -> -geometry.dualRowGap / 2f
-                1 -> geometry.dualRowGap / 2f
+                0 -> -geometry.dualRowGap * geometry.centeredScale(true) / 2f
+                1 -> geometry.dualRowGap * geometry.centeredScale(true) / 2f
                 else -> 0f
             }
 
@@ -3291,12 +3291,14 @@ internal class StatusPainter(
         geometry: OuterGeometry.Resolved,
         row: Int?,
     ): TransitionBounds {
-        val radius = if (row == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius
+        val dual = row != null
+        val scale = geometry.centeredScale(dual)
+        val radius = (if (dual) geometry.dualMobileDotRadius else geometry.mobileDotRadius) * scale
         val y = centeredMobileRowY(geometry, row)
         return TransitionBounds(
-            CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(0) - radius,
+            CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(0) * scale - radius,
             y - radius,
-            CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(MOBILE_DOT_COUNT - 1) + radius,
+            CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(MOBILE_DOT_COUNT - 1) * scale + radius,
             y + radius,
         )
     }
@@ -3313,9 +3315,11 @@ internal class StatusPainter(
         row: Int?,
     ): MobileSignalTransitionLayout {
         val bounds = centeredMobileRowBounds(geometry, row)
-        val radius = if (row == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius
+        val dual = row != null
+        val scale = geometry.centeredScale(dual)
+        val radius = (if (dual) geometry.dualMobileDotRadius else geometry.mobileDotRadius) * scale
         val centers = (0 until MOBILE_DOT_COUNT).map { index ->
-            TransitionPoint(CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(index), bounds.centerY)
+            TransitionPoint(CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(index) * scale, bounds.centerY)
         }
         return MobileSignalTransitionLayout(
             bounds = bounds,
@@ -3476,7 +3480,9 @@ internal class StatusPainter(
                 else -> resolveMobileSignalTransitionLayout(geometry, model)
             }
         val radius =
-            if (row == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius
+            (if (row == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius) *
+                (if (centered) geometry.centeredScale(row != null || model.dualMobileLevels != null)
+                 else 1f)
         val level = when (row) {
             0 -> model.dualMobileLevels?.sim1
             1 -> model.dualMobileLevels?.sim2
@@ -3529,7 +3535,8 @@ internal class StatusPainter(
                         else model.dualMobileLevels.sim2,
                     tint = tint,
                     opacity = opacity,
-                    radius = geometry.dualMobileDotRadius,
+                    radius = geometry.dualMobileDotRadius *
+                        (if (centered) geometry.centeredScale(true) else 1f),
                     layout = rowLayout,
                     trim = trim,
                     move = move,
@@ -3766,11 +3773,12 @@ internal class StatusPainter(
     ) {
         val dual = model.dualMobileLevels
         val rows = if (dual == null) 1 else 2
+        val centerScale = geometry.centeredScale(dual != null)
         for (row in 0 until rows) {
             val level = if (dual == null) model.mobileLevel
                 else if (row == 0) dual.sim1 else dual.sim2
             val y = centeredMobileRowY(geometry, if (dual == null) null else row)
-            val radius = if (dual == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius
+            val radius = (if (dual == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius) * centerScale
             for (index in 0 until MOBILE_DOT_COUNT) {
                 fill(
                     color = tint,
@@ -3778,7 +3786,7 @@ internal class StatusPainter(
                     opacity = opacity,
                 )
                 canvas.drawCircle(
-                    CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(index),
+                    CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(index) * centerScale,
                     y,
                     radius,
                     paint,
