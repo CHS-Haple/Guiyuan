@@ -193,6 +193,8 @@ internal data class VisualCfg(
     val layout: ContentLayout = ContentLayout.NETWORK_CENTER,
     val dualSignal: Boolean = false,
     val dualDotStyle: DualDotStyle = DualDotStyle.DEFAULT,
+    val mobileSignalCentered: Boolean = false,
+    val mobileTypeBottomOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,
     val showTopReadout: Boolean = topReadoutDefault(layout),
@@ -226,6 +228,12 @@ internal data class VisualCfg(
     val batteryColorOverrides: BatteryColorOverrides =
         BatteryColorOverrides(),
 ) {
+    val centeredMobileSignal: Boolean
+        get() = layout == ContentLayout.NETWORK_CENTER && mobileSignalCentered
+
+    val effectiveContentStyle: DualDotStyle
+        get() = if (centeredMobileSignal) DualDotStyle.DUO else dualDotStyle
+
     val dualMobileOffsetY: Float
         get() = if (dualDotStyle == DualDotStyle.DUO) dualDuoOffsetY else dualDefaultOffsetY
 }
@@ -266,6 +274,12 @@ internal fun VisualCfg.normalized(): VisualCfg =
             ),
         dualDefaultOffsetY =
             dualDefaultOffsetY.finiteIn(
+                NETWORK_TOP_OFFSET_MIN,
+                NETWORK_TOP_OFFSET_MAX,
+                NETWORK_TOP_OFFSET_DEFAULT,
+            ),
+        mobileTypeBottomOffsetY =
+            mobileTypeBottomOffsetY.finiteIn(
                 NETWORK_TOP_OFFSET_MIN,
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,
