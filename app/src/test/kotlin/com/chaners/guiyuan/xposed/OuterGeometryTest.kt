@@ -24,7 +24,7 @@ class OuterGeometryTest {
                     sin(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS,
                     geometry.singleDotY(index, SignalDotArrangement.CURVED, 0f), 0.0001f,
                 )
-                assertEquals(geometry.dualDotX(index),
+                assertEquals(geometry.horizontalDotX(index),
                     geometry.singleDotX(index, SignalDotArrangement.HORIZONTAL), 0f)
                 assertEquals("flat Duo row at every weight", duoY,
                     geometry.singleDotY(index, SignalDotArrangement.HORIZONTAL, 0f), 0.0001f)
@@ -67,7 +67,7 @@ class OuterGeometryTest {
 
 
     @Test
-    fun centeredDuoDotsRemainInsideRingAcrossFullWeightRange() {
+    fun centeredHorizontalDotsRemainInsideRingAcrossFullWeightRange() {
         for (step in 0..28) {
             val weight = 0.6f + step * 0.05f
             val geometry = OuterGeometry.resolve(weight)
@@ -79,7 +79,7 @@ class OuterGeometryTest {
                 for (row in rows) {
                     val y = row * geometry.dualRowGap * scale
                     for (dot in 0..3) {
-                        val x = geometry.dualDotX(dot) * scale
+                        val x = geometry.horizontalDotX(dot) * scale
                         assertTrue(
                             "centered dot crosses ring weight=$weight dual=$dual",
                             sqrt(x * x + y * y) + radius <= allowed + 0.001f,
@@ -107,7 +107,7 @@ class OuterGeometryTest {
             assertTrue("radius grows with weight $scale", dotRadius > lastDotRadius)
             lastDotRadius = dotRadius
             assertEquals("ring thickness follows same weight $scale", 5.0215f * scale, dotRadius, 0.0001f)
-            val width = geometry.dualDotSpan
+            val width = geometry.horizontalDotSpan
             assertTrue("column clearance $scale", width / 3f > 2f * dotRadius)
             assertTrue("two rows stay apart at $scale", gap > 2f * dotRadius)
             val naturalGap = 14.3f * scale
@@ -165,19 +165,19 @@ class OuterGeometryTest {
         assertEquals(14.3f, default.dualRowGap, 0.0001f)
         assertEquals(14.3f * 0.7f, OuterGeometry.resolve(0.7f).dualRowGap, 0.0001f)
         assertEquals(17.69f, OuterGeometry.resolve(1.3f).dualRowGap, 0.0002f)
-        assertEquals(56f, default.dualDotSpan, 0.0001f)
+        assertEquals(56f, default.horizontalDotSpan, 0.0001f)
         assertTrue(default.dualOpticalRise >= 1.2f)
 
         val max = OuterGeometry.resolve(2f)
         assertEquals(10.043f, max.dualMobileDotRadius, 0.0001f)
         assertEquals(27.7f, max.dualRowGap, 0.0002f)
-        assertEquals(62.258f, max.dualDotSpan, 0.0002f)
+        assertEquals(62.258f, max.horizontalDotSpan, 0.0002f)
         assertEquals(7.53225f, OuterGeometry.resolve(1.5f).dualMobileDotRadius, 0.0001f)
         assertTrue(max.dualOpticalRise > default.dualOpticalRise)
     }
 
     @Test
-    fun duoKeepsDotSizesAndHorizontalSpacingWithFlatRows() {
+    fun horizontalArrangementKeepsDotSizesAndSpacingWithFlatRows() {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
             for (row in 0..1) {
@@ -185,8 +185,8 @@ class OuterGeometryTest {
                 for (index in 1..3) {
                     assertEquals(baseline, geometry.dualDotY(index, row, SignalDotArrangement.HORIZONTAL), 0.0001f)
                     assertEquals(
-                        geometry.dualDotSpan / 3f,
-                        geometry.dualDotX(index) - geometry.dualDotX(index - 1),
+                        geometry.horizontalDotSpan / 3f,
+                        geometry.horizontalDotX(index) - geometry.horizontalDotX(index - 1),
                         0.0001f,
                     )
                 }
@@ -221,11 +221,11 @@ class OuterGeometryTest {
     fun dualRowSourceCoordinatesRemainSharedAcrossWeights() {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
-            val positions = (0 until 4).map(geometry::dualDotX)
+            val positions = (0 until 4).map(geometry::horizontalDotX)
             assertEquals(-positions[3], positions[0], 0.0001f)
             assertEquals(-positions[2], positions[1], 0.0001f)
-            assertEquals(-geometry.dualDotSpan / 2f, positions.first(), 0.0001f)
-            assertEquals(geometry.dualDotSpan / 2f, positions.last(), 0.0001f)
+            assertEquals(-geometry.horizontalDotSpan / 2f, positions.first(), 0.0001f)
+            assertEquals(geometry.horizontalDotSpan / 2f, positions.last(), 0.0001f)
 
             for (index in 0 until 4) {
                 val x = positions[index]
