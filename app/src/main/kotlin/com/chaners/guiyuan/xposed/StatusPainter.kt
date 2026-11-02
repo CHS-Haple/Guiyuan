@@ -436,7 +436,8 @@ internal class StatusPainter(
                         targetBars = mobileTargetBars,
                         aggregateRows = mobileAggregateRows,
                         row = mobileRow,
-                        style = visual.effectiveContentStyle,
+                        style = if (model.dualMobileLevels == null) visual.effectiveSingleRowStyle
+                            else visual.effectiveContentStyle,
                         mobileOffsetY = visual.effectiveSignalDotOffsetY,
                         centered = visual.centeredMobileSignal &&
                             model.centerIndicator is CenterIndicator.MobileType &&
@@ -454,7 +455,8 @@ internal class StatusPainter(
                         tint = colors.mobileTint,
                         opacity = opacity,
                         geometry = outerGeometry,
-                        style = visual.effectiveContentStyle,
+                        style = if (model.dualMobileLevels == null) visual.effectiveSingleRowStyle
+                            else visual.effectiveContentStyle,
                         mobileOffsetY = visual.effectiveSignalDotOffsetY,
                     )
                 }
@@ -767,7 +769,7 @@ internal class StatusPainter(
                 centeredMobile -> centeredMobileBounds(outerGeometry, model.dualMobileLevels != null)
                 model.dualMobileLevels != null ->
                     dualMobileTransitionBounds(outerGeometry, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY)
-                else -> resolveMobileSignalTransitionLayout(outerGeometry, model, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY).bounds
+                else -> resolveMobileSignalTransitionLayout(outerGeometry, model, visual.effectiveSingleRowStyle, visual.effectiveSignalDotOffsetY).bounds
             }
         specs +=
             TransitionComponentSpec(
@@ -3799,11 +3801,11 @@ internal class StatusPainter(
                 for (index in 0 until MOBILE_DOT_COUNT) {
                     val innerX = CENTER_TRANSITION_PIVOT_X + geometry.dualDotX(index) * scale
                     val outerX = if (dual == null) {
-                        MOBILE_CENTER_X + geometry.singleDotX(index, visual.effectiveContentStyle)
+                        MOBILE_CENTER_X + geometry.singleDotX(index, visual.effectiveSingleRowStyle)
                     } else MOBILE_CENTER_X + geometry.dualDotX(index)
                     val outerY = if (dual == null) {
                         MOBILE_CENTER_Y + geometry.singleDotY(
-                            index, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY,
+                            index, visual.effectiveSingleRowStyle, visual.effectiveSignalDotOffsetY,
                         )
                     } else {
                         MOBILE_CENTER_Y + geometry.dualDotY(
@@ -3834,7 +3836,9 @@ internal class StatusPainter(
         } else {
             drawMobile(
                 canvas, model, tint, opacity, geometry,
-                visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY,
+                if (model.dualMobileLevels == null) visual.effectiveSingleRowStyle
+                    else visual.effectiveContentStyle,
+                visual.effectiveSignalDotOffsetY,
             )
         }
     }
