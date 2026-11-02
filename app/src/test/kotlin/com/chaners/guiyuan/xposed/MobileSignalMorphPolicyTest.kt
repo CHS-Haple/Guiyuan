@@ -1,11 +1,32 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.xposed.network.CenterIndicator
+import com.chaners.guiyuan.xposed.network.InternetState
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MobileSignalMorphPolicyTest {
     private val morph = MobileSignalMorphPolicy
+
+    @Test
+    fun switchingWifiAndMobileTypeRelocatesDotsWithoutSnapping() {
+        val mobile = CenterIndicator.MobileType("5G", false, internet = InternetState.VALIDATED)
+        val wifi = CenterIndicator.Wifi(3, InternetState.VALIDATED)
+        val policy = MobileDotRelocationPolicy
+        assertTrue(policy.shouldInterpolate(mobile, wifi, true, false))
+        assertTrue(policy.shouldInterpolate(wifi, mobile, false, true))
+        assertFalse(policy.shouldInterpolate(mobile, mobile, true, true))
+        assertFalse(policy.shouldInterpolate(null, wifi, false, false))
+        assertEquals(30f, policy.coordinate(30f, 90f, 0f), 0f)
+        assertEquals(60f, policy.coordinate(30f, 90f, 0.5f), 0f)
+        assertEquals(90f, policy.coordinate(30f, 90f, 1f), 0f)
+        assertEquals(30f, policy.coordinate(90f, 30f, 1f), 0f)
+        assertEquals(30f, policy.coordinate(30f, 90f, -1f), 0f)
+        assertEquals(90f, policy.coordinate(30f, 90f, 2f), 0f)
+    }
+
 
     @Test
     fun collapseEndsAtThirtyPercentWithoutChangingLaterPhases() {
