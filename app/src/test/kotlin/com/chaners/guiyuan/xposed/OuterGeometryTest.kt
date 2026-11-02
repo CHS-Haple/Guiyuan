@@ -40,6 +40,33 @@ class OuterGeometryTest {
 
 
     @Test
+    fun centeredDuoDotsRemainInsideRingAcrossFullWeightRange() {
+        for (step in 0..28) {
+            val weight = 0.6f + step * 0.05f
+            val geometry = OuterGeometry.resolve(weight)
+            for (dual in listOf(false, true)) {
+                val scale = geometry.centeredScale(dual)
+                val radius = (if (dual) geometry.dualMobileDotRadius else geometry.mobileDotRadius) * scale
+                val rows = if (dual) listOf(-0.5f, 0.5f) else listOf(0f)
+                val allowed = OuterGeometry.RING_RADIUS - geometry.ringStroke / 2f - 2f
+                for (row in rows) {
+                    val y = row * geometry.dualRowGap * scale
+                    for (dot in 0..3) {
+                        val x = geometry.dualDotX(dot) * scale
+                        assertTrue(
+                            "centered dot crosses ring weight=$weight dual=$dual",
+                            sqrt(x * x + y * y) + radius <= allowed + 0.001f,
+                        )
+                    }
+                }
+                assertTrue("scale never enlarges dots", scale in 0f..1f)
+            }
+        }
+        assertEquals(1f, OuterGeometry.resolve(1f).centeredScale(true), 0f)
+        assertTrue(OuterGeometry.resolve(2f).centeredScale(true) < 1f)
+    }
+
+    @Test
     fun dualRowsKeepTheirOpticalSpacingAcrossWeights() {
         assertEquals(56f, OuterGeometry.DUAL_DOT_SPAN, 0f)
         var lastDotRadius = 0f
