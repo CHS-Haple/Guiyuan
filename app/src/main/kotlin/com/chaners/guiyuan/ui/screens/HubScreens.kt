@@ -108,7 +108,7 @@ import com.chaners.guiyuan.settings.WIFI_WEIGHT_MIN
 import com.chaners.guiyuan.settings.WIFI_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.DualDotStyle
+import com.chaners.guiyuan.settings.ContentStyle
 import com.chaners.guiyuan.settings.ConfigBackup
 import com.chaners.guiyuan.settings.ConfigBackupFiles
 import com.chaners.guiyuan.settings.FeatureRepo
@@ -220,7 +220,7 @@ internal fun FeaturesScreen(
             stringResource(R.string.content_layout_network_center),
             stringResource(R.string.content_layout_battery_center),
         )
-    val dualDotStyles = listOf(
+    val contentStyles = listOf(
         stringResource(R.string.dual_dot_style_default),
         stringResource(R.string.dual_dot_style_duo),
     )
@@ -463,7 +463,7 @@ internal fun FeaturesScreen(
                 if (search.matches(R.string.dual_dot_style_title)) {
                     UiDropdownPreference(
                         title = stringResource(R.string.dual_dot_style_title),
-                        items = dualDotStyles,
+                        items = contentStyles,
                         selectedIndex = visual.effectiveContentStyle.ordinal,
                         summary = if (visual.centeredMobileSignal) {
                             stringResource(R.string.centered_mobile_style_locked)
@@ -477,7 +477,7 @@ internal fun FeaturesScreen(
                             )
                         },
                         onSelectedIndexChange = { index ->
-                            DualDotStyle.entries.getOrNull(index)?.let(visualRepo::setDualDotStyle)
+                            ContentStyle.entries.getOrNull(index)?.let(visualRepo::setContentStyle)
                         },
                     )
                 }
