@@ -162,6 +162,8 @@ class VisualPersistenceTest {
                 .putString(DUAL_DOT_STYLE_KEY, DualDotStyle.DEFAULT.persistedValue)
                 .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), DualDotStyle.DUO.persistedValue)
                 .apply()
+            assertEquals(if (dual) DualDotStyle.DUO else DualDotStyle.DEFAULT,
+                prefs.readVisualCfg(dual = dual).dualDotStyle)
             migrateSharedContentStyleIfNeeded(prefs)
             val expected = if (dual) DualDotStyle.DUO else DualDotStyle.DEFAULT
             assertEquals(expected, prefs.readVisualCfg(dual = true).dualDotStyle)
