@@ -499,7 +499,7 @@ internal fun FeaturesScreen(
                 }
                 if (search.matches(R.string.dual_signal_title) ||
                     (searching && !visual.dualSignal &&
-                        search.matches(R.string.dual_mobile_vertical_offset))) {
+                        search.matches(R.string.signal_dot_vertical_offset))) {
                     SwitchPreference(
                         title = stringResource(R.string.dual_signal_title),
                         startAction = {
@@ -514,7 +514,10 @@ internal fun FeaturesScreen(
                         onCheckedChange = visualRepo::setDualSignal,
                     )
                 }
-                AnimatedPreferenceGroup(visible = visual.dualSignal || visual.centeredMobileSignal) {
+                AnimatedPreferenceGroup(
+                    visible = visual.dualSignal || visual.centeredMobileSignal ||
+                        visual.effectiveContentStyle == ContentStyle.DUO,
+                ) {
                     if (visual.centeredMobileSignal &&
                         search.matches(R.string.mobile_type_bottom_offset)) {
                         SliderPreference(
@@ -540,12 +543,12 @@ internal fun FeaturesScreen(
                             magnetThreshold = 0.035f,
                             enabled = featureCfg.enabled,
                         )
-                    } else if (visual.dualSignal &&
-                        search.matches(R.string.dual_mobile_vertical_offset)) {
+                    } else if ((visual.dualSignal || visual.effectiveContentStyle == ContentStyle.DUO) &&
+                        search.matches(R.string.signal_dot_vertical_offset)) {
                         SliderPreference(
                             value = visual.signalDotOffsetY,
                             onValueChange = visualRepo::setSignalDotOffsetY,
-                            title = stringResource(R.string.dual_mobile_vertical_offset),
+                            title = stringResource(R.string.signal_dot_vertical_offset),
                             startAction = {
                                 SemanticLeadingIcon(
                                     R.drawable.ic_material_symbol_signal_cellular_alt,
