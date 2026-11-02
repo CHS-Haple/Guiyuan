@@ -30,6 +30,18 @@ internal enum class ContentStyle(val persistedValue: String) {
 }
 
 @Serializable
+internal enum class BatteryAvoidanceMode(val persistedValue: String) {
+    ORIGINAL("original"),
+    INDEPENDENT("independent"),
+    SYMMETRIC("symmetric");
+
+    companion object {
+        fun fromPersisted(value: String?): BatteryAvoidanceMode =
+            entries.firstOrNull { it.persistedValue == value } ?: INDEPENDENT
+    }
+}
+
+@Serializable
 internal enum class BatteryColorPreset(
     val persistedValue: String,
 ) {
@@ -198,6 +210,7 @@ internal data class VisualCfg(
     val contentStyle: ContentStyle = ContentStyle.DEFAULT,
     val singleRowFlatDots: Boolean = false,
     val mobileSignalCentered: Boolean = false,
+    val batteryAvoidanceMode: BatteryAvoidanceMode = BatteryAvoidanceMode.INDEPENDENT,
     val mobileTypeBottomOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,

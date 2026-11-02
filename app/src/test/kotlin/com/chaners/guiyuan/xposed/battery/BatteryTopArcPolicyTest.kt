@@ -6,6 +6,43 @@ import org.junit.Test
 
 class BatteryTopArcPolicyTest {
     @Test
+    fun fullRingIndependentAndSymmetricGapsUseMeasuredOpticalAngles() {
+        val independent = BatteryTopArcPolicy.drawableRingArcs(22f, 34f)
+        assertEquals(
+            listOf(
+                BatteryTopArcPolicy.Arc(124f, 124f),
+                BatteryTopArcPolicy.Arc(292f, 124f),
+            ),
+            independent,
+        )
+        val symmetric = BatteryTopArcPolicy.drawableRingArcs(34f, 34f)
+        assertEquals(
+            listOf(
+                BatteryTopArcPolicy.Arc(124f, 112f),
+                BatteryTopArcPolicy.Arc(304f, 112f),
+            ),
+            symmetric,
+        )
+        assertEquals(248f, independent.sumOf { it.sweepDegrees.toDouble() }.toFloat(), 0.0001f)
+        assertEquals(224f, symmetric.sumOf { it.sweepDegrees.toDouble() }.toFloat(), 0.0001f)
+        val half = BatteryTopArcPolicy.resolve(independent, 50)
+        assertEquals(listOf(independent.first()), half.active)
+        assertEquals(listOf(independent.last()), half.inactive)
+    }
+
+    @Test
+    fun fullRingOneSidedAndAbsentGapsHaveNoOverlappingRoundCaps() {
+        assertEquals(listOf(BatteryTopArcPolicy.Arc(90f, 360f)),
+            BatteryTopArcPolicy.drawableRingArcs(0f, 0f))
+        assertEquals(listOf(BatteryTopArcPolicy.Arc(105f, 330f)),
+            BatteryTopArcPolicy.drawableRingArcs(0f, 15f))
+        assertEquals(listOf(BatteryTopArcPolicy.Arc(285f, 330f)),
+            BatteryTopArcPolicy.drawableRingArcs(15f, 0f))
+        assertEquals(emptyList<BatteryTopArcPolicy.Arc>(),
+            BatteryTopArcPolicy.drawableRingArcs(90f, 90f))
+    }
+
+    @Test
     fun halfBatteryFillsFirstVisibleShoulderBeforeGap() {
         val result =
             BatteryTopArcPolicy.resolve(

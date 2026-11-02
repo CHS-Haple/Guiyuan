@@ -5,6 +5,18 @@ import org.junit.Test
 
 class VisualCfgTest {
     @Test
+    fun avoidanceDefaultsToIndependentAndPreservesSelection() {
+        assertEquals(BatteryAvoidanceMode.INDEPENDENT, VisualCfg().batteryAvoidanceMode)
+        assertEquals(BatteryAvoidanceMode.INDEPENDENT, BatteryAvoidanceMode.fromPersisted(null))
+        assertEquals(BatteryAvoidanceMode.INDEPENDENT, BatteryAvoidanceMode.fromPersisted("unknown"))
+        assertEquals(BatteryAvoidanceMode.ORIGINAL, BatteryAvoidanceMode.fromPersisted("original"))
+        assertEquals(BatteryAvoidanceMode.SYMMETRIC, BatteryAvoidanceMode.fromPersisted("symmetric"))
+        assertEquals(BatteryAvoidanceMode.SYMMETRIC,
+            VisualCfg(batteryAvoidanceMode = BatteryAvoidanceMode.SYMMETRIC)
+                .normalized().batteryAvoidanceMode)
+    }
+
+    @Test
     fun finiteBoundPreservesValidInputsAndRejectsNonFinite() {
         for (invalid in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) {
             assertEquals(1f, invalid.finiteIn(0.4f, 1.25f, 1f), 0f)

@@ -74,6 +74,7 @@ internal object FeatureSearchIds {
         R.string.signal_dot_vertical_offset,
         R.string.combined_size,
         R.string.outer_weight,
+        R.string.battery_avoidance_title,
         R.string.wifi_vertical_offset,
         R.string.mobile_type_vertical_offset,
         R.string.top_info_vertical_offset,
@@ -242,6 +243,7 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
     R.string.signal_dot_vertical_offset -> listOf("双卡偏移", "双排位置", "双排上下偏移")
     R.string.combined_size -> listOf("整体缩放", "总大小", "三合一大小", "三合一缩放")
     R.string.outer_weight -> listOf("环形粗细", "圆环粗细", "外环宽度", "电量环粗细")
+    R.string.battery_avoidance_title -> listOf("电量环避让", "光学避让", "原始避让", "独立避让", "对称避让", "环形开口")
     R.string.wifi_vertical_offset -> listOf("WiFi 位置", "WiFi 垂直位置", "无线位置")
     R.string.mobile_type_vertical_offset -> cellularTerms + listOf("5G 位置", "制式位置", "移动网络位置")
     R.string.top_info_vertical_offset -> listOf("顶部位置", "信息位置")

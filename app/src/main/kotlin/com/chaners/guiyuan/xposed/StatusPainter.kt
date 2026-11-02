@@ -17,10 +17,9 @@ import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.ContentStyle
 import com.chaners.guiyuan.settings.VisualCfg
-import com.chaners.guiyuan.xposed.battery.BatteryArcSegments
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import com.chaners.guiyuan.xposed.battery.BatteryTopArcPolicy
-import com.chaners.guiyuan.xposed.battery.batteryArcSegments
+import com.chaners.guiyuan.settings.BatteryAvoidanceMode
 import com.chaners.guiyuan.xposed.battery.batteryTopBaseCenterY
 import com.chaners.guiyuan.xposed.battery.batteryTopCenterY
 import com.chaners.guiyuan.xposed.battery.batteryTopOverflowPx
@@ -1488,6 +1487,8 @@ internal class StatusPainter(
     private fun resolveBatteryTopGap(
         avoidance: TopSlotAvoidance,
         ringStroke: Float,
+        startDegrees: Float = BATTERY_START_DEGREES,
+        maxSweep: Float = BATTERY_MAX_SWEEP,
     ): BatteryTopArcPolicy.Gap {
         // Preserve disconnected visible shapes (notably Wi-Fi arcs) instead of
         // reserving the empty corners of their union rectangle.
@@ -1505,11 +1506,185 @@ internal class StatusPainter(
                         ringRadius = batteryRing.width() / 2f,
                         ringStroke = ringStroke,
                         visualClearance = BATTERY_TOP_RING_VISUAL_CLEARANCE,
-                        startDegrees = BATTERY_START_DEGREES,
-                        maxSweep = BATTERY_MAX_SWEEP,
+                        startDegrees = startDegrees,
+                        maxSweep = maxSweep,
                     )
                 }
         return BatteryTopArcPolicy.mergeGaps(gaps)
+    }
+
+    private fun resolveBatteryBottomAvoidance(
+        model: RenderModel,
+        visual: VisualCfg,
+        outerGeometry: OuterGeometry.Resolved,
+        centerGeometry: CenterGeometry.Resolved,
+        scale: Float,
+        scaleMobileTypeWithCanvas: Boolean,
+        previousCenterIndicator: CenterIndicator?,
+        centerExitAmount: Float,
+        centerEnterAmount: Float,
+    ): TopSlotAvoidance? {
+        val centeredNow = visual.centeredMobileSignal &&
+            model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
+        val centeredBefore = visual.centeredMobileSignal &&
+            previousCenterIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
+        val switching = previousCenterIndicator != null && previousCenterIndicator != model.centerIndicator
+        val relocating = MobileDotRelocationPolicy.shouldInterpolate(
+            previousCenterIndicator, model.centerIndicator, centeredBefore, centeredNow,
+        )
+        var avoidance: TopSlotAvoidance? = null
+
+        if (relocating) {
+            val progress = centerEnterAmount.coerceIn(0f, 1f)
+            val dual = model.dualMobileLevels != null
+            val rows = if (dual) 2 else 1
+            val centeredScale = outerGeometry.centeredScale(dual)
+            var left = Float.POSITIVE_INFINITY
+            var top = Float.POSITIVE_INFINITY
+            var right = Float.NEGATIVE_INFINITY
+            var bottom = Float.NEGATIVE_INFINITY
+            for (row in 0 until rows) {
+                val centeredY = centeredMobileRowY(outerGeometry, if (dual) row else null)
+                val outerRadius = if (dual) outerGeometry.dualMobileDotRadius else outerGeometry.mobileDotRadius
+                val innerRadius = outerRadius * centeredScale
+                for (index in 0 until MOBILE_DOT_COUNT) {
+                    val innerX = CENTER_TRANSITION_PIVOT_X + outerGeometry.dualDotX(index) * centeredScale
+                    val outerX = if (dual) {
+                        MOBILE_CENTER_X + outerGeometry.dualDotX(index)
+                    } else {
+                        MOBILE_CENTER_X + outerGeometry.singleDotX(index, visual.effectiveSingleRowStyle)
+                    }
+                    val outerY = if (dual) {
+                        MOBILE_CENTER_Y + outerGeometry.dualDotY(
+                            index, row, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY,
+                        )
+                    } else {
+                        MOBILE_CENTER_Y + outerGeometry.singleDotY(
+                            index, visual.effectiveSingleRowStyle, visual.effectiveSignalDotOffsetY,
+                        )
+                    }
+                    val x = MobileDotRelocationPolicy.coordinate(
+                        if (centeredBefore) innerX else outerX,
+                        if (centeredNow) innerX else outerX, progress,
+                    )
+                    val y = MobileDotRelocationPolicy.coordinate(
+                        if (centeredBefore) centeredY else outerY,
+                        if (centeredNow) centeredY else outerY, progress,
+                    )
+                    val radius = MobileDotRelocationPolicy.coordinate(
+                        if (centeredBefore) innerRadius else outerRadius,
+                        if (centeredNow) innerRadius else outerRadius, progress,
+                    )
+                    left = min(left, x - radius)
+                    top = min(top, y - radius)
+                    right = max(right, x + radius)
+                    bottom = max(bottom, y + radius)
+                }
+            }
+            avoidance = singleTopSlotAvoidance(TransitionBounds(left, top, right, bottom))
+        } else if (!centeredNow) {
+            val bounds = if (model.dualMobileLevels != null && !model.mobileUnavailableMark) {
+                dualMobileTransitionBounds(
+                    outerGeometry, visual.effectiveContentStyle, visual.effectiveSignalDotOffsetY,
+                )
+            } else {
+                resolveMobileSignalTransitionLayout(
+                    outerGeometry, model, visual.effectiveSingleRowStyle, visual.effectiveSignalDotOffsetY,
+                ).bounds
+            }
+            avoidance = singleTopSlotAvoidance(bounds)
+        }
+
+        if (centeredNow || centeredBefore) {
+            fun includeMobileType(indicator: CenterIndicator?, amount: Float) {
+                val type = indicator as? CenterIndicator.MobileType ?: return
+                val layout = resolveMobileTypeLayout(
+                    indicator = type,
+                    scale = scale,
+                    geometry = centerGeometry,
+                    scaleWithCanvas = scaleMobileTypeWithCanvas,
+                )
+                val bounds = shiftBoundsY(layout.bounds, mobileTypeBottomTranslation(visual, layout))
+                val scaled = scaleAvoidanceAroundPivot(
+                    singleTopSlotAvoidance(bounds),
+                    pivotX = CENTER_TRANSITION_PIVOT_X,
+                    pivotY = CENTER_TRANSITION_PIVOT_Y,
+                    amount = amount,
+                ) ?: return
+                avoidance = unionAvoidance(avoidance, scaled)
+            }
+            if (switching) {
+                includeMobileType(previousCenterIndicator, centerExitAmount)
+                includeMobileType(model.centerIndicator, centerEnterAmount)
+            } else {
+                includeMobileType(model.centerIndicator, 1f)
+            }
+        }
+        return avoidance
+    }
+
+    private fun resolveBatteryDrawableArcs(
+        model: RenderModel,
+        visual: VisualCfg,
+        topAvoidance: TopSlotAvoidance?,
+        outerGeometry: OuterGeometry.Resolved,
+        centerGeometry: CenterGeometry.Resolved,
+        scale: Float,
+        scaleMobileTypeWithCanvas: Boolean,
+        previousCenterIndicator: CenterIndicator?,
+        centerExitAmount: Float,
+        centerEnterAmount: Float,
+    ): List<BatteryTopArcPolicy.Arc> {
+        if (visual.batteryAvoidanceMode == BatteryAvoidanceMode.ORIGINAL) {
+            if (topAvoidance == null) {
+                return listOf(BatteryTopArcPolicy.Arc(BATTERY_START_DEGREES, BATTERY_MAX_SWEEP))
+            }
+            val gap = resolveBatteryTopGap(topAvoidance, outerGeometry.ringStroke)
+            return BatteryTopArcPolicy.drawableArcs(
+                startDegrees = BATTERY_START_DEGREES,
+                maxSweep = BATTERY_MAX_SWEEP,
+                gapCenterDegrees = gap.centerDegrees,
+                gapSweepDegrees = gap.sweepDegrees,
+            )
+        }
+        fun halfGap(avoidance: TopSlotAvoidance?, center: Float, start: Float): Float {
+            if (avoidance == null) return 0f
+            val gap = resolveBatteryTopGap(
+                avoidance = avoidance,
+                ringStroke = outerGeometry.ringStroke,
+                startDegrees = start,
+                maxSweep = 180f,
+            )
+            if (gap.sweepDegrees <= 0f) return 0f
+            val half = gap.sweepDegrees / 2f
+            return maxOf(
+                center - (gap.centerDegrees - half),
+                (gap.centerDegrees + half) - center,
+            ).coerceIn(0f, 90f)
+        }
+        val topHalf = halfGap(topAvoidance, center = 270f, start = 180f)
+        val bottomHalf = halfGap(
+            resolveBatteryBottomAvoidance(
+                model = model,
+                visual = visual,
+                outerGeometry = outerGeometry,
+                centerGeometry = centerGeometry,
+                scale = scale,
+                scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+                previousCenterIndicator = previousCenterIndicator,
+                centerExitAmount = centerExitAmount,
+                centerEnterAmount = centerEnterAmount,
+            ),
+            center = 90f,
+            start = 0f,
+        )
+        val shared = if (visual.batteryAvoidanceMode == BatteryAvoidanceMode.SYMMETRIC) {
+            maxOf(topHalf, bottomHalf)
+        } else null
+        return BatteryTopArcPolicy.drawableRingArcs(
+            topHalfDegrees = shared ?: topHalf,
+            bottomHalfDegrees = shared ?: bottomHalf,
+        )
     }
 
     private fun batteryReadoutPreferredCenterY(
@@ -1568,140 +1743,60 @@ internal class StatusPainter(
                     ?.let(::singleTopSlotAvoidance)
             }
 
+        val drawableArcs = resolveBatteryDrawableArcs(
+            model = model,
+            visual = visual,
+            topAvoidance = topContentAvoidance,
+            outerGeometry = geometry,
+            centerGeometry = centerGeometry,
+            scale = scale,
+            scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+            previousCenterIndicator = previousCenterIndicator,
+            centerExitAmount = centerExitAmount,
+            centerEnterAmount = centerEnterAmount,
+        )
         if (ringRetractProgress != null) {
-            val drawableArcs =
-                if (topContentAvoidance == null) {
-                    listOf(
-                        BatteryTopArcPolicy.Arc(
-                            startDegrees = BATTERY_START_DEGREES,
-                            sweepDegrees = BATTERY_MAX_SWEEP,
-                        ),
-                    )
-                } else {
-                    val gap =
-                        resolveBatteryTopGap(
-                            avoidance = topContentAvoidance,
-                            ringStroke = geometry.ringStroke,
-                        )
-                    BatteryTopArcPolicy.drawableArcs(
-                        startDegrees = BATTERY_START_DEGREES,
-                        maxSweep = BATTERY_MAX_SWEEP,
-                        gapCenterDegrees = gap.centerDegrees,
-                        gapSweepDegrees = gap.sweepDegrees,
-                    )
-                }
-            val segments =
-                BatteryRingTransitionPolicy.resolve(
-                    drawableArcs = drawableArcs,
-                    batteryPercent = model.batteryPercent,
-                    progress = ringRetractProgress,
-                    exitDirection = ringRetractExitDirection,
-                    followRetractEndpoint =
-                        visual.fillFollowsRetract,
-                )
+            val segments = BatteryRingTransitionPolicy.resolve(
+                drawableArcs = drawableArcs,
+                batteryPercent = model.batteryPercent,
+                progress = ringRetractProgress,
+                exitDirection = ringRetractExitDirection,
+                followRetractEndpoint = visual.fillFollowsRetract,
+            )
             val totalSweepDegrees =
-                drawableArcs
-                    .sumOf { arc -> arc.sweepDegrees.coerceAtLeast(0f).toDouble() }
-                    .toFloat()
-            val terminalCapDominated =
-                BatteryRingTransitionPolicy.isTerminalCapDominated(
-                    remainingFraction = segments.remainingFraction,
-                    totalSweepDegrees = totalSweepDegrees,
-                    radiusPx = OuterGeometry.RING_RADIUS,
-                    strokeWidthPx = geometry.ringStroke,
-                )
-
+                drawableArcs.sumOf { it.sweepDegrees.coerceAtLeast(0f).toDouble() }.toFloat()
+            val terminalCapDominated = BatteryRingTransitionPolicy.isTerminalCapDominated(
+                remainingFraction = segments.remainingFraction,
+                totalSweepDegrees = totalSweepDegrees,
+                radiusPx = OuterGeometry.RING_RADIUS,
+                strokeWidthPx = geometry.ringStroke,
+            )
             if (!terminalCapDominated) {
                 stroke(batteryTint, 48, geometry.ringStroke, opacity)
                 segments.background.forEach { arc ->
                     if (arc.sweepDegrees > 0f) {
-                        canvas.drawArc(
-                            batteryRing,
-                            arc.startDegrees,
-                            arc.sweepDegrees,
-                            false,
-                            paint,
-                        )
+                        canvas.drawArc(batteryRing, arc.startDegrees, arc.sweepDegrees, false, paint)
                     }
                 }
                 stroke(batteryTint, 255, geometry.ringStroke, opacity)
                 segments.active.forEach { arc ->
                     if (arc.sweepDegrees > 0f) {
-                        canvas.drawArc(
-                            batteryRing,
-                            arc.startDegrees,
-                            arc.sweepDegrees,
-                            false,
-                            paint,
-                        )
+                        canvas.drawArc(batteryRing, arc.startDegrees, arc.sweepDegrees, false, paint)
                     }
                 }
             }
-        } else if (topContentAvoidance == null) {
-            val segments =
-                batteryArcSegments(
-                    batteryPercent = model.batteryPercent,
-                    startDegrees = BATTERY_START_DEGREES,
-                    maxSweep = BATTERY_MAX_SWEEP,
-                    degreesPerPercent = BATTERY_DEGREES_PER_PERCENT,
-                )
-            if (segments.inactiveSweep > 0f) {
-                stroke(batteryTint, 48, geometry.ringStroke, opacity)
-                canvas.drawArc(
-                    batteryRing,
-                    segments.inactiveStart,
-                    segments.inactiveSweep,
-                    false,
-                    paint,
-                )
-            }
-            if (segments.activeSweep > 0f) {
-                stroke(batteryTint, 255, geometry.ringStroke, opacity)
-                canvas.drawArc(
-                    batteryRing,
-                    BATTERY_START_DEGREES,
-                    segments.activeSweep,
-                    false,
-                    paint,
-                )
-            }
         } else {
-            val gap =
-                resolveBatteryTopGap(
-                    avoidance = topContentAvoidance,
-                    ringStroke = geometry.ringStroke,
-                )
-            val segments =
-                BatteryTopArcPolicy.resolve(
-                    batteryPercent = model.batteryPercent,
-                    startDegrees = BATTERY_START_DEGREES,
-                    maxSweep = BATTERY_MAX_SWEEP,
-                    gapCenterDegrees = gap.centerDegrees,
-                    gapSweepDegrees = gap.sweepDegrees,
-                )
-
+            val segments = BatteryTopArcPolicy.resolve(drawableArcs, model.batteryPercent)
             stroke(batteryTint, 48, geometry.ringStroke, opacity)
             segments.inactive.forEach { arc ->
                 if (arc.sweepDegrees > 0f) {
-                    canvas.drawArc(
-                        batteryRing,
-                        arc.startDegrees,
-                        arc.sweepDegrees,
-                        false,
-                        paint,
-                    )
+                    canvas.drawArc(batteryRing, arc.startDegrees, arc.sweepDegrees, false, paint)
                 }
             }
             stroke(batteryTint, 255, geometry.ringStroke, opacity)
             segments.active.forEach { arc ->
                 if (arc.sweepDegrees > 0f) {
-                    canvas.drawArc(
-                        batteryRing,
-                        arc.startDegrees,
-                        arc.sweepDegrees,
-                        false,
-                        paint,
-                    )
+                    canvas.drawArc(batteryRing, arc.startDegrees, arc.sweepDegrees, false, paint)
                 }
             }
         }

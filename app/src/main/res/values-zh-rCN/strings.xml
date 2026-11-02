@@ -52,6 +52,11 @@
     <string name="hide_launcher_icon_summary">隐藏后，通常可从框架服务的模块列表打开归元</string>
     <string name="battery_fill_follow_retract">电量段跟随回收</string>
     <string name="battery_fill_follow_retract_summary">收口时，实心电量段随端点移动，剩余环长不足后再缩短</string>
+    <string name="battery_avoidance_title">电量环避让方式</string>
+    <string name="battery_avoidance_summary">根据上下内容的实际尺寸调整圆环开口</string>
+    <string name="battery_avoidance_original">原始避让</string>
+    <string name="battery_avoidance_independent">独立避让</string>
+    <string name="battery_avoidance_symmetric">对称避让</string>
     <string name="battery_top_readout">显示电量数字</string>
     <string name="battery_top_readout_summary">显示当前电量数字，电量环自动避让</string>
     <string name="battery_top_text_size">数字大小</string>
