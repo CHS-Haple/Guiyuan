@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.settings
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 
 
@@ -18,12 +19,12 @@ internal enum class ContentLayout(
 }
 
 @Serializable
-internal enum class DualDotStyle(val persistedValue: String) {
+internal enum class ContentStyle(val persistedValue: String) {
     DEFAULT("default"),
     DUO("duo");
 
     companion object {
-        fun fromPersisted(value: String?): DualDotStyle =
+        fun fromPersisted(value: String?): ContentStyle =
             entries.firstOrNull { it.persistedValue == value } ?: DEFAULT
     }
 }
@@ -192,7 +193,9 @@ internal object IosStyleBatteryPalette {
 internal data class VisualCfg(
     val layout: ContentLayout = ContentLayout.NETWORK_CENTER,
     val dualSignal: Boolean = false,
-    val dualDotStyle: DualDotStyle = DualDotStyle.DEFAULT,
+    // Keep the V1 backup field name readable after the source-model rename.
+    @SerialName("dualDotStyle")
+    val contentStyle: ContentStyle = ContentStyle.DEFAULT,
     val mobileSignalCentered: Boolean = false,
     val mobileTypeBottomOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val mobileFollowsBatteryColor: Boolean = false,
@@ -231,14 +234,14 @@ internal data class VisualCfg(
     val centeredMobileSignal: Boolean
         get() = layout == ContentLayout.NETWORK_CENTER && mobileSignalCentered
 
-    val effectiveContentStyle: DualDotStyle
-        get() = if (centeredMobileSignal) DualDotStyle.DUO else dualDotStyle
+    val effectiveContentStyle: ContentStyle
+        get() = if (centeredMobileSignal) ContentStyle.DUO else contentStyle
 
     val dualMobileOffsetY: Float
-        get() = if (dualDotStyle == DualDotStyle.DUO) dualDuoOffsetY else dualDefaultOffsetY
+        get() = if (contentStyle == ContentStyle.DUO) dualDuoOffsetY else dualDefaultOffsetY
 
     val effectiveDualMobileOffsetY: Float
-        get() = if (effectiveContentStyle == DualDotStyle.DUO) dualDuoOffsetY else dualDefaultOffsetY
+        get() = if (effectiveContentStyle == ContentStyle.DUO) dualDuoOffsetY else dualDefaultOffsetY
 }
 
 internal fun Float.finiteIn(min: Float, max: Float, fallback: Float): Float =
