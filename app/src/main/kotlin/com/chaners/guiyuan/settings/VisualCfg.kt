@@ -237,13 +237,15 @@ internal data class VisualCfg(
     val centeredMobileSignal: Boolean
         get() = layout == ContentLayout.MOBILE_CENTER
 
+    // Styles describe the lower/outside dots, including Wi-Fi/mobile transitions.
+    // Centered mobile dots are always drawn as horizontal rows by the renderer.
     val effectiveContentStyle: ContentStyle
-        get() = if (centeredMobileSignal) ContentStyle.DUO else contentStyle
+        get() = contentStyle
 
     // A lower single row stays curved by default even if the saved style is Duo.
     // Only an explicit opt-in permits its flat Duo arrangement; dual rows are unaffected.
     val effectiveSingleRowStyle: ContentStyle
-        get() = if (!centeredMobileSignal && contentStyle == ContentStyle.DUO && singleRowFlatDots) {
+        get() = if (contentStyle == ContentStyle.DUO && singleRowFlatDots) {
             ContentStyle.DUO
         } else {
             ContentStyle.DEFAULT

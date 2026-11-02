@@ -1685,8 +1685,11 @@ internal class StatusPainter(
         }
         val centeredNow = visual.centeredMobileSignal &&
             model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
-        val centeredBefore = visual.centeredMobileSignal &&
-            previousCenterIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
+        // No previous frame means this is already the stable presentation, not
+        // a Wi-Fi→mobile relocation. Do not briefly reserve the outer curved gap.
+        val centeredBefore = if (previousCenterIndicator == null) centeredNow else
+            visual.centeredMobileSignal &&
+                previousCenterIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
         return BatteryTopArcPolicy.drawableRingArcs(
             topHalfDegrees = topHalf,
             bottomHalfDegrees = BatteryTopArcPolicy.autoBottomHalfGap(

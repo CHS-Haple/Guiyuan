@@ -112,7 +112,7 @@ class VisualCfgTest {
     fun mobileCenteredIsAnIndependentLayoutWithOwnDefaults() {
         val centered = VisualCfg(layout = ContentLayout.MOBILE_CENTER)
         assertTrue(centered.centeredMobileSignal)
-        assertEquals(ContentStyle.DUO, centered.effectiveContentStyle)
+        assertEquals(ContentStyle.DEFAULT, centered.effectiveContentStyle)
         assertEquals(ContentStyle.DEFAULT, centered.contentStyle)
         assertEquals(0.85f, centered.mobileTypeScale, 0f)
         assertEquals(-3f, centered.mobileTypeBottomOffsetY, 0f)
@@ -125,14 +125,48 @@ class VisualCfgTest {
     }
 
     @Test
-    fun optionalSingleRowStyleDoesNotOverrideCenteredSignalDots() {
+    fun optionalSingleRowStyleControlsTheOutsideRowOfCenteredLayout() {
         val lower = VisualCfg(contentStyle = ContentStyle.DUO, singleRowFlatDots = true)
         assertEquals(ContentStyle.DUO, lower.effectiveSingleRowStyle)
         val centered = lower.copy(layout = ContentLayout.MOBILE_CENTER)
+        assertTrue(centered.centeredMobileSignal)
         assertEquals(ContentStyle.DUO, centered.effectiveContentStyle)
-        assertEquals(ContentStyle.DEFAULT, centered.effectiveSingleRowStyle)
+        assertEquals(ContentStyle.DUO, centered.effectiveSingleRowStyle)
         assertEquals(ContentStyle.DUO,
             centered.copy(layout = ContentLayout.NETWORK_CENTER).effectiveSingleRowStyle)
+    }
+
+    @Test
+    fun centeredLayoutKeepsBothSavedStylesAndLowerSingleRowChoices() {
+        for (dual in listOf(false, true)) {
+            for (style in ContentStyle.entries) {
+                for (horizontal in listOf(false, true)) {
+                    val visual = VisualCfg(
+                        layout = ContentLayout.MOBILE_CENTER,
+                        dualSignal = dual,
+                        contentStyle = style,
+                        singleRowFlatDots = horizontal,
+                        defaultSignalDotOffsetY = 2f,
+                        duoSignalDotOffsetY = 5f,
+                    )
+                    assertTrue(visual.centeredMobileSignal)
+                    assertEquals(style, visual.effectiveContentStyle)
+                    assertEquals(
+                        if (style == ContentStyle.DUO && horizontal) ContentStyle.DUO
+                        else ContentStyle.DEFAULT,
+                        visual.effectiveSingleRowStyle,
+                    )
+                    assertEquals(
+                        if (style == ContentStyle.DUO) 5f else 2f,
+                        visual.effectiveSignalDotOffsetY,
+                        0f,
+                    )
+                }
+            }
+        }
+        // Reordering the user-facing dropdown must never rewrite persisted values.
+        assertEquals(ContentLayout.MOBILE_CENTER, ContentLayout.fromPersisted("mobile_center"))
+        assertEquals(ContentLayout.BATTERY_CENTER, ContentLayout.fromPersisted("battery_center"))
     }
 
     @Test

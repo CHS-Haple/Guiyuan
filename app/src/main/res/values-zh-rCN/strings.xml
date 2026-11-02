@@ -15,6 +15,7 @@
     <string name="dual_signal_summary">同时识别到两张 SIM 卡时显示双排\n内容布局保持不变，其他视觉配置分别记忆</string>
     <string name="single_row_flat_dots">单排信号横向排列</string>
     <string name="single_row_flat_dots_summary">将下方单排信号点由弧形改为横排</string>
+    <string name="single_row_flat_dots_summary_centered">仅在信号点位于下方时生效，居中时始终横排</string>
     <string name="mobile_signal_centered_title">移动信号居中</string>
     <string name="mobile_signal_centered_summary">信号居中显示，网络制式位于下方</string>
     <string name="mobile_type_bottom_offset">网络制式上下偏移</string>
@@ -27,7 +28,7 @@
     <string name="content_layout_title">内容布局</string>
     <string name="content_layout_summary">三种布局分别记忆设置</string>
     <string name="content_layout_network_center">网络信息居中</string>
-    <string name="content_layout_battery_center">电量居中</string>
+    <string name="content_layout_battery_center">电量数字居中</string>
     <string name="content_layout_mobile_center">信号强度居中</string>
     <string name="content_layout_network_center_summary">Wi-Fi 和网络制式位于圆环中央，信号点在下方</string>
     <string name="content_layout_battery_center_summary">电量数字位于圆环中央，网络信息显示在上方</string>

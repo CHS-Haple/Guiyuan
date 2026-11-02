@@ -16,6 +16,7 @@
     <string name="dual_signal_summary">Show two rows when both SIM cards are detected\nKeep the content layout and remember other visual settings separately</string>
     <string name="single_row_flat_dots">Horizontal single-row signal</string>
     <string name="single_row_flat_dots_summary">Arrange the lower signal dots in a straight row instead of an arc</string>
+    <string name="single_row_flat_dots_summary_centered">Applies to dots shown below; centered dots always stay horizontal</string>
     <string name="mobile_signal_centered_title">Centered mobile signal</string>
     <string name="mobile_signal_centered_summary">Center the signal dots with the network type below</string>
     <string name="mobile_type_bottom_offset">Network type vertical offset</string>
@@ -28,7 +29,7 @@
     <string name="content_layout_title">Content layout</string>
     <string name="content_layout_summary">Each of the three layouts remembers its settings</string>
     <string name="content_layout_network_center">Network info centered</string>
-    <string name="content_layout_battery_center">Battery centered</string>
+    <string name="content_layout_battery_center">Battery number centered</string>
     <string name="content_layout_mobile_center">Signal strength centered</string>
     <string name="content_layout_network_center_summary">Wi-Fi and network type at center, signal dots below</string>
     <string name="content_layout_battery_center_summary">Battery level at center, network information above</string>

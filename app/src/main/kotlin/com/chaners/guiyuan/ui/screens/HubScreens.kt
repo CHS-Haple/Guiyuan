@@ -216,12 +216,12 @@ internal fun FeaturesScreen(
         schemeRepo.library.collectAsState(
             initial = schemeRepo.current(),
         )
-    val layoutOptions =
-        listOf(
-            stringResource(R.string.content_layout_network_center),
-            stringResource(R.string.content_layout_battery_center),
-            stringResource(R.string.content_layout_mobile_center),
-        )
+    // Display order is deliberately independent of the persisted ContentLayout enum.
+    val layoutChoices = listOf(
+        ContentLayout.NETWORK_CENTER to stringResource(R.string.content_layout_network_center),
+        ContentLayout.MOBILE_CENTER to stringResource(R.string.content_layout_mobile_center),
+        ContentLayout.BATTERY_CENTER to stringResource(R.string.content_layout_battery_center),
+    )
     val contentStyles = listOf(
         stringResource(R.string.dual_dot_style_default),
         stringResource(R.string.dual_dot_style_duo),
@@ -448,8 +448,8 @@ internal fun FeaturesScreen(
                     (searching && visual.layout == ContentLayout.BATTERY_CENTER &&
                         search.matches(R.string.top_info_vertical_offset))) {
                     UiDropdownPreference(
-                        items = layoutOptions,
-                        selectedIndex = visual.layout.ordinal,
+                        items = layoutChoices.map { it.second },
+                        selectedIndex = layoutChoices.indexOfFirst { it.first == visual.layout },
                         title = stringResource(R.string.content_layout_title),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_dashboard, featureCfg.enabled) },
                         summary = stringResource(
@@ -462,9 +462,7 @@ internal fun FeaturesScreen(
                         showValue = true,
                         enabled = featureCfg.enabled,
                         onSelectedIndexChange = { index ->
-                            ContentLayout.entries
-                                .getOrNull(index)
-                                ?.let(visualRepo::setLayout)
+                            layoutChoices.getOrNull(index)?.first?.let(visualRepo::setLayout)
                         },
                     )
                 }
@@ -485,7 +483,7 @@ internal fun FeaturesScreen(
                         onCheckedChange = visualRepo::setDualSignal,
                     )
                 }
-                if (!visual.centeredMobileSignal && search.matches(R.string.dual_dot_style_title)) {
+                if (search.matches(R.string.dual_dot_style_title)) {
                     UiDropdownPreference(
                         title = stringResource(R.string.dual_dot_style_title),
                         items = contentStyles,
@@ -503,13 +501,17 @@ internal fun FeaturesScreen(
                         },
                     )
                 }
-                // A lower single row is curved by default. Centered signals
-                // stay horizontal regardless of this optional presentation setting.
-                if (visual.contentStyle == ContentStyle.DUO && !visual.centeredMobileSignal &&
+                // This option controls only a lower/outside single row. The mobile
+                // center remains horizontal regardless of the saved style.
+                if (visual.contentStyle == ContentStyle.DUO &&
                     search.matches(R.string.single_row_flat_dots)) {
                     SwitchPreference(
                         title = stringResource(R.string.single_row_flat_dots),
-                        summary = stringResource(R.string.single_row_flat_dots_summary),
+                        summary = stringResource(
+                            if (visual.centeredMobileSignal)
+                                R.string.single_row_flat_dots_summary_centered
+                            else R.string.single_row_flat_dots_summary,
+                        ),
                         startAction = {
                             SemanticLeadingIcon(
                                 R.drawable.ic_material_symbol_signal_cellular_alt,
