@@ -170,7 +170,7 @@ class ConfigBackupTest {
         ))
         val json = ConfigBackupFormat.encode(enabled)
         assertEquals(enabled, ConfigBackupFormat.decode(json))
-        val legacy = json.replace(",\\\"singleRowFlatDots\\\":true", "")
+        val legacy = json.replace(",\"singleRowFlatDots\":true", "")
         assertTrue(ConfigBackupFormat.decode(legacy).visual.profiles.all { !it.singleRowFlatDots })
     }
 
