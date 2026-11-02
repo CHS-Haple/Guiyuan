@@ -703,8 +703,12 @@ internal fun SharedPreferences.readVisualCfg(
         layout = layout,
         dualSignal = dual,
         dualDotStyle = DualDotStyle.fromPersisted(
-            getString(DUAL_DOT_STYLE_KEY, null)
-                ?: if (dual) getString(visualModeKey(true, DUAL_DOT_STYLE_KEY), null) else null,
+            if (dual && getInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 0) == 0) {
+                getString(visualModeKey(true, DUAL_DOT_STYLE_KEY), null)
+                    ?: getString(DUAL_DOT_STYLE_KEY, null)
+            } else {
+                getString(DUAL_DOT_STYLE_KEY, null)
+            },
         ),
         mobileSignalCentered = getBoolean(MOBILE_SIGNAL_CENTERED_KEY, false),
         mobileTypeBottomOffsetY = getFloat(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
