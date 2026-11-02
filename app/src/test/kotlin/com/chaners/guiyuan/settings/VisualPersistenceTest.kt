@@ -409,7 +409,7 @@ class VisualPersistenceTest {
             batteryColorOverrides = BatteryColorOverrides(charging = 0xFF2468AC.toInt()),
         )
         assertEquals(null, schemes.matchingKey(unmatched))
-    
+
     @Test
     fun releasedVersionDotStyleMigratesIntoEachLayoutWithoutLosingSimChoice() {
         val prefs = MemoryPreferences()
