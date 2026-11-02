@@ -11,8 +11,9 @@ internal const val CONTENT_STYLE_KEY = "content_style"
 // Only used to import settings saved before content style was shared.
 internal const val LEGACY_DUAL_DOT_STYLE_KEY = "dual_dot_style"
 internal const val SHARED_CONTENT_STYLE_SCHEMA_KEY = "shared_content_style_schema"
-internal const val DUAL_DEFAULT_OFFSET_Y_KEY = "dual_default_offset_y"
-internal const val DUAL_DUO_OFFSET_Y_KEY = "dual_duo_offset_y"
+// Keep the original persisted names; these offsets now serve both SIM modes.
+internal const val DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY = "dual_default_offset_y"
+internal const val DUO_SIGNAL_DOT_OFFSET_Y_KEY = "dual_duo_offset_y"
 internal const val MOBILE_SIGNAL_CENTERED_KEY = "mobile_signal_centered"
 internal const val MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY = "mobile_type_bottom_offset_y"
 internal const val MOBILE_FOLLOWS_BATTERY_COLOR_KEY = "mobile_follows_battery_color"
@@ -71,8 +72,8 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         BATTERY_TOP_VERTICAL_OFFSET_KEY,
         WIFI_VERTICAL_OFFSET_KEY,
         MOBILE_TYPE_VERTICAL_OFFSET_KEY,
-        DUAL_DEFAULT_OFFSET_Y_KEY,
-        DUAL_DUO_OFFSET_Y_KEY,
+        DEFAULT_SIGNAL_DOT_OFFSET_Y_KEY,
+        DUO_SIGNAL_DOT_OFFSET_Y_KEY,
         BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
         COMBINED_SCALE_KEY,
         OUTER_WEIGHT_SCALE_KEY,
