@@ -282,6 +282,10 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
+    fun setSingleRowFlatDots(enabled: Boolean) {
+        preferences.edit().putBoolean(SINGLE_ROW_FLAT_DOTS_KEY, enabled).apply()
+    }
+
     fun setMobileSignalCentered(enabled: Boolean) {
         preferences.edit().putBoolean(MOBILE_SIGNAL_CENTERED_KEY, enabled).apply()
     }
@@ -591,6 +595,7 @@ internal class VisualRepo(context: Context) {
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
         editor.putString(CONTENT_STYLE_KEY, active.contentStyle.persistedValue)
             .putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 2)
+            .putBoolean(SINGLE_ROW_FLAT_DOTS_KEY, active.singleRowFlatDots)
             .putBoolean(MOBILE_SIGNAL_CENTERED_KEY, active.mobileSignalCentered)
             .putFloat(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, active.mobileTypeBottomOffsetY)
         // Restored physical charging scales use the current reference.
@@ -711,6 +716,7 @@ internal fun SharedPreferences.readVisualCfg(
                 } else null)
                 ?: getString(LEGACY_DUAL_DOT_STYLE_KEY, null),
         ),
+        singleRowFlatDots = getBoolean(SINGLE_ROW_FLAT_DOTS_KEY, false),
         mobileSignalCentered = getBoolean(MOBILE_SIGNAL_CENTERED_KEY, false),
         mobileTypeBottomOffsetY = getFloat(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
@@ -804,6 +810,9 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putString(
         CONTENT_STYLE_KEY,
         normalized.contentStyle.persistedValue,
+    ).putBoolean(
+        SINGLE_ROW_FLAT_DOTS_KEY,
+        normalized.singleRowFlatDots,
     ).putBoolean(
         MOBILE_SIGNAL_CENTERED_KEY,
         normalized.mobileSignalCentered,
