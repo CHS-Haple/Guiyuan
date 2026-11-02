@@ -517,7 +517,7 @@ internal fun FeaturesScreen(
                         },
                         checked = visual.horizontalLowerSingleRow,
                         enabled = featureCfg.enabled,
-                        onCheckedChange = visualRepo::setSingleRowFlatDots,
+                        onCheckedChange = visualRepo::setHorizontalLowerSingleRow,
                     )
                 }
                 if (visual.layout == ContentLayout.BATTERY_CENTER) {

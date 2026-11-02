@@ -10,10 +10,10 @@ import org.junit.Test
 
 class OuterGeometryTest {
     @Test
-    fun contentStyleAppliesToSingleSimAndTransitionSourceGeometry() {
+    fun signalDotArrangementAppliesToSingleSimAndTransitionSourceGeometry() {
         for (step in 0..28) {
             val geometry = OuterGeometry.resolve(0.6f + step * 0.05f)
-            val duoY = geometry.singleDotY(0, SignalDotArrangement.HORIZONTAL, 0f)
+            val horizontalY = geometry.singleDotY(0, SignalDotArrangement.HORIZONTAL, 0f)
             for (index in 0..3) {
                 val angle = geometry.bottomDotAngle(index)
                 assertEquals(
@@ -26,13 +26,13 @@ class OuterGeometryTest {
                 )
                 assertEquals(geometry.horizontalDotX(index),
                     geometry.singleDotX(index, SignalDotArrangement.HORIZONTAL), 0f)
-                assertEquals("flat Duo row at every weight", duoY,
+                assertEquals("horizontal row at every weight", horizontalY,
                     geometry.singleDotY(index, SignalDotArrangement.HORIZONTAL, 0f), 0.0001f)
-                assertEquals(duoY - 3f,
+                assertEquals(horizontalY - 3f,
                     geometry.singleDotY(index, SignalDotArrangement.HORIZONTAL, 3f), 0.0001f)
             }
             val radius = geometry.mobileDotRadius
-            assertTrue(58f + duoY + radius < 120f)
+            assertTrue(58f + horizontalY + radius < 120f)
         }
     }
 

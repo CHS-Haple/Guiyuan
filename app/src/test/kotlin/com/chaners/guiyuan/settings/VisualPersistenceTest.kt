@@ -115,7 +115,7 @@ class VisualPersistenceTest {
             }
         }
 
-        // Reproduce B1726: current layout uses a profile-scoped Duo setting,
+        // Reproduce B1726: current layout uses a profile-scoped horizontal arrangement,
         // but the retired global style preference is absent.
         prefs.edit()
             .putString(CONTENT_LAYOUT_KEY, ContentLayout.BATTERY_CENTER.persistedValue)
@@ -138,7 +138,7 @@ class VisualPersistenceTest {
             layoutOverride = ContentLayout.BATTERY_CENTER,
         ).horizontalSignalDotOffsetY, 0f)
 
-        // The default shape in a single-SIM profile still has a separate value.
+        // The curved arrangement in a single-SIM profile still has a separate value.
         prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
             .putString(
                 visualProfileKey(ContentLayout.BATTERY_CENTER, SIGNAL_DOT_ARRANGEMENT_KEY),

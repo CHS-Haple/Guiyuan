@@ -156,7 +156,7 @@ internal class VisualRepo(context: Context) {
         preferences.edit().putString(activeProfileKey(SIGNAL_DOT_ARRANGEMENT_KEY), style.persistedValue).apply()
     }
 
-    fun setSingleRowFlatDots(enabled: Boolean) {
+    fun setHorizontalLowerSingleRow(enabled: Boolean) {
         preferences.edit().putBoolean(activeProfileKey(HORIZONTAL_LOWER_SINGLE_ROW_KEY), enabled).apply()
     }
 
