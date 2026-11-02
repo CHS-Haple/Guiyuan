@@ -143,13 +143,13 @@ class VisualPersistenceTest {
     @Test
     fun contentStyleIsSharedAcrossSignalModesAndLayouts() {
         val prefs = MemoryPreferences()
-        prefs.edit().putString(DUAL_DOT_STYLE_KEY, ContentStyle.DUO.persistedValue).apply()
+        prefs.edit().putString(CONTENT_STYLE_KEY, ContentStyle.DUO.persistedValue).apply()
         for (dual in listOf(false, true)) {
             for (layout in ContentLayout.entries) {
                 assertEquals(ContentStyle.DUO, prefs.readVisualCfg(dual = dual, layoutOverride = layout).contentStyle)
             }
         }
-        prefs.edit().putString(DUAL_DOT_STYLE_KEY, "invalid").apply()
+        prefs.edit().putString(CONTENT_STYLE_KEY, "invalid").apply()
         assertEquals(ContentStyle.DEFAULT, prefs.readVisualCfg(dual = true).contentStyle)
     }
 
@@ -159,8 +159,8 @@ class VisualPersistenceTest {
             val prefs = MemoryPreferences()
             prefs.edit()
                 .putBoolean(DUAL_SIGNAL_ENABLED_KEY, dual)
-                .putString(DUAL_DOT_STYLE_KEY, ContentStyle.DEFAULT.persistedValue)
-                .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), ContentStyle.DUO.persistedValue)
+                .putString(LEGACY_DUAL_DOT_STYLE_KEY, ContentStyle.DEFAULT.persistedValue)
+                .putString(visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY), ContentStyle.DUO.persistedValue)
                 .apply()
             assertEquals(if (dual) ContentStyle.DUO else ContentStyle.DEFAULT,
                 prefs.readVisualCfg(dual = dual).contentStyle)
@@ -168,17 +168,28 @@ class VisualPersistenceTest {
             val expected = if (dual) ContentStyle.DUO else ContentStyle.DEFAULT
             assertEquals(expected, prefs.readVisualCfg(dual = true).contentStyle)
             assertEquals(expected, prefs.readVisualCfg(dual = false).contentStyle)
-            assertFalse(prefs.contains(visualModeKey(true, DUAL_DOT_STYLE_KEY)))
+            assertFalse(prefs.contains(visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY)))
             val saved = prefs.all.toMap()
             migrateSharedContentStyleIfNeeded(prefs)
             assertEquals(saved, prefs.all)
         }
         val oldDualOnly = MemoryPreferences()
         oldDualOnly.edit()
-            .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), ContentStyle.DUO.persistedValue)
+            .putString(visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY), ContentStyle.DUO.persistedValue)
             .apply()
         migrateSharedContentStyleIfNeeded(oldDualOnly)
         assertEquals(ContentStyle.DUO, oldDualOnly.readVisualCfg(dual = false).contentStyle)
+
+        val b1719 = MemoryPreferences()
+        b1719.edit()
+            .putString(LEGACY_DUAL_DOT_STYLE_KEY, ContentStyle.DUO.persistedValue)
+            .putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 1)
+            .apply()
+        migrateSharedContentStyleIfNeeded(b1719)
+        assertEquals(ContentStyle.DUO, b1719.readVisualCfg().contentStyle)
+        assertEquals(ContentStyle.DUO.persistedValue, b1719.getString(CONTENT_STYLE_KEY, null))
+        assertFalse(b1719.contains(LEGACY_DUAL_DOT_STYLE_KEY))
+        assertEquals(2, b1719.getInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 0))
     }
 
     @Test
