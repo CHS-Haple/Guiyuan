@@ -392,6 +392,14 @@ internal object OuterGeometry {
             )
         }
 
+        fun centeredScale(dual: Boolean): Float {
+            val dotRadius = if (dual) dualMobileDotRadius else mobileDotRadius
+            val y = if (dual) dualRowGap / 2f else 0f
+            val outer = sqrt((dualDotSpan / 2f) * (dualDotSpan / 2f) + y * y) + dotRadius
+            val inner = (RING_RADIUS - ringStroke / 2f - 2f).coerceAtLeast(0f)
+            return (inner / outer).coerceIn(0f, 1f)
+        }
+
         fun dualDotX(index: Int): Float =
             (index - (DOT_COUNT - 1) / 2f) * (dualDotSpan / (DOT_COUNT - 1))
 
