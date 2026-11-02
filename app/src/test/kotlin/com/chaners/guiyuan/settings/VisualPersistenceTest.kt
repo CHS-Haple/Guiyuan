@@ -180,6 +180,30 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun centeredMobileConfigurationDoesNotChangeSavedContentStyleOrOffsets() {
+        val prefs = MemoryPreferences()
+        prefs.edit().putVisualCfg(VisualCfg(
+            layout = ContentLayout.NETWORK_CENTER,
+            mobileSignalCentered = true,
+            mobileTypeBottomOffsetY = 4f,
+            dualDotStyle = DualDotStyle.DEFAULT,
+            dualDuoOffsetY = -6f,
+        )).apply()
+        val regular = prefs.readVisualCfg(dual = false)
+        val dual = prefs.readVisualCfg(dual = true)
+        assertTrue(regular.centeredMobileSignal)
+        assertTrue(dual.centeredMobileSignal)
+        assertEquals(DualDotStyle.DEFAULT, regular.dualDotStyle)
+        assertEquals(DualDotStyle.DUO, regular.effectiveContentStyle)
+        assertEquals(4f, regular.mobileTypeBottomOffsetY, 0f)
+        assertEquals(4f, dual.mobileTypeBottomOffsetY, 0f)
+        assertEquals(0f, regular.dualDuoOffsetY, 0f)
+        assertEquals(-6f, prefs.readVisualCfg(dual = false).dualDuoOffsetY, 0f)
+        assertEquals(DualDotStyle.DEFAULT,
+            regular.copy(mobileSignalCentered = false).effectiveContentStyle)
+    }
+
+    @Test
     fun dualOffsetsStayIndependentAcrossStylesAndLayouts() {
         val prefs = MemoryPreferences()
         val dual = VisualCfg(
