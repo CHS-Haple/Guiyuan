@@ -196,6 +196,7 @@ internal data class VisualCfg(
     // Keep the V1 backup field name readable after the source-model rename.
     @SerialName("dualDotStyle")
     val contentStyle: ContentStyle = ContentStyle.DEFAULT,
+    val singleRowFlatDots: Boolean = false,
     val mobileSignalCentered: Boolean = false,
     val mobileTypeBottomOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val mobileFollowsBatteryColor: Boolean = false,
@@ -238,6 +239,15 @@ internal data class VisualCfg(
 
     val effectiveContentStyle: ContentStyle
         get() = if (centeredMobileSignal) ContentStyle.DUO else contentStyle
+
+    // A lower single row stays curved by default even if the saved style is Duo.
+    // Only an explicit opt-in permits its flat Duo arrangement; dual rows are unaffected.
+    val effectiveSingleRowStyle: ContentStyle
+        get() = if (!centeredMobileSignal && contentStyle == ContentStyle.DUO && singleRowFlatDots) {
+            ContentStyle.DUO
+        } else {
+            ContentStyle.DEFAULT
+        }
 
     val signalDotOffsetY: Float
         get() = if (contentStyle == ContentStyle.DUO) duoSignalDotOffsetY else defaultSignalDotOffsetY
