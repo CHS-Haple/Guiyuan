@@ -10,6 +10,33 @@ import org.junit.Test
 
 class OuterGeometryTest {
     @Test
+    fun contentStyleAppliesToSingleSimAndTransitionSourceGeometry() {
+        for (step in 0..28) {
+            val geometry = OuterGeometry.resolve(0.6f + step * 0.05f)
+            val duoY = geometry.singleDotY(0, ContentStyle.DUO, 0f)
+            for (index in 0..3) {
+                val angle = geometry.bottomDotAngle(index)
+                assertEquals(
+                    cos(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS,
+                    geometry.singleDotX(index, ContentStyle.DEFAULT), 0.0001f,
+                )
+                assertEquals(
+                    sin(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS,
+                    geometry.singleDotY(index, ContentStyle.DEFAULT, 0f), 0.0001f,
+                )
+                assertEquals(geometry.dualDotX(index),
+                    geometry.singleDotX(index, ContentStyle.DUO), 0f)
+                assertEquals("flat Duo row at every weight", duoY,
+                    geometry.singleDotY(index, ContentStyle.DUO, 0f), 0.0001f)
+                assertEquals(duoY - 3f,
+                    geometry.singleDotY(index, ContentStyle.DUO, 3f), 0.0001f)
+            }
+            val radius = geometry.mobileDotRadius
+            assertTrue(58f + duoY + radius < 120f)
+        }
+    }
+
+    @Test
     fun defaultOpticalBaselineRestoresPreferred825Ring() {
         val geometry =
             OuterGeometry.resolve(
