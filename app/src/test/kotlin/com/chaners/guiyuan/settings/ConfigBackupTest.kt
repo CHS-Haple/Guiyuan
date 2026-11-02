@@ -275,7 +275,7 @@ class ConfigBackupTest {
         assertTrue(isBackupVisualKey(
             visualProfileKey(ContentLayout.NETWORK_CENTER, WIFI_WEIGHT_KEY, dual = true),
         ))
-        assertTrue(isBackupVisualKey(BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY))
+        assertTrue(isBackupVisualKey(visualProfileKey(ContentLayout.MOBILE_CENTER, MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY)))
         assertTrue(isBackupVisualKey("battery_color_scheme_library.custom.1.name"))
         assertFalse(isBackupVisualKey("application_ui_scale"))
         assertFalse(isBackupVisualKey("scope_authorization"))
