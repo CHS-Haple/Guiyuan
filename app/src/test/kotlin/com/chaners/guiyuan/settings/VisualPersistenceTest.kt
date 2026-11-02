@@ -141,19 +141,42 @@ class VisualPersistenceTest {
         assertFalse(prefs.readVisualCfg(dual = true).fillFollowsRetract)
     }
     @Test
-    fun duoStyleIsModeWideAndSurvivesLayoutSwitches() {
+    fun contentStyleIsSharedAcrossSignalModesAndLayouts() {
         val prefs = MemoryPreferences()
-        prefs.edit()
+        prefs.edit().putString(DUAL_DOT_STYLE_KEY, DualDotStyle.DUO.persistedValue).apply()
+        for (dual in listOf(false, true)) {
+            for (layout in ContentLayout.entries) {
+                assertEquals(DualDotStyle.DUO, prefs.readVisualCfg(dual = dual, layoutOverride = layout).dualDotStyle)
+            }
+        }
+        prefs.edit().putString(DUAL_DOT_STYLE_KEY, "invalid").apply()
+        assertEquals(DualDotStyle.DEFAULT, prefs.readVisualCfg(dual = true).dualDotStyle)
+    }
+
+    @Test
+    fun contentStyleMigrationPreservesActivePreferenceAndIsIdempotent() {
+        for (dual in listOf(false, true)) {
+            val prefs = MemoryPreferences()
+            prefs.edit()
+                .putBoolean(DUAL_SIGNAL_ENABLED_KEY, dual)
+                .putString(DUAL_DOT_STYLE_KEY, DualDotStyle.DEFAULT.persistedValue)
+                .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), DualDotStyle.DUO.persistedValue)
+                .apply()
+            migrateSharedContentStyleIfNeeded(prefs)
+            val expected = if (dual) DualDotStyle.DUO else DualDotStyle.DEFAULT
+            assertEquals(expected, prefs.readVisualCfg(dual = true).dualDotStyle)
+            assertEquals(expected, prefs.readVisualCfg(dual = false).dualDotStyle)
+            assertFalse(prefs.contains(visualModeKey(true, DUAL_DOT_STYLE_KEY)))
+            val saved = prefs.all.toMap()
+            migrateSharedContentStyleIfNeeded(prefs)
+            assertEquals(saved, prefs.all)
+        }
+        val oldDualOnly = MemoryPreferences()
+        oldDualOnly.edit()
             .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), DualDotStyle.DUO.persistedValue)
             .apply()
-        for (layout in ContentLayout.entries) {
-            assertEquals(DualDotStyle.DUO, prefs.readVisualCfg(dual = true, layoutOverride = layout).dualDotStyle)
-            assertEquals(DualDotStyle.DEFAULT, prefs.readVisualCfg(dual = false, layoutOverride = layout).dualDotStyle)
-        }
-        prefs.edit()
-            .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), "invalid")
-            .apply()
-        assertEquals(DualDotStyle.DEFAULT, prefs.readVisualCfg(dual = true).dualDotStyle)
+        migrateSharedContentStyleIfNeeded(oldDualOnly)
+        assertEquals(DualDotStyle.DUO, oldDualOnly.readVisualCfg(dual = false).dualDotStyle)
     }
 
     @Test
