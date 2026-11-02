@@ -471,8 +471,6 @@ internal fun OnboardingFlow(
                                         is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
                                     },
                                     checked = connected != null,
-                                    warning = framework == XposedStatus.FrameworkUnavailable ||
-                                        framework == XposedStatus.QueryUnavailable,
                                     expanded = expandedPermission == 1,
                                     onToggleDetails = {
                                         expandedPermission = if (expandedPermission == 1) 0 else 1
@@ -499,7 +497,6 @@ internal fun OnboardingFlow(
                                         else -> stringResource(R.string.runtime_scope_disabled)
                                     },
                                     checked = sysUiInScope,
-                                    warning = !sysUiInScope && framework != XposedStatus.Checking && !scopeBusy,
                                     expanded = expandedPermission == 2,
                                     onToggleDetails = {
                                         expandedPermission = if (expandedPermission == 2) 0 else 2
@@ -542,7 +539,6 @@ internal fun OnboardingFlow(
                                         else -> stringResource(R.string.guide_root_not_checked)
                                     },
                                     checked = rootAccess == true,
-                                    warning = !rootChecking && rootAccess == false,
                                     expanded = expandedPermission == 3,
                                     onToggleDetails = {
                                         expandedPermission = if (expandedPermission == 3) 0 else 3
@@ -1106,7 +1102,6 @@ private fun GuidePermissionItem(
     status: String,
     purpose: String,
     checked: Boolean,
-    warning: Boolean,
     expanded: Boolean,
     onToggleDetails: () -> Unit,
     guidance: String? = null,
@@ -1121,13 +1116,6 @@ private fun GuidePermissionItem(
                     contentDescription = status,
                     modifier = Modifier.size(26.dp),
                     tint = MiuixTheme.colorScheme.primary,
-                )
-            } else if (warning) {
-                Icon(
-                    imageVector = MiuixIcons.Regular.Report,
-                    contentDescription = status,
-                    modifier = Modifier.size(26.dp),
-                    tint = MiuixTheme.colorScheme.error,
                 )
             } else {
                 Text(
