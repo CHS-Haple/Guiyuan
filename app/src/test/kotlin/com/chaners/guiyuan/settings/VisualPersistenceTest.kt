@@ -217,6 +217,27 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun optionalFlatSingleRowPersistsAcrossLayoutAndSimMode() {
+        val prefs = MemoryPreferences()
+        prefs.edit().putVisualCfg(
+            VisualCfg(contentStyle = ContentStyle.DUO, singleRowFlatDots = true),
+        ).apply()
+        for (dual in listOf(false, true)) {
+            for (layout in ContentLayout.entries) {
+                val visual = prefs.readVisualCfg(dual = dual, layoutOverride = layout)
+                assertTrue(visual.singleRowFlatDots)
+                assertEquals(ContentStyle.DUO, visual.effectiveSingleRowStyle)
+            }
+        }
+        val disabled = prefs.readVisualCfg().copy(mobileSignalCentered = true)
+        assertEquals(ContentStyle.DUO, disabled.effectiveContentStyle)
+        assertEquals(ContentStyle.DEFAULT, disabled.effectiveSingleRowStyle)
+        assertTrue(disabled.singleRowFlatDots)
+        assertEquals(ContentStyle.DUO,
+            disabled.copy(mobileSignalCentered = false).effectiveSingleRowStyle)
+    }
+
+    @Test
     fun dualOffsetsStayIndependentAcrossStylesAndLayouts() {
         val prefs = MemoryPreferences()
         val dual = VisualCfg(
