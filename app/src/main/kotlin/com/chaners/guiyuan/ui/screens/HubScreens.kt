@@ -464,13 +464,37 @@ internal fun FeaturesScreen(
                     UiDropdownPreference(
                         title = stringResource(R.string.dual_dot_style_title),
                         items = dualDotStyles,
-                        selectedIndex = visual.dualDotStyle.ordinal,
+                        selectedIndex = visual.effectiveContentStyle.ordinal,
+                        summary = if (visual.centeredMobileSignal) {
+                            stringResource(R.string.centered_mobile_style_locked)
+                        } else null,
                         showValue = true,
-                        enabled = featureCfg.enabled,
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_layers, featureCfg.enabled) },
+                        enabled = featureCfg.enabled && !visual.centeredMobileSignal,
+                        startAction = {
+                            SemanticLeadingIcon(
+                                R.drawable.ic_material_symbol_layers,
+                                featureCfg.enabled && !visual.centeredMobileSignal,
+                            )
+                        },
                         onSelectedIndexChange = { index ->
                             DualDotStyle.entries.getOrNull(index)?.let(visualRepo::setDualDotStyle)
                         },
+                    )
+                }
+                if (visual.layout == ContentLayout.NETWORK_CENTER &&
+                    search.matches(R.string.mobile_signal_centered_title)) {
+                    SwitchPreference(
+                        title = stringResource(R.string.mobile_signal_centered_title),
+                        summary = stringResource(R.string.mobile_signal_centered_summary),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                R.drawable.ic_material_symbol_signal_cellular_alt,
+                                featureCfg.enabled,
+                            )
+                        },
+                        checked = visual.mobileSignalCentered,
+                        enabled = featureCfg.enabled,
+                        onCheckedChange = visualRepo::setMobileSignalCentered,
                     )
                 }
                 if (search.matches(R.string.dual_signal_title) ||
@@ -490,8 +514,34 @@ internal fun FeaturesScreen(
                         onCheckedChange = visualRepo::setDualSignal,
                     )
                 }
-                AnimatedPreferenceGroup(visible = visual.dualSignal) {
-                    if (search.matches(R.string.dual_mobile_vertical_offset)) {
+                AnimatedPreferenceGroup(visible = visual.dualSignal || visual.centeredMobileSignal) {
+                    if (visual.centeredMobileSignal &&
+                        search.matches(R.string.mobile_type_bottom_offset)) {
+                        SliderPreference(
+                            value = visual.mobileTypeBottomOffsetY,
+                            onValueChange = visualRepo::setMobileTypeBottomOffsetY,
+                            title = stringResource(R.string.mobile_type_bottom_offset),
+                            startAction = {
+                                SemanticLeadingIcon(
+                                    R.drawable.ic_material_symbol_5g,
+                                    featureCfg.enabled,
+                                    R.drawable.ic_material_symbol_height_w500,
+                                )
+                            },
+                            valueText = stringResource(
+                                R.string.battery_top_offset_value,
+                                visual.mobileTypeBottomOffsetY.roundToInt(),
+                            ),
+                            valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
+                            steps = 19,
+                            showKeyPoints = true,
+                            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                            keyPoints = listOf(0f),
+                            magnetThreshold = 0.035f,
+                            enabled = featureCfg.enabled,
+                        )
+                    } else if (visual.dualSignal &&
+                        search.matches(R.string.dual_mobile_vertical_offset)) {
                         SliderPreference(
                             value = visual.dualMobileOffsetY,
                             onValueChange = visualRepo::setDualMobileOffsetY,
