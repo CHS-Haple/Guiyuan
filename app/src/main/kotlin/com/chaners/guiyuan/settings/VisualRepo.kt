@@ -109,19 +109,22 @@ internal fun migrateSharedLayoutIfNeeded(prefs: SharedPreferences) {
 }
 
 
-// Content style is shared across SIM modes; preserve the current selection.
+// Import both the original per-dual preference and B1718/B1719's global key.
+// A migrated user choice wins, and all obsolete keys are retired atomically.
 internal fun migrateSharedContentStyleIfNeeded(prefs: SharedPreferences) {
-    if (prefs.getInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 0) >= 1) return
-    val legacyDual = visualModeKey(true, DUAL_DOT_STYLE_KEY)
+    if (prefs.getInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 0) >= 2 && prefs.contains(CONTENT_STYLE_KEY)) return
+    val legacyDual = visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY)
     val selected = when {
+        prefs.contains(CONTENT_STYLE_KEY) -> prefs.getString(CONTENT_STYLE_KEY, null)
         prefs.dualSignalEnabled() && prefs.contains(legacyDual) -> prefs.getString(legacyDual, null)
-        prefs.contains(DUAL_DOT_STYLE_KEY) -> prefs.getString(DUAL_DOT_STYLE_KEY, null)
+        prefs.contains(LEGACY_DUAL_DOT_STYLE_KEY) -> prefs.getString(LEGACY_DUAL_DOT_STYLE_KEY, null)
         else -> prefs.getString(legacyDual, null)
     }
     prefs.edit()
-        .putString(DUAL_DOT_STYLE_KEY, ContentStyle.fromPersisted(selected).persistedValue)
+        .putString(CONTENT_STYLE_KEY, ContentStyle.fromPersisted(selected).persistedValue)
+        .remove(LEGACY_DUAL_DOT_STYLE_KEY)
         .remove(legacyDual)
-        .putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 1)
+        .putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 2)
         .apply()
 }
 
@@ -275,7 +278,7 @@ internal class VisualRepo(context: Context) {
 
     fun setContentStyle(style: ContentStyle) {
         preferences.edit()
-            .putString(DUAL_DOT_STYLE_KEY, style.persistedValue)
+            .putString(CONTENT_STYLE_KEY, style.persistedValue)
             .apply()
     }
 
@@ -439,7 +442,7 @@ internal class VisualRepo(context: Context) {
     fun setDualMobileOffsetY(offset: Float) {
         if (!preferences.dualSignalEnabled()) return
         val style = ContentStyle.fromPersisted(
-            preferences.getString(DUAL_DOT_STYLE_KEY, null),
+            preferences.getString(CONTENT_STYLE_KEY, null),
         )
         val key = if (style == ContentStyle.DUO) DUAL_DUO_OFFSET_Y_KEY else DUAL_DEFAULT_OFFSET_Y_KEY
         preferences.edit()
@@ -587,8 +590,8 @@ internal class VisualRepo(context: Context) {
             editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
         }
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
-        editor.putString(DUAL_DOT_STYLE_KEY, active.contentStyle.persistedValue)
-            .putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 1)
+        editor.putString(CONTENT_STYLE_KEY, active.contentStyle.persistedValue)
+            .putInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 2)
             .putBoolean(MOBILE_SIGNAL_CENTERED_KEY, active.mobileSignalCentered)
             .putFloat(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, active.mobileTypeBottomOffsetY)
         // Restored physical charging scales use the current reference.
@@ -703,12 +706,11 @@ internal fun SharedPreferences.readVisualCfg(
         layout = layout,
         dualSignal = dual,
         contentStyle = ContentStyle.fromPersisted(
-            if (dual && getInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 0) == 0) {
-                getString(visualModeKey(true, DUAL_DOT_STYLE_KEY), null)
-                    ?: getString(DUAL_DOT_STYLE_KEY, null)
-            } else {
-                getString(DUAL_DOT_STYLE_KEY, null)
-            },
+            getString(CONTENT_STYLE_KEY, null)
+                ?: (if (dual && getInt(SHARED_CONTENT_STYLE_SCHEMA_KEY, 0) == 0) {
+                    getString(visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY), null)
+                } else null)
+                ?: getString(LEGACY_DUAL_DOT_STYLE_KEY, null),
         ),
         mobileSignalCentered = getBoolean(MOBILE_SIGNAL_CENTERED_KEY, false),
         mobileTypeBottomOffsetY = getFloat(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
@@ -801,7 +803,7 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         CONTENT_LAYOUT_KEY,
         layout.persistedValue,
     ).putString(
-        DUAL_DOT_STYLE_KEY,
+        CONTENT_STYLE_KEY,
         normalized.contentStyle.persistedValue,
     ).putBoolean(
         MOBILE_SIGNAL_CENTERED_KEY,
