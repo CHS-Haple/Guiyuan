@@ -8,6 +8,7 @@ internal const val CONTENT_LAYOUT_KEY = "content_layout"
 internal const val DUAL_SIGNAL_ENABLED_KEY = "dual_signal_enabled"
 internal const val DUAL_PROFILES_INITIALIZED_KEY = "dual_profiles_initialized"
 internal const val CONTENT_STYLE_KEY = "content_style"
+internal const val SINGLE_ROW_FLAT_DOTS_KEY = "single_row_flat_dots"
 // Only used to import settings saved before content style was shared.
 internal const val LEGACY_DUAL_DOT_STYLE_KEY = "dual_dot_style"
 internal const val SHARED_CONTENT_STYLE_SCHEMA_KEY = "shared_content_style_schema"
@@ -95,6 +96,7 @@ internal val BATTERY_COLOR_KEYS =
 internal val GLOBAL_VISUAL_KEYS =
     setOf(
         CONTENT_STYLE_KEY,
+        SINGLE_ROW_FLAT_DOTS_KEY,
         MOBILE_SIGNAL_CENTERED_KEY,
         MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
         BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
