@@ -175,8 +175,9 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion")
-    // Only the OS4 upstream source-set uses native Glass icons; fallback keeps pinned vectors.
+    // Trial: source-matched native Glass module (local Glass UI is Published fallback only).
     if (os4DialogSurfaces) {
+        implementation("top.yukonga.miuix.kmp:miuix-glass-android:$miuixVersion")
         implementation("top.yukonga.miuix.kmp:miuix-glass-icons-android:$miuixVersion")
     }
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion")

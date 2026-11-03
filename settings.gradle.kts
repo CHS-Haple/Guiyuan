@@ -59,8 +59,8 @@ include(":app")
 // Opt-in source-matched OS4 graph. The default app still uses published MIUIX packages.
 providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.let { source ->
     val miuix = file(source)
-    // Native Glass Icons are source-substituted, while Glass UI remains app-local.
-    // This checks checkout completeness, not UI/API parity or published availability.
+    // Native Glass and Glass Icons are source-substituted for this isolated compile experiment.
+    // Published fallback retains a separately compiled copy of the accepted local Glass UI.
     val requiredSourceModules = listOf(
         "miuix-core",
         "miuix-ui",
@@ -89,6 +89,7 @@ providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.
             substitute(module("top.yukonga.miuix.kmp:miuix-blur-android")).using(project(":miuix-blur"))
             substitute(module("top.yukonga.miuix.kmp:miuix-preference-android")).using(project(":miuix-preference"))
             substitute(module("top.yukonga.miuix.kmp:miuix-icons-android")).using(project(":miuix-icons"))
+            substitute(module("top.yukonga.miuix.kmp:miuix-glass-android")).using(project(":miuix-glass"))
             substitute(module("top.yukonga.miuix.kmp:miuix-glass-icons-android")).using(project(":miuix-glass-icons"))
             substitute(module("top.yukonga.miuix.kmp:miuix-nav-android")).using(project(":miuix-nav"))
         }
