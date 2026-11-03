@@ -470,6 +470,38 @@ class ConfigBackupTest {
     }
 
     @Test
+    fun importedSingleRowChoiceFollowsActiveModeWithoutChangingDualStyle() {
+        val source = sample()
+        val mismatched = source.copy(
+            visual = source.visual.copy(profiles = source.visual.profiles.map { cfg ->
+                cfg.copy(
+                    singleRowDotArrangement =
+                        if (cfg.dualSignal) SignalDotArrangement.HORIZONTAL
+                        else SignalDotArrangement.CURVED,
+                    dualRowDotArrangement =
+                        if (cfg.dualSignal) SignalDotArrangement.CURVED
+                        else SignalDotArrangement.HORIZONTAL,
+                )
+            }),
+        )
+        val restored = ConfigBackupFormat.decode(ConfigBackupFormat.encode(mismatched))
+        assertTrue(restored.visual.profiles.all {
+            it.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL
+        })
+        assertEquals(
+            mismatched.visual.profiles.map { it.dualRowDotArrangement },
+            restored.visual.profiles.map { it.dualRowDotArrangement },
+        )
+        val singleEnabled = mismatched.copy(
+            visual = mismatched.visual.copy(dualEnabled = false),
+        )
+        val singleRestored = ConfigBackupFormat.decode(ConfigBackupFormat.encode(singleEnabled))
+        assertTrue(singleRestored.visual.profiles.all {
+            it.singleRowDotArrangement == SignalDotArrangement.CURVED
+        })
+    }
+
+    @Test
     fun malformedColorAndNonFiniteInputCannotBeSilentlyNormalized() {
         val normal = sample()
         val badVisual = normal.copy(visual = normal.visual.copy(profiles =

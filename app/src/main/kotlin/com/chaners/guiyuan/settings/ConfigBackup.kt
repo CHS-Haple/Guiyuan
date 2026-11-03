@@ -196,13 +196,22 @@ internal object ConfigBackupFormat {
                 cfg.wifiScale, cfg.airplaneScale, cfg.noSimScale, cfg.mobileTypeScale,
             ).all(Float::isFinite)) { "Nonfinite visual setting" }
         }
+        val currentMode = backup.visual.dualEnabled && backup.visual.dualInitialized
+        val chosenSingleStyles = backup.visual.profiles
+            .filter { it.dualSignal == currentMode }
+            .associate { it.layout to it.singleRowDotArrangement }
         return backup.copy(
             feature = backup.feature.copy(
                 lowBatteryThreshold = backup.feature.lowBatteryThreshold
                     .coerceIn(LOW_BATTERY_THRESHOLD_MIN, LOW_BATTERY_THRESHOLD_MAX),
             ),
             visual = backup.visual.copy(
-                profiles = backup.visual.profiles.map(VisualCfg::normalized),
+                profiles = backup.visual.profiles.map { cfg ->
+                    cfg.normalized().copy(
+                        singleRowDotArrangement =
+                            chosenSingleStyles[cfg.layout] ?: cfg.singleRowDotArrangement,
+                    )
+                },
             ),
         )
     }

@@ -57,36 +57,47 @@ internal fun SharedPreferences.rollbackBackupVisuals(snapshot: Map<String, Any?>
     return editor.commit()
 }
 
-// Keep the released per-SIM style while moving to two explicit row choices.
-// The retired lower-single-row switch only made a horizontal row when the
-// previous dual-row style was horizontal; every other combination stayed curved.
+// Convert the retired lower-row switch using its old effective behavior.
+// A single-row choice is shared across SIM modes within each content layout.
 internal fun migrateSignalDotArrangementsIfNeeded(prefs: SharedPreferences) {
     if (prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0) >= 4) return
     val editor = prefs.edit()
-    for (dual in listOf(false, true)) {
-        val releasedKey = visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY)
-        val releasedStyle = SignalDotArrangement.fromPersisted(prefs.getString(releasedKey, null))
-        for (layout in ContentLayout.entries) {
-            val dualKey = visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, dual)
-            val dualStyle = if (prefs.contains(dualKey)) {
-                SignalDotArrangement.fromPersisted(prefs.getString(dualKey, null))
-            } else {
-                releasedStyle
-            }
-            if (!prefs.contains(dualKey)) editor.putString(dualKey, dualStyle.persistedValue)
-            val singleKey = visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY, dual)
-            val legacyKey = visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, dual)
-            if (!prefs.contains(singleKey)) {
-                val horizontal = prefs.getBoolean(legacyKey, false) &&
-                    dualStyle == SignalDotArrangement.HORIZONTAL
-                editor.putString(
-                    singleKey,
-                    (if (horizontal) SignalDotArrangement.HORIZONTAL else SignalDotArrangement.CURVED).persistedValue,
-                )
-            }
-            editor.remove(legacyKey)
+    val activeDual = prefs.getBoolean(DUAL_SIGNAL_ENABLED_KEY, false) &&
+        prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false)
+    fun oldDualStyle(layout: ContentLayout, dual: Boolean): SignalDotArrangement {
+        val key = visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, dual)
+        val oldKey = visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY)
+        return SignalDotArrangement.fromPersisted(
+            if (prefs.contains(key)) prefs.getString(key, null) else prefs.getString(oldKey, null),
+        )
+    }
+    for (layout in ContentLayout.entries) {
+        val legacySingleKey =
+            visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY, activeDual)
+        val legacySwitchKey =
+            visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, activeDual)
+        val activeSingleStyle = if (prefs.contains(legacySingleKey)) {
+            SignalDotArrangement.fromPersisted(prefs.getString(legacySingleKey, null))
+        } else if (prefs.getBoolean(legacySwitchKey, false) &&
+            oldDualStyle(layout, activeDual) == SignalDotArrangement.HORIZONTAL) {
+            SignalDotArrangement.HORIZONTAL
+        } else {
+            SignalDotArrangement.CURVED
         }
-        editor.remove(releasedKey)
+        for (dual in listOf(false, true)) {
+            val dualKey = visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, dual)
+            if (!prefs.contains(dualKey)) {
+                editor.putString(dualKey, oldDualStyle(layout, dual).persistedValue)
+            }
+            editor.putString(
+                visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY, dual),
+                activeSingleStyle.persistedValue,
+            )
+            editor.remove(visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, dual))
+        }
+    }
+    for (dual in listOf(false, true)) {
+        editor.remove(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY))
     }
     editor.remove(SIGNAL_DOT_ARRANGEMENT_KEY)
         .remove(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)

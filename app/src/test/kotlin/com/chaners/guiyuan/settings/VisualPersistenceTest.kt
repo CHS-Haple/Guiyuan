@@ -138,10 +138,10 @@ class VisualPersistenceTest {
             layoutOverride = ContentLayout.BATTERY_CENTER,
         ).horizontalSignalDotOffsetY, 0f)
 
-        // The curved arrangement in a single-SIM profile still has a separate value.
+        // The single-row arrangement controls the single-mode slider's offset bank.
         prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
             .putString(
-                visualProfileKey(ContentLayout.BATTERY_CENTER, SIGNAL_DOT_ARRANGEMENT_KEY),
+                visualProfileKey(ContentLayout.BATTERY_CENTER, SINGLE_ROW_DOT_STYLE_KEY),
                 SignalDotArrangement.CURVED.persistedValue,
             ).apply()
         prefs.writeSignalDotOffsetY(4f)
@@ -514,27 +514,38 @@ class VisualPersistenceTest {
     }
 
     @Test
-    fun legacyFlatSwitchMigratesWithoutChangingSingleFallback() {
-        val prefs = MemoryPreferences()
-        val layout = ContentLayout.NETWORK_CENTER
-        val dualStyleKey = visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, true)
-        val singleStyleKey = visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY, true)
-        val legacyKey = visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, true)
-        prefs.edit()
-            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3)
-            .putString(dualStyleKey, SignalDotArrangement.HORIZONTAL.persistedValue)
-            .putBoolean(legacyKey, false)
-            .apply()
-        migrateSignalDotArrangementsIfNeeded(prefs)
-        assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(true, layout).dualRowDotArrangement)
-        assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg(true, layout).singleRowDotArrangement)
-        assertFalse(prefs.contains(legacyKey))
-        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
-
-        prefs.edit().remove(singleStyleKey).putBoolean(legacyKey, true)
-            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3).apply()
-        migrateSignalDotArrangementsIfNeeded(prefs)
-        assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(true, layout).singleRowDotArrangement)
+    fun legacySingleRowMigrationPreservesActiveModeAndSharesItsChoice() {
+        for (activeDual in listOf(false, true)) {
+            val prefs = MemoryPreferences()
+            val layout = ContentLayout.NETWORK_CENTER
+            prefs.edit().putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3)
+                .putBoolean(DUAL_SIGNAL_ENABLED_KEY, activeDual)
+                .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+                .putString(
+                    visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, true),
+                    SignalDotArrangement.HORIZONTAL.persistedValue,
+                )
+                .putBoolean(
+                    visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, true),
+                    true,
+                ).apply()
+            migrateSignalDotArrangementsIfNeeded(prefs)
+            val chosen = if (activeDual) SignalDotArrangement.HORIZONTAL else SignalDotArrangement.CURVED
+            for (dual in listOf(false, true)) {
+                assertEquals(chosen, prefs.readVisualCfg(dual, layout).singleRowDotArrangement)
+                assertFalse(prefs.contains(
+                    visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, dual),
+                ))
+            }
+            assertEquals(
+                SignalDotArrangement.HORIZONTAL,
+                prefs.readVisualCfg(true, layout).dualRowDotArrangement,
+            )
+            assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+            val snapshot = prefs.all.toMap()
+            migrateSignalDotArrangementsIfNeeded(prefs)
+            assertEquals(snapshot, prefs.all)
+        }
     }
 
     @Test

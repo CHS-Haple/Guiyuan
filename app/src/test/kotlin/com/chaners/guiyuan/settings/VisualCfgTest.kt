@@ -116,7 +116,6 @@ class VisualCfgTest {
         assertEquals(SignalDotArrangement.CURVED, centered.singleRowDotArrangement)
         assertEquals(0.85f, centered.mobileTypeScale, 0f)
         assertEquals(-3f, centered.mobileTypeBottomOffsetY, 0f)
-        assertEquals(SignalDotArrangement.CURVED, centered.singleRowDotArrangement)
         assertEquals(false, centered.copy(layout = ContentLayout.NETWORK_CENTER).centeredMobileSignal)
         assertEquals(NETWORK_TOP_OFFSET_MAX,
             centered.copy(mobileTypeBottomOffsetY = 99f).normalized().mobileTypeBottomOffsetY, 0f)
