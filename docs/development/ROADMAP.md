@@ -4,7 +4,7 @@ This file describes future direction only. Current truth belongs in [CURRENT.md]
 
 ## Established baseline
 
-The current pre-1.0 line already has:
+The published 1.0.0 stable line includes:
 
 - projected Home presentation with native-owned surrounding layout and motion;
 - optional Keyguard and AOD presentation through one host-scoped family owner;
@@ -56,11 +56,11 @@ For a new SystemUI target:
 
 Compatibility expansion must not weaken the current target's ownership and restoration contracts.
 
-## 1.0.0 qualification
+## Stable-release qualification
 
-1.0.0 advertises **HyperOS 4 only**; the OS3 UI-style setting does not imply support for HyperOS 3. Broader ROM/SystemUI compatibility requires separate evidence.
+[Guiyuan 1.0.0](https://github.com/CHS-Haple/Guiyuan/releases/tag/v1.0.0) was published on 2026-11-02 and advertises **HyperOS 4 only**. The OS3 UI-style setting does not imply support for HyperOS 3. Broader ROM/SystemUI compatibility requires separate evidence.
 
-Before the first formal release:
+For subsequent stable releases or new runtime capabilities:
 
 - define and document the supported SystemUI/device scope;
 - close acceptance for the advertised Home, Keyguard, AOD and Control Center transition surfaces;
@@ -70,7 +70,7 @@ Before the first formal release:
 - confirm README, privacy, security, support, third-party notices and changelog are release-ready;
 - complete a final runtime, maintainability and release-workflow review.
 
-1.0.0 remains an explicit maintainer decision.
+Future version promotions remain explicit maintainer decisions; an accepted source change or development Build is not an automatic stable release.
 
 ## Permanent guardrails
 
