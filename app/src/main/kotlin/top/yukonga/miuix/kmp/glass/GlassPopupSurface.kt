@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
@@ -178,9 +179,11 @@ internal fun GlassPopupSurface(
                     while (true) {
                         val event = awaitPointerEvent(PointerEventPass.Initial)
                         val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        // A consumed up event is cancellation, not an intentional outside release.
+                        val released = change.changedToUp()
                         change.consume()
                         if (!change.pressed) {
-                            currentOnDismissRequest()
+                            if (released) currentOnDismissRequest()
                             break
                         }
                     }
