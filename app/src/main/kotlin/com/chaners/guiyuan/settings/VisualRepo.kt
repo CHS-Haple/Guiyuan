@@ -114,6 +114,11 @@ internal fun migrateSharedLayoutVisualsIfNeeded(
         for (key in PROFILE_VISUAL_BASE_KEYS) {
             val canonical = visualProfileKey(layout, key)
             val previousDual = visualModeKey(true, canonical)
+            // When the dot-style migration is staged in this same editor,
+            // neither a missing dual bank nor a stale unscoped key may
+            // overwrite its effective active-mode selection.
+            val migratedStyle = preserveMigratedSignalStyles &&
+                (key == DUAL_ROW_DOT_ARRANGEMENT_KEY || key == SINGLE_ROW_DOT_STYLE_KEY)
             if (activeDual) {
                 when (val value = stored[previousDual]) {
                     is Boolean -> editor.putBoolean(canonical, value)
@@ -125,13 +130,11 @@ internal fun migrateSharedLayoutVisualsIfNeeded(
                         // not the single-bank value, in the previous version.
                         // The earlier dot-style migration has already selected
                         // the effective active style and must not be undone.
-                        val migratedStyle = preserveMigratedSignalStyles &&
-                            key in setOf(DUAL_ROW_DOT_ARRANGEMENT_KEY, SINGLE_ROW_DOT_STYLE_KEY)
                         if (!migratedStyle) editor.remove(canonical)
                     }
                     else -> error("Unexpected saved visual preference type: $key")
                 }
-            } else if (!stored.containsKey(canonical)) {
+            } else if (!stored.containsKey(canonical) && !migratedStyle) {
                 // Earlier single-mode installations may still use unscoped
                 // preference names. Materialize those values per layout.
                 when (val value = stored[key]) {

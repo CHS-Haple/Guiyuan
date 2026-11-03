@@ -732,6 +732,41 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun combinedLegacyMigrationDoesNotRestoreStaleSingleModeRootStyles() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.NETWORK_CENTER
+        // Legacy per-mode selection is horizontal; these unscoped fields
+        // must not override the dot-style selection staged just before
+        // layout profile flattening in the same SharedPreferences.Editor.
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3)
+            .putString(
+                visualModeKey(false, LEGACY_DUAL_DOT_STYLE_KEY),
+                SignalDotArrangement.HORIZONTAL.persistedValue,
+            )
+            .putString(DUAL_ROW_DOT_ARRANGEMENT_KEY, SignalDotArrangement.CURVED.persistedValue)
+            .putString(SINGLE_ROW_DOT_STYLE_KEY, SignalDotArrangement.HORIZONTAL.persistedValue)
+            .apply()
+
+        migrateVisualPrefsIfNeeded(prefs)
+
+        for (dual in listOf(false, true)) {
+            val cfg = prefs.readVisualCfg(dual, layout)
+            assertEquals(SignalDotArrangement.HORIZONTAL, cfg.dualRowDotArrangement)
+            assertEquals(SignalDotArrangement.CURVED, cfg.singleRowDotArrangement)
+        }
+        assertFalse(prefs.contains(DUAL_ROW_DOT_ARRANGEMENT_KEY))
+        assertFalse(prefs.contains(SINGLE_ROW_DOT_STYLE_KEY))
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
+        val migrated = prefs.all.toMap()
+        migrateVisualPrefsIfNeeded(prefs)
+        assertEquals(migrated, prefs.all)
+    }
+
+    @Test
     fun freshLegacyMigrationPublishesBothSchemasInOneWrite() {
         val prefs = MemoryPreferences()
         val layout = ContentLayout.MOBILE_CENTER
