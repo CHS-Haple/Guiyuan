@@ -605,14 +605,26 @@ internal fun visualProfileKey(
     baseKey: String,
 ): String = layout.persistedValue + "." + baseKey
 
+private fun storedProfileKey(
+    layout: ContentLayout,
+    baseKey: String,
+    legacyDualBank: Boolean,
+): String {
+    val sharedKey = visualProfileKey(layout, baseKey)
+    return if (legacyDualBank) visualModeKey(true, sharedKey) else sharedKey
+}
+
 private fun SharedPreferences.profileBoolean(
     layout: ContentLayout,
     baseKey: String,
     defaultValue: Boolean,
+    legacyDualBank: Boolean = false,
 ): Boolean {
-    val profileKey = visualProfileKey(layout, baseKey)
+    val profileKey = storedProfileKey(layout, baseKey, legacyDualBank)
     return if (contains(profileKey)) {
         getBoolean(profileKey, defaultValue)
+    } else if (legacyDualBank) {
+        defaultValue
     } else {
         getBoolean(baseKey, defaultValue)
     }
@@ -622,10 +634,13 @@ private fun SharedPreferences.profileFloat(
     layout: ContentLayout,
     baseKey: String,
     defaultValue: Float,
+    legacyDualBank: Boolean = false,
 ): Float {
-    val profileKey = visualProfileKey(layout, baseKey)
+    val profileKey = storedProfileKey(layout, baseKey, legacyDualBank)
     return if (contains(profileKey)) {
         getFloat(profileKey, defaultValue)
+    } else if (legacyDualBank) {
+        defaultValue
     } else {
         getFloat(baseKey, defaultValue)
     }
@@ -635,10 +650,13 @@ private fun SharedPreferences.profileInt(
     layout: ContentLayout,
     baseKey: String,
     defaultValue: Int,
+    legacyDualBank: Boolean = false,
 ): Int {
-    val profileKey = visualProfileKey(layout, baseKey)
+    val profileKey = storedProfileKey(layout, baseKey, legacyDualBank)
     return if (contains(profileKey)) {
         getInt(profileKey, defaultValue)
+    } else if (legacyDualBank) {
+        defaultValue
     } else {
         getInt(baseKey, defaultValue)
     }
@@ -648,8 +666,9 @@ private fun SharedPreferences.profileString(
     layout: ContentLayout,
     baseKey: String,
     defaultValue: String?,
+    legacyDualBank: Boolean,
 ): String? {
-    val profileKey = visualProfileKey(layout, baseKey)
+    val profileKey = storedProfileKey(layout, baseKey, legacyDualBank)
     return if (contains(profileKey)) getString(profileKey, defaultValue)
     else getString(baseKey, defaultValue)
 }
@@ -659,19 +678,30 @@ internal fun SharedPreferences.readVisualCfg(
     layoutOverride: ContentLayout? = null,
 ): VisualCfg {
     val layout = layoutOverride ?: readLayout()
-    fun flag(key: String, default: Boolean) = profileBoolean(layout, key, default)
-    fun size(key: String, default: Float) = profileFloat(layout, key, default)
-    fun weight(key: String, default: Int) = profileInt(layout, key, default)
+    // SystemUI can bind an older remote snapshot before the app migrates it.
+    // Only read the retired dual bank when that bank actually exists.
+    val legacyDualBank = dual &&
+        getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0) < 1 &&
+        getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false) &&
+        PROFILE_VISUAL_BASE_KEYS.any { key ->
+            contains(visualModeKey(true, visualProfileKey(layout, key)))
+        }
+    fun flag(key: String, default: Boolean) =
+        profileBoolean(layout, key, default, legacyDualBank)
+    fun size(key: String, default: Float) =
+        profileFloat(layout, key, default, legacyDualBank)
+    fun weight(key: String, default: Int) =
+        profileInt(layout, key, default, legacyDualBank)
     val topOffset = size(BATTERY_TOP_VERTICAL_OFFSET_KEY, topOffsetYDefault(layout))
     // Preserve existing battery-centered network position when split keys are first read.
     val oldNetworkOffset =
         if (layout == ContentLayout.BATTERY_CENTER) topOffsetYUi(topOffset) else 0f
 
     val dualStyle = SignalDotArrangement.fromPersisted(
-        profileString(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, null)
+        profileString(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, null, legacyDualBank)
             ?: getString(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY), null),
     )
-    val singleStyle = profileString(layout, SINGLE_ROW_DOT_STYLE_KEY, null)
+    val singleStyle = profileString(layout, SINGLE_ROW_DOT_STYLE_KEY, null, legacyDualBank)
         ?.let(SignalDotArrangement::fromPersisted)
         ?: if (flag(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, false) &&
             dualStyle == SignalDotArrangement.HORIZONTAL) {
@@ -863,11 +893,12 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY),
         normalized.mobileTypeWeight,
     ).putBatteryColors(normalized)
-    return if (normalized.dualSignal) {
-        editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
-    } else {
-        editor
-    }
+    // One writer serves app-local settings and the SystemUI remote mirror.
+    // Publish the schema with the values so stale dual banks cannot win later.
+    return editor
+        .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+        .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
+        .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
 }
 
 private fun SharedPreferences.batteryColorMode(

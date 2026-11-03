@@ -258,6 +258,71 @@ class VisualPersistenceTest {
         assertEquals(1f, prefs.readVisualCfg().combinedScale, 0.001f)
     }
 
+
+    @Test
+    fun oldRemoteDualBankRemainsReadableUntilTheSharedMirrorIsPublished() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.NETWORK_CENTER
+        val sharedScale = visualProfileKey(layout, WIFI_SIZE_SCALE_KEY)
+        val oldDualScale = visualModeKey(true, sharedScale)
+        val sharedStyle = visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY)
+        val oldDualStyle = visualModeKey(true, sharedStyle)
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putFloat(sharedScale, 0.71f)
+            .putFloat(oldDualScale, 1.13f)
+            .putFloat(visualProfileKey(layout, COMBINED_SCALE_KEY), 0.75f)
+            .putInt(visualModeKey(true, visualProfileKey(layout, WIFI_WEIGHT_KEY)), 120)
+            .putString(sharedStyle, SignalDotArrangement.CURVED.persistedValue)
+            .putString(oldDualStyle, SignalDotArrangement.HORIZONTAL.persistedValue)
+            .apply()
+
+        // SystemUI can read the untouched old remote store before app startup.
+        val before = prefs.all.toMap()
+        val legacy = prefs.readVisualCfg()
+        assertEquals(1.13f, legacy.wifiScale, 0f)
+        assertEquals(120, legacy.wifiWeight)
+        assertEquals(SignalDotArrangement.HORIZONTAL, legacy.dualRowDotArrangement)
+        assertEquals(COMBINED_SCALE_DEFAULT, legacy.combinedScale, 0f)
+        assertEquals(0.71f, prefs.readVisualCfg(dual = false).wifiScale, 0f)
+        assertEquals(before, prefs.all)
+
+        // The same writer mirrors new settings and their schema atomically.
+        prefs.edit().putVisualCfg(
+            VisualCfg(
+                layout = layout,
+                dualSignal = true,
+                wifiScale = 0.89f,
+                wifiWeight = 86,
+                combinedScale = 0.83f,
+                dualRowDotArrangement = SignalDotArrangement.CURVED,
+            ),
+        ).apply()
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
+        assertTrue(prefs.contains(oldDualScale))
+        for (dual in listOf(false, true)) {
+            val current = prefs.readVisualCfg(dual = dual, layoutOverride = layout)
+            assertEquals(0.89f, current.wifiScale, 0f)
+            assertEquals(86, current.wifiWeight)
+            assertEquals(0.83f, current.combinedScale, 0f)
+            assertEquals(SignalDotArrangement.CURVED, current.dualRowDotArrangement)
+        }
+    }
+
+    @Test
+    fun freshSharedPreferencesDoNotRequireAnOldDualBank() {
+        val prefs = MemoryPreferences()
+        val key = visualProfileKey(ContentLayout.NETWORK_CENTER, WIFI_SIZE_SCALE_KEY)
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putFloat(key, 0.92f)
+            .apply()
+        assertEquals(0.92f, prefs.readVisualCfg().wifiScale, 0f)
+    }
+
     @Test
     fun remoteMirrorPreservesSharedColorsWhileSwitchingGeometry() {
         val local = MemoryPreferences()
