@@ -674,7 +674,7 @@ internal fun FeaturesScreen(
                             enabled = featureCfg.enabled,
                             startAction = {
                                 SemanticLeadingIcon(
-                                    R.drawable.ic_material_symbol_donut_large,
+                                    R.drawable.ic_horizontal_ring_opening,
                                     featureCfg.enabled,
                                 )
                             },
