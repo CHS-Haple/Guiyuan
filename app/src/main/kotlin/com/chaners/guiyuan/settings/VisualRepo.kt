@@ -57,23 +57,40 @@ internal fun SharedPreferences.rollbackBackupVisuals(snapshot: Map<String, Any?>
     return editor.commit()
 }
 
-// v1.0.0 stored dot style per SIM mode. Split that released setting into
-// independent layout profiles once. Unreleased Canary settings are not imported.
+// Keep the released per-SIM style while moving to two explicit row choices.
+// The retired lower-single-row switch only made a horizontal row when the
+// previous dual-row style was horizontal; every other combination stayed curved.
 internal fun migrateSignalDotArrangementsIfNeeded(prefs: SharedPreferences) {
-    if (prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0) >= 3) return
+    if (prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0) >= 4) return
     val editor = prefs.edit()
     for (dual in listOf(false, true)) {
         val releasedKey = visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY)
         val releasedStyle = SignalDotArrangement.fromPersisted(prefs.getString(releasedKey, null))
         for (layout in ContentLayout.entries) {
-            val target = visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, dual)
-            if (!prefs.contains(target)) editor.putString(target, releasedStyle.persistedValue)
+            val dualKey = visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, dual)
+            val dualStyle = if (prefs.contains(dualKey)) {
+                SignalDotArrangement.fromPersisted(prefs.getString(dualKey, null))
+            } else {
+                releasedStyle
+            }
+            if (!prefs.contains(dualKey)) editor.putString(dualKey, dualStyle.persistedValue)
+            val singleKey = visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY, dual)
+            val legacyKey = visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, dual)
+            if (!prefs.contains(singleKey)) {
+                val horizontal = prefs.getBoolean(legacyKey, false) &&
+                    dualStyle == SignalDotArrangement.HORIZONTAL
+                editor.putString(
+                    singleKey,
+                    (if (horizontal) SignalDotArrangement.HORIZONTAL else SignalDotArrangement.CURVED).persistedValue,
+                )
+            }
+            editor.remove(legacyKey)
         }
         editor.remove(releasedKey)
     }
     editor.remove(SIGNAL_DOT_ARRANGEMENT_KEY)
-        .remove(HORIZONTAL_LOWER_SINGLE_ROW_KEY)
-        .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3)
+        .remove(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)
+        .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
         .apply()
 }
 
@@ -152,12 +169,18 @@ internal class VisualRepo(context: Context) {
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, enabled).apply()
     }
 
-    fun setSignalDotArrangement(style: SignalDotArrangement) {
+    fun setDualRowDotArrangement(style: SignalDotArrangement) {
         preferences.edit().putString(activeProfileKey(SIGNAL_DOT_ARRANGEMENT_KEY), style.persistedValue).apply()
     }
 
-    fun setHorizontalLowerSingleRow(enabled: Boolean) {
-        preferences.edit().putBoolean(activeProfileKey(HORIZONTAL_LOWER_SINGLE_ROW_KEY), enabled).apply()
+    fun setSingleRowDotArrangement(style: SignalDotArrangement) {
+        val layout = preferences.readLayout()
+        preferences.edit().apply {
+            // The one-row fallback is the same choice whether dual mode is enabled or not.
+            listOf(false, true).forEach { dual ->
+                putString(visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY, dual), style.persistedValue)
+            }
+        }.apply()
     }
 
     fun setMobileTypeBottomOffsetY(offset: Float) {
@@ -450,7 +473,7 @@ internal class VisualRepo(context: Context) {
             editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
         }
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
-        editor.putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3)
+        editor.putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
         // Restored physical charging scales use the current reference.
         return editor.commit()
     }
@@ -485,7 +508,7 @@ internal fun visualModeKey(dual: Boolean, key: String): String =
 
 internal fun SharedPreferences.writeSignalDotOffsetY(offset: Float) {
     val visual = readVisualCfg()
-    val key = if (visual.signalDotArrangement == SignalDotArrangement.HORIZONTAL) {
+    val key = if ((if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement) == SignalDotArrangement.HORIZONTAL) {
         HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY
     } else {
         CURVED_SIGNAL_DOT_OFFSET_Y_KEY
@@ -589,11 +612,13 @@ internal fun SharedPreferences.readVisualCfg(
     return VisualCfg(
         layout = layout,
         dualSignal = dual,
-        signalDotArrangement = SignalDotArrangement.fromPersisted(
+        dualRowDotArrangement = SignalDotArrangement.fromPersisted(
             profileString(layout, SIGNAL_DOT_ARRANGEMENT_KEY, null, dual)
                 ?: getString(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY), null),
         ),
-        horizontalLowerSingleRow = flag(HORIZONTAL_LOWER_SINGLE_ROW_KEY, false),
+        singleRowDotArrangement = SignalDotArrangement.fromPersisted(
+            profileString(layout, SINGLE_ROW_DOT_STYLE_KEY, null, dual),
+        ),
         mobileTypeBottomOffsetY = size(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, mobileTypeBottomOffsetDefault(layout)),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
         centerFollowsBatteryColor = flag(CENTER_FOLLOWS_BATTERY_COLOR_KEY, false),
@@ -685,10 +710,10 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         layout.persistedValue,
     ).putString(
         visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, normalized.dualSignal),
-        normalized.signalDotArrangement.persistedValue,
-    ).putBoolean(
-        visualProfileKey(layout, HORIZONTAL_LOWER_SINGLE_ROW_KEY, normalized.dualSignal),
-        normalized.horizontalLowerSingleRow,
+        normalized.dualRowDotArrangement.persistedValue,
+    ).putString(
+        visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY, normalized.dualSignal),
+        normalized.singleRowDotArrangement.persistedValue,
     ).putFloat(
         visualProfileKey(layout, MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, normalized.dualSignal),
         normalized.mobileTypeBottomOffsetY,

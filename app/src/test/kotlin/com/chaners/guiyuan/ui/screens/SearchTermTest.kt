@@ -126,7 +126,9 @@ class SearchTermTest {
     fun highConfidenceAliasesStayTargeted() {
         val pairs = listOf(
             R.string.aod_combined_status_title to "AOD",
-            R.string.dual_signal_title to "单排信号",
+            R.string.dual_signal_title to "双排信号点",
+            R.string.single_row_signal_dot_arrangement_title to "单排信号",
+            R.string.dual_row_signal_dot_arrangement_title to "双排样式",
             R.string.combined_size to "三合一缩放",
             R.string.outer_weight to "电量环粗细",
             R.string.wifi_size to "无线图标尺寸",

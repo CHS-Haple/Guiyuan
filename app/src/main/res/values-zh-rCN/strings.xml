@@ -10,13 +10,12 @@
     <string name="features_title">功能</string>
     <string name="section_display_transition">显示与过渡</string>
     <string name="section_layout_size">布局与尺寸</string>
-    <string name="section_network">网络与信号</string>
-    <string name="dual_signal_title">双排信号</string>
-    <string name="dual_signal_summary">同时识别到两张 SIM 卡时显示双排\n内容布局保持不变，其他视觉配置分别记忆</string>
-    <string name="horizontal_lower_single_row">单排信号横向排列</string>
-    <string name="horizontal_lower_single_row_summary">单排信号点位于下方时，也采用横向排列</string>
+    <string name="section_network">网络与信号点</string>
+    <string name="dual_signal_title">双排信号点</string>
+    <string name="dual_signal_summary">同时识别到两张 SIM 卡时显示双排信号点\n内容布局保持不变，其他视觉配置分别记忆</string>
+    <string name="single_row_signal_dot_arrangement_title">单排信号点排列</string>
+    <string name="dual_row_signal_dot_arrangement_title">双排信号点排列</string>
     <string name="mobile_type_bottom_offset">网络制式上下偏移</string>
-    <string name="signal_dot_arrangement_title">信号点样式</string>
     <string name="signal_dot_arrangement_curved">弧形排列</string>
     <string name="signal_dot_arrangement_horizontal">横向排列</string>
     <string name="signal_dot_vertical_offset">信号点上下偏移</string>
@@ -65,7 +64,7 @@
     <string name="keyguard_combined_status_summary">在锁屏状态栏显示</string>
     <string name="aod_combined_status_title">AOD 显示</string>
     <string name="aod_combined_status_summary">在 AOD 中显示，进入与退出过渡保持系统原生</string>
-    <string name="mobile_follow_battery_color">移动信号跟随电量环颜色</string>
+    <string name="mobile_follow_battery_color">移动信号点跟随电量环颜色</string>
     <string name="mobile_follow_battery_color_summary">四点与叉号跟随电量环颜色</string>
     <string name="center_follow_battery_color">网络状态跟随电量环颜色</string>
     <string name="center_follow_battery_color_summary">Wi-Fi、移动制式、飞行模式和无 SIM 等跟随电量环颜色</string>

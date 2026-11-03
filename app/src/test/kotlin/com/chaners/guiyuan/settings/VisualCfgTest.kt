@@ -85,7 +85,7 @@ class VisualCfgTest {
         assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.curvedSignalDotOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.horizontalSignalDotOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.signalDotOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(signalDotArrangement = SignalDotArrangement.HORIZONTAL).signalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(singleRowDotArrangement = SignalDotArrangement.HORIZONTAL).signalDotOffsetY, 0f)
         val invalidOffsets = settings.copy(
             curvedSignalDotOffsetY = Float.NaN,
             horizontalSignalDotOffsetY = Float.POSITIVE_INFINITY,
@@ -112,11 +112,11 @@ class VisualCfgTest {
     fun mobileCenteredIsAnIndependentLayoutWithOwnDefaults() {
         val centered = VisualCfg(layout = ContentLayout.MOBILE_CENTER)
         assertTrue(centered.centeredMobileSignal)
-        assertEquals(SignalDotArrangement.CURVED, centered.effectiveDualRowArrangement)
-        assertEquals(SignalDotArrangement.CURVED, centered.signalDotArrangement)
+        assertEquals(SignalDotArrangement.CURVED, centered.dualRowDotArrangement)
+        assertEquals(SignalDotArrangement.CURVED, centered.singleRowDotArrangement)
         assertEquals(0.85f, centered.mobileTypeScale, 0f)
         assertEquals(-3f, centered.mobileTypeBottomOffsetY, 0f)
-        assertEquals(SignalDotArrangement.CURVED, centered.effectiveSingleRowArrangement)
+        assertEquals(SignalDotArrangement.CURVED, centered.singleRowDotArrangement)
         assertEquals(false, centered.copy(layout = ContentLayout.NETWORK_CENTER).centeredMobileSignal)
         assertEquals(NETWORK_TOP_OFFSET_MAX,
             centered.copy(mobileTypeBottomOffsetY = 99f).normalized().mobileTypeBottomOffsetY, 0f)
@@ -125,51 +125,51 @@ class VisualCfgTest {
     }
 
     @Test
-    fun optionalSingleRowStyleControlsTheOutsideRowOfCenteredLayout() {
-        val lower = VisualCfg(signalDotArrangement = SignalDotArrangement.HORIZONTAL, horizontalLowerSingleRow = true)
-        assertEquals(SignalDotArrangement.HORIZONTAL, lower.effectiveSingleRowArrangement)
-        val centered = lower.copy(layout = ContentLayout.MOBILE_CENTER)
-        assertTrue(centered.centeredMobileSignal)
-        assertEquals(SignalDotArrangement.HORIZONTAL, centered.effectiveDualRowArrangement)
-        assertEquals(SignalDotArrangement.HORIZONTAL, centered.effectiveSingleRowArrangement)
-        assertEquals(SignalDotArrangement.HORIZONTAL,
-            centered.copy(layout = ContentLayout.NETWORK_CENTER).effectiveSingleRowArrangement)
+    fun outsideSingleAndDualRowsHaveIndependentStyleChoices() {
+        val singleCurvedDualFlat = VisualCfg(
+            layout = ContentLayout.MOBILE_CENTER,
+            dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+            singleRowDotArrangement = SignalDotArrangement.CURVED,
+        )
+        assertEquals(SignalDotArrangement.CURVED, singleCurvedDualFlat.singleRowDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, singleCurvedDualFlat.dualRowDotArrangement)
+        val singleFlatDualCurved = singleCurvedDualFlat.copy(
+            dualRowDotArrangement = SignalDotArrangement.CURVED,
+            singleRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+        )
+        assertEquals(SignalDotArrangement.HORIZONTAL, singleFlatDualCurved.singleRowDotArrangement)
+        assertEquals(SignalDotArrangement.CURVED, singleFlatDualCurved.dualRowDotArrangement)
+        assertTrue(singleFlatDualCurved.centeredMobileSignal)
     }
 
     @Test
-    fun centeredLayoutKeepsBothSavedStylesAndLowerSingleRowChoices() {
+    fun outsideRowsUseTheActualRowStyleForGeometryAndOffset() {
         for (dual in listOf(false, true)) {
-            for (style in SignalDotArrangement.entries) {
-                for (horizontal in listOf(false, true)) {
+            for (singleStyle in SignalDotArrangement.entries) {
+                for (dualStyle in SignalDotArrangement.entries) {
                     val visual = VisualCfg(
                         layout = ContentLayout.MOBILE_CENTER,
                         dualSignal = dual,
-                        signalDotArrangement = style,
-                        horizontalLowerSingleRow = horizontal,
+                        dualRowDotArrangement = dualStyle,
+                        singleRowDotArrangement = singleStyle,
                         curvedSignalDotOffsetY = 2f,
                         horizontalSignalDotOffsetY = 5f,
                     )
-                    assertTrue(visual.centeredMobileSignal)
-                    assertEquals(style, visual.effectiveDualRowArrangement)
+                    assertEquals(singleStyle, visual.singleRowDotArrangement)
+                    assertEquals(dualStyle, visual.dualRowDotArrangement)
                     assertEquals(
-                        if (style == SignalDotArrangement.HORIZONTAL && horizontal) SignalDotArrangement.HORIZONTAL
-                        else SignalDotArrangement.CURVED,
-                        visual.effectiveSingleRowArrangement,
-                    )
-                    assertEquals(
-                        if (style == SignalDotArrangement.HORIZONTAL) 5f else 2f,
-                        visual.signalDotOffsetY,
+                        if (singleStyle == SignalDotArrangement.HORIZONTAL) 5f else 2f,
+                        visual.singleRowDotOffsetY,
                         0f,
                     )
                     assertEquals(
-                        if (style == SignalDotArrangement.HORIZONTAL && horizontal) 5f else 2f,
-                        visual.singleRowDotOffsetY,
+                        if ((if (dual) dualStyle else singleStyle) == SignalDotArrangement.HORIZONTAL) 5f else 2f,
+                        visual.signalDotOffsetY,
                         0f,
                     )
                 }
             }
         }
-        // Reordering the user-facing dropdown must never rewrite persisted values.
         assertEquals(ContentLayout.MOBILE_CENTER, ContentLayout.fromPersisted("mobile_center"))
         assertEquals(ContentLayout.BATTERY_CENTER, ContentLayout.fromPersisted("battery_center"))
     }

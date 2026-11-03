@@ -79,19 +79,19 @@ class VisualPersistenceTest {
         prefs.edit().putVisualCfg(dual).apply()
         val network = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
         assertEquals(4f, network.signalDotOffsetY, 0f)
-        assertEquals(-7f, network.copy(signalDotArrangement = SignalDotArrangement.HORIZONTAL).signalDotOffsetY, 0f)
+        assertEquals(-7f, network.copy(dualRowDotArrangement = SignalDotArrangement.HORIZONTAL).signalDotOffsetY, 0f)
 
         prefs.edit().putVisualCfg(
             dual.copy(
                 layout = ContentLayout.BATTERY_CENTER,
-                signalDotArrangement = SignalDotArrangement.HORIZONTAL,
+                dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
                 curvedSignalDotOffsetY = -2f,
                 horizontalSignalDotOffsetY = 5f,
             ),
         ).apply()
         val battery = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.BATTERY_CENTER)
         assertEquals(5f, battery.signalDotOffsetY, 0f)
-        assertEquals(-2f, battery.copy(signalDotArrangement = SignalDotArrangement.CURVED).signalDotOffsetY, 0f)
+        assertEquals(-2f, battery.copy(dualRowDotArrangement = SignalDotArrangement.CURVED).signalDotOffsetY, 0f)
         val original = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
         assertEquals(4f, original.curvedSignalDotOffsetY, 0f)
         assertEquals(-7f, original.horizontalSignalDotOffsetY, 0f)
@@ -107,7 +107,7 @@ class VisualPersistenceTest {
                     VisualCfg(
                         layout = layout,
                         dualSignal = dual,
-                        signalDotArrangement = SignalDotArrangement.HORIZONTAL,
+                        dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
                         curvedSignalDotOffsetY = 1f,
                         horizontalSignalDotOffsetY = 2f,
                     ),
@@ -122,7 +122,7 @@ class VisualPersistenceTest {
             .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
             .apply()
         assertFalse(prefs.contains(SIGNAL_DOT_ARRANGEMENT_KEY))
-        assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg().signalDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg().dualRowDotArrangement)
         prefs.writeSignalDotOffsetY(-6f)
 
         val batteryDual = prefs.readVisualCfg()
@@ -485,15 +485,39 @@ class VisualPersistenceTest {
             .apply()
         migrateSignalDotArrangementsIfNeeded(prefs)
         for (layout in ContentLayout.entries) {
-            assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg(false, layout).signalDotArrangement)
-            assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(true, layout).signalDotArrangement)
+            assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg(false, layout).dualRowDotArrangement)
+            assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(true, layout).dualRowDotArrangement)
         }
-        assertEquals(3, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
         assertFalse(prefs.contains(visualModeKey(false, LEGACY_DUAL_DOT_STYLE_KEY)))
         assertFalse(prefs.contains(visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY)))
         val snapshot = prefs.all.toMap()
         migrateSignalDotArrangementsIfNeeded(prefs)
         assertEquals(snapshot, prefs.all)
+    }
+
+    @Test
+    fun legacyFlatSwitchMigratesWithoutChangingSingleFallback() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.NETWORK_CENTER
+        val dualStyleKey = visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, true)
+        val singleStyleKey = visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY, true)
+        val legacyKey = visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, true)
+        prefs.edit()
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3)
+            .putString(dualStyleKey, SignalDotArrangement.HORIZONTAL.persistedValue)
+            .putBoolean(legacyKey, false)
+            .apply()
+        migrateSignalDotArrangementsIfNeeded(prefs)
+        assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(true, layout).dualRowDotArrangement)
+        assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg(true, layout).singleRowDotArrangement)
+        assertFalse(prefs.contains(legacyKey))
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+
+        prefs.edit().remove(singleStyleKey).putBoolean(legacyKey, true)
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3).apply()
+        migrateSignalDotArrangementsIfNeeded(prefs)
+        assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(true, layout).singleRowDotArrangement)
     }
 
     @Test
@@ -504,15 +528,15 @@ class VisualPersistenceTest {
         assertEquals(-3f, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).mobileTypeBottomOffsetY, 0f)
         val centered = VisualCfg(
             layout = ContentLayout.MOBILE_CENTER,
-            signalDotArrangement = SignalDotArrangement.HORIZONTAL,
+            dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
             mobileTypeScale = 0.92f,
             mobileTypeBottomOffsetY = 6f,
-            horizontalLowerSingleRow = true,
+            singleRowDotArrangement = SignalDotArrangement.HORIZONTAL,
         )
         prefs.edit().putVisualCfg(centered).apply()
         val battery = VisualCfg(
             layout = ContentLayout.BATTERY_CENTER,
-            signalDotArrangement = SignalDotArrangement.CURVED,
+            dualRowDotArrangement = SignalDotArrangement.CURVED,
             mobileTypeScale = 0.77f,
         )
         prefs.edit().putVisualCfg(battery).apply()
@@ -520,13 +544,14 @@ class VisualPersistenceTest {
         val batterySaved = prefs.readVisualCfg(false, ContentLayout.BATTERY_CENTER)
         val normalSaved = prefs.readVisualCfg(false, ContentLayout.NETWORK_CENTER)
         assertTrue(centeredSaved.centeredMobileSignal)
-        assertEquals(SignalDotArrangement.HORIZONTAL, centeredSaved.signalDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, centeredSaved.dualRowDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, centeredSaved.singleRowDotArrangement)
         assertEquals(0.92f, centeredSaved.mobileTypeScale, 0f)
         assertEquals(6f, centeredSaved.mobileTypeBottomOffsetY, 0f)
-        assertEquals(SignalDotArrangement.CURVED, batterySaved.signalDotArrangement)
+        assertEquals(SignalDotArrangement.CURVED, batterySaved.dualRowDotArrangement)
         assertEquals(0.77f, batterySaved.mobileTypeScale, 0f)
         assertFalse(normalSaved.centeredMobileSignal)
-        assertEquals(SignalDotArrangement.CURVED, normalSaved.signalDotArrangement)
+        assertEquals(SignalDotArrangement.CURVED, normalSaved.dualRowDotArrangement)
         assertEquals(1f, normalSaved.mobileTypeScale, 0f)
     }
 
@@ -542,13 +567,13 @@ class VisualPersistenceTest {
                 layout = ContentLayout.MOBILE_CENTER,
                 dualSignal = true,
                 mobileTypeBottomOffsetY = -7f,
-                signalDotArrangement = SignalDotArrangement.HORIZONTAL,
+                dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
             ),
         ).apply()
         assertEquals(2f, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).mobileTypeBottomOffsetY, 0f)
         assertEquals(-7f, prefs.readVisualCfg(true, ContentLayout.MOBILE_CENTER).mobileTypeBottomOffsetY, 0f)
-        assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).signalDotArrangement)
-        assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(true, ContentLayout.MOBILE_CENTER).signalDotArrangement)
+        assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).dualRowDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(true, ContentLayout.MOBILE_CENTER).dualRowDotArrangement)
     }
 
 

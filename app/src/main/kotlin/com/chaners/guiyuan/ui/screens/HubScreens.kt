@@ -483,41 +483,42 @@ internal fun FeaturesScreen(
                         onCheckedChange = visualRepo::setDualSignal,
                     )
                 }
-                if (search.matches(R.string.signal_dot_arrangement_title)) {
+                if (search.matches(R.string.single_row_signal_dot_arrangement_title)) {
                     UiDropdownPreference(
-                        title = stringResource(R.string.signal_dot_arrangement_title),
+                        title = stringResource(R.string.single_row_signal_dot_arrangement_title),
                         items = signalDotArrangements,
-                        selectedIndex = visual.signalDotArrangement.ordinal,
+                        selectedIndex = visual.singleRowDotArrangement.ordinal,
                         showValue = true,
                         enabled = featureCfg.enabled,
                         startAction = {
                             SemanticLeadingIcon(
-                                R.drawable.ic_material_symbol_layers,
+                                R.drawable.ic_material_symbol_sim_card,
                                 featureCfg.enabled,
+                                R.drawable.ic_material_symbol_layers,
                             )
                         },
                         onSelectedIndexChange = { index ->
-                            SignalDotArrangement.entries.getOrNull(index)?.let(visualRepo::setSignalDotArrangement)
+                            SignalDotArrangement.entries.getOrNull(index)?.let(visualRepo::setSingleRowDotArrangement)
                         },
                     )
                 }
-                // This option controls only a lower/outside single row. The mobile
-                // center remains horizontal regardless of the saved style.
-                if (visual.signalDotArrangement == SignalDotArrangement.HORIZONTAL &&
-                    search.matches(R.string.horizontal_lower_single_row)) {
-                    SwitchPreference(
-                        title = stringResource(R.string.horizontal_lower_single_row),
-                        summary = stringResource(R.string.horizontal_lower_single_row_summary),
+                if (visual.dualSignal && search.matches(R.string.dual_row_signal_dot_arrangement_title)) {
+                    UiDropdownPreference(
+                        title = stringResource(R.string.dual_row_signal_dot_arrangement_title),
+                        items = signalDotArrangements,
+                        selectedIndex = visual.dualRowDotArrangement.ordinal,
+                        showValue = true,
+                        enabled = featureCfg.enabled,
                         startAction = {
                             SemanticLeadingIcon(
-                                R.drawable.ic_material_symbol_signal_cellular_alt,
+                                R.drawable.ic_material_symbol_sim_cards,
                                 featureCfg.enabled,
-                                R.drawable.ic_material_symbol_swap_horiz_w500,
+                                R.drawable.ic_material_symbol_layers,
                             )
                         },
-                        checked = visual.horizontalLowerSingleRow,
-                        enabled = featureCfg.enabled,
-                        onCheckedChange = visualRepo::setHorizontalLowerSingleRow,
+                        onSelectedIndexChange = { index ->
+                            SignalDotArrangement.entries.getOrNull(index)?.let(visualRepo::setDualRowDotArrangement)
+                        },
                     )
                 }
                 if (visual.layout == ContentLayout.BATTERY_CENTER) {
@@ -595,7 +596,7 @@ internal fun FeaturesScreen(
                 }
                 AnimatedPreferenceGroup(
                     visible = visual.dualSignal || visual.centeredMobileSignal ||
-                        visual.effectiveSingleRowArrangement == SignalDotArrangement.HORIZONTAL,
+                        visual.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL,
                 ) {
                     if (visual.centeredMobileSignal &&
                         search.matches(R.string.mobile_type_bottom_offset)) {
@@ -622,7 +623,7 @@ internal fun FeaturesScreen(
                             magnetThreshold = 0.035f,
                             enabled = featureCfg.enabled,
                         )
-                    } else if ((visual.dualSignal || visual.effectiveSingleRowArrangement == SignalDotArrangement.HORIZONTAL) &&
+                    } else if ((visual.dualSignal || visual.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL) &&
                         search.matches(R.string.signal_dot_vertical_offset)) {
                         SliderPreference(
                             value = visual.signalDotOffsetY,

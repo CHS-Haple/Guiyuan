@@ -199,10 +199,10 @@ internal data class VisualCfg(
     val dualSignal: Boolean = false,
     // Keep the V1 backup field name readable after the source-model rename.
     @SerialName("dualDotStyle")
-    val signalDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
-    // Keep existing exported JSON names; source properties describe behavior.
-    @SerialName("singleRowFlatDots")
-    val horizontalLowerSingleRow: Boolean = false,
+    val dualRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
+    // New field; older backup booleans are translated before decoding.
+    @SerialName("singleRowDotStyle")
+    val singleRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
     val mobileTypeBottomOffsetY: Float = mobileTypeBottomOffsetDefault(layout),
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,
@@ -242,25 +242,15 @@ internal data class VisualCfg(
     val centeredMobileSignal: Boolean
         get() = layout == ContentLayout.MOBILE_CENTER
 
-    // Styles describe the lower/outside dots, including Wi-Fi/mobile transitions.
-    // Centered mobile dots are always drawn as horizontal rows by the renderer.
-    val effectiveDualRowArrangement: SignalDotArrangement
-        get() = signalDotArrangement
-
-    // The lower single row stays curved unless the horizontal arrangement is
-    // selected AND the dedicated lower-row option is enabled.
-    val effectiveSingleRowArrangement: SignalDotArrangement
-        get() = if (signalDotArrangement == SignalDotArrangement.HORIZONTAL && horizontalLowerSingleRow) {
-            SignalDotArrangement.HORIZONTAL
-        } else {
-            SignalDotArrangement.CURVED
-        }
-
+    // Only the outside/bottom dots use these saved choices.
+    // Signal-strength-centered dots remain horizontal in the renderer.
     val signalDotOffsetY: Float
-        get() = if (signalDotArrangement == SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
+        get() = if ((if (dualSignal) dualRowDotArrangement else singleRowDotArrangement) ==
+            SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
 
     val singleRowDotOffsetY: Float
-        get() = if (effectiveSingleRowArrangement == SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
+        get() = if (singleRowDotArrangement == SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
+
 }
 
 internal fun Float.finiteIn(min: Float, max: Float, fallback: Float): Float =

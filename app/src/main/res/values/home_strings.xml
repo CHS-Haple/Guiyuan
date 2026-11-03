@@ -35,7 +35,7 @@
     <string name="home_preview_parasite_title">Parasite mode</string>
     <string name="home_preview_parasite_summary">Temporarily shows simulated status in the system status bar. Turning it off or leaving the sandbox page restores the display</string>
     <string name="home_preview_open_title">Preview sandbox</string>
-    <string name="home_preview_home_summary">Simulate network, signal, battery, and charging states without affecting the system</string>
+    <string name="home_preview_home_summary">Simulate network, signal dots, battery, and charging states without affecting the system</string>
     <string name="home_preview_live_title">Live preview</string>
     <string name="home_preview_section_preview">Preview</string>
     <string name="home_preview_section_network">Network</string>
@@ -67,8 +67,8 @@
     <string name="home_preview_network_4g">4G</string>
     <string name="home_preview_network_5g">5G</string>
     <string name="home_preview_network_5ga">5G-A</string>
-    <string name="home_preview_mobile_signal_title">Mobile signal</string>
-    <string name="home_preview_summary_mobile_title">Mobile</string>
+    <string name="home_preview_mobile_signal_title">Mobile signal dots</string>
+    <string name="home_preview_summary_mobile_title">Mobile signal dots</string>
     <string name="home_preview_mobile_disabled_no_sim">Unavailable while no SIM is inserted</string>
     <string name="home_preview_mobile_disabled_airplane">Unavailable while airplane mode is on</string>
 
@@ -81,7 +81,7 @@
     <string name="home_preview_signal_none">None</string>
     <string name="home_preview_signal_level">%1$d bars</string>
     <string name="home_preview_signal_dual">%1$d｜%2$d bars</string>
-    <string name="home_preview_summary_mobile_signal">Mobile signal %1$s</string>
+    <string name="home_preview_summary_mobile_signal">Mobile signal dots %1$s</string>
 
     <string name="home_preview_battery_level_title">Battery level</string>
     <string name="home_preview_battery_percent">%1$d%%</string>
@@ -99,10 +99,10 @@
     <string name="home_preview_charging_normal">Charging</string>
     <string name="home_preview_charging_super_fast">Super fast charging</string>
     <string name="home_preview_charging_super_fast_compact">Super fast</string>
-    <string name="home_preview_dual_mobile_title">Dual-row signal preview</string>
+    <string name="home_preview_dual_mobile_title">Dual-row signal dot preview</string>
     <string name="home_preview_dual_mobile_summary">SIM1 inner, SIM2 outer, network type follows data SIM</string>
-    <string name="home_preview_sim1_signal_title">SIM1 signal</string>
-    <string name="home_preview_sim2_signal_title">SIM2 signal</string>
+    <string name="home_preview_sim1_signal_title">SIM1 signal dots</string>
+    <string name="home_preview_sim2_signal_title">SIM2 signal dots</string>
     <string name="home_preview_network_mode_title">Network mode</string>
     <string name="home_preview_state_on">On</string>
     <string name="home_preview_state_off">Off</string>

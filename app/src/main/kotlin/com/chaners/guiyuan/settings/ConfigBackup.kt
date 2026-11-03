@@ -93,10 +93,11 @@ internal object ConfigBackupFormat {
         val root = json.parseToJsonElement(contents).jsonObject
         val schema = root["schemaVersion"]?.jsonPrimitive?.intOrNull
         require(schema == SCHEMA) { "Unsupported schemaVersion: " + schema }
-        requireCanonicalTypes(root, ConfigBackup.serializer().descriptor)
+        val compatibleRoot = upgradeLegacySingleRowStyle(root)
+        requireCanonicalTypes(compatibleRoot, ConfigBackup.serializer().descriptor)
         // Only released 1.0.0 two-layout backups are upgraded. Other
         // profile counts are invalid, never silently filled or truncated.
-        val decoded = json.decodeFromJsonElement(ConfigBackup.serializer(), root)
+        val decoded = json.decodeFromJsonElement(ConfigBackup.serializer(), compatibleRoot)
         val profiles = decoded.visual.profiles
         val upgraded = if (profiles.size == 4 &&
             profiles.map { it.layout }.toSet() ==
@@ -110,7 +111,7 @@ internal object ConfigBackupFormat {
                         layout = ContentLayout.MOBILE_CENTER,
                         mobileTypeScale = mobileTypeScaleDefault(ContentLayout.MOBILE_CENTER),
                         mobileTypeBottomOffsetY = MOBILE_TYPE_BOTTOM_OFFSET_DEFAULT,
-                        horizontalLowerSingleRow = false,
+                        singleRowDotArrangement = SignalDotArrangement.CURVED,
                     )
                 }
             decoded.copy(visual = decoded.visual.copy(profiles = profiles + mobileProfiles))
@@ -118,6 +119,28 @@ internal object ConfigBackupFormat {
             decoded
         }
         return normalizeImported(upgraded).also(::validate)
+    }
+
+    // Retire the old boolean without changing the V1 backup schema or
+    // accepting conflicting new and legacy representations.
+    private fun upgradeLegacySingleRowStyle(root: JsonObject): JsonObject {
+        val visual = root["visual"] as? JsonObject ?: return root
+        val profiles = visual["profiles"] as? JsonArray ?: return root
+        if (profiles.none { it is JsonObject && "singleRowFlatDots" in it }) return root
+        val converted = profiles.map { profile ->
+            if (profile !is JsonObject || "singleRowFlatDots" !in profile) return@map profile
+            require("singleRowDotStyle" !in profile) { "Conflicting single-row styles" }
+            val old = profile["singleRowFlatDots"] as? JsonPrimitive
+            require(old != null && !old.isString && old.booleanOrNull != null) {
+                "Invalid legacy single-row style"
+            }
+            val horizontal = old.booleanOrNull == true &&
+                (profile["dualDotStyle"] as? JsonPrimitive)?.content == "DUO"
+            JsonObject(profile.filterKeys { it != "singleRowFlatDots" } +
+                ("singleRowDotStyle" to JsonPrimitive(if (horizontal) "DUO" else "DEFAULT")))
+        }
+        return JsonObject(root + ("visual" to JsonObject(visual +
+            ("profiles" to JsonArray(converted)))))
     }
 
     // Preserve wire types: kotlinx serialization may otherwise accept quoted

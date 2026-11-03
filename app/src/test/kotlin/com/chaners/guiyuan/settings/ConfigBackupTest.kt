@@ -70,8 +70,8 @@ class ConfigBackupTest {
         val original = sample().let { backup ->
             backup.copy(visual = backup.visual.copy(profiles = backup.visual.profiles.map { profile ->
                 profile.copy(
-                    signalDotArrangement = SignalDotArrangement.HORIZONTAL,
-                    horizontalLowerSingleRow = true,
+                    dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+                    singleRowDotArrangement = SignalDotArrangement.HORIZONTAL,
                     curvedSignalDotOffsetY = 2f,
                     horizontalSignalDotOffsetY = -3f,
                 )
@@ -79,21 +79,46 @@ class ConfigBackupTest {
         }
         val encoded = ConfigBackupFormat.encode(original)
         assertTrue(encoded.contains("\"dualDotStyle\":\"DUO\""))
-        assertTrue(encoded.contains("\"singleRowFlatDots\":true"))
+        assertTrue(encoded.contains("\"singleRowDotStyle\":\"DUO\""))
         assertTrue(encoded.contains("\"dualDefaultOffsetY\":2.0"))
         assertTrue(encoded.contains("\"dualDuoOffsetY\":-3.0"))
-        assertFalse(encoded.contains("\"signalDotArrangement\""))
-        assertFalse(encoded.contains("\"horizontalLowerSingleRow\""))
+        assertFalse(encoded.contains("\"dualRowDotArrangement\""))
+        assertFalse(encoded.contains("\"singleRowDotArrangement\""))
+        assertFalse(encoded.contains("\"singleRowFlatDots\""))
         assertEquals(original, ConfigBackupFormat.decode(encoded))
         assertEquals(SignalDotArrangement.HORIZONTAL, SignalDotArrangement.fromPersisted("duo"))
         assertEquals(SignalDotArrangement.CURVED, SignalDotArrangement.fromPersisted("default"))
+    }
+
+    @Test fun legacySingleRowBooleanBackupsUpgradeExactlyAndRejectConflicts() {
+        val original = sample().let { backup ->
+            backup.copy(visual = backup.visual.copy(profiles = backup.visual.profiles.map { profile ->
+                profile.copy(
+                    dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+                    singleRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+                )
+            }))
+        }
+        val encoded = ConfigBackupFormat.encode(original)
+        val old = encoded.replace("\"singleRowDotStyle\":\"DUO\"", "\"singleRowFlatDots\":true")
+        assertEquals(original, ConfigBackupFormat.decode(old))
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.decode(old.replaceFirst(
+                "\"singleRowFlatDots\":true",
+                "\"singleRowFlatDots\":true,\"singleRowDotStyle\":\"DUO\"",
+            ))
+        }
+        val curved = old.replaceFirst("\"singleRowFlatDots\":true", "\"singleRowFlatDots\":false")
+        assertEquals(SignalDotArrangement.CURVED, ConfigBackupFormat.decode(curved).visual.profiles.first().singleRowDotArrangement)
+        val invalid = old.replaceFirst("\"singleRowFlatDots\":true", "\"singleRowFlatDots\":\"true\"")
+        assertThrows(IllegalArgumentException::class.java) { ConfigBackupFormat.decode(invalid) }
     }
 
     @Test fun legacyArchivesDefaultToOriginalDotStyle() {
         val json = ConfigBackupFormat.encode(sample())
             .replace("\"dualDotStyle\":\"DEFAULT\",", "")
         assertTrue(ConfigBackupFormat.decode(json).visual.profiles.all {
-            it.signalDotArrangement == SignalDotArrangement.CURVED
+            it.dualRowDotArrangement == SignalDotArrangement.CURVED
         })
     }
 
@@ -434,8 +459,8 @@ class ConfigBackupTest {
         val varied = source.copy(visual = source.visual.copy(profiles =
             source.visual.profiles.mapIndexed { index, cfg ->
                 cfg.copy(
-                    signalDotArrangement = if (index % 2 == 0) SignalDotArrangement.HORIZONTAL else SignalDotArrangement.CURVED,
-                    horizontalLowerSingleRow = index % 2 == 1,
+                    dualRowDotArrangement = if (index % 2 == 0) SignalDotArrangement.HORIZONTAL else SignalDotArrangement.CURVED,
+                    singleRowDotArrangement = if (index % 3 == 0) SignalDotArrangement.HORIZONTAL else SignalDotArrangement.CURVED,
                     mobileTypeBottomOffsetY = (index - 3).toFloat(),
                     mobileTypeScale = 0.75f + index * 0.05f,
                 )

@@ -67,8 +67,8 @@ internal object FeatureSearchIds {
     val layout = intArrayOf(
         R.string.content_layout_title,
         R.string.dual_signal_title,
-        R.string.signal_dot_arrangement_title,
-        R.string.horizontal_lower_single_row,
+        R.string.single_row_signal_dot_arrangement_title,
+        R.string.dual_row_signal_dot_arrangement_title,
         R.string.mobile_type_bottom_offset,
         R.string.signal_dot_vertical_offset,
         R.string.combined_size,
@@ -239,8 +239,15 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
         "排列", "网络居中", "网络信息居中", "电量居中",
         "移动信号居中", "信号强度居中", "信号点居中", "网络制式下方", "三种布局",
     )
-    R.string.dual_signal_title -> listOf("双卡", "双 SIM", "双卡信号", "单排信号", "单卡显示")
-    R.string.signal_dot_arrangement_title -> listOf("内容样式", "Content style", "双卡样式", "Duo", "八点", "弧形排列", "横向排列", "Curved arrangement", "Horizontal arrangement")
+    R.string.dual_signal_title -> listOf("双卡", "双 SIM", "双卡信号点", "双排信号", "单卡显示")
+    R.string.single_row_signal_dot_arrangement_title -> listOf(
+        "单排信号", "单卡信号点", "单SIM", "单排样式", "弧形排列", "横向排列",
+        "Single row signal", "Single-row dots", "Curved arrangement", "Horizontal arrangement",
+    )
+    R.string.dual_row_signal_dot_arrangement_title -> listOf(
+        "双排信号", "双卡样式", "Duo", "八点", "双排样式", "弧形排列", "横向排列",
+        "Dual-row dots", "Curved arrangement", "Horizontal arrangement",
+    )
     R.string.signal_dot_vertical_offset -> listOf("双卡偏移", "双排位置", "双排上下偏移")
     R.string.combined_size -> listOf("整体缩放", "总大小", "三合一大小", "三合一缩放")
     R.string.outer_weight -> listOf("环形粗细", "圆环粗细", "外环宽度", "电量环粗细")
