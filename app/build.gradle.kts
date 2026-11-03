@@ -175,6 +175,10 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion")
+    // Native Glass icons are source-built only; the published fallback retains pinned vectors.
+    if (miuixSourceDir != null) {
+        implementation("top.yukonga.miuix.kmp:miuix-glass-icons-android:$miuixVersion")
+    }
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinxSerializationCoreVersion")
