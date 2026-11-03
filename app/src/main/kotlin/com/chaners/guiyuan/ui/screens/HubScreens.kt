@@ -226,6 +226,10 @@ internal fun FeaturesScreen(
         stringResource(R.string.signal_dot_arrangement_curved),
         stringResource(R.string.signal_dot_arrangement_horizontal),
     )
+    val lowerOpeningOptions = listOf(
+        stringResource(R.string.battery_lower_opening_follow),
+        stringResource(R.string.battery_lower_opening_fixed),
+    )
     val backupFiles = remember(context.applicationContext) {
         ConfigBackupFiles(context.applicationContext)
     }
@@ -629,6 +633,9 @@ internal fun FeaturesScreen(
                         )
                     }
                 }
+                val outerDotsHorizontal =
+                    (if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement) ==
+                        SignalDotArrangement.HORIZONTAL
                 AnimatedPreferenceGroup(
                     visible = visual.dualSignal || visual.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL,
                 ) {
@@ -656,6 +663,29 @@ internal fun FeaturesScreen(
                             keyPoints = listOf(0f),
                             magnetThreshold = 0.035f,
                             enabled = featureCfg.enabled,
+                        )
+                    }
+                }
+                AnimatedPreferenceGroup(visible = outerDotsHorizontal) {
+                    if (search.matches(R.string.battery_lower_opening_title)) {
+                        UiDropdownPreference(
+                            title = stringResource(R.string.battery_lower_opening_title),
+                            summary = stringResource(R.string.battery_lower_opening_summary),
+                            items = lowerOpeningOptions,
+                            selectedIndex = if (visual.horizontalFixedOpening) 1 else 0,
+                            showValue = true,
+                            enabled = featureCfg.enabled,
+                            startAction = {
+                                SemanticLeadingIcon(
+                                    R.drawable.ic_material_symbol_donut_large,
+                                    featureCfg.enabled,
+                                )
+                            },
+                            onSelectedIndexChange = { index ->
+                                if (index in lowerOpeningOptions.indices) {
+                                    visualRepo.setHorizontalFixedOpening(index == 1)
+                                }
+                            },
                         )
                     }
                 }
