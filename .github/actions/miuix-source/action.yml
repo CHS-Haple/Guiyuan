@@ -23,8 +23,22 @@ runs:
         test -f miuix-upstream/miuix-preference/build.gradle.kts
         test -f miuix-upstream/miuix-glass/build.gradle.kts
         test -f miuix-upstream/miuix-glass-icons/build.gradle.kts
-        test -f app/src/os4Upstream/kotlin/top/yukonga/miuix/kmp/glass/GlassDialog.kt
-        test -f app/src/os4Upstream/kotlin/top/yukonga/miuix/kmp/glass/internal/ScrimBackdrop.kt
+        # The experimental native-module migration and the accepted local bridge
+        # have different, mutually exclusive source ownership contracts.
+        native_glass='implementation("top.yukonga.miuix.kmp:miuix-glass-android:$miuixVersion")'
+        if grep -Fq "$native_glass" app/build.gradle.kts; then
+          test -f miuix-upstream/miuix-glass/src/commonMain/kotlin/top/yukonga/miuix/kmp/glass/GlassDialog.kt
+          test -f miuix-upstream/miuix-glass/src/commonMain/kotlin/top/yukonga/miuix/kmp/glass/internal/ScrimBackdrop.kt
+          test ! -e app/src/os4Upstream/kotlin/top/yukonga/miuix/kmp/glass/GlassDialog.kt
+          test ! -e app/src/os4Upstream/kotlin/top/yukonga/miuix/kmp/glass/internal/ScrimBackdrop.kt
+          test ! -e app/src/main/kotlin/top/yukonga/miuix/kmp/glass/Glass.kt
+          test -f app/src/os4Published/kotlin/top/yukonga/miuix/kmp/glass/Glass.kt
+          echo "MIUIX glass owner: source-pinned native module (experimental)"
+        else
+          test -f app/src/os4Upstream/kotlin/top/yukonga/miuix/kmp/glass/GlassDialog.kt
+          test -f app/src/os4Upstream/kotlin/top/yukonga/miuix/kmp/glass/internal/ScrimBackdrop.kt
+          echo "MIUIX glass owner: reviewed app-local bridge"
+        fi
         echo "MIUIX_SOURCE_REVISION=$expected" >> "$GITHUB_ENV"
         echo "MIUIX_SOURCE_DIR=miuix-upstream" >> "$GITHUB_ENV"
 
