@@ -20,8 +20,8 @@
     <string name="signal_dot_arrangement_curved">弧形排列</string>
     <string name="signal_dot_arrangement_horizontal">横向排列</string>
     <string name="signal_dot_vertical_offset">信号点上下偏移</string>
-    <string name="battery_lower_opening_title">电量环下方开口</string>
-    <string name="battery_lower_opening_summary">选择开口是否跟随信号点移动</string>
+    <string name="battery_lower_opening_title">横排电量环开口</string>
+    <string name="battery_lower_opening_summary">仅横向排列生效，单排与双排共用</string>
     <string name="battery_lower_opening_follow">跟随位置</string>
     <string name="battery_lower_opening_fixed">固定开口</string>
     <string name="section_battery">电量与充电</string>
