@@ -161,6 +161,12 @@ internal fun resetVisualPreferences(
     schemes: BatteryColorSchemeLibrary,
 ) {
     val editor = preferences.edit().clear()
+    // A reset creates a current-schema store. Without these markers, the
+    // next startup may misinterpret newly saved shared values as legacy
+    // single-bank preferences and discard them when dual mode is enabled.
+    editor.putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
+        .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
+        .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
     writeBatterySchemeLibrary(
         editor,
         schemes.copy(activeSchemeKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY),

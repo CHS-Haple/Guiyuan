@@ -69,6 +69,25 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun resetKeepsNewSharedValuesAfterDualModeAndReinitialization() {
+        val prefs = MemoryPreferences()
+        resetVisualPreferences(prefs, BatteryColorSchemeLibrary())
+        assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        assertTrue(prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false))
+
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putFloat(visualProfileKey(ContentLayout.NETWORK_CENTER, WIFI_SIZE_SCALE_KEY), 0.86f)
+            .apply()
+        val before = prefs.all.toMap()
+        migrateVisualPrefsIfNeeded(prefs)
+        assertEquals(before, prefs.all)
+        assertEquals(0.86f, prefs.readVisualCfg(dual = true).wifiScale, 0f)
+        assertEquals(0.86f, prefs.readVisualCfg(dual = false).wifiScale, 0f)
+    }
+
+    @Test
     fun dualOffsetsStayIndependentAcrossStylesAndLayouts() {
         val prefs = MemoryPreferences()
         val dual = VisualCfg(
