@@ -43,7 +43,7 @@ class VisualCfgTest {
         assertEquals(1f, settings.wifiScale, 0.0001f)
         assertEquals(0f, settings.wifiOffsetY, 0f)
         assertEquals(0f, settings.mobileTypeOffsetY, 0f)
-        assertEquals(0f, settings.signalDotOffsetY, 0f)
+        assertEquals(0f, settings.activeSignalDotOffsetY, 0f)
         assertEquals(1f, settings.airplaneScale, 0.0001f)
         assertEquals(1f, settings.noSimScale, 0.0001f)
         assertEquals(1f, settings.mobileTypeScale, 0.0001f)
@@ -84,8 +84,8 @@ class VisualCfgTest {
         assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.mobileTypeOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.curvedSignalDotOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.horizontalSignalDotOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.signalDotOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(singleRowDotArrangement = SignalDotArrangement.HORIZONTAL).signalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.activeSignalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(singleRowDotArrangement = SignalDotArrangement.HORIZONTAL).activeSignalDotOffsetY, 0f)
         val invalidOffsets = settings.copy(
             curvedSignalDotOffsetY = Float.NaN,
             horizontalSignalDotOffsetY = Float.POSITIVE_INFINITY,
@@ -158,13 +158,18 @@ class VisualCfgTest {
                     assertEquals(singleStyle, visual.singleRowDotArrangement)
                     assertEquals(dualStyle, visual.dualRowDotArrangement)
                     assertEquals(
+                        if (dualStyle == SignalDotArrangement.HORIZONTAL) 5f else 2f,
+                        visual.dualRowDotOffsetY,
+                        0f,
+                    )
+                    assertEquals(
                         if (singleStyle == SignalDotArrangement.HORIZONTAL) 5f else 2f,
                         visual.singleRowDotOffsetY,
                         0f,
                     )
                     assertEquals(
                         if ((if (dual) dualStyle else singleStyle) == SignalDotArrangement.HORIZONTAL) 5f else 2f,
-                        visual.signalDotOffsetY,
+                        visual.activeSignalDotOffsetY,
                         0f,
                     )
                 }

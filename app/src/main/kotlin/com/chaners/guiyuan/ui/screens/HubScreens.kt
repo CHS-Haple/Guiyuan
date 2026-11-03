@@ -626,7 +626,7 @@ internal fun FeaturesScreen(
                     } else if ((visual.dualSignal || visual.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL) &&
                         search.matches(R.string.signal_dot_vertical_offset)) {
                         SliderPreference(
-                            value = visual.signalDotOffsetY,
+                            value = visual.activeSignalDotOffsetY,
                             onValueChange = visualRepo::setSignalDotOffsetY,
                             title = stringResource(R.string.signal_dot_vertical_offset),
                             startAction = {
@@ -638,7 +638,7 @@ internal fun FeaturesScreen(
                             },
                             valueText = stringResource(
                                 R.string.battery_top_offset_value,
-                                visual.signalDotOffsetY.roundToInt(),
+                                visual.activeSignalDotOffsetY.roundToInt(),
                             ),
                             valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
                             steps = 19,

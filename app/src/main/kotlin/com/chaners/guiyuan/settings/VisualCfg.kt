@@ -244,12 +244,16 @@ internal data class VisualCfg(
 
     // Only the outside/bottom dots use these saved choices.
     // Signal-strength-centered dots remain horizontal in the renderer.
-    val signalDotOffsetY: Float
-        get() = if ((if (dualSignal) dualRowDotArrangement else singleRowDotArrangement) ==
-            SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
+    val dualRowDotOffsetY: Float
+        get() = if (dualRowDotArrangement == SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
 
     val singleRowDotOffsetY: Float
         get() = if (singleRowDotArrangement == SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
+
+    // The settings slider follows the selected SIM-mode profile; drawing
+    // instead resolves the offset from the actual rendered row count.
+    val activeSignalDotOffsetY: Float
+        get() = if (dualSignal) dualRowDotOffsetY else singleRowDotOffsetY
 
 }
 

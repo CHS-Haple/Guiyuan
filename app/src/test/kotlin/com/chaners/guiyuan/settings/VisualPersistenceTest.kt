@@ -78,8 +78,8 @@ class VisualPersistenceTest {
         )
         prefs.edit().putVisualCfg(dual).apply()
         val network = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
-        assertEquals(4f, network.signalDotOffsetY, 0f)
-        assertEquals(-7f, network.copy(dualRowDotArrangement = SignalDotArrangement.HORIZONTAL).signalDotOffsetY, 0f)
+        assertEquals(4f, network.activeSignalDotOffsetY, 0f)
+        assertEquals(-7f, network.copy(dualRowDotArrangement = SignalDotArrangement.HORIZONTAL).activeSignalDotOffsetY, 0f)
 
         prefs.edit().putVisualCfg(
             dual.copy(
@@ -90,12 +90,12 @@ class VisualPersistenceTest {
             ),
         ).apply()
         val battery = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.BATTERY_CENTER)
-        assertEquals(5f, battery.signalDotOffsetY, 0f)
-        assertEquals(-2f, battery.copy(dualRowDotArrangement = SignalDotArrangement.CURVED).signalDotOffsetY, 0f)
+        assertEquals(5f, battery.activeSignalDotOffsetY, 0f)
+        assertEquals(-2f, battery.copy(dualRowDotArrangement = SignalDotArrangement.CURVED).activeSignalDotOffsetY, 0f)
         val original = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
         assertEquals(4f, original.curvedSignalDotOffsetY, 0f)
         assertEquals(-7f, original.horizontalSignalDotOffsetY, 0f)
-        assertEquals(0f, prefs.readVisualCfg(dual = false).signalDotOffsetY, 0f)
+        assertEquals(0f, prefs.readVisualCfg(dual = false).activeSignalDotOffsetY, 0f)
     }
 
     @Test
@@ -126,7 +126,7 @@ class VisualPersistenceTest {
         prefs.writeSignalDotOffsetY(-6f)
 
         val batteryDual = prefs.readVisualCfg()
-        assertEquals(-6f, batteryDual.signalDotOffsetY, 0f)
+        assertEquals(-6f, batteryDual.activeSignalDotOffsetY, 0f)
         assertEquals(-6f, batteryDual.horizontalSignalDotOffsetY, 0f)
         assertEquals(1f, batteryDual.curvedSignalDotOffsetY, 0f)
         assertEquals(2f, prefs.readVisualCfg(
@@ -146,7 +146,7 @@ class VisualPersistenceTest {
             ).apply()
         prefs.writeSignalDotOffsetY(4f)
         val batterySingle = prefs.readVisualCfg()
-        assertEquals(4f, batterySingle.signalDotOffsetY, 0f)
+        assertEquals(4f, batterySingle.activeSignalDotOffsetY, 0f)
         assertEquals(2f, batterySingle.horizontalSignalDotOffsetY, 0f)
         assertEquals(-6f, prefs.readVisualCfg(dual = true).horizontalSignalDotOffsetY, 0f)
 
@@ -156,7 +156,7 @@ class VisualPersistenceTest {
             .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
             .apply()
         prefs.writeSignalDotOffsetY(7f)
-        assertEquals(7f, prefs.readVisualCfg().signalDotOffsetY, 0f)
+        assertEquals(7f, prefs.readVisualCfg().activeSignalDotOffsetY, 0f)
         assertEquals(-6f, prefs.readVisualCfg(
             dual = true,
             layoutOverride = ContentLayout.BATTERY_CENTER,
