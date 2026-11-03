@@ -1,85 +1,39 @@
-name: Bug report
-description: Report a reproducible Guiyuan problem
+name: Bug report / 问题反馈
+description: Report a problem with Guiyuan / 反馈归元使用问题
 title: "[Bug] "
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a problem. Guiyuan is pre-release software and currently supports a narrow, verified SystemUI baseline. Please provide enough runtime context to reproduce the issue.
+        Describe what happened. Steps or screenshots help, but are optional.
+        请说明遇到的问题。复现步骤、截图可选，有助于排查。
 
-        Before attaching diagnostics or logs, review them and remove unrelated personal or sensitive information.
-  - type: input
-    id: build
+        Remove private information before uploading files. / 上传文件前请去除隐私信息。
+  - type: textarea
+    id: problem
     attributes:
-      label: Guiyuan version and build
-      description: Include versionName, internal build ID, and channel (Debug/Canary/Release) when known.
-      placeholder: "x.y.z / YYYYMMDD-NNN / Canary"
-    validations:
-      required: true
-  - type: input
-    id: device
-    attributes:
-      label: Device and Android version
-      placeholder: "Device model / Android 17 (API 37)"
-    validations:
-      required: true
-  - type: input
-    id: hyperos
-    attributes:
-      label: HyperOS and SystemUI version
-      description: The exact SystemUI version is especially important for hook/runtime issues.
-      placeholder: "HyperOS ... / SystemUI 17.03.260226.r"
-    validations:
-      required: true
-  - type: dropdown
-    id: scene
-    attributes:
-      label: Affected scene
-      options:
-        - Home status bar
-        - Notification Shade transition
-        - Control Center
-        - Lock screen / Keyguard
-        - AOD
-        - Companion app
-        - Hot Reload / SystemUI restart
-        - Other
+      label: What happened? / 出现了什么问题？
+      placeholder: "For example: After switching ..., ... / 例如：切换……后，出现……"
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Steps to reproduce
-      description: Use the smallest reliable sequence.
+      label: Steps to reproduce (if known) / 复现方法（如有）
       placeholder: |
         1. ...
         2. ...
-        3. ...
-    validations:
-      required: true
+  - type: input
+    id: build
+    attributes:
+      label: Guiyuan version / 归元版本
+      placeholder: "1.0.0 / B1733"
+  - type: input
+    id: device
+    attributes:
+      label: Device and system / 设备与系统
+      placeholder: "Xiaomi 15 Pro / HyperOS 4 / SystemUI ..."
   - type: textarea
-    id: expected
+    id: evidence
     attributes:
-      label: Expected behavior
-    validations:
-      required: true
-  - type: textarea
-    id: actual
-    attributes:
-      label: Actual behavior
-    validations:
-      required: true
-  - type: textarea
-    id: diagnostics
-    attributes:
-      label: Diagnostics and evidence
-      description: Attach the built-in diagnostic report, relevant LSPosed log excerpt, screenshot, or recording when useful. Remove unrelated sensitive information first.
-  - type: checkboxes
-    id: checks
-    attributes:
-      label: Checklist
-      options:
-        - label: I reproduced the problem on the build identified above.
-          required: true
-        - label: I checked that the report does not contain signing material, credentials, or unrelated private data.
-          required: true
+      label: Screenshots or logs (optional) / 截图或日志（选填）
