@@ -609,16 +609,24 @@ internal fun SharedPreferences.readVisualCfg(
     val oldNetworkOffset =
         if (layout == ContentLayout.BATTERY_CENTER) topOffsetYUi(topOffset) else 0f
 
+    val dualStyle = SignalDotArrangement.fromPersisted(
+        profileString(layout, SIGNAL_DOT_ARRANGEMENT_KEY, null, dual)
+            ?: getString(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY), null),
+    )
+    val singleStyle = profileString(layout, SINGLE_ROW_DOT_STYLE_KEY, null, dual)
+        ?.let(SignalDotArrangement::fromPersisted)
+        ?: if (flag(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, false) &&
+            dualStyle == SignalDotArrangement.HORIZONTAL) {
+            SignalDotArrangement.HORIZONTAL
+        } else {
+            SignalDotArrangement.CURVED
+        }
+
     return VisualCfg(
         layout = layout,
         dualSignal = dual,
-        dualRowDotArrangement = SignalDotArrangement.fromPersisted(
-            profileString(layout, SIGNAL_DOT_ARRANGEMENT_KEY, null, dual)
-                ?: getString(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY), null),
-        ),
-        singleRowDotArrangement = SignalDotArrangement.fromPersisted(
-            profileString(layout, SINGLE_ROW_DOT_STYLE_KEY, null, dual),
-        ),
+        dualRowDotArrangement = dualStyle,
+        singleRowDotArrangement = singleStyle,
         mobileTypeBottomOffsetY = size(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, mobileTypeBottomOffsetDefault(layout)),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
         centerFollowsBatteryColor = flag(CENTER_FOLLOWS_BATTERY_COLOR_KEY, false),

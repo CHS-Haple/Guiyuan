@@ -497,6 +497,23 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun legacySingleRowPreferenceWorksBeforeAppMigration() {
+        val prefs = MemoryPreferences()
+        val key = visualProfileKey(ContentLayout.NETWORK_CENTER, SIGNAL_DOT_ARRANGEMENT_KEY, true)
+        val flat = visualProfileKey(ContentLayout.NETWORK_CENTER, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, true)
+        prefs.edit().putString(key, SignalDotArrangement.HORIZONTAL.persistedValue)
+            .putBoolean(flat, true).apply()
+        val beforeMigration = prefs.readVisualCfg(true, ContentLayout.NETWORK_CENTER)
+        assertEquals(SignalDotArrangement.HORIZONTAL, beforeMigration.singleRowDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, beforeMigration.dualRowDotArrangement)
+        prefs.edit().putBoolean(flat, false).apply()
+        assertEquals(
+            SignalDotArrangement.CURVED,
+            prefs.readVisualCfg(true, ContentLayout.NETWORK_CENTER).singleRowDotArrangement,
+        )
+    }
+
+    @Test
     fun legacyFlatSwitchMigratesWithoutChangingSingleFallback() {
         val prefs = MemoryPreferences()
         val layout = ContentLayout.NETWORK_CENTER
