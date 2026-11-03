@@ -696,6 +696,42 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun b1734V4DualDotBanksSurviveSharedLayoutMigration() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.MOBILE_CENTER
+        val singleDotKey = visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY)
+        val dualDotKey = visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY)
+        val oldDualSingleKey = visualModeKey(true, singleDotKey)
+        val oldDualDotKey = visualModeKey(true, dualDotKey)
+        // B1734 finished the dot arrangement schema, but still kept
+        // separate single/dual preference banks for the same layout.
+        prefs.edit()
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putString(singleDotKey, SignalDotArrangement.CURVED.persistedValue)
+            .putString(dualDotKey, SignalDotArrangement.CURVED.persistedValue)
+            .putString(oldDualSingleKey, SignalDotArrangement.HORIZONTAL.persistedValue)
+            .putString(oldDualDotKey, SignalDotArrangement.HORIZONTAL.persistedValue)
+            .apply()
+
+        migrateVisualPrefsIfNeeded(prefs)
+
+        assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        for (dual in listOf(false, true)) {
+            val result = prefs.readVisualCfg(dual, layout)
+            assertEquals(SignalDotArrangement.HORIZONTAL, result.singleRowDotArrangement)
+            assertEquals(SignalDotArrangement.HORIZONTAL, result.dualRowDotArrangement)
+        }
+        assertFalse(prefs.contains(oldDualSingleKey))
+        assertFalse(prefs.contains(oldDualDotKey))
+        val snapshot = prefs.all.toMap()
+        migrateVisualPrefsIfNeeded(prefs)
+        assertEquals(snapshot, prefs.all)
+    }
+
+    @Test
     fun freshLegacyMigrationPublishesBothSchemasInOneWrite() {
         val prefs = MemoryPreferences()
         val layout = ContentLayout.MOBILE_CENTER
