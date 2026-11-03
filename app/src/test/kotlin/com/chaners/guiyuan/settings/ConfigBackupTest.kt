@@ -481,14 +481,16 @@ class ConfigBackupTest {
         assertEquals(changed, ConfigBackupFormat.decode(encoded))
 
         // Older V1 archives have no field for this newly added visual option.
-        val oldJson = encoded.replace(Regex("\\\"horizontalFixedOpening\\\":(?:true|false),"), "")
+        val oldJson = encoded
+            .replace("\"horizontalFixedOpening\":true,", "")
+            .replace("\"horizontalFixedOpening\":false,", "")
         assertFalse(oldJson.contains("horizontalFixedOpening"))
         assertTrue(ConfigBackupFormat.decode(oldJson).visual.profiles.all { !it.horizontalFixedOpening })
 
         val invalid = encoded.replaceFirst(
             "\\\"horizontalFixedOpening\\\":true",
-            "\\\"horizontalFixedOpening\\\":\\\"true\\\"",
-        )
+            "\"horizontalFixedOpening\":true",
+            "\"horizontalFixedOpening\":\"true\"",
         assertThrows(IllegalArgumentException::class.java) { ConfigBackupFormat.decode(invalid) }
     }
 
