@@ -59,9 +59,26 @@ include(":app")
 // Opt-in source-matched OS4 graph. The default app still uses published MIUIX packages.
 providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.let { source ->
     val miuix = file(source)
-    require(miuix.resolve("miuix-blur/build.gradle.kts").isFile &&
-        miuix.resolve("miuix-ui/build.gradle.kts").isFile
-    ) { "gy.os4.miuixDir must point to a complete MIUIX source checkout" }
+    // A complete checkout is required even though Glass remains an app-local bridge.
+    // This does not enable native miuix-glass(-icons) dependencies or certify API parity.
+    val requiredSourceModules = listOf(
+        "miuix-core",
+        "miuix-ui",
+        "miuix-blur",
+        "miuix-preference",
+        "miuix-icons",
+        "miuix-nav",
+        "miuix-shader",
+        "miuix-squircle",
+        "miuix-glass",
+        "miuix-glass-icons",
+    )
+    val missingSourceModules = requiredSourceModules.filterNot { module ->
+        miuix.resolve("$module/build.gradle.kts").isFile
+    }
+    require(missingSourceModules.isEmpty()) {
+        "gy.os4.miuixDir is missing MIUIX source modules: ${missingSourceModules.joinToString()}"
+    }
 
     includeBuild(miuix) {
         dependencySubstitution {
