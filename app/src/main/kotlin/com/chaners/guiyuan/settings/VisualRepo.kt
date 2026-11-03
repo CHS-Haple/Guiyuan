@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 private val visualPreferenceKeys = buildSet {
     add(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY)
+    add(SHARED_LAYOUT_VISUAL_SCHEMA_KEY)
     add(CONTENT_LAYOUT_KEY)
     add(DUAL_SIGNAL_ENABLED_KEY)
     add(DUAL_PROFILES_INITIALIZED_KEY)
@@ -61,42 +62,32 @@ internal fun SharedPreferences.rollbackBackupVisuals(snapshot: Map<String, Any?>
 // A single-row choice is shared across SIM modes within each content layout.
 internal fun migrateSignalDotArrangementsIfNeeded(prefs: SharedPreferences) {
     if (prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0) >= 4) return
-    val editor = prefs.edit()
-    val activeDual = prefs.getBoolean(DUAL_SIGNAL_ENABLED_KEY, false) &&
+    val activeDual = prefs.dualSignalEnabled() &&
         prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false)
-    fun oldDualStyle(layout: ContentLayout, dual: Boolean): SignalDotArrangement {
-        val key = visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, dual)
-        val oldKey = visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY)
-        return SignalDotArrangement.fromPersisted(
-            if (prefs.contains(key)) prefs.getString(key, null) else prefs.getString(oldKey, null),
-        )
-    }
+    val editor = prefs.edit()
     for (layout in ContentLayout.entries) {
-        val legacySingleKey =
-            visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY, activeDual)
-        val legacySwitchKey =
-            visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, activeDual)
-        val activeSingleStyle = if (prefs.contains(legacySingleKey)) {
-            SignalDotArrangement.fromPersisted(prefs.getString(legacySingleKey, null))
-        } else if (prefs.getBoolean(legacySwitchKey, false) &&
-            oldDualStyle(layout, activeDual) == SignalDotArrangement.HORIZONTAL) {
+        fun oldKey(key: String): String =
+            visualModeKey(activeDual, visualProfileKey(layout, key))
+        val dualKey = oldKey(DUAL_ROW_DOT_ARRANGEMENT_KEY)
+        val legacyDual = visualModeKey(activeDual, LEGACY_DUAL_DOT_STYLE_KEY)
+        val dualStyle = SignalDotArrangement.fromPersisted(
+            prefs.getString(dualKey, prefs.getString(legacyDual, null)),
+        )
+        val singleKey = oldKey(SINGLE_ROW_DOT_STYLE_KEY)
+        val legacySwitch = oldKey(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)
+        val singleStyle = if (prefs.contains(singleKey)) {
+            SignalDotArrangement.fromPersisted(prefs.getString(singleKey, null))
+        } else if (prefs.getBoolean(legacySwitch, false) &&
+            dualStyle == SignalDotArrangement.HORIZONTAL) {
             SignalDotArrangement.HORIZONTAL
-        } else {
-            SignalDotArrangement.CURVED
-        }
-        for (dual in listOf(false, true)) {
-            val dualKey = visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, dual)
-            if (!prefs.contains(dualKey)) {
-                editor.putString(dualKey, oldDualStyle(layout, dual).persistedValue)
-            }
-            editor.putString(
-                visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY, dual),
-                activeSingleStyle.persistedValue,
-            )
-            editor.remove(visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, dual))
+        } else SignalDotArrangement.CURVED
+        editor.putString(visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY), dualStyle.persistedValue)
+            .putString(visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY), singleStyle.persistedValue)
+        listOf(false, true).forEach { dual ->
+            editor.remove(visualModeKey(dual, visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)))
         }
     }
-    for (dual in listOf(false, true)) {
+    listOf(false, true).forEach { dual ->
         editor.remove(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY))
     }
     editor.remove(DUAL_ROW_DOT_ARRANGEMENT_KEY)
@@ -105,9 +96,38 @@ internal fun migrateSignalDotArrangementsIfNeeded(prefs: SharedPreferences) {
         .apply()
 }
 
+internal const val SHARED_LAYOUT_VISUAL_SCHEMA_KEY = "shared_layout_visual_schema"
+
+internal fun migrateSharedLayoutVisualsIfNeeded(prefs: SharedPreferences) {
+    if (prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0) >= 1) return
+    val activeDual = prefs.dualSignalEnabled() &&
+        prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false)
+    val stored = prefs.all
+    val editor = prefs.edit()
+    for (layout in ContentLayout.entries) {
+        for (key in PROFILE_VISUAL_BASE_KEYS) {
+            val canonical = visualProfileKey(layout, key)
+            val previousDual = visualModeKey(true, canonical)
+            if (activeDual && stored.containsKey(previousDual)) {
+                when (val value = stored[previousDual]) {
+                    is Boolean -> editor.putBoolean(canonical, value)
+                    is Float -> editor.putFloat(canonical, value)
+                    is Int -> editor.putInt(canonical, value)
+                    is String -> editor.putString(canonical, value)
+                }
+            }
+            editor.remove(previousDual)
+        }
+    }
+    editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+        .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
+        .commit()
+}
+
 // Migrations must finish before the app mirrors its first runtime snapshot.
 internal fun migrateVisualPrefsIfNeeded(preferences: SharedPreferences) {
     migrateSignalDotArrangementsIfNeeded(preferences)
+    migrateSharedLayoutVisualsIfNeeded(preferences)
 }
 
 // Reset visual choices without deleting user-created battery schemes.
@@ -165,19 +185,7 @@ internal class VisualRepo(context: Context) {
         )
 
     fun setDualSignal(enabled: Boolean) {
-        val editor = preferences.edit()
-        if (enabled && !preferences.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false)) {
-            val layout = preferences.readLayout()
-            ContentLayout.entries.forEach { profile ->
-                editor.putVisualCfg(
-                    preferences.readVisualCfg(dual = false, layoutOverride = profile)
-                        .copy(dualSignal = true),
-                )
-            }
-            editor.putString(CONTENT_LAYOUT_KEY, layout.persistedValue)
-            editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
-        }
-        editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, enabled).apply()
+        preferences.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, enabled).apply()
     }
 
     fun setDualRowDotArrangement(style: SignalDotArrangement) {
@@ -185,13 +193,10 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setSingleRowDotArrangement(style: SignalDotArrangement) {
-        val layout = preferences.readLayout()
-        preferences.edit().apply {
-            // The one-row fallback is the same choice whether dual mode is enabled or not.
-            listOf(false, true).forEach { dual ->
-                putString(visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY, dual), style.persistedValue)
-            }
-        }.apply()
+        preferences.edit().putString(
+            activeProfileKey(SINGLE_ROW_DOT_STYLE_KEY),
+            style.persistedValue,
+        ).apply()
     }
 
     fun setMobileTypeBottomOffsetY(offset: Float) {
@@ -470,7 +475,7 @@ internal class VisualRepo(context: Context) {
 
     fun restore(backup: VisualBackup, library: BatteryColorSchemeLibrary): Boolean {
         val editor = preferences.editBackupVisuals()
-        backup.profiles.filter { !it.dualSignal || backup.dualInitialized }
+        backup.profiles.filter { it.dualSignal == backup.dualEnabled }
             .forEach { editor.putVisualCfg(it) }
         val active = backup.profiles.first { it.dualSignal == backup.dualEnabled }
         editor.putBatteryColors(active)
@@ -485,6 +490,7 @@ internal class VisualRepo(context: Context) {
         }
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
         editor.putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
+        editor.putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
         // Restored physical charging scales use the current reference.
         return editor.commit()
     }
@@ -546,7 +552,7 @@ internal fun visualProfileKey(
     layout: ContentLayout,
     baseKey: String,
     dual: Boolean = false,
-): String = visualModeKey(dual, layout.persistedValue + "." + baseKey)
+): String = layout.persistedValue + "." + baseKey
 
 private fun SharedPreferences.profileBoolean(
     layout: ContentLayout,
