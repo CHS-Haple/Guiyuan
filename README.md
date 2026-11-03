@@ -35,7 +35,7 @@ Guiyuan is an open-source LSPosed module for **Xiaomi HyperOS 4**, combining bat
 | --- | --- |
 | **Supported OS family** | **Xiaomi HyperOS 4 only** |
 | Module framework | LSPosed with Modern Xposed API 102; alternative frameworks are not verified |
-| Device-tested baseline | Xiaomi 15 Pro, HyperOS `OS4.0.0.19.XOBCNXM`, SystemUI `17.03.260226.r` |
+| Device-tested baseline | Xiaomi 15 Pro, HyperOS `4.0.0.19.XOBCNXM`, SystemUI `17.03.260226.r` |
 | Module scope | SystemUI; Settings is optional for its integration shortcut |
 | Root | Not mandatory for ordinary companion-app settings; some diagnostics and process-maintenance actions require Root |
 
@@ -56,7 +56,6 @@ Report ordinary bugs or requests through [Issues](https://github.com/CHS-Haple/G
 
 [Changelog](CHANGELOG.md) · [Terms](TERMS.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [Developer docs](docs/README.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
-
 ---
 
 ## 简体中文
@@ -76,7 +75,7 @@ Report ordinary bugs or requests through [Issues](https://github.com/CHS-Haple/G
 | --- | --- |
 | **对外支持的系统** | **Xiaomi HyperOS 4**；不支持将 HyperOS 3 或其他 Android 系统视为正式适配目标 |
 | 模块框架 | 兼容 Modern Xposed API 102 的 LSPosed 环境；其他框架未经验证 |
-| 已实机验证的基线 | Xiaomi 15 Pro，HyperOS `OS4.0.0.19.XOBCNXM`，SystemUI `17.03.260226.r` |
+| 已实机验证的基线 | Xiaomi 15 Pro，HyperOS `4.0.0.19.XOBCNXM`，SystemUI `17.03.260226.r` |
 | 作用域 | SystemUI；如需在系统设置中启用快捷入口，按需授权设置作用域 |
 | Root | 配套应用的常规设置不强制 Root；部分诊断与系统进程维护需要 Root |
 
@@ -96,7 +95,6 @@ Report ordinary bugs or requests through [Issues](https://github.com/CHS-Haple/G
 普通故障、兼容性问题和功能建议请使用 [Issues](https://github.com/CHS-Haple/Guiyuan/issues)。反馈前请核对设备、HyperOS 与 SystemUI 版本，并移除日志中的敏感信息。安全漏洞请使用 GitHub 的[私密漏洞报告入口](https://github.com/CHS-Haple/Guiyuan/security/advisories/new)，不要在公开 Issue 中披露。
 
 [更新日志](CHANGELOG.md) · [使用条款](TERMS.md) · [隐私政策](PRIVACY.md) · [安全政策](SECURITY.md) · [支持项目](docs/SUPPORT.md)
-
 ---
 
 <sub>Guiyuan is an independent community project and is not affiliated with or endorsed by Xiaomi, LSPosed or MIUIX. 归元是独立开源项目，不隶属于 Xiaomi、LSPosed 或 MIUIX，也不代表这些项目的官方立场。</sub>

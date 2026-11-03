@@ -4,11 +4,9 @@ This file documents **formal Guiyuan releases starting with 1.0.0**. As the firs
 
 Formal releases appear newest first, with **equivalent Simplified Chinese and English notes**. Subsequent releases use **Features**, **Improvements** and **Fixes** where applicable, adding security or compatibility notes only when needed and omitting empty categories. Build-by-Build history, abandoned experiments and unpublished candidates are not release notes.
 
-
 本文件仅记录归元自 **1.0.0** 起正式发布的版本。1.0.0 为首次正式版，以下内容介绍应用能力，并非相对旧正式版的变更。此前的开发、内测与构建记录保留在 Git 提交、PR 和 CI 历史中，不列入公开版本日志。
 
 每个正式版本按日期倒序记录，**简体中文与 English 均须完整对应**。后续版本按实际内容选用 **新功能 / Features**、**体验优化 / Improvements**、**问题修复 / Fixes**；仅在需要时增加安全或兼容性说明，省略无内容的分类。不按 Build 逐条记录，不收录失败实验，也不将未发布候选写作已发布版本。
-
 
 ## [1.0.0] - 2026-11-02
 
@@ -31,7 +29,7 @@ Formal releases appear newest first, with **equivalent Simplified Chinese and En
 #### Compatibility
 
 - **Officially supports Xiaomi HyperOS 4**, with an LSPosed environment compatible with Modern Xposed API 102. The OS3 visual style does **not** imply HyperOS 3 runtime support.
-- The device-tested baseline is **Xiaomi 15 Pro**, HyperOS `OS4.0.0.19.XOBCNXM`, SystemUI `17.03.260226.r`. Other HyperOS 4 devices, system builds, third-party fonts and framework combinations are not all individually certified.
+- The device-tested baseline is **Xiaomi 15 Pro**, HyperOS `4.0.0.19.XOBCNXM`, SystemUI `17.03.260226.r`. Other HyperOS 4 devices, system builds, third-party fonts and framework combinations are not all individually certified.
 
 ### 简体中文
 
@@ -52,4 +50,4 @@ Formal releases appear newest first, with **equivalent Simplified Chinese and En
 #### 兼容性说明
 
 - **正式支持 Xiaomi HyperOS 4**，需要兼容 Modern Xposed API 102 的 LSPosed 环境；应用内的 OS3 视觉风格不代表支持 HyperOS 3。
-- 已实机验证的基线为 **Xiaomi 15 Pro**、HyperOS `OS4.0.0.19.XOBCNXM`、SystemUI `17.03.260226.r`。其他 HyperOS 4 机型、系统版本、第三方字体和框架组合未全部独立验证。
+- 已实机验证的基线为 **Xiaomi 15 Pro**、HyperOS `4.0.0.19.XOBCNXM`、SystemUI `17.03.260226.r`。其他 HyperOS 4 机型、系统版本、第三方字体和框架组合未全部独立验证。
