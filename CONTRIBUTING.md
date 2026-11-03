@@ -1,6 +1,6 @@
 # Contributing to Guiyuan
 
-This is the engineering and contribution source of truth for Guiyuan. Use the smallest process that preserves runtime safety, traceability and a clean stable branch.
+This is the engineering and contribution source of truth for Guiyuan. Use the smallest process that preserves runtime safety, traceability and a clean stable branch. AI coding assistants also follow [AGENTS.md](AGENTS.md) for assistant-specific instructions.
 
 ## Baseline
 
@@ -45,13 +45,13 @@ Before editing:
 5. choose a coherent scope that removes the cause without unrelated churn;
 6. identify behavior that must remain unchanged and evidence needed for acceptance.
 
-For non-trivial decisions, record the alternatives considered, their evidence and trade-offs, and why the chosen approach is preferable before implementation; keep this proportional to the risk and scope. Do not invent alternatives or evidence for simple mechanical changes.
+For non-trivial decisions, record the alternatives considered, their evidence and trade-offs, and why the chosen approach is preferable before implementation; keep this proportional to the risk and scope.
 
 For defects, investigate root cause before adding a workaround. Do not add geometry, timing, alpha, visibility, polling, retry or delayed patches merely because they hide one symptom.
 
 When several explanations remain plausible, prefer a bounded single-variable diagnostic.
 
-Before each MIUIX-facing UI adaptation, report to the maintainer **before editing**: whether upstream provides a released API, an experimental PR/sample, or no corresponding implementation; the exact upstream source/revision and its layout, motion, state, and lifecycle contract; the current Guiyuan mismatch; the minimal adaptation and its verification boundary. An upstream sample is evidence, not a mandatory public API. Do not replace an accepted control merely to match an illustrative demo.
+For MIUIX-facing UI adaptations, record before editing whether upstream provides a released API, an experimental PR/sample or no implementation; the exact source/revision and relevant layout, motion, state and lifecycle contract; the current Guiyuan mismatch; and the proposed adaptation and verification boundary. An upstream sample is evidence, not a mandatory public API. Do not replace an accepted control merely to match an illustrative demo.
 
 ## Runtime safety
 
@@ -67,7 +67,7 @@ For SystemUI call chains, hooks, state/lifecycle and Hot Reload changes, inspect
 
 Before repeating target-specific reverse engineering, consult the maintainer-controlled private `SystemUI-Reference` repository **when authorized and accessible**. It owns detailed target-binary identities, DEX method/instruction indexes, investigation notes and device-specific traces. The public `docs/reference/systemui-contracts.md` is limited to reusable integration constraints, not a substitute for the private evidence or a complete proof of platform behavior.
 
-If the private reference is unavailable, explain the missing evidence and independently verify an authorized copy of the exact target SystemUI/Framework as required; do not claim access, assume an old binary still matches, or substitute generic AOSP internals for a vendor-specific contract. Access to the private reference is not required for unrelated public contributions. Keep decompiled code/binaries, raw device logs, local reverse-tool/MCP configurations and sensitive device details outside this public repository. The reference repository is development-only, never a Gradle/CI/runtime dependency.
+If the private reference is unavailable, record the evidence gap and independently verify an authorized copy of the exact target SystemUI/Framework as required. Do not assume an old binary still matches or substitute generic AOSP internals for a vendor-specific contract. Access to the private reference is not required for unrelated public contributions. Keep decompiled code/binaries, raw device logs, local reverse-tool/MCP configurations and sensitive device details outside this public repository. The reference repository is development-only, never a Gradle/CI/runtime dependency.
 
 ### State and writers
 
@@ -155,13 +155,13 @@ Check touched code and relevant adjacent call sites for:
 - one-caller wrappers, pass-through helpers and mirrored abstractions;
 - synthetic failure branches, proof-only helpers/tests or duplicated Result/State layers;
 - diagnostics that fill templates rather than report facts;
-- invented metrics, pass rates or proof fields;
+- metrics, pass rates or proof fields unsupported by actual observations;
 - comments that narrate code or preserve debugging history;
 - structures that make a small future change require touching unrelated layers.
 
 Keep an unusual structure when a real platform/maintenance constraint justifies it; otherwise simplify it. Add only the smallest useful explanation for a necessary non-obvious structure.
 
-Record each applicable pre-commit check with the touched code/call path, validation method, concrete evidence and conclusion. Explain non-applicable or unverified checks. For a failed check, state the root cause, fix and recheck evidence; resolve deterministic findings before committing. A bare `PASS`, unrun test or invented metric is not evidence.
+Record each applicable pre-commit check with the touched code/call path, validation method, concrete evidence and conclusion. Explain non-applicable or unverified checks. For a failed check, state the root cause, fix and recheck evidence; resolve deterministic findings before committing. A review conclusion must identify what was actually inspected or executed.
 
 Prefer deleting proven dead code/indirection over renaming it. Do not run CI for every micro-edit; validate meaningful checkpoints. Device evidence is required only when runtime behavior can plausibly change.
 
@@ -175,31 +175,21 @@ event -> bounded snapshot -> report
 
 Log useful state transitions, decisions, failures and observations. Structured fields are facts, not mandatory template slots.
 
-A metric, readiness field, or health signal must come from a real runtime observation or calculation. Do not hard-code values merely to prove an invariant or produce self-derived `N/N`, `100%`, or coverage-looking output.
+A metric, readiness field, or health signal must come from a real runtime observation or calculation. Do not fabricate verification values or inferred coverage statistics.
 
 Build-channel diagnostic flags are observation gates only. They must not control functional hook installation, state authority, ownership, acquisition/release or fail-native fallback. Canary and Release share functional control flow.
 
 For app UI, prefer current MIUIX components and conventions. Persist real user preferences only; Preview/Sandbox state must not become runtime module state.
 
-Before UI changes, inspect applicable MIUIX upstream code, examples and PRs/issues. Explain **before editing** whether an upstream solution exists, its source, rules, applicable scenarios, current differences and intended approach. Adapt the full affected UI chain (layout, states, interactions, motion/glass, navigation, lifecycle and relevant OS3/OS4 behavior), not just controls. Recheck after editing, resolve deterministic issues and record evidence.
+Before UI changes, inspect applicable MIUIX upstream code, examples and PRs/issues. Record whether an upstream solution exists, its source, rules, applicable scenarios, current differences and intended approach before implementation. Adapt the full affected UI chain (layout, states, interactions, motion/glass, navigation, lifecycle and relevant OS3/OS4 behavior), not just controls. Recheck after editing, resolve deterministic issues and record evidence.
 
 For every MIUIX UI change, record an OS3 / OS4 / both / neither **UI-style** impact decision, including shared components and style switching. These style names do not broaden 1.0.0's HyperOS 4-only runtime support. For each affected style, verify the **corresponding** upstream revision and relevant layout, material, state, motion, interaction and lifecycle rules before editing, then compare the final implementation against them. Do not apply one style's rules to another. Cite the source and outcome in the PR; missing or unpublished guidance is an explicit evidence gap, not an invented upstream standard. Keep verification proportional to the affected call paths.
 
 For OS4-related changes, also classify the upstream surface as the accepted pinned implementation or a new/materially revised PR or component. Explore promising improvements, but assess practical benefit, maturity, transitive dependencies/ABI, compatibility, performance, UI regression, rollback and maintenance cost before adopting new upstream code. Record an adopt / isolated experiment / defer decision. An upstream update never automatically advances the accepted revision; experimental work stays in ordinary feat/fix branches until focused source-matched CI and any necessary device validation pass. This adds a risk gate, not a separate OS4 development or release pipeline.
 
-### Semantic leading icons
+### UI iconography
 
-Use Material Symbols for explanatory row semantics and MIUIX icons for MIUIX-owned controls/navigation/actions.
-
-For Material Symbols:
-- select the glyph by semantic meaning after inspecting the actual shape;
-- default to Outlined/Regular W400 to match the pinned MIUIX visual language;
-- use W500 only when the real glyph is perceptually too light;
-- use Filled only when state semantics or legibility justify it;
-- normalize perceived mass through official glyph/weight choices, not per-icon scale/translation/stroke/alpha hacks;
-- use the shared `SemanticLeadingIcon` geometry: 24 dp optical box, 22 dp visual size, common alignment and tint;
-- first normalize subordinate glyphs using official outlined W500 variants while preserving primary glyph weights; then use the shared 12 dp badge inside the 24 dp optical box (one quarter of its area), independent of the main glyph's shape; keep the existing contour cutout and 1 dp gap unchanged;
-- review neighboring glyphs in light and dark themes.
+For settings-row icon choices and current `SemanticLeadingIcon` sizing, follow [UI iconography](docs/architecture/ui-iconography.md) and recheck its implementation when editing UI. The MIUIX source/evidence and OS3/OS4 style review requirements above still apply.
 
 ### Version and build identity
 
@@ -207,7 +197,7 @@ The external `versionName` changes only when the maintainer requests promotion. 
 
 For an intended device-test or distribution candidate, compare it with the last delivered candidate. A materially different installable APK needs one new Build: advance Android `versionCode` and `buildId` together before submitting the checkpoint. Rebuilds, source SHAs and branch copies of the same material APK do not each consume a Build. The protected-branch Build-identity pair is the deliberate signal for automatic unsigned Canary/Release artifact production and trusted signing; no new pair means the distribution steps are skipped while required source/build checks continue.
 
-Before delivery, check other public/IT installed versions so the intended upgrade has a strictly higher `versionCode`; channel-specific functional differences cannot silently share a Build identity. Use the exact Git SHA and branch/channel to trace every CI result and signed artifact. Keep trusted signing isolated from candidate code. Work-branch device tests still require an explicitly reviewed same-repository PR and a separately authorized signing request; never allow unreviewed PRs to trigger privileged signing automatically.
+Before delivery, check previously distributed APKs, including historical IT versions, so the intended upgrade has a strictly higher `versionCode`; channel-specific functional differences cannot silently share a Build identity. Use the exact Git SHA and branch/channel to trace every CI result and signed artifact. Keep trusted signing isolated from candidate code. Work-branch device tests still require an explicitly reviewed same-repository PR and a separately authorized signing request; never allow unreviewed PRs to trigger privileged signing automatically.
 
 ## Git workflow
 
@@ -216,7 +206,6 @@ Branch roles:
 - `fix/*` — bounded correction;
 - `refactor/*` — behavior-neutral maintainability work;
 - `dev` — public/shared integration;
-- `it` — unstable internal-test integration, not a promotion source;
 - `main` — accepted stable baseline;
 - `hotfix/*` — urgent stable correction;
 - `dependabot/*` — dependency proposal.
@@ -233,16 +222,13 @@ A PR may remain Draft while implementation is moving. Mark it ready at the final
 
 Use squash merge for ordinary work branches.
 
-### IT synchronization and boundaries
+### Retired IT channel
 
-- `it` is a long-lived test branch. Develop IT-only experiments from an `it` base and merge them into `it` by reviewed PR. The IT-owned `it-only/RESTRICT_PROJECT_LINK` marker disables in-app project navigation for Debug and Canary without changing their build-type semantics. This does not hide the entry, remove embedded strings, or make the APK confidential.
-- Sync public fixes **dev → it** through reviewed integration PRs. For **it → dev**, create a fresh branch from current `dev`, selectively port only generally applicable fixes and submit a separate PR. Never merge the whole `it` branch into `dev` or `main`. Stable fixes go `main → dev → it`.
-- IT-only sources must stay under `app/src/internal/` or `it-only/` and must not enter public branches. Shared-path changes require semantic review: a file-path guard cannot detect all IT-only behavior. No public branch can inherit IT behavior just because its fix was observed during IT testing.
-- Both channels retain package/signing identity. Plan `versionCode` monotonicity so installation of a later public version after IT is possible. No Build bump for branch creation or CI/governance only.
-- The public PR CI rejects direct `it` heads and exclusive paths. Protect `it` via PR + required official Build check, not an in-PR check alone. The protected IT Canary is distributable only after its exact-SHA push Build and the separate main-trusted signed-APK verification have succeeded.
+The historical `it` channel was retired from routine development and distribution after the v1.0.0 stable release. Do not start IT feature work, synchronize `dev` to `it`, or issue new IT APKs. Preserve historical Git, CI and release evidence.
 
+The historical `it` branch remains for traceability, but current `dev` and `main` Build/signing workflows no longer admit IT APK sources (see [#1189](https://github.com/CHS-Haple/Guiyuan/pull/1189) and [#1190](https://github.com/CHS-Haple/Guiyuan/pull/1190)). Keep historical `app/src/internal/` and `it-only/` content out of public branches, and maintain a public `versionCode` above previously distributed IT versions.
 
-All distributable CI APKs use the same accepted, pinned MIUIX source graph. The build matrix is: `dev` Debug validation and demand-driven signed Canary; `it` Debug validation and daily-use optimized Canary; `main` Release only. Any new issue-specific diagnostic package requires a separate explicitly authorized, time-limited build/signing path with a removal plan. Canary remains non-debuggable, release-optimized and defaults to General diagnostics on every branch. Detailed diagnostics must be user-selected, while issue-specific probes require an explicit removal plan and must not enter public `dev`. No ordinary Release assembly on `dev` or `it`; no routine Debug/Canary on `main`. The trusted Work Branch APK signs only successful exact-SHA source-built artifacts; candidate code never executes with Haple credentials. The old Internal producer/distribution role is retired once ordinary protected IT Canary signing has passed. Never substitute the published MIUIX fallback for the accepted source-built OS4 graph.
+All distributable APKs use the accepted pinned MIUIX source graph. Active channels: `dev` Debug validation and demand-driven signed Canary; `main` Release only. New issue-specific diagnostics require explicitly authorized, time-limited builds and removal plans. Canary remains non-debuggable, release-optimized, and defaults to General diagnostics. No ordinary Release assembly on `dev` or routine Debug/Canary on `main`. Trusted work-branch signing accepts only reviewed exact-SHA source-built artifacts; candidate code never runs with signing credentials. Never substitute the published MIUIX fallback for the accepted source-built OS4 graph.
 
 ### Stable promotion
 
@@ -262,7 +248,7 @@ After a dev-to-main merge, verify that long-lived `dev` still exists; recreate i
 
 Pure docs/metadata/governance may use the shortest safe path. Keep shared policy/current-state documents aligned across long-lived branches when divergence would mislead development.
 
-For shared build/signing workflow, pinned-action or contribution-rule changes, compare `main`, `dev` and `it` during the same review. Promptly carry validated common changes through branch-targeted PRs, preserving each branch's triggers, trust boundaries and IT-only restrictions; document deliberate differences instead of blindly copying whole workflows. Do not bump Build identities or merge unrelated branch histories solely to synchronize governance.
+For shared build/signing workflow, pinned-action or contribution-rule changes, compare current `main` and `dev` during the same review. Carry validated common changes through branch-targeted PRs, preserving trust boundaries. Assess legacy IT entries for safe retirement, not synchronization. Do not bump Build identities or merge unrelated branch histories solely to synchronize governance.
 
 CI/build/release workflow changes require Full validation because they change the validation mechanism; device testing is needed only if APK/runtime behavior also changes.
 
@@ -287,19 +273,19 @@ Do not expose signing credentials or project-signed artifacts to untrusted fork 
 
 ### Canary
 
-The **same pre-build device-test decision** applies to every eligible development channel, not only dev. For `dev` a deliberately changed Build identity compiles Canary and uses the trusted inline signer; for eligible `feat/*`, `fix/*`, `refactor/*` and `hotfix/*` PRs a paired Build identity plus the owner's prior exact-SHA authorization automatically chains successful Build to Work Branch APK signing; for protected `it` a new paired Build identity automatically chains the protected push Build to its trusted signer. The workflow run title identifies the source branch, and the signing job has the neutral name `Sign Canary`; `main` keeps an independent stable-Release signing boundary. An ordinary change that does not require a device test validates source without signing; do not create a new Build or signed APK just to satisfy CI.
+The **same pre-build device-test decision** applies to `dev` and eligible work branches. For `dev`, a deliberately changed Build identity compiles Canary and uses the trusted inline signer; for eligible `feat/*`, `fix/*`, `refactor/*` and `hotfix/*` PRs, a paired Build identity plus the owner's prior exact-SHA authorization chains successful Build to Work Branch APK signing. The workflow run title identifies the source branch and signing is named `Sign Canary`; `main` keeps an independent stable Release signing boundary. Changes not needing device evidence validate source without signing or allocating a new Build.
 
-Signed work-branch Canary is demand-driven. Decide whether device evidence is needed before the CI checkpoint; an ordinary source-validation run does not require a signed APK. Protected `dev`, `it` and `main` use a deliberate new versionCode/buildId pair as the installable-distribution signal; without one, their ordinary validation does not sign.
+Signed work-branch Canary is demand-driven. Decide whether device evidence is needed before the CI checkpoint; an ordinary source-validation run does not require a signed APK. Active protected `dev` and `main` use a deliberate new versionCode/buildId pair as the installable-distribution signal; without one, ordinary validation does not sign.
 
 For automatic work-branch signing, keep the PR Draft until the intended HEAD SHA is ready. The repository owner must post `B<build> Canary SHA <full HEAD SHA>` on that PR **before** source CI begins, then mark it ready. After successful exact-SHA PR Build, the trusted workflow automatically signs its verified unsigned Canary. Without that exact prior authorization, CI validates without signing; changing the PR HEAD requires new authorization. For a later signing decision, Work Branch APK can sign an unexpired exact-SHA unsigned Canary from successful source CI without rebuilding. If the original source-only CI did not produce a Canary artifact, first create an explicitly reviewed paired versionCode/buildId installable checkpoint and run normal source validation; never execute candidate code in the trusted signer. An exact-SHA preauthorization comment records consent before CI; it does not itself start signing and its comment-triggered job is intentionally skipped. The successful Build event triggers the trusted sign check.
 
-The low-privilege pull_request Build compiles the unsigned candidate. The default-branch Work Branch APK only selects a successful exact-SHA Build and its unexpired artifact, then verifies and signs it in an isolated trusted runner without checking out or executing candidate source. Work-branch Canary requires a ready, open same-repository PR. Protected `it` Canary requires the current protected IT SHA and successful exact-SHA Push Build; the owner may dispatch signing or request `B<build> Canary` on its just-merged current-head IT PR. Stale, foreign and unmerged IT PRs are not eligible; ordinary work-branch signing comments apply only to open PRs. Never run Gradle or restore untrusted Actions caches in the signer.
+The low-privilege pull_request Build compiles the unsigned candidate. The default-branch Work Branch APK selects only successful exact-SHA Builds and unexpired artifacts, then verifies and signs in an isolated trusted runner without checking out or executing candidate source. Work-branch Canary requires a ready, open same-repository PR; signing comments apply only to open PRs. Never run Gradle or restore untrusted Actions caches in the signer. Legacy IT signing paths are retired and must not be requested.
 
 A device test is useful for ownership/lifecycle/scene/transition/geometry changes, first meaningful runtime checkpoints, competing hypotheses, integrated runtime validation or a runtime-affecting stable candidate.
 
 Do not request device testing merely because a commit or APK exists.
 
-Canary is non-debuggable, release-optimized and retains bounded runtime diagnostics. IT-only policy is branch-owned, not a new build type; Debug and Canary must share its app-side navigation restrictions without altering SystemUI behavior or Xposed scope. The former Internal build type is retired from routine distribution. IT-specific native probes must not enter normal Canary. They require an independently reviewed, explicitly authorized temporary diagnostic path and removal after sufficient issue evidence.
+Canary is non-debuggable, release-optimized and retains bounded runtime diagnostics. Any new issue-specific native probe requires an independently reviewed, explicitly authorized temporary diagnostic path, and removal after sufficient issue evidence.
 
 ## Versions, dependencies and release
 
@@ -311,29 +297,9 @@ Dependency updates require relevance and exact-revision evidence where applicabl
 
 Formal stable releases publish from prepared `main` state and must satisfy release workflow, signing, metadata, version, tag and changelog checks.
 
-## Development memory
+## Documentation and source of truth
 
-For normal recovery read:
-1. `CONTRIBUTING.md`;
-2. `docs/development/CURRENT.md`.
-
-Then use:
-- ROADMAP for future direction;
-- DECISIONS for durable rationale;
-- architecture docs for current ownership/layout policy;
-- SystemUI reference for reusable target evidence.
-
-Repository state is authoritative over remembered chat context.
-
-### Document ownership
-
-- **CURRENT** — accepted baseline, current blockers/guardrails and immediate next step; no Build/CI diary.
-- **ROADMAP** — future direction and release exit criteria; no debugging history.
-- **DECISIONS** — durable decisions/rationale only; no checkpoint log.
-- **Architecture/reference** — reusable current policy/evidence only.
-- **CHANGELOG** — durable release-level behavior and public engineering changes.
-
-Do not synchronize every fact everywhere.
+For the contributor reading order and document responsibilities, use the [documentation index](docs/README.md). Current repository code, CI and verified device evidence take precedence over stale documentation or remembered history. Do not duplicate build-by-build records across long-lived reference documents.
 
 ## Definition of done
 
@@ -343,7 +309,7 @@ Runtime-sensitive work: review ownership/writer conflicts, lifecycle/cleanup, fa
 
 UI work: review hierarchy, MIUIX behavior, themes, localization, accessibility and interaction.
 
-Formal privacy and terms documents are not subject to ordinary UI copy-shortening or semicolon-avoidance rules. Preserve necessary legal qualifications and precise meanings. For substantive changes, verify disclosures against actual source/runtime behavior, keep Chinese/English meaning equivalent, and synchronize in-app articles with the public `PRIVACY.md` and `TERMS.md`. Never invent maintainer identities, private contact methods, consent mechanisms, retention guarantees, or legal assurances. Respect the IT channel's project-link restriction.
+Privacy and terms documents require formal, precise language rather than routine UI copyediting. Preserve necessary legal qualifications and exact meanings. For substantive changes, verify disclosures against actual source/runtime behavior, keep Chinese/English meaning equivalent, and synchronize in-app articles with public `PRIVACY.md` and `TERMS.md`. Do not introduce unsupported maintainer identities, private contact methods, consent mechanisms, retention guarantees or legal assurances.
 
 Repository/CI work: review triggers, secret boundaries, artifact semantics and branch protection.
 

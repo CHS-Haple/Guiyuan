@@ -13,7 +13,7 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 | AndroidX Activity Compose | 1.13.0 | Android/Compose activity integration | Apache-2.0 |
 | AndroidX Navigation Event Compose | 1.2.0 | Predictive/navigation event integration | Apache-2.0 |
 | AndroidX DataStore Preferences | 1.3.0 | Local application preferences | Apache-2.0 |
-| MIUIX UI / Preference / Icons / Nav / Blur | Published baseline `0.9.4-8972f941-SNAPSHOT` (`8972f941`); OS4 matched-source Canary and Release candidates use PR423 source (`b9f70838`) | Xiaomi HyperOS-style UI; signed OS4 Canary and Release candidates substitute a verified same-revision MIUIX source graph rather than the published baseline binaries | Apache-2.0 |
+| MIUIX UI / Preference / Icons / Nav / Blur | Published baseline `0.9.4-8972f941-SNAPSHOT` (`8972f941`); matched OS4 source graph: stable v1.0.0 `b9f70838`, current development `f4cfe9b0` | Xiaomi HyperOS-style UI; matched-source builds select the revision pinned by that branch, not an interchangeable published-module or Glass ABI | Apache-2.0 |
 | kotlinx.serialization core / JSON | 1.12.0 | Versioned configuration file serialization | Apache-2.0 |
 
 ## Compile-only API
@@ -34,12 +34,13 @@ runtime dependency in this experimental implementation.
 
 `app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` contains a pinned, adapted subset of the
 [MIUIX miuix-glass PR #423](https://github.com/compose-miuix-ui/miuix/pull/423),
-at baseline commit `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (Apache-2.0).
-`GlassPopupSurface.kt` and `GlassPopupColumn.kt` are now taken unmodified from PR #423
+at the current development revision `f4cfe9b0adaa5151b68ec169ed18d470b957a6f6`. The published v1.0.0 stable branch remains pinned to `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (Apache-2.0; [license text](third_party/miuix-glass/LICENSE)).
+`GlassPopupSurface.kt` and `GlassPopupColumn.kt` were initially based on PR #423
 commit `8d52b45f223d4bec9a719d3d6ca52972cc7ea5fb` to use upstream popup
-measurement, scroll and outside-gesture ownership. The remaining compatibility
+measurement, scroll and outside-gesture ownership. This is provenance, not a claim
+that those files remain byte-identical to the current upstream revision. The remaining compatibility
 bridge is not claimed to be the latest complete `miuix-glass` module.
-The adapted source includes documented compatibility bridges (including title rendering), so it is not a byte-for-byte copy of the entire upstream module. The signed OS4 Canary and Release candidates use the matching PR423 UI/Blur source modules; plain Gradle builds retain published-module compatibility paths.
+The adapted source includes documented compatibility bridges (including title rendering), so it is not a byte-for-byte copy of the entire upstream module. Matched-source OS4 candidates use their branch-pinned PR423 UI/Blur source modules; plain Gradle builds retain published-module compatibility paths.
 These primitives are temporary until the official module is published; they must not be silently
 updated independently from the corresponding MIUIX UI/Blur contracts. See
 `third_party/miuix-glass/README.md` for source boundaries and removal instructions.
@@ -83,7 +84,7 @@ Android Gradle Plugin and Kotlin Gradle plugins are resolved through their stand
 
 The Android build may remove duplicate dependency license resources from packaged `META-INF` entries to avoid resource conflicts. That packaging behavior does not remove or alter the upstream license obligations.
 
-Before a formal release, maintainers should verify the resolved dependency set and any notice requirements applicable to the distributed APK.
+Before each release, maintainers should verify the resolved dependency set and applicable license/notice requirements of the distributed APK.
 
 ## Project license
 
@@ -100,6 +101,6 @@ Guiyuan itself is licensed under the [GNU General Public License v3.0 only](LICE
 - **图标素材**：使用注明来源的 Material Symbols 及 MIUIX 图标素材，原始许可仍然适用。
 - **构建工具**：Gradle、Android Gradle Plugin 与 Kotlin 构建工具遵循各自上游许可。
 
-构建过程中可能为避免冲突而移除重复的 `META-INF` 许可资源，但不改变第三方许可义务。正式发布前仍需核对实际依赖和应随附的声明。
+构建过程中可能为避免冲突而移除重复的 `META-INF` 许可资源，但不改变第三方许可义务。每次发布前仍需核对实际依赖及应随附的许可证和声明。
 
 归元自身源代码采用 [GPL-3.0-only](LICENSE) 许可证；第三方组件分别受其上游许可证和声明要求约束。
