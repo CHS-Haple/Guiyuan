@@ -664,25 +664,25 @@ internal fun FeaturesScreen(
                     }
                 }
                 if (search.matches(R.string.battery_lower_opening_title)) {
-                        UiDropdownPreference(
-                            title = stringResource(R.string.battery_lower_opening_title),
-                            summary = stringResource(R.string.battery_lower_opening_summary),
-                            items = lowerOpeningOptions,
-                            selectedIndex = if (visual.fixedLowerOpening) 1 else 0,
-                            showValue = true,
-                            enabled = featureCfg.enabled,
-                            startAction = {
-                                SemanticLeadingIcon(
-                                    R.drawable.ic_battery_ring_opening,
-                                    featureCfg.enabled,
-                                )
-                            },
-                            onSelectedIndexChange = { index ->
-                                if (index in lowerOpeningOptions.indices) {
-                                    visualRepo.setFixedLowerOpening(index == 1)
-                                }
-                            },
-                        )
+                    UiDropdownPreference(
+                        title = stringResource(R.string.battery_lower_opening_title),
+                        summary = stringResource(R.string.battery_lower_opening_summary),
+                        items = lowerOpeningOptions,
+                        selectedIndex = if (visual.fixedLowerOpening) 1 else 0,
+                        showValue = true,
+                        enabled = featureCfg.enabled,
+                        startAction = {
+                            SemanticLeadingIcon(
+                                R.drawable.ic_battery_ring_opening,
+                                featureCfg.enabled,
+                            )
+                        },
+                        onSelectedIndexChange = { index ->
+                            if (index in lowerOpeningOptions.indices) {
+                                visualRepo.setFixedLowerOpening(index == 1)
+                            }
+                        },
+                    )
                 }
                 if (search.matches(R.string.combined_size)) {
                     SliderPreference(
