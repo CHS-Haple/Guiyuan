@@ -2,8 +2,6 @@
 
 Guiyuan uses third-party libraries and build tooling. This file provides a human-readable summary of the project's direct dependencies and does not replace the license text or notices distributed by each upstream project.
 
-The full Apache-2.0 license for the adapted MIUIX Glass source is included as [Glass source license](third_party/miuix-glass/LICENSE-APACHE-2.0.txt); the original copyright/SPDX headers remain in the files.
-
 The exact resolved dependency graph is defined by Gradle and may include additional transitive dependencies. The in-app third-party screen groups modules by upstream project to avoid duplicate entries; individual module identities and versions remain listed here.
 
 ## Runtime / application dependencies
@@ -36,7 +34,7 @@ runtime dependency in this experimental implementation.
 
 `app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` contains a pinned, adapted subset of the
 [MIUIX miuix-glass PR #423](https://github.com/compose-miuix-ui/miuix/pull/423),
-at current accepted source revision `f4cfe9b0adaa5151b68ec169ed18d470b957a6f6` (previous baseline `b9f70838509fbc3f63f1a972777a7e6ce07f578f`, Apache-2.0).
+at current accepted source revision `f4cfe9b0adaa5151b68ec169ed18d470b957a6f6` (previous baseline `b9f70838509fbc3f63f1a972777a7e6ce07f578f`, Apache-2.0; [license text](third_party/miuix-glass/LICENSE)).
 `GlassPopupSurface.kt` and `GlassPopupColumn.kt` were initially based on PR #423
 commit `8d52b45f223d4bec9a719d3d6ca52972cc7ea5fb` to use upstream popup
 measurement, scroll and outside-gesture ownership. This is provenance, not a claim
