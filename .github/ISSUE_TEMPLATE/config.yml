@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Security vulnerability
+  - name: Security vulnerability / 安全漏洞
     url: https://github.com/CHS-Haple/Guiyuan/security/advisories/new
-    about: Report security-sensitive issues privately. Do not post credentials or exploit details in a public issue.
+    about: Report security issues privately; never post secrets or exploit details in public. / 请私密报告安全问题，勿公开密钥或漏洞利用细节。
