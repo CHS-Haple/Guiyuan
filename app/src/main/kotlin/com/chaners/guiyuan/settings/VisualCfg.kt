@@ -203,6 +203,7 @@ internal data class VisualCfg(
     // New field; older backup booleans are translated before decoding.
     @SerialName("singleRowDotStyle")
     val singleRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
+    val horizontalFixedOpening: Boolean = false,
     val mobileTypeBottomOffsetY: Float = mobileTypeBottomOffsetDefault(layout),
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,
@@ -241,6 +242,12 @@ internal data class VisualCfg(
 ) {
     val centeredMobileSignal: Boolean
         get() = layout == ContentLayout.MOBILE_CENTER
+
+    // The original lower opening remains the baseline for curved outside dots.
+    // Horizontal rows may opt into it without changing the centered indicator.
+    fun reserveOriginalBottomOpening(actualDualRows: Boolean): Boolean =
+        (if (actualDualRows) dualRowDotArrangement else singleRowDotArrangement) == SignalDotArrangement.CURVED ||
+            horizontalFixedOpening
 
     // Only the outside/bottom dots use these saved choices.
     // Signal-strength-centered dots remain horizontal in the renderer.
