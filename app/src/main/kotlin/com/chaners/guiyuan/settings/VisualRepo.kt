@@ -98,7 +98,10 @@ internal fun migrateSignalDotArrangementsIfNeeded(prefs: SharedPreferences) {
 
 internal const val SHARED_LAYOUT_VISUAL_SCHEMA_KEY = "shared_layout_visual_schema"
 
-internal fun migrateSharedLayoutVisualsIfNeeded(prefs: SharedPreferences) {
+internal fun migrateSharedLayoutVisualsIfNeeded(
+    prefs: SharedPreferences,
+    preserveMigratedSignalStyles: Boolean = false,
+) {
     if (prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0) >= 1) return
     val activeDual = prefs.dualSignalEnabled() &&
         prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false)
@@ -108,17 +111,39 @@ internal fun migrateSharedLayoutVisualsIfNeeded(prefs: SharedPreferences) {
         for (key in PROFILE_VISUAL_BASE_KEYS) {
             val canonical = visualProfileKey(layout, key)
             val previousDual = visualModeKey(true, canonical)
-            if (activeDual && stored.containsKey(previousDual)) {
+            if (activeDual) {
                 when (val value = stored[previousDual]) {
                     is Boolean -> editor.putBoolean(canonical, value)
                     is Float -> editor.putFloat(canonical, value)
                     is Int -> editor.putInt(canonical, value)
                     is String -> editor.putString(canonical, value)
+                    null -> {
+                        // A missing dual-bank value meant the layout default,
+                        // not the single-bank value, in the previous version.
+                        // The earlier dot-style migration has already selected
+                        // the effective active style and must not be undone.
+                        val migratedStyle = preserveMigratedSignalStyles &&
+                            key in setOf(DUAL_ROW_DOT_ARRANGEMENT_KEY, SINGLE_ROW_DOT_STYLE_KEY)
+                        if (!migratedStyle) editor.remove(canonical)
+                    }
+                    else -> error("Unexpected saved visual preference type: $key")
+                }
+            } else if (!stored.containsKey(canonical)) {
+                // Earlier single-mode installations may still use unscoped
+                // preference names. Materialize those values per layout.
+                when (val value = stored[key]) {
+                    is Boolean -> editor.putBoolean(canonical, value)
+                    is Float -> editor.putFloat(canonical, value)
+                    is Int -> editor.putInt(canonical, value)
+                    is String -> editor.putString(canonical, value)
+                    null -> Unit
+                    else -> error("Unexpected saved visual preference type: $key")
                 }
             }
             editor.remove(previousDual)
         }
     }
+    PROFILE_VISUAL_BASE_KEYS.forEach { editor.remove(it) }
     editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
         .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
         .commit()
@@ -126,8 +151,9 @@ internal fun migrateSharedLayoutVisualsIfNeeded(prefs: SharedPreferences) {
 
 // Migrations must finish before the app mirrors its first runtime snapshot.
 internal fun migrateVisualPrefsIfNeeded(preferences: SharedPreferences) {
+    val migratingDotStyles = preferences.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0) < 4
     migrateSignalDotArrangementsIfNeeded(preferences)
-    migrateSharedLayoutVisualsIfNeeded(preferences)
+    migrateSharedLayoutVisualsIfNeeded(preferences, preserveMigratedSignalStyles = migratingDotStyles)
 }
 
 // Reset visual choices without deleting user-created battery schemes.
@@ -563,8 +589,6 @@ private fun SharedPreferences.profileBoolean(
     val profileKey = visualProfileKey(layout, baseKey, dual)
     return if (contains(profileKey)) {
         getBoolean(profileKey, defaultValue)
-    } else if (dual) {
-        defaultValue
     } else {
         getBoolean(baseKey, defaultValue)
     }
@@ -579,8 +603,6 @@ private fun SharedPreferences.profileFloat(
     val profileKey = visualProfileKey(layout, baseKey, dual)
     return if (contains(profileKey)) {
         getFloat(profileKey, defaultValue)
-    } else if (dual) {
-        defaultValue
     } else {
         getFloat(baseKey, defaultValue)
     }
@@ -595,8 +617,6 @@ private fun SharedPreferences.profileInt(
     val profileKey = visualProfileKey(layout, baseKey, dual)
     return if (contains(profileKey)) {
         getInt(profileKey, defaultValue)
-    } else if (dual) {
-        defaultValue
     } else {
         getInt(baseKey, defaultValue)
     }

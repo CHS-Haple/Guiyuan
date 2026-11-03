@@ -95,7 +95,7 @@ class VisualPersistenceTest {
         val original = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
         assertEquals(4f, original.curvedSignalDotOffsetY, 0f)
         assertEquals(-7f, original.horizontalSignalDotOffsetY, 0f)
-        assertEquals(4f, prefs.readVisualCfg(dual = false).activeSignalDotOffsetY, 0f)
+        assertEquals(-2f, prefs.readVisualCfg(dual = false).activeSignalDotOffsetY, 0f)
     }
 
     @Test
@@ -515,11 +515,11 @@ class VisualPersistenceTest {
                 .putBoolean(DUAL_SIGNAL_ENABLED_KEY, activeDual)
                 .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
                 .putString(
-                    visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, true),
+                    visualModeKey(true, visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY)),
                     SignalDotArrangement.HORIZONTAL.persistedValue,
                 )
                 .putBoolean(
-                    visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, true),
+                    visualModeKey(true, visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)),
                     true,
                 ).apply()
             migrateSignalDotArrangementsIfNeeded(prefs)
@@ -634,6 +634,46 @@ class VisualPersistenceTest {
         migrateSharedLayoutVisualsIfNeeded(prefs)
         assertEquals(-4f, prefs.readVisualCfg(false, layout).wifiOffsetY, 0f)
         assertEquals(-4f, prefs.readVisualCfg(true, layout).wifiOffsetY, 0f)
+    }
+
+    @Test
+    fun migratingActiveDualKeepsDefaultWhenItsOldBankIsMissing() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.NETWORK_CENTER
+        val canonical = visualProfileKey(layout, WIFI_SIZE_SCALE_KEY)
+        val dualKey = visualModeKey(true, canonical)
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
+            .putFloat(canonical, 0.7f)
+            .putFloat(WIFI_SIZE_SCALE_KEY, 0.6f)
+            .apply()
+
+        migrateVisualPrefsIfNeeded(prefs)
+        assertEquals(WIFI_SIZE_SCALE_DEFAULT, prefs.readVisualCfg(dual = true).wifiScale, 0f)
+        assertEquals(WIFI_SIZE_SCALE_DEFAULT, prefs.readVisualCfg(dual = false).wifiScale, 0f)
+        assertFalse(prefs.contains(canonical))
+        assertFalse(prefs.contains(dualKey))
+        assertFalse(prefs.contains(WIFI_SIZE_SCALE_KEY))
+    }
+
+    @Test
+    fun migratingLegacySingleRootValueMakesItLayoutScoped() {
+        val prefs = MemoryPreferences()
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
+            .putFloat(WIFI_SIZE_SCALE_KEY, 0.82f)
+            .apply()
+
+        migrateVisualPrefsIfNeeded(prefs)
+        for (layout in ContentLayout.entries) {
+            assertEquals(0.82f, prefs.readVisualCfg(false, layout).wifiScale, 0f)
+            assertEquals(0.82f, prefs.readVisualCfg(true, layout).wifiScale, 0f)
+        }
+        assertFalse(prefs.contains(WIFI_SIZE_SCALE_KEY))
+        assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
     }
 
     private class MemoryPreferences : SharedPreferences {
