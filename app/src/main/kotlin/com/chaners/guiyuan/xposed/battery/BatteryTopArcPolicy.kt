@@ -250,22 +250,21 @@ internal object BatteryTopArcPolicy {
         )
     }
 
-    // Keep the original 120° lower opening for curved dots or when requested
-    // for horizontal rows. Measured optical clearance remains authoritative.
+    // Fixed reserves the original 120°; follow uses the dot-derived optical gap.
+    // Other lower content retains its measured clearance.
     internal fun autoBottomHalfGap(
         measuredHalf: Float,
-        reserveOriginalOpening: Boolean,
+        outsideHalfDegrees: Float,
         centeredBefore: Boolean,
         centeredNow: Boolean,
         motion: Float,
     ): Float {
-        if (!reserveOriginalOpening) return measuredHalf
         val outerAmount = when {
             centeredBefore == centeredNow -> if (centeredNow) 0f else 1f
             centeredBefore -> motion.coerceIn(0f, 1f)
             else -> 1f - motion.coerceIn(0f, 1f)
         }
-        return maxOf(measuredHalf, 60f * outerAmount)
+        return maxOf(measuredHalf, outsideHalfDegrees * outerAmount)
     }
 
     // Angles follow Android Canvas (90 = bottom, 270 = top).

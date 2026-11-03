@@ -10,6 +10,31 @@ import org.junit.Test
 
 class OuterGeometryTest {
     @Test
+    fun followingOpeningApproximatelyPreservesTheCurvedDefault() {
+        val g = OuterGeometry.resolve(1f)
+        assertEquals(60f, g.followingLowerHalfGap(false, SignalDotArrangement.CURVED, 0f), 0.1f)
+        assertEquals(60f, g.followingLowerHalfGap(true, SignalDotArrangement.CURVED, 0f), 1.5f)
+    }
+
+    @Test
+    fun followingOpeningTracksDotOffsetsAndWeights() {
+        for (weight in listOf(0.6f, 1f, 1.5f, 2f)) {
+            val g = OuterGeometry.resolve(weight)
+            for (dual in listOf(false, true)) {
+                for (style in SignalDotArrangement.entries) {
+                    val lower = g.followingLowerHalfGap(dual, style, -5f)
+                    val neutral = g.followingLowerHalfGap(dual, style, 0f)
+                    val higher = g.followingLowerHalfGap(dual, style, 5f)
+                    assertTrue("drawable gap", neutral in 0f..90f)
+                    if (dual || style == SignalDotArrangement.HORIZONTAL) {
+                        assertTrue("higher dots need larger opening", higher >= neutral)
+                        assertTrue("lower dots need smaller opening", lower <= neutral)
+                    }
+                }
+            }
+        }
+    }
+    @Test
     fun signalDotArrangementAppliesToSingleSimAndTransitionSourceGeometry() {
         for (step in 0..28) {
             val geometry = OuterGeometry.resolve(0.6f + step * 0.05f)

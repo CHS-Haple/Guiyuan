@@ -6,9 +6,9 @@ import org.junit.Test
 
 class BatteryTopArcPolicyTest {
     @Test
-    fun automaticLowerOpeningFollowsDotsRatherThanLayout() {
-        fun gap(curved: Boolean, before: Boolean, now: Boolean, fraction: Float, measured: Float = 18f) =
-            BatteryTopArcPolicy.autoBottomHalfGap(measured, curved, before, now, fraction)
+    fun lowerOpeningPreservesMeasuredClearanceAndCenteredMotion() {
+        fun gap(fixed: Boolean, before: Boolean, now: Boolean, fraction: Float, measured: Float = 18f) =
+            BatteryTopArcPolicy.autoBottomHalfGap(measured, if (fixed) 60f else 0f, before, now, fraction)
         assertEquals(60f, gap(true, false, false, 1f), 0f)
         assertEquals(18f, gap(false, false, false, 1f), 0f)
         assertEquals(18f, gap(true, true, true, 1f), 0f)

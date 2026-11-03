@@ -1524,6 +1524,7 @@ internal class StatusPainter(
         previousCenterIndicator: CenterIndicator?,
         centerExitAmount: Float,
         centerEnterAmount: Float,
+        includeOutsideDots: Boolean,
     ): TopSlotAvoidance? {
         val centeredNow = visual.centeredMobileSignal &&
             model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
@@ -1583,7 +1584,7 @@ internal class StatusPainter(
                 }
             }
             avoidance = singleTopSlotAvoidance(TransitionBounds(left, top, right, bottom))
-        } else if (!centeredNow) {
+        } else if (!centeredNow && (includeOutsideDots || model.mobileUnavailableMark)) {
             val bounds = if (model.dualMobileLevels != null && !model.mobileUnavailableMark) {
                 dualMobileTransitionBounds(
                     outerGeometry, visual.dualRowDotArrangement, visual.dualRowDotOffsetY,
@@ -1669,6 +1670,7 @@ internal class StatusPainter(
                 previousCenterIndicator = previousCenterIndicator,
                 centerExitAmount = centerExitAmount,
                 centerEnterAmount = centerEnterAmount,
+                includeOutsideDots = visual.fixedLowerOpening,
             ),
             center = 90f,
             start = 0f,
@@ -1678,8 +1680,11 @@ internal class StatusPainter(
                     previousCenterIndicator is CenterIndicator.MobileType)
             ) BATTERY_BOTTOM_RING_VISUAL_CLEARANCE else BATTERY_TOP_RING_VISUAL_CLEARANCE,
         )
-        val reserveOriginalOpening = visual.reserveOriginalBottomOpening(
-            actualDualRows = model.dualMobileLevels != null,
+        val dualRows = model.dualMobileLevels != null && !model.mobileUnavailableMark
+        val outsideHalf = if (visual.fixedLowerOpening) 60f else outerGeometry.followingLowerHalfGap(
+            dual = dualRows,
+            style = if (dualRows) visual.dualRowDotArrangement else visual.singleRowDotArrangement,
+            offsetY = if (dualRows) visual.dualRowDotOffsetY else visual.singleRowDotOffsetY,
         )
         val centeredNow = visual.centeredMobileSignal &&
             model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
@@ -1692,7 +1697,7 @@ internal class StatusPainter(
             topHalfDegrees = topHalf,
             bottomHalfDegrees = BatteryTopArcPolicy.autoBottomHalfGap(
                 measuredHalf = bottomHalf,
-                reserveOriginalOpening = reserveOriginalOpening,
+                outsideHalfDegrees = outsideHalf,
                 centeredBefore = centeredBefore,
                 centeredNow = centeredNow,
                 motion = centerEnterAmount,

@@ -203,7 +203,8 @@ internal data class VisualCfg(
     // New field; older backup booleans are translated before decoding.
     @SerialName("singleRowDotStyle")
     val singleRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
-    val horizontalFixedOpening: Boolean = false,
+    @SerialName("horizontalFixedOpening") // Keep the V1 backup field stable.
+    val fixedLowerOpening: Boolean = false,
     val mobileTypeBottomOffsetY: Float = mobileTypeBottomOffsetDefault(layout),
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,
@@ -242,18 +243,6 @@ internal data class VisualCfg(
 ) {
     val centeredMobileSignal: Boolean
         get() = layout == ContentLayout.MOBILE_CENTER
-
-    // The original lower opening remains the baseline for curved outside dots.
-    // Horizontal rows may opt into it without changing the centered indicator.
-    fun reserveOriginalBottomOpening(actualDualRows: Boolean): Boolean =
-        (if (actualDualRows) dualRowDotArrangement else singleRowDotArrangement) == SignalDotArrangement.CURVED ||
-            horizontalFixedOpening
-
-    // A device may render a single row even with dual-row display enabled.
-    // Show one shared opening choice whenever either available row style is horizontal.
-    val hasHorizontalOuterDots: Boolean
-        get() = singleRowDotArrangement == SignalDotArrangement.HORIZONTAL ||
-            (dualSignal && dualRowDotArrangement == SignalDotArrangement.HORIZONTAL)
 
     // Only the outside/bottom dots use these saved choices.
     // Signal-strength-centered dots remain horizontal in the renderer.

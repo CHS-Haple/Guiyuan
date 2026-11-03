@@ -19,6 +19,8 @@ import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.settings.topOffsetYUi
+import kotlin.math.acos
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
@@ -437,6 +439,32 @@ internal object OuterGeometry {
 
         fun horizontalDotX(index: Int): Float =
             (index - (DOT_COUNT - 1) / 2f) * (horizontalDotSpan / (DOT_COUNT - 1))
+
+        // Balance visible ring-to-dot clearance against adjacent dot spacing.
+        fun followingLowerHalfGap(dual: Boolean, style: SignalDotArrangement, offsetY: Float): Float {
+            val radius = if (dual) dualMobileDotRadius else mobileDotRadius
+            val dotGap = if (!dual && style == SignalDotArrangement.CURVED) balancedEdgeGap
+                else (horizontalDotSpan / (DOT_COUNT - 1) - 2f * radius).coerceAtLeast(0f)
+            val reach = (radius + ringStroke / 2f + dotGap).toDouble()
+            val ringRadius = RING_RADIUS.toDouble()
+            var halfGap = 0.0
+            for (row in 0 until (if (dual) 2 else 1)) {
+                for (index in 0 until DOT_COUNT) {
+                    val x = (if (dual) horizontalDotX(index) else singleDotX(index, style)).toDouble()
+                    val y = (if (dual) dualDotY(index, row, style, offsetY)
+                        else singleDotY(index, style, offsetY)).toDouble()
+                    val distance = sqrt(x * x + y * y)
+                    if (reach <= kotlin.math.abs(distance - ringRadius)) continue
+                    val spread = if (reach >= distance + ringRadius) 180.0 else Math.toDegrees(
+                        acos(((distance * distance + ringRadius * ringRadius - reach * reach) /
+                            (2.0 * distance * ringRadius)).coerceIn(-1.0, 1.0)),
+                    )
+                    halfGap = max(halfGap, kotlin.math.abs(Math.toDegrees(atan2(y, x)) - 90.0) + spread)
+                }
+            }
+            return halfGap.toFloat().coerceIn(0f, 90f)
+        }
+
 
         fun dualDotY(
             index: Int,

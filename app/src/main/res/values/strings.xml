@@ -21,8 +21,8 @@
     <string name="signal_dot_arrangement_curved">Curved arrangement</string>
     <string name="signal_dot_arrangement_horizontal">Horizontal arrangement</string>
     <string name="signal_dot_vertical_offset">Signal dots vertical offset</string>
-    <string name="battery_lower_opening_title">Horizontal ring opening</string>
-    <string name="battery_lower_opening_summary">Horizontal dots only; shared by single and dual rows</string>
+    <string name="battery_lower_opening_title">Battery ring opening</string>
+    <string name="battery_lower_opening_summary">For outer signal dots; shared by single and dual rows</string>
     <string name="battery_lower_opening_follow">Follow position</string>
     <string name="battery_lower_opening_fixed">Fixed opening</string>
     <string name="section_battery">Battery &amp; charging</string>

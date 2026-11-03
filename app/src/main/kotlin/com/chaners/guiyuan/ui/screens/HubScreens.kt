@@ -279,8 +279,6 @@ internal fun FeaturesScreen(
         if (!visible) search.close()
     }
     val searching = search.filtering
-    // Keep the arrangement controls mounted as the dependent opening animates.
-    val openingSearch = searching && search.matches(R.string.battery_lower_opening_title)
     val displayMatches = search.any(*FeatureSearchIds.display)
     val layoutMatches = search.any(*FeatureSearchIds.layout)
     val networkMatches = search.any(*FeatureSearchIds.network)
@@ -474,7 +472,7 @@ internal fun FeaturesScreen(
                         },
                     )
                 }
-                if (search.matches(R.string.dual_signal_title) || openingSearch ||
+                if (search.matches(R.string.dual_signal_title) ||
                     (searching && !visual.dualSignal &&
                         search.any(R.string.dual_row_signal_dot_arrangement_title,
                             R.string.signal_dot_vertical_offset))) {
@@ -492,7 +490,7 @@ internal fun FeaturesScreen(
                         onCheckedChange = visualRepo::setDualSignal,
                     )
                 }
-                if (search.matches(R.string.single_row_signal_dot_arrangement_title) || openingSearch) {
+                if (search.matches(R.string.single_row_signal_dot_arrangement_title)) {
                     UiDropdownPreference(
                         title = stringResource(R.string.single_row_signal_dot_arrangement_title),
                         summary = stringResource(R.string.outer_signal_dots_only_summary),
@@ -513,7 +511,7 @@ internal fun FeaturesScreen(
                     )
                 }
                 AnimatedPreferenceGroup(visible = visual.dualSignal) {
-                    if (search.matches(R.string.dual_row_signal_dot_arrangement_title) || openingSearch) {
+                    if (search.matches(R.string.dual_row_signal_dot_arrangement_title)) {
                         UiDropdownPreference(
                             title = stringResource(R.string.dual_row_signal_dot_arrangement_title),
                             summary = stringResource(R.string.outer_signal_dots_only_summary),
@@ -665,35 +663,33 @@ internal fun FeaturesScreen(
                         )
                     }
                 }
-                AnimatedPreferenceGroup(visible = visual.hasHorizontalOuterDots) {
-                    if (search.matches(R.string.battery_lower_opening_title)) {
+                if (search.matches(R.string.battery_lower_opening_title)) {
                         UiDropdownPreference(
                             title = stringResource(R.string.battery_lower_opening_title),
                             summary = stringResource(R.string.battery_lower_opening_summary),
                             items = lowerOpeningOptions,
-                            selectedIndex = if (visual.horizontalFixedOpening) 1 else 0,
+                            selectedIndex = if (visual.fixedLowerOpening) 1 else 0,
                             showValue = true,
                             enabled = featureCfg.enabled,
                             startAction = {
                                 SemanticLeadingIcon(
-                                    R.drawable.ic_horizontal_ring_opening,
+                                    R.drawable.ic_battery_ring_opening,
                                     featureCfg.enabled,
                                 )
                             },
                             onSelectedIndexChange = { index ->
                                 if (index in lowerOpeningOptions.indices) {
-                                    visualRepo.setHorizontalFixedOpening(index == 1)
+                                    visualRepo.setFixedLowerOpening(index == 1)
                                 }
                             },
                         )
-                    }
                 }
                 if (search.matches(R.string.combined_size)) {
                     SliderPreference(
                         value = visual.combinedScale,
                         onValueChange = visualRepo::setCombinedScale,
                         title = stringResource(R.string.combined_size),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_radio_button_unchecked, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
+                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                         valueText =
                             stringResource(
                                 R.string.percent_value,
@@ -713,7 +709,7 @@ internal fun FeaturesScreen(
                         value = visual.outerWeightScale,
                         onValueChange = visualRepo::setOuterWeightScale,
                         title = stringResource(R.string.outer_weight),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_radio_button_unchecked, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
+                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
                         summary = stringResource(R.string.outer_weight_summary),
                         valueText =
                             stringResource(

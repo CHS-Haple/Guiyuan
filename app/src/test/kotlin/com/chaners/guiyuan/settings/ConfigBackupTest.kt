@@ -474,7 +474,7 @@ class ConfigBackupTest {
         val source = sample()
         val changed = source.copy(visual = source.visual.copy(
             profiles = source.visual.profiles.map { cfg ->
-                cfg.copy(horizontalFixedOpening = cfg.layout != ContentLayout.NETWORK_CENTER)
+                cfg.copy(fixedLowerOpening = cfg.layout != ContentLayout.NETWORK_CENTER)
             },
         ))
         val encoded = ConfigBackupFormat.encode(changed)
@@ -485,7 +485,7 @@ class ConfigBackupTest {
             .replace("\"horizontalFixedOpening\":true,", "")
             .replace("\"horizontalFixedOpening\":false,", "")
         assertFalse(oldJson.contains("horizontalFixedOpening"))
-        assertTrue(ConfigBackupFormat.decode(oldJson).visual.profiles.all { !it.horizontalFixedOpening })
+        assertTrue(ConfigBackupFormat.decode(oldJson).visual.profiles.all { !it.fixedLowerOpening })
 
         val invalid = encoded.replaceFirst(
             "\"horizontalFixedOpening\":true",

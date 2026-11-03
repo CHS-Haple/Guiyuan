@@ -250,7 +250,7 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
         "Dual-row dots", "Curved arrangement", "Horizontal arrangement",
     )
     R.string.signal_dot_vertical_offset -> listOf("双卡偏移", "双排位置", "双排上下偏移")
-    R.string.battery_lower_opening_title -> listOf("开口", "电量环开口", "固定开口", "跟随位置", "避让", "Lower opening", "Follow position", "Fixed opening")
+    R.string.battery_lower_opening_title -> listOf("开口", "电量环开口", "弧形开口", "横排开口", "固定开口", "跟随位置", "避让", "Lower opening", "Follow position", "Fixed opening")
     R.string.combined_size -> listOf("整体缩放", "总大小", "三合一大小", "三合一缩放")
     R.string.outer_weight -> listOf("环形粗细", "圆环粗细", "外环宽度", "电量环粗细")
     R.string.wifi_vertical_offset -> listOf("WiFi 位置", "WiFi 垂直位置", "无线位置")
