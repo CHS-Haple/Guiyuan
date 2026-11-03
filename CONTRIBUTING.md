@@ -25,6 +25,10 @@ For an ordinary code checkpoint:
 
 Keep credentials, signing material, local SDK paths, generated APK/AAB artifacts and machine-specific configuration out of the repository.
 
+### External repository access
+
+Upstream and third-party repositories are **read-only research inputs by default**. Inspecting their source, issues, PRs, releases and API contracts to inform Guiyuan development is permitted; it does **not** authorize public interaction on those repositories. Do not create, edit, withdraw or delete external issues, comments, reviews, pull requests, commits, reactions or other repository records using the maintainer's account without **prior explicit approval for that specific external repository and action**. A broad request to continue developing, investigate or follow upstream is not such approval. Keep unsolicited compatibility findings and proposed fixes inside Guiyuan until the maintainer authorizes external outreach.
+
 ## Engineering principles
 
 **Standardized.** Prefer Android, HyperOS, MIUIX and Modern Xposed contracts over project-local reinvention. Reuse verified platform state, resources and motion when they already express the required semantics.
