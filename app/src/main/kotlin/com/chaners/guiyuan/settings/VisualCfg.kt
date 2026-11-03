@@ -249,6 +249,12 @@ internal data class VisualCfg(
         (if (actualDualRows) dualRowDotArrangement else singleRowDotArrangement) == SignalDotArrangement.CURVED ||
             horizontalFixedOpening
 
+    // A device may render a single row even with dual-row display enabled.
+    // Show one shared opening choice whenever either available row style is horizontal.
+    val hasHorizontalOuterDots: Boolean
+        get() = singleRowDotArrangement == SignalDotArrangement.HORIZONTAL ||
+            (dualSignal && dualRowDotArrangement == SignalDotArrangement.HORIZONTAL)
+
     // Only the outside/bottom dots use these saved choices.
     // Signal-strength-centered dots remain horizontal in the renderer.
     val dualRowDotOffsetY: Float
