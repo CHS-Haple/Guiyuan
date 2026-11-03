@@ -321,7 +321,7 @@ class ConfigBackupTest {
 
     @Test fun importOwnsOnlyFeatureVisualAndSchemeKeys() {
         assertTrue(isBackupVisualKey(
-            visualProfileKey(ContentLayout.NETWORK_CENTER, WIFI_WEIGHT_KEY, dual = true),
+            visualProfileKey(ContentLayout.NETWORK_CENTER, WIFI_WEIGHT_KEY),
         ))
         assertTrue(isBackupVisualKey(visualProfileKey(ContentLayout.MOBILE_CENTER, MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY)))
         assertTrue(isBackupVisualKey("battery_color_scheme_library.custom.1.name"))

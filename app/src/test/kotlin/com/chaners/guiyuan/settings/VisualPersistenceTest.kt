@@ -218,7 +218,6 @@ class VisualPersistenceTest {
         }
         prefs.edit()
             .putBoolean(visualProfileKey(ContentLayout.BATTERY_CENTER, BATTERY_TOP_READOUT_ENABLED_KEY), false)
-            .putBoolean(visualProfileKey(ContentLayout.BATTERY_CENTER, BATTERY_TOP_READOUT_ENABLED_KEY, dual = true), false)
             .apply()
         assertFalse(prefs.readVisualCfg(dual = false, layoutOverride = ContentLayout.BATTERY_CENTER).showTopReadout)
         assertFalse(prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.BATTERY_CENTER).showTopReadout)
@@ -511,8 +510,8 @@ class VisualPersistenceTest {
     @Test
     fun legacySingleRowPreferenceWorksBeforeAppMigration() {
         val prefs = MemoryPreferences()
-        val key = visualProfileKey(ContentLayout.NETWORK_CENTER, DUAL_ROW_DOT_ARRANGEMENT_KEY, true)
-        val flat = visualProfileKey(ContentLayout.NETWORK_CENTER, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, true)
+        val key = visualProfileKey(ContentLayout.NETWORK_CENTER, DUAL_ROW_DOT_ARRANGEMENT_KEY)
+        val flat = visualProfileKey(ContentLayout.NETWORK_CENTER, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)
         prefs.edit().putString(key, SignalDotArrangement.HORIZONTAL.persistedValue)
             .putBoolean(flat, true).apply()
         val beforeMigration = prefs.readVisualCfg(true, ContentLayout.NETWORK_CENTER)
@@ -546,7 +545,7 @@ class VisualPersistenceTest {
             for (dual in listOf(false, true)) {
                 assertEquals(chosen, prefs.readVisualCfg(dual, layout).singleRowDotArrangement)
                 assertFalse(prefs.contains(
-                    visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, dual),
+                    visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY),
                 ))
             }
             assertEquals(

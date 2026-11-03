@@ -18,7 +18,7 @@ class VisualPreferenceKeysTest {
         assertFalse(isVisualPreferenceKey(visualProfileKey(ContentLayout.MOBILE_CENTER, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)))
         assertTrue(isVisualPreferenceKey(visualProfileKey(ContentLayout.MOBILE_CENTER, MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY)))
         assertTrue(isVisualPreferenceKey(DUAL_PROFILES_INITIALIZED_KEY))
-        assertTrue(isVisualPreferenceKey(visualProfileKey(ContentLayout.NETWORK_CENTER, COMBINED_SCALE_KEY, true)))
+        assertTrue(isVisualPreferenceKey(visualProfileKey(ContentLayout.NETWORK_CENTER, COMBINED_SCALE_KEY)))
         assertTrue(isVisualPreferenceKey(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY))
         assertTrue(isVisualPreferenceKey(BATTERY_TOP_TEXT_SCALE_KEY))
         assertTrue(isVisualPreferenceKey("mobile_center.battery_top_text_scale"))

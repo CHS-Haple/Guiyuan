@@ -284,7 +284,6 @@ class VisualCfgTest {
         assertEquals("content_layout", visualModeKey(false, CONTENT_LAYOUT_KEY))
         assertEquals("dual.content_layout", visualModeKey(true, CONTENT_LAYOUT_KEY))
         assertEquals("network_center.combined_scale", visualProfileKey(ContentLayout.NETWORK_CENTER, COMBINED_SCALE_KEY))
-        assertEquals("network_center.combined_scale", visualProfileKey(ContentLayout.NETWORK_CENTER, COMBINED_SCALE_KEY, dual = true))
         assertEquals(false, VisualCfg().dualSignal)
     }
 

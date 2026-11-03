@@ -226,11 +226,7 @@ internal class VisualRepo(context: Context) {
     fun current(): VisualCfg = preferences.readVisualCfg()
 
     private fun activeProfileKey(baseKey: String): String =
-        visualProfileKey(
-            layout = preferences.readLayout(),
-            baseKey = baseKey,
-            dual = preferences.dualSignalEnabled(),
-        )
+        visualProfileKey(preferences.readLayout(), baseKey)
 
     fun setDualSignal(enabled: Boolean) {
         preferences.edit()
@@ -290,13 +286,13 @@ internal class VisualRepo(context: Context) {
     fun setTopReadout(enabled: Boolean) {
         val layout = preferences.readLayout()
         val dual = preferences.dualSignalEnabled()
-        val readoutKey = visualProfileKey(layout, BATTERY_TOP_READOUT_ENABLED_KEY, dual)
-        val offsetKey = visualProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY, dual)
+        val readoutKey = visualProfileKey(layout, BATTERY_TOP_READOUT_ENABLED_KEY)
+        val offsetKey = visualProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY)
         val editor = preferences.edit().putBoolean(readoutKey, enabled)
         if (
             layout == ContentLayout.BATTERY_CENTER &&
             enabled &&
-            !preferences.profileBoolean(layout, BATTERY_TOP_READOUT_ENABLED_KEY, false, dual) &&
+            !preferences.profileBoolean(layout, BATTERY_TOP_READOUT_ENABLED_KEY, false) &&
             !preferences.contains(offsetKey) &&
             !preferences.contains(visualModeKey(dual, BATTERY_TOP_VERTICAL_OFFSET_KEY))
         ) {
@@ -587,7 +583,7 @@ internal fun SharedPreferences.writeSignalDotOffsetY(offset: Float) {
         CURVED_SIGNAL_DOT_OFFSET_Y_KEY
     }
     edit().putFloat(
-        visualProfileKey(visual.layout, key, visual.dualSignal),
+        visualProfileKey(visual.layout, key),
         offset.finiteIn(
             NETWORK_TOP_OFFSET_MIN,
             NETWORK_TOP_OFFSET_MAX,
@@ -607,16 +603,14 @@ internal fun SharedPreferences.readLayout(): ContentLayout =
 internal fun visualProfileKey(
     layout: ContentLayout,
     baseKey: String,
-    @Suppress("UNUSED_PARAMETER") dual: Boolean = false,
 ): String = layout.persistedValue + "." + baseKey
 
 private fun SharedPreferences.profileBoolean(
     layout: ContentLayout,
     baseKey: String,
     defaultValue: Boolean,
-    @Suppress("UNUSED_PARAMETER") dual: Boolean,
 ): Boolean {
-    val profileKey = visualProfileKey(layout, baseKey, dual)
+    val profileKey = visualProfileKey(layout, baseKey)
     return if (contains(profileKey)) {
         getBoolean(profileKey, defaultValue)
     } else {
@@ -628,9 +622,8 @@ private fun SharedPreferences.profileFloat(
     layout: ContentLayout,
     baseKey: String,
     defaultValue: Float,
-    @Suppress("UNUSED_PARAMETER") dual: Boolean,
 ): Float {
-    val profileKey = visualProfileKey(layout, baseKey, dual)
+    val profileKey = visualProfileKey(layout, baseKey)
     return if (contains(profileKey)) {
         getFloat(profileKey, defaultValue)
     } else {
@@ -642,9 +635,8 @@ private fun SharedPreferences.profileInt(
     layout: ContentLayout,
     baseKey: String,
     defaultValue: Int,
-    @Suppress("UNUSED_PARAMETER") dual: Boolean,
 ): Int {
-    val profileKey = visualProfileKey(layout, baseKey, dual)
+    val profileKey = visualProfileKey(layout, baseKey)
     return if (contains(profileKey)) {
         getInt(profileKey, defaultValue)
     } else {
@@ -656,9 +648,8 @@ private fun SharedPreferences.profileString(
     layout: ContentLayout,
     baseKey: String,
     defaultValue: String?,
-    @Suppress("UNUSED_PARAMETER") dual: Boolean,
 ): String? {
-    val profileKey = visualProfileKey(layout, baseKey, dual)
+    val profileKey = visualProfileKey(layout, baseKey)
     return if (contains(profileKey)) getString(profileKey, defaultValue)
     else getString(baseKey, defaultValue)
 }
@@ -668,19 +659,19 @@ internal fun SharedPreferences.readVisualCfg(
     layoutOverride: ContentLayout? = null,
 ): VisualCfg {
     val layout = layoutOverride ?: readLayout()
-    fun flag(key: String, default: Boolean) = profileBoolean(layout, key, default, dual)
-    fun size(key: String, default: Float) = profileFloat(layout, key, default, dual)
-    fun weight(key: String, default: Int) = profileInt(layout, key, default, dual)
+    fun flag(key: String, default: Boolean) = profileBoolean(layout, key, default)
+    fun size(key: String, default: Float) = profileFloat(layout, key, default)
+    fun weight(key: String, default: Int) = profileInt(layout, key, default)
     val topOffset = size(BATTERY_TOP_VERTICAL_OFFSET_KEY, topOffsetYDefault(layout))
     // Preserve existing battery-centered network position when split keys are first read.
     val oldNetworkOffset =
         if (layout == ContentLayout.BATTERY_CENTER) topOffsetYUi(topOffset) else 0f
 
     val dualStyle = SignalDotArrangement.fromPersisted(
-        profileString(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, null, dual)
+        profileString(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, null)
             ?: getString(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY), null),
     )
-    val singleStyle = profileString(layout, SINGLE_ROW_DOT_STYLE_KEY, null, dual)
+    val singleStyle = profileString(layout, SINGLE_ROW_DOT_STYLE_KEY, null)
         ?.let(SignalDotArrangement::fromPersisted)
         ?: if (flag(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, false) &&
             dualStyle == SignalDotArrangement.HORIZONTAL) {
@@ -785,34 +776,34 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         CONTENT_LAYOUT_KEY,
         layout.persistedValue,
     ).putString(
-        visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, normalized.dualSignal),
+        visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY),
         normalized.dualRowDotArrangement.persistedValue,
     ).putString(
-        visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY, normalized.dualSignal),
+        visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY),
         normalized.singleRowDotArrangement.persistedValue,
     ).putBoolean(
-        visualProfileKey(layout, HORIZONTAL_FIXED_OPENING_KEY, normalized.dualSignal),
+        visualProfileKey(layout, HORIZONTAL_FIXED_OPENING_KEY),
         normalized.horizontalFixedOpening,
     ).putFloat(
-        visualProfileKey(layout, MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, normalized.dualSignal),
+        visualProfileKey(layout, MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY),
         normalized.mobileTypeBottomOffsetY,
     ).putBoolean(
-        visualProfileKey(layout, MOBILE_FOLLOWS_BATTERY_COLOR_KEY, normalized.dualSignal),
+        visualProfileKey(layout, MOBILE_FOLLOWS_BATTERY_COLOR_KEY),
         normalized.mobileFollowsBatteryColor,
     ).putBoolean(
-        visualProfileKey(layout, CENTER_FOLLOWS_BATTERY_COLOR_KEY, normalized.dualSignal),
+        visualProfileKey(layout, CENTER_FOLLOWS_BATTERY_COLOR_KEY),
         normalized.centerFollowsBatteryColor,
     ).putBoolean(
-        visualProfileKey(layout, BATTERY_TOP_READOUT_ENABLED_KEY, normalized.dualSignal),
+        visualProfileKey(layout, BATTERY_TOP_READOUT_ENABLED_KEY),
         normalized.showTopReadout,
     ).putBoolean(
-        visualProfileKey(layout, BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY, normalized.dualSignal),
+        visualProfileKey(layout, BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY),
         normalized.topTextFollowsBatteryColor,
     ).putBoolean(
-        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_ENABLED_KEY, normalized.dualSignal),
+        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_ENABLED_KEY),
         normalized.showTopChargingIcon,
     ).putBoolean(
-        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY, normalized.dualSignal),
+        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY),
         normalized.topChargingIconFollowsBatteryColor,
     ).putBoolean(
         BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
@@ -821,55 +812,55 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
         normalized.ccTintTransition,
     ).putFloat(
-        visualProfileKey(layout, BATTERY_TOP_TEXT_SCALE_KEY, normalized.dualSignal),
+        visualProfileKey(layout, BATTERY_TOP_TEXT_SCALE_KEY),
         normalized.topTextScale,
     ).putInt(
-        visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY, normalized.dualSignal),
+        visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY),
         normalized.topTextWeight,
     ).putFloat(
-        visualProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY, normalized.dualSignal),
+        visualProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY),
         normalized.topOffsetY,
     ).putFloat(
-        visualProfileKey(layout, WIFI_VERTICAL_OFFSET_KEY, normalized.dualSignal),
+        visualProfileKey(layout, WIFI_VERTICAL_OFFSET_KEY),
         normalized.wifiOffsetY,
     ).putFloat(
-        visualProfileKey(layout, MOBILE_TYPE_VERTICAL_OFFSET_KEY, normalized.dualSignal),
+        visualProfileKey(layout, MOBILE_TYPE_VERTICAL_OFFSET_KEY),
         normalized.mobileTypeOffsetY,
     ).putFloat(
-        visualProfileKey(layout, CURVED_SIGNAL_DOT_OFFSET_Y_KEY, normalized.dualSignal),
+        visualProfileKey(layout, CURVED_SIGNAL_DOT_OFFSET_Y_KEY),
         normalized.curvedSignalDotOffsetY,
     ).putFloat(
-        visualProfileKey(layout, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY, normalized.dualSignal),
+        visualProfileKey(layout, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY),
         normalized.horizontalSignalDotOffsetY,
     ).putFloat(
-        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY, normalized.dualSignal),
+        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY),
         normalized.topChargingIconScale,
     ).putFloat(
-        visualProfileKey(layout, COMBINED_SCALE_KEY, normalized.dualSignal),
+        visualProfileKey(layout, COMBINED_SCALE_KEY),
         normalized.combinedScale,
     ).putFloat(
-        visualProfileKey(layout, OUTER_WEIGHT_SCALE_KEY, normalized.dualSignal),
+        visualProfileKey(layout, OUTER_WEIGHT_SCALE_KEY),
         normalized.outerWeightScale,
     ).putFloat(
-        visualProfileKey(layout, WIFI_SIZE_SCALE_KEY, normalized.dualSignal),
+        visualProfileKey(layout, WIFI_SIZE_SCALE_KEY),
         normalized.wifiScale,
     ).putInt(
-        visualProfileKey(layout, WIFI_WEIGHT_KEY, normalized.dualSignal),
+        visualProfileKey(layout, WIFI_WEIGHT_KEY),
         normalized.wifiWeight,
     ).putFloat(
-        visualProfileKey(layout, AIRPLANE_SIZE_SCALE_KEY, normalized.dualSignal),
+        visualProfileKey(layout, AIRPLANE_SIZE_SCALE_KEY),
         normalized.airplaneScale,
     ).putInt(
-        visualProfileKey(layout, AIRPLANE_WEIGHT_KEY, normalized.dualSignal),
+        visualProfileKey(layout, AIRPLANE_WEIGHT_KEY),
         normalized.airplaneWeight,
     ).putFloat(
-        visualProfileKey(layout, NO_SIM_SIZE_SCALE_KEY, normalized.dualSignal),
+        visualProfileKey(layout, NO_SIM_SIZE_SCALE_KEY),
         normalized.noSimScale,
     ).putFloat(
-        visualProfileKey(layout, MOBILE_TYPE_SIZE_SCALE_KEY, normalized.dualSignal),
+        visualProfileKey(layout, MOBILE_TYPE_SIZE_SCALE_KEY),
         normalized.mobileTypeScale,
     ).putInt(
-        visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, normalized.dualSignal),
+        visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY),
         normalized.mobileTypeWeight,
     ).putBatteryColors(normalized)
     return if (normalized.dualSignal) {
