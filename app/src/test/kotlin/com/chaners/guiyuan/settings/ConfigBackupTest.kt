@@ -488,9 +488,9 @@ class ConfigBackupTest {
         assertTrue(ConfigBackupFormat.decode(oldJson).visual.profiles.all { !it.horizontalFixedOpening })
 
         val invalid = encoded.replaceFirst(
-            "\\\"horizontalFixedOpening\\\":true",
             "\"horizontalFixedOpening\":true",
             "\"horizontalFixedOpening\":\"true\"",
+        )
         assertThrows(IllegalArgumentException::class.java) { ConfigBackupFormat.decode(invalid) }
     }
 
