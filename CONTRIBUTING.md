@@ -226,7 +226,7 @@ Use squash merge for ordinary work branches.
 
 The historical `it` channel was retired from routine development and distribution after the v1.0.0 stable release. Do not start IT feature work, synchronize `dev` to `it`, or issue new IT APKs. Preserve historical Git, CI and release evidence.
 
-The legacy `it` ref and CI/signing triggers may remain until a separately reviewed workflow retirement. Their presence does not authorize their use. Prevent historical `app/src/internal/` and `it-only/` content from entering public branches. Public `versionCode` must remain above previously distributed IT APKs.
+The historical `it` branch remains for traceability, but current `dev` and `main` Build/signing workflows no longer admit IT APK sources (see [#1189](https://github.com/CHS-Haple/Guiyuan/pull/1189) and [#1190](https://github.com/CHS-Haple/Guiyuan/pull/1190)). Keep historical `app/src/internal/` and `it-only/` content out of public branches, and maintain a public `versionCode` above previously distributed IT versions.
 
 All distributable APKs use the accepted pinned MIUIX source graph. Active channels: `dev` Debug validation and demand-driven signed Canary; `main` Release only. New issue-specific diagnostics require explicitly authorized, time-limited builds and removal plans. Canary remains non-debuggable, release-optimized, and defaults to General diagnostics. No ordinary Release assembly on `dev` or routine Debug/Canary on `main`. Trusted work-branch signing accepts only reviewed exact-SHA source-built artifacts; candidate code never runs with signing credentials. Never substitute the published MIUIX fallback for the accepted source-built OS4 graph.
 
