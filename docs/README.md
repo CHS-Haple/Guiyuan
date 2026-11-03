@@ -10,11 +10,16 @@ The repository root [README](../README.md) is the **user-facing project homepage
 | [Roadmap](development/ROADMAP.md) | Future capabilities and release qualification criteria |
 | [Release readiness](development/RELEASE_READINESS.md) | Bounded evidence, release gates, sign-off and remaining checks |
 | [Architecture](architecture/README.md) | Runtime ownership, layout, scene, and native fallback contracts |
+| [UI iconography](architecture/ui-iconography.md) | Current settings-row icon semantics, weight and optical geometry |
 | [SystemUI reference](reference/systemui-contracts.md) | Public and reusable host contracts; sensitive binary analysis remains private |
 | [Framework references](reference/lsposed-7927-hot-reload.md) | Framework compatibility evidence (see related 7930 and 7936 files) |
 | [OS4 glass integration](../third_party/miuix-glass/README.md) | Pinned upstream provenance, adaptation boundary and license upkeep |
 
 User-facing policies: [CHANGELOG](../CHANGELOG.md), [TERMS](../TERMS.md), [PRIVACY](../PRIVACY.md), [SECURITY](../SECURITY.md), [THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES.md), [Support](SUPPORT.md).
+
+## Reading order
+
+For ongoing development, read [CONTRIBUTING](../CONTRIBUTING.md) → this index → [Current state](development/CURRENT.md). Then consult architecture, decisions, release evidence and third-party references as needed. Live repository/CI and verified device evidence override stale text.
 
 ## Maintenance rules
 

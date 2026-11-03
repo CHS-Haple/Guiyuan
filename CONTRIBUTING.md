@@ -187,19 +187,9 @@ For every MIUIX UI change, record an OS3 / OS4 / both / neither **UI-style** imp
 
 For OS4-related changes, also classify the upstream surface as the accepted pinned implementation or a new/materially revised PR or component. Explore promising improvements, but assess practical benefit, maturity, transitive dependencies/ABI, compatibility, performance, UI regression, rollback and maintenance cost before adopting new upstream code. Record an adopt / isolated experiment / defer decision. An upstream update never automatically advances the accepted revision; experimental work stays in ordinary feat/fix branches until focused source-matched CI and any necessary device validation pass. This adds a risk gate, not a separate OS4 development or release pipeline.
 
-### Semantic leading icons
+### UI iconography
 
-Use Material Symbols for explanatory row semantics and MIUIX icons for MIUIX-owned controls/navigation/actions.
-
-For Material Symbols:
-- select the glyph by semantic meaning after inspecting the actual shape;
-- default to Outlined/Regular W400 to match the pinned MIUIX visual language;
-- use W500 only when the real glyph is perceptually too light;
-- use Filled only when state semantics or legibility justify it;
-- normalize perceived mass through official glyph/weight choices, not per-icon scale/translation/stroke/alpha hacks;
-- use the shared `SemanticLeadingIcon` geometry: 24 dp optical box, 22 dp visual size, common alignment and tint;
-- first normalize subordinate glyphs using official outlined W500 variants while preserving primary glyph weights; then use the shared 12 dp badge inside the 24 dp optical box (one quarter of its area), independent of the main glyph's shape; keep the existing contour cutout and 1 dp gap unchanged;
-- review neighboring glyphs in light and dark themes.
+For settings-row icon choices and current `SemanticLeadingIcon` sizing, follow [UI iconography](docs/architecture/ui-iconography.md) and recheck its implementation when editing UI. The MIUIX source/evidence and OS3/OS4 style review requirements above still apply.
 
 ### Version and build identity
 
@@ -242,7 +232,7 @@ Use squash merge for ordinary work branches.
 - The public PR CI rejects direct `it` heads and exclusive paths. Protect `it` via PR + required official Build check, not an in-PR check alone. The protected IT Canary is distributable only after its exact-SHA push Build and the separate main-trusted signed-APK verification have succeeded.
 
 
-All distributable CI APKs use the same accepted, pinned MIUIX source graph. The build matrix is: `dev` Debug validation and demand-driven signed Canary; `it` Debug validation and daily-use optimized Canary; `main` Release only. Any new issue-specific diagnostic package requires a separate explicitly authorized, time-limited build/signing path with a removal plan. Canary remains non-debuggable, release-optimized and defaults to General diagnostics on every branch. Detailed diagnostics must be user-selected, while issue-specific probes require an explicit removal plan and must not enter public `dev`. No ordinary Release assembly on `dev` or `it`; no routine Debug/Canary on `main`. The trusted Work Branch APK signs only successful exact-SHA source-built artifacts; candidate code never executes with Haple credentials. The old Internal producer/distribution role is retired once ordinary protected IT Canary signing has passed. Never substitute the published MIUIX fallback for the accepted source-built OS4 graph.
+All distributable CI APKs use the same accepted, pinned MIUIX source graph. The build matrix is: `dev` Debug validation and demand-driven signed Canary; `it` Debug validation and daily-use optimized Canary; `main` Release only. Any new issue-specific diagnostic package requires a separate explicitly authorized, time-limited build/signing path with a removal plan. Canary remains non-debuggable, release-optimized and defaults to General diagnostics on every branch. Detailed diagnostics must be user-selected, while issue-specific probes require an explicit removal plan and must not enter public `dev`. No ordinary Release assembly on `dev` or `it`; no routine Debug/Canary on `main`. The trusted Work Branch APK signs only successful exact-SHA source-built artifacts; candidate code never executes with Haple credentials. Never substitute the published MIUIX fallback for the accepted source-built OS4 graph.
 
 ### Stable promotion
 
@@ -299,7 +289,7 @@ A device test is useful for ownership/lifecycle/scene/transition/geometry change
 
 Do not request device testing merely because a commit or APK exists.
 
-Canary is non-debuggable, release-optimized and retains bounded runtime diagnostics. IT-only policy is branch-owned, not a new build type; Debug and Canary must share its app-side navigation restrictions without altering SystemUI behavior or Xposed scope. The former Internal build type is retired from routine distribution. IT-specific native probes must not enter normal Canary. They require an independently reviewed, explicitly authorized temporary diagnostic path and removal after sufficient issue evidence.
+Canary is non-debuggable, release-optimized and retains bounded runtime diagnostics. IT-only policy is branch-owned, not a new build type; Debug and Canary must share its app-side navigation restrictions without altering SystemUI behavior or Xposed scope. IT-specific native probes must not enter normal Canary. They require an independently reviewed, explicitly authorized temporary diagnostic path and removal after sufficient issue evidence.
 
 ## Versions, dependencies and release
 
@@ -311,29 +301,9 @@ Dependency updates require relevance and exact-revision evidence where applicabl
 
 Formal stable releases publish from prepared `main` state and must satisfy release workflow, signing, metadata, version, tag and changelog checks.
 
-## Development memory
+## Documentation and source of truth
 
-For normal recovery read:
-1. `CONTRIBUTING.md`;
-2. `docs/development/CURRENT.md`.
-
-Then use:
-- ROADMAP for future direction;
-- DECISIONS for durable rationale;
-- architecture docs for current ownership/layout policy;
-- SystemUI reference for reusable target evidence.
-
-Repository state is authoritative over remembered chat context.
-
-### Document ownership
-
-- **CURRENT** — accepted baseline, current blockers/guardrails and immediate next step; no Build/CI diary.
-- **ROADMAP** — future direction and release exit criteria; no debugging history.
-- **DECISIONS** — durable decisions/rationale only; no checkpoint log.
-- **Architecture/reference** — reusable current policy/evidence only.
-- **CHANGELOG** — durable release-level behavior and public engineering changes.
-
-Do not synchronize every fact everywhere.
+For the contributor reading order and document responsibilities, use the [documentation index](docs/README.md). Current repository code, CI and verified device evidence take precedence over stale documentation or remembered history. Do not duplicate build-by-build records across long-lived reference documents.
 
 ## Definition of done
 
