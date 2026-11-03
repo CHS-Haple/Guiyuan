@@ -682,6 +682,8 @@ internal fun SharedPreferences.readVisualCfg(
     // Only read the retired dual bank when that bank actually exists.
     val legacyDualBank = dual &&
         getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0) < 1 &&
+        // The local v4 style migration may leave a temporary old dual bank.
+        getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0) < 4 &&
         getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false) &&
         PROFILE_VISUAL_BASE_KEYS.any { key ->
             contains(visualModeKey(true, visualProfileKey(layout, key)))
