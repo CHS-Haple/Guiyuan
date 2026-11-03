@@ -13,7 +13,7 @@
     <string name="section_layout_size">Layout &amp; size</string>
     <string name="section_network">Network &amp; signal dots</string>
     <string name="dual_signal_title">Dual-row signal dots</string>
-    <string name="dual_signal_summary">Show two signal-dot rows when both SIM cards are detected\nKeep the content layout and remember other visual settings separately</string>
+    <string name="dual_signal_summary">Show two signal-dot rows when both SIM cards are detected</string>
     <string name="single_row_signal_dot_arrangement_title">Single-row signal dot arrangement</string>
     <string name="dual_row_signal_dot_arrangement_title">Dual-row signal dot arrangement</string>
     <string name="mobile_type_bottom_offset">Network type vertical offset</string>
