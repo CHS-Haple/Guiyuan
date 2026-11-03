@@ -15,6 +15,8 @@
     <string name="dual_signal_summary">同时识别到两张 SIM 卡时显示双排信号点</string>
     <string name="single_row_signal_dot_arrangement_title">单排信号点排列</string>
     <string name="dual_row_signal_dot_arrangement_title">双排信号点排列</string>
+    <string name="single_row_signal_dot_arrangement_summary">仅调整外侧信号点，中心固定横排</string>
+    <string name="dual_row_signal_dot_arrangement_summary">与单排独立记忆，切换后保留</string>
     <string name="mobile_type_bottom_offset">网络制式上下偏移</string>
     <string name="signal_dot_arrangement_curved">弧形排列</string>
     <string name="signal_dot_arrangement_horizontal">横向排列</string>
