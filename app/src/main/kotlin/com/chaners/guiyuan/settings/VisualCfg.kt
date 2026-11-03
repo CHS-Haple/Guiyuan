@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.settings
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 
 
@@ -9,7 +10,8 @@ internal enum class ContentLayout(
     val persistedValue: String,
 ) {
     NETWORK_CENTER("network_center"),
-    BATTERY_CENTER("battery_center");
+    BATTERY_CENTER("battery_center"),
+    MOBILE_CENTER("mobile_center");
 
     companion object {
         fun fromPersisted(value: String?): ContentLayout =
@@ -18,13 +20,16 @@ internal enum class ContentLayout(
 }
 
 @Serializable
-internal enum class DualDotStyle(val persistedValue: String) {
-    DEFAULT("default"),
-    DUO("duo");
+internal enum class SignalDotArrangement(val persistedValue: String) {
+    // Keep the released enum wire values while using names that describe geometry.
+    @SerialName("DEFAULT")
+    CURVED("default"),
+    @SerialName("DUO")
+    HORIZONTAL("duo");
 
     companion object {
-        fun fromPersisted(value: String?): DualDotStyle =
-            entries.firstOrNull { it.persistedValue == value } ?: DEFAULT
+        fun fromPersisted(value: String?): SignalDotArrangement =
+            entries.firstOrNull { it.persistedValue == value } ?: CURVED
     }
 }
 
@@ -192,7 +197,13 @@ internal object IosStyleBatteryPalette {
 internal data class VisualCfg(
     val layout: ContentLayout = ContentLayout.NETWORK_CENTER,
     val dualSignal: Boolean = false,
-    val dualDotStyle: DualDotStyle = DualDotStyle.DEFAULT,
+    // Keep the V1 backup field name readable after the source-model rename.
+    @SerialName("dualDotStyle")
+    val dualRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
+    // New field; older backup booleans are translated before decoding.
+    @SerialName("singleRowDotStyle")
+    val singleRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
+    val mobileTypeBottomOffsetY: Float = mobileTypeBottomOffsetDefault(layout),
     val mobileFollowsBatteryColor: Boolean = false,
     val centerFollowsBatteryColor: Boolean = false,
     val showTopReadout: Boolean = topReadoutDefault(layout),
@@ -206,8 +217,10 @@ internal data class VisualCfg(
     val topOffsetY: Float = topOffsetYDefault(layout),
     val wifiOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val mobileTypeOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
-    val dualDefaultOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
-    val dualDuoOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    @SerialName("dualDefaultOffsetY") // Backward-compatible V1 backup field.
+    val curvedSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    @SerialName("dualDuoOffsetY") // Backward-compatible V1 backup field.
+    val horizontalSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val topChargingIconScale: Float =
         topChargingIconScaleDefault(layout),
     val combinedScale: Float = COMBINED_SCALE_DEFAULT,
@@ -226,8 +239,22 @@ internal data class VisualCfg(
     val batteryColorOverrides: BatteryColorOverrides =
         BatteryColorOverrides(),
 ) {
-    val dualMobileOffsetY: Float
-        get() = if (dualDotStyle == DualDotStyle.DUO) dualDuoOffsetY else dualDefaultOffsetY
+    val centeredMobileSignal: Boolean
+        get() = layout == ContentLayout.MOBILE_CENTER
+
+    // Only the outside/bottom dots use these saved choices.
+    // Signal-strength-centered dots remain horizontal in the renderer.
+    val dualRowDotOffsetY: Float
+        get() = if (dualRowDotArrangement == SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
+
+    val singleRowDotOffsetY: Float
+        get() = if (singleRowDotArrangement == SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
+
+    // The settings slider follows the selected SIM-mode profile; drawing
+    // instead resolves the offset from the actual rendered row count.
+    val activeSignalDotOffsetY: Float
+        get() = if (dualSignal) dualRowDotOffsetY else singleRowDotOffsetY
+
 }
 
 internal fun Float.finiteIn(min: Float, max: Float, fallback: Float): Float =
@@ -264,14 +291,20 @@ internal fun VisualCfg.normalized(): VisualCfg =
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,
             ),
-        dualDefaultOffsetY =
-            dualDefaultOffsetY.finiteIn(
+        curvedSignalDotOffsetY =
+            curvedSignalDotOffsetY.finiteIn(
                 NETWORK_TOP_OFFSET_MIN,
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,
             ),
-        dualDuoOffsetY =
-            dualDuoOffsetY.finiteIn(
+        mobileTypeBottomOffsetY =
+            mobileTypeBottomOffsetY.finiteIn(
+                NETWORK_TOP_OFFSET_MIN,
+                NETWORK_TOP_OFFSET_MAX,
+                mobileTypeBottomOffsetDefault(layout),
+            ),
+        horizontalSignalDotOffsetY =
+            horizontalSignalDotOffsetY.finiteIn(
                 NETWORK_TOP_OFFSET_MIN,
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,
@@ -317,7 +350,7 @@ internal fun VisualCfg.normalized(): VisualCfg =
             mobileTypeScale.finiteIn(
                 MOBILE_TYPE_SIZE_SCALE_MIN,
                 MOBILE_TYPE_SIZE_SCALE_MAX,
-                MOBILE_TYPE_SIZE_SCALE_DEFAULT,
+                mobileTypeScaleDefault(layout),
             ),
         mobileTypeWeight =
             mobileTypeWeight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX),

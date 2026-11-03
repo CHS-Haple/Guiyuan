@@ -7,6 +7,26 @@ import org.junit.Test
 
 class BatteryRingTransitionPolicyTest {
     @Test
+    fun symmetricGapRetractionConsumesActualVisibleLengthAcrossBothSides() {
+        val arcs = BatteryTopArcPolicy.drawableRingArcs(34f, 34f)
+        val half = BatteryRingTransitionPolicy.resolve(
+            drawableArcs = arcs,
+            batteryPercent = 50,
+            progress = 0f,
+        )
+        assertEquals(listOf(arcs.first()), half.active)
+        assertEquals(arcs, half.background)
+        val retracted = BatteryRingTransitionPolicy.resolve(
+            drawableArcs = arcs,
+            batteryPercent = 75,
+            progress = 0.6f,
+        )
+        val remaining = BatteryRingTransitionPolicy.remainingFraction(0.6f)
+        assertEquals(224f * remaining,
+            retracted.background.sumOf { it.sweepDegrees.toDouble() }.toFloat(), 0.001f)
+    }
+
+    @Test
     fun transitionProgressFinishesRingAtFortyFivePercentWithoutJump() {
         assertEquals(
             0f,

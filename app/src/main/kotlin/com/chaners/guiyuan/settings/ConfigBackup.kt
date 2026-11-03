@@ -11,11 +11,18 @@ import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.SerialKind
+import kotlinx.serialization.descriptors.StructureKind
+import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -86,61 +93,127 @@ internal object ConfigBackupFormat {
         val root = json.parseToJsonElement(contents).jsonObject
         val schema = root["schemaVersion"]?.jsonPrimitive?.intOrNull
         require(schema == SCHEMA) { "Unsupported schemaVersion: " + schema }
-        // Typed decode may accept noncanonical numeric literals. Do not migrate them.
-        root["visual"]?.jsonObject?.get("profiles")?.jsonArray?.forEach { entry ->
-            val profile = entry.jsonObject
-            for (key in listOf("mobileTypeWeight", "topTextWeight")) {
-                val value = profile[key] ?: continue
-                require(value is JsonPrimitive && !value.isString && value.intOrNull != null) {
-                    "Invalid $key"
+        val compatibleRoot = upgradeLegacySingleRowStyle(root)
+        requireCanonicalTypes(compatibleRoot, ConfigBackup.serializer().descriptor)
+        // Only released 1.0.0 two-layout backups are upgraded. Other
+        // profile counts are invalid, never silently filled or truncated.
+        val decoded = json.decodeFromJsonElement(ConfigBackup.serializer(), compatibleRoot)
+        val profiles = decoded.visual.profiles
+        val upgraded = if (profiles.size == 4 &&
+            profiles.map { it.layout }.toSet() ==
+                setOf(ContentLayout.NETWORK_CENTER, ContentLayout.BATTERY_CENTER) &&
+            profiles.map { it.dualSignal to it.layout }.toSet().size == 4
+        ) {
+            val mobileProfiles = profiles
+                .filter { it.layout == ContentLayout.NETWORK_CENTER }
+                .map { network ->
+                    network.copy(
+                        layout = ContentLayout.MOBILE_CENTER,
+                        mobileTypeScale = mobileTypeScaleDefault(ContentLayout.MOBILE_CENTER),
+                        mobileTypeBottomOffsetY = MOBILE_TYPE_BOTTOM_OFFSET_DEFAULT,
+                        singleRowDotArrangement = SignalDotArrangement.CURVED,
+                    )
+                }
+            decoded.copy(visual = decoded.visual.copy(profiles = profiles + mobileProfiles))
+        } else {
+            decoded
+        }
+        return normalizeImported(upgraded).also(::validate)
+    }
+
+    // Retire the old boolean without changing the V1 backup schema or
+    // accepting conflicting new and legacy representations.
+    private fun upgradeLegacySingleRowStyle(root: JsonObject): JsonObject {
+        val visual = root["visual"] as? JsonObject ?: return root
+        val profiles = visual["profiles"] as? JsonArray ?: return root
+        if (profiles.none { it is JsonObject && "singleRowFlatDots" in it }) return root
+        val converted = profiles.map { profile ->
+            if (profile !is JsonObject || "singleRowFlatDots" !in profile) return@map profile
+            require("singleRowDotStyle" !in profile) { "Conflicting single-row styles" }
+            val old = profile["singleRowFlatDots"] as? JsonPrimitive
+            require(old != null && !old.isString && old.booleanOrNull != null) {
+                "Invalid legacy single-row style"
+            }
+            val horizontal = old.booleanOrNull == true &&
+                (profile["dualDotStyle"] as? JsonPrimitive)?.content == "DUO"
+            JsonObject(profile.filterKeys { it != "singleRowFlatDots" } +
+                ("singleRowDotStyle" to JsonPrimitive(if (horizontal) "DUO" else "DEFAULT")))
+        }
+        return JsonObject(root + ("visual" to JsonObject(visual +
+            ("profiles" to JsonArray(converted)))))
+    }
+
+    // Preserve wire types: kotlinx serialization may otherwise accept quoted
+    // numbers even with isLenient=false. Recursing over the serializer schema
+    // keeps this check current when new backup settings are introduced.
+    private fun requireCanonicalTypes(value: JsonElement, descriptor: SerialDescriptor) {
+        if (value == JsonNull) return // Decoder checks required vs nullable.
+        when (val kind = descriptor.kind) {
+            is PrimitiveKind -> {
+                require(value is JsonPrimitive &&
+                    value.isString == (kind == PrimitiveKind.STRING || kind == PrimitiveKind.CHAR)) {
+                    "Invalid value type for ${descriptor.serialName}"
                 }
             }
-        }
-        // Older test archives may record two selections; only the active mode survives.
-        val oldSchemes = root["batterySchemes"]?.jsonObject
-        val oldDualKey = oldSchemes?.get("dualActiveSchemeKey")
-        val archive =
-            if (oldSchemes != null && oldDualKey != null) {
-                require(oldDualKey is JsonPrimitive &&
-                    (oldDualKey.isString || oldDualKey is JsonNull)
-                ) { "Invalid legacy dual selection" }
-                val schemeFields = oldSchemes.toMutableMap().apply {
-                    remove("dualActiveSchemeKey")
-                    if (root["visual"]?.jsonObject?.get("dualEnabled")?.jsonPrimitive?.booleanOrNull == true &&
-                        oldDualKey !is JsonNull
-                    ) {
-                        put("activeSchemeKey", oldDualKey)
+            SerialKind.ENUM -> require(value is JsonPrimitive && value.isString) {
+                "Invalid enum value type for ${descriptor.serialName}"
+            }
+            StructureKind.LIST -> {
+                require(value is JsonArray) { "Invalid list type for ${descriptor.serialName}" }
+                val member = descriptor.getElementDescriptor(0)
+                value.forEach { requireCanonicalTypes(it, member) }
+            }
+            StructureKind.MAP -> {
+                require(value is JsonObject) { "Invalid map type for ${descriptor.serialName}" }
+                val member = descriptor.getElementDescriptor(1)
+                value.values.forEach { requireCanonicalTypes(it, member) }
+            }
+            StructureKind.CLASS, StructureKind.OBJECT -> {
+                require(value is JsonObject) { "Invalid object type for ${descriptor.serialName}" }
+                value.forEach { (key, child) ->
+                    val index = descriptor.getElementIndex(key)
+                    if (index != CompositeDecoder.UNKNOWN_NAME) {
+                        requireCanonicalTypes(child, descriptor.getElementDescriptor(index))
                     }
                 }
-                JsonObject(root.toMutableMap().apply {
-                    put("batterySchemes", JsonObject(schemeFields))
-                })
-            } else {
-                root
             }
-        val decoded = json.decodeFromJsonElement(ConfigBackup.serializer(), archive)
-        if (oldDualKey != null && oldDualKey !is JsonNull) {
-            require(decoded.batterySchemes.containsKey(oldDualKey.jsonPrimitive.content)) {
-                "Unknown legacy dual-SIM scheme"
-            }
+            else -> Unit // Decoder owns unsupported/polymorphic schema kinds.
         }
-        val profiles = decoded.visual.profiles.map { cfg ->
-            cfg.copy(
-                mobileTypeWeight =
-                    if (cfg.mobileTypeWeight in (MOBILE_TYPE_WEIGHT_MAX + 1)..1400) {
-                        MOBILE_TYPE_WEIGHT_MAX
-                    } else {
-                        cfg.mobileTypeWeight
-                    },
-                topTextWeight =
-                    if (cfg.topTextWeight in (BATTERY_TOP_TEXT_WEIGHT_MAX + 1)..1400) {
-                        BATTERY_TOP_TEXT_WEIGHT_MAX
-                    } else {
-                        cfg.topTextWeight
-                    },
-            )
+    }
+
+    // Only bounded, finite user-tunable values are adjusted. Type, profile
+    // structure, unknown enums, color integrity and references still fail.
+    private fun normalizeImported(backup: ConfigBackup): ConfigBackup {
+        backup.visual.profiles.forEach { cfg ->
+            require(BatteryColorSlot.entries.all { slot ->
+                val color = cfg.batteryColorOverrides.colorFor(slot)
+                color == null || color ushr 24 == 0xFF
+            }) { "Invalid visual battery color" }
+            require(listOf(
+                cfg.topTextScale, cfg.topOffsetY, cfg.wifiOffsetY, cfg.mobileTypeOffsetY,
+                cfg.curvedSignalDotOffsetY, cfg.horizontalSignalDotOffsetY, cfg.mobileTypeBottomOffsetY,
+                cfg.topChargingIconScale, cfg.combinedScale, cfg.outerWeightScale,
+                cfg.wifiScale, cfg.airplaneScale, cfg.noSimScale, cfg.mobileTypeScale,
+            ).all(Float::isFinite)) { "Nonfinite visual setting" }
         }
-        return decoded.copy(visual = decoded.visual.copy(profiles = profiles)).also(::validate)
+        val currentMode = backup.visual.dualEnabled && backup.visual.dualInitialized
+        val chosenSingleStyles = backup.visual.profiles
+            .filter { it.dualSignal == currentMode }
+            .associate { it.layout to it.singleRowDotArrangement }
+        return backup.copy(
+            feature = backup.feature.copy(
+                lowBatteryThreshold = backup.feature.lowBatteryThreshold
+                    .coerceIn(LOW_BATTERY_THRESHOLD_MIN, LOW_BATTERY_THRESHOLD_MAX),
+            ),
+            visual = backup.visual.copy(
+                profiles = backup.visual.profiles.map { cfg ->
+                    cfg.normalized().copy(
+                        singleRowDotArrangement =
+                            chosenSingleStyles[cfg.layout] ?: cfg.singleRowDotArrangement,
+                    )
+                },
+            ),
+        )
     }
 
     fun validate(backup: ConfigBackup) {
@@ -166,12 +239,11 @@ internal object ConfigBackupFormat {
             profiles.size == expected.size &&
                 profiles.map { it.dualSignal to it.layout }.toSet() == expected
         ) { "Missing or duplicated visual profile" }
-        // V1 archives may differ by SIM mode, but each mode must agree across layouts.
+        // Shared settings must agree across all three layouts of each SIM mode.
         require(profiles.groupBy { it.dualSignal }.values.all { sameMode ->
             val first = sameMode.first()
             sameMode.all { cfg ->
-                cfg.dualDotStyle == first.dualDotStyle &&
-                    cfg.fillFollowsRetract == first.fillFollowsRetract &&
+                cfg.fillFollowsRetract == first.fillFollowsRetract &&
                     cfg.ccTintTransition == first.ccTintTransition &&
                     cfg.batteryColorPreset == first.batteryColorPreset &&
                     cfg.batteryColorModes == first.batteryColorModes &&
@@ -181,7 +253,8 @@ internal object ConfigBackupFormat {
         profiles.forEach { cfg ->
             val values = listOf(
                 cfg.topTextScale, cfg.topOffsetY, cfg.wifiOffsetY, cfg.mobileTypeOffsetY,
-                cfg.dualDefaultOffsetY, cfg.dualDuoOffsetY,
+                cfg.curvedSignalDotOffsetY, cfg.horizontalSignalDotOffsetY,
+                cfg.mobileTypeBottomOffsetY,
                 cfg.topChargingIconScale, cfg.combinedScale, cfg.outerWeightScale,
                 cfg.wifiScale, cfg.airplaneScale, cfg.noSimScale, cfg.mobileTypeScale,
             )
@@ -192,6 +265,12 @@ internal object ConfigBackupFormat {
                 val color = cfg.batteryColorOverrides.colorFor(slot)
                 color == null || color ushr 24 == 0xFF
             }) { "Visual colors must be opaque" }
+        }
+
+        // Reject invalid active profile selections even when a complete bank exists.
+        require(backup.visual.singleLayout in ContentLayout.entries &&
+            backup.visual.dualLayout in ContentLayout.entries) {
+            "Invalid selected content layout"
         }
 
         val schemes = backup.batterySchemes

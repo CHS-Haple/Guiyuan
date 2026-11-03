@@ -42,6 +42,7 @@ internal fun PreviewSummary(
                     PreviewWifiState.CONNECTED -> stringResource(R.string.home_preview_network_mode_wifi)
                     PreviewWifiState.NO_INTERNET -> stringResource(R.string.home_preview_wifi_no_internet)
                     PreviewWifiState.HOTSPOT -> stringResource(R.string.home_preview_wifi_hotspot)
+                    PreviewWifiState.DUAL_WIFI -> stringResource(R.string.home_preview_wifi_dual_acceleration)
                 }
             PreviewCenterSource.AIRPLANE -> stringResource(R.string.home_preview_airplane_title)
             PreviewCenterSource.NO_SIM -> stringResource(R.string.home_preview_sim_absent)

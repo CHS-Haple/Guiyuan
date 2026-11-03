@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.settings
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VisualCfgTest {
@@ -42,7 +43,7 @@ class VisualCfgTest {
         assertEquals(1f, settings.wifiScale, 0.0001f)
         assertEquals(0f, settings.wifiOffsetY, 0f)
         assertEquals(0f, settings.mobileTypeOffsetY, 0f)
-        assertEquals(0f, settings.dualMobileOffsetY, 0f)
+        assertEquals(0f, settings.activeSignalDotOffsetY, 0f)
         assertEquals(1f, settings.airplaneScale, 0.0001f)
         assertEquals(1f, settings.noSimScale, 0.0001f)
         assertEquals(1f, settings.mobileTypeScale, 0.0001f)
@@ -63,8 +64,8 @@ class VisualCfgTest {
                 wifiScale = 9f,
                 wifiOffsetY = -99f,
                 mobileTypeOffsetY = 99f,
-                dualDefaultOffsetY = -99f,
-                dualDuoOffsetY = 99f,
+                curvedSignalDotOffsetY = -99f,
+                horizontalSignalDotOffsetY = 99f,
                 airplaneScale = 9f,
                 noSimScale = 9f,
                 mobileTypeScale = 9f,
@@ -81,16 +82,16 @@ class VisualCfgTest {
         assertEquals(WIFI_SIZE_SCALE_MAX, normalized.wifiScale, 0.0001f)
         assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.wifiOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.mobileTypeOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.dualDefaultOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.dualDuoOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.dualMobileOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(dualDotStyle = DualDotStyle.DUO).dualMobileOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.curvedSignalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.horizontalSignalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.activeSignalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(singleRowDotArrangement = SignalDotArrangement.HORIZONTAL).activeSignalDotOffsetY, 0f)
         val invalidOffsets = settings.copy(
-            dualDefaultOffsetY = Float.NaN,
-            dualDuoOffsetY = Float.POSITIVE_INFINITY,
+            curvedSignalDotOffsetY = Float.NaN,
+            horizontalSignalDotOffsetY = Float.POSITIVE_INFINITY,
         ).normalized()
-        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.dualDefaultOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.dualDuoOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.curvedSignalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.horizontalSignalDotOffsetY, 0f)
         assertEquals(AIRPLANE_SIZE_SCALE_MAX, normalized.airplaneScale, 0.0001f)
         assertEquals(NO_SIM_SIZE_SCALE_MAX, normalized.noSimScale, 0.0001f)
         assertEquals(MOBILE_TYPE_SIZE_SCALE_MAX, normalized.mobileTypeScale, 0.0001f)
@@ -108,6 +109,76 @@ class VisualCfgTest {
     }
 
     @Test
+    fun mobileCenteredIsAnIndependentLayoutWithOwnDefaults() {
+        val centered = VisualCfg(layout = ContentLayout.MOBILE_CENTER)
+        assertTrue(centered.centeredMobileSignal)
+        assertEquals(SignalDotArrangement.CURVED, centered.dualRowDotArrangement)
+        assertEquals(SignalDotArrangement.CURVED, centered.singleRowDotArrangement)
+        assertEquals(0.85f, centered.mobileTypeScale, 0f)
+        assertEquals(-3f, centered.mobileTypeBottomOffsetY, 0f)
+        assertEquals(false, centered.copy(layout = ContentLayout.NETWORK_CENTER).centeredMobileSignal)
+        assertEquals(NETWORK_TOP_OFFSET_MAX,
+            centered.copy(mobileTypeBottomOffsetY = 99f).normalized().mobileTypeBottomOffsetY, 0f)
+        assertEquals(-3f,
+            centered.copy(mobileTypeBottomOffsetY = Float.NaN).normalized().mobileTypeBottomOffsetY, 0f)
+    }
+
+    @Test
+    fun outsideSingleAndDualRowsHaveIndependentStyleChoices() {
+        val singleCurvedDualFlat = VisualCfg(
+            layout = ContentLayout.MOBILE_CENTER,
+            dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+            singleRowDotArrangement = SignalDotArrangement.CURVED,
+        )
+        assertEquals(SignalDotArrangement.CURVED, singleCurvedDualFlat.singleRowDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, singleCurvedDualFlat.dualRowDotArrangement)
+        val singleFlatDualCurved = singleCurvedDualFlat.copy(
+            dualRowDotArrangement = SignalDotArrangement.CURVED,
+            singleRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+        )
+        assertEquals(SignalDotArrangement.HORIZONTAL, singleFlatDualCurved.singleRowDotArrangement)
+        assertEquals(SignalDotArrangement.CURVED, singleFlatDualCurved.dualRowDotArrangement)
+        assertTrue(singleFlatDualCurved.centeredMobileSignal)
+    }
+
+    @Test
+    fun outsideRowsUseTheActualRowStyleForGeometryAndOffset() {
+        for (dual in listOf(false, true)) {
+            for (singleStyle in SignalDotArrangement.entries) {
+                for (dualStyle in SignalDotArrangement.entries) {
+                    val visual = VisualCfg(
+                        layout = ContentLayout.MOBILE_CENTER,
+                        dualSignal = dual,
+                        dualRowDotArrangement = dualStyle,
+                        singleRowDotArrangement = singleStyle,
+                        curvedSignalDotOffsetY = 2f,
+                        horizontalSignalDotOffsetY = 5f,
+                    )
+                    assertEquals(singleStyle, visual.singleRowDotArrangement)
+                    assertEquals(dualStyle, visual.dualRowDotArrangement)
+                    assertEquals(
+                        if (dualStyle == SignalDotArrangement.HORIZONTAL) 5f else 2f,
+                        visual.dualRowDotOffsetY,
+                        0f,
+                    )
+                    assertEquals(
+                        if (singleStyle == SignalDotArrangement.HORIZONTAL) 5f else 2f,
+                        visual.singleRowDotOffsetY,
+                        0f,
+                    )
+                    assertEquals(
+                        if ((if (dual) dualStyle else singleStyle) == SignalDotArrangement.HORIZONTAL) 5f else 2f,
+                        visual.activeSignalDotOffsetY,
+                        0f,
+                    )
+                }
+            }
+        }
+        assertEquals(ContentLayout.MOBILE_CENTER, ContentLayout.fromPersisted("mobile_center"))
+        assertEquals(ContentLayout.BATTERY_CENTER, ContentLayout.fromPersisted("battery_center"))
+    }
+
+    @Test
     fun nonFiniteGeometryFallsBackToLayoutDefaults() {
         for (invalid in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) {
             val raw =
@@ -116,8 +187,8 @@ class VisualCfgTest {
                     topOffsetY = invalid,
                     wifiOffsetY = invalid,
                     mobileTypeOffsetY = invalid,
-                    dualDefaultOffsetY = invalid,
-                    dualDuoOffsetY = invalid,
+                    curvedSignalDotOffsetY = invalid,
+                    horizontalSignalDotOffsetY = invalid,
                     topChargingIconScale = invalid,
                     combinedScale = invalid,
                     outerWeightScale = invalid,
@@ -131,15 +202,15 @@ class VisualCfgTest {
             assertEquals(BATTERY_TOP_VERTICAL_OFFSET_DEFAULT, normalized.topOffsetY, 0f)
             assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.wifiOffsetY, 0f)
             assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.mobileTypeOffsetY, 0f)
-            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.dualDefaultOffsetY, 0f)
-            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.dualDuoOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.curvedSignalDotOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.horizontalSignalDotOffsetY, 0f)
             assertEquals(topChargingIconScaleDefault(raw.layout), normalized.topChargingIconScale, 0f)
             assertEquals(COMBINED_SCALE_DEFAULT, normalized.combinedScale, 0f)
             assertEquals(OUTER_WEIGHT_SCALE_DEFAULT, normalized.outerWeightScale, 0f)
             assertEquals(WIFI_SIZE_SCALE_DEFAULT, normalized.wifiScale, 0f)
             assertEquals(AIRPLANE_SIZE_SCALE_DEFAULT, normalized.airplaneScale, 0f)
             assertEquals(NO_SIM_SIZE_SCALE_DEFAULT, normalized.noSimScale, 0f)
-            assertEquals(MOBILE_TYPE_SIZE_SCALE_DEFAULT, normalized.mobileTypeScale, 0f)
+            assertEquals(mobileTypeScaleDefault(raw.layout), normalized.mobileTypeScale, 0f)
         }
     }
 
@@ -171,11 +242,11 @@ class VisualCfgTest {
     }
 
     @Test
-    fun singleKeysStayCompatibleAndDualProfilesStaySeparate() {
+    fun layoutVisualKeysAreSharedAcrossSimModes() {
         assertEquals("content_layout", visualModeKey(false, CONTENT_LAYOUT_KEY))
         assertEquals("dual.content_layout", visualModeKey(true, CONTENT_LAYOUT_KEY))
         assertEquals("network_center.combined_scale", visualProfileKey(ContentLayout.NETWORK_CENTER, COMBINED_SCALE_KEY))
-        assertEquals("dual.network_center.combined_scale", visualProfileKey(ContentLayout.NETWORK_CENTER, COMBINED_SCALE_KEY, dual = true))
+        assertEquals("network_center.combined_scale", visualProfileKey(ContentLayout.NETWORK_CENTER, COMBINED_SCALE_KEY, dual = true))
         assertEquals(false, VisualCfg().dualSignal)
     }
 

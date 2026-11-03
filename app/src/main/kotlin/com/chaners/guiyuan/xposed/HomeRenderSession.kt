@@ -578,9 +578,15 @@ internal object HomeRenderSession {
                     logicalWidthPx = anchorRect.width(),
                     logicalHeightPx = anchorRect.height(),
                 )
+            val bottomOverflowPx =
+                probeView.requiredBottomOverflowPx(
+                    logicalWidthPx = anchorRect.width(),
+                    logicalHeightPx = anchorRect.height(),
+                )
             applyAnchorBounds(
                 bounds = anchorRect,
                 topOverflowPx = topOverflowPx,
+                bottomOverflowPx = bottomOverflowPx,
             )
             layoutReady = true
 
@@ -687,12 +693,14 @@ internal object HomeRenderSession {
         private fun applyAnchorBounds(
             bounds: Rect,
             topOverflowPx: Int,
+            bottomOverflowPx: Int,
         ) {
             val physical =
                 VerticalOverflowPolicy.resolve(
                     logicalTopPx = bounds.top,
                     logicalHeightPx = bounds.height(),
                     requestedTopOverflowPx = topOverflowPx,
+                    requestedBottomOverflowPx = bottomOverflowPx,
                 )
             probeView.setLogicalViewport(
                 widthPx = bounds.width(),
@@ -717,7 +725,7 @@ internal object HomeRenderSession {
                 bounds.left,
                 physical.physicalTopPx,
                 bounds.right,
-                bounds.bottom,
+                bounds.bottom + bottomOverflowPx,
             )
         }
     }
@@ -737,13 +745,15 @@ internal object VerticalOverflowPolicy {
         logicalTopPx: Int,
         logicalHeightPx: Int,
         requestedTopOverflowPx: Int,
+        requestedBottomOverflowPx: Int = 0,
     ): Resolved {
         val logicalHeight = logicalHeightPx.coerceAtLeast(0)
-        val overflow = requestedTopOverflowPx.coerceAtLeast(0)
+        val top = requestedTopOverflowPx.coerceAtLeast(0)
+        val bottom = requestedBottomOverflowPx.coerceAtLeast(0)
         return Resolved(
-            physicalTopPx = logicalTopPx - overflow,
-            physicalHeightPx = logicalHeight + overflow,
-            logicalTopInsetPx = overflow,
+            physicalTopPx = logicalTopPx - top,
+            physicalHeightPx = logicalHeight + top + bottom,
+            logicalTopInsetPx = top,
         )
     }
 }

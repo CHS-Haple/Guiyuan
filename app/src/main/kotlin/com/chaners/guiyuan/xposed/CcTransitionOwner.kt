@@ -885,7 +885,7 @@ internal object CcTransitionOwner {
                         model.dualMobileLevels != null
                 }
             val rowSpecs =
-                dualSpec?.let { painter.dualMobileRowSpecs(it, currentSnapshot.visual) }
+                dualSpec?.let { painter.dualMobileRowSpecs(it, currentSnapshot.visual, model) }
             val nativeDualTargets =
                 dualSpec?.let { resolveDualMobileTargets(it, model) }
             val dualRowTargets =
@@ -1458,6 +1458,9 @@ internal object CcTransitionOwner {
                                 nativeTargetAvailable =
                                     matchedTargetGeometry != null &&
                                         witness?.opticalView != null && nativeTypeMatch == true,
+                                mobileTypeBottom =
+                                    currentSnapshot.visual.centeredMobileSignal &&
+                                        !model.mobileUnavailableMark,
                                 visual = currentSnapshot.visual,
                             ) ?: spec.sourceBounds
 
