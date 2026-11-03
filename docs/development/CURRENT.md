@@ -13,7 +13,7 @@ This file records **accepted behavior, current constraints and next work**, not 
 
 The detailed B1193–B1670 implementation history (0.9.0/0.9.1 promotions, earlier probes, fixes and one-off CI) is **historical**, not the active development baseline. Its dated source/evidence remains inspectable in [the versioned history of this file](https://github.com/CHS-Haple/Guiyuan/commits/dev/docs/development/CURRENT.md), [CHANGELOG](../../CHANGELOG.md), and the linked GitHub PR/Issue/CI records (notably [0.9.1 promotion #999](https://github.com/CHS-Haple/Guiyuan/pull/999), [0.9.2 promotion #1087](https://github.com/CHS-Haple/Guiyuan/pull/1087), and [Hot Reload retirement #1077](https://github.com/CHS-Haple/Guiyuan/pull/1077)). Do not infer current source, a verified device, or a future stable release merely from a historical Build.
 
-For active decisions consult [DECISIONS](DECISIONS.md), the [architecture policy](../architecture/README.md), and exact current `dev` source/CI. For first stable-release qualification use [RELEASE_READINESS](RELEASE_READINESS.md), not historical acceptance notes.
+For active decisions consult [DECISIONS](DECISIONS.md), the [architecture policy](../architecture/README.md), and exact current `dev` source/CI. [RELEASE_READINESS](RELEASE_READINESS.md) preserves the first stable-release qualification as dated historical evidence; current release status comes from GitHub and the live Gradle configuration.
 
 ## Presentation ownership and lifecycle
 

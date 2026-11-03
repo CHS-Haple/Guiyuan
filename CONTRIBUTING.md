@@ -309,7 +309,7 @@ Runtime-sensitive work: review ownership/writer conflicts, lifecycle/cleanup, fa
 
 UI work: review hierarchy, MIUIX behavior, themes, localization, accessibility and interaction.
 
-Formal privacy and terms documents are not subject to ordinary UI copy-shortening or semicolon-avoidance rules. Preserve necessary legal qualifications and precise meanings. For substantive changes, verify disclosures against actual source/runtime behavior, keep Chinese/English meaning equivalent, and synchronize in-app articles with the public `PRIVACY.md` and `TERMS.md`. Never invent maintainer identities, private contact methods, consent mechanisms, retention guarantees, or legal assurances. Respect the IT channel's project-link restriction.
+Privacy and terms documents require formal, precise language rather than routine UI copyediting. Preserve necessary legal qualifications and exact meanings. For substantive changes, verify disclosures against actual source/runtime behavior, keep Chinese/English meaning equivalent, and synchronize in-app articles with public `PRIVACY.md` and `TERMS.md`. Do not introduce unsupported maintainer identities, private contact methods, consent mechanisms, retention guarantees or legal assurances.
 
 Repository/CI work: review triggers, secret boundaries, artifact semantics and branch protection.
 
