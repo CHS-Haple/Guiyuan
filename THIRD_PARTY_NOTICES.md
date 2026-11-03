@@ -1,4 +1,4 @@
-# Third-Party Notices
+# Third-Party Notices / 第三方声明
 
 Guiyuan uses third-party libraries and build tooling. This file provides a human-readable summary of the project's direct dependencies and does not replace the license text or notices distributed by each upstream project.
 
@@ -88,3 +88,18 @@ Before a formal release, maintainers should verify the resolved dependency set a
 ## Project license
 
 Guiyuan itself is licensed under the [GNU General Public License v3.0 only](LICENSE) (`GPL-3.0-only`). Third-party components remain governed by their respective upstream licenses and notice requirements.
+
+---
+
+## 简体中文
+
+本文件列出归元使用的主要第三方依赖、适配的源代码及图标素材，并说明其来源和许可证。具体组件、版本与上游许可证以本页上方的英文清单为准；实际解析的依赖还可能包括间接依赖。
+
+- **应用与编译依赖**：包括 Modern Xposed、AndroidX、MIUIX、Kotlin 序列化及 JUnit。各自的版本和许可证见上方对应表格。
+- **MIUIX 适配**：部分界面和液态玻璃相关代码基于注明版本的上游项目进行适配，保留相关版权和许可证声明；这些代码不等于完整上游模块。
+- **图标素材**：使用注明来源的 Material Symbols 及 MIUIX 图标素材，原始许可仍然适用。
+- **构建工具**：Gradle、Android Gradle Plugin 与 Kotlin 构建工具遵循各自上游许可。
+
+构建过程中可能为避免冲突而移除重复的 `META-INF` 许可资源，但不改变第三方许可义务。正式发布前仍需核对实际依赖和应随附的声明。
+
+归元自身源代码采用 [GPL-3.0-only](LICENSE) 许可证；第三方组件分别受其上游许可证和声明要求约束。
