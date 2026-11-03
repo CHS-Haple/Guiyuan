@@ -19,7 +19,6 @@ private val visualPreferenceKeys = buildSet {
     ContentLayout.entries.forEach { layout ->
         PROFILE_VISUAL_BASE_KEYS.forEach { key ->
             add(visualProfileKey(layout, key))
-            add(visualProfileKey(layout, key, dual = true))
         }
     }
 }
@@ -211,7 +210,10 @@ internal class VisualRepo(context: Context) {
         )
 
     fun setDualSignal(enabled: Boolean) {
-        preferences.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, enabled).apply()
+        preferences.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, enabled)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .apply()
     }
 
     fun setDualRowDotArrangement(style: SignalDotArrangement) {
@@ -511,9 +513,10 @@ internal class VisualRepo(context: Context) {
         writeBatterySchemeLibrary(editor, library.copy(activeSchemeKey = applied))
         val activeLayout = if (backup.dualEnabled) backup.dualLayout else backup.singleLayout
         editor.putString(CONTENT_LAYOUT_KEY, activeLayout.persistedValue)
-        if (backup.dualInitialized) {
-            editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
-        }
+        // Shared visual profiles require no separate dual-bank initialization.
+        // Even a valid legacy backup with dualInitialized=false must be ready
+        // for toggling dual mode and exporting a new backup.
+        editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
         editor.putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
         editor.putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)

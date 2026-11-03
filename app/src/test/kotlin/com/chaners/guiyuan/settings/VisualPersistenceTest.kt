@@ -184,7 +184,7 @@ class VisualPersistenceTest {
             0f,
         )
         assertEquals(
-            3f,
+            -2f,
             topOffsetYUi(prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER).topOffsetY),
             0f,
         )
