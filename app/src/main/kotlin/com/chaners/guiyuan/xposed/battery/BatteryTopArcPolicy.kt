@@ -250,16 +250,16 @@ internal object BatteryTopArcPolicy {
         )
     }
 
-    // Preserve the original 120° lower opening for curved dots without a
-    // second motion owner. Measured clearance remains authoritative.
+    // Keep the original 120° lower opening for curved dots or when requested
+    // for horizontal rows. Measured optical clearance remains authoritative.
     internal fun autoBottomHalfGap(
         measuredHalf: Float,
-        curvedBottom: Boolean,
+        reserveOriginalOpening: Boolean,
         centeredBefore: Boolean,
         centeredNow: Boolean,
         motion: Float,
     ): Float {
-        if (!curvedBottom) return measuredHalf
+        if (!reserveOriginalOpening) return measuredHalf
         val outerAmount = when {
             centeredBefore == centeredNow -> if (centeredNow) 0f else 1f
             centeredBefore -> motion.coerceIn(0f, 1f)
