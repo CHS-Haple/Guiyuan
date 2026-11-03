@@ -65,7 +65,7 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
-import com.chaners.guiyuan.ui.icons.Os4GlassShare
+import com.chaners.guiyuan.ui.icons.Os4GlassExport
 import com.chaners.guiyuan.ui.icons.Os4GlassFilter
 import com.chaners.guiyuan.ui.icons.Os4GlassMore
 import com.chaners.guiyuan.settings.DiagLevel
@@ -372,7 +372,7 @@ internal fun DiagnosticsScreen(
                 enabled = reportEnabled,
             ) {
                 Icon(
-                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassShare else MiuixIcons.Share,
+                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassExport else MiuixIcons.Share,
                     contentDescription = exportTitle,
                     modifier = Modifier.size(24.dp),
                 )

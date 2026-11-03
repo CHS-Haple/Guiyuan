@@ -7,10 +7,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.Back
 import top.yukonga.miuix.kmp.icon.glass.Close
+import top.yukonga.miuix.kmp.icon.glass.Copy
+import top.yukonga.miuix.kmp.icon.glass.Delete
+import top.yukonga.miuix.kmp.icon.glass.Edit
 import top.yukonga.miuix.kmp.icon.glass.Filter
 import top.yukonga.miuix.kmp.icon.glass.More
 import top.yukonga.miuix.kmp.icon.glass.Refresh
 import top.yukonga.miuix.kmp.icon.glass.Search
+import top.yukonga.miuix.kmp.icon.glass.Save
 import top.yukonga.miuix.kmp.icon.glass.Share
 
 // Keep app call sites stable across native source and published fallback variants.
@@ -21,3 +25,10 @@ internal val Os4GlassRefresh: ImageVector get() = MiuixIcons.Glass.Regular.Refre
 internal val Os4GlassFilter: ImageVector get() = MiuixIcons.Glass.Regular.Filter
 internal val Os4GlassShare: ImageVector get() = MiuixIcons.Glass.Regular.Share
 internal val Os4GlassMore: ImageVector get() = MiuixIcons.Glass.Regular.More
+
+
+// Export writes a report file; the legacy Share glyph overfills its 24 dp viewport.
+internal val Os4GlassExport: ImageVector get() = MiuixIcons.Glass.Regular.Save
+internal val Os4GlassEdit: ImageVector get() = MiuixIcons.Glass.Regular.Edit
+internal val Os4GlassCopy: ImageVector get() = MiuixIcons.Glass.Regular.Copy
+internal val Os4GlassDelete: ImageVector get() = MiuixIcons.Glass.Regular.Delete

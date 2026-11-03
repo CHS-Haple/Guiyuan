@@ -72,6 +72,9 @@ import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.icons.Os4GlassMore
+import com.chaners.guiyuan.ui.icons.Os4GlassEdit
+import com.chaners.guiyuan.ui.icons.Os4GlassCopy
+import com.chaners.guiyuan.ui.icons.Os4GlassDelete
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_CUSTOM_MAX
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
@@ -825,7 +828,7 @@ private fun BatterySchemeManageMenu(
                     ) {
                         GlassPopupItem(
                             text = stringResource(R.string.battery_custom_scheme_rename),
-                            icon = MiuixIcons.Edit,
+                            icon = Os4GlassEdit,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.Confirm)
                                 expanded = false
@@ -834,7 +837,7 @@ private fun BatterySchemeManageMenu(
                         )
                         GlassPopupItem(
                             text = stringResource(R.string.battery_custom_scheme_copy),
-                            icon = MiuixIcons.Copy,
+                            icon = Os4GlassCopy,
                             enabled = canCopy,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.Confirm)
@@ -851,7 +854,7 @@ private fun BatterySchemeManageMenu(
                         )
                         GlassPopupItem(
                             text = stringResource(R.string.battery_custom_scheme_delete),
-                            icon = MiuixIcons.Delete,
+                            icon = Os4GlassDelete,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.Confirm)
                                 expanded = false
