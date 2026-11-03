@@ -1,51 +1,24 @@
 name: Feature request / 功能建议
-description: Propose a new capability or behavior / 提出功能或交互改进建议
+description: Suggest a feature or improvement / 提出功能或体验改进建议
 title: "[Feature] "
 body:
   - type: markdown
     attributes:
       value: |
-        Feature requests are assessed for compatibility, maintainability and native fallback safety. Suggested implementations may change after technical review.
-
-        功能建议将综合评估兼容性、可维护性与原生回退安全性。具体实现方式可能在技术评审后调整。
+        Describe what you'd like. No technical solution needed.
+        说说希望归元怎么改，不需要提供技术方案。
   - type: textarea
-    id: problem
+    id: request
     attributes:
-      label: Problem or use case / 需求场景
-      description: Describe the user problem before suggesting a solution. / 请先描述遇到的问题或使用场景。
+      label: What would you like? / 希望增加或改进什么？
+      placeholder: "I'd like Guiyuan to ... / 我希望归元能够……"
     validations:
       required: true
   - type: textarea
-    id: behavior
+    id: use_case
     attributes:
-      label: Desired behavior / 期望效果
-      description: Explain the desired behavior from the user's perspective. / 请描述你希望归元如何表现。
-    validations:
-      required: true
-  - type: dropdown
-    id: scope
-    attributes:
-      label: Primary scope / 主要涉及范围
-      options:
-        - Home status bar / 桌面状态栏
-        - Notification shade / 通知下拉
-        - Control Center / 控制中心
-        - Lock screen / 锁屏
-        - AOD / 息屏显示
-        - Charging / 充电
-        - Network / SIM behavior / 网络与 SIM 卡
-        - Companion app / 归元应用
-        - Diagnostics / developer tooling / 诊断与开发工具
-        - Other / 其他
-    validations:
-      required: true
+      label: Use case (optional) / 使用场景（选填）
   - type: textarea
-    id: context
+    id: references
     attributes:
-      label: Runtime evidence or references / 证据或参考资料
-      description: Optional. Include relevant SystemUI behavior, screenshots or recordings; remove sensitive data. / 可选，提供有助于理解需求的 SystemUI 表现、截图或录屏，并去除敏感信息。
-  - type: textarea
-    id: alternatives
-    attributes:
-      label: Alternatives considered / 考虑过的其他方案
-      description: Optional. Mention simpler or native alternatives if known. / 可选，说明考虑过的更简洁或原生的方案。
+      label: Examples or screenshots (optional) / 参考或截图（选填）

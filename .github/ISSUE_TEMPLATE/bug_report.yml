@@ -1,89 +1,39 @@
 name: Bug report / 问题反馈
-description: Report a reproducible Guiyuan problem / 反馈可复现的归元问题
+description: Report a problem with Guiyuan / 反馈归元使用问题
 title: "[Bug] "
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a problem. Guiyuan currently targets verified HyperOS 4 environments; provide enough context to reproduce the issue.
+        Describe what happened. Steps or screenshots help, but are optional.
+        请说明遇到的问题。复现步骤、截图可选，有助于排查。
 
-        感谢反馈。归元目前面向已验证的 HyperOS 4 环境，请提供足以复现问题的信息。
-
-        Before attaching diagnostics or logs, remove unrelated personal information, secrets, and other sensitive content.
-
-        上传诊断或日志前，请删除无关的个人信息、密钥及其他敏感内容。
-  - type: input
-    id: build
+        Remove private information before uploading files. / 上传文件前请去除隐私信息。
+  - type: textarea
+    id: problem
     attributes:
-      label: Guiyuan version and build / 归元版本与构建
-      description: Include version, build ID and channel when known. / 请尽量填写版本号、构建编号和构建类型。
-      placeholder: "x.y.z / YYYYMMDD-NNN / Canary"
-    validations:
-      required: true
-  - type: input
-    id: device
-    attributes:
-      label: Device and Android version / 设备与 Android 版本
-      placeholder: "Device model / Android 17 (API 37)"
-    validations:
-      required: true
-  - type: input
-    id: hyperos
-    attributes:
-      label: HyperOS and SystemUI version / HyperOS 与 SystemUI 版本
-      description: Exact SystemUI version matters for runtime issues. / 运行时问题请尽量提供准确的 SystemUI 版本。
-      placeholder: "HyperOS ... / SystemUI 17.03.260226.r"
-    validations:
-      required: true
-  - type: dropdown
-    id: scene
-    attributes:
-      label: Affected scene / 问题发生场景
-      options:
-        - Home status bar / 桌面状态栏
-        - Notification shade / 通知下拉
-        - Control Center / 控制中心
-        - Lock screen / 锁屏
-        - AOD / 息屏显示
-        - Companion app / 归元应用
-        - Hot Reload / SystemUI restart / 热重载或重启 SystemUI
-        - Other / 其他
+      label: What happened? / 出现了什么问题？
+      placeholder: "For example: After switching ..., ... / 例如：切换……后，出现……"
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Steps to reproduce / 复现步骤
-      description: Describe the shortest repeatable sequence. / 请尽量描述最简可复现步骤。
+      label: Steps to reproduce (if known) / 复现方法（如有）
       placeholder: |
         1. ...
         2. ...
-        3. ...
-    validations:
-      required: true
+  - type: input
+    id: build
+    attributes:
+      label: Guiyuan version / 归元版本
+      placeholder: "1.0.0 / B1733"
+  - type: input
+    id: device
+    attributes:
+      label: Device and system / 设备与系统
+      placeholder: "Xiaomi 15 Pro / HyperOS 4 / SystemUI ..."
   - type: textarea
-    id: expected
+    id: evidence
     attributes:
-      label: Expected behavior / 预期表现
-    validations:
-      required: true
-  - type: textarea
-    id: actual
-    attributes:
-      label: Actual behavior / 实际表现
-    validations:
-      required: true
-  - type: textarea
-    id: diagnostics
-    attributes:
-      label: Diagnostics and evidence / 诊断与证据
-      description: Attach relevant diagnostic reports, log excerpts, screenshots or recordings when useful; redact sensitive content. / 可附相关诊断报告、日志片段、截图或录屏，请先去除敏感信息。
-  - type: checkboxes
-    id: checks
-    attributes:
-      label: Checklist / 提交前确认
-      options:
-        - label: I reproduced the issue on the specified build. / 已在所填构建上复现此问题。
-          required: true
-        - label: I removed secrets, signing material and unrelated private data. / 已清除密钥、签名材料及无关隐私信息。
-          required: true
+      label: Screenshots or logs (optional) / 截图或日志（选填）
