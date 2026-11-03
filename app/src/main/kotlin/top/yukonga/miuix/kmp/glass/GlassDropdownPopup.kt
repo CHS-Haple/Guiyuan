@@ -1,5 +1,6 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
+// Guiyuan modification (2026): Back ownership for nested popup/dismiss flows.
 
 package top.yukonga.miuix.kmp.glass
 
