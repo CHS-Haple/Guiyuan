@@ -279,6 +279,8 @@ internal fun FeaturesScreen(
         if (!visible) search.close()
     }
     val searching = search.filtering
+    // Keep the arrangement controls mounted as the dependent opening animates.
+    val openingSearch = searching && search.matches(R.string.battery_lower_opening_title)
     val displayMatches = search.any(*FeatureSearchIds.display)
     val layoutMatches = search.any(*FeatureSearchIds.layout)
     val networkMatches = search.any(*FeatureSearchIds.network)
@@ -472,7 +474,7 @@ internal fun FeaturesScreen(
                         },
                     )
                 }
-                if (search.matches(R.string.dual_signal_title) ||
+                if (search.matches(R.string.dual_signal_title) || openingSearch ||
                     (searching && !visual.dualSignal &&
                         search.any(R.string.dual_row_signal_dot_arrangement_title,
                             R.string.signal_dot_vertical_offset))) {
@@ -490,7 +492,7 @@ internal fun FeaturesScreen(
                         onCheckedChange = visualRepo::setDualSignal,
                     )
                 }
-                if (search.matches(R.string.single_row_signal_dot_arrangement_title)) {
+                if (search.matches(R.string.single_row_signal_dot_arrangement_title) || openingSearch) {
                     UiDropdownPreference(
                         title = stringResource(R.string.single_row_signal_dot_arrangement_title),
                         summary = stringResource(R.string.outer_signal_dots_only_summary),
@@ -511,7 +513,7 @@ internal fun FeaturesScreen(
                     )
                 }
                 AnimatedPreferenceGroup(visible = visual.dualSignal) {
-                    if (search.matches(R.string.dual_row_signal_dot_arrangement_title)) {
+                    if (search.matches(R.string.dual_row_signal_dot_arrangement_title) || openingSearch) {
                         UiDropdownPreference(
                             title = stringResource(R.string.dual_row_signal_dot_arrangement_title),
                             summary = stringResource(R.string.outer_signal_dots_only_summary),
