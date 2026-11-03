@@ -470,6 +470,29 @@ class ConfigBackupTest {
     }
 
     @Test
+    fun horizontalOpeningSurvivesBackupsAndDefaultsOffInOlderArchives() {
+        val source = sample()
+        val changed = source.copy(visual = source.visual.copy(
+            profiles = source.visual.profiles.map { cfg ->
+                cfg.copy(horizontalFixedOpening = cfg.layout != ContentLayout.NETWORK_CENTER)
+            },
+        ))
+        val encoded = ConfigBackupFormat.encode(changed)
+        assertEquals(changed, ConfigBackupFormat.decode(encoded))
+
+        // Older V1 archives have no field for this newly added visual option.
+        val oldJson = encoded.replace(Regex("\\\"horizontalFixedOpening\\\":(?:true|false),"), "")
+        assertFalse(oldJson.contains("horizontalFixedOpening"))
+        assertTrue(ConfigBackupFormat.decode(oldJson).visual.profiles.all { !it.horizontalFixedOpening })
+
+        val invalid = encoded.replaceFirst(
+            "\\\"horizontalFixedOpening\\\":true",
+            "\\\"horizontalFixedOpening\\\":\\\"true\\\"",
+        )
+        assertThrows(IllegalArgumentException::class.java) { ConfigBackupFormat.decode(invalid) }
+    }
+
+    @Test
     fun importedSingleRowChoiceFollowsActiveModeWithoutChangingDualStyle() {
         val source = sample()
         val mismatched = source.copy(
