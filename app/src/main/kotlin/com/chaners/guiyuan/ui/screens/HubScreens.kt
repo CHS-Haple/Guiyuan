@@ -633,9 +633,6 @@ internal fun FeaturesScreen(
                         )
                     }
                 }
-                val outerDotsHorizontal =
-                    (if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement) ==
-                        SignalDotArrangement.HORIZONTAL
                 AnimatedPreferenceGroup(
                     visible = visual.dualSignal || visual.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL,
                 ) {
@@ -666,7 +663,7 @@ internal fun FeaturesScreen(
                         )
                     }
                 }
-                AnimatedPreferenceGroup(visible = outerDotsHorizontal) {
+                AnimatedPreferenceGroup(visible = visual.hasHorizontalOuterDots) {
                     if (search.matches(R.string.battery_lower_opening_title)) {
                         UiDropdownPreference(
                             title = stringResource(R.string.battery_lower_opening_title),
