@@ -142,6 +142,44 @@ class VisualCfgTest {
     }
 
     @Test
+    fun horizontalLowerOpeningUsesTheRenderedRowAndAvailableSettings() {
+        for (layout in ContentLayout.entries) {
+            val singleCurvedDualHorizontal = VisualCfg(
+                layout = layout,
+                singleRowDotArrangement = SignalDotArrangement.CURVED,
+                dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+            )
+            assertEquals(false, singleCurvedDualHorizontal.hasHorizontalOuterDots)
+            assertEquals(true, singleCurvedDualHorizontal.reserveOriginalBottomOpening(actualDualRows = false))
+
+            val dualEnabled = singleCurvedDualHorizontal.copy(dualSignal = true)
+            assertEquals(true, dualEnabled.hasHorizontalOuterDots)
+            assertEquals(false, dualEnabled.reserveOriginalBottomOpening(actualDualRows = true))
+            // A missing SIM falls back to the single curved row, not the selected dual row.
+            assertEquals(true, dualEnabled.reserveOriginalBottomOpening(actualDualRows = false))
+            assertEquals(true, dualEnabled.copy(horizontalFixedOpening = true)
+                .reserveOriginalBottomOpening(actualDualRows = true))
+
+            val singleHorizontalDualCurved = dualEnabled.copy(
+                singleRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+                dualRowDotArrangement = SignalDotArrangement.CURVED,
+            )
+            assertEquals(true, singleHorizontalDualCurved.hasHorizontalOuterDots)
+            assertEquals(false, singleHorizontalDualCurved.reserveOriginalBottomOpening(actualDualRows = false))
+            assertEquals(true, singleHorizontalDualCurved.reserveOriginalBottomOpening(actualDualRows = true))
+            assertEquals(true, singleHorizontalDualCurved.copy(horizontalFixedOpening = true)
+                .reserveOriginalBottomOpening(actualDualRows = false))
+
+            val bothCurved = singleHorizontalDualCurved.copy(
+                singleRowDotArrangement = SignalDotArrangement.CURVED,
+            )
+            assertEquals(false, bothCurved.hasHorizontalOuterDots)
+            assertEquals(true, bothCurved.reserveOriginalBottomOpening(actualDualRows = false))
+            assertEquals(true, bothCurved.reserveOriginalBottomOpening(actualDualRows = true))
+        }
+    }
+
+    @Test
     fun outsideRowsUseTheActualRowStyleForGeometryAndOffset() {
         for (dual in listOf(false, true)) {
             for (singleStyle in SignalDotArrangement.entries) {
