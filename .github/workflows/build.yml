@@ -401,6 +401,18 @@ jobs:
               -Pgy.os4.dialogSurfaces=false \
               :app:compileDebugKotlin --no-daemon --max-workers=3 --stacktrace
             echo "::endgroup::"
+
+            # Independent published-binary fallback probe. Do not pass
+            # GITHUB_TOKEN, package credentials, or signing secrets to Gradle
+            # running in this experimental PR. Failure to resolve GitHub
+            # Packages without credentials is an access limitation, not
+            # evidence of Kotlin/ABI incompatibility.
+            echo "::group::PR1179 published MIUIX fallback clean compile"
+            ./gradlew \
+              -Pgy.os4.dialogSurfaces=false \
+              :app:clean :app:compileDebugKotlin \
+              --no-daemon --max-workers=3 --stacktrace
+            echo "::endgroup::"
           fi
 
       - name: Resolve built APK paths
