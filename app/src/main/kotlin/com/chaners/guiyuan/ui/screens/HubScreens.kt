@@ -446,7 +446,9 @@ internal fun FeaturesScreen(
                     (searching && visual.layout != ContentLayout.BATTERY_CENTER &&
                         search.any(R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset)) ||
                     (searching && visual.layout == ContentLayout.BATTERY_CENTER &&
-                        search.matches(R.string.top_info_vertical_offset))) {
+                        search.matches(R.string.top_info_vertical_offset)) ||
+                    (searching && visual.centeredMobileSignal &&
+                        search.matches(R.string.signal_dot_vertical_offset))) {
                     UiDropdownPreference(
                         items = layoutChoices.map { it.second },
                         selectedIndex = layoutChoices.indexOfFirst { it.first == visual.layout },
@@ -468,7 +470,8 @@ internal fun FeaturesScreen(
                 }
                 if (search.matches(R.string.dual_signal_title) ||
                     (searching && !visual.dualSignal &&
-                        search.matches(R.string.signal_dot_vertical_offset))) {
+                        search.any(R.string.dual_row_signal_dot_arrangement_title,
+                            R.string.signal_dot_vertical_offset))) {
                     SwitchPreference(
                         title = stringResource(R.string.dual_signal_title),
                         startAction = {
@@ -502,26 +505,28 @@ internal fun FeaturesScreen(
                         },
                     )
                 }
-                if (visual.dualSignal && search.matches(R.string.dual_row_signal_dot_arrangement_title)) {
-                    UiDropdownPreference(
-                        title = stringResource(R.string.dual_row_signal_dot_arrangement_title),
-                        items = signalDotArrangements,
-                        selectedIndex = visual.dualRowDotArrangement.ordinal,
-                        showValue = true,
-                        enabled = featureCfg.enabled,
-                        startAction = {
-                            SemanticLeadingIcon(
-                                R.drawable.ic_material_symbol_sim_cards,
-                                featureCfg.enabled,
-                                R.drawable.ic_material_symbol_layers,
-                            )
-                        },
-                        onSelectedIndexChange = { index ->
-                            SignalDotArrangement.entries.getOrNull(index)?.let(visualRepo::setDualRowDotArrangement)
-                        },
-                    )
+                AnimatedPreferenceGroup(visible = visual.dualSignal) {
+                    if (search.matches(R.string.dual_row_signal_dot_arrangement_title)) {
+                        UiDropdownPreference(
+                            title = stringResource(R.string.dual_row_signal_dot_arrangement_title),
+                            items = signalDotArrangements,
+                            selectedIndex = visual.dualRowDotArrangement.ordinal,
+                            showValue = true,
+                            enabled = featureCfg.enabled,
+                            startAction = {
+                                SemanticLeadingIcon(
+                                    R.drawable.ic_material_symbol_sim_cards,
+                                    featureCfg.enabled,
+                                    R.drawable.ic_material_symbol_layers,
+                                )
+                            },
+                            onSelectedIndexChange = { index ->
+                                SignalDotArrangement.entries.getOrNull(index)?.let(visualRepo::setDualRowDotArrangement)
+                            },
+                        )
+                    }
                 }
-                if (visual.layout == ContentLayout.BATTERY_CENTER) {
+                AnimatedPreferenceGroup(visible = visual.layout == ContentLayout.BATTERY_CENTER) {
                     if (search.matches(R.string.wifi_vertical_offset)) {
                         SliderPreference(
                             value = visual.wifiOffsetY,
@@ -566,7 +571,8 @@ internal fun FeaturesScreen(
                             enabled = featureCfg.enabled,
                         )
                     }
-                } else {
+                }
+                AnimatedPreferenceGroup(visible = visual.layout != ContentLayout.BATTERY_CENTER) {
                     val topInfoVerticalOffsetUi =
                         topOffsetYUi(
                             visual.topOffsetY,
@@ -594,12 +600,8 @@ internal fun FeaturesScreen(
                         )
                     }
                 }
-                AnimatedPreferenceGroup(
-                    visible = visual.dualSignal || visual.centeredMobileSignal ||
-                        visual.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL,
-                ) {
-                    if (visual.centeredMobileSignal &&
-                        search.matches(R.string.mobile_type_bottom_offset)) {
+                AnimatedPreferenceGroup(visible = visual.centeredMobileSignal) {
+                    if (search.matches(R.string.mobile_type_bottom_offset)) {
                         SliderPreference(
                             value = visual.mobileTypeBottomOffsetY,
                             onValueChange = visualRepo::setMobileTypeBottomOffsetY,
@@ -623,8 +625,13 @@ internal fun FeaturesScreen(
                             magnetThreshold = 0.035f,
                             enabled = featureCfg.enabled,
                         )
-                    } else if ((visual.dualSignal || visual.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL) &&
-                        search.matches(R.string.signal_dot_vertical_offset)) {
+                    }
+                }
+                AnimatedPreferenceGroup(
+                    visible = !visual.centeredMobileSignal &&
+                        (visual.dualSignal || visual.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL),
+                ) {
+                    if (search.matches(R.string.signal_dot_vertical_offset)) {
                         SliderPreference(
                             value = visual.activeSignalDotOffsetY,
                             onValueChange = visualRepo::setSignalDotOffsetY,
