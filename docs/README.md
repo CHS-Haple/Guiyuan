@@ -23,7 +23,7 @@ For ongoing development, read [CONTRIBUTING](../CONTRIBUTING.md) → this index 
 
 ## Maintenance rules
 
-- Do not repeat long history across README, CURRENT, ROADMAP and RELEASE_READINESS. Build-by-build logs belong in commits, PRs or CI.
+- Do not duplicate long histories across README, CURRENT and RELEASE_READINESS. Build-by-build logs belong in commits, PRs or CI.
 - A verified source or host observation takes precedence over stale documentation; update the **owning** document when behavior changes.
 - Keep real dependency attribution and licenses. Keep private ROM binaries, raw logs and local analysis tools out of this public repository.
 - The detailed [OS4 conformance matrix](../third_party/miuix-glass/CONFORMANCE.md) and [UI audit](../third_party/miuix-glass/UI_AUDIT.md) are **historical engineering evidence**, not app-level documentation or a checklist that overrides current source. Use their dated context before reusing an observation.
