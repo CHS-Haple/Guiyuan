@@ -5,6 +5,7 @@ The repository root [README](../README.md) is the **user-facing project homepage
 | Document | Responsibility |
 | --- | --- |
 | [CONTRIBUTING](../CONTRIBUTING.md) | Contribution rules, code review, CI, branching, and device-evidence requirements |
+| [AI coding assistants](../AGENTS.md) | Assistant-only evidence, communications, permissions and verification boundaries |
 | [Current state](development/CURRENT.md) | The accepted runtime architecture, verified constraints and outstanding work (not a build diary) |
 | [Decisions](development/DECISIONS.md) | Stable design decisions and their technical rationale |
 | [Roadmap](development/ROADMAP.md) | Future capabilities and release qualification criteria |
@@ -19,7 +20,7 @@ User-facing policies: [CHANGELOG](../CHANGELOG.md), [TERMS](../TERMS.md), [PRIVA
 
 ## Reading order
 
-For ongoing development, read [CONTRIBUTING](../CONTRIBUTING.md) → this index → [Current state](development/CURRENT.md). Then consult architecture, decisions, release evidence and third-party references as needed. Live repository/CI and verified device evidence override stale text.
+For ongoing development, read [CONTRIBUTING](../CONTRIBUTING.md) → this index → [Current state](development/CURRENT.md). AI assistants additionally read [AGENTS.md](../AGENTS.md). Then consult architecture, decisions, release evidence and third-party references as needed. Live repository/CI and verified device evidence override stale text.
 
 ## Maintenance rules
 
