@@ -250,6 +250,10 @@ internal class VisualRepo(context: Context) {
         ).apply()
     }
 
+    fun setHorizontalFixedOpening(enabled: Boolean) {
+        preferences.edit().putBoolean(activeProfileKey(HORIZONTAL_FIXED_OPENING_KEY), enabled).apply()
+    }
+
     fun setMobileTypeBottomOffsetY(offset: Float) {
         preferences.edit()
             .putFloat(
@@ -690,6 +694,7 @@ internal fun SharedPreferences.readVisualCfg(
         dualSignal = dual,
         dualRowDotArrangement = dualStyle,
         singleRowDotArrangement = singleStyle,
+        horizontalFixedOpening = flag(HORIZONTAL_FIXED_OPENING_KEY, false),
         mobileTypeBottomOffsetY = size(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, mobileTypeBottomOffsetDefault(layout)),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
         centerFollowsBatteryColor = flag(CENTER_FOLLOWS_BATTERY_COLOR_KEY, false),
@@ -785,6 +790,9 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putString(
         visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY, normalized.dualSignal),
         normalized.singleRowDotArrangement.persistedValue,
+    ).putBoolean(
+        visualProfileKey(layout, HORIZONTAL_FIXED_OPENING_KEY, normalized.dualSignal),
+        normalized.horizontalFixedOpening,
     ).putFloat(
         visualProfileKey(layout, MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, normalized.dualSignal),
         normalized.mobileTypeBottomOffsetY,
