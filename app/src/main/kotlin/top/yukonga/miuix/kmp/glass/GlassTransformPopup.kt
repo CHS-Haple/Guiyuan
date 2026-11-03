@@ -58,6 +58,9 @@ class GlassPopupAnchor {
     /** Predictive-back progress published by an attached [GlassDropdownPopup]. */
     internal var dropdownBackProgressState: State<Float>? by mutableStateOf(null)
 
+    /** Keeps the restored value visible after the popup host is disposed. */
+    internal var dropdownRetainedValueAlpha: Float by mutableFloatStateOf(0f)
+
     /**
      * Secondary predictive-back progress, including cancellation recovery and the retained exit
      * fraction. Read inside a draw/layer callback to make custom arrows follow the menu:
@@ -108,7 +111,7 @@ class GlassPopupAnchor {
 
     /** The displayed value reappears with the dropdown as it travels home. */
     internal val dropdownValueAlpha: Float
-        get() = dropdownBackProgressState?.value?.coerceIn(0f, 1f) ?: 0f
+        get() = (dropdownBackProgressState?.value ?: dropdownRetainedValueAlpha).coerceIn(0f, 1f)
 }
 
 /** The button's sampling and colour treatment at the collapsed endpoint of its menu. */
@@ -421,7 +424,7 @@ fun BoxScope.GlassTransformPopup(
         },
         contentLayer = { end, _ ->
             val width = startRect.width + (end.width - startRect.width) * geometryProgress()
-            val scale = if (end.width > 0f) (width / end.width).coerceAtMost(1f) else 1f
+            val scale = if (end.width > 0f) (width / end.width).coerceAtLeast(0f) else 1f
             scaleX = scale
             scaleY = scale
             val fraction = popupFractionWithBack(contentMaterial.value, backProgress.value)

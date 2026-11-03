@@ -247,10 +247,6 @@ internal fun GlassPopupSurface(
             GlassPopupColumn(
                 modifier = Modifier
                     .then(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                    .graphicsLayer {
-                        transformOrigin = TransformOrigin(0f, 0f)
-                        contentLayer(measured.end, measured.rect)
-                    }
                     .padding(contentPadding),
                 content = content,
             )
@@ -281,7 +277,13 @@ internal fun GlassPopupSurface(
         val background = measurables[0].measure(Constraints.fixed(panelWidth, panelHeight))
         layout(panelWidth, panelHeight) {
             background.place(0, 0)
-            foreground.place(0, 0)
+            foreground.placeWithLayer(0, 0) {
+                transformOrigin = TransformOrigin(0f, 0f)
+                contentLayer(measured.end, measured.rect)
+                // Preserve the frame's subpixel origin without changing the measured viewport.
+                translationX = measured.rect.left - measured.rect.left.roundToInt()
+                translationY = measured.rect.top - measured.rect.top.roundToInt()
+            }
         }
     }
 }
