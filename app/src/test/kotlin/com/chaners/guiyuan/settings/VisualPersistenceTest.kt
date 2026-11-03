@@ -95,7 +95,7 @@ class VisualPersistenceTest {
         val original = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
         assertEquals(4f, original.curvedSignalDotOffsetY, 0f)
         assertEquals(-7f, original.horizontalSignalDotOffsetY, 0f)
-        assertEquals(0f, prefs.readVisualCfg(dual = false).activeSignalDotOffsetY, 0f)
+        assertEquals(4f, prefs.readVisualCfg(dual = false).activeSignalDotOffsetY, 0f)
     }
 
     @Test
@@ -133,7 +133,7 @@ class VisualPersistenceTest {
             dual = true,
             layoutOverride = ContentLayout.NETWORK_CENTER,
         ).horizontalSignalDotOffsetY, 0f)
-        assertEquals(2f, prefs.readVisualCfg(
+        assertEquals(-6f, prefs.readVisualCfg(
             dual = false,
             layoutOverride = ContentLayout.BATTERY_CENTER,
         ).horizontalSignalDotOffsetY, 0f)
@@ -147,7 +147,7 @@ class VisualPersistenceTest {
         prefs.writeSignalDotOffsetY(4f)
         val batterySingle = prefs.readVisualCfg()
         assertEquals(4f, batterySingle.activeSignalDotOffsetY, 0f)
-        assertEquals(2f, batterySingle.horizontalSignalDotOffsetY, 0f)
+        assertEquals(-6f, batterySingle.horizontalSignalDotOffsetY, 0f)
         assertEquals(-6f, prefs.readVisualCfg(dual = true).horizontalSignalDotOffsetY, 0f)
 
         // Switching back to the other layout cannot overwrite the battery bank.
@@ -228,20 +228,13 @@ class VisualPersistenceTest {
         prefs.edit().putVisualCfg(dual).apply()
 
         assertEquals(dual.normalized(), prefs.readVisualCfg(dual = true))
-        assertEquals(
-            single.copy(
-                batteryColorPreset = dual.batteryColorPreset,
-                batteryColorModes = dual.batteryColorModes,
-                batteryColorOverrides = dual.batteryColorOverrides,
-            ).normalized(),
-            prefs.readVisualCfg(dual = false),
-        )
+        assertEquals(dual.normalized().copy(dualSignal = false), prefs.readVisualCfg(dual = false))
         assertEquals(ContentLayout.BATTERY_CENTER, prefs.readLayout())
         assertFalse(prefs.all.keys.any { it.startsWith("dual.battery_color_") })
 
         prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false).apply()
         assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg().batteryColorPreset)
-        assertEquals(0.9f, prefs.readVisualCfg().combinedScale, 0.001f)
+        assertEquals(1f, prefs.readVisualCfg().combinedScale, 0.001f)
         prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, true).apply()
         assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg().batteryColorPreset)
         assertEquals(1f, prefs.readVisualCfg().combinedScale, 0.001f)
@@ -267,7 +260,7 @@ class VisualPersistenceTest {
 
         local.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false).apply()
         remote.edit().putVisualCfg(local.readVisualCfg()).apply()
-        assertEquals(0.8f, remote.readVisualCfg().combinedScale, 0.001f)
+        assertEquals(1f, remote.readVisualCfg().combinedScale, 0.001f)
         assertEquals(BatteryColorPreset.IOS_STYLE, remote.readVisualCfg().batteryColorPreset)
         assertEquals(BatteryColorPreset.IOS_STYLE, remote.readVisualCfg(dual = true).batteryColorPreset)
 
@@ -286,8 +279,8 @@ class VisualPersistenceTest {
             .putString(BATTERY_COLOR_PRESET_KEY, BatteryColorPreset.IOS_STYLE.persistedValue)
             .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
             .apply()
-        assertEquals(COMBINED_SCALE_DEFAULT, prefs.readVisualCfg().combinedScale, 0.0001f)
-        assertEquals(0f, prefs.readVisualCfg().wifiOffsetY, 0f)
+        assertEquals(0.75f, prefs.readVisualCfg().combinedScale, 0.0001f)
+        assertEquals(-3f, prefs.readVisualCfg().wifiOffsetY, 0f)
         assertEquals(-3f, prefs.readVisualCfg(dual = false).wifiOffsetY, 0f)
         assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg().batteryColorPreset)
         assertEquals(0.75f, prefs.readVisualCfg(dual = false).combinedScale, 0.0001f)
@@ -423,7 +416,7 @@ class VisualPersistenceTest {
 
         assertEquals(BatteryColorPreset.RECOMMENDED, prefs.readVisualCfg(dual = false).batteryColorPreset)
         assertEquals(BatteryColorPreset.RECOMMENDED, prefs.readVisualCfg(dual = true).batteryColorPreset)
-        assertEquals(0.8f, prefs.readVisualCfg(dual = false).combinedScale, 0.001f)
+        assertEquals(1f, prefs.readVisualCfg(dual = false).combinedScale, 0.001f)
         assertEquals(1f, prefs.readVisualCfg(dual = true).combinedScale, 0.001f)
     }
 
@@ -486,7 +479,7 @@ class VisualPersistenceTest {
         migrateSignalDotArrangementsIfNeeded(prefs)
         for (layout in ContentLayout.entries) {
             assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg(false, layout).dualRowDotArrangement)
-            assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(true, layout).dualRowDotArrangement)
+            assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg(true, layout).dualRowDotArrangement)
         }
         assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
         assertFalse(prefs.contains(visualModeKey(false, LEGACY_DUAL_DOT_STYLE_KEY)))
@@ -538,7 +531,7 @@ class VisualPersistenceTest {
                 ))
             }
             assertEquals(
-                SignalDotArrangement.HORIZONTAL,
+                if (activeDual) SignalDotArrangement.HORIZONTAL else SignalDotArrangement.CURVED,
                 prefs.readVisualCfg(true, layout).dualRowDotArrangement,
             )
             assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
@@ -598,12 +591,50 @@ class VisualPersistenceTest {
                 dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
             ),
         ).apply()
-        assertEquals(2f, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).mobileTypeBottomOffsetY, 0f)
+        assertEquals(-7f, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).mobileTypeBottomOffsetY, 0f)
         assertEquals(-7f, prefs.readVisualCfg(true, ContentLayout.MOBILE_CENTER).mobileTypeBottomOffsetY, 0f)
-        assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).dualRowDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).dualRowDotArrangement)
         assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(true, ContentLayout.MOBILE_CENTER).dualRowDotArrangement)
     }
 
+
+    @Test
+    fun migratedLayoutsKeepVisibleDualValuesAndShareAcrossSimSwitches() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.MOBILE_CENTER
+        val shared = visualProfileKey(layout, WIFI_SIZE_SCALE_KEY)
+        val legacyDual = visualModeKey(true, shared)
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putFloat(shared, 0.72f)
+            .putFloat(legacyDual, 1.18f)
+            .putString(CONTENT_LAYOUT_KEY, layout.persistedValue)
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
+            .apply()
+        migrateSharedLayoutVisualsIfNeeded(prefs)
+        assertEquals(1.18f, prefs.readVisualCfg(dual = true).wifiScale, 0f)
+        assertEquals(1.18f, prefs.readVisualCfg(dual = false).wifiScale, 0f)
+        assertFalse(prefs.contains(legacyDual))
+        val snapshot = prefs.all.toMap()
+        migrateSharedLayoutVisualsIfNeeded(prefs)
+        assertEquals(snapshot, prefs.all)
+    }
+
+    @Test
+    fun migratingSingleModeDoesNotOverwriteItsSavedLayoutValues() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.BATTERY_CENTER
+        val shared = visualProfileKey(layout, WIFI_VERTICAL_OFFSET_KEY)
+        prefs.edit()
+            .putFloat(shared, -4f)
+            .putFloat(visualModeKey(true, shared), 7f)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
+            .apply()
+        migrateSharedLayoutVisualsIfNeeded(prefs)
+        assertEquals(-4f, prefs.readVisualCfg(false, layout).wifiOffsetY, 0f)
+        assertEquals(-4f, prefs.readVisualCfg(true, layout).wifiOffsetY, 0f)
+    }
 
     private class MemoryPreferences : SharedPreferences {
         private val values = mutableMapOf<String, Any>()
