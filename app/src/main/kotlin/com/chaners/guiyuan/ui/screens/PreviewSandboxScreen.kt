@@ -189,6 +189,7 @@ internal fun PreviewSandboxScreen(
             stringResource(R.string.home_preview_wifi_connected),
             stringResource(R.string.home_preview_wifi_no_internet),
             stringResource(R.string.home_preview_wifi_hotspot),
+            stringResource(R.string.home_preview_wifi_dual_acceleration),
         )
     val batteryModeOptions =
         listOf(
@@ -539,15 +540,21 @@ internal fun PreviewSandboxScreen(
                             )
                         }
                         AnimatedPreferenceGroup(visible = state.networkMode == PreviewNetworkMode.WIFI) {
-                            SandboxSegmentedField(
+                            UiDropdownPreference(
                                 title = stringResource(R.string.home_preview_wifi_state_title),
-                                iconRes = R.drawable.ic_material_symbol_wifi,
-                                detailRes = R.drawable.ic_material_symbol_swap_horiz,
-                                options = wifiOptions,
-                                selectedIndex = state.wifiState.ordinal,
-                                onSelected = { index ->
-                                    onWifiStateChange(PreviewWifiState.entries[index])
+                                startAction = {
+                                    SemanticLeadingIcon(
+                                        iconRes = R.drawable.ic_material_symbol_wifi,
+                                        detailRes = R.drawable.ic_material_symbol_swap_horiz,
+                                    )
                                 },
+                                items = wifiOptions,
+                                selectedIndex = state.wifiState.ordinal,
+                                onSelectedIndexChange = { index ->
+                                    PreviewWifiState.entries.getOrNull(index)?.let(onWifiStateChange)
+                                },
+                                insideMargin = SandboxPreferenceInsideMargin,
+                                maxHeight = 280.dp,
                                 modifier = Modifier.padding(top = 4.dp),
                             )
                             SliderPreference(
