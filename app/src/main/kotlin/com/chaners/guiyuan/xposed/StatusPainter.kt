@@ -1678,11 +1678,9 @@ internal class StatusPainter(
                     previousCenterIndicator is CenterIndicator.MobileType)
             ) BATTERY_BOTTOM_RING_VISUAL_CLEARANCE else BATTERY_TOP_RING_VISUAL_CLEARANCE,
         )
-        val curvedBottom = if (model.dualMobileLevels != null) {
-            visual.dualRowDotArrangement == SignalDotArrangement.CURVED
-        } else {
-            visual.singleRowDotArrangement == SignalDotArrangement.CURVED
-        }
+        val reserveOriginalOpening = visual.reserveOriginalBottomOpening(
+            actualDualRows = model.dualMobileLevels != null,
+        )
         val centeredNow = visual.centeredMobileSignal &&
             model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
         // No previous frame means this is already the stable presentation, not
@@ -1694,7 +1692,7 @@ internal class StatusPainter(
             topHalfDegrees = topHalf,
             bottomHalfDegrees = BatteryTopArcPolicy.autoBottomHalfGap(
                 measuredHalf = bottomHalf,
-                curvedBottom = curvedBottom,
+                reserveOriginalOpening = reserveOriginalOpening,
                 centeredBefore = centeredBefore,
                 centeredNow = centeredNow,
                 motion = centerEnterAmount,
