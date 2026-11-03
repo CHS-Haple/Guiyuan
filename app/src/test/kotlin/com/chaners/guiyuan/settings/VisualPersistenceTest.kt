@@ -676,6 +676,37 @@ class VisualPersistenceTest {
         assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
     }
 
+    @Test
+    fun preV4DualDotStyleIsRetainedWhenFlatteningOldProfiles() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.MOBILE_CENTER
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3)
+            .putString(
+                visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY),
+                SignalDotArrangement.HORIZONTAL.persistedValue,
+            )
+            .putBoolean(
+                visualModeKey(true, visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)),
+                true,
+            )
+            .apply()
+
+        migrateVisualPrefsIfNeeded(prefs)
+        val migrated = prefs.readVisualCfg(dual = true, layoutOverride = layout)
+        assertEquals(SignalDotArrangement.HORIZONTAL, migrated.singleRowDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, migrated.dualRowDotArrangement)
+        assertEquals(
+            migrated.copy(dualSignal = false),
+            prefs.readVisualCfg(dual = false, layoutOverride = layout),
+        )
+        assertFalse(prefs.contains(visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY)))
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
+    }
+
     private class MemoryPreferences : SharedPreferences {
         private val values = mutableMapOf<String, Any>()
 

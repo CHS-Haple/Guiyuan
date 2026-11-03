@@ -577,14 +577,14 @@ internal fun SharedPreferences.readLayout(): ContentLayout =
 internal fun visualProfileKey(
     layout: ContentLayout,
     baseKey: String,
-    dual: Boolean = false,
+    @Suppress("UNUSED_PARAMETER") dual: Boolean = false,
 ): String = layout.persistedValue + "." + baseKey
 
 private fun SharedPreferences.profileBoolean(
     layout: ContentLayout,
     baseKey: String,
     defaultValue: Boolean,
-    dual: Boolean,
+    @Suppress("UNUSED_PARAMETER") dual: Boolean,
 ): Boolean {
     val profileKey = visualProfileKey(layout, baseKey, dual)
     return if (contains(profileKey)) {
@@ -598,7 +598,7 @@ private fun SharedPreferences.profileFloat(
     layout: ContentLayout,
     baseKey: String,
     defaultValue: Float,
-    dual: Boolean,
+    @Suppress("UNUSED_PARAMETER") dual: Boolean,
 ): Float {
     val profileKey = visualProfileKey(layout, baseKey, dual)
     return if (contains(profileKey)) {
@@ -612,7 +612,7 @@ private fun SharedPreferences.profileInt(
     layout: ContentLayout,
     baseKey: String,
     defaultValue: Int,
-    dual: Boolean,
+    @Suppress("UNUSED_PARAMETER") dual: Boolean,
 ): Int {
     val profileKey = visualProfileKey(layout, baseKey, dual)
     return if (contains(profileKey)) {
@@ -626,7 +626,7 @@ private fun SharedPreferences.profileString(
     layout: ContentLayout,
     baseKey: String,
     defaultValue: String?,
-    dual: Boolean,
+    @Suppress("UNUSED_PARAMETER") dual: Boolean,
 ): String? {
     val profileKey = visualProfileKey(layout, baseKey, dual)
     return if (contains(profileKey)) getString(profileKey, defaultValue)
