@@ -9,7 +9,7 @@ The repository root [README](../README.md) is the **user-facing project homepage
 | [Current state](development/CURRENT.md) | The accepted runtime architecture, verified constraints and outstanding work (not a build diary) |
 | [Decisions](development/DECISIONS.md) | Stable design decisions and their technical rationale |
 | [Roadmap](development/ROADMAP.md) | Future capabilities and release qualification criteria |
-| [Release readiness](development/RELEASE_READINESS.md) | Bounded evidence, release gates, sign-off and remaining checks |
+| [Historical 1.0.0 qualification](development/RELEASE_READINESS.md) | Dated first-release evidence, historical gates and original sign-off scope; not a current release checklist |
 | [Architecture](architecture/README.md) | Runtime ownership, layout, scene, and native fallback contracts |
 | [UI iconography](architecture/ui-iconography.md) | Current settings-row icon semantics, weight and optical geometry |
 | [SystemUI reference](reference/systemui-contracts.md) | Public and reusable host contracts; sensitive binary analysis remains private |

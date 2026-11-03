@@ -26,4 +26,5 @@ For AI coding assistants working on Guiyuan. This file supplements [CONTRIBUTING
 
 - Keep durable decisions in DECISIONS, current accepted limits in CURRENT, architecture contracts in architecture/reference, and patch/test evidence in PRs and CI. Do not duplicate historical checklists across permanent documents.
 - Preserve actual third-party copyright notices and licenses; do not expose private data or claim an external maintainer's approval without evidence.
+- Do not apply ordinary UI copy-shortening or semicolon-avoidance preferences to formal privacy and terms documents. Preserve necessary legal precision; compare the actual in-app and public policy text when editing.
 - AI instructions never relax the common root-cause, lifecycle, single-writer, fail-native, review, signing and security rules.

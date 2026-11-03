@@ -56,11 +56,11 @@ For a new SystemUI target:
 
 Compatibility expansion must not weaken the current target's ownership and restoration contracts.
 
-## 1.0.0 qualification
+## First stable-release qualification (historical)
 
 1.0.0 advertises **HyperOS 4 only**; the OS3 UI-style setting does not imply support for HyperOS 3. Broader ROM/SystemUI compatibility requires separate evidence.
 
-Before the first formal release:
+These criteria were recorded before the first formal release. Their presence is not a claim that every path was independently verified:
 
 - define and document the supported SystemUI/device scope;
 - close acceptance for the advertised Home, Keyguard, AOD and Control Center transition surfaces;
@@ -70,7 +70,7 @@ Before the first formal release:
 - confirm README, privacy, security, support, third-party notices and changelog are release-ready;
 - complete a final runtime, maintainability and release-workflow review.
 
-1.0.0 remains an explicit maintainer decision.
+Stable `v1.0.0` (B1716) was published on 2026-11-02. This is a historical first-release checklist, not a current unresolved release gate. Future promotions must use current source and CI evidence.
 
 ## Permanent guardrails
 
