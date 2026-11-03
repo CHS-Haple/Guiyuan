@@ -65,7 +65,7 @@ internal fun migrateSignalDotArrangementsIfNeeded(prefs: SharedPreferences) {
     val activeDual = prefs.getBoolean(DUAL_SIGNAL_ENABLED_KEY, false) &&
         prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false)
     fun oldDualStyle(layout: ContentLayout, dual: Boolean): SignalDotArrangement {
-        val key = visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, dual)
+        val key = visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, dual)
         val oldKey = visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY)
         return SignalDotArrangement.fromPersisted(
             if (prefs.contains(key)) prefs.getString(key, null) else prefs.getString(oldKey, null),
@@ -85,7 +85,7 @@ internal fun migrateSignalDotArrangementsIfNeeded(prefs: SharedPreferences) {
             SignalDotArrangement.CURVED
         }
         for (dual in listOf(false, true)) {
-            val dualKey = visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, dual)
+            val dualKey = visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, dual)
             if (!prefs.contains(dualKey)) {
                 editor.putString(dualKey, oldDualStyle(layout, dual).persistedValue)
             }
@@ -99,7 +99,7 @@ internal fun migrateSignalDotArrangementsIfNeeded(prefs: SharedPreferences) {
     for (dual in listOf(false, true)) {
         editor.remove(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY))
     }
-    editor.remove(SIGNAL_DOT_ARRANGEMENT_KEY)
+    editor.remove(DUAL_ROW_DOT_ARRANGEMENT_KEY)
         .remove(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)
         .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
         .apply()
@@ -181,7 +181,7 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setDualRowDotArrangement(style: SignalDotArrangement) {
-        preferences.edit().putString(activeProfileKey(SIGNAL_DOT_ARRANGEMENT_KEY), style.persistedValue).apply()
+        preferences.edit().putString(activeProfileKey(DUAL_ROW_DOT_ARRANGEMENT_KEY), style.persistedValue).apply()
     }
 
     fun setSingleRowDotArrangement(style: SignalDotArrangement) {
@@ -621,7 +621,7 @@ internal fun SharedPreferences.readVisualCfg(
         if (layout == ContentLayout.BATTERY_CENTER) topOffsetYUi(topOffset) else 0f
 
     val dualStyle = SignalDotArrangement.fromPersisted(
-        profileString(layout, SIGNAL_DOT_ARRANGEMENT_KEY, null, dual)
+        profileString(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, null, dual)
             ?: getString(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY), null),
     )
     val singleStyle = profileString(layout, SINGLE_ROW_DOT_STYLE_KEY, null, dual)
@@ -728,7 +728,7 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         CONTENT_LAYOUT_KEY,
         layout.persistedValue,
     ).putString(
-        visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, normalized.dualSignal),
+        visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, normalized.dualSignal),
         normalized.dualRowDotArrangement.persistedValue,
     ).putString(
         visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY, normalized.dualSignal),

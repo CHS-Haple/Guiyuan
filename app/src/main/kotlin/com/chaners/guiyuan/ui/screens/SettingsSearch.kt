@@ -239,9 +239,9 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
         "排列", "网络居中", "网络信息居中", "电量居中",
         "移动信号居中", "信号强度居中", "信号点居中", "网络制式下方", "三种布局",
     )
-    R.string.dual_signal_title -> listOf("双卡", "双 SIM", "双卡信号点", "双排信号", "单卡显示")
+    R.string.dual_signal_title -> listOf("双卡", "双 SIM", "双卡信号点", "双排信号", "双排信号点", "单卡显示")
     R.string.single_row_signal_dot_arrangement_title -> listOf(
-        "单排信号", "单卡信号点", "单SIM", "单排样式", "弧形排列", "横向排列",
+        "单排信号", "单排信号点", "单卡信号点", "单SIM", "单排样式", "弧形排列", "横向排列",
         "Single row signal", "Single-row dots", "Curved arrangement", "Horizontal arrangement",
     )
     R.string.dual_row_signal_dot_arrangement_title -> listOf(

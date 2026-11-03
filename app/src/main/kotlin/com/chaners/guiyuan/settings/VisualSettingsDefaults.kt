@@ -5,7 +5,7 @@ internal const val COMBINED_STATUS_VISUAL_PREFS_NAME = "combined_status_visual"
 internal const val CONTENT_LAYOUT_KEY = "content_layout"
 internal const val DUAL_SIGNAL_ENABLED_KEY = "dual_signal_enabled"
 internal const val DUAL_PROFILES_INITIALIZED_KEY = "dual_profiles_initialized"
-internal const val SIGNAL_DOT_ARRANGEMENT_KEY = "content_style"
+internal const val DUAL_ROW_DOT_ARRANGEMENT_KEY = "content_style"
 internal const val SINGLE_ROW_DOT_STYLE_KEY = "single_row_dot_style"
 internal const val LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY = "single_row_flat_dots"
 // v1.0.0 released key, consumed once when introducing three layout profiles.
@@ -76,7 +76,7 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         BATTERY_TOP_VERTICAL_OFFSET_KEY,
         WIFI_VERTICAL_OFFSET_KEY,
         MOBILE_TYPE_VERTICAL_OFFSET_KEY,
-        SIGNAL_DOT_ARRANGEMENT_KEY,
+        DUAL_ROW_DOT_ARRANGEMENT_KEY,
         SINGLE_ROW_DOT_STYLE_KEY,
         MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
         CURVED_SIGNAL_DOT_OFFSET_Y_KEY,

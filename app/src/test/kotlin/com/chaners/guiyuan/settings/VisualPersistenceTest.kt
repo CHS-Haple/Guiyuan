@@ -121,7 +121,7 @@ class VisualPersistenceTest {
             .putString(CONTENT_LAYOUT_KEY, ContentLayout.BATTERY_CENTER.persistedValue)
             .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
             .apply()
-        assertFalse(prefs.contains(SIGNAL_DOT_ARRANGEMENT_KEY))
+        assertFalse(prefs.contains(DUAL_ROW_DOT_ARRANGEMENT_KEY))
         assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg().dualRowDotArrangement)
         prefs.writeSignalDotOffsetY(-6f)
 
@@ -499,7 +499,7 @@ class VisualPersistenceTest {
     @Test
     fun legacySingleRowPreferenceWorksBeforeAppMigration() {
         val prefs = MemoryPreferences()
-        val key = visualProfileKey(ContentLayout.NETWORK_CENTER, SIGNAL_DOT_ARRANGEMENT_KEY, true)
+        val key = visualProfileKey(ContentLayout.NETWORK_CENTER, DUAL_ROW_DOT_ARRANGEMENT_KEY, true)
         val flat = visualProfileKey(ContentLayout.NETWORK_CENTER, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, true)
         prefs.edit().putString(key, SignalDotArrangement.HORIZONTAL.persistedValue)
             .putBoolean(flat, true).apply()
@@ -522,7 +522,7 @@ class VisualPersistenceTest {
                 .putBoolean(DUAL_SIGNAL_ENABLED_KEY, activeDual)
                 .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
                 .putString(
-                    visualProfileKey(layout, SIGNAL_DOT_ARRANGEMENT_KEY, true),
+                    visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, true),
                     SignalDotArrangement.HORIZONTAL.persistedValue,
                 )
                 .putBoolean(

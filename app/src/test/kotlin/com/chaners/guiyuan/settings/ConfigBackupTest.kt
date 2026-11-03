@@ -108,7 +108,7 @@ class ConfigBackupTest {
                 "\"singleRowFlatDots\":true,\"singleRowDotStyle\":\"DUO\"",
             ))
         }
-        val curved = old.replaceFirst("\"singleRowFlatDots\":true", "\"singleRowFlatDots\":false")
+        val curved = old.replace("\"singleRowFlatDots\":true", "\"singleRowFlatDots\":false")
         assertEquals(SignalDotArrangement.CURVED, ConfigBackupFormat.decode(curved).visual.profiles.first().singleRowDotArrangement)
         val invalid = old.replaceFirst("\"singleRowFlatDots\":true", "\"singleRowFlatDots\":\"true\"")
         assertThrows(IllegalArgumentException::class.java) { ConfigBackupFormat.decode(invalid) }
