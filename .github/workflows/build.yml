@@ -388,6 +388,21 @@ jobs:
             -Pgy.os4.dialogSurfaces=true \
             "${TASKS[@]}" --no-daemon --max-workers=3 --stacktrace
 
+          # TEMPORARY qualification for PR #1179 only.
+          # Check legacy OS4 fallback source-set compilation against the SAME pinned
+          # composite source graph, not against historical published Maven artifacts.
+          # Remove this before any integration of the experimental PR.
+          if [[ "${{ github.event_name }}" == "pull_request" &&
+                "${{ github.event.pull_request.number }}" == "1179" ]]; then
+            echo "::group::PR1179 matched-source legacy OS4 fallback compilation"
+            ./gradlew \
+              -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
+              -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
+              -Pgy.os4.dialogSurfaces=false \
+              :app:compileDebugKotlin --no-daemon --max-workers=3 --stacktrace
+            echo "::endgroup::"
+          fi
+
       - name: Resolve built APK paths
         if: steps.scope.outputs.run_android == 'true'
         shell: bash
