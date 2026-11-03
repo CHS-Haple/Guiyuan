@@ -1,6 +1,5 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
-// Guiyuan modification (2026): locally adapted source; see third_party/miuix-glass/README.md.
 
 @file:Suppress("ktlint:compose:multiple-emitters-check")
 
