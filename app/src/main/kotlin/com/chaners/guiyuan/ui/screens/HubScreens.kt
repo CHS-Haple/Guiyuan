@@ -489,7 +489,7 @@ internal fun FeaturesScreen(
                 if (search.matches(R.string.single_row_signal_dot_arrangement_title)) {
                     UiDropdownPreference(
                         title = stringResource(R.string.single_row_signal_dot_arrangement_title),
-                        summary = stringResource(R.string.single_row_signal_dot_arrangement_summary),
+                        summary = stringResource(R.string.outer_signal_dots_only_summary),
                         items = signalDotArrangements,
                         selectedIndex = visual.singleRowDotArrangement.ordinal,
                         showValue = true,
@@ -510,7 +510,7 @@ internal fun FeaturesScreen(
                     if (search.matches(R.string.dual_row_signal_dot_arrangement_title)) {
                         UiDropdownPreference(
                             title = stringResource(R.string.dual_row_signal_dot_arrangement_title),
-                            summary = stringResource(R.string.dual_row_signal_dot_arrangement_summary),
+                            summary = stringResource(R.string.outer_signal_dots_only_summary),
                             items = signalDotArrangements,
                             selectedIndex = visual.dualRowDotArrangement.ordinal,
                             showValue = true,
@@ -630,14 +630,14 @@ internal fun FeaturesScreen(
                     }
                 }
                 AnimatedPreferenceGroup(
-                    visible = !visual.centeredMobileSignal &&
-                        (visual.dualSignal || visual.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL),
+                    visible = visual.dualSignal || visual.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL,
                 ) {
                     if (search.matches(R.string.signal_dot_vertical_offset)) {
                         SliderPreference(
                             value = visual.activeSignalDotOffsetY,
                             onValueChange = visualRepo::setSignalDotOffsetY,
                             title = stringResource(R.string.signal_dot_vertical_offset),
+                            summary = stringResource(R.string.outer_signal_dots_only_summary),
                             startAction = {
                                 SemanticLeadingIcon(
                                     R.drawable.ic_material_symbol_signal_cellular_alt,
