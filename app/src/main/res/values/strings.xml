@@ -16,8 +16,8 @@
     <string name="dual_signal_summary">Show two signal-dot rows when both SIM cards are detected</string>
     <string name="single_row_signal_dot_arrangement_title">Single-row signal dot arrangement</string>
     <string name="dual_row_signal_dot_arrangement_title">Dual-row signal dot arrangement</string>
-    <string name="single_row_signal_dot_arrangement_summary">Only outer dots change; centered dots stay horizontal</string>
-    <string name="dual_row_signal_dot_arrangement_summary">Saved separately from the single-row style</string>
+    <string name="single_row_signal_dot_arrangement_summary">Only applies to outer signal dots</string>
+    <string name="dual_row_signal_dot_arrangement_summary">Only applies to outer signal dots</string>
     <string name="mobile_type_bottom_offset">Network type vertical offset</string>
     <string name="signal_dot_arrangement_curved">Curved arrangement</string>
     <string name="signal_dot_arrangement_horizontal">Horizontal arrangement</string>
