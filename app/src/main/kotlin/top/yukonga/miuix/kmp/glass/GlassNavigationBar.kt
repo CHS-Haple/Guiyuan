@@ -1,6 +1,6 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
-// Guiyuan modification (2026): preview interactivity and bottom hit-area extension.
+// Modified from upstream (2026): preview interactivity and bottom hit-area extension.
 
 package top.yukonga.miuix.kmp.glass
 

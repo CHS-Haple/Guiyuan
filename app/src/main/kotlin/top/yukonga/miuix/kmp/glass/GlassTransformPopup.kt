@@ -1,6 +1,6 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
-// Guiyuan modification (2026): popup interaction and transform integration.
+// Modified from upstream (2026): popup interaction and transform integration.
 
 package top.yukonga.miuix.kmp.glass
 
