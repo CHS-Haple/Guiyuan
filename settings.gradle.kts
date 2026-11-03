@@ -59,8 +59,8 @@ include(":app")
 // Opt-in source-matched OS4 graph. The default app still uses published MIUIX packages.
 providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.let { source ->
     val miuix = file(source)
-    // A complete checkout is required even though Glass remains an app-local bridge.
-    // This does not enable native miuix-glass(-icons) dependencies or certify API parity.
+    // Native Glass Icons are source-substituted, while Glass UI remains app-local.
+    // This checks checkout completeness, not UI/API parity or published availability.
     val requiredSourceModules = listOf(
         "miuix-core",
         "miuix-ui",
