@@ -2,9 +2,9 @@
 
 # 归元 · Guiyuan
 
-**为 HyperOS 4 打造的一体化状态栏图标**
+**A unified battery, cellular and Wi-Fi indicator for HyperOS 4.**
 
-*A unified battery, cellular and Wi-Fi indicator for HyperOS 4.*
+*为 HyperOS 4 打造的一体化状态栏图标。*
 
 [![Release](https://img.shields.io/github/v/release/CHS-Haple/Guiyuan?label=release)](https://github.com/CHS-Haple/Guiyuan/releases)
 [![Build](https://github.com/CHS-Haple/Guiyuan/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/CHS-Haple/Guiyuan/actions/workflows/build.yml)
@@ -12,9 +12,50 @@
 ![Modern Xposed API](https://img.shields.io/badge/Modern%20Xposed%20API-102-5965BB)
 [![GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-238636)](LICENSE)
 
-[简体中文](#简体中文) · [English](#english) · [Releases](https://github.com/CHS-Haple/Guiyuan/releases) · [Issues](https://github.com/CHS-Haple/Guiyuan/issues)
+[English](#english) · [简体中文](#简体中文) · [Releases](https://github.com/CHS-Haple/Guiyuan/releases) · [Issues](https://github.com/CHS-Haple/Guiyuan/issues)
 
 </div>
+
+---
+
+## English
+
+Guiyuan is an open-source LSPosed module for **Xiaomi HyperOS 4**, combining battery, cellular and Wi-Fi status into one compact indicator with a configurable companion app.
+
+### Features
+
+- **Unified status indicator:** battery, cellular and Wi-Fi presentation, with configurable layout, colors, weight and positioning.
+- **Native-aware scenes:** verified Home, optional Keyguard and AOD integration, with SystemUI-owned Control Center handoffs and safe native fallback.
+- **Connectivity and dual SIM:** optional dual-row presentation and network-state handling when trustworthy native information is available.
+- **Configuration and diagnostics:** MIUIX settings, preview sandbox, backup/restore, on-demand diagnostics and Hot Reload.
+
+### Compatibility
+
+| Area | Policy |
+| --- | --- |
+| **Supported OS family** | **Xiaomi HyperOS 4 only** |
+| Module framework | LSPosed with Modern Xposed API 102; alternative frameworks are not verified |
+| Device-tested baseline | Xiaomi 15 Pro, HyperOS `OS4.0.0.19.XOBCNXM`, SystemUI `17.03.260226.r` |
+| Module scope | SystemUI; Settings is optional for its integration shortcut |
+| Root | Not mandatory for ordinary companion-app settings; some diagnostics and process-maintenance actions require Root |
+
+**HyperOS 4 support does not mean every HyperOS 4 device or SystemUI build has been tested.** Unsupported or ambiguous hosts should retain native presentation. The in-app “OS3” option is a **visual style**, not an assertion of HyperOS 3 runtime compatibility.
+
+### Installation
+
+1. Download the signed APK from [Releases](https://github.com/CHS-Haple/Guiyuan/releases).
+2. Enable Guiyuan in a compatible LSPosed manager and authorize the **SystemUI** scope.
+3. Restart the relevant system process as required by your framework, then complete the first-run guide.
+4. Configure the indicator in the companion app; grant Root only for optional maintenance operations.
+
+Back up your settings before major upgrades. If SystemUI becomes unstable, disable the module in the framework manager to restore native behavior.
+
+### Community and documentation
+
+Report ordinary bugs or requests through [Issues](https://github.com/CHS-Haple/Guiyuan/issues). Keep private logs and security details out of public discussions; use [private vulnerability reporting](https://github.com/CHS-Haple/Guiyuan/security/advisories/new) for security concerns.
+
+[Changelog](CHANGELOG.md) · [Terms](TERMS.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [Developer docs](docs/README.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
+
 
 ---
 
@@ -58,46 +99,6 @@
 
 ---
 
-## English
-
-Guiyuan is an open-source LSPosed module for **Xiaomi HyperOS 4**, combining battery, cellular and Wi-Fi status into one compact indicator with a configurable companion app.
-
-### Features
-
-- **Unified status indicator:** battery, cellular and Wi-Fi presentation, with configurable layout, colors, weight and positioning.
-- **Native-aware scenes:** verified Home, optional Keyguard and AOD integration, with SystemUI-owned Control Center handoffs and safe native fallback.
-- **Connectivity and dual SIM:** optional dual-row presentation and network-state handling when trustworthy native information is available.
-- **Configuration and diagnostics:** MIUIX settings, preview sandbox, backup/restore, on-demand diagnostics and Hot Reload.
-
-### Compatibility
-
-| Area | Policy |
-| --- | --- |
-| **Supported OS family** | **Xiaomi HyperOS 4 only** |
-| Module framework | LSPosed with Modern Xposed API 102; alternative frameworks are not verified |
-| Device-tested baseline | Xiaomi 15 Pro, HyperOS `OS4.0.0.19.XOBCNXM`, SystemUI `17.03.260226.r` |
-| Module scope | SystemUI; Settings is optional for its integration shortcut |
-| Root | Not mandatory for ordinary companion-app settings; some diagnostics and process-maintenance actions require Root |
-
-**HyperOS 4 support does not mean every HyperOS 4 device or SystemUI build has been tested.** Unsupported or ambiguous hosts should retain native presentation. The in-app “OS3” option is a **visual style**, not an assertion of HyperOS 3 runtime compatibility.
-
-### Installation
-
-1. Download the signed APK from [Releases](https://github.com/CHS-Haple/Guiyuan/releases).
-2. Enable Guiyuan in a compatible LSPosed manager and authorize the **SystemUI** scope.
-3. Restart the relevant system process as required by your framework, then complete the first-run guide.
-4. Configure the indicator in the companion app; grant Root only for optional maintenance operations.
-
-Back up your settings before major upgrades. If SystemUI becomes unstable, disable the module in the framework manager to restore native behavior.
-
-### Community and documentation
-
-Report ordinary bugs or requests through [Issues](https://github.com/CHS-Haple/Guiyuan/issues). Keep private logs and security details out of public discussions; use [private vulnerability reporting](https://github.com/CHS-Haple/Guiyuan/security/advisories/new) for security concerns.
-
-[Changelog](CHANGELOG.md) · [Terms](TERMS.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [Developer docs](docs/README.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
-
----
-
-<sub>归元是独立开源项目，不隶属于 Xiaomi、LSPosed 或 MIUIX，也不代表这些项目的官方立场。 Guiyuan is an independent community project and is not affiliated with or endorsed by Xiaomi, LSPosed or MIUIX.</sub>
+<sub>Guiyuan is an independent community project and is not affiliated with or endorsed by Xiaomi, LSPosed or MIUIX. 归元是独立开源项目，不隶属于 Xiaomi、LSPosed 或 MIUIX，也不代表这些项目的官方立场。</sub>
 
 **License:** [GPL-3.0-only](LICENSE). Third-party dependencies and incorporated assets retain their respective notices and licenses.
