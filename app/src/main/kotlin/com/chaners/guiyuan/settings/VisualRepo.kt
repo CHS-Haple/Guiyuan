@@ -59,11 +59,14 @@ internal fun SharedPreferences.rollbackBackupVisuals(snapshot: Map<String, Any?>
 
 // Convert the retired lower-row switch using its old effective behavior.
 // A single-row choice is shared across SIM modes within each content layout.
-internal fun migrateSignalDotArrangementsIfNeeded(prefs: SharedPreferences) {
+internal fun migrateSignalDotArrangementsIfNeeded(
+    prefs: SharedPreferences,
+    sharedEditor: SharedPreferences.Editor? = null,
+) {
     if (prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0) >= 4) return
     val activeDual = prefs.dualSignalEnabled() &&
         prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false)
-    val editor = prefs.edit()
+    val editor = sharedEditor ?: prefs.edit()
     for (layout in ContentLayout.entries) {
         fun oldKey(key: String): String =
             visualModeKey(activeDual, visualProfileKey(layout, key))
@@ -92,7 +95,7 @@ internal fun migrateSignalDotArrangementsIfNeeded(prefs: SharedPreferences) {
     editor.remove(DUAL_ROW_DOT_ARRANGEMENT_KEY)
         .remove(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)
         .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
-        .apply()
+    if (sharedEditor == null) editor.apply()
 }
 
 internal const val SHARED_LAYOUT_VISUAL_SCHEMA_KEY = "shared_layout_visual_schema"
@@ -100,12 +103,13 @@ internal const val SHARED_LAYOUT_VISUAL_SCHEMA_KEY = "shared_layout_visual_schem
 internal fun migrateSharedLayoutVisualsIfNeeded(
     prefs: SharedPreferences,
     preserveMigratedSignalStyles: Boolean = false,
+    sharedEditor: SharedPreferences.Editor? = null,
 ) {
     if (prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0) >= 1) return
     val activeDual = prefs.dualSignalEnabled() &&
         prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false)
     val stored = prefs.all
-    val editor = prefs.edit()
+    val editor = sharedEditor ?: prefs.edit()
     for (layout in ContentLayout.entries) {
         for (key in PROFILE_VISUAL_BASE_KEYS) {
             val canonical = visualProfileKey(layout, key)
@@ -145,14 +149,24 @@ internal fun migrateSharedLayoutVisualsIfNeeded(
     PROFILE_VISUAL_BASE_KEYS.forEach { editor.remove(it) }
     editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
         .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
-        .commit()
+    if (sharedEditor == null) editor.commit()
 }
 
 // Migrations must finish before the app mirrors its first runtime snapshot.
 internal fun migrateVisualPrefsIfNeeded(preferences: SharedPreferences) {
     val migratingDotStyles = preferences.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0) < 4
-    migrateSignalDotArrangementsIfNeeded(preferences)
-    migrateSharedLayoutVisualsIfNeeded(preferences, preserveMigratedSignalStyles = migratingDotStyles)
+    val migratingSharedLayout = preferences.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0) < 1
+    if (migratingDotStyles && migratingSharedLayout) {
+        // Both steps must become durable together: a restart between writes could
+        // discard a newly migrated dot style while retiring the old SIM bank.
+        val editor = preferences.edit()
+        migrateSignalDotArrangementsIfNeeded(preferences, editor)
+        migrateSharedLayoutVisualsIfNeeded(preferences, preserveMigratedSignalStyles = true, sharedEditor = editor)
+        check(editor.commit()) { "Could not commit visual preference migration" }
+    } else {
+        migrateSignalDotArrangementsIfNeeded(preferences)
+        migrateSharedLayoutVisualsIfNeeded(preferences)
+    }
 }
 
 // Reset visual choices without deleting user-created battery schemes.

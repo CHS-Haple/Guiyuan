@@ -696,6 +696,48 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun freshLegacyMigrationPublishesBothSchemasInOneWrite() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.MOBILE_CENTER
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3)
+            .putString(
+                visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY),
+                SignalDotArrangement.HORIZONTAL.persistedValue,
+            )
+            .putBoolean(
+                visualModeKey(true, visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)),
+                true,
+            )
+            .putFloat(
+                visualModeKey(true, visualProfileKey(layout, WIFI_SIZE_SCALE_KEY)),
+                0.91f,
+            )
+            .apply()
+        val priorWrites = prefs.writeCount
+
+        migrateVisualPrefsIfNeeded(prefs)
+
+        // The old dot-style conversion and profile flattening are one durable write.
+        assertEquals(priorWrites + 1, prefs.writeCount)
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
+        for (dual in listOf(false, true)) {
+            val cfg = prefs.readVisualCfg(dual, layout)
+            assertEquals(SignalDotArrangement.HORIZONTAL, cfg.dualRowDotArrangement)
+            assertEquals(SignalDotArrangement.HORIZONTAL, cfg.singleRowDotArrangement)
+            assertEquals(0.91f, cfg.wifiScale, 0f)
+        }
+        assertFalse(prefs.contains(visualModeKey(true, visualProfileKey(layout, WIFI_SIZE_SCALE_KEY))))
+        val migrated = prefs.all.toMap()
+        migrateVisualPrefsIfNeeded(prefs)
+        assertEquals(migrated, prefs.all)
+        assertEquals(priorWrites + 1, prefs.writeCount)
+    }
+
+    @Test
     fun preV4DualDotStyleIsRetainedWhenFlatteningOldProfiles() {
         val prefs = MemoryPreferences()
         val layout = ContentLayout.MOBILE_CENTER
@@ -728,6 +770,8 @@ class VisualPersistenceTest {
 
     private class MemoryPreferences : SharedPreferences {
         private val values = mutableMapOf<String, Any>()
+        var writeCount = 0
+            private set
 
         override fun getAll(): MutableMap<String, *> = values.toMutableMap()
         override fun contains(key: String?): Boolean = values.containsKey(key)
@@ -788,6 +832,7 @@ class VisualPersistenceTest {
             }
 
             override fun commit(): Boolean {
+                writeCount++
                 if (clearFirst) values.clear()
                 changes.forEach { (key, value) ->
                     if (value == null) values.remove(key) else values[key] = value
