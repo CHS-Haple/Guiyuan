@@ -49,11 +49,11 @@ updated independently from the corresponding MIUIX UI/Blur contracts. See
 | Component | Variant | Purpose | Upstream license |
 | --- | --- | --- | --- |
 | Google Material Symbols | Local embedded vectors; no library version | Semantic leading glyphs for companion-app information surfaces | Apache-2.0 |
-| MIUIX OS4 Glass icons | Back, Search, Close, Refresh, Filter, Share and More vectors from [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) | Same-revision `miuix-glass-icons` *source module* in experimental OS4 matched-source builds; pinned local vectors in published fallback. No matching public artifact is claimed | Apache-2.0 |
+| MIUIX OS4 Glass action icons | Back, Search, Close, Refresh, Filter, More, Edit, Copy and Delete from [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) (`f4cfe9b0`, experimental source only) | Same-revision `miuix-glass-icons` source module in experimental OS4 builds; pinned local vectors for six existing actions and published MIUIX Edit/Copy/Delete in fallback. Diagnostics export keeps published `MiuixIcons.Share`. No Glass artifact publication is claimed | Apache-2.0 |
 
 The selected Material Symbols are stored as local Android vector drawables sourced from Google's `google/material-design-icons` repository. They are app resources, not a runtime library dependency.
 
-The pinned MIUIX OS4 Regular paths are retained in `os4Published` source-set copies of `Os4BackIcon.kt`, `Os4SearchIcons.kt`, `Os4RefreshIcon.kt` and `Os4DiagnosticIcons.kt`, with preserved copyright/SPDX headers. The same-revision OS4 source build instead uses upstream `miuix-glass-icons` through `Os4NativeGlassIcons.kt`. This does not claim matching publicly published Glass artifacts. The input's clear icon still uses MIUIX `Basic.SearchCleanup`; Glass.Close is used for the outside Cancel control.
+Six pinned MIUIX OS4 Regular paths (Back, Search, Close, Refresh, Filter and More) are retained in `os4Published` source-set copies of `Os4BackIcon.kt`, `Os4SearchIcons.kt`, `Os4RefreshIcon.kt` and `Os4DiagnosticIcons.kt`, with preserved copyright/SPDX headers. Edit, Copy and Delete fall back to the published MIUIX extended icons. The same-revision OS4 source build uses upstream `miuix-glass-icons` through `Os4NativeGlassIcons.kt`. The diagnostics export icon remains published `MiuixIcons.Share` in both UI styles, not Glass.Regular.Share. The input's clear icon still uses MIUIX `Basic.SearchCleanup`; Glass.Close is used for the outside Cancel control.
 
 ## Test dependencies
 
