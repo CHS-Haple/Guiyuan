@@ -1,49 +1,24 @@
-name: Feature request
-description: Propose a new capability or behavior
+name: Feature request / 功能建议
+description: Suggest a feature or improvement / 提出功能或体验改进建议
 title: "[Feature] "
 body:
   - type: markdown
     attributes:
       value: |
-        Feature requests are evaluated against Guiyuan's architecture, maintainability, and fail-native safety principles. A proposed mechanism may be adjusted or rejected when a safer native integration exists.
+        Describe what you'd like. No technical solution needed.
+        说说希望归元怎么改，不需要提供技术方案。
   - type: textarea
-    id: problem
+    id: request
     attributes:
-      label: Problem or use case
-      description: Describe the user problem before proposing an implementation.
+      label: What would you like? / 希望增加或改进什么？
+      placeholder: "I'd like Guiyuan to ... / 我希望归元能够……"
     validations:
       required: true
   - type: textarea
-    id: behavior
+    id: use_case
     attributes:
-      label: Desired behavior
-      description: Describe what should happen from the user's perspective.
-    validations:
-      required: true
-  - type: dropdown
-    id: scope
-    attributes:
-      label: Primary scope
-      options:
-        - Home status bar
-        - Notification shade
-        - Control Center
-        - Lock screen / Keyguard
-        - AOD
-        - Charging
-        - Network / SIM behavior
-        - Companion app
-        - Diagnostics / developer tooling
-        - Other
-    validations:
-      required: true
+      label: Use case (optional) / 使用场景（选填）
   - type: textarea
-    id: context
+    id: references
     attributes:
-      label: Runtime evidence or references
-      description: Optional. Include SystemUI behavior, screenshots, recordings, or other technical context when they materially help explain the request.
-  - type: textarea
-    id: alternatives
-    attributes:
-      label: Alternatives considered
-      description: Optional. Mention simpler or more native approaches you have considered.
+      label: Examples or screenshots (optional) / 参考或截图（选填）
