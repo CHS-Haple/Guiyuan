@@ -689,7 +689,7 @@ internal fun FeaturesScreen(
                         value = visual.combinedScale,
                         onValueChange = visualRepo::setCombinedScale,
                         title = stringResource(R.string.combined_size),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
+                        startAction = { SemanticLeadingIcon(R.drawable.ic_battery_ring_outline, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                         valueText =
                             stringResource(
                                 R.string.percent_value,
@@ -709,7 +709,7 @@ internal fun FeaturesScreen(
                         value = visual.outerWeightScale,
                         onValueChange = visualRepo::setOuterWeightScale,
                         title = stringResource(R.string.outer_weight),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
+                        startAction = { SemanticLeadingIcon(R.drawable.ic_battery_ring_outline, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
                         summary = stringResource(R.string.outer_weight_summary),
                         valueText =
                             stringResource(
