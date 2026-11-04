@@ -1239,7 +1239,7 @@ internal object CcTransitionOwner {
                             when {
                                 dualRowTargets != null && dualRowTravel != null &&
                                     rowSpecs?.size == 2 -> {
-                                    val currentRows = rowSpecs.zip(dualRowTargets).mapNotNull {
+                                    val currentRows = rowSpecs.orEmpty().zip(dualRowTargets).mapNotNull {
                                         (rowSpec, target) ->
                                         CcTransitionPolicy.componentGeometry(
                                             parentGeometry = sourceParentGeometry,
