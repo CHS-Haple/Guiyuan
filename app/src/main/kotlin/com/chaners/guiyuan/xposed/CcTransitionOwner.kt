@@ -310,7 +310,15 @@ internal object CcTransitionOwner {
                     }
                 }
             }
+        private data class MissingNetworkActivityTarget(
+            val resourceId: Int,
+            val wifi: Boolean,
+            val subscriptionId: Int,
+            val roots: List<View>,
+        )
+
         private var cachedNetworkActivityTarget: Pair<Int, TargetWitness>? = null
+        private var missingNetworkActivityTarget: MissingNetworkActivityTarget? = null
         private var nativeWifiRoot: View? = null
         private var nativeWifiSignal: View? = null
         private var wifiTargetReady: Boolean? = null
@@ -378,6 +386,8 @@ internal object CcTransitionOwner {
                 }
 
                 if (mobileTargetsDirty.getAndSet(false)) {
+                    missingNetworkActivityTarget = null
+                    cachedNetworkActivityTarget = null
                     targetCache.keys.removeAll { key ->
                         (key.target as? StatusPainter.TransitionTarget.Slots)
                             ?.preferredSlots
@@ -458,6 +468,8 @@ internal object CcTransitionOwner {
             if (nativeWifiRoot !== root || nativeWifiSignal !== signal) wifiAnchor = null
             nativeWifiRoot = root
             nativeWifiSignal = signal
+            missingNetworkActivityTarget = null
+            cachedNetworkActivityTarget = null
             targetCache.keys.removeAll { key ->
                 (key.target as? StatusPainter.TransitionTarget.Slots)
                     ?.preferredSlots
@@ -685,6 +697,13 @@ internal object CcTransitionOwner {
         private fun acceptSourceSnapshot(next: CcRenderSession.TransitionSourceSnapshot) {
             val previous = currentSnapshot.model
             val model = next.model
+            if (previous.networkActivityResId != model.networkActivityResId ||
+                previous.effectiveDataSubscriptionId != model.effectiveDataSubscriptionId ||
+                previous.centerIndicator != model.centerIndicator
+            ) {
+                missingNetworkActivityTarget = null
+                cachedNetworkActivityTarget = null
+            }
             // Native battery views can stay attached after their displayed content changes.
             if (previous.batteryPercent != model.batteryPercent) {
                 targetCache.remove(
@@ -2758,6 +2777,20 @@ internal object CcTransitionOwner {
                 ) return witness
             }
             cachedNetworkActivityTarget = null
+            val probeKey = MissingNetworkActivityTarget(
+                resourceId = resourceId,
+                wifi = wifi,
+                subscriptionId = selectedSubId,
+                roots = candidateRoots,
+            )
+            missingNetworkActivityTarget?.let { missed ->
+                if (missed.resourceId == probeKey.resourceId &&
+                    missed.wifi == probeKey.wifi &&
+                    missed.subscriptionId == probeKey.subscriptionId &&
+                    missed.roots.size == probeKey.roots.size &&
+                    missed.roots.indices.all { missed.roots[it] === probeKey.roots[it] }
+                ) return null
+            }
 
             val matches = ArrayList<TargetWitness>(2)
             for (root in candidateRoots.filter(::ownsSelectedTransport)) {
@@ -2775,7 +2808,10 @@ internal object CcTransitionOwner {
                             requiresOpticalGeometry = true,
                             fallbackBounds = null,
                         )
-                        if (matches.size > 1) return null
+                        if (matches.size > 1) {
+                            missingNetworkActivityTarget = probeKey
+                            return null
+                        }
                     }
                     if (node is ViewGroup && depth < 6) {
                         for (index in 0 until node.childCount) {
@@ -2784,9 +2820,14 @@ internal object CcTransitionOwner {
                     }
                 }
             }
-            return matches.singleOrNull()?.also { match ->
+            val match = matches.singleOrNull()
+            if (match == null) {
+                missingNetworkActivityTarget = probeKey
+            } else {
+                missingNetworkActivityTarget = null
                 cachedNetworkActivityTarget = resourceId to match
             }
+            return match
         }
 
         private fun resolveSpecTarget(
