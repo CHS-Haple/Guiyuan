@@ -208,6 +208,20 @@ internal object NativeOpticalGeometry {
             opticalBottom = drawTop + currentOpticalBottom * drawHeight,
         )
     }
+
+    // Offset viewport centers by native ink, rather than transparent padding,
+    // to keep the displayed icon fixed as its size changes.
+    fun viewportCenterForInkAnchor(
+        anchorX: Float,
+        anchorY: Float,
+        drawWidth: Float,
+        drawHeight: Float,
+        opticalCenterX: Float,
+        inkCenterY: Float,
+    ): Pair<Float, Float> = Pair(
+        anchorX - (opticalCenterX - 0.5f) * drawWidth,
+        anchorY - (inkCenterY - 0.5f) * drawHeight,
+    )
 }
 
 
@@ -407,7 +421,7 @@ internal object OuterGeometry {
         val firstDotCenterDegrees: Float,
         val dotCenterStepDegrees: Float,
         val balancedEdgeGap: Float,
-        val leftRightBottomSlotEnabled: Boolean,
+        val leftRightBottomIconVisible: Boolean,
         val leftRightStepDegrees: Double,
         val leftRightWithSlotFirstDegrees: Double,
         val leftRightBalancedFirstDegrees: Double,
@@ -456,7 +470,7 @@ internal object OuterGeometry {
 
         private fun leftRightDotAngle(index: Int, row: Int): Double {
             require(index in 0 until DOT_COUNT && row in 0..1)
-            val first = if (leftRightBottomSlotEnabled) {
+            val first = if (leftRightBottomIconVisible) {
                 leftRightWithSlotFirstDegrees
             } else {
                 leftRightBalancedFirstDegrees
@@ -514,7 +528,7 @@ internal object OuterGeometry {
             ?.coerceIn(MIN_WEIGHT_SCALE, MAX_WEIGHT_SCALE)
             ?: DEFAULT_WEIGHT_SCALE
 
-    fun resolve(weightScale: Float, leftRightBottomSlotEnabled: Boolean = true): Resolved {
+    fun resolve(weightScale: Float, leftRightBottomIconVisible: Boolean = true): Resolved {
         val normalized = normalizeWeightScale(weightScale)
         val ringStroke = BASE_RING_STROKE * normalized
         val dotRadius = BASE_MOBILE_DOT_RADIUS * normalized
@@ -558,7 +572,7 @@ internal object OuterGeometry {
         val splitDotRadius = min(dualDotRadius, 6.5f)
         val minimumChord = 2f * splitDotRadius + 1f
         val leftRightStep = max(
-            15.0,
+            if (leftRightBottomIconVisible) 16.0 else 18.0,
             Math.toDegrees(2.0 * kotlin.math.asin(
                 (minimumChord / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
             )),
@@ -616,7 +630,7 @@ internal object OuterGeometry {
             firstDotCenterDegrees = firstCenter,
             dotCenterStepDegrees = step,
             balancedEdgeGap = gap,
-            leftRightBottomSlotEnabled = leftRightBottomSlotEnabled,
+            leftRightBottomIconVisible = leftRightBottomIconVisible,
             leftRightStepDegrees = leftRightStep,
             leftRightWithSlotFirstDegrees = withSlotFirst,
             leftRightBalancedFirstDegrees = balancedFirst,

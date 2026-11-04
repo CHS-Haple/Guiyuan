@@ -175,7 +175,7 @@ internal class StatusPainter(
         canvas.translate(offsetX, offsetY)
         canvas.scale(scale, scale)
 
-        val outerGeometry = resolveOuterGeometry(outerWeightScale, visual.leftRightBottomSlotEnabled)
+        val outerGeometry = resolveOuterGeometry(outerWeightScale, hasDrawableBottomInformation(model, visual))
         val centerGeometry = resolveCenterGeometry(visual)
         drawBattery(
             canvas = canvas,
@@ -378,7 +378,7 @@ internal class StatusPainter(
                     geometry =
                         resolveOuterGeometry(
                             visual.outerWeightScale,
-                            visual.leftRightBottomSlotEnabled,
+                            hasDrawableBottomInformation(model, visual),
                         ),
                     centerGeometry =
                         resolveCenterGeometry(visual),
@@ -459,7 +459,7 @@ internal class StatusPainter(
                 val outerGeometry =
                     resolveOuterGeometry(
                         visual.outerWeightScale,
-                        visual.leftRightBottomSlotEnabled,
+                        hasDrawableBottomInformation(model, visual),
                     )
                 if (shapePolicy == TransitionShapePolicy.MOBILE_SIGNAL) {
                     drawMobileSignalTransition(
@@ -600,7 +600,7 @@ internal class StatusPainter(
         val offsetX = nativeTransform.offsetX
         val offsetY = nativeTransform.offsetY
         val outerGeometry =
-            resolveOuterGeometry(visual.outerWeightScale, visual.leftRightBottomSlotEnabled)
+            resolveOuterGeometry(visual.outerWeightScale, hasDrawableBottomInformation(model, visual))
         val centerGeometry =
             resolveCenterGeometry(visual)
 
@@ -836,7 +836,7 @@ internal class StatusPainter(
         visual: VisualCfg,
         model: RenderModel,
     ): List<TransitionComponentSpec> {
-        val geometry = resolveOuterGeometry(visual.outerWeightScale, visual.leftRightBottomSlotEnabled)
+        val geometry = resolveOuterGeometry(visual.outerWeightScale, hasDrawableBottomInformation(model, visual))
         val centered = visual.centeredMobileSignal &&
             model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
         val group = if (centered) centeredMobileBounds(geometry, true)
@@ -1190,16 +1190,16 @@ internal class StatusPainter(
 
     private fun resolveOuterGeometry(
         weightScale: Float,
-        leftRightBottomSlotEnabled: Boolean = true,
+        leftRightBottomIconVisible: Boolean = true,
     ): OuterGeometry.Resolved {
         val normalized = OuterGeometry.normalizeWeightScale(weightScale)
         if (cachedOuterWeightScale != normalized ||
-            cachedOuterGeometry.leftRightBottomSlotEnabled != leftRightBottomSlotEnabled
+            cachedOuterGeometry.leftRightBottomIconVisible != leftRightBottomIconVisible
         ) {
             cachedOuterWeightScale = normalized
             cachedOuterGeometry = OuterGeometry.resolve(
                 normalized,
-                leftRightBottomSlotEnabled,
+                leftRightBottomIconVisible,
             )
         }
         return cachedOuterGeometry
@@ -1867,7 +1867,7 @@ internal class StatusPainter(
         val textVisible = visual.showTopReadout
         val chargingSlotVisible =
             model.charging && visual.showTopChargingIcon &&
-                !(visual.leftRightBottomCharging && leftRightOutsideActive(model, visual))
+                !(resolveLeftRightBottomInformation(model, visual)?.charging == true)
         if (!textVisible && !chargingSlotVisible) return null
 
         val text = model.batteryPercent.coerceIn(0, 100).toString()
@@ -2884,6 +2884,7 @@ internal class StatusPainter(
         nativeTransform: NativeRenderTransform,
         pixelAligned: Boolean,
         strokeWeight: Int = 100,
+        opticalInkCentered: Boolean = false,
     ): Boolean {
         // Resolve draw size and actual current-resource optical bounds through
         // one geometry path shared with top-slot avoidance.
@@ -2901,6 +2902,15 @@ internal class StatusPainter(
         val intrinsicHeight = asset.intrinsicHeight
         val drawWidth = geometry.drawWidth
         val drawHeight = geometry.drawHeight
+        val (viewportCenterX, viewportCenterY) =
+            if (opticalInkCentered) NativeOpticalGeometry.viewportCenterForInkAnchor(
+                anchorX = centerX,
+                anchorY = centerY,
+                drawWidth = drawWidth,
+                drawHeight = drawHeight,
+                opticalCenterX = (asset.opticalBounds.left + asset.opticalBounds.right) / 2f,
+                inkCenterY = asset.inkCenterY,
+            ) else Pair(centerX, centerY)
 
         val drawable = asset.drawable
         val styledStroke = nativeStrokePath(resource, strokeWeight)
@@ -2911,8 +2921,8 @@ internal class StatusPainter(
         if (pixelAligned && nativeTransform.scale > 0f) {
             val bounds =
                 NativeRenderGeometry.resolvePixelBounds(
-                    centerX = centerX,
-                    centerY = centerY,
+                    centerX = viewportCenterX,
+                    centerY = viewportCenterY,
                     drawWidth = drawWidth,
                     drawHeight = drawHeight,
                     transform = nativeTransform,
@@ -2944,8 +2954,8 @@ internal class StatusPainter(
             drawNativeDrawable(
                 canvas = canvas,
                 drawable = drawable,
-                left = centerX - drawWidth / 2f,
-                top = centerY - drawHeight / 2f,
+                left = viewportCenterX - drawWidth / 2f,
+                top = viewportCenterY - drawHeight / 2f,
                 width = drawWidth,
                 height = drawHeight,
                 intrinsicWidth = intrinsicWidth,
@@ -3174,7 +3184,7 @@ internal class StatusPainter(
 
     private fun mobileTypeBottomTranslation(visual: VisualCfg, layout: MobileTypeLayout): Float {
         val innerBottom = centeredMobileBounds(
-            resolveOuterGeometry(visual.outerWeightScale, visual.leftRightBottomSlotEnabled),
+            resolveOuterGeometry(visual.outerWeightScale),
             true,
         ).bottom
         return CenteredMobileTypePositionPolicy.translation(
@@ -4060,6 +4070,47 @@ internal class StatusPainter(
             visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT &&
             !(visual.centeredMobileSignal && model.centerIndicator is CenterIndicator.MobileType)
 
+    private data class LeftRightBottomInformation(
+        val resource: PresentationStore.NativeIconResource,
+        val charging: Boolean,
+    )
+
+    private fun resolveLeftRightBottomInformation(
+        model: RenderModel,
+        visual: VisualCfg,
+    ): LeftRightBottomInformation? {
+        if (!leftRightOutsideActive(model, visual)) return null
+
+        fun drawableAvailable(resourceId: Int, charging: Boolean): LeftRightBottomInformation? {
+            if (resourceId <= 0) return null
+            val resource = PresentationStore.NativeIconResource(SYSTEM_UI_PACKAGE, resourceId)
+            val width = (if (charging) LEFT_RIGHT_CHARGING_SLOT_WIDTH else LEFT_RIGHT_BOTTOM_SLOT_WIDTH) *
+                visual.leftRightBottomInfoScale
+            val height = (if (charging) LEFT_RIGHT_CHARGING_SLOT_HEIGHT else LEFT_RIGHT_BOTTOM_SLOT_HEIGHT) *
+                visual.leftRightBottomInfoScale
+            if (resolveNativeCenterDrawGeometry(
+                    resource = resource,
+                    centerX = BATTERY_COMPONENT_CENTER_X,
+                    centerY = LEFT_RIGHT_BOTTOM_INK_CENTER_Y,
+                    maxWidth = width,
+                    maxHeight = height,
+                ) == null
+            ) return null
+            return LeftRightBottomInformation(resource, charging)
+        }
+
+        if (visual.leftRightBottomCharging && model.charging) {
+            model.chargingIconResId?.let { drawableAvailable(it, true) }?.let { return it }
+        }
+        if (visual.leftRightShowActivity) {
+            model.networkActivityResId?.let { drawableAvailable(it, false) }?.let { return it }
+        }
+        return null
+    }
+
+    private fun hasDrawableBottomInformation(model: RenderModel, visual: VisualCfg): Boolean =
+        resolveLeftRightBottomInformation(model, visual) != null
+
     private fun drawLeftRightBottomInformation(
         canvas: Canvas,
         model: RenderModel,
@@ -4070,11 +4121,7 @@ internal class StatusPainter(
         previousCenter: CenterIndicator?,
         progress: Float,
     ) {
-        if (
-            model.dualMobileLevels == null || model.mobileUnavailableMark ||
-            visual.dualRowDotArrangement != SignalDotArrangement.LEFT_RIGHT
-        ) return
-
+        val bottom = resolveLeftRightBottomInformation(model, visual) ?: return
         val centeredNow =
             visual.centeredMobileSignal && model.centerIndicator is CenterIndicator.MobileType
         val centeredBefore =
@@ -4089,29 +4136,21 @@ internal class StatusPainter(
         }
         if (outsideAmount <= 0f) return
 
-        val chargeIcon = model.chargingIconResId?.takeIf { it > 0 }
-        val bottomCharging = visual.leftRightBottomCharging && model.charging
-        val resourceId = if (bottomCharging) chargeIcon
-        else if (visual.leftRightShowActivity) model.networkActivityResId
-        else null
-        if (resourceId == null || resourceId <= 0) return
-
+        val bottomCharging = bottom.charging
         drawNativeCenterResource(
             canvas = canvas,
-            resource = PresentationStore.NativeIconResource(
-                packageName = SYSTEM_UI_PACKAGE,
-                resourceId = resourceId,
-            ),
+            resource = bottom.resource,
             tint = if (bottomCharging) colors.chargingIconTint else colors.centerTint,
             opacity = opacity * outsideAmount,
             centerX = BATTERY_COMPONENT_CENTER_X,
-            centerY = if (bottomCharging) 101f else 92f,
+            centerY = LEFT_RIGHT_BOTTOM_INK_CENTER_Y,
             maxWidth = (if (bottomCharging) LEFT_RIGHT_CHARGING_SLOT_WIDTH else LEFT_RIGHT_BOTTOM_SLOT_WIDTH) *
                 visual.leftRightBottomInfoScale,
             maxHeight = (if (bottomCharging) LEFT_RIGHT_CHARGING_SLOT_HEIGHT else LEFT_RIGHT_BOTTOM_SLOT_HEIGHT) *
                 visual.leftRightBottomInfoScale,
             nativeTransform = nativeTransform,
             pixelAligned = false,
+            opticalInkCentered = true,
         )
     }
 
@@ -4319,6 +4358,10 @@ internal class StatusPainter(
         const val NATIVE_STEADY_APPEAR_THRESHOLD = 0.999f
         const val BATTERY_COMPONENT_CENTER_X = 60f
         const val BATTERY_COMPONENT_CENTER_Y = 58f
+        // The six-o'clock ring tangent is y=108. Keep the ink 4 units inside
+        // so even the largest supported bottom icon clears the canvas edge.
+        const val LEFT_RIGHT_BOTTOM_INK_CENTER_Y =
+            BATTERY_COMPONENT_CENTER_Y + OuterGeometry.RING_RADIUS - 4f
         const val BATTERY_TOP_TEXT_SIZE = 24f
         const val BATTERY_TOP_CHARGING_ICON_SIZE = 18f
         const val LEFT_RIGHT_BOTTOM_SLOT_WIDTH = 19f

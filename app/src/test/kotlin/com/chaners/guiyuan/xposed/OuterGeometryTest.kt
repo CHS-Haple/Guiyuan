@@ -391,7 +391,7 @@ class OuterGeometryTest {
                     g.dualDotX(3, 0, SignalDotArrangement.LEFT_RIGHT).toDouble(),
                 ),
             )
-            assertTrue("each split group uses a 15 degree baseline", last - first >= 44.9)
+            assertTrue("bottom icon requires a 16 degree minimum", last - first >= 47.9)
             for (row in 0..1) {
                 val nearestX = kotlin.math.abs(g.dualDotX(0, row, SignalDotArrangement.LEFT_RIGHT))
                 val slotHalfWidth = 19f * 1.2f / 2f
@@ -402,9 +402,20 @@ class OuterGeometryTest {
     }
 
     @Test
+    fun emptyBottomUsesWiderGroupsAtAllSupportedWeights() {
+        for (weight in listOf(0.6f, 1f, 1.5f, 2f)) {
+            val icon = OuterGeometry.resolve(weight, leftRightBottomIconVisible = true)
+            val empty = OuterGeometry.resolve(weight, leftRightBottomIconVisible = false)
+            assertTrue("no-icon layout needs wider dot spacing",
+                empty.leftRightStepDegrees > icon.leftRightStepDegrees)
+            assertEquals(icon.ringStroke, empty.ringStroke, 0f)
+        }
+    }
+
+    @Test
     fun disabledBottomSlotBalancesBothOpticalGapsWithoutShorteningTheHalfRing() {
         for (step in 0..12) {
-            val g = OuterGeometry.resolve(0.7f + step * 0.05f, leftRightBottomSlotEnabled = false)
+            val g = OuterGeometry.resolve(0.7f + step * 0.05f, leftRightBottomIconVisible = false)
             val innerX = g.dualDotX(0, 0, SignalDotArrangement.LEFT_RIGHT)
             val rightInnerX = g.dualDotX(0, 1, SignalDotArrangement.LEFT_RIGHT)
             val ringSideX = -OuterGeometry.RING_RADIUS
@@ -443,7 +454,7 @@ class OuterGeometryTest {
         for (step in 0..28) {
             val weight = 0.6f + step * 0.05f
             for (slotEnabled in listOf(true, false)) {
-                val geom = OuterGeometry.resolve(weight, leftRightBottomSlotEnabled = slotEnabled)
+                val geom = OuterGeometry.resolve(weight, leftRightBottomIconVisible = slotEnabled)
                 val radius = geom.leftRightMobileDotRadius
                 assertTrue("split radius cannot exceed ordinary dual dot radius",
                     radius > 0f && radius <= geom.dualMobileDotRadius)

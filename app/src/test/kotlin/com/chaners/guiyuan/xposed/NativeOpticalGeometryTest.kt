@@ -7,6 +7,23 @@ import org.junit.Test
 
 class NativeOpticalGeometryTest {
     @Test
+    fun opticalInkCenterStaysOnOneBottomAnchorAcrossIconSizes() {
+        val anchorX = 60f
+        val anchorY = 104f
+        for (size in listOf(0.7f, 1f, 1.2f)) {
+            val width = 23f * size
+            val height = 28f * size
+            val viewport = NativeOpticalGeometry.viewportCenterForInkAnchor(
+                anchorX = anchorX, anchorY = anchorY,
+                drawWidth = width, drawHeight = height,
+                opticalCenterX = 0.65f, inkCenterY = 0.34f,
+            )
+            assertEquals(anchorX, viewport.first + (0.65f - 0.5f) * width, 0.0001f)
+            assertEquals(anchorY, viewport.second + (0.34f - 0.5f) * height, 0.0001f)
+        }
+    }
+
+    @Test
     fun currentOpticalWidthStaysResourceSpecificUnderSharedReferenceFit() {
         val narrow =
             NativeOpticalGeometry.resolve(
