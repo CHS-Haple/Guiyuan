@@ -620,12 +620,16 @@ internal fun FeaturesScreen(
                             SwitchPreference(
                                 title = stringResource(R.string.left_right_idle_activity_title),
                                 summary = stringResource(R.string.left_right_idle_activity_summary),
-                                checked = visual.leftRightShowIdleActivity,
+                                checked = visual.leftRightHideIdleActivity,
                                 enabled = featureCfg.enabled,
                                 startAction = {
-                                    SemanticLeadingIcon(R.drawable.ic_material_symbol_swap_vert_outline, featureCfg.enabled)
+                                    SemanticLeadingIcon(
+                                        R.drawable.ic_material_symbol_swap_vert,
+                                        featureCfg.enabled,
+                                        R.drawable.ic_material_symbol_visibility_off,
+                                    )
                                 },
-                                onCheckedChange = visualRepo::setLeftRightShowIdleActivity,
+                                onCheckedChange = visualRepo::setLeftRightHideIdleActivity,
                             )
                         }
                         if (search.matches(R.string.left_right_activity_size)) {
