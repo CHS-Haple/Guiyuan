@@ -8,7 +8,9 @@ internal const val DUAL_PROFILES_INITIALIZED_KEY = "dual_profiles_initialized"
 internal const val DUAL_ROW_DOT_ARRANGEMENT_KEY = "content_style"
 internal const val SINGLE_ROW_DOT_STYLE_KEY = "single_row_dot_style"
 internal const val LEFT_RIGHT_ACTIVITY_KEY = "left_right_activity"
-internal const val LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY = "left_right_show_idle_activity"
+// Retired B1754 preference; earlier "show while idle" does not mean "hide while idle".
+internal const val LEGACY_LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY = "left_right_show_idle_activity"
+internal const val LEFT_RIGHT_HIDE_IDLE_ACTIVITY_KEY = "left_right_hide_idle_activity"
 internal const val LEFT_RIGHT_CHARGING_KEY = "left_right_charging"
 // Keep the B1750 disk key for the activity icon when splitting the two sizes.
 internal const val LEFT_RIGHT_ACTIVITY_SCALE_KEY = "left_right_bottom_info_scale"
@@ -92,7 +94,7 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         DUAL_ROW_DOT_ARRANGEMENT_KEY,
         SINGLE_ROW_DOT_STYLE_KEY,
         LEFT_RIGHT_ACTIVITY_KEY,
-        LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY,
+        LEFT_RIGHT_HIDE_IDLE_ACTIVITY_KEY,
         LEFT_RIGHT_CHARGING_KEY,
         LEFT_RIGHT_ACTIVITY_SCALE_KEY,
         LEFT_RIGHT_ACTIVITY_OFFSET_Y_KEY,
