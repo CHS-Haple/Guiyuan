@@ -440,8 +440,20 @@ internal object OuterGeometry {
         fun horizontalDotX(index: Int): Float =
             (index - (DOT_COUNT - 1) / 2f) * (horizontalDotSpan / (DOT_COUNT - 1))
 
+        fun dualDotX(index: Int, row: Int, style: SignalDotArrangement): Float =
+            if (style == SignalDotArrangement.LEFT_RIGHT) {
+                cos(leftRightDotAngle(index, row)).toFloat() * RING_RADIUS
+            } else horizontalDotX(index)
+
+        private fun leftRightDotAngle(index: Int, row: Int): Double {
+            require(index in 0 until DOT_COUNT && row in 0..1)
+            val degrees = if (row == 0) 118f + index * 14f else 62f - index * 14f
+            return Math.toRadians(degrees.toDouble())
+        }
+
         // Balance visible ring-to-dot clearance against adjacent dot spacing.
         fun followingLowerHalfGap(dual: Boolean, style: SignalDotArrangement, offsetY: Float): Float {
+            if (dual && style == SignalDotArrangement.LEFT_RIGHT) return 90f
             val radius = if (dual) dualMobileDotRadius else mobileDotRadius
             val dotGap = if (!dual && style == SignalDotArrangement.CURVED) balancedEdgeGap
                 else (horizontalDotSpan / (DOT_COUNT - 1) - 2f * radius).coerceAtLeast(0f)
@@ -472,6 +484,9 @@ internal object OuterGeometry {
             style: SignalDotArrangement = SignalDotArrangement.CURVED,
             offsetY: Float = 0f,
         ): Float {
+            if (style == SignalDotArrangement.LEFT_RIGHT) {
+                return sin(leftRightDotAngle(index, row)).toFloat() * RING_RADIUS - offsetY
+            }
             val x = if (style == SignalDotArrangement.HORIZONTAL) horizontalDotSpan / 6f else horizontalDotX(index)
             val offset = if (row == 0) -dualRowGap / 2f else dualRowGap / 2f
             return sqrt(RING_RADIUS * RING_RADIUS - x * x) +
