@@ -235,6 +235,16 @@ internal class StatusPainter(
             previousCenter = previousCenterIndicator,
             progress = centerEnterAmount,
         )
+        drawLeftRightBottomInformation(
+            canvas = canvas,
+            model = model,
+            visual = visual,
+            colors = colors,
+            opacity = opacity,
+            nativeTransform = nativeTransform,
+            previousCenter = previousCenterIndicator,
+            progress = centerEnterAmount,
+        )
         canvas.restoreToCount(save)
     }
 
@@ -1681,7 +1691,9 @@ internal class StatusPainter(
             ) BATTERY_BOTTOM_RING_VISUAL_CLEARANCE else BATTERY_TOP_RING_VISUAL_CLEARANCE,
         )
         val dualRows = model.dualMobileLevels != null && !model.mobileUnavailableMark
-        val outsideHalf = if (visual.fixedLowerOpening) 60f else outerGeometry.followingLowerHalfGap(
+        val outsideHalf = if (
+            dualRows && visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT
+        ) 90f else if (visual.fixedLowerOpening) 60f else outerGeometry.followingLowerHalfGap(
             dual = dualRows,
             style = if (dualRows) visual.dualRowDotArrangement else visual.singleRowDotArrangement,
             offsetY = if (dualRows) visual.dualRowDotOffsetY else visual.singleRowDotOffsetY,
@@ -1843,7 +1855,8 @@ internal class StatusPainter(
     ): BatteryTopReadoutLayout? {
         val textVisible = visual.showTopReadout
         val chargingSlotVisible =
-            model.charging && visual.showTopChargingIcon
+            model.charging && visual.showTopChargingIcon &&
+                !(visual.leftRightBottomCharging && leftRightOutsideActive(model, visual))
         if (!textVisible && !chargingSlotVisible) return null
 
         val text = model.batteryPercent.coerceIn(0, 100).toString()
@@ -4021,6 +4034,65 @@ internal class StatusPainter(
                 )
             }
         }
+    }
+
+    private fun leftRightOutsideActive(model: RenderModel, visual: VisualCfg): Boolean =
+        model.dualMobileLevels != null &&
+            !model.mobileUnavailableMark &&
+            visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT &&
+            !(visual.centeredMobileSignal && model.centerIndicator is CenterIndicator.MobileType)
+
+    private fun drawLeftRightBottomInformation(
+        canvas: Canvas,
+        model: RenderModel,
+        visual: VisualCfg,
+        colors: RenderColors,
+        opacity: Float,
+        nativeTransform: NativeRenderTransform,
+        previousCenter: CenterIndicator?,
+        progress: Float,
+    ) {
+        if (
+            model.dualMobileLevels == null || model.mobileUnavailableMark ||
+            visual.dualRowDotArrangement != SignalDotArrangement.LEFT_RIGHT
+        ) return
+
+        val centeredNow =
+            visual.centeredMobileSignal && model.centerIndicator is CenterIndicator.MobileType
+        val centeredBefore =
+            visual.centeredMobileSignal && previousCenter is CenterIndicator.MobileType
+        val outsideAmount = when {
+            centeredNow && !centeredBefore && previousCenter != null ->
+                1f - progress.coerceIn(0f, 1f)
+            !centeredNow && centeredBefore -> progress.coerceIn(0f, 1f)
+            centeredNow -> 0f
+            else -> 1f
+        }
+        if (outsideAmount <= 0f) return
+
+        val chargeIcon = model.chargingIconResId?.takeIf { it != 0 }
+        val bottomCharging = visual.leftRightBottomCharging && model.charging &&
+            chargeIcon != null
+        val resourceId = if (bottomCharging) chargeIcon
+        else if (visual.leftRightShowActivity) model.networkActivityResId
+        else null
+        if (resourceId == null || resourceId == 0) return
+
+        drawNativeCenterResource(
+            canvas = canvas,
+            resource = PresentationStore.NativeIconResource(
+                packageName = SYSTEM_UI_PACKAGE,
+                resourceId = resourceId,
+            ),
+            tint = if (bottomCharging) colors.chargingIconTint else colors.mobileTint,
+            opacity = opacity * outsideAmount,
+            centerX = BATTERY_COMPONENT_CENTER_X,
+            centerY = 109f,
+            maxWidth = 13f,
+            maxHeight = 13f,
+            nativeTransform = nativeTransform,
+            pixelAligned = false,
+        )
     }
 
     private fun drawMobile(
