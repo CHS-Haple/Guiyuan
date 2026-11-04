@@ -22,6 +22,13 @@
     <string name="signal_dot_arrangement_left_right">左右分布</string>
     <string name="left_right_activity_title">底部网络活动指示器</string>
     <string name="left_right_activity_summary">左右分布时在圆环底部显示系统原生上传、下载状态</string>
+    <string name="left_right_activity_unavailable_summary">仅双排信号点选择左右分布时可用</string>
+    <string name="home_preview_activity_state_title">网络活动状态</string>
+    <string name="home_preview_activity_unavailable_summary">仅双卡信号点采用左右分布时可调节</string>
+    <string name="home_preview_activity_upload">上传</string>
+    <string name="home_preview_activity_download">下载</string>
+    <string name="home_preview_activity_both">双向</string>
+    <string name="home_preview_activity_idle">空闲</string>
     <string name="left_right_idle_activity_title">空闲时保留活动箭头</string>
     <string name="left_right_idle_activity_summary">联网但没有数据活动时，仍以低亮度显示箭头，此项为可选扩展</string>
     <string name="left_right_activity_size">网络活动指示器大小</string>
