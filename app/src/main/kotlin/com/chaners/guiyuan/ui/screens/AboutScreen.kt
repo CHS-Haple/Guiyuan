@@ -22,6 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
@@ -113,8 +115,8 @@ internal fun AboutScreen(
             } else if (spacerBottom <= versionBottom ||
                 versionBottom <= nameBottom || nameBottom <= iconBottom
             ) {
-                // Measurements are captured only at rest; never keep an unfaded
-                // overlay alive if the list has started scrolling before layout settles.
+                // The first layout may not have measured yet. A nonzero scroll
+                // must not leave an opaque identity mark over a preference row.
                 if (offset > 0f) Triple(1f, 1f, 1f) else Triple(0f, 0f, 0f)
             } else {
                 val first = spacerBottom - versionBottom
@@ -143,16 +145,34 @@ internal fun AboutScreen(
         listState = listState,
         compactTopBar = os4,
         titleAlpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
-        background = { padding ->
+        background = {
             BgEffectBackground(
                 dynamicBackground = visible,
                 modifier = Modifier.fillMaxSize(),
                 bgModifier = if (blur) Modifier.layerBackdrop(backdrop) else Modifier,
                 isFullSize = true,
                 alpha = { 1f - scrollProgress },
+            ) {}
+        },
+        foreground = { padding ->
+            // Foreground keeps the interactive logo above the scroll hit layer,
+            // but it must never draw over the first preference card.
+            val firstCardTopPx =
+                if (listState.firstVisibleItemIndex == 0) {
+                    with(density) { (padding.calculateTopPadding() + spacerHeight).toPx() } -
+                        listState.firstVisibleItemScrollOffset
+                } else {
+                    0f
+                }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawWithContent {
+                        clipRect(bottom = firstCardTopPx.coerceIn(0f, size.height)) {
+                            drawContent()
+                        }
+                    },
             ) {
-                // SettingsPage paints background before LazyColumn; foreground
-                // is painted afterwards and would cover scrolling preference rows.
                 AboutHero(
                     topPadding = padding.calculateTopPadding(),
                     active = visible,
