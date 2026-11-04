@@ -819,6 +819,14 @@ class GyModule : XposedModule() {
                         )
                     }
                 },
+                onWifiActivity = { resourceId ->
+                    StatusStateStore.updateWifiActivity(resourceId)?.let { snapshot ->
+                        onCombinedStateChanged(
+                            snapshot = snapshot,
+                            trace = markStateCommitted(beginRenderTrace("wifiActivity")),
+                        )
+                    }
+                },
                 onMobileSignal = { subscriptionId, signal ->
                     val trace = beginRenderTrace("mobile")
                     val changed =
@@ -837,6 +845,14 @@ class GyModule : XposedModule() {
                         onCombinedStateChanged(
                             snapshot = StatusStateStore.snapshot(),
                             trace = stateTrace,
+                        )
+                    }
+                },
+                onMobileActivity = { subscriptionId, resourceId ->
+                    StatusStateStore.updateMobileActivity(subscriptionId, resourceId)?.let { snapshot ->
+                        onCombinedStateChanged(
+                            snapshot = snapshot,
+                            trace = markStateCommitted(beginRenderTrace("mobileActivity")),
                         )
                     }
                 },
