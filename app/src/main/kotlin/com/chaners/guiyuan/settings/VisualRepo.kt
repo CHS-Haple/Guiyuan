@@ -506,10 +506,11 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
-    fun backup(): VisualBackup =
-        VisualBackup(
-            singleLayout = preferences.readLayout(),
-            dualLayout = preferences.readLayout(),
+    fun backup(): VisualBackup {
+        val layout = preferences.readLayout()
+        return VisualBackup(
+            singleLayout = layout,
+            dualLayout = layout,
             dualEnabled = preferences.dualSignalEnabled(),
             dualInitialized = preferences.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false),
             profiles = listOf(false, true).flatMap { dual ->
@@ -518,6 +519,7 @@ internal class VisualRepo(context: Context) {
                 }
             },
         )
+    }
 
     fun backupSnapshot(): Map<String, Any?> = preferences.backupVisualSnapshot()
 
