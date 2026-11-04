@@ -171,7 +171,7 @@ internal fun AboutScreen(
                                 0f
                             }
                         clipRect(bottom = firstCardTopPx.coerceIn(0f, size.height)) {
-                            drawContent()
+                            this@drawWithContent.drawContent()
                         }
                     },
             ) {
