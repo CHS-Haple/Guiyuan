@@ -18,11 +18,11 @@
     <string name="dual_row_signal_dot_arrangement_title">Dual-row signal dot arrangement</string>
     <string name="outer_signal_dots_only_summary">Only adjusts outer or lower dots, not centered signal dots</string>
     <string name="mobile_type_bottom_offset">Network type vertical offset</string>
-    <string name="signal_dot_arrangement_curved">Curved arrangement</string>
-    <string name="signal_dot_arrangement_horizontal">Horizontal arrangement</string>
-    <string name="signal_dot_arrangement_left_right">Left-right arrangement</string>
+    <string name="signal_dot_arrangement_curved">Curved distribution</string>
+    <string name="signal_dot_arrangement_horizontal">Horizontal distribution</string>
+    <string name="signal_dot_arrangement_left_right">Left-right distribution</string>
     <string name="left_right_activity_title">Bottom network activity indicator</string>
-    <string name="left_right_activity_summary">Show the native upload and download status at the bottom in left-right arrangement</string>
+    <string name="left_right_activity_summary">Show the native upload and download status at the bottom in left-right distribution</string>
     <string name="left_right_idle_activity_title">Show activity arrows when idle</string>
     <string name="left_right_idle_activity_summary">Keep the native arrows dim while connected but idle; this is an optional override</string>
     <string name="left_right_activity_size">Network activity indicator size</string>
@@ -75,7 +75,7 @@
     <string name="battery_top_text_weight">Number font weight</string>
     <string name="battery_top_vertical_offset">Vertical offset (+ up / − down)</string>
     <string name="battery_top_charging_icon_size">Charging bolt size</string>
-    <string name="battery_charging_size_summary">Also adjusts the bottom charging bolt in left-right arrangement</string>
+    <string name="battery_charging_size_summary">Also adjusts the bottom charging bolt in left-right distribution</string>
     <string name="battery_top_scale_value">%1$d%%</string>
     <string name="battery_top_offset_value">%1$d</string>
     <string name="keyguard_combined_status_title">Show on lock screen</string>
