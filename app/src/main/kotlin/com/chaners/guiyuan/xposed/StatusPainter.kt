@@ -305,23 +305,34 @@ internal class StatusPainter(
         previousCenterIndicator: CenterIndicator? = null,
         scaleMobileTypeWithCanvas: Boolean = false,
     ): Int {
-        if (!visual.centeredMobileSignal || model.mobileUnavailableMark) return 0
         val transform = resolveCanvasTransform(width, height, visual) ?: return 0
-        val geometry = resolveCenterGeometry(visual)
-        return listOfNotNull(
-            model.centerIndicator as? CenterIndicator.MobileType,
-            previousCenterIndicator as? CenterIndicator.MobileType,
-        ).maxOfOrNull { type ->
-            val layout = resolveMobileTypeLayout(
-                indicator = type,
-                scale = transform.scale,
-                geometry = geometry,
-                scaleWithCanvas = scaleMobileTypeWithCanvas,
-            )
-            val bottom = transform.offsetY +
-                (layout.bounds.bottom + mobileTypeBottomTranslation(visual, layout)) * transform.scale
-            if (bottom.isFinite() && bottom > height) ceil(bottom - height).toInt() + 1 else 0
-        } ?: 0
+        fun overflow(bottomY: Float): Int {
+            val bottomPx = transform.offsetY + bottomY * transform.scale
+            return if (bottomPx.isFinite() && bottomPx > height) {
+                ceil(bottomPx - height).toInt() + 1
+            } else 0
+        }
+        val centeredOverflow =
+            if (!visual.centeredMobileSignal || model.mobileUnavailableMark) 0
+            else {
+                val geometry = resolveCenterGeometry(visual)
+                listOfNotNull(
+                    model.centerIndicator as? CenterIndicator.MobileType,
+                    previousCenterIndicator as? CenterIndicator.MobileType,
+                ).maxOfOrNull { type ->
+                    val layout = resolveMobileTypeLayout(
+                        indicator = type,
+                        scale = transform.scale,
+                        geometry = geometry,
+                        scaleWithCanvas = scaleMobileTypeWithCanvas,
+                    )
+                    overflow(layout.bounds.bottom + mobileTypeBottomTranslation(visual, layout))
+                } ?: 0
+            }
+        val iconOverflow = resolveLeftRightBottomInformation(model, visual)
+            ?.let { leftRightBottomOpticalBounds(it, visual)?.bottom }
+            ?.let(::overflow) ?: 0
+        return maxOf(centeredOverflow, iconOverflow)
     }
 
     fun drawTransitionComponent(
@@ -4165,44 +4176,55 @@ internal class StatusPainter(
     private fun hasDrawableBottomInformation(model: RenderModel, visual: VisualCfg): Boolean =
         resolveLeftRightBottomInformation(model, visual) != null
 
-    // Measured after native ink-centering and the shared lower-group shift:
-    // follow mode cannot use the drawable's transparent viewport as avoidance.
-    private fun leftRightBottomInformationHalfGap(
-        model: RenderModel,
+    // Both opening avoidance and host overflow consume the same optical ink.
+    private fun leftRightBottomOpticalBounds(
+        bottom: LeftRightBottomInformation,
         visual: VisualCfg,
-        outerGeometry: OuterGeometry.Resolved,
-    ): Float {
-        val bottom = resolveLeftRightBottomInformation(model, visual) ?: return 0f
+    ): TransitionBounds? {
         val centerX = BATTERY_COMPONENT_CENTER_X
         val centerY = LEFT_RIGHT_BOTTOM_INK_CENTER_Y - visual.dualRowDotOffsetY
         val width = (if (bottom.charging) LEFT_RIGHT_CHARGING_SLOT_WIDTH else LEFT_RIGHT_BOTTOM_SLOT_WIDTH) *
             visual.leftRightBottomInfoScale
         val height = (if (bottom.charging) LEFT_RIGHT_CHARGING_SLOT_HEIGHT else LEFT_RIGHT_BOTTOM_SLOT_HEIGHT) *
             visual.leftRightBottomInfoScale
-        val asset = resolveNativeCenterDrawGeometry(
+        val geometry = resolveNativeCenterDrawGeometry(
             resource = bottom.resource,
             centerX = centerX,
             centerY = centerY,
             maxWidth = width,
             maxHeight = height,
-        ) ?: return 0f
-        val ink = asset.asset
+        ) ?: return null
+        val ink = geometry.asset
         val (viewportX, viewportY) = NativeOpticalGeometry.viewportCenterForInkAnchor(
             anchorX = centerX,
             anchorY = centerY,
-            drawWidth = asset.drawWidth,
-            drawHeight = asset.drawHeight,
+            drawWidth = geometry.drawWidth,
+            drawHeight = geometry.drawHeight,
             opticalCenterX = (ink.opticalBounds.left + ink.opticalBounds.right) / 2f,
             inkCenterY = ink.inkCenterY,
         )
         val deltaX = viewportX - centerX
         val deltaY = viewportY - centerY
-        val bounds = asset.opticalBounds
+        return geometry.opticalBounds.let { bounds ->
+            TransitionBounds(
+                bounds.left + deltaX, bounds.top + deltaY,
+                bounds.right + deltaX, bounds.bottom + deltaY,
+            )
+        }
+    }
+
+    private fun leftRightBottomInformationHalfGap(
+        model: RenderModel,
+        visual: VisualCfg,
+        outerGeometry: OuterGeometry.Resolved,
+    ): Float {
+        val bottom = resolveLeftRightBottomInformation(model, visual) ?: return 0f
+        val bounds = leftRightBottomOpticalBounds(bottom, visual) ?: return 0f
         val gap = BatteryTopArcPolicy.resolveGap(
-            contentLeft = bounds.left + deltaX,
-            contentTop = bounds.top + deltaY,
-            contentRight = bounds.right + deltaX,
-            contentBottom = bounds.bottom + deltaY,
+            contentLeft = bounds.left,
+            contentTop = bounds.top,
+            contentRight = bounds.right,
+            contentBottom = bounds.bottom,
             ringCenterX = batteryRing.centerX(),
             ringCenterY = batteryRing.centerY(),
             ringRadius = batteryRing.width() / 2f,
