@@ -5,6 +5,7 @@ import com.chaners.guiyuan.ui.screens.PreviewChargingState
 import com.chaners.guiyuan.ui.screens.PreviewDataSim
 import com.chaners.guiyuan.ui.screens.PreviewMobileNetwork
 import com.chaners.guiyuan.ui.screens.PreviewNetworkMode
+import com.chaners.guiyuan.ui.screens.PreviewNetworkActivity
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.PreviewSimCards
 import com.chaners.guiyuan.ui.screens.PreviewWifiState
@@ -26,6 +27,7 @@ class SandboxLeaseTest {
         simCards = PreviewSimCards.SIM2_ONLY,
         wifiState = PreviewWifiState.HOTSPOT,
         wifiSignalLevel = 1,
+        networkActivity = PreviewNetworkActivity.UPLOAD,
         batteryPercent = 13,
         batteryMode = PreviewBatteryMode.POWER_SAVE,
         chargingState = PreviewChargingState.SUPER_FAST_CHARGING,
@@ -45,6 +47,17 @@ class SandboxLeaseTest {
 
     @Test fun fullStateRoundTrips() {
         assertEquals(lease, SandboxLease.decode(lease.encode()))
+    }
+
+    @Test fun legacyV2LeaseStillDecodesWithNativeActivityDefault() {
+        val fields = lease.encode().split('|').toMutableList()
+        assertEquals("3", fields[0])
+        fields[0] = "2"
+        fields.removeAt(19)
+        val restored = SandboxLease.decode(fields.joinToString("|"))
+        assertNotNull(restored)
+        assertEquals(PreviewNetworkActivity.BOTH, restored!!.state.networkActivity)
+        assertEquals(state.copy(networkActivity = PreviewNetworkActivity.BOTH), restored.state)
     }
 
     @Test fun dualPreviewSurvivesFirstLeaseBeforeAnyUpdates() {
