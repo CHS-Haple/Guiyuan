@@ -219,6 +219,28 @@ class PreviewSandboxPolicyTest {
     }
 
     @Test
+    fun previewNetworkActivityUsesNativeTransportResourceFamilies() {
+        val wifi = PreviewCenterSource.WIFI
+        val mobile = PreviewCenterSource.MOBILE
+        assertEquals(listOf("stat_sys_wifi_out"),
+            previewNetworkActivityResourceNames(wifi, PreviewNetworkActivity.UPLOAD))
+        assertEquals(listOf("stat_sys_wifi_in"),
+            previewNetworkActivityResourceNames(wifi, PreviewNetworkActivity.DOWNLOAD))
+        assertEquals(listOf("stat_sys_wifi_inout"),
+            previewNetworkActivityResourceNames(wifi, PreviewNetworkActivity.BOTH))
+        assertEquals(listOf("stat_sys_signal_out_left", "stat_sys_signal_out"),
+            previewNetworkActivityResourceNames(mobile, PreviewNetworkActivity.UPLOAD))
+        assertEquals(listOf("stat_sys_signal_in_left", "stat_sys_signal_in"),
+            previewNetworkActivityResourceNames(mobile, PreviewNetworkActivity.DOWNLOAD))
+        assertEquals(listOf("stat_sys_signal_inout_left", "stat_sys_signal_inout"),
+            previewNetworkActivityResourceNames(mobile, PreviewNetworkActivity.BOTH))
+        assertTrue(previewNetworkActivityResourceNames(wifi, PreviewNetworkActivity.IDLE).isEmpty())
+        assertTrue(previewNetworkActivityResourceNames(PreviewCenterSource.AIRPLANE,
+            PreviewNetworkActivity.BOTH).isEmpty())
+        assertEquals(PreviewNetworkActivity.BOTH, PreviewSandboxUiState().networkActivity)
+    }
+
+    @Test
     fun previewChargingUsesNativeHollowBatteryResourceFamilies() {
         assertEquals(
             listOf(
