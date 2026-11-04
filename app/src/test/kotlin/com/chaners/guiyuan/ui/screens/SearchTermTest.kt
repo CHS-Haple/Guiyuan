@@ -40,6 +40,11 @@ class SearchTermTest {
                     term.matchesInitials(query) == term.matchesInitialsFolded(folded))
             }
         }
+        assertTrue(terms[0].matchesFolded("wlzs"))
+        assertTrue(terms[1].matchesFolded("wifi", includeInitials = false))
+        assertFalse(terms[1].matchesInitialsFolded("wfs"))
+        assertTrue(terms[2].matchesInitialsFolded("dlys"))
+        assertFalse(terms[2].matchesFolded("wifi"))
     }
 
     @Test
