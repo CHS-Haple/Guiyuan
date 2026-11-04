@@ -5,6 +5,7 @@ import com.chaners.guiyuan.ui.screens.PreviewChargingState
 import com.chaners.guiyuan.ui.screens.PreviewDataSim
 import com.chaners.guiyuan.ui.screens.PreviewMobileNetwork
 import com.chaners.guiyuan.ui.screens.PreviewNetworkMode
+import com.chaners.guiyuan.ui.screens.PreviewNetworkActivity
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.PreviewSimCards
 import com.chaners.guiyuan.ui.screens.PreviewWifiState
@@ -35,7 +36,7 @@ internal data class SandboxLease(
 
     fun encode(): String =
         listOf(
-            "2", id, elapsedAt, wallAt,
+            "3", id, elapsedAt, wallAt,
             if (state.simPresent) 1 else 0,
             if (state.airplaneMode) 1 else 0,
             state.networkMode.name, state.mobileNetwork.name,
@@ -45,6 +46,7 @@ internal data class SandboxLease(
             state.dataSim.name, state.simCards.name,
             state.wifiState.name, state.wifiSignalLevel,
             state.batteryPercent, state.batteryMode.name, state.chargingState.name,
+            state.networkActivity.name,
         ).joinToString("|")
 
     companion object {
@@ -52,7 +54,9 @@ internal data class SandboxLease(
             if (raw == null || raw.length > 400) return null
             return runCatching {
                 val fields = raw.split('|')
-                if (fields.size != 19 || fields[0] != "2") return null
+                val oldSchema = fields.size == 19 && fields[0] == "2"
+                val newSchema = fields.size == 20 && fields[0] == "3"
+                if (!oldSchema && !newSchema) return null
                 fun bool(s: String): Boolean = when (s) {
                     "1" -> true
                     "0" -> false
@@ -76,6 +80,9 @@ internal data class SandboxLease(
                     batteryPercent = bounded(fields[16], 0..100),
                     batteryMode = enumValueOf<PreviewBatteryMode>(fields[17]),
                     chargingState = enumValueOf<PreviewChargingState>(fields[18]),
+                    networkActivity = if (newSchema) {
+                        enumValueOf<PreviewNetworkActivity>(fields[19])
+                    } else PreviewNetworkActivity.BOTH,
                 )
                 SandboxLease(fields[1].toLong(), fields[2].toLong(), fields[3].toLong(), state)
             }.getOrElse { error ->
