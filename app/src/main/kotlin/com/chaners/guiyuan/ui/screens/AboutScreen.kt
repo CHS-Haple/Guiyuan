@@ -370,7 +370,7 @@ internal fun AboutScreen(
 @Composable
 internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
     val uriHandler = LocalUriHandler.current
-    val miuixVersion = "${BuildConfig.MIUIX_VERSION}｜PR #423"
+    val miuixVersion = "${BuildConfig.MIUIX_VERSION} (PR #423)"
     val runtimeDependencies =
         remember(miuixVersion) {
             listOf(
