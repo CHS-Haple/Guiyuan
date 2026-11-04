@@ -4087,9 +4087,9 @@ internal class StatusPainter(
             tint = if (bottomCharging) colors.chargingIconTint else colors.centerTint,
             opacity = opacity * outsideAmount,
             centerX = BATTERY_COMPONENT_CENTER_X,
-            centerY = 100f,
-            maxWidth = 13f,
-            maxHeight = 13f,
+            centerY = 92f,
+            maxWidth = LEFT_RIGHT_BOTTOM_SLOT_WIDTH * visual.leftRightBottomInfoScale,
+            maxHeight = LEFT_RIGHT_BOTTOM_SLOT_HEIGHT * visual.leftRightBottomInfoScale,
             nativeTransform = nativeTransform,
             pixelAligned = false,
         )
@@ -4301,6 +4301,8 @@ internal class StatusPainter(
         const val BATTERY_COMPONENT_CENTER_Y = 58f
         const val BATTERY_TOP_TEXT_SIZE = 24f
         const val BATTERY_TOP_CHARGING_ICON_SIZE = 18f
+        const val LEFT_RIGHT_BOTTOM_SLOT_WIDTH = 19f
+        const val LEFT_RIGHT_BOTTOM_SLOT_HEIGHT = 22f
         const val BATTERY_TOP_ICON_TEXT_GAP = 1f
         const val BATTERY_TOP_RING_VISUAL_CLEARANCE = 2f
         const val BATTERY_BOTTOM_RING_VISUAL_CLEARANCE = 4f

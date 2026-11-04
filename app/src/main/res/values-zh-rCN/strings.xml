@@ -24,6 +24,8 @@
     <string name="left_right_activity_summary">在底部显示原生上传、下载活动状态</string>
     <string name="left_right_charging_title">底部充电图标</string>
     <string name="left_right_charging_summary">充电时将闪电图标移至底部，优先于网络活动指示器</string>
+    <string name="left_right_bottom_info_size">底部信息大小</string>
+    <string name="left_right_bottom_info_size_summary">统一调整网络活动指示器与底部充电图标的大小</string>
     <string name="signal_dot_vertical_offset">信号点上下偏移</string>
     <string name="battery_lower_opening_title">电量环开口方式</string>
     <string name="battery_lower_opening_summary">开口随下方信号点移动调整，或保持固定大小</string>

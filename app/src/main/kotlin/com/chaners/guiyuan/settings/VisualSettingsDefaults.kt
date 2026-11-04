@@ -9,6 +9,10 @@ internal const val DUAL_ROW_DOT_ARRANGEMENT_KEY = "content_style"
 internal const val SINGLE_ROW_DOT_STYLE_KEY = "single_row_dot_style"
 internal const val LEFT_RIGHT_ACTIVITY_KEY = "left_right_activity"
 internal const val LEFT_RIGHT_CHARGING_KEY = "left_right_charging"
+internal const val LEFT_RIGHT_BOTTOM_INFO_SCALE_KEY = "left_right_bottom_info_scale"
+internal const val LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT = 1f
+internal const val LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN = 0.7f
+internal const val LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX = 1.2f
 internal const val LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY = "single_row_flat_dots"
 // v1.0.0 released key, consumed once when introducing three layout profiles.
 internal const val LEGACY_DUAL_DOT_STYLE_KEY = "dual_dot_style"
@@ -84,6 +88,7 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         SINGLE_ROW_DOT_STYLE_KEY,
         LEFT_RIGHT_ACTIVITY_KEY,
         LEFT_RIGHT_CHARGING_KEY,
+        LEFT_RIGHT_BOTTOM_INFO_SCALE_KEY,
         MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
         CURVED_SIGNAL_DOT_OFFSET_Y_KEY,
         HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY,

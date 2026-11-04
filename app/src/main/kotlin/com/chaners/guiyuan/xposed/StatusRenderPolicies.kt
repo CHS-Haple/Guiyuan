@@ -449,7 +449,7 @@ internal object OuterGeometry {
             require(index in 0 until DOT_COUNT && row in 0..1)
             val minimumChord = 2f * dualMobileDotRadius + 1f
             val step = max(
-                14.0,
+                17.0,
                 Math.toDegrees(2.0 * kotlin.math.asin(
                     (minimumChord / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
                 )),
@@ -458,7 +458,7 @@ internal object OuterGeometry {
             val endMargin = Math.toDegrees(2.0 * kotlin.math.asin(
                 (ringClearance / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
             ))
-            val first = minOf(118.0, 180.0 - 3.0 * step - endMargin)
+            val first = minOf(112.0, 180.0 - 3.0 * step - endMargin)
             val degrees = if (row == 0) first + index * step
                 else 180.0 - first - index * step
             return Math.toRadians(degrees)

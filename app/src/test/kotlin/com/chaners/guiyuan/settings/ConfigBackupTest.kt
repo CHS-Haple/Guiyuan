@@ -27,6 +27,27 @@ class ConfigBackupTest {
         batterySchemes = BatteryColorSchemeLibrary(),
     )
 
+    @Test fun leftRightBottomSizeNormalizesAndPersistsInLayoutProfile() {
+        val selected = VisualCfg(
+            layout = ContentLayout.NETWORK_CENTER,
+            dualSignal = true,
+            dualRowDotArrangement = SignalDotArrangement.LEFT_RIGHT,
+            leftRightBottomInfoScale = 1.15f,
+        )
+        assertEquals(0.7f, selected.copy(leftRightBottomInfoScale = 0.2f)
+            .normalized().leftRightBottomInfoScale, 0.0001f)
+        assertEquals(1.2f, selected.copy(leftRightBottomInfoScale = 4f)
+            .normalized().leftRightBottomInfoScale, 0.0001f)
+        assertEquals(1f, selected.copy(leftRightBottomInfoScale = Float.NaN)
+            .normalized().leftRightBottomInfoScale, 0.0001f)
+        val source = sample().let { backup ->
+            backup.copy(visual = backup.visual.copy(profiles = backup.visual.profiles.map { cfg ->
+                if (cfg.dualSignal && cfg.layout == ContentLayout.NETWORK_CENTER) selected else cfg
+            }))
+        }
+        assertEquals(source, ConfigBackupFormat.decode(ConfigBackupFormat.encode(source)))
+    }
+
     @Test fun rejectsConflictingModeWideValues() {
         val source = sample()
         val first = source.visual.profiles.first()

@@ -247,6 +247,17 @@ internal class VisualRepo(context: Context) {
         preferences.edit().putBoolean(activeProfileKey(LEFT_RIGHT_CHARGING_KEY), enabled).apply()
     }
 
+    fun setLeftRightBottomInfoScale(scale: Float) {
+        preferences.edit().putFloat(
+            activeProfileKey(LEFT_RIGHT_BOTTOM_INFO_SCALE_KEY),
+            scale.finiteIn(
+                LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN,
+                LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX,
+                LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
+            ),
+        ).apply()
+    }
+
     fun setSingleRowDotArrangement(style: SignalDotArrangement) {
         preferences.edit().putString(
             activeProfileKey(SINGLE_ROW_DOT_STYLE_KEY),
@@ -729,6 +740,7 @@ internal fun SharedPreferences.readVisualCfg(
         singleRowDotArrangement = singleStyle,
         leftRightShowActivity = flag(LEFT_RIGHT_ACTIVITY_KEY, true),
         leftRightBottomCharging = flag(LEFT_RIGHT_CHARGING_KEY, false),
+        leftRightBottomInfoScale = size(LEFT_RIGHT_BOTTOM_INFO_SCALE_KEY, LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT),
         fixedLowerOpening = flag(LOWER_FIXED_OPENING_KEY, false),
         mobileTypeBottomOffsetY = size(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, mobileTypeBottomOffsetDefault(layout)),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
@@ -831,6 +843,9 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putBoolean(
         visualProfileKey(layout, LEFT_RIGHT_CHARGING_KEY),
         normalized.leftRightBottomCharging,
+    ).putFloat(
+        visualProfileKey(layout, LEFT_RIGHT_BOTTOM_INFO_SCALE_KEY),
+        normalized.leftRightBottomInfoScale,
     ).putBoolean(
         visualProfileKey(layout, LOWER_FIXED_OPENING_KEY),
         normalized.fixedLowerOpening,

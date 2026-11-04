@@ -204,6 +204,7 @@ internal data class VisualCfg(
     val dualRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
     val leftRightShowActivity: Boolean = true,
     val leftRightBottomCharging: Boolean = false,
+    val leftRightBottomInfoScale: Float = LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
     // New field; older backup booleans are translated before decoding.
     @SerialName("singleRowDotStyle")
     val singleRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
@@ -314,6 +315,12 @@ internal fun VisualCfg.normalized(): VisualCfg =
                 NETWORK_TOP_OFFSET_MIN,
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,
+            ),
+        leftRightBottomInfoScale =
+            leftRightBottomInfoScale.finiteIn(
+                LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN,
+                LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX,
+                LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
             ),
         topChargingIconScale =
             topChargingIconScale.finiteIn(

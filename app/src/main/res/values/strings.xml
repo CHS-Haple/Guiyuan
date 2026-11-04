@@ -25,6 +25,8 @@
     <string name="left_right_activity_summary">Show native upload and download activity in the bottom slot</string>
     <string name="left_right_charging_title">Charging icon at bottom</string>
     <string name="left_right_charging_summary">Move the lightning icon to the bottom while charging, ahead of network activity</string>
+    <string name="left_right_bottom_info_size">Bottom indicator size</string>
+    <string name="left_right_bottom_info_size_summary">Adjust native network activity and bottom charging icons together</string>
     <string name="signal_dot_vertical_offset">Signal dots vertical offset</string>
     <string name="battery_lower_opening_title">Battery ring opening</string>
     <string name="battery_lower_opening_summary">Adjust the opening with lower signal dots, or keep a fixed size</string>

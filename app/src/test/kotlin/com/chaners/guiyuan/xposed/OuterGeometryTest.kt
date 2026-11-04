@@ -376,6 +376,32 @@ class OuterGeometryTest {
     }
 
     @Test
+    fun leftRightDotsKeepWiderSpacingAndClearTheSharedBottomSlot() {
+        for (step in 0..12) {
+            val g = OuterGeometry.resolve(0.7f + step * 0.05f)
+            val first = Math.toDegrees(
+                kotlin.math.atan2(
+                    g.dualDotY(0, 0, SignalDotArrangement.LEFT_RIGHT).toDouble(),
+                    g.dualDotX(0, 0, SignalDotArrangement.LEFT_RIGHT).toDouble(),
+                ),
+            )
+            val last = Math.toDegrees(
+                kotlin.math.atan2(
+                    g.dualDotY(3, 0, SignalDotArrangement.LEFT_RIGHT).toDouble(),
+                    g.dualDotX(3, 0, SignalDotArrangement.LEFT_RIGHT).toDouble(),
+                ),
+            )
+            assertTrue("split four-dot arc needs breathing room", last - first >= 50.9)
+            for (row in 0..1) {
+                val nearestX = kotlin.math.abs(g.dualDotX(0, row, SignalDotArrangement.LEFT_RIGHT))
+                val slotHalfWidth = 19f * 1.2f / 2f
+                assertTrue("bottom slot must clear both SIM dot groups",
+                    nearestX - slotHalfWidth - g.dualMobileDotRadius > 0.5f)
+            }
+        }
+    }
+
+    @Test
     fun fourDotsRemainMirrorSymmetricAcrossSupportedScales() {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)

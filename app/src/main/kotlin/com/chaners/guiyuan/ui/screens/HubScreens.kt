@@ -95,6 +95,9 @@ import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_DEFAULT
+import com.chaners.guiyuan.settings.LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT
+import com.chaners.guiyuan.settings.LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN
+import com.chaners.guiyuan.settings.LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_MAX
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_MIN
@@ -560,6 +563,32 @@ internal fun FeaturesScreen(
                                 SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled)
                             },
                             onCheckedChange = visualRepo::setLeftRightBottomCharging,
+                        )
+                    }
+                    if ((visual.leftRightShowActivity || visual.leftRightBottomCharging) &&
+                        search.matches(R.string.left_right_bottom_info_size)) {
+                        SliderPreference(
+                            value = visual.leftRightBottomInfoScale,
+                            onValueChange = visualRepo::setLeftRightBottomInfoScale,
+                            title = stringResource(R.string.left_right_bottom_info_size),
+                            summary = stringResource(R.string.left_right_bottom_info_size_summary),
+                            startAction = {
+                                SemanticLeadingIcon(
+                                    R.drawable.ic_material_symbol_open_in_full,
+                                    featureCfg.enabled,
+                                )
+                            },
+                            valueText = stringResource(
+                                R.string.percent_value,
+                                (visual.leftRightBottomInfoScale * 100f).roundToInt(),
+                            ),
+                            valueRange = LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN..LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX,
+                            steps = 9,
+                            showKeyPoints = true,
+                            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                            keyPoints = listOf(LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT),
+                            magnetThreshold = 0.035f,
+                            enabled = featureCfg.enabled,
                         )
                     }
                 }
