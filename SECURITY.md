@@ -42,7 +42,7 @@ The current supported stable version is 1.0.0. New fixes are evaluated against t
 
 ## 简体中文
 
-归元目前支持 **Xiaomi HyperOS 4** 和兼容 Modern Xposed API 102 的 LSPosed 环境。已实机验证的基线为 Xiaomi 15 Pro、HyperOS `4.0.0.19.XOBCNXM`、SystemUI `17.03.260226.r`。其他设备和版本尚未全部验证。可以报告最新正式版或开发版中的安全问题。
+归元（Guiyuan）目前支持 **Xiaomi HyperOS 4** 和兼容 Modern Xposed API 102 的 LSPosed 环境。已实机验证的基线为 Xiaomi 15 Pro、HyperOS `4.0.0.19.XOBCNXM`、SystemUI `17.03.260226.r`。其他设备和版本尚未全部验证。可以报告最新正式版或开发版中的安全问题。
 
 ### 如何报告安全漏洞
 

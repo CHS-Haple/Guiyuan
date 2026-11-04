@@ -29,7 +29,7 @@ internal object AppPlatform {
     private const val GUIDE_STARTED = "started"
     // Increment only when a substantive agreement revision requires fresh acknowledgment.
     private const val PRIVACY_ACK_VERSION = 4
-    private const val TERMS_ACK_VERSION = 2
+    private const val TERMS_ACK_VERSION = 3
 
     internal fun hasCurrentAgreementAcknowledgment(privacy: Int, terms: Int): Boolean =
         privacy >= PRIVACY_ACK_VERSION && terms >= TERMS_ACK_VERSION
