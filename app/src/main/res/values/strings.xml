@@ -23,6 +23,13 @@
     <string name="signal_dot_arrangement_left_right">Left-right distribution</string>
     <string name="left_right_activity_title">Bottom network activity indicator</string>
     <string name="left_right_activity_summary">Show the native upload and download status at the bottom in left-right distribution</string>
+    <string name="left_right_activity_unavailable_summary">Available only with dual-row signal dots in left-right distribution</string>
+    <string name="home_preview_activity_state_title">Network activity state</string>
+    <string name="home_preview_activity_unavailable_summary">Adjustable only with dual-SIM dots in left-right distribution</string>
+    <string name="home_preview_activity_upload">Upload</string>
+    <string name="home_preview_activity_download">Download</string>
+    <string name="home_preview_activity_both">Both</string>
+    <string name="home_preview_activity_idle">Idle</string>
     <string name="left_right_idle_activity_title">Show activity arrows when idle</string>
     <string name="left_right_idle_activity_summary">Keep the native arrows dim while connected but idle; this is an optional override</string>
     <string name="left_right_activity_size">Network activity indicator size</string>
