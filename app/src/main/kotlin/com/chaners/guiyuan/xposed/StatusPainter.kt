@@ -690,6 +690,23 @@ internal class StatusPainter(
             }
         }
 
+        // Bottom charging is the same logical charging participant as the top
+        // bolt. Only its source optical bounds differ; CC keeps the established
+        // battery-number follower and native charging-target handoff policy.
+        resolveLeftRightBottomInformation(model, visual)
+            ?.takeIf { it.charging }
+            ?.let { charging ->
+                leftRightBottomOpticalBounds(charging, visual)?.let { bounds ->
+                    specs += TransitionComponentSpec(
+                        component = TransitionComponent.CHARGING_ICON,
+                        sourceBounds = toViewBounds(bounds),
+                        target = TransitionTarget.BatteryChargingIcon,
+                        shapePolicy = TransitionShapePolicy.RIGID,
+                        scalePolicy = TransitionScalePolicy.TARGET,
+                    )
+                }
+            }
+
         val centerSpec =
             when (model.centerIndicator) {
                 is CenterIndicator.Wifi -> {
@@ -2217,6 +2234,28 @@ internal class StatusPainter(
         visual: VisualCfg,
         nativeTransform: NativeRenderTransform,
     ) {
+        // Reuse the established charging transition component, including CC
+        // target matching and clipping, with the bottom slot as its source.
+        resolveLeftRightBottomInformation(model, visual)
+            ?.takeIf { it.charging }
+            ?.let { bottom ->
+                drawNativeCenterResource(
+                    canvas = canvas,
+                    resource = bottom.resource,
+                    tint = chargingIconTint,
+                    opacity = opacity,
+                    centerX = BATTERY_COMPONENT_CENTER_X,
+                    centerY = leftRightBottomCenterY(visual, charging = true),
+                    maxWidth = LEFT_RIGHT_CHARGING_SLOT_WIDTH *
+                        leftRightBottomScale(visual, charging = true),
+                    maxHeight = LEFT_RIGHT_CHARGING_SLOT_HEIGHT *
+                        leftRightBottomScale(visual, charging = true),
+                    nativeTransform = nativeTransform,
+                    pixelAligned = true,
+                    opticalInkCentered = true,
+                )
+                return
+            }
         val layout =
             resolveBatteryTopReadoutLayout(
                 model = model,
