@@ -56,6 +56,14 @@ internal enum class PreviewWifiState {
     DUAL_WIFI,
 }
 
+// Sandbox-only selection; real status-bar activity still comes from native collectors.
+internal enum class PreviewNetworkActivity {
+    UPLOAD,
+    DOWNLOAD,
+    BOTH,
+    IDLE,
+}
+
 internal enum class PreviewBatteryMode {
     BALANCED,
     POWER_SAVE,
@@ -90,6 +98,7 @@ internal data class PreviewSandboxUiState(
     val simCards: PreviewSimCards = PreviewSimCards.BOTH,
     val wifiState: PreviewWifiState = PreviewWifiState.CONNECTED,
     val wifiSignalLevel: Int = 3,
+    val networkActivity: PreviewNetworkActivity = PreviewNetworkActivity.BOTH,
     val batteryPercent: Int = 87,
     val batteryMode: PreviewBatteryMode = PreviewBatteryMode.BALANCED,
     val chargingState: PreviewChargingState = PreviewChargingState.NOT_CHARGING,
@@ -296,6 +305,18 @@ internal fun PreviewSandboxUiState.toRenderModel(
                 resources = resources,
                 state = chargingState,
             ),
+        networkActivityResId = if (networkActivity == PreviewNetworkActivity.IDLE) {
+            // Null is the native idle contract. The existing user setting
+            // decides whether the dim idle arrows should remain visible.
+            null
+        } else {
+            resources.drawableId(
+                *previewNetworkActivityResourceNames(
+                    centerSource = previewCenterSource(),
+                    state = networkActivity,
+                ).toTypedArray(),
+            )
+        },
         mobileLevel = mobileLevel,
         dualMobileLevels = dualLevels,
         mobileUnavailableMark = airplaneMode || !hasSim,
@@ -340,6 +361,31 @@ private fun previewWifiResourceId(
             level = level.coerceIn(0, 3),
         ).toTypedArray(),
     )
+
+// All IDs are resolved against the installed SystemUI. Never substitute an
+// app-owned approximation when a requested native variant is unavailable.
+internal fun previewNetworkActivityResourceNames(
+    centerSource: PreviewCenterSource,
+    state: PreviewNetworkActivity,
+): List<String> =
+    when (centerSource) {
+        PreviewCenterSource.WIFI -> when (state) {
+            PreviewNetworkActivity.UPLOAD -> listOf("stat_sys_wifi_out")
+            PreviewNetworkActivity.DOWNLOAD -> listOf("stat_sys_wifi_in")
+            PreviewNetworkActivity.BOTH -> listOf("stat_sys_wifi_inout")
+            PreviewNetworkActivity.IDLE -> emptyList()
+        }
+        PreviewCenterSource.MOBILE -> when (state) {
+            PreviewNetworkActivity.UPLOAD ->
+                listOf("stat_sys_signal_out_left", "stat_sys_signal_out")
+            PreviewNetworkActivity.DOWNLOAD ->
+                listOf("stat_sys_signal_in_left", "stat_sys_signal_in")
+            PreviewNetworkActivity.BOTH ->
+                listOf("stat_sys_signal_inout_left", "stat_sys_signal_inout")
+            PreviewNetworkActivity.IDLE -> emptyList()
+        }
+        else -> emptyList()
+    }
 
 internal fun previewChargingResourceNames(
     state: PreviewChargingState,
