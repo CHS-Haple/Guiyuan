@@ -310,6 +310,7 @@ internal object CcTransitionOwner {
                     }
                 }
             }
+        private var cachedNetworkActivityTarget: Pair<Int, TargetWitness>? = null
         private var nativeWifiRoot: View? = null
         private var nativeWifiSignal: View? = null
         private var wifiTargetReady: Boolean? = null
@@ -2712,11 +2713,90 @@ internal object CcTransitionOwner {
             return CcTransitionPolicy.dualMobileGroupGeometry(targets)
         }
 
+        // The original binder tags its activity ImageView with the applied
+        // drawable resource ID. Match that exact native image in FINAL instead
+        // of guessing an activity View ID, scale or destination.
+        private fun resolveNativeNetworkActivityTarget(model: RenderModel): TargetWitness? {
+            val resourceId = model.networkActivityResId?.takeIf { it > 0 } ?: return null
+            val wifi = model.centerIndicator is CenterIndicator.Wifi
+            if (!wifi && model.centerIndicator !is CenterIndicator.MobileType) return null
+
+            val native = PresentationStore.snapshot().mobilePresentation
+            val selectedSubId = model.effectiveDataSubscriptionId
+            val candidateRoots = if (wifi) {
+                slotViews(finalStatusIcons, WIFI_SLOT)
+            } else {
+                listOf(MOBILE_SLOT, STACKED_MOBILE_SLOT)
+                    .flatMap { slot -> slotViews(finalStatusIcons, slot) }
+                    .distinct()
+            }.filter { root ->
+                root.visibility == View.VISIBLE && isUsableSlotView(root)
+            }
+            val singleMobileRoot = !wifi && candidateRoots.size == 1 &&
+                native?.activeSubscriptionIds?.contains(selectedSubId) == true &&
+                (native.activeSubscriptionIds.size == 1 ||
+                    native.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED)
+            fun ownsSelectedTransport(root: View): Boolean {
+                if (wifi) return NativeParticipantAccess.slotOf(root) == WIFI_SLOT
+                if (selectedSubId < 0) return false
+                return readMobileSubId(root) == selectedSubId ||
+                    (singleMobileRoot && readMobileSubId(root) == null)
+            }
+            fun nativeImageValid(image: ImageView): Boolean =
+                image.visibility == View.VISIBLE &&
+                    image.isAttachedToWindow && image.width > 0 && image.height > 0 &&
+                    image.drawable != null &&
+                    (image.tag as? Number)?.toInt() == resourceId
+
+            cachedNetworkActivityTarget?.let { (cachedId, witness) ->
+                val image = witness.opticalView as? ImageView
+                if (cachedId == resourceId &&
+                    witness.slotView in candidateRoots &&
+                    ownsSelectedTransport(witness.slotView) &&
+                    image != null && nativeImageValid(image) &&
+                    belongsToSlot(image, witness.slotView)
+                ) return witness
+            }
+            cachedNetworkActivityTarget = null
+
+            val matches = ArrayList<TargetWitness>(2)
+            for (root in candidateRoots.filter(::ownsSelectedTransport)) {
+                val queue = ArrayDeque<Pair<View, Int>>()
+                queue.add(root to 0)
+                var visited = 0
+                while (queue.isNotEmpty() && visited++ < 64) {
+                    val (node, depth) = queue.removeFirst()
+                    if (node is ImageView && nativeImageValid(node)) {
+                        matches += TargetWitness(
+                            slot = NativeParticipantAccess.slotOf(root) ?: continue,
+                            slotView = root,
+                            opticalView = node,
+                            subscriptionId = readMobileSubId(root),
+                            requiresOpticalGeometry = true,
+                            fallbackBounds = null,
+                        )
+                        if (matches.size > 1) return null
+                    }
+                    if (node is ViewGroup && depth < 6) {
+                        for (index in 0 until node.childCount) {
+                            queue.add(node.getChildAt(index) to depth + 1)
+                        }
+                    }
+                }
+            }
+            return matches.singleOrNull()?.also { match ->
+                cachedNetworkActivityTarget = resourceId to match
+            }
+        }
+
         private fun resolveSpecTarget(
             spec: StatusPainter.TransitionComponentSpec,
             model: RenderModel,
             preferredMobileSubId: Int?,
         ): TargetWitness? {
+            if (spec.component == StatusPainter.TransitionComponent.NETWORK_ACTIVITY) {
+                return resolveNativeNetworkActivityTarget(model)
+            }
             if (
                 model.dualMobileLevels != null &&
                 spec.component == StatusPainter.TransitionComponent.MOBILE
@@ -2840,6 +2920,8 @@ internal object CcTransitionOwner {
 
                     StatusPainter.TransitionTarget.BatteryChargingIcon ->
                         resolveBatteryChargingIconTargetWitness()
+
+                    StatusPainter.TransitionTarget.NetworkActivity -> null
 
                     is StatusPainter.TransitionTarget.Slots ->
                         target.preferredSlots.firstNotNullOfOrNull { slot ->
