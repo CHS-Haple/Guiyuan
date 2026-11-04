@@ -14,6 +14,7 @@ internal data class RenderModel(
     val charging: Boolean,
     val centerIndicator: CenterIndicator,
     val chargingIconResId: Int? = null,
+    val networkActivityResId: Int? = null,
     val mobileLevel: Int?,
     val mobileUnavailableMark: Boolean = false,
     val effectiveDataSubscriptionId: Int,
@@ -203,6 +204,11 @@ internal data class RenderModel(
                 charging = battery.charging,
                 centerIndicator = centerIndicator,
                 chargingIconResId = battery.chargingIconResId,
+                networkActivityResId = if (centerIndicator is CenterIndicator.Wifi) {
+                    snapshot.wifiActivityResId
+                } else {
+                    snapshot.mobileActivityResIds[selectedSubscriptionId]
+                },
                 mobileLevel = mobileLevel,
                 mobileUnavailableMark = mobileUnavailableMark,
                 effectiveDataSubscriptionId = selectedSubscriptionId,
