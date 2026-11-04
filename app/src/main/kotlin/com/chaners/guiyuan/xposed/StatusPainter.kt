@@ -4279,7 +4279,8 @@ internal class StatusPainter(
             maxHeight = (if (bottomCharging) LEFT_RIGHT_CHARGING_SLOT_HEIGHT else LEFT_RIGHT_BOTTOM_SLOT_HEIGHT) *
                 visual.leftRightBottomInfoScale,
             nativeTransform = nativeTransform,
-            pixelAligned = false,
+            // Match steady Wi-Fi and airplane icons: settle native ink on physical pixels.
+            pixelAligned = true,
             opticalInkCentered = true,
         )
     }
