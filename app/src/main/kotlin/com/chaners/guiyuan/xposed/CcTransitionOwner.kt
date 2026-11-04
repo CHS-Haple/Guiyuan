@@ -1219,6 +1219,62 @@ internal object CcTransitionOwner {
                     Pair(numberSource, numberCurrent)
                 }
 
+            // The bottom charging bolt is visually part of the two outer
+            // mobile rows, not of the battery-number/ring group. Reuse the
+            // exact eight-dot motion authorities for its source flight.
+            // Separate and aggregate native targets retain their existing
+            // SIM-identity/optical verification; without them, follow the
+            // carrier instead of inventing a destination.
+            val dualMobileFollowerFrames =
+                if (specs.any { it.followDualMobileMotion }) {
+                    dualSpec?.let { mobileSpec ->
+                        val mobileSource = CcTransitionPolicy.componentGeometry(
+                            parentGeometry = sourceParentGeometry,
+                            parentWidth = sourceWidth,
+                            parentHeight = sourceHeight,
+                            bounds = mobileSpec.sourceBounds,
+                        ) ?: return@let null
+                        val carried = carriedSourceGeometry(mobileSource, carrierFrames)
+                        val current =
+                            when {
+                                dualRowTargets != null && dualRowTravel != null &&
+                                    rowSpecs?.size == 2 -> {
+                                    val currentRows = rowSpecs.zip(dualRowTargets).mapNotNull {
+                                        (rowSpec, target) ->
+                                        CcTransitionPolicy.componentGeometry(
+                                            parentGeometry = sourceParentGeometry,
+                                            parentWidth = sourceWidth,
+                                            parentHeight = sourceHeight,
+                                            bounds = rowSpec.sourceBounds,
+                                        )?.let { rowSource ->
+                                            CcTransitionPolicy.dualMobileRowMotionGeometry(
+                                                source = carriedSourceGeometry(rowSource, carrierFrames),
+                                                target = target.second,
+                                                groupTravelX = dualRowTravel[0],
+                                                groupTravelY = dualRowTravel[1],
+                                                progress = motionProgress,
+                                                scalePolicy = rowSpec.scalePolicy,
+                                            )
+                                        }
+                                    }
+                                    CcTransitionPolicy.dualMobileGroupGeometry(currentRows) ?: carried
+                                }
+
+                                aggregateTarget != null ->
+                                    projectedGeometry(
+                                        source = mobileSource,
+                                        target = aggregateTarget.first,
+                                        progress = motionProgress,
+                                        scalePolicy = mobileSpec.scalePolicy,
+                                        carrierFrames = carrierFrames,
+                                    )
+
+                                else -> carried
+                            }
+                        mobileSource to current
+                    }
+                } else null
+
             specs.forEach { spec ->
                 val sourceGeometry =
                     CcTransitionPolicy.componentGeometry(
@@ -1322,7 +1378,11 @@ internal object CcTransitionOwner {
                                 model.centerIndicator is CenterIndicator.MobileType
                         )
                 val chargingSourceVisibleFraction =
-                    if (
+                    if (spec.followDualMobileMotion) {
+                        // Hide the bottom bolt during the existing dot-group
+                        // move phase, not during the battery ring's retract.
+                        1f - MobileSignalMorphPolicy.moveProgress(motionProgress)
+                    } else if (
                         spec.component ==
                         StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
@@ -1348,12 +1408,15 @@ internal object CcTransitionOwner {
                 val geometry =
                     when {
                         chargingSourceLocked -> {
-                            batteryNumberFollowerFrames
-                                ?.let { (numberSource, numberCurrent) ->
+                            val followerFrames =
+                                if (spec.followDualMobileMotion) dualMobileFollowerFrames
+                                else batteryNumberFollowerFrames
+                            followerFrames
+                                ?.let { (anchorSource, anchorCurrent) ->
                                     CcTransitionPolicy.followAnchorGeometry(
                                         follower = sourceGeometry,
-                                        sourceAnchor = numberSource,
-                                        currentAnchor = numberCurrent,
+                                        sourceAnchor = anchorSource,
+                                        currentAnchor = anchorCurrent,
                                     )
                                 }
                                 ?: carriedSourceGeometry(
@@ -1454,11 +1517,17 @@ internal object CcTransitionOwner {
                         spec.component ==
                         StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
-                        BatteryNumberFollowerPolicy
-                            .chargingVisibleFraction(
-                                progress = motionProgress,
-                                targetAvailable = targetGeometry != null,
-                            )
+                        if (spec.followDualMobileMotion &&
+                            chargingSourceVisibleFraction > 0f
+                        ) {
+                            chargingSourceVisibleFraction
+                        } else {
+                            BatteryNumberFollowerPolicy
+                                .chargingVisibleFraction(
+                                    progress = motionProgress,
+                                    targetAvailable = targetGeometry != null,
+                                )
+                        }
                     } else if (matchedTargetGeometry != null || wifiCenter) {
                         // FINAL may bind after the source changes; FAKE alpha owns the handoff.
                         1f
@@ -1525,6 +1594,7 @@ internal object CcTransitionOwner {
                         if (
                             spec.component ==
                             StatusPainter.TransitionComponent.CHARGING_ICON &&
+                            !spec.followDualMobileMotion &&
                             batterySourceCenterX != null
                         ) {
                             batterySourceCenterX >= matrixBounds.centerX
