@@ -39,6 +39,80 @@ class StatusStateStoreTest {
 
 
     @Test
+    fun newerActivityClearWinsOverOldHotReloadTransfer() {
+        StatusStateStore.restoreHotReloadState(null)
+        val wifi = StatusStateStore.WifiState.Visible(
+            iconResId = 100, signal = SignalStrength.Level(3),
+        )
+        StatusStateStore.updateWifi(wifi)
+        StatusStateStore.updateWifiActivity(120)
+        StatusStateStore.updateMobileActivity(1, 220)
+        StatusStateStore.updateMobileActivity(2, 230)
+        val previous = StatusStateStore.exportHotReloadState()
+
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateWifi(wifi)
+        // The new collectors have already observed no drawable. They should not
+        // need a value change to override the outgoing generation's saved icons.
+        assertNull(StatusStateStore.updateWifiActivity(null))
+        assertNull(StatusStateStore.updateMobileActivity(1, null))
+        StatusStateStore.updateMobileActivity(2, 240)
+        val merged = StatusStateStore.restoreHotReloadState(previous)
+        assertNull(merged.wifiActivityResId)
+        assertNull(merged.mobileActivityResIds[1])
+        assertEquals(240, merged.mobileActivityResIds[2])
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
+    fun missingFreshActivityObservationRetainsPreviousHotReloadState() {
+        StatusStateStore.restoreHotReloadState(null)
+        val wifi = StatusStateStore.WifiState.Visible(
+            iconResId = 100, signal = SignalStrength.Level(3),
+        )
+        StatusStateStore.updateWifi(wifi)
+        StatusStateStore.updateWifiActivity(120)
+        StatusStateStore.updateMobileActivity(1, 220)
+        val previous = StatusStateStore.exportHotReloadState()
+
+        StatusStateStore.restoreHotReloadState(null)
+        val restored = StatusStateStore.restoreHotReloadState(previous)
+        assertEquals(120, restored.wifiActivityResId)
+        assertEquals(220, restored.mobileActivityResIds[1])
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
+    fun hiddenWifiCannotRetainAnActivityTagAcrossReappearance() {
+        StatusStateStore.restoreHotReloadState(null)
+        val wifi = StatusStateStore.WifiState.Visible(
+            iconResId = 100, signal = SignalStrength.Level(3),
+        )
+        StatusStateStore.updateWifi(wifi)
+        StatusStateStore.updateWifiActivity(120)
+        StatusStateStore.updateWifi(StatusStateStore.WifiState.Hidden)
+        assertNull(StatusStateStore.updateWifiActivity(120))
+        StatusStateStore.updateWifi(wifi)
+        assertNull(StatusStateStore.snapshot().wifiActivityResId)
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
+    fun freshAirplaneModeDoesNotRestoreOldMobileTraffic() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateAirplaneMode(false)
+        StatusStateStore.updateMobileActivity(1, 220)
+        val old = StatusStateStore.exportHotReloadState()
+
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateAirplaneMode(true)
+        val restored = StatusStateStore.restoreHotReloadState(old)
+        assertEquals(true, restored.airplaneMode)
+        assertTrue(restored.mobileActivityResIds.isEmpty())
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
     fun airplaneExitStartsFreshMobileRecoveryAndClearsCachedSignal() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)

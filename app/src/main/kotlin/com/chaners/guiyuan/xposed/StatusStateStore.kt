@@ -48,16 +48,22 @@ internal object StatusStateStore {
         current = current.copy(
             wifi = state,
             wifiActivityResId = if (state is WifiState.Visible) current.wifiActivityResId else null,
+            wifiActivityObserved = current.wifiActivityObserved || state is WifiState.Hidden,
         )
         return current
     }
 
     @Synchronized
     fun updateWifiActivity(resourceId: Int?): Snapshot? {
-        val next = resourceId?.takeIf { it > 0 }
-        if (current.wifiActivityResId == next) return null
-        current = current.copy(wifiActivityResId = next)
-        return current
+        // Explicit absence is an observation too: an older Hot Reload snapshot
+        // must not restore a resource after a newer collector has cleared it.
+        val next = resourceId?.takeIf { it > 0 && current.wifi !is WifiState.Hidden }
+        val changed = current.wifiActivityResId != next
+        current = current.copy(
+            wifiActivityResId = next,
+            wifiActivityObserved = true,
+        )
+        return current.takeIf { changed }
     }
 
     @Synchronized
@@ -66,9 +72,12 @@ internal object StatusStateStore {
         val next = current.mobileActivityResIds.toMutableMap()
         if (resourceId == null || resourceId <= 0) next.remove(subscriptionId)
         else next[subscriptionId] = resourceId
-        if (next == current.mobileActivityResIds) return null
-        current = current.copy(mobileActivityResIds = next.toSortedMap())
-        return current
+        val changed = next != current.mobileActivityResIds
+        current = current.copy(
+            mobileActivityResIds = if (changed) next.toSortedMap() else current.mobileActivityResIds,
+            mobileActivityObservedIds = current.mobileActivityObservedIds + subscriptionId,
+        )
+        return current.takeIf { changed }
     }
 
     @Synchronized
@@ -95,6 +104,9 @@ internal object StatusStateStore {
             current.copy(
                 mobile = mobile,
                 mobileActivityResIds = if (enabled) emptyMap() else current.mobileActivityResIds,
+                mobileActivityObservedIds = if (enabled) {
+                    current.mobileActivityObservedIds + current.mobileActivityResIds.keys
+                } else current.mobileActivityObservedIds,
                 airplaneMode = enabled,
                 mobileRecoveryPending = recoveryPending,
             )
@@ -292,20 +304,27 @@ internal object StatusStateStore {
                 battery = battery,
                 wifi = selectedWifi,
                 wifiActivityResId = if (selectedWifi is WifiState.Visible) {
-                    observed.wifiActivityResId
-                        ?: bundle.getInt(KEY_WIFI_ACTIVITY_RES_ID).takeIf { it > 0 }
+                    if (observed.wifiActivityObserved) observed.wifiActivityResId
+                    else bundle.getInt(KEY_WIFI_ACTIVITY_RES_ID).takeIf { it > 0 }
                 } else null,
+                wifiActivityObserved = observed.wifiActivityObserved,
                 mobile = mobile.apply { putAll(observed.mobile) },
                 mobileActivityResIds = buildMap {
-                    val activity = bundle.getIntArray(KEY_MOBILE_ACTIVITY_RES_IDS) ?: IntArray(0)
-                    for (index in 0 until activity.size - 1 step 2) {
-                        if (activity[index] >= 0 && activity[index + 1] != 0) {
-                            put(activity[index], activity[index + 1])
+                    if (observed.airplaneMode != true) {
+                        val activity = bundle.getIntArray(KEY_MOBILE_ACTIVITY_RES_IDS) ?: IntArray(0)
+                        for (index in 0 until activity.size - 1 step 2) {
+                            if (activity[index] >= 0 && activity[index + 1] > 0) {
+                                put(activity[index], activity[index + 1])
+                            }
                         }
                     }
-                    putAll(observed.mobileActivityResIds)
+                    // New collector results take precedence even when they explicitly
+                    // say that the old subscription's activity icon is absent.
+                    observed.mobileActivityObservedIds.forEach { remove(it) }
+                    if (observed.airplaneMode != true) putAll(observed.mobileActivityResIds)
                 },
-                airplaneMode = airplane,
+                mobileActivityObservedIds = observed.mobileActivityObservedIds,
+                airplaneMode = observed.airplaneMode ?: airplane,
                 mobileRecoveryPending =
                     bundle.getBoolean(KEY_MOBILE_RECOVERY_PENDING, false),
             )
@@ -331,8 +350,10 @@ internal object StatusStateStore {
         val battery: BatteryState? = null,
         val wifi: WifiState = WifiState.Unknown,
         val wifiActivityResId: Int? = null,
+        val wifiActivityObserved: Boolean = false,
         val mobile: Map<Int, MobileState> = emptyMap(),
         val mobileActivityResIds: Map<Int, Int> = emptyMap(),
+        val mobileActivityObservedIds: Set<Int> = emptySet(),
         val airplaneMode: Boolean? = null,
         val mobileRecoveryPending: Boolean = false,
     )
