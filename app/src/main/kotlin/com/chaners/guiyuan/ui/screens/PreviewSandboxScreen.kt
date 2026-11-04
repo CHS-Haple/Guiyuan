@@ -64,6 +64,7 @@ import com.chaners.guiyuan.ui.icons.Os4GlassBack
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
@@ -122,6 +123,7 @@ internal fun PreviewSandboxScreen(
     onSimCardsChange: (PreviewSimCards) -> Unit,
     onWifiStateChange: (PreviewWifiState) -> Unit,
     onWifiSignalLevelChange: (Int) -> Unit,
+    onNetworkActivityChange: (PreviewNetworkActivity) -> Unit,
     onBatteryPercentChange: (Int) -> Unit,
     onBatteryModeChange: (PreviewBatteryMode) -> Unit,
     onChargingStateChange: (PreviewChargingState) -> Unit,
@@ -191,6 +193,16 @@ internal fun PreviewSandboxScreen(
             stringResource(R.string.home_preview_wifi_hotspot),
             stringResource(R.string.home_preview_wifi_dual_acceleration),
         )
+    val networkActivityOptions = listOf(
+        stringResource(R.string.home_preview_activity_upload),
+        stringResource(R.string.home_preview_activity_download),
+        stringResource(R.string.home_preview_activity_both),
+        stringResource(R.string.home_preview_activity_idle),
+    )
+    val activitySupported =
+        visual.dualSignal &&
+            visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT &&
+            state.dualLevels != null
     val batteryModeOptions =
         listOf(
             stringResource(R.string.home_preview_battery_mode_balanced),
@@ -574,6 +586,29 @@ internal fun PreviewSandboxScreen(
                             )
                         }
 
+                        UiDropdownPreference(
+                            title = stringResource(R.string.home_preview_activity_state_title),
+                            summary = if (activitySupported) null
+                                else stringResource(R.string.home_preview_activity_unavailable_summary),
+                            enabled = activitySupported,
+                            startAction = {
+                                SemanticLeadingIcon(
+                                    iconRes = R.drawable.ic_material_symbol_swap_vert,
+                                    detailRes = R.drawable.ic_material_symbol_swap_horiz,
+                                )
+                            },
+                            items = networkActivityOptions,
+                            selectedIndex = state.networkActivity.ordinal,
+                            onSelectedIndexChange = { index ->
+                                if (activitySupported) {
+                                    PreviewNetworkActivity.entries.getOrNull(index)
+                                        ?.let(onNetworkActivityChange)
+                                }
+                            },
+                            insideMargin = SandboxPreferenceInsideMargin,
+                            maxHeight = 280.dp,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
                         AnimatedPreferenceGroup(visible = state.mobileOptionsVisible && state.sim1Active) {
                             UiDropdownPreference(
                                 title = stringResource(
