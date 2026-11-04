@@ -143,7 +143,7 @@ internal fun AboutScreen(
         listState = listState,
         compactTopBar = os4,
         titleAlpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
-        background = {
+        background = { padding ->
             BgEffectBackground(
                 dynamicBackground = visible,
                 modifier = Modifier.fillMaxSize(),
