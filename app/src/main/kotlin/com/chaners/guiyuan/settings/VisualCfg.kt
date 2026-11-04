@@ -25,7 +25,9 @@ internal enum class SignalDotArrangement(val persistedValue: String) {
     @SerialName("DEFAULT")
     CURVED("default"),
     @SerialName("DUO")
-    HORIZONTAL("duo");
+    HORIZONTAL("duo"),
+    @SerialName("LEFT_RIGHT")
+    LEFT_RIGHT("left_right");
 
     companion object {
         fun fromPersisted(value: String?): SignalDotArrangement =
@@ -200,6 +202,8 @@ internal data class VisualCfg(
     // Keep the V1 backup field name readable after the source-model rename.
     @SerialName("dualDotStyle")
     val dualRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
+    val leftRightShowActivity: Boolean = true,
+    val leftRightBottomCharging: Boolean = false,
     // New field; older backup booleans are translated before decoding.
     @SerialName("singleRowDotStyle")
     val singleRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
