@@ -150,6 +150,20 @@ class SearchTermTest {
     }
 
     @Test
+    fun simSignalArrangementSearchRetainsOldAndNewWords() {
+        val single = searchAliases(R.string.single_row_signal_dot_arrangement_title)
+        val dual = searchAliases(R.string.dual_row_signal_dot_arrangement_title)
+        for (word in listOf("单排", "单卡", "单排信号点", "单卡信号点")) {
+            assertTrue("Single-SIM alias missing: $word", single.any { it.contains(word) })
+        }
+        for (word in listOf("双排", "双卡", "双排信号点", "双卡信号点")) {
+            assertTrue("Dual-SIM alias missing: $word", dual.any { it.contains(word) })
+        }
+        assertFalse(single.any { it == "双排" || it == "双卡" })
+        assertFalse(dual.any { it == "单排" || it == "单卡" })
+    }
+
+    @Test
     fun highConfidenceAliasesStayTargeted() {
         val pairs = listOf(
             R.string.aod_combined_status_title to "AOD",

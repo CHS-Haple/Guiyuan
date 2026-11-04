@@ -4233,12 +4233,12 @@ internal class StatusPainter(
             return LeftRightBottomInformation(resource, charging)
         }
 
-        if (visual.leftRightBottomCharging && model.charging) {
+        if (visual.showTopChargingIcon && visual.leftRightBottomCharging && model.charging) {
             model.chargingIconResId?.let { drawableAvailable(it, true) }?.let { return it }
         }
         if (visual.leftRightShowActivity) {
             model.networkActivityResId?.let { drawableAvailable(it, false) }?.let { return it }
-            if (visual.leftRightShowIdleActivity) {
+            if (!visual.leftRightHideIdleActivity) {
                 idleActivityResourceId(model.centerIndicator)?.let { id ->
                     drawableAvailable(id, false)?.copy(idle = true)
                 }?.let { return it }

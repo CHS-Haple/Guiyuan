@@ -72,9 +72,10 @@ internal fun migrateSignalDotArrangementsIfNeeded(
             visualModeKey(activeDual, visualProfileKey(layout, key))
         val dualKey = oldKey(DUAL_ROW_DOT_ARRANGEMENT_KEY)
         val legacyDual = visualModeKey(activeDual, LEGACY_DUAL_DOT_STYLE_KEY)
-        val dualStyle = SignalDotArrangement.fromPersisted(
-            prefs.getString(dualKey, prefs.getString(legacyDual, null)),
-        )
+        val dualStyle = prefs.getString(dualKey, null)
+            ?.let(SignalDotArrangement::fromPersisted)
+            ?: prefs.getString(legacyDual, null)?.let(SignalDotArrangement::fromPersisted)
+            ?: SignalDotArrangement.LEFT_RIGHT
         val singleKey = oldKey(SINGLE_ROW_DOT_STYLE_KEY)
         val legacySwitch = oldKey(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)
         val singleStyle = if (prefs.contains(singleKey)) {
@@ -758,10 +759,11 @@ internal fun SharedPreferences.readVisualCfg(
     val oldNetworkOffset =
         if (layout == ContentLayout.BATTERY_CENTER) topOffsetYUi(topOffset) else 0f
 
-    val dualStyle = SignalDotArrangement.fromPersisted(
+    val dualStyle = (
         profileString(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, null, legacyDualBank)
-            ?: getString(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY), null),
-    )
+            ?: getString(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY), null)
+        )?.let(SignalDotArrangement::fromPersisted)
+        ?: SignalDotArrangement.LEFT_RIGHT
     val singleStyle = profileString(layout, SINGLE_ROW_DOT_STYLE_KEY, null, legacyDualBank)
         ?.let(SignalDotArrangement::fromPersisted)
         ?: if (flag(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, false) &&

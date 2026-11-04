@@ -688,14 +688,14 @@ internal fun FeaturesScreen(
                             title = stringResource(R.string.left_right_charging_title),
                             summary = stringResource(R.string.left_right_charging_summary),
                             checked = visual.leftRightBottomCharging,
-                            enabled = featureCfg.enabled,
+                            enabled = featureCfg.enabled && visual.showTopChargingIcon,
                             startAction = {
                                 SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled)
                             },
                             onCheckedChange = visualRepo::setLeftRightBottomCharging,
                         )
                     }
-                    AnimatedPreferenceGroup(visible = visual.leftRightBottomCharging) {
+                    AnimatedPreferenceGroup(visible = visual.leftRightBottomCharging && visual.showTopChargingIcon) {
                         if (search.matches(R.string.left_right_charging_vertical_offset)) {
                             SliderPreference(
                                 value = visual.leftRightChargingOffsetY,
@@ -1173,10 +1173,7 @@ internal fun FeaturesScreen(
                     )
                 }
                 AnimatedPreferenceGroup(
-                    visible = visual.showTopChargingIcon ||
-                        (visual.dualSignal &&
-                            visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT &&
-                            visual.leftRightBottomCharging),
+                    visible = visual.showTopChargingIcon,
                 ) {
                     val chargingIconUiScale =
                         topChargingIconUiScale(

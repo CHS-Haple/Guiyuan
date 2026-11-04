@@ -249,16 +249,17 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
     )
     R.string.dual_signal_title -> listOf("双卡", "双 SIM", "双卡信号点", "双排信号", "双排信号点", "单卡显示")
     R.string.single_row_signal_dot_arrangement_title -> listOf(
-        "单排信号", "单排信号点", "单卡信号点", "单SIM", "单排样式", "弧形排列", "横向排列",
-        "Single row signal", "Single-row dots", "Curved arrangement", "Horizontal arrangement",
+        "单排", "单排信号", "单排信号点", "单卡", "单卡信号点", "单SIM", "单排样式", "弧形排列", "横向排列",
+        "Single row signal", "Single-row dots", "Single-SIM dots", "Curved arrangement", "Horizontal arrangement",
     )
     R.string.dual_row_signal_dot_arrangement_title -> listOf(
-        "双排信号", "双卡样式", "Duo", "八点", "双排样式", "弧形排列", "横向排列",
-        "Dual-row dots", "Curved arrangement", "Horizontal arrangement",
+        "双排", "双排信号", "双排信号点", "双卡", "双卡信号点", "双卡样式", "Duo", "八点", "双排样式", "弧形排列", "横向排列",
+        "Dual-row dots", "Dual-SIM dots", "Curved arrangement", "Horizontal arrangement",
     )
     R.string.curved_signal_dot_vertical_offset -> listOf("弧形偏移", "弧形上下位置", "Curved dot offset")
     R.string.horizontal_signal_dot_vertical_offset -> listOf("横向偏移", "横排上下位置", "Horizontal dot offset")
     R.string.left_right_activity_title -> listOf("上传下载", "网络活动", "流量指示器", "activity indicator")
+    R.string.left_right_idle_activity_title -> listOf("空闲箭头", "保留活动箭头", "隐藏活动箭头", "空闲隐藏")
     R.string.left_right_activity_size -> listOf("活动箭头大小", "流量图标大小")
     R.string.left_right_activity_vertical_offset -> listOf("活动箭头位置", "网络活动上下偏移")
     R.string.left_right_charging_title -> listOf("底部闪电", "充电图标")

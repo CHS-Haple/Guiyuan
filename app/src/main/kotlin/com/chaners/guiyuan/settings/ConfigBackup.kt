@@ -93,7 +93,7 @@ internal object ConfigBackupFormat {
         val root = json.parseToJsonElement(contents).jsonObject
         val schema = root["schemaVersion"]?.jsonPrimitive?.intOrNull
         require(schema == SCHEMA) { "Unsupported schemaVersion: " + schema }
-        val compatibleRoot = upgradeLegacySingleRowStyle(root)
+        val compatibleRoot = upgradeLegacyDualAndIdleSettings(upgradeLegacySingleRowStyle(root))
         requireCanonicalTypes(compatibleRoot, ConfigBackup.serializer().descriptor)
         // Only released 1.0.0 two-layout backups are upgraded. Other
         // profile counts are invalid, never silently filled or truncated.
@@ -119,6 +119,33 @@ internal object ConfigBackupFormat {
             decoded
         }
         return normalizeImported(upgraded).also(::validate)
+    }
+
+    // Missing dual-dot style in older archives meant curved, not the new default.
+    // The retired idle-show preference cannot be interpreted as an opt-in hide.
+    private fun upgradeLegacyDualAndIdleSettings(root: JsonObject): JsonObject {
+        val visual = root["visual"] as? JsonObject ?: return root
+        val profiles = visual["profiles"] as? JsonArray ?: return root
+        if (profiles.none { it is JsonObject &&
+                ("dualDotStyle" !in it || "leftRightShowIdleActivity" in it) }) return root
+        val upgraded = profiles.map { profile ->
+            if (profile !is JsonObject) return@map profile
+            val oldIdle = profile["leftRightShowIdleActivity"]
+            if (oldIdle != null) {
+                require("leftRightHideIdleActivity" !in profile) {
+                    "Conflicting idle activity settings"
+                }
+                require(oldIdle is JsonPrimitive &&
+                    !oldIdle.isString && oldIdle.booleanOrNull != null) {
+                    "Invalid legacy idle activity setting"
+                }
+            }
+            val fields = profile.filterKeys { it != "leftRightShowIdleActivity" }
+            JsonObject(if ("dualDotStyle" in fields) fields
+                else fields + ("dualDotStyle" to JsonPrimitive("DEFAULT")))
+        }
+        return JsonObject(root + ("visual" to JsonObject(visual +
+            ("profiles" to JsonArray(upgraded)))))
     }
 
     // Retire the old boolean without changing the V1 backup schema or

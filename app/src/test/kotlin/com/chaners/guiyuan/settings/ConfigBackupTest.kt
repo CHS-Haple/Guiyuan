@@ -27,21 +27,35 @@ class ConfigBackupTest {
         batterySchemes = BatteryColorSchemeLibrary(),
     )
 
-    @Test fun idleActivityVisibilityIsOptInAndSurvivesBackups() {
+    @Test fun idleActivityHidingIsOptInAndSurvivesBackups() {
         val selected = VisualCfg(
             layout = ContentLayout.NETWORK_CENTER,
             dualSignal = true,
             dualRowDotArrangement = SignalDotArrangement.LEFT_RIGHT,
             leftRightShowActivity = true,
-            leftRightShowIdleActivity = true,
+            leftRightHideIdleActivity = true,
         )
-        assertFalse(VisualCfg().leftRightShowIdleActivity)
+        assertFalse(VisualCfg().leftRightHideIdleActivity)
         val original = sample().let { source ->
             source.copy(visual = source.visual.copy(profiles = source.visual.profiles.map { cfg ->
                 if (cfg.dualSignal && cfg.layout == ContentLayout.NETWORK_CENTER) selected else cfg
             }))
         }
         assertEquals(original, ConfigBackupFormat.decode(ConfigBackupFormat.encode(original)))
+    }
+
+    @Test fun retiredIdleShowBackupDoesNotBecomeHide() {
+        val old = ConfigBackupFormat.encode(sample())
+            .replace("\"leftRightHideIdleActivity\":false", "\"leftRightShowIdleActivity\":true")
+        val restored = ConfigBackupFormat.decode(old)
+        assertTrue(restored.visual.profiles.none { it.leftRightHideIdleActivity })
+        val conflict = old.replaceFirst(
+            "\"leftRightShowIdleActivity\":true",
+            "\"leftRightShowIdleActivity\":true,\"leftRightHideIdleActivity\":false",
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.decode(conflict)
+        }
     }
 
     @Test fun leftRightOffsetIsIndependentOfCurvedAndSurvivesBackups() {
@@ -183,7 +197,7 @@ class ConfigBackupTest {
 
     @Test fun legacyArchivesDefaultToOriginalDotStyle() {
         val json = ConfigBackupFormat.encode(sample())
-            .replace("\"dualDotStyle\":\"DEFAULT\",", "")
+            .replace("\"dualDotStyle\":\"LEFT_RIGHT\",", "")
         assertTrue(ConfigBackupFormat.decode(json).visual.profiles.all {
             it.dualRowDotArrangement == SignalDotArrangement.CURVED
         })

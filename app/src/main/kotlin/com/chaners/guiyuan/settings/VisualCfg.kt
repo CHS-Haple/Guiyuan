@@ -201,7 +201,7 @@ internal data class VisualCfg(
     val dualSignal: Boolean = false,
     // Keep the V1 backup field name readable after the source-model rename.
     @SerialName("dualDotStyle")
-    val dualRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
+    val dualRowDotArrangement: SignalDotArrangement = SignalDotArrangement.LEFT_RIGHT,
     val leftRightShowActivity: Boolean = true,
     val leftRightHideIdleActivity: Boolean = false,
     val leftRightBottomCharging: Boolean = false,

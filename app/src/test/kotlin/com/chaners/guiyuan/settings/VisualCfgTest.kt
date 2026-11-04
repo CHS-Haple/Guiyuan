@@ -115,7 +115,7 @@ class VisualCfgTest {
     fun mobileCenteredIsAnIndependentLayoutWithOwnDefaults() {
         val centered = VisualCfg(layout = ContentLayout.MOBILE_CENTER)
         assertTrue(centered.centeredMobileSignal)
-        assertEquals(SignalDotArrangement.CURVED, centered.dualRowDotArrangement)
+        assertEquals(SignalDotArrangement.LEFT_RIGHT, centered.dualRowDotArrangement)
         assertEquals(SignalDotArrangement.CURVED, centered.singleRowDotArrangement)
         assertEquals(0.85f, centered.mobileTypeScale, 0f)
         assertEquals(-3f, centered.mobileTypeBottomOffsetY, 0f)
