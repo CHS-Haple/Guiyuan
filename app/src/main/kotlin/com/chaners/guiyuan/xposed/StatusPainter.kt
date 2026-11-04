@@ -3691,19 +3691,6 @@ internal class StatusPainter(
         mobileOffsetY: Float,
         centered: Boolean = false,
     ) {
-        if (row == null && aggregateRows != null && model.dualMobileLevels != null &&
-            style == SignalDotArrangement.LEFT_RIGHT && !centered
-        ) {
-            // The native aggregate has no SIM-to-row identity. Each cluster
-            // changes shape locally rather than mapping to an unknown native row.
-            for (localRow in 0..1) {
-                drawMobileSignalTransition(
-                    canvas, model, tint, opacity, geometry, shapeProgress,
-                    null, null, null, null, localRow, style, mobileOffsetY,
-                )
-            }
-            return
-        }
         val layout =
             when {
                 centered -> resolveCenteredMobileTransitionLayout(geometry, row)
