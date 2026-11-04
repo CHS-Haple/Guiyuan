@@ -226,6 +226,8 @@ internal fun FeaturesScreen(
         stringResource(R.string.signal_dot_arrangement_curved),
         stringResource(R.string.signal_dot_arrangement_horizontal),
     )
+    val dualSignalDotArrangements = signalDotArrangements +
+        stringResource(R.string.signal_dot_arrangement_left_right)
     val lowerOpeningOptions = listOf(
         stringResource(R.string.battery_lower_opening_follow),
         stringResource(R.string.battery_lower_opening_fixed),
@@ -515,7 +517,7 @@ internal fun FeaturesScreen(
                         UiDropdownPreference(
                             title = stringResource(R.string.dual_row_signal_dot_arrangement_title),
                             summary = stringResource(R.string.outer_signal_dots_only_summary),
-                            items = signalDotArrangements,
+                            items = dualSignalDotArrangements,
                             selectedIndex = visual.dualRowDotArrangement.ordinal,
                             showValue = true,
                             enabled = featureCfg.enabled,
@@ -529,6 +531,35 @@ internal fun FeaturesScreen(
                             onSelectedIndexChange = { index ->
                                 SignalDotArrangement.entries.getOrNull(index)?.let(visualRepo::setDualRowDotArrangement)
                             },
+                        )
+                    }
+                }
+                AnimatedPreferenceGroup(
+                    visible = visual.dualSignal &&
+                        visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT,
+                ) {
+                    if (search.matches(R.string.left_right_activity_title)) {
+                        SwitchPreference(
+                            title = stringResource(R.string.left_right_activity_title),
+                            summary = stringResource(R.string.left_right_activity_summary),
+                            checked = visual.leftRightShowActivity,
+                            enabled = featureCfg.enabled,
+                            startAction = {
+                                SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled)
+                            },
+                            onCheckedChange = visualRepo::setLeftRightShowActivity,
+                        )
+                    }
+                    if (search.matches(R.string.left_right_charging_title)) {
+                        SwitchPreference(
+                            title = stringResource(R.string.left_right_charging_title),
+                            summary = stringResource(R.string.left_right_charging_summary),
+                            checked = visual.leftRightBottomCharging,
+                            enabled = featureCfg.enabled,
+                            startAction = {
+                                SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled)
+                            },
+                            onCheckedChange = visualRepo::setLeftRightBottomCharging,
                         )
                     }
                 }
