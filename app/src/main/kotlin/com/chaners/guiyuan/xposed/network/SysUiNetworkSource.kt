@@ -390,8 +390,19 @@ internal object SysUiNetworkSource {
                                 try {
                                     val visible = image.visibility == View.VISIBLE &&
                                         image.drawable != null
-                                    onWifiActivity((image.tag as? Number)?.toInt()
-                                        ?.takeIf { it > 0 && visible })
+                                    val taggedResId = (image.tag as? Number)?.toInt()
+                                        ?.takeIf { it > 0 && visible }
+                                    onWifiActivity(taggedResId)
+                                    if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                        readOrNull {
+                                            onEvent(
+                                                "networkPipeline wifi activityEvent " +
+                                                    "phase=afterNativeProceed " +
+                                                    "appliedResId=" + (taggedResId ?: 0) +
+                                                    " " + nativeActivityObservation(image, result),
+                                            )
+                                        }
+                                    }
                                 } catch (error: Throwable) {
                                     callbackFailed("wifi-activity", error, onRuntimeFailure)
                                 }
@@ -535,10 +546,19 @@ internal object SysUiNetworkSource {
                                 try {
                                     val visible = image.visibility == View.VISIBLE &&
                                         image.drawable != null
-                                    onMobileActivity(
-                                        subId,
-                                        (image.tag as? Number)?.toInt()?.takeIf { it > 0 && visible },
-                                    )
+                                    val taggedResId = (image.tag as? Number)?.toInt()
+                                        ?.takeIf { it > 0 && visible }
+                                    onMobileActivity(subId, taggedResId)
+                                    if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                        readOrNull {
+                                            onEvent(
+                                                "networkPipeline mobile activityEvent " +
+                                                    "phase=afterNativeProceed subId=" + subId +
+                                                    " appliedResId=" + (taggedResId ?: 0) +
+                                                    " " + nativeActivityObservation(image, result),
+                                            )
+                                        }
+                                    }
                                 } catch (error: Throwable) {
                                     callbackFailed("mobile-activity", error, onRuntimeFailure)
                                 }
@@ -558,6 +578,23 @@ internal object SysUiNetworkSource {
             active.set(false)
             failedBranch("mobile", error, created)
         }
+    }
+
+    // Diagnostic-only witness: native activity may change visibility, image alpha
+    // or drawable state without changing the resource ID we currently transfer.
+    // Do not synthesize an activity event from these observations.
+    private fun nativeActivityObservation(image: ImageView, hookResult: Any?): String {
+        val drawable = image.drawable
+        return "viewId=" + resourceId(image) +
+            " tag=" + ((image.tag as? Number)?.toInt() ?: 0) +
+            " visibility=" + visibilityName(image.visibility) +
+            " shown=" + image.isShown +
+            " viewAlpha=" + image.alpha +
+            " imageAlpha=" + image.imageAlpha +
+            " drawableType=" + (drawable?.javaClass?.simpleName ?: "none") +
+            " drawableAlpha=" + (drawable?.alpha ?: -1) +
+            " drawableLevel=" + (drawable?.level ?: -1) +
+            " nativeResult=" + (hookResult?.javaClass?.simpleName ?: "null")
     }
 
     private fun resolveEmitterMethod(
