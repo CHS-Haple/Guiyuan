@@ -22,6 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
@@ -113,7 +115,9 @@ internal fun AboutScreen(
             } else if (spacerBottom <= versionBottom ||
                 versionBottom <= nameBottom || nameBottom <= iconBottom
             ) {
-                Triple(0f, 0f, 0f)
+                // The first layout may not have measured yet. A nonzero scroll
+                // must not leave an opaque identity mark over a preference row.
+                if (offset > 0f) Triple(1f, 1f, 1f) else Triple(0f, 0f, 0f)
             } else {
                 val first = spacerBottom - versionBottom
                 val second = versionBottom - nameBottom
@@ -151,31 +155,52 @@ internal fun AboutScreen(
             ) {}
         },
         foreground = { padding ->
-            AboutHero(
-                topPadding = padding.calculateTopPadding(),
-                active = visible,
-                backdrop = if (blur) backdrop else null,
-                logoBlend = logoBlend,
-                versionProgress = collapse.first,
-                nameProgress = collapse.second,
-                iconProgress = collapse.third,
-                onHeight = { if (heroHeight != it) heroHeight = it },
-                onIconBottom = {
-                    if (listState.firstVisibleItemIndex == 0 &&
-                        listState.firstVisibleItemScrollOffset == 0 && iconBottom != it
-                    ) iconBottom = it
-                },
-                onNameBottom = {
-                    if (listState.firstVisibleItemIndex == 0 &&
-                        listState.firstVisibleItemScrollOffset == 0 && nameBottom != it
-                    ) nameBottom = it
-                },
-                onVersionBottom = {
-                    if (listState.firstVisibleItemIndex == 0 &&
-                        listState.firstVisibleItemScrollOffset == 0 && versionBottom != it
-                    ) versionBottom = it
-                },
-            )
+            // Foreground keeps the interactive logo above the scroll hit layer,
+            // but it must never draw over the first preference card.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawWithContent {
+                        // Read list position in the draw phase so a fling cannot
+                        // paint a stale foreground boundary between recompositions.
+                        val firstCardTopPx =
+                            if (listState.firstVisibleItemIndex == 0) {
+                                (padding.calculateTopPadding() + spacerHeight).toPx() -
+                                    listState.firstVisibleItemScrollOffset
+                            } else {
+                                0f
+                            }
+                        clipRect(bottom = firstCardTopPx.coerceIn(0f, size.height)) {
+                            this@drawWithContent.drawContent()
+                        }
+                    },
+            ) {
+                AboutHero(
+                    topPadding = padding.calculateTopPadding(),
+                    active = visible,
+                    backdrop = if (blur) backdrop else null,
+                    logoBlend = logoBlend,
+                    versionProgress = collapse.first,
+                    nameProgress = collapse.second,
+                    iconProgress = collapse.third,
+                    onHeight = { if (heroHeight != it) heroHeight = it },
+                    onIconBottom = {
+                        if (listState.firstVisibleItemIndex == 0 &&
+                            listState.firstVisibleItemScrollOffset == 0 && iconBottom != it
+                        ) iconBottom = it
+                    },
+                    onNameBottom = {
+                        if (listState.firstVisibleItemIndex == 0 &&
+                            listState.firstVisibleItemScrollOffset == 0 && nameBottom != it
+                        ) nameBottom = it
+                    },
+                    onVersionBottom = {
+                        if (listState.firstVisibleItemIndex == 0 &&
+                            listState.firstVisibleItemScrollOffset == 0 && versionBottom != it
+                        ) versionBottom = it
+                    },
+                )
+            }
         },
         overlay = {
             UiOverlayDialog(
