@@ -547,31 +547,31 @@ internal fun FeaturesScreen(
                 ).forEach { (style, dotOffsetTitle) ->
                     AnimatedPreferenceGroup(visible = activeDotArrangement == style) {
                         if (search.matches(dotOffsetTitle)) {
-                        SliderPreference(
-                            value = visual.activeSignalDotOffsetY,
-                            onValueChange = visualRepo::setSignalDotOffsetY,
-                            title = stringResource(dotOffsetTitle),
-                            summary = stringResource(R.string.outer_signal_dots_only_summary),
-                            startAction = {
-                                SemanticLeadingIcon(
-                                    R.drawable.ic_material_symbol_signal_cellular_alt,
-                                    featureCfg.enabled,
-                                    R.drawable.ic_material_symbol_height_w500,
-                                )
-                            },
-                            valueText = stringResource(
-                                R.string.battery_top_offset_value,
-                                visual.activeSignalDotOffsetY.roundToInt(),
-                            ),
-                            valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                            steps = 19,
-                            showKeyPoints = true,
-                            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                            keyPoints = listOf(0f),
-                            magnetThreshold = 0.035f,
-                            enabled = featureCfg.enabled,
-                        )
-                    }
+                            SliderPreference(
+                                value = visual.activeSignalDotOffsetY,
+                                onValueChange = visualRepo::setSignalDotOffsetY,
+                                title = stringResource(dotOffsetTitle),
+                                summary = stringResource(R.string.outer_signal_dots_only_summary),
+                                startAction = {
+                                    SemanticLeadingIcon(
+                                        R.drawable.ic_material_symbol_signal_cellular_alt,
+                                        featureCfg.enabled,
+                                        R.drawable.ic_material_symbol_height_w500,
+                                    )
+                                },
+                                valueText = stringResource(
+                                    R.string.battery_top_offset_value,
+                                    visual.activeSignalDotOffsetY.roundToInt(),
+                                ),
+                                valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
+                                steps = 19,
+                                showKeyPoints = true,
+                                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                                keyPoints = listOf(0f),
+                                magnetThreshold = 0.035f,
+                                enabled = featureCfg.enabled,
+                            )
+                        }
                     }
                 }
                 AnimatedPreferenceGroup(visible = activeDotArrangement != SignalDotArrangement.LEFT_RIGHT) {
@@ -692,14 +692,14 @@ internal fun FeaturesScreen(
                     AnimatedPreferenceGroup(visible = visual.leftRightBottomCharging) {
                         if (search.matches(R.string.left_right_charging_vertical_offset)) {
                             SliderPreference(
-                            value = visual.leftRightChargingOffsetY,
-                            onValueChange = visualRepo::setLeftRightChargingOffsetY,
-                            title = stringResource(R.string.left_right_charging_vertical_offset),
-                            startAction = {
-                                SemanticLeadingIcon(
-                                    R.drawable.ic_material_symbol_bolt,
-                                    featureCfg.enabled,
-                                    R.drawable.ic_material_symbol_height_w500,
+                                value = visual.leftRightChargingOffsetY,
+                                onValueChange = visualRepo::setLeftRightChargingOffsetY,
+                                title = stringResource(R.string.left_right_charging_vertical_offset),
+                                startAction = {
+                                    SemanticLeadingIcon(
+                                        R.drawable.ic_material_symbol_bolt,
+                                        featureCfg.enabled,
+                                        R.drawable.ic_material_symbol_height_w500,
                                 )
                             },
                             valueText = stringResource(
@@ -1181,6 +1181,7 @@ internal fun FeaturesScreen(
                             value = chargingIconUiScale,
                             onValueChange = visualRepo::setTopChargingIconScale,
                             title = stringResource(R.string.battery_top_charging_icon_size),
+                            summary = stringResource(R.string.battery_charging_size_summary),
                             startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
                             valueText =
                                 stringResource(
