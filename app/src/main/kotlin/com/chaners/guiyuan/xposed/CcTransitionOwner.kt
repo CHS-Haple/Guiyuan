@@ -273,6 +273,9 @@ internal object CcTransitionOwner {
         private val nativeMembershipListener =
             ViewTreeObserver.OnGlobalLayoutListener {
                 if (started) {
+                    // The FINAL activity ImageView may gain drawable/optical bounds
+                    // after the first miss; retry only on a native layout event.
+                    missingNetworkActivityTarget = null
                     if (
                         captureNativeChildren() &&
                         currentSnapshot.model.dualMobileLevels == null
