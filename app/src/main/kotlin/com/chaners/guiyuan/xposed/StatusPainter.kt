@@ -555,6 +555,7 @@ internal class StatusPainter(
         data object BatteryIcon : TransitionTarget
         data object BatteryNumber : TransitionTarget
         data object BatteryChargingIcon : TransitionTarget
+        data object NetworkActivity : TransitionTarget
 
         data class Slots(
             val preferredSlots: List<String>,
@@ -834,23 +835,13 @@ internal class StatusPainter(
                 ?.takeUnless { it.charging }
                 ?.let { activity ->
                     leftRightBottomOpticalBounds(activity, visual)?.let { bounds ->
-                        val slots = when (model.centerIndicator) {
-                            is CenterIndicator.Wifi -> listOf("wifi")
-                            is CenterIndicator.MobileType -> listOf("mobile", "stacked_mobile")
-                            else -> emptyList()
-                        }
-                        if (slots.isNotEmpty()) {
-                            specs += TransitionComponentSpec(
-                                component = TransitionComponent.NETWORK_ACTIVITY,
-                                sourceBounds = toViewBounds(bounds),
-                                target = TransitionTarget.Slots(
-                                    preferredSlots = slots,
-                                    preferredChildEntries = listOf("network_activity"),
-                                ),
-                                shapePolicy = TransitionShapePolicy.RIGID,
-                                scalePolicy = TransitionScalePolicy.TARGET,
-                            )
-                        }
+                        specs += TransitionComponentSpec(
+                            component = TransitionComponent.NETWORK_ACTIVITY,
+                            sourceBounds = toViewBounds(bounds),
+                            target = TransitionTarget.NetworkActivity,
+                            shapePolicy = TransitionShapePolicy.RIGID,
+                            scalePolicy = TransitionScalePolicy.TARGET,
+                        )
                     }
                 }
         }
