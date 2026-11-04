@@ -375,25 +375,18 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
         remember(miuixVersion) {
             listOf(
                 AboutDependency(
-                    name = "MIUIX",
-                    version = miuixVersion,
-                    license = "Apache-2.0",
-                    maintainer = "compose-miuix-ui",
-                    upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
-                ),
-                AboutDependency(
-                    name = "libxposed API",
-                    version = BuildConfig.LIBXPOSED_VERSION,
-                    license = "Apache-2.0",
-                    maintainer = "libxposed",
-                    upstreamUrl = "https://github.com/libxposed/api",
-                ),
-                AboutDependency(
                     name = "libxposed service",
                     version = BuildConfig.LIBXPOSED_VERSION,
                     license = "Apache-2.0",
                     maintainer = "libxposed",
                     upstreamUrl = "https://github.com/libxposed/service",
+                ),
+                AboutDependency(
+                    name = "MIUIX",
+                    version = miuixVersion,
+                    license = "Apache-2.0",
+                    maintainer = "compose-miuix-ui",
+                    upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
                 ),
                 AboutDependency(
                     name = "AndroidX Core",
@@ -424,18 +417,23 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     upstreamUrl = "https://github.com/androidx/androidx",
                 ),
                 AboutDependency(
-                    name = "kotlinx.serialization core",
+                    name = "kotlinx.serialization",
                     version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
                     license = "Apache-2.0",
                     maintainer = "Kotlin",
                     upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
                 ),
+            )
+        }
+    val compileTimeDependencies =
+        remember {
+            listOf(
                 AboutDependency(
-                    name = "kotlinx.serialization JSON",
-                    version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
+                    name = "libxposed API",
+                    version = BuildConfig.LIBXPOSED_VERSION,
                     license = "Apache-2.0",
-                    maintainer = "Kotlin",
-                    upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
+                    maintainer = "libxposed",
+                    upstreamUrl = "https://github.com/libxposed/api",
                 ),
             )
         }
@@ -465,6 +463,14 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
     ) {
         Section(R.string.section_runtime_dependencies) {
             runtimeDependencies.forEach { dependency ->
+                AboutDependencyPreference(
+                    dependency = dependency,
+                    onClick = { uriHandler.openUri(dependency.upstreamUrl) },
+                )
+            }
+        }
+        Section(R.string.section_compile_time_dependencies) {
+            compileTimeDependencies.forEach { dependency ->
                 AboutDependencyPreference(
                     dependency = dependency,
                     onClick = { uriHandler.openUri(dependency.upstreamUrl) },
