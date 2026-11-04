@@ -807,6 +807,14 @@ class GyModule : XposedModule() {
                 onRuntimeFailure = { source, error ->
                     onPresentationCallbackFailure("network-" + source, error)
                 },
+                onWifiActivity = { resourceId ->
+                    StatusStateStore.updateWifiActivity(resourceId)?.let { changed ->
+                        onCombinedStateChanged(
+                            snapshot = changed,
+                            trace = markStateCommitted(beginRenderTrace("wifiActivity")),
+                        )
+                    }
+                },
                 onWifiState = { state ->
                     val trace = beginRenderTrace("wifi")
                     val changed = StatusStateStore.updateWifi(state)
@@ -824,6 +832,14 @@ class GyModule : XposedModule() {
                         onCombinedStateChanged(
                             snapshot = snapshot,
                             trace = markStateCommitted(beginRenderTrace("wifiActivity")),
+                        )
+                    }
+                },
+                onMobileActivity = { subscriptionId, resourceId ->
+                    StatusStateStore.updateMobileActivity(subscriptionId, resourceId)?.let { changed ->
+                        onCombinedStateChanged(
+                            snapshot = changed,
+                            trace = markStateCommitted(beginRenderTrace("mobileActivity")),
                         )
                     }
                 },
