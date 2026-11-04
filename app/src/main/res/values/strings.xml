@@ -171,7 +171,8 @@
     <string name="about_open_source_license_summary">GPL-3.0-only</string>
     <string name="about_third_party_title">Third-party dependencies</string>
     <string name="about_third_party_summary">View open-source components and licenses</string>
-    <string name="section_runtime_dependencies">Runtime and interface</string>
+    <string name="section_runtime_dependencies">Runtime dependencies</string>
+    <string name="section_compile_time_dependencies">Compile-time interface</string>
     <string name="section_embedded_assets">Embedded assets</string>
     <string name="about_embedded_asset_summary">Local embedded assets\nGoogle｜Apache-2.0</string>
     <string name="section_development_dependencies">Test and build</string>
