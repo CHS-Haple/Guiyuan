@@ -54,7 +54,7 @@ internal object StatusStateStore {
 
     @Synchronized
     fun updateWifiActivity(resourceId: Int?): Snapshot? {
-        val next = resourceId?.takeIf { it != 0 }
+        val next = resourceId?.takeIf { it > 0 }
         if (current.wifiActivityResId == next) return null
         current = current.copy(wifiActivityResId = next)
         return current
@@ -64,7 +64,7 @@ internal object StatusStateStore {
     fun updateMobileActivity(subscriptionId: Int, resourceId: Int?): Snapshot? {
         if (subscriptionId < 0) return null
         val next = current.mobileActivityResIds.toMutableMap()
-        if (resourceId == null || resourceId == 0) next.remove(subscriptionId)
+        if (resourceId == null || resourceId <= 0) next.remove(subscriptionId)
         else next[subscriptionId] = resourceId
         if (next == current.mobileActivityResIds) return null
         current = current.copy(mobileActivityResIds = next.toSortedMap())
