@@ -74,10 +74,12 @@ internal object FeatureSearchIds {
         R.string.left_right_activity_title,
         R.string.left_right_idle_activity_title,
         R.string.left_right_charging_title,
-        R.string.left_right_bottom_info_size,
+        R.string.left_right_activity_size,
+        R.string.left_right_activity_vertical_offset,
+        R.string.left_right_charging_vertical_offset,
         R.string.mobile_type_bottom_offset,
-        R.string.signal_dot_vertical_offset,
-        R.string.left_right_lower_group_vertical_offset,
+        R.string.curved_signal_dot_vertical_offset,
+        R.string.horizontal_signal_dot_vertical_offset,
         R.string.battery_lower_opening_title,
         R.string.combined_size,
         R.string.outer_weight,
@@ -254,8 +256,13 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
         "双排信号", "双卡样式", "Duo", "八点", "双排样式", "弧形排列", "横向排列",
         "Dual-row dots", "Curved arrangement", "Horizontal arrangement",
     )
-    R.string.signal_dot_vertical_offset -> listOf("双卡偏移", "双排位置", "双排上下偏移")
-    R.string.left_right_lower_group_vertical_offset -> listOf("下方信息偏移", "左右点偏移", "网络活动上下偏移", "底部充电位置", "lower group offset")
+    R.string.curved_signal_dot_vertical_offset -> listOf("弧形偏移", "弧形上下位置", "Curved dot offset")
+    R.string.horizontal_signal_dot_vertical_offset -> listOf("横向偏移", "横排上下位置", "Horizontal dot offset")
+    R.string.left_right_activity_title -> listOf("上传下载", "网络活动", "流量指示器", "activity indicator")
+    R.string.left_right_activity_size -> listOf("活动箭头大小", "流量图标大小")
+    R.string.left_right_activity_vertical_offset -> listOf("活动箭头位置", "网络活动上下偏移")
+    R.string.left_right_charging_title -> listOf("底部闪电", "充电图标")
+    R.string.left_right_charging_vertical_offset -> listOf("底部闪电位置", "充电闪电上下偏移")
     R.string.battery_lower_opening_title -> listOf("开口", "电量环开口", "弧形开口", "横排开口", "固定开口", "跟随位置", "避让", "Lower opening", "Follow position", "Fixed opening")
     R.string.combined_size -> listOf("整体缩放", "总大小", "三合一大小", "三合一缩放")
     R.string.outer_weight -> listOf("环形粗细", "圆环粗细", "外环宽度", "电量环粗细")
