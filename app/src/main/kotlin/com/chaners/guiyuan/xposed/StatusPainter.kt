@@ -424,6 +424,18 @@ internal class StatusPainter(
                     nativeTransform = nativeTransform,
                 )
 
+            TransitionComponent.NETWORK_ACTIVITY ->
+                drawLeftRightBottomInformation(
+                    canvas = canvas,
+                    model = model,
+                    visual = visual,
+                    colors = colors,
+                    opacity = opacity,
+                    nativeTransform = nativeTransform,
+                    previousCenter = null,
+                    progress = 1f,
+                )
+
             TransitionComponent.CHARGING_ICON ->
                 drawBatteryTopChargingIconTransition(
                     canvas = canvas,
@@ -523,6 +535,7 @@ internal class StatusPainter(
         BATTERY,
         BATTERY_NUMBER,
         CHARGING_ICON,
+        NETWORK_ACTIVITY,
         CENTER,
         MOBILE,
     }
@@ -626,7 +639,7 @@ internal class StatusPainter(
                 bottom = offsetY + bounds.bottom * scale,
             )
 
-        val specs = ArrayList<TransitionComponentSpec>(5)
+        val specs = ArrayList<TransitionComponentSpec>(6)
         val batteryHalfStroke = outerGeometry.ringStroke / 2f
         specs +=
             TransitionComponentSpec(
@@ -811,6 +824,34 @@ internal class StatusPainter(
                     )
                 } else {
                     spec
+                }
+        }
+
+        // This is the same native-asset draw path as the steady bottom activity
+        // icon; CC owns its destination, while absent targets use the existing exit.
+        if (!(visual.centeredMobileSignal && model.centerIndicator is CenterIndicator.MobileType)) {
+            resolveLeftRightBottomInformation(model, visual)
+                ?.takeUnless { it.charging }
+                ?.let { activity ->
+                    leftRightBottomOpticalBounds(activity, visual)?.let { bounds ->
+                        val slots = when (model.centerIndicator) {
+                            is CenterIndicator.Wifi -> listOf("wifi")
+                            is CenterIndicator.MobileType -> listOf("mobile", "stacked_mobile")
+                            else -> emptyList()
+                        }
+                        if (slots.isNotEmpty()) {
+                            specs += TransitionComponentSpec(
+                                component = TransitionComponent.NETWORK_ACTIVITY,
+                                sourceBounds = toViewBounds(bounds),
+                                target = TransitionTarget.Slots(
+                                    preferredSlots = slots,
+                                    preferredChildEntries = listOf("network_activity"),
+                                ),
+                                shapePolicy = TransitionShapePolicy.RIGID,
+                                scalePolicy = TransitionScalePolicy.TARGET,
+                            )
+                        }
+                    }
                 }
         }
 
