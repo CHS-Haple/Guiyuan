@@ -251,14 +251,28 @@ internal class VisualRepo(context: Context) {
         preferences.edit().putBoolean(activeProfileKey(LEFT_RIGHT_CHARGING_KEY), enabled).apply()
     }
 
-    fun setLeftRightBottomInfoScale(scale: Float) {
+    fun setLeftRightActivityScale(scale: Float) {
         preferences.edit().putFloat(
-            activeProfileKey(LEFT_RIGHT_BOTTOM_INFO_SCALE_KEY),
+            activeProfileKey(LEFT_RIGHT_ACTIVITY_SCALE_KEY),
             scale.finiteIn(
                 LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN,
                 LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX,
                 LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
             ),
+        ).apply()
+    }
+
+    fun setLeftRightActivityOffsetY(offset: Float) {
+        preferences.edit().putFloat(
+            activeProfileKey(LEFT_RIGHT_ACTIVITY_OFFSET_Y_KEY),
+            offset.finiteIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX, NETWORK_TOP_OFFSET_DEFAULT),
+        ).apply()
+    }
+
+    fun setLeftRightChargingOffsetY(offset: Float) {
+        preferences.edit().putFloat(
+            activeProfileKey(LEFT_RIGHT_CHARGING_OFFSET_Y_KEY),
+            offset.finiteIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX, NETWORK_TOP_OFFSET_DEFAULT),
         ).apply()
     }
 
@@ -604,7 +618,7 @@ internal fun SharedPreferences.writeSignalDotOffsetY(offset: Float) {
     val visual = readVisualCfg()
     val key = when (if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement) {
         SignalDotArrangement.HORIZONTAL -> HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY
-        SignalDotArrangement.LEFT_RIGHT -> LEFT_RIGHT_SIGNAL_DOT_OFFSET_Y_KEY
+        SignalDotArrangement.LEFT_RIGHT -> return
         SignalDotArrangement.CURVED -> CURVED_SIGNAL_DOT_OFFSET_Y_KEY
     }
     edit().putFloat(
@@ -745,7 +759,9 @@ internal fun SharedPreferences.readVisualCfg(
         leftRightShowActivity = flag(LEFT_RIGHT_ACTIVITY_KEY, true),
         leftRightShowIdleActivity = flag(LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY, false),
         leftRightBottomCharging = flag(LEFT_RIGHT_CHARGING_KEY, false),
-        leftRightBottomInfoScale = size(LEFT_RIGHT_BOTTOM_INFO_SCALE_KEY, LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT),
+        leftRightActivityScale = size(LEFT_RIGHT_ACTIVITY_SCALE_KEY, LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT),
+        leftRightActivityOffsetY = size(LEFT_RIGHT_ACTIVITY_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
+        leftRightChargingOffsetY = size(LEFT_RIGHT_CHARGING_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
         fixedLowerOpening = flag(LOWER_FIXED_OPENING_KEY, false),
         mobileTypeBottomOffsetY = size(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, mobileTypeBottomOffsetDefault(layout)),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
@@ -853,8 +869,14 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         visualProfileKey(layout, LEFT_RIGHT_CHARGING_KEY),
         normalized.leftRightBottomCharging,
     ).putFloat(
-        visualProfileKey(layout, LEFT_RIGHT_BOTTOM_INFO_SCALE_KEY),
-        normalized.leftRightBottomInfoScale,
+        visualProfileKey(layout, LEFT_RIGHT_ACTIVITY_SCALE_KEY),
+        normalized.leftRightActivityScale,
+    ).putFloat(
+        visualProfileKey(layout, LEFT_RIGHT_ACTIVITY_OFFSET_Y_KEY),
+        normalized.leftRightActivityOffsetY,
+    ).putFloat(
+        visualProfileKey(layout, LEFT_RIGHT_CHARGING_OFFSET_Y_KEY),
+        normalized.leftRightChargingOffsetY,
     ).putBoolean(
         visualProfileKey(layout, LOWER_FIXED_OPENING_KEY),
         normalized.fixedLowerOpening,
