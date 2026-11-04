@@ -178,7 +178,7 @@ class VisualCfgTest {
                     assertEquals(
                         when (dualStyle) {
                             SignalDotArrangement.HORIZONTAL -> 5f
-                            SignalDotArrangement.LEFT_RIGHT -> 7f
+                            SignalDotArrangement.LEFT_RIGHT -> 0f
                             SignalDotArrangement.CURVED -> 2f
                         },
                         visual.dualRowDotOffsetY,
