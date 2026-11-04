@@ -590,6 +590,9 @@ internal class StatusPainter(
         val scalePolicy: TransitionScalePolicy,
         val targetOpticalBounds: TransitionNormalizedBounds? = null,
         val mobileRow: Int? = null,
+        // Only the bottom charging bolt travels with the eight outer signal dots.
+        // The regular charging icon keeps its established battery/readout motion.
+        val followDualMobileMotion: Boolean = false,
     )
 
     internal data class TransitionNormalizedBounds(
@@ -703,6 +706,7 @@ internal class StatusPainter(
                         target = TransitionTarget.BatteryChargingIcon,
                         shapePolicy = TransitionShapePolicy.RIGID,
                         scalePolicy = TransitionScalePolicy.TARGET,
+                        followDualMobileMotion = true,
                     )
                 }
             }
