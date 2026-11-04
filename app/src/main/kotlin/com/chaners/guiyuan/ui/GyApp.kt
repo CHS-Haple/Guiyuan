@@ -36,6 +36,7 @@ import com.chaners.guiyuan.ui.screens.PreviewDataSim
 import com.chaners.guiyuan.ui.screens.PreviewSimCards
 import com.chaners.guiyuan.ui.screens.PreviewMobileNetwork
 import com.chaners.guiyuan.ui.screens.PreviewNetworkMode
+import com.chaners.guiyuan.ui.screens.PreviewNetworkActivity
 import com.chaners.guiyuan.ui.screens.PreviewSandboxScreen
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.PreviewWifiState
@@ -129,6 +130,9 @@ internal fun GyApp(
             mutableIntStateOf(PreviewWifiState.CONNECTED.ordinal)
         }
         var previewWifiSignalLevel by rememberSaveable { mutableIntStateOf(3) }
+        var previewNetworkActivityIndex by rememberSaveable {
+            mutableIntStateOf(PreviewNetworkActivity.BOTH.ordinal)
+        }
         var previewBatteryPercent by rememberSaveable { mutableIntStateOf(87) }
         var previewBatteryModeIndex by rememberSaveable {
             mutableIntStateOf(PreviewBatteryMode.BALANCED.ordinal)
@@ -184,6 +188,9 @@ internal fun GyApp(
                         )
                     ],
                 wifiSignalLevel = previewWifiSignalLevel,
+                networkActivity = PreviewNetworkActivity.entries[
+                    previewNetworkActivityIndex.coerceIn(0, PreviewNetworkActivity.entries.lastIndex)
+                ],
                 batteryPercent = previewBatteryPercent,
                 batteryMode =
                     PreviewBatteryMode.entries[
@@ -321,6 +328,7 @@ internal fun GyApp(
                         onWifiSignalLevelChange = {
                             previewWifiSignalLevel = it
                         },
+                        onNetworkActivityChange = { previewNetworkActivityIndex = it.ordinal },
                         onBatteryPercentChange = {
                             previewBatteryPercent = it
                         },
