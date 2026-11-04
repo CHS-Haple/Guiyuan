@@ -344,6 +344,8 @@ internal object ParticipantVisualSnapshot {
     private fun resolveViewGroup(group: ViewGroup): Snapshot? {
         if (group.width <= 0 || group.height <= 0) return null
         val components = ArrayList<NormalizedRect>()
+        val matrix = Matrix()
+        val rect = RectF()
 
         fun collect(view: View) {
             if (
@@ -355,17 +357,16 @@ internal object ParticipantVisualSnapshot {
             }
             if (view is ImageView) {
                 val snapshot = resolveImageView(view) ?: return
-                val matrix = Matrix()
+                matrix.reset()
                 view.transformMatrixToGlobal(matrix)
                 group.transformMatrixToLocal(matrix)
                 snapshot.components.forEach { component ->
-                    val rect =
-                        RectF(
-                            component.left * view.width,
-                            component.top * view.height,
-                            component.right * view.width,
-                            component.bottom * view.height,
-                        )
+                    rect.set(
+                        component.left * view.width,
+                        component.top * view.height,
+                        component.right * view.width,
+                        component.bottom * view.height,
+                    )
                     matrix.mapRect(rect)
                     components +=
                         NormalizedRect(
