@@ -17,6 +17,7 @@ import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.settings.topChargingIconUiScale
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import com.chaners.guiyuan.xposed.battery.BatteryTopArcPolicy
 import com.chaners.guiyuan.settings.MOBILE_TYPE_BOTTOM_ZERO_REFERENCE
@@ -1693,6 +1694,10 @@ internal class StatusPainter(
             ).coerceIn(0f, 90f)
         }
         val topHalf = halfGap(topAvoidance, center = 270f, start = 180f)
+        // A stored opening choice from another arrangement cannot override left-right auto avoidance.
+        val leftRightSelected = visual.dualSignal &&
+            visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT
+        val fixedOpening = visual.fixedLowerOpening && !leftRightSelected
         val bottomHalf = halfGap(
             resolveBatteryBottomAvoidance(
                 model = model,
@@ -1704,7 +1709,7 @@ internal class StatusPainter(
                 previousCenterIndicator = previousCenterIndicator,
                 centerExitAmount = centerExitAmount,
                 centerEnterAmount = centerEnterAmount,
-                includeOutsideDots = visual.fixedLowerOpening,
+                includeOutsideDots = fixedOpening,
             ),
             center = 90f,
             start = 0f,
@@ -1717,9 +1722,8 @@ internal class StatusPainter(
         val dualRows = model.dualMobileLevels != null && !model.mobileUnavailableMark
         val leftRightOutside = dualRows &&
             visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT
-        val followLeftRight = leftRightOutside && !visual.fixedLowerOpening
         val outsideHalf = if (leftRightOutside) {
-            if (visual.fixedLowerOpening) 90f else outerGeometry.followingLowerHalfGap(
+            outerGeometry.followingLowerHalfGap(
                 dual = true,
                 style = SignalDotArrangement.LEFT_RIGHT,
                 offsetY = visual.dualRowDotOffsetY,
@@ -1729,7 +1733,7 @@ internal class StatusPainter(
                     outerGeometry = outerGeometry,
                 ),
             )
-        } else if (visual.fixedLowerOpening) 60f else outerGeometry.followingLowerHalfGap(
+        } else if (fixedOpening) 60f else outerGeometry.followingLowerHalfGap(
             dual = dualRows,
             style = if (dualRows) visual.dualRowDotArrangement else visual.singleRowDotArrangement,
             offsetY = if (dualRows) visual.dualRowDotOffsetY else visual.singleRowDotOffsetY,
@@ -1750,7 +1754,7 @@ internal class StatusPainter(
                 centeredNow = centeredNow,
                 motion = centerEnterAmount,
             ),
-            allowExtendedBottomGap = followLeftRight,
+            allowExtendedBottomGap = leftRightOutside,
         )
     }
 
@@ -4115,6 +4119,14 @@ internal class StatusPainter(
         val idle: Boolean = false,
     )
 
+    private fun leftRightBottomScale(visual: VisualCfg, charging: Boolean): Float =
+        if (charging) topChargingIconUiScale(visual.topChargingIconScale)
+        else visual.leftRightActivityScale
+
+    private fun leftRightBottomCenterY(visual: VisualCfg, charging: Boolean): Float =
+        LEFT_RIGHT_BOTTOM_INK_CENTER_Y -
+            if (charging) visual.leftRightChargingOffsetY else visual.leftRightActivityOffsetY
+
     private fun idleActivityResourceId(center: CenterIndicator): Int? {
         val name = when (center) {
             is CenterIndicator.Wifi -> "stat_sys_wifi_inout"
@@ -4145,13 +4157,13 @@ internal class StatusPainter(
             if (resourceId <= 0) return null
             val resource = PresentationStore.NativeIconResource(SYSTEM_UI_PACKAGE, resourceId)
             val width = (if (charging) LEFT_RIGHT_CHARGING_SLOT_WIDTH else LEFT_RIGHT_BOTTOM_SLOT_WIDTH) *
-                visual.leftRightBottomInfoScale
+                leftRightBottomScale(visual, charging)
             val height = (if (charging) LEFT_RIGHT_CHARGING_SLOT_HEIGHT else LEFT_RIGHT_BOTTOM_SLOT_HEIGHT) *
-                visual.leftRightBottomInfoScale
+                leftRightBottomScale(visual, charging)
             if (resolveNativeCenterDrawGeometry(
                     resource = resource,
                     centerX = BATTERY_COMPONENT_CENTER_X,
-                    centerY = LEFT_RIGHT_BOTTOM_INK_CENTER_Y - visual.dualRowDotOffsetY,
+                    centerY = leftRightBottomCenterY(visual, charging),
                     maxWidth = width,
                     maxHeight = height,
                 ) == null
@@ -4182,11 +4194,11 @@ internal class StatusPainter(
         visual: VisualCfg,
     ): TransitionBounds? {
         val centerX = BATTERY_COMPONENT_CENTER_X
-        val centerY = LEFT_RIGHT_BOTTOM_INK_CENTER_Y - visual.dualRowDotOffsetY
+        val centerY = leftRightBottomCenterY(visual, bottom.charging)
         val width = (if (bottom.charging) LEFT_RIGHT_CHARGING_SLOT_WIDTH else LEFT_RIGHT_BOTTOM_SLOT_WIDTH) *
-            visual.leftRightBottomInfoScale
+            leftRightBottomScale(visual, bottom.charging)
         val height = (if (bottom.charging) LEFT_RIGHT_CHARGING_SLOT_HEIGHT else LEFT_RIGHT_BOTTOM_SLOT_HEIGHT) *
-            visual.leftRightBottomInfoScale
+            leftRightBottomScale(visual, bottom.charging)
         val geometry = resolveNativeCenterDrawGeometry(
             resource = bottom.resource,
             centerX = centerX,
@@ -4273,11 +4285,11 @@ internal class StatusPainter(
             tint = if (bottomCharging) colors.chargingIconTint else colors.centerTint,
             opacity = opacity * outsideAmount * (if (bottom.idle) IDLE_ACTIVITY_OPACITY else 1f),
             centerX = BATTERY_COMPONENT_CENTER_X,
-            centerY = LEFT_RIGHT_BOTTOM_INK_CENTER_Y - visual.dualRowDotOffsetY,
+            centerY = leftRightBottomCenterY(visual, bottomCharging),
             maxWidth = (if (bottomCharging) LEFT_RIGHT_CHARGING_SLOT_WIDTH else LEFT_RIGHT_BOTTOM_SLOT_WIDTH) *
-                visual.leftRightBottomInfoScale,
+                leftRightBottomScale(visual, bottomCharging),
             maxHeight = (if (bottomCharging) LEFT_RIGHT_CHARGING_SLOT_HEIGHT else LEFT_RIGHT_BOTTOM_SLOT_HEIGHT) *
-                visual.leftRightBottomInfoScale,
+                leftRightBottomScale(visual, bottomCharging),
             nativeTransform = nativeTransform,
             // Match steady Wi-Fi and airplane icons: settle native ink on physical pixels.
             pixelAligned = true,
@@ -4497,8 +4509,7 @@ internal class StatusPainter(
         const val IDLE_ACTIVITY_OPACITY = 0.28f
         const val LEFT_RIGHT_BOTTOM_SLOT_WIDTH = 19f
         const val LEFT_RIGHT_BOTTOM_SLOT_HEIGHT = 22f
-        // Native charging and traffic assets have very different intrinsic ink.
-        // Share the user-facing scale, but preserve independent optical frames.
+        // Native charging and traffic assets have different intrinsic optical frames.
         const val LEFT_RIGHT_CHARGING_SLOT_WIDTH = 18f
         const val LEFT_RIGHT_CHARGING_SLOT_HEIGHT = 26f
         const val BATTERY_TOP_ICON_TEXT_GAP = 1f
