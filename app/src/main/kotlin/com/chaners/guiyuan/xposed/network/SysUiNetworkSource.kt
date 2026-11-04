@@ -392,14 +392,20 @@ internal object SysUiNetworkSource {
                                         image.drawable != null
                                     val taggedResId = (image.tag as? Number)?.toInt()
                                         ?.takeIf { it > 0 && visible }
+                                    // Capture the native witness before Guiyuan's
+                                    // update may change presentation or masking.
+                                    val nativeWitness =
+                                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                            readOrNull { nativeActivityObservation(image, result) }
+                                        } else null
                                     onWifiActivity(taggedResId)
-                                    if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                    nativeWitness?.let { witness ->
                                         readOrNull {
-                                            onEvent(
+                                            onEvent?.invoke(
                                                 "networkPipeline wifi activityEvent " +
-                                                    "phase=afterNativeProceed " +
+                                                    "phase=afterNativeProceed/beforeModuleCommit " +
                                                     "appliedResId=" + (taggedResId ?: 0) +
-                                                    " " + nativeActivityObservation(image, result),
+                                                    " " + witness,
                                             )
                                         }
                                     }
@@ -548,14 +554,19 @@ internal object SysUiNetworkSource {
                                         image.drawable != null
                                     val taggedResId = (image.tag as? Number)?.toInt()
                                         ?.takeIf { it > 0 && visible }
+                                    val nativeWitness =
+                                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                            readOrNull { nativeActivityObservation(image, result) }
+                                        } else null
                                     onMobileActivity(subId, taggedResId)
-                                    if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                    nativeWitness?.let { witness ->
                                         readOrNull {
-                                            onEvent(
+                                            onEvent?.invoke(
                                                 "networkPipeline mobile activityEvent " +
-                                                    "phase=afterNativeProceed subId=" + subId +
+                                                    "phase=afterNativeProceed/beforeModuleCommit " +
+                                                    "subId=" + subId +
                                                     " appliedResId=" + (taggedResId ?: 0) +
-                                                    " " + nativeActivityObservation(image, result),
+                                                    " " + witness,
                                             )
                                         }
                                     }
