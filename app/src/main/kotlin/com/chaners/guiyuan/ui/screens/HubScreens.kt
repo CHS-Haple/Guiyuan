@@ -539,6 +539,64 @@ internal fun FeaturesScreen(
                         )
                     }
                 }
+                val activeDotArrangement =
+                    if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement
+                listOf(
+                    SignalDotArrangement.CURVED to R.string.curved_signal_dot_vertical_offset,
+                    SignalDotArrangement.HORIZONTAL to R.string.horizontal_signal_dot_vertical_offset,
+                ).forEach { (style, dotOffsetTitle) ->
+                    AnimatedPreferenceGroup(visible = activeDotArrangement == style) {
+                        if (search.matches(dotOffsetTitle)) {
+                        SliderPreference(
+                            value = visual.activeSignalDotOffsetY,
+                            onValueChange = visualRepo::setSignalDotOffsetY,
+                            title = stringResource(dotOffsetTitle),
+                            summary = stringResource(R.string.outer_signal_dots_only_summary),
+                            startAction = {
+                                SemanticLeadingIcon(
+                                    R.drawable.ic_material_symbol_signal_cellular_alt,
+                                    featureCfg.enabled,
+                                    R.drawable.ic_material_symbol_height_w500,
+                                )
+                            },
+                            valueText = stringResource(
+                                R.string.battery_top_offset_value,
+                                visual.activeSignalDotOffsetY.roundToInt(),
+                            ),
+                            valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
+                            steps = 19,
+                            showKeyPoints = true,
+                            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                            keyPoints = listOf(0f),
+                            magnetThreshold = 0.035f,
+                            enabled = featureCfg.enabled,
+                        )
+                    }
+                    }
+                }
+                AnimatedPreferenceGroup(visible = activeDotArrangement != SignalDotArrangement.LEFT_RIGHT) {
+                    if (search.matches(R.string.battery_lower_opening_title)) {
+                        UiDropdownPreference(
+                            title = stringResource(R.string.battery_lower_opening_title),
+                            summary = stringResource(R.string.battery_lower_opening_summary),
+                            items = lowerOpeningOptions,
+                            selectedIndex = if (visual.fixedLowerOpening) 1 else 0,
+                            showValue = true,
+                            enabled = featureCfg.enabled,
+                            startAction = {
+                                SemanticLeadingIcon(
+                                    R.drawable.ic_battery_ring_opening,
+                                    featureCfg.enabled,
+                                )
+                            },
+                            onSelectedIndexChange = { index ->
+                                if (index in lowerOpeningOptions.indices) {
+                                    visualRepo.setFixedLowerOpening(index == 1)
+                                }
+                            },
+                        )
+                    }
+                }
                 AnimatedPreferenceGroup(
                     visible = visual.dualSignal &&
                         visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT,
@@ -555,7 +613,7 @@ internal fun FeaturesScreen(
                             onCheckedChange = visualRepo::setLeftRightShowActivity,
                         )
                     }
-                    if (visual.leftRightShowActivity) {
+                    AnimatedPreferenceGroup(visible = visual.leftRightShowActivity) {
                         if (search.matches(R.string.left_right_idle_activity_title)) {
                             SwitchPreference(
                                 title = stringResource(R.string.left_right_idle_activity_title),
@@ -631,9 +689,9 @@ internal fun FeaturesScreen(
                             onCheckedChange = visualRepo::setLeftRightBottomCharging,
                         )
                     }
-                    if (visual.leftRightBottomCharging &&
-                        search.matches(R.string.left_right_charging_vertical_offset)) {
-                        SliderPreference(
+                    AnimatedPreferenceGroup(visible = visual.leftRightBottomCharging) {
+                        if (search.matches(R.string.left_right_charging_vertical_offset)) {
+                            SliderPreference(
                             value = visual.leftRightChargingOffsetY,
                             onValueChange = visualRepo::setLeftRightChargingOffsetY,
                             title = stringResource(R.string.left_right_charging_vertical_offset),
@@ -655,7 +713,8 @@ internal fun FeaturesScreen(
                             keyPoints = listOf(0f),
                             magnetThreshold = 0.035f,
                             enabled = featureCfg.enabled,
-                        )
+                            )
+                        }
                     }
                 }
                 AnimatedPreferenceGroup(visible = visual.layout == ContentLayout.BATTERY_CENTER) {
@@ -756,61 +815,6 @@ internal fun FeaturesScreen(
                             keyPoints = listOf(0f),
                             magnetThreshold = 0.035f,
                             enabled = featureCfg.enabled,
-                        )
-                    }
-                }
-                val activeDotArrangement =
-                    if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement
-                AnimatedPreferenceGroup(visible = activeDotArrangement != SignalDotArrangement.LEFT_RIGHT) {
-                    val dotOffsetTitle =
-                        if (activeDotArrangement == SignalDotArrangement.CURVED)
-                            R.string.curved_signal_dot_vertical_offset
-                        else R.string.horizontal_signal_dot_vertical_offset
-                    if (search.matches(dotOffsetTitle)) {
-                        SliderPreference(
-                            value = visual.activeSignalDotOffsetY,
-                            onValueChange = visualRepo::setSignalDotOffsetY,
-                            title = stringResource(dotOffsetTitle),
-                            summary = stringResource(R.string.outer_signal_dots_only_summary),
-                            startAction = {
-                                SemanticLeadingIcon(
-                                    R.drawable.ic_material_symbol_signal_cellular_alt,
-                                    featureCfg.enabled,
-                                    R.drawable.ic_material_symbol_height_w500,
-                                )
-                            },
-                            valueText = stringResource(
-                                R.string.battery_top_offset_value,
-                                visual.activeSignalDotOffsetY.roundToInt(),
-                            ),
-                            valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                            steps = 19,
-                            showKeyPoints = true,
-                            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                            keyPoints = listOf(0f),
-                            magnetThreshold = 0.035f,
-                            enabled = featureCfg.enabled,
-                        )
-                    }
-                    if (search.matches(R.string.battery_lower_opening_title)) {
-                        UiDropdownPreference(
-                            title = stringResource(R.string.battery_lower_opening_title),
-                            summary = stringResource(R.string.battery_lower_opening_summary),
-                            items = lowerOpeningOptions,
-                            selectedIndex = if (visual.fixedLowerOpening) 1 else 0,
-                            showValue = true,
-                            enabled = featureCfg.enabled,
-                            startAction = {
-                                SemanticLeadingIcon(
-                                    R.drawable.ic_battery_ring_opening,
-                                    featureCfg.enabled,
-                                )
-                            },
-                            onSelectedIndexChange = { index ->
-                                if (index in lowerOpeningOptions.indices) {
-                                    visualRepo.setFixedLowerOpening(index == 1)
-                                }
-                            },
                         )
                     }
                 }
