@@ -335,6 +335,47 @@ class OuterGeometryTest {
     }
 
     @Test
+    fun leftRightDotsRemainMirroredAndClearAtSupportedRingWeights() {
+        for (step in 0..12) {
+            val weight = 0.7f + 0.05f * step
+            val g = OuterGeometry.resolve(weight)
+            val dotRadius = g.dualMobileDotRadius
+            for (index in 0 until 4) {
+                val leftX = g.dualDotX(index, 0, SignalDotArrangement.LEFT_RIGHT)
+                val rightX = g.dualDotX(index, 1, SignalDotArrangement.LEFT_RIGHT)
+                val leftY = g.dualDotY(index, 0, SignalDotArrangement.LEFT_RIGHT)
+                val rightY = g.dualDotY(index, 1, SignalDotArrangement.LEFT_RIGHT)
+                assertEquals("mirrored x", -leftX, rightX, 0.0001f)
+                assertEquals("mirrored y", leftY, rightY, 0.0001f)
+                assertTrue("left group remains left", leftX < 0f)
+                assertTrue("right group remains right", rightX > 0f)
+                assertTrue("lower group remains below center", leftY > 0f)
+                if (index > 0) {
+                    for (row in 0..1) {
+                        val dx = g.dualDotX(index, row, SignalDotArrangement.LEFT_RIGHT) -
+                            g.dualDotX(index - 1, row, SignalDotArrangement.LEFT_RIGHT)
+                        val dy = g.dualDotY(index, row, SignalDotArrangement.LEFT_RIGHT) -
+                            g.dualDotY(index - 1, row, SignalDotArrangement.LEFT_RIGHT)
+                        assertTrue("dots must not overlap at weight $weight",
+                            sqrt(dx * dx + dy * dy) >= 2f * dotRadius + 0.9f)
+                    }
+                }
+            }
+            for (row in 0..1) {
+                val x = g.dualDotX(3, row, SignalDotArrangement.LEFT_RIGHT)
+                val y = g.dualDotY(3, row, SignalDotArrangement.LEFT_RIGHT)
+                val endpointX = if (row == 0) -OuterGeometry.RING_RADIUS
+                    else OuterGeometry.RING_RADIUS
+                assertTrue("upper ring cap must clear split dots at $weight",
+                    sqrt((x - endpointX) * (x - endpointX) + y * y) >=
+                        dotRadius + g.ringStroke / 2f + 1.9f)
+            }
+            assertEquals(90f,
+                g.followingLowerHalfGap(true, SignalDotArrangement.LEFT_RIGHT, 0f), 0f)
+        }
+    }
+
+    @Test
     fun fourDotsRemainMirrorSymmetricAcrossSupportedScales() {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
