@@ -22,8 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
@@ -107,14 +105,6 @@ internal fun AboutScreen(
         }
     }
     val visible by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
-    // The scrolling content owns the foreground boundary; hero pixels must not cover its rows.
-    val aboutContentTop by remember(listState) {
-        derivedStateOf {
-            listState.layoutInfo.visibleItemsInfo
-                .firstOrNull { it.key == "aboutContent" }
-                ?.offset
-        }
-    }
     val collapse by remember {
         derivedStateOf {
             val offset = listState.firstVisibleItemScrollOffset.toFloat()
@@ -123,7 +113,9 @@ internal fun AboutScreen(
             } else if (spacerBottom <= versionBottom ||
                 versionBottom <= nameBottom || nameBottom <= iconBottom
             ) {
-                Triple(0f, 0f, 0f)
+                // Measurements are captured only at rest; never keep an unfaded
+                // overlay alive if the list has started scrolling before layout settles.
+                if (offset > 0f) Triple(1f, 1f, 1f) else Triple(0f, 0f, 0f)
             } else {
                 val first = spacerBottom - versionBottom
                 val second = versionBottom - nameBottom
@@ -158,20 +150,9 @@ internal fun AboutScreen(
                 bgModifier = if (blur) Modifier.layerBackdrop(backdrop) else Modifier,
                 isFullSize = true,
                 alpha = { 1f - scrollProgress },
-            ) {}
-        },
-        foreground = { padding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .drawWithContent {
-                        // LazyColumn and the hero share the SettingsPage content origin.
-                        // Clip the hero before the first real row even if the fade state lags.
-                        clipRect(bottom = aboutHeroClipBottom(aboutContentTop, size.height)) {
-                            drawContent()
-                        }
-                    },
             ) {
+                // SettingsPage paints background before LazyColumn; foreground
+                // is painted afterwards and would cover scrolling preference rows.
                 AboutHero(
                     topPadding = padding.calculateTopPadding(),
                     active = visible,
@@ -388,11 +369,6 @@ internal fun AboutScreen(
         }
     }
 }
-
-
-/** Prevent a fixed About hero from drawing across the LazyColumn's first content row. */
-internal fun aboutHeroClipBottom(contentTopPx: Int?, viewportHeightPx: Float): Float =
-    (contentTopPx?.toFloat() ?: viewportHeightPx).coerceIn(0f, viewportHeightPx)
 
 @Composable
 internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
