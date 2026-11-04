@@ -80,7 +80,7 @@ class ConfigBackupTest {
             .normalized().leftRightActivityScale, 0.0001f)
         assertEquals(1.2f, selected.copy(leftRightActivityScale = 4f)
             .normalized().leftRightActivityScale, 0.0001f)
-        assertEquals(1f, selected.copy(leftRightActivityScale = Float.NaN)
+        assertEquals(LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT, selected.copy(leftRightActivityScale = Float.NaN)
             .normalized().leftRightActivityScale, 0.0001f)
         assertEquals(-10f, selected.copy(leftRightActivityOffsetY = -100f)
             .normalized().leftRightActivityOffsetY, 0f)
