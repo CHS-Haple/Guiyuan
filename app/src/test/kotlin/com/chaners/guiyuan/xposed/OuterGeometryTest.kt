@@ -339,7 +339,7 @@ class OuterGeometryTest {
         for (step in 0..12) {
             val weight = 0.7f + 0.05f * step
             val g = OuterGeometry.resolve(weight)
-            val dotRadius = g.dualMobileDotRadius
+            val dotRadius = g.leftRightMobileDotRadius
             for (index in 0 until 4) {
                 val leftX = g.dualDotX(index, 0, SignalDotArrangement.LEFT_RIGHT)
                 val rightX = g.dualDotX(index, 1, SignalDotArrangement.LEFT_RIGHT)
@@ -396,7 +396,7 @@ class OuterGeometryTest {
                 val nearestX = kotlin.math.abs(g.dualDotX(0, row, SignalDotArrangement.LEFT_RIGHT))
                 val slotHalfWidth = 19f * 1.2f / 2f
                 assertTrue("bottom slot must clear both SIM dot groups",
-                    nearestX - slotHalfWidth - g.dualMobileDotRadius > 0.5f)
+                    nearestX - slotHalfWidth - g.leftRightMobileDotRadius > 0.5f)
             }
         }
     }
@@ -410,10 +410,10 @@ class OuterGeometryTest {
             val ringSideX = -OuterGeometry.RING_RADIUS
             val outerX = g.dualDotX(3, 0, SignalDotArrangement.LEFT_RIGHT)
             val outerY = g.dualDotY(3, 0, SignalDotArrangement.LEFT_RIGHT)
-            val centerClearance = rightInnerX - innerX - 2f * g.dualMobileDotRadius
+            val centerClearance = rightInnerX - innerX - 2f * g.leftRightMobileDotRadius
             val ringClearance = sqrt(
                 (outerX - ringSideX) * (outerX - ringSideX) + outerY * outerY,
-            ) - g.dualMobileDotRadius - g.ringStroke / 2f
+            ) - g.leftRightMobileDotRadius - g.ringStroke / 2f
             assertTrue("split groups must remain optically separated", centerClearance > 1f)
             assertEquals("center and ring-side optical spacing", ringClearance, centerClearance, 0.1f)
             assertEquals(
@@ -434,6 +434,30 @@ class OuterGeometryTest {
                     -g.dualDotX(index, 0, SignalDotArrangement.LEFT_RIGHT),
                     g.dualDotX(index, 1, SignalDotArrangement.LEFT_RIGHT), 0.0001f,
                 )
+            }
+        }
+    }
+
+    @Test
+    fun leftRightDotsClearAtEverySupportedRingWeight() {
+        for (step in 0..28) {
+            val weight = 0.6f + step * 0.05f
+            for (slotEnabled in listOf(true, false)) {
+                val geom = OuterGeometry.resolve(weight, leftRightBottomSlotEnabled = slotEnabled)
+                val radius = geom.leftRightMobileDotRadius
+                assertTrue("split radius cannot exceed ordinary dual dot radius",
+                    radius > 0f && radius <= geom.dualMobileDotRadius)
+                for (i in 1..3) {
+                    val dx = geom.dualDotX(i, 0, SignalDotArrangement.LEFT_RIGHT) -
+                        geom.dualDotX(i - 1, 0, SignalDotArrangement.LEFT_RIGHT)
+                    val dy = geom.dualDotY(i, 0, SignalDotArrangement.LEFT_RIGHT) -
+                        geom.dualDotY(i - 1, 0, SignalDotArrangement.LEFT_RIGHT)
+                    assertTrue("within-group circles must not overlap at $weight",
+                        sqrt(dx * dx + dy * dy) > 2f * radius)
+                }
+                val innerGap = geom.dualDotX(0, 1, SignalDotArrangement.LEFT_RIGHT) -
+                    geom.dualDotX(0, 0, SignalDotArrangement.LEFT_RIGHT) - 2f * radius
+                assertTrue("SIM groups must not overlap at $weight", innerGap > 0.5f)
             }
         }
     }

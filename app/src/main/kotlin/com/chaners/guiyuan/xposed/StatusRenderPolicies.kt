@@ -398,6 +398,7 @@ internal object OuterGeometry {
         val ringStroke: Float,
         val mobileDotRadius: Float,
         val dualMobileDotRadius: Float,
+        val leftRightMobileDotRadius: Float,
         val horizontalDotSpan: Float,
         val dualRowGap: Float,
         val dualOpticalRise: Float,
@@ -443,6 +444,10 @@ internal object OuterGeometry {
 
         fun horizontalDotX(index: Int): Float =
             (index - (DOT_COUNT - 1) / 2f) * (horizontalDotSpan / (DOT_COUNT - 1))
+
+        fun dualDotRadius(style: SignalDotArrangement): Float =
+            if (style == SignalDotArrangement.LEFT_RIGHT) leftRightMobileDotRadius
+            else dualMobileDotRadius
 
         fun dualDotX(index: Int, row: Int, style: SignalDotArrangement): Float =
             if (style == SignalDotArrangement.LEFT_RIGHT) {
@@ -548,14 +553,17 @@ internal object OuterGeometry {
             )
 
         val dualDotRadius = DUAL_BASE_DOT_RADIUS * normalized
-        val minimumChord = 2f * dualDotRadius + 1f
+        // Eight circles no longer fit the lower semicircle if their radii grow
+        // without bound. Limit only the split presentation at extreme weights.
+        val splitDotRadius = min(dualDotRadius, 6.5f)
+        val minimumChord = 2f * splitDotRadius + 1f
         val leftRightStep = max(
             15.0,
             Math.toDegrees(2.0 * kotlin.math.asin(
                 (minimumChord / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
             )),
         )
-        val ringClearance = ringStroke / 2f + dualDotRadius + 2f
+        val ringClearance = ringStroke / 2f + splitDotRadius + 2f
         val endMargin = Math.toDegrees(2.0 * kotlin.math.asin(
             (ringClearance / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
         ))
@@ -570,10 +578,10 @@ internal object OuterGeometry {
         var balancedUpper = outermostAllowed
         repeat(20) {
             val first = (balancedLower + balancedUpper) / 2.0
-            val inner = visualChordGap(2.0 * first - 180.0, 2.0 * dualDotRadius)
+            val inner = visualChordGap(2.0 * first - 180.0, 2.0 * splitDotRadius)
             val edge = visualChordGap(
                 180.0 - first - 3.0 * leftRightStep,
-                dualDotRadius + ringStroke / 2.0,
+                splitDotRadius + ringStroke / 2.0,
             )
             if (inner > edge) balancedUpper = first else balancedLower = first
         }
@@ -599,6 +607,7 @@ internal object OuterGeometry {
             ringStroke = ringStroke,
             mobileDotRadius = dotRadius,
             dualMobileDotRadius = dualDotRadius,
+            leftRightMobileDotRadius = splitDotRadius,
             horizontalDotSpan = horizontalDotSpan,
             dualRowGap = dualRowGap,
             dualOpticalRise = dualOpticalRise,

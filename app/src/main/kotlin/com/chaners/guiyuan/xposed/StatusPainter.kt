@@ -1566,7 +1566,9 @@ internal class StatusPainter(
             var bottom = Float.NEGATIVE_INFINITY
             for (row in 0 until rows) {
                 val centeredY = centeredMobileRowY(outerGeometry, if (dual) row else null)
-                val outerRadius = if (dual) outerGeometry.dualMobileDotRadius else outerGeometry.mobileDotRadius
+                val outerRadius = if (dual) {
+                    outerGeometry.dualDotRadius(visual.dualRowDotArrangement)
+                } else outerGeometry.mobileDotRadius
                 val innerRadius = outerRadius * centeredScale
                 for (index in 0 until MOBILE_DOT_COUNT) {
                     val innerX = CENTER_TRANSITION_PIVOT_X + outerGeometry.horizontalDotX(index) * centeredScale
@@ -3516,7 +3518,7 @@ internal class StatusPainter(
         style: SignalDotArrangement,
         mobileOffsetY: Float,
     ): TransitionBounds {
-        val radius = geometry.dualMobileDotRadius
+        val radius = geometry.dualDotRadius(style)
         val ys = (0 until MOBILE_DOT_COUNT).map { index ->
             MOBILE_CENTER_Y + geometry.dualDotY(index, row, style, mobileOffsetY)
         }
@@ -3536,7 +3538,7 @@ internal class StatusPainter(
         style: SignalDotArrangement,
         mobileOffsetY: Float,
     ): TransitionBounds {
-        val radius = geometry.dualMobileDotRadius
+        val radius = geometry.dualDotRadius(style)
         var left = Float.POSITIVE_INFINITY
         var top = Float.POSITIVE_INFINITY
         var right = Float.NEGATIVE_INFINITY
@@ -3624,8 +3626,8 @@ internal class StatusPainter(
             sourceCenters = centers,
             targetCenters = (0 until MOBILE_DOT_COUNT).map { index ->
                 TransitionPoint(
-                    bounds.left + geometry.dualMobileDotRadius +
-                        index * (bounds.width - 2f * geometry.dualMobileDotRadius) /
+                    bounds.left + geometry.dualDotRadius(style) +
+                        index * (bounds.width - 2f * geometry.dualDotRadius(style)) /
                             (MOBILE_DOT_COUNT - 1),
                     bounds.centerY,
                 )
@@ -3656,7 +3658,9 @@ internal class StatusPainter(
                 else -> resolveMobileSignalTransitionLayout(geometry, model, style, mobileOffsetY)
             }
         val radius =
-            (if (row == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius) *
+            (if (row == null) geometry.mobileDotRadius
+             else if (centered) geometry.dualMobileDotRadius
+             else geometry.dualDotRadius(style)) *
                 (if (centered) geometry.centeredScale(row != null || model.dualMobileLevels != null)
                  else 1f)
         val level = when (row) {
@@ -3970,7 +3974,9 @@ internal class StatusPainter(
                 val level = if (dual == null) model.mobileLevel
                     else if (row == 0) dual.sim1 else dual.sim2
                 val centeredY = centeredMobileRowY(geometry, if (dual == null) null else row)
-                val outerRadius = if (dual == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius
+                val outerRadius = if (dual == null) {
+                    geometry.mobileDotRadius
+                } else geometry.dualDotRadius(visual.dualRowDotArrangement)
                 val innerRadius = outerRadius * scale
                 for (index in 0 until MOBILE_DOT_COUNT) {
                     val innerX = CENTER_TRANSITION_PIVOT_X + geometry.horizontalDotX(index) * scale
@@ -4133,7 +4139,7 @@ internal class StatusPainter(
                     canvas.drawCircle(
                         MOBILE_CENTER_X + x,
                         MOBILE_CENTER_Y + y,
-                        geometry.dualMobileDotRadius,
+                        geometry.dualDotRadius(style),
                         paint,
                     )
                 }
