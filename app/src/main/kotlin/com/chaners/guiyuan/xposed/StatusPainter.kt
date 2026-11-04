@@ -1702,9 +1702,21 @@ internal class StatusPainter(
             ) BATTERY_BOTTOM_RING_VISUAL_CLEARANCE else BATTERY_TOP_RING_VISUAL_CLEARANCE,
         )
         val dualRows = model.dualMobileLevels != null && !model.mobileUnavailableMark
-        val outsideHalf = if (
-            dualRows && visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT
-        ) 90f else if (visual.fixedLowerOpening) 60f else outerGeometry.followingLowerHalfGap(
+        val leftRightOutside = dualRows &&
+            visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT
+        val followLeftRight = leftRightOutside && !visual.fixedLowerOpening
+        val outsideHalf = if (leftRightOutside) {
+            if (visual.fixedLowerOpening) 90f else outerGeometry.followingLowerHalfGap(
+                dual = true,
+                style = SignalDotArrangement.LEFT_RIGHT,
+                offsetY = visual.dualRowDotOffsetY,
+                additionalContentHalfGap = leftRightBottomInformationHalfGap(
+                    model = model,
+                    visual = visual,
+                    outerGeometry = outerGeometry,
+                ),
+            )
+        } else if (visual.fixedLowerOpening) 60f else outerGeometry.followingLowerHalfGap(
             dual = dualRows,
             style = if (dualRows) visual.dualRowDotArrangement else visual.singleRowDotArrangement,
             offsetY = if (dualRows) visual.dualRowDotOffsetY else visual.singleRowDotOffsetY,
@@ -1725,6 +1737,7 @@ internal class StatusPainter(
                 centeredNow = centeredNow,
                 motion = centerEnterAmount,
             ),
+            allowExtendedBottomGap = followLeftRight,
         )
     }
 
@@ -4091,7 +4104,7 @@ internal class StatusPainter(
             if (resolveNativeCenterDrawGeometry(
                     resource = resource,
                     centerX = BATTERY_COMPONENT_CENTER_X,
-                    centerY = LEFT_RIGHT_BOTTOM_INK_CENTER_Y,
+                    centerY = LEFT_RIGHT_BOTTOM_INK_CENTER_Y - visual.dualRowDotOffsetY,
                     maxWidth = width,
                     maxHeight = height,
                 ) == null
@@ -4110,6 +4123,60 @@ internal class StatusPainter(
 
     private fun hasDrawableBottomInformation(model: RenderModel, visual: VisualCfg): Boolean =
         resolveLeftRightBottomInformation(model, visual) != null
+
+    // Measured after native ink-centering and the shared lower-group shift:
+    // follow mode cannot use the drawable's transparent viewport as avoidance.
+    private fun leftRightBottomInformationHalfGap(
+        model: RenderModel,
+        visual: VisualCfg,
+        outerGeometry: OuterGeometry.Resolved,
+    ): Float {
+        val bottom = resolveLeftRightBottomInformation(model, visual) ?: return 0f
+        val centerX = BATTERY_COMPONENT_CENTER_X
+        val centerY = LEFT_RIGHT_BOTTOM_INK_CENTER_Y - visual.dualRowDotOffsetY
+        val width = (if (bottom.charging) LEFT_RIGHT_CHARGING_SLOT_WIDTH else LEFT_RIGHT_BOTTOM_SLOT_WIDTH) *
+            visual.leftRightBottomInfoScale
+        val height = (if (bottom.charging) LEFT_RIGHT_CHARGING_SLOT_HEIGHT else LEFT_RIGHT_BOTTOM_SLOT_HEIGHT) *
+            visual.leftRightBottomInfoScale
+        val asset = resolveNativeCenterDrawGeometry(
+            resource = bottom.resource,
+            centerX = centerX,
+            centerY = centerY,
+            maxWidth = width,
+            maxHeight = height,
+        ) ?: return 0f
+        val ink = asset.asset
+        val (viewportX, viewportY) = NativeOpticalGeometry.viewportCenterForInkAnchor(
+            anchorX = centerX,
+            anchorY = centerY,
+            drawWidth = asset.drawWidth,
+            drawHeight = asset.drawHeight,
+            opticalCenterX = (ink.opticalBounds.left + ink.opticalBounds.right) / 2f,
+            inkCenterY = ink.inkCenterY,
+        )
+        val deltaX = viewportX - centerX
+        val deltaY = viewportY - centerY
+        val bounds = asset.opticalBounds
+        val gap = BatteryTopArcPolicy.resolveGap(
+            contentLeft = bounds.left + deltaX,
+            contentTop = bounds.top + deltaY,
+            contentRight = bounds.right + deltaX,
+            contentBottom = bounds.bottom + deltaY,
+            ringCenterX = batteryRing.centerX(),
+            ringCenterY = batteryRing.centerY(),
+            ringRadius = batteryRing.width() / 2f,
+            ringStroke = outerGeometry.ringStroke,
+            visualClearance = BATTERY_BOTTOM_RING_VISUAL_CLEARANCE,
+            startDegrees = 0f,
+            maxSweep = 180f,
+        )
+        if (gap.sweepDegrees <= 0f) return 0f
+        val half = gap.sweepDegrees / 2f
+        return maxOf(
+            90f - (gap.centerDegrees - half),
+            (gap.centerDegrees + half) - 90f,
+        ).coerceIn(0f, 110f)
+    }
 
     private fun drawLeftRightBottomInformation(
         canvas: Canvas,
@@ -4143,7 +4210,7 @@ internal class StatusPainter(
             tint = if (bottomCharging) colors.chargingIconTint else colors.centerTint,
             opacity = opacity * outsideAmount,
             centerX = BATTERY_COMPONENT_CENTER_X,
-            centerY = LEFT_RIGHT_BOTTOM_INK_CENTER_Y,
+            centerY = LEFT_RIGHT_BOTTOM_INK_CENTER_Y - visual.dualRowDotOffsetY,
             maxWidth = (if (bottomCharging) LEFT_RIGHT_CHARGING_SLOT_WIDTH else LEFT_RIGHT_BOTTOM_SLOT_WIDTH) *
                 visual.leftRightBottomInfoScale,
             maxHeight = (if (bottomCharging) LEFT_RIGHT_CHARGING_SLOT_HEIGHT else LEFT_RIGHT_BOTTOM_SLOT_HEIGHT) *

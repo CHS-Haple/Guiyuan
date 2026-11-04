@@ -57,6 +57,17 @@ class BatteryTopArcPolicyTest {
     }
 
     @Test
+    fun splitFollowCanRetractBeyondEquatorButFixedRetainsHalfRing() {
+        val fixed = BatteryTopArcPolicy.drawableRingArcs(0f, 90f)
+        val followNeutral = BatteryTopArcPolicy.drawableRingArcs(0f, 90f, allowExtendedBottomGap = true)
+        val followRaised = BatteryTopArcPolicy.drawableRingArcs(0f, 101f, allowExtendedBottomGap = true)
+        assertEquals(fixed, followNeutral)
+        assertEquals(180f, fixed.sumOf { it.sweepDegrees.toDouble() }.toFloat(), 0f)
+        assertEquals(158f, followRaised.sumOf { it.sweepDegrees.toDouble() }.toFloat(), 0f)
+        assertEquals(fixed, BatteryTopArcPolicy.drawableRingArcs(0f, 101f))
+    }
+
+    @Test
     fun fullRingIndependentAndSymmetricGapsUseMeasuredOpticalAngles() {
         val independent = BatteryTopArcPolicy.drawableRingArcs(22f, 34f)
         assertEquals(

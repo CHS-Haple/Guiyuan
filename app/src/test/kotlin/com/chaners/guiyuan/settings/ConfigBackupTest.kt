@@ -27,6 +27,29 @@ class ConfigBackupTest {
         batterySchemes = BatteryColorSchemeLibrary(),
     )
 
+    @Test fun leftRightOffsetIsIndependentOfCurvedAndSurvivesBackups() {
+        val value = VisualCfg(
+            dualSignal = true,
+            dualRowDotArrangement = SignalDotArrangement.LEFT_RIGHT,
+            curvedSignalDotOffsetY = -3f,
+            horizontalSignalDotOffsetY = 2f,
+            leftRightSignalDotOffsetY = 6f,
+        )
+        assertEquals(6f, value.dualRowDotOffsetY, 0f)
+        assertEquals(-3f,
+            value.copy(dualRowDotArrangement = SignalDotArrangement.CURVED).dualRowDotOffsetY, 0f)
+        assertEquals(2f,
+            value.copy(dualRowDotArrangement = SignalDotArrangement.HORIZONTAL).dualRowDotOffsetY, 0f)
+        assertEquals(10f, value.copy(leftRightSignalDotOffsetY = 100f)
+            .normalized().leftRightSignalDotOffsetY, 0f)
+        val original = sample().let { source ->
+            source.copy(visual = source.visual.copy(profiles = source.visual.profiles.map { cfg ->
+                if (cfg.dualSignal) value.copy(layout = cfg.layout) else cfg
+            }))
+        }
+        assertEquals(original, ConfigBackupFormat.decode(ConfigBackupFormat.encode(original)))
+    }
+
     @Test fun leftRightBottomSizeNormalizesAndPersistsInLayoutProfile() {
         val selected = VisualCfg(
             layout = ContentLayout.NETWORK_CENTER,

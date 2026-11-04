@@ -10,6 +10,27 @@ import org.junit.Test
 
 class OuterGeometryTest {
     @Test
+    fun splitLeftRightFollowAndFixedMatchAtDefaultThenRespondToOffset() {
+        for (weight in listOf(0.6f, 1f, 1.5f, 2f)) {
+            for (iconVisible in listOf(false, true)) {
+                val g = OuterGeometry.resolve(weight, leftRightBottomIconVisible = iconVisible)
+                val fixedOpening = 90f
+                val neutral = g.followingLowerHalfGap(true, SignalDotArrangement.LEFT_RIGHT, 0f)
+                val lower = g.followingLowerHalfGap(true, SignalDotArrangement.LEFT_RIGHT, -5f)
+                val higher = g.followingLowerHalfGap(true, SignalDotArrangement.LEFT_RIGHT, 5f)
+                assertEquals("neutral follow gap must match fixed half-ring", fixedOpening, neutral, 0.0001f)
+                assertTrue("follow gap should close when dots rise", higher > neutral)
+                assertTrue("follow gap should open when dots lower", lower < neutral)
+                assertTrue("new lower info slot must also participate in avoidance",
+                    g.followingLowerHalfGap(
+                        dual = true, style = SignalDotArrangement.LEFT_RIGHT, offsetY = 0f,
+                        additionalContentHalfGap = 105f,
+                    ) >= 105f)
+            }
+        }
+    }
+
+    @Test
     fun followingOpeningApproximatelyPreservesTheCurvedDefault() {
         val g = OuterGeometry.resolve(1f)
         assertEquals(60f, g.followingLowerHalfGap(false, SignalDotArrangement.CURVED, 0f), 0.1f)

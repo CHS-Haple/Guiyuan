@@ -20,6 +20,7 @@ internal const val SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY = "shared_content_style_sch
 // Keep the original persisted names; these offsets now serve both SIM modes.
 internal const val CURVED_SIGNAL_DOT_OFFSET_Y_KEY = "dual_default_offset_y"
 internal const val HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY = "dual_duo_offset_y"
+internal const val LEFT_RIGHT_SIGNAL_DOT_OFFSET_Y_KEY = "left_right_signal_dot_offset_y"
 // Keep the existing on-disk key although the setting now covers curved rows.
 internal const val LOWER_FIXED_OPENING_KEY = "horizontal_fixed_opening"
 internal const val MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY = "mobile_type_bottom_offset_y"
@@ -92,6 +93,7 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
         CURVED_SIGNAL_DOT_OFFSET_Y_KEY,
         HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY,
+        LEFT_RIGHT_SIGNAL_DOT_OFFSET_Y_KEY,
         LOWER_FIXED_OPENING_KEY,
         BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
         COMBINED_SCALE_KEY,

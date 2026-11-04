@@ -598,10 +598,10 @@ internal fun visualModeKey(dual: Boolean, key: String): String =
 
 internal fun SharedPreferences.writeSignalDotOffsetY(offset: Float) {
     val visual = readVisualCfg()
-    val key = if ((if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement) == SignalDotArrangement.HORIZONTAL) {
-        HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY
-    } else {
-        CURVED_SIGNAL_DOT_OFFSET_Y_KEY
+    val key = when (if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement) {
+        SignalDotArrangement.HORIZONTAL -> HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY
+        SignalDotArrangement.LEFT_RIGHT -> LEFT_RIGHT_SIGNAL_DOT_OFFSET_Y_KEY
+        SignalDotArrangement.CURVED -> CURVED_SIGNAL_DOT_OFFSET_Y_KEY
     }
     edit().putFloat(
         visualProfileKey(visual.layout, key),
@@ -758,6 +758,7 @@ internal fun SharedPreferences.readVisualCfg(
         mobileTypeOffsetY = size(MOBILE_TYPE_VERTICAL_OFFSET_KEY, oldNetworkOffset),
         curvedSignalDotOffsetY = size(CURVED_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
         horizontalSignalDotOffsetY = size(HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
+        leftRightSignalDotOffsetY = size(LEFT_RIGHT_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
         topChargingIconScale = size(BATTERY_TOP_CHARGING_ICON_SCALE_KEY, topChargingIconScaleDefault(layout)),
         combinedScale = size(COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),
         outerWeightScale = size(OUTER_WEIGHT_SCALE_KEY, OUTER_WEIGHT_SCALE_DEFAULT),
@@ -897,6 +898,9 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putFloat(
         visualProfileKey(layout, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY),
         normalized.horizontalSignalDotOffsetY,
+    ).putFloat(
+        visualProfileKey(layout, LEFT_RIGHT_SIGNAL_DOT_OFFSET_Y_KEY),
+        normalized.leftRightSignalDotOffsetY,
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY),
         normalized.topChargingIconScale,

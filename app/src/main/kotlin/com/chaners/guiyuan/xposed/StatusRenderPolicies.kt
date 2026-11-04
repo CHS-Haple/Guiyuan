@@ -480,8 +480,41 @@ internal object OuterGeometry {
         }
 
         // Balance visible ring-to-dot clearance against adjacent dot spacing.
-        fun followingLowerHalfGap(dual: Boolean, style: SignalDotArrangement, offsetY: Float): Float {
-            if (dual && style == SignalDotArrangement.LEFT_RIGHT) return 90f
+        fun followingLowerHalfGap(
+            dual: Boolean,
+            style: SignalDotArrangement,
+            offsetY: Float,
+            additionalContentHalfGap: Float = 0f,
+        ): Float {
+            if (dual && style == SignalDotArrangement.LEFT_RIGHT) {
+                // The default layout reserves exactly the same lower half as
+                // fixed mode. Only the *change* in actual dot occupancy moves
+                // the opening when users move the entire lower assembly.
+                fun requiredHalfGap(atOffset: Float): Double {
+                    val clearance = (leftRightMobileDotRadius + ringStroke / 2f + 2f).toDouble()
+                    val radius = RING_RADIUS.toDouble()
+                    var half = 0.0
+                    for (row in 0..1) for (index in 0 until DOT_COUNT) {
+                        val x = dualDotX(index, row, style).toDouble()
+                        val y = dualDotY(index, row, style, atOffset).toDouble()
+                        val d = sqrt(x * x + y * y)
+                        if (d <= 0.00001 || kotlin.math.abs(d - radius) >= clearance) continue
+                        val spread = if (clearance >= d + radius) 180.0 else Math.toDegrees(
+                            acos(((d * d + radius * radius - clearance * clearance) /
+                                (2.0 * d * radius)).coerceIn(-1.0, 1.0)),
+                        )
+                        val angle = Math.toDegrees(atan2(y, x))
+                        half = max(half, kotlin.math.abs(angle - 90.0) + spread)
+                    }
+                    return half
+                }
+                val baseline = requiredHalfGap(0f)
+                val current = requiredHalfGap(offsetY)
+                return max(
+                    (90.0 + current - baseline).toFloat().coerceIn(72f, 110f),
+                    additionalContentHalfGap.coerceIn(0f, 110f),
+                )
+            }
             val radius = if (dual) dualMobileDotRadius else mobileDotRadius
             val dotGap = if (!dual && style == SignalDotArrangement.CURVED) balancedEdgeGap
                 else (horizontalDotSpan / (DOT_COUNT - 1) - 2f * radius).coerceAtLeast(0f)

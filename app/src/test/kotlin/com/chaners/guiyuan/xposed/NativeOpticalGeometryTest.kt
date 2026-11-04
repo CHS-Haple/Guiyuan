@@ -7,6 +7,24 @@ import org.junit.Test
 
 class NativeOpticalGeometryTest {
     @Test
+    fun lowerGroupOffsetMovesOpticalIconAnchorWithoutSizeDependentDrift() {
+        for (offset in listOf(-5f, 0f, 5f)) {
+            for (scale in listOf(0.7f, 1f, 1.2f)) {
+                val w = 18f * scale
+                val h = 26f * scale
+                val anchor = 104f - offset
+                val origin = NativeOpticalGeometry.viewportCenterForInkAnchor(
+                    anchorX = 60f, anchorY = anchor,
+                    drawWidth = w, drawHeight = h,
+                    opticalCenterX = 0.65f, inkCenterY = 0.34f,
+                )
+                assertEquals(anchor, origin.second + (0.34f - 0.5f) * h, 0.0001f)
+                assertEquals(60f, origin.first + (0.65f - 0.5f) * w, 0.0001f)
+            }
+        }
+    }
+
+    @Test
     fun opticalInkCenterStaysOnOneBottomAnchorAcrossIconSizes() {
         val anchorX = 60f
         val anchorY = 104f

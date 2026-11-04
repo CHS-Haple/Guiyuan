@@ -228,6 +228,7 @@ internal data class VisualCfg(
     val curvedSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     @SerialName("dualDuoOffsetY") // Backward-compatible V1 backup field.
     val horizontalSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    val leftRightSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val topChargingIconScale: Float =
         topChargingIconScaleDefault(layout),
     val combinedScale: Float = COMBINED_SCALE_DEFAULT,
@@ -253,7 +254,11 @@ internal data class VisualCfg(
     // Only the outside/bottom dots use these saved choices.
     // Signal-strength-centered dots remain horizontal in the renderer.
     val dualRowDotOffsetY: Float
-        get() = if (dualRowDotArrangement == SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
+        get() = when (dualRowDotArrangement) {
+            SignalDotArrangement.HORIZONTAL -> horizontalSignalDotOffsetY
+            SignalDotArrangement.LEFT_RIGHT -> leftRightSignalDotOffsetY
+            SignalDotArrangement.CURVED -> curvedSignalDotOffsetY
+        }
 
     val singleRowDotOffsetY: Float
         get() = if (singleRowDotArrangement == SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
@@ -313,6 +318,12 @@ internal fun VisualCfg.normalized(): VisualCfg =
             ),
         horizontalSignalDotOffsetY =
             horizontalSignalDotOffsetY.finiteIn(
+                NETWORK_TOP_OFFSET_MIN,
+                NETWORK_TOP_OFFSET_MAX,
+                NETWORK_TOP_OFFSET_DEFAULT,
+            ),
+        leftRightSignalDotOffsetY =
+            leftRightSignalDotOffsetY.finiteIn(
                 NETWORK_TOP_OFFSET_MIN,
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,

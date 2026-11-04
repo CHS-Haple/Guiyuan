@@ -76,6 +76,7 @@ internal object FeatureSearchIds {
         R.string.left_right_bottom_info_size,
         R.string.mobile_type_bottom_offset,
         R.string.signal_dot_vertical_offset,
+        R.string.left_right_lower_group_vertical_offset,
         R.string.battery_lower_opening_title,
         R.string.combined_size,
         R.string.outer_weight,
@@ -253,6 +254,7 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
         "Dual-row dots", "Curved arrangement", "Horizontal arrangement",
     )
     R.string.signal_dot_vertical_offset -> listOf("双卡偏移", "双排位置", "双排上下偏移")
+    R.string.left_right_lower_group_vertical_offset -> listOf("下方信息偏移", "左右点偏移", "网络活动上下偏移", "底部充电位置", "lower group offset")
     R.string.battery_lower_opening_title -> listOf("开口", "电量环开口", "弧形开口", "横排开口", "固定开口", "跟随位置", "避让", "Lower opening", "Follow position", "Fixed opening")
     R.string.combined_size -> listOf("整体缩放", "总大小", "三合一大小", "三合一缩放")
     R.string.outer_weight -> listOf("环形粗细", "圆环粗细", "外环宽度", "电量环粗细")

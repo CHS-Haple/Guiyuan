@@ -28,6 +28,8 @@
     <string name="left_right_bottom_info_size">Bottom indicator size</string>
     <string name="left_right_bottom_info_size_summary">Adjust native network activity and bottom charging icons together</string>
     <string name="signal_dot_vertical_offset">Signal dots vertical offset</string>
+    <string name="left_right_lower_group_vertical_offset">Bottom group vertical offset</string>
+    <string name="left_right_lower_group_vertical_offset_summary">Move both SIM dot groups and the bottom indicator together</string>
     <string name="battery_lower_opening_title">Battery ring opening</string>
     <string name="battery_lower_opening_summary">Adjust the opening with lower signal dots, or keep a fixed size</string>
     <string name="battery_lower_opening_follow">Follow position</string>

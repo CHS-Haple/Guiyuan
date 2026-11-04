@@ -696,12 +696,24 @@ internal fun FeaturesScreen(
                 AnimatedPreferenceGroup(
                     visible = visual.dualSignal || visual.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL,
                 ) {
-                    if (search.matches(R.string.signal_dot_vertical_offset)) {
+                    if (search.matches(R.string.signal_dot_vertical_offset) ||
+                        (visual.dualSignal &&
+                            visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT &&
+                            search.matches(R.string.left_right_lower_group_vertical_offset))
+                    ) {
+                        val split = visual.dualSignal &&
+                            visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT
                         SliderPreference(
                             value = visual.activeSignalDotOffsetY,
                             onValueChange = visualRepo::setSignalDotOffsetY,
-                            title = stringResource(R.string.signal_dot_vertical_offset),
-                            summary = stringResource(R.string.outer_signal_dots_only_summary),
+                            title = stringResource(
+                                if (split) R.string.left_right_lower_group_vertical_offset
+                                else R.string.signal_dot_vertical_offset,
+                            ),
+                            summary = stringResource(
+                                if (split) R.string.left_right_lower_group_vertical_offset_summary
+                                else R.string.outer_signal_dots_only_summary,
+                            ),
                             startAction = {
                                 SemanticLeadingIcon(
                                     R.drawable.ic_material_symbol_signal_cellular_alt,
