@@ -694,7 +694,8 @@ internal fun FeaturesScreen(
                         )
                     }
                 }
-                if (search.matches(R.string.battery_lower_opening_title)) {
+                if (!(visual.dualSignal && visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT) &&
+                    search.matches(R.string.battery_lower_opening_title)) {
                     UiDropdownPreference(
                         title = stringResource(R.string.battery_lower_opening_title),
                         summary = stringResource(R.string.battery_lower_opening_summary),
