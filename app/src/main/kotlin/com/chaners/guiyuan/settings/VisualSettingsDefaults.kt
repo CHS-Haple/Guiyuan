@@ -10,7 +10,11 @@ internal const val SINGLE_ROW_DOT_STYLE_KEY = "single_row_dot_style"
 internal const val LEFT_RIGHT_ACTIVITY_KEY = "left_right_activity"
 internal const val LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY = "left_right_show_idle_activity"
 internal const val LEFT_RIGHT_CHARGING_KEY = "left_right_charging"
-internal const val LEFT_RIGHT_BOTTOM_INFO_SCALE_KEY = "left_right_bottom_info_scale"
+// Keep the B1750 disk key for the activity icon when splitting the two sizes.
+internal const val LEFT_RIGHT_ACTIVITY_SCALE_KEY = "left_right_bottom_info_scale"
+internal const val LEFT_RIGHT_CHARGING_SCALE_KEY = "left_right_charging_scale"
+internal const val LEFT_RIGHT_ACTIVITY_OFFSET_Y_KEY = "left_right_activity_offset_y"
+internal const val LEFT_RIGHT_CHARGING_OFFSET_Y_KEY = "left_right_charging_offset_y"
 internal const val LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT = 1f
 internal const val LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN = 0.7f
 internal const val LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX = 1.2f
@@ -91,7 +95,10 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         LEFT_RIGHT_ACTIVITY_KEY,
         LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY,
         LEFT_RIGHT_CHARGING_KEY,
-        LEFT_RIGHT_BOTTOM_INFO_SCALE_KEY,
+        LEFT_RIGHT_ACTIVITY_SCALE_KEY,
+        LEFT_RIGHT_CHARGING_SCALE_KEY,
+        LEFT_RIGHT_ACTIVITY_OFFSET_Y_KEY,
+        LEFT_RIGHT_CHARGING_OFFSET_Y_KEY,
         MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
         CURVED_SIGNAL_DOT_OFFSET_Y_KEY,
         HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY,
