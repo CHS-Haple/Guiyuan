@@ -40,7 +40,7 @@ Comply with applicable laws, device authorization, and third-party licenses. Do 
 
 ### Article 7 — Changes and contact
 
-These Terms may be updated when features, compatibility, or relevant requirements change; material changes affecting users will be disclosed through project documentation or release notes and, when necessary, presented in the app for renewed acknowledgment. The maintainers may issue explanations or revisions concerning Guiyuan's functions, operating requirements, and these Terms. These Terms are interpreted and applied in accordance with applicable law; project statements do not exclude or restrict users' statutory rights. General questions may be raised through the repository [Issues](https://github.com/CHS-Haple/Guiyuan/issues); report security vulnerabilities through the private reporting channel described in SECURITY.md. For personal-data matters, see the Privacy Policy.
+The maintainers may revise these Terms when functions, compatibility, or applicable requirements change. Material changes affecting users will be disclosed in project documentation, release notes, or the app, with renewed acknowledgment where required by law. The maintainers may explain Guiyuan's functions and these Terms, but such explanations do not override applicable law or restrict users' statutory rights. General questions may be raised through the repository [Issues](https://github.com/CHS-Haple/Guiyuan/issues); report security vulnerabilities through the private reporting channel described in SECURITY.md. For personal-data matters, see the Privacy Policy.
 
 ---
 
@@ -80,6 +80,6 @@ Root 并非全部功能的必要条件。进入首次引导的权限页面时，
 
 ### 第七条 条款更新与联系
 
-因功能、兼容性或相关规则发生变化，本使用条款可能适时更新；对用户权利义务有重要影响的变更将通过项目文档或版本说明告知，并在需要时通过应用内页面请求重新确认。项目维护者可以就归元的软件功能、使用条件及本条款发布说明或修订。本条款的解释与适用应遵循相关法律规定，项目说明不得排除或限制用户依法享有的权利。普通问题可通过项目仓库 [Issues](https://github.com/CHS-Haple/Guiyuan/issues) 反馈；涉及安全漏洞时，请按 SECURITY.md 的说明使用私密漏洞报告渠道。有关个人信息处理的问题，请参阅《隐私政策》。
+项目维护者可根据软件功能、兼容性或适用规则的变化修订本条款。涉及用户重要权利义务的变更，将通过项目文档、版本说明或应用内提示告知，并在依法需要时重新征得确认。维护者可对归元功能及本条款作出说明，但相关说明不得违反法律规定或限制用户依法享有的权利。普通问题可通过项目仓库 [Issues](https://github.com/CHS-Haple/Guiyuan/issues) 反馈；涉及安全漏洞时，请按 SECURITY.md 的说明使用私密漏洞报告渠道。有关个人信息处理的问题，请参阅《隐私政策》。
 
 ---
