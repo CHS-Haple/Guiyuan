@@ -96,7 +96,7 @@ class SandboxLeaseTest {
         malformedSignal[10] = "7" // SIM2 level, not the dual-SIM enabled flag.
         assertNull(SandboxLease.decode(malformedSignal.joinToString("|")))
         assertNull(SandboxLease.decode(raw.replace("|1|LTE|", "|x|LTE|")))
-        assertNull(SandboxLease.decode(raw.replace("2|13|", "1|13|")))
+        assertNull(SandboxLease.decode(raw.replace("3|13|", "1|13|")))
         assertNull(SandboxLease.decode("x".repeat(401)))
     }
 }
