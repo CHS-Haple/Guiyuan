@@ -239,6 +239,14 @@ internal class VisualRepo(context: Context) {
         preferences.edit().putString(activeProfileKey(DUAL_ROW_DOT_ARRANGEMENT_KEY), style.persistedValue).apply()
     }
 
+    fun setLeftRightShowActivity(enabled: Boolean) {
+        preferences.edit().putBoolean(activeProfileKey(LEFT_RIGHT_ACTIVITY_KEY), enabled).apply()
+    }
+
+    fun setLeftRightBottomCharging(enabled: Boolean) {
+        preferences.edit().putBoolean(activeProfileKey(LEFT_RIGHT_CHARGING_KEY), enabled).apply()
+    }
+
     fun setSingleRowDotArrangement(style: SignalDotArrangement) {
         preferences.edit().putString(
             activeProfileKey(SINGLE_ROW_DOT_STYLE_KEY),
@@ -719,6 +727,8 @@ internal fun SharedPreferences.readVisualCfg(
         dualSignal = dual,
         dualRowDotArrangement = dualStyle,
         singleRowDotArrangement = singleStyle,
+        leftRightShowActivity = flag(LEFT_RIGHT_ACTIVITY_KEY, true),
+        leftRightBottomCharging = flag(LEFT_RIGHT_CHARGING_KEY, false),
         fixedLowerOpening = flag(LOWER_FIXED_OPENING_KEY, false),
         mobileTypeBottomOffsetY = size(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, mobileTypeBottomOffsetDefault(layout)),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
@@ -815,6 +825,12 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putString(
         visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY),
         normalized.singleRowDotArrangement.persistedValue,
+    ).putBoolean(
+        visualProfileKey(layout, LEFT_RIGHT_ACTIVITY_KEY),
+        normalized.leftRightShowActivity,
+    ).putBoolean(
+        visualProfileKey(layout, LEFT_RIGHT_CHARGING_KEY),
+        normalized.leftRightBottomCharging,
     ).putBoolean(
         visualProfileKey(layout, LOWER_FIXED_OPENING_KEY),
         normalized.fixedLowerOpening,
