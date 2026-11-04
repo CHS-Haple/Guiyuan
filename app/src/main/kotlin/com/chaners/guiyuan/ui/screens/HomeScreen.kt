@@ -202,6 +202,7 @@ internal fun HomeScreen(
                     title = stringResource(R.string.home_title),
                     backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
+                    progressiveBlur = true,
                     actions = actions,
                     unclippedActions = true,
                 )
