@@ -22,7 +22,7 @@
     <string name="signal_dot_arrangement_horizontal">Horizontal arrangement</string>
     <string name="signal_dot_vertical_offset">Signal dots vertical offset</string>
     <string name="battery_lower_opening_title">Battery ring opening</string>
-    <string name="battery_lower_opening_summary">Follows lower signal dots or keeps the original opening</string>
+    <string name="battery_lower_opening_summary">Adjust the opening with lower signal dots, or keep a fixed size</string>
     <string name="battery_lower_opening_follow">Follow position</string>
     <string name="battery_lower_opening_fixed">Fixed opening</string>
     <string name="section_battery">Battery &amp; charging</string>
