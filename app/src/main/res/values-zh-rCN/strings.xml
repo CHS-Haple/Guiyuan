@@ -17,8 +17,8 @@
     <string name="dual_row_signal_dot_arrangement_title">双排信号点排列</string>
     <string name="outer_signal_dots_only_summary">仅调整外侧或下方的信号点，不影响居中的信号点</string>
     <string name="mobile_type_bottom_offset">网络制式上下偏移</string>
-    <string name="signal_dot_arrangement_curved">弧形排列</string>
-    <string name="signal_dot_arrangement_horizontal">横向排列</string>
+    <string name="signal_dot_arrangement_curved">弧形分布</string>
+    <string name="signal_dot_arrangement_horizontal">横向分布</string>
     <string name="signal_dot_arrangement_left_right">左右分布</string>
     <string name="left_right_activity_title">底部网络活动指示器</string>
     <string name="left_right_activity_summary">左右分布时在圆环底部显示系统原生上传、下载状态</string>
