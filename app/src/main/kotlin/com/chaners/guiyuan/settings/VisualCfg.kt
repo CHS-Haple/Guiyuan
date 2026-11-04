@@ -207,7 +207,6 @@ internal data class VisualCfg(
     val leftRightBottomCharging: Boolean = false,
     @SerialName("leftRightBottomInfoScale") // B1750 backup field stays readable.
     val leftRightActivityScale: Float = LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
-    val leftRightChargingScale: Float = LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
     val leftRightActivityOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val leftRightChargingOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     // New field; older backup booleans are translated before decoding.
@@ -336,12 +335,6 @@ internal fun VisualCfg.normalized(): VisualCfg =
             ),
         leftRightActivityScale =
             leftRightActivityScale.finiteIn(
-                LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN,
-                LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX,
-                LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
-            ),
-        leftRightChargingScale =
-            leftRightChargingScale.finiteIn(
                 LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN,
                 LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX,
                 LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
