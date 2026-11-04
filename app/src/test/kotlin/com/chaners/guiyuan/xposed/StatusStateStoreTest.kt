@@ -10,6 +10,33 @@ import org.junit.Test
 
 class StatusStateStoreTest {
     @Test
+    fun nativeActivityStateFollowsItsTransportAndSurvivesHotReload() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateWifi(StatusStateStore.WifiState.Visible(
+            iconResId = 100, signal = com.chaners.guiyuan.xposed.network.SignalStrength.Level(3),
+        ))
+        StatusStateStore.updateWifiActivity(120)
+        StatusStateStore.updateMobileActivity(1, 220)
+        StatusStateStore.updateMobileActivity(2, 0)
+        assertEquals(120, StatusStateStore.snapshot().wifiActivityResId)
+        assertEquals(220, StatusStateStore.snapshot().mobileActivityResIds[1])
+        assertEquals(null, StatusStateStore.snapshot().mobileActivityResIds[2])
+
+        val transfer = StatusStateStore.exportHotReloadState()
+        StatusStateStore.restoreHotReloadState(null)
+        val restored = StatusStateStore.restoreHotReloadState(transfer)
+        assertEquals(120, restored.wifiActivityResId)
+        assertEquals(220, restored.mobileActivityResIds[1])
+
+        StatusStateStore.updateWifi(StatusStateStore.WifiState.Hidden)
+        assertEquals(null, StatusStateStore.snapshot().wifiActivityResId)
+        StatusStateStore.updateMobileActivity(1, null)
+        assertEquals(null, StatusStateStore.snapshot().mobileActivityResIds[1])
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+
+    @Test
     fun airplaneExitStartsFreshMobileRecoveryAndClearsCachedSignal() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)
