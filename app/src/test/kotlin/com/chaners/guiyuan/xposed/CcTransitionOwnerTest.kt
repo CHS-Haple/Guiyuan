@@ -255,6 +255,62 @@ class CcTransitionOwnerTest {
     }
 
     @Test
+    fun leftRightBottomChargingFollowsEightDotGroupInsteadOfBatteryNumber() {
+        val top = transitionGeometry(centerX = 20f, centerY = 10f, width = 40f, height = 10f)
+        val bottom = transitionGeometry(centerX = 20f, centerY = 32f, width = 40f, height = 10f)
+        val sourceGroup = requireNotNull(CcTransitionPolicy.dualMobileGroupGeometry(listOf(top, bottom)))
+        // The bolt sits between the two rows, not above the ring.
+        val bolt = transitionGeometry(
+            centerX = sourceGroup[0],
+            centerY = sourceGroup[1],
+            width = 10f,
+            height = 12f,
+        )
+        val topTarget = transitionGeometry(centerX = 108f, centerY = 15f, width = 12f, height = 18f)
+        val bottomTarget = transitionGeometry(centerX = 138f, centerY = 44f, width = 12f, height = 18f)
+        val numberSource = transitionGeometry(centerX = 20f, centerY = -30f, width = 20f, height = 10f)
+        val numberCurrent = transitionGeometry(centerX = 20f, centerY = -80f, width = 20f, height = 10f)
+
+        for (progress in listOf(0f, 0.15f, 0.30f, 0.435f, 0.57f)) {
+            val rows = listOf(top to topTarget, bottom to bottomTarget).map { (source, target) ->
+                CcTransitionPolicy.dualMobileRowMotionGeometry(
+                    source = source,
+                    target = target,
+                    groupTravelX = 65f,
+                    groupTravelY = 8f,
+                    progress = progress,
+                    scalePolicy = StatusPainter.TransitionScalePolicy.SHRINK_ONLY,
+                )
+            }
+            val mobileCurrent = requireNotNull(CcTransitionPolicy.dualMobileGroupGeometry(rows))
+            val follower = requireNotNull(
+                CcTransitionPolicy.followAnchorGeometry(
+                    follower = bolt,
+                    sourceAnchor = sourceGroup,
+                    currentAnchor = mobileCurrent,
+                ),
+            )
+            // Identical center and scaling to the verified dot envelope.
+            assertEquals(mobileCurrent[0], follower[0], 0.0001f)
+            assertEquals(mobileCurrent[1], follower[1], 0.0001f)
+            assertEquals(mobileCurrent[2] / sourceGroup[2] * bolt[2], follower[2], 0.0001f)
+            // The unrelated top battery number moves vertically in the opposite direction.
+            if (progress > 0f) {
+                val batteryFollower = requireNotNull(
+                    CcTransitionPolicy.followAnchorGeometry(
+                        follower = bolt,
+                        sourceAnchor = numberSource,
+                        currentAnchor = numberCurrent,
+                    ),
+                )
+                assertTrue(kotlin.math.abs(follower[1] - batteryFollower[1]) > 10f)
+            }
+        }
+        assertEquals(1f - MobileSignalMorphPolicy.moveProgress(0.3f), 1f, 0.0001f)
+        assertEquals(1f - MobileSignalMorphPolicy.moveProgress(0.57f), 0f, 0.0001f)
+    }
+
+    @Test
     fun dualRowsStayVerticallyPairedDuringMovingCollapse() {
         val top = transitionGeometry(centerX = 20f, centerY = 10f, width = 40f, height = 10f)
         val bottom = transitionGeometry(centerX = 20f, centerY = 32f, width = 40f, height = 10f)
