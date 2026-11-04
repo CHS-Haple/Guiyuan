@@ -306,8 +306,23 @@ class CcTransitionOwnerTest {
                 assertTrue(kotlin.math.abs(follower[1] - batteryFollower[1]) > 10f)
             }
         }
-        assertEquals(1f - MobileSignalMorphPolicy.moveProgress(0.3f), 1f, 0.0001f)
-        assertEquals(1f - MobileSignalMorphPolicy.moveProgress(0.57f), 0f, 0.0001f)
+        // Regression: the dot group has not reached its move-phase fade at
+        // 30%, but the established charging source has already disappeared.
+        // Its path may follow these rows; its clip timeline must not.
+        val originalChargingFade = BatteryNumberFollowerPolicy
+        assertTrue(originalChargingFade.chargingSourceVisibleFraction(0.12f) in 0f..1f)
+        assertEquals(0f, originalChargingFade.chargingSourceVisibleFraction(0.30f), 0.0001f)
+        assertEquals(1f, 1f - MobileSignalMorphPolicy.moveProgress(0.30f), 0.0001f)
+        for (progress in listOf(0.05f, 0.12f, 0.18f, 0.30f, 0.57f, 0.90f)) {
+            assertEquals(
+                originalChargingFade.chargingSourceVisibleFraction(progress),
+                originalChargingFade.chargingVisibleFraction(
+                    progress = progress,
+                    targetAvailable = false,
+                ),
+                0.0001f,
+            )
+        }
     }
 
     @Test
