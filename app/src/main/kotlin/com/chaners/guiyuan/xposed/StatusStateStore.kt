@@ -45,7 +45,29 @@ internal object StatusStateStore {
             return null
         }
 
-        current = current.copy(wifi = state)
+        current = current.copy(
+            wifi = state,
+            wifiActivityResId = if (state is WifiState.Visible) current.wifiActivityResId else null,
+        )
+        return current
+    }
+
+    @Synchronized
+    fun updateWifiActivity(resourceId: Int?): Snapshot? {
+        val next = resourceId?.takeIf { it != 0 }
+        if (current.wifiActivityResId == next) return null
+        current = current.copy(wifiActivityResId = next)
+        return current
+    }
+
+    @Synchronized
+    fun updateMobileActivity(subscriptionId: Int, resourceId: Int?): Snapshot? {
+        if (subscriptionId < 0) return null
+        val next = current.mobileActivityResIds.toMutableMap()
+        if (resourceId == null || resourceId == 0) next.remove(subscriptionId)
+        else next[subscriptionId] = resourceId
+        if (next == current.mobileActivityResIds) return null
+        current = current.copy(mobileActivityResIds = next.toSortedMap())
         return current
     }
 
@@ -160,6 +182,13 @@ internal object StatusStateStore {
                     )
                 }
             }
+            putInt(KEY_WIFI_ACTIVITY_RES_ID, current.wifiActivityResId ?: 0)
+            putIntArray(
+                KEY_MOBILE_ACTIVITY_RES_IDS,
+                current.mobileActivityResIds.entries.flatMap { (id, resourceId) ->
+                    listOf(id, resourceId)
+                }.toIntArray(),
+            )
             putBoolean(KEY_MOBILE_RECOVERY_PENDING, current.mobileRecoveryPending)
             putInt(
                 KEY_AIRPLANE,
@@ -260,7 +289,18 @@ internal object StatusStateStore {
             Snapshot(
                 battery = battery,
                 wifi = observed.wifi.takeUnless { it == WifiState.Unknown } ?: wifi,
+                wifiActivityResId = observed.wifiActivityResId
+                    ?: bundle.getInt(KEY_WIFI_ACTIVITY_RES_ID).takeIf { it != 0 },
                 mobile = mobile.apply { putAll(observed.mobile) },
+                mobileActivityResIds = buildMap {
+                    val activity = bundle.getIntArray(KEY_MOBILE_ACTIVITY_RES_IDS) ?: IntArray(0)
+                    for (index in 0 until activity.size - 1 step 2) {
+                        if (activity[index] >= 0 && activity[index + 1] != 0) {
+                            put(activity[index], activity[index + 1])
+                        }
+                    }
+                    putAll(observed.mobileActivityResIds)
+                },
                 airplaneMode = airplane,
                 mobileRecoveryPending =
                     bundle.getBoolean(KEY_MOBILE_RECOVERY_PENDING, false),
@@ -286,7 +326,9 @@ internal object StatusStateStore {
     internal data class Snapshot(
         val battery: BatteryState? = null,
         val wifi: WifiState = WifiState.Unknown,
+        val wifiActivityResId: Int? = null,
         val mobile: Map<Int, MobileState> = emptyMap(),
+        val mobileActivityResIds: Map<Int, Int> = emptyMap(),
         val airplaneMode: Boolean? = null,
         val mobileRecoveryPending: Boolean = false,
     )
@@ -325,6 +367,8 @@ internal object StatusStateStore {
     private const val KEY_BATTERY_LOW_SYSTEM_COLOR = "batteryLowSystemColor"
     private const val KEY_WIFI_KIND = "wifiKind"
     private const val KEY_WIFI_RES_ID = "wifiResId"
+    private const val KEY_WIFI_ACTIVITY_RES_ID = "wifiActivityResId"
+    private const val KEY_MOBILE_ACTIVITY_RES_IDS = "mobileActivityResIds"
     private const val KEY_WIFI_SIGNAL = "wifiSignal"
     private const val KEY_WIFI_INTERNET = "wifiInternet"
     private const val KEY_AIRPLANE = "airplane"
