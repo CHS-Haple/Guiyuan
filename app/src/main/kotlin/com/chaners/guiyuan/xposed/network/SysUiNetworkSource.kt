@@ -596,8 +596,11 @@ internal object SysUiNetworkSource {
     // Do not synthesize an activity event from these observations.
     private fun nativeActivityObservation(image: ImageView, hookResult: Any?): String {
         val drawable = image.drawable
+        val nativeId = (image.tag as? Number)?.toInt() ?: 0
+        val nativeName = nativeId.takeIf { it > 0 }?.let { resourceName(image, it) }
         return "viewId=" + resourceId(image) +
-            " tag=" + ((image.tag as? Number)?.toInt() ?: 0) +
+            " tag=" + nativeId +
+            " tagName=" + (nativeName ?: "none") +
             " visibility=" + visibilityName(image.visibility) +
             " shown=" + image.isShown +
             " viewAlpha=" + image.alpha +
