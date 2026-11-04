@@ -614,7 +614,7 @@
     <string name="terms_conduct_title">第六条 合理使用与反馈</string>
     <string name="terms_conduct_body">请遵守适用法律、设备授权及第三方许可，不要使用归元的权限干扰他人的设备或数据。反馈问题时仅提交必要信息，避免公开密码、私人日志或安全漏洞细节。</string>
     <string name="terms_updates_title">第七条 条款更新与联系</string>
-    <string name="terms_updates_body">因功能、兼容性或相关规则发生变化，本使用条款可能适时更新；对用户权利义务有重要影响的变更将通过项目文档或版本说明告知，并在需要时通过应用内页面请求重新确认。普通问题可通过项目仓库 Issues 反馈；涉及安全漏洞时，请按 SECURITY.md 的说明使用私密漏洞报告渠道。有关个人信息处理的问题，请参阅《隐私政策》。</string>
+    <string name="terms_updates_body">因功能、兼容性或相关规则发生变化，本使用条款可能适时更新；对用户权利义务有重要影响的变更将通过项目文档或版本说明告知，并在需要时通过应用内页面请求重新确认。项目维护者可以就归元的软件功能、使用条件及本条款发布说明或修订。本条款的解释与适用应遵循相关法律规定，项目说明不得排除或限制用户依法享有的权利。普通问题可通过项目仓库 Issues 反馈；涉及安全漏洞时，请按 SECURITY.md 的说明使用私密漏洞报告渠道。有关个人信息处理的问题，请参阅《隐私政策》。</string>
     <string name="guide_terms_link_text">《使用条款》</string>
     <string name="guide_policy_link_text">《隐私政策》</string>
     <string name="terms_title">使用条款</string>
