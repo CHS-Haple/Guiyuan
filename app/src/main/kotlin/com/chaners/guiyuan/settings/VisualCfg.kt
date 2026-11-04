@@ -203,7 +203,7 @@ internal data class VisualCfg(
     @SerialName("dualDotStyle")
     val dualRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
     val leftRightShowActivity: Boolean = true,
-    val leftRightShowIdleActivity: Boolean = false,
+    val leftRightHideIdleActivity: Boolean = false,
     val leftRightBottomCharging: Boolean = false,
     @SerialName("leftRightBottomInfoScale") // B1750 backup field stays readable.
     val leftRightActivityScale: Float = LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
