@@ -52,7 +52,7 @@ class ConfigBackupTest {
             horizontalSignalDotOffsetY = 2f,
             leftRightSignalDotOffsetY = 6f,
         )
-        assertEquals(6f, value.dualRowDotOffsetY, 0f)
+        assertEquals(0f, value.dualRowDotOffsetY, 0f)
         assertEquals(-3f,
             value.copy(dualRowDotArrangement = SignalDotArrangement.CURVED).dualRowDotOffsetY, 0f)
         assertEquals(2f,
@@ -72,14 +72,20 @@ class ConfigBackupTest {
             layout = ContentLayout.NETWORK_CENTER,
             dualSignal = true,
             dualRowDotArrangement = SignalDotArrangement.LEFT_RIGHT,
-            leftRightBottomInfoScale = 1.15f,
+            leftRightActivityScale = 1.15f,
+            leftRightActivityOffsetY = 3f,
+            leftRightChargingOffsetY = -4f,
         )
-        assertEquals(0.7f, selected.copy(leftRightBottomInfoScale = 0.2f)
-            .normalized().leftRightBottomInfoScale, 0.0001f)
-        assertEquals(1.2f, selected.copy(leftRightBottomInfoScale = 4f)
-            .normalized().leftRightBottomInfoScale, 0.0001f)
-        assertEquals(1f, selected.copy(leftRightBottomInfoScale = Float.NaN)
-            .normalized().leftRightBottomInfoScale, 0.0001f)
+        assertEquals(0.7f, selected.copy(leftRightActivityScale = 0.2f)
+            .normalized().leftRightActivityScale, 0.0001f)
+        assertEquals(1.2f, selected.copy(leftRightActivityScale = 4f)
+            .normalized().leftRightActivityScale, 0.0001f)
+        assertEquals(1f, selected.copy(leftRightActivityScale = Float.NaN)
+            .normalized().leftRightActivityScale, 0.0001f)
+        assertEquals(-10f, selected.copy(leftRightActivityOffsetY = -100f)
+            .normalized().leftRightActivityOffsetY, 0f)
+        assertEquals(10f, selected.copy(leftRightChargingOffsetY = 100f)
+            .normalized().leftRightChargingOffsetY, 0f)
         val source = sample().let { backup ->
             backup.copy(visual = backup.visual.copy(profiles = backup.visual.profiles.map { cfg ->
                 if (cfg.dualSignal && cfg.layout == ContentLayout.NETWORK_CENTER) selected else cfg
