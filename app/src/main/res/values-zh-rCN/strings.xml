@@ -22,6 +22,8 @@
     <string name="signal_dot_arrangement_left_right">左右分布</string>
     <string name="left_right_activity_title">网络活动指示器</string>
     <string name="left_right_activity_summary">在底部显示原生上传、下载活动状态</string>
+    <string name="left_right_idle_activity_title">空闲时保持显示</string>
+    <string name="left_right_idle_activity_summary">联网但无数据活动时，保留低亮度的上传、下载箭头</string>
     <string name="left_right_charging_title">底部充电图标</string>
     <string name="left_right_charging_summary">充电时将闪电图标移至底部，优先于网络活动指示器</string>
     <string name="left_right_bottom_info_size">底部信息大小</string>

@@ -27,6 +27,23 @@ class ConfigBackupTest {
         batterySchemes = BatteryColorSchemeLibrary(),
     )
 
+    @Test fun idleActivityVisibilityIsOptInAndSurvivesBackups() {
+        val selected = VisualCfg(
+            layout = ContentLayout.NETWORK_CENTER,
+            dualSignal = true,
+            dualRowDotArrangement = SignalDotArrangement.LEFT_RIGHT,
+            leftRightShowActivity = true,
+            leftRightShowIdleActivity = true,
+        )
+        assertFalse(VisualCfg().leftRightShowIdleActivity)
+        val original = sample().let { source ->
+            source.copy(visual = source.visual.copy(profiles = source.visual.profiles.map { cfg ->
+                if (cfg.dualSignal && cfg.layout == ContentLayout.NETWORK_CENTER) selected else cfg
+            }))
+        }
+        assertEquals(original, ConfigBackupFormat.decode(ConfigBackupFormat.encode(original)))
+    }
+
     @Test fun leftRightOffsetIsIndependentOfCurvedAndSurvivesBackups() {
         val value = VisualCfg(
             dualSignal = true,

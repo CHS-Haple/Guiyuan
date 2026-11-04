@@ -8,6 +8,7 @@ internal const val DUAL_PROFILES_INITIALIZED_KEY = "dual_profiles_initialized"
 internal const val DUAL_ROW_DOT_ARRANGEMENT_KEY = "content_style"
 internal const val SINGLE_ROW_DOT_STYLE_KEY = "single_row_dot_style"
 internal const val LEFT_RIGHT_ACTIVITY_KEY = "left_right_activity"
+internal const val LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY = "left_right_show_idle_activity"
 internal const val LEFT_RIGHT_CHARGING_KEY = "left_right_charging"
 internal const val LEFT_RIGHT_BOTTOM_INFO_SCALE_KEY = "left_right_bottom_info_scale"
 internal const val LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT = 1f
@@ -88,6 +89,7 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         DUAL_ROW_DOT_ARRANGEMENT_KEY,
         SINGLE_ROW_DOT_STYLE_KEY,
         LEFT_RIGHT_ACTIVITY_KEY,
+        LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY,
         LEFT_RIGHT_CHARGING_KEY,
         LEFT_RIGHT_BOTTOM_INFO_SCALE_KEY,
         MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,

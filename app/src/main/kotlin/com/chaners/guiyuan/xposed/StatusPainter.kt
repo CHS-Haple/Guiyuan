@@ -52,6 +52,7 @@ internal class StatusPainter(
         }
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
+    private val idleActivityResourceIds = HashMap<String, Int>()
     private val nativeCenterAssets =
         LinkedHashMap<PresentationStore.NativeIconResource, NativeCenterAsset>(
             NATIVE_CENTER_CACHE_SIZE,
@@ -136,6 +137,7 @@ internal class StatusPainter(
         mobileInkSamples.clear()
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
+        idleActivityResourceIds.clear()
     }
 
     private fun checkNativeResources() {
@@ -4086,7 +4088,28 @@ internal class StatusPainter(
     private data class LeftRightBottomInformation(
         val resource: PresentationStore.NativeIconResource,
         val charging: Boolean,
+        val idle: Boolean = false,
     )
+
+    private fun idleActivityResourceId(center: CenterIndicator): Int? {
+        val name = when (center) {
+            is CenterIndicator.Wifi -> "stat_sys_wifi_inout"
+            is CenterIndicator.MobileType -> "stat_sys_signal_inout_left"
+            else -> return null
+        }
+        checkNativeResources()
+        val id = idleActivityResourceIds.getOrPut(name) {
+            runCatching {
+                val resourceContext = if (context.packageName == SYSTEM_UI_PACKAGE) {
+                    context
+                } else {
+                    context.createPackageContext(SYSTEM_UI_PACKAGE, 0)
+                }
+                resourceContext.resources.getIdentifier(name, "drawable", SYSTEM_UI_PACKAGE)
+            }.onFailure { rethrowRenderFatal(it) }.getOrDefault(0)
+        }
+        return id.takeIf { it > 0 }
+    }
 
     private fun resolveLeftRightBottomInformation(
         model: RenderModel,
@@ -4117,6 +4140,11 @@ internal class StatusPainter(
         }
         if (visual.leftRightShowActivity) {
             model.networkActivityResId?.let { drawableAvailable(it, false) }?.let { return it }
+            if (visual.leftRightShowIdleActivity) {
+                idleActivityResourceId(model.centerIndicator)?.let { id ->
+                    drawableAvailable(id, false)?.copy(idle = true)
+                }?.let { return it }
+            }
         }
         return null
     }
@@ -4208,7 +4236,7 @@ internal class StatusPainter(
             canvas = canvas,
             resource = bottom.resource,
             tint = if (bottomCharging) colors.chargingIconTint else colors.centerTint,
-            opacity = opacity * outsideAmount,
+            opacity = opacity * outsideAmount * (if (bottom.idle) IDLE_ACTIVITY_OPACITY else 1f),
             centerX = BATTERY_COMPONENT_CENTER_X,
             centerY = LEFT_RIGHT_BOTTOM_INK_CENTER_Y - visual.dualRowDotOffsetY,
             maxWidth = (if (bottomCharging) LEFT_RIGHT_CHARGING_SLOT_WIDTH else LEFT_RIGHT_BOTTOM_SLOT_WIDTH) *
@@ -4431,6 +4459,7 @@ internal class StatusPainter(
             BATTERY_COMPONENT_CENTER_Y + OuterGeometry.RING_RADIUS - 4f
         const val BATTERY_TOP_TEXT_SIZE = 24f
         const val BATTERY_TOP_CHARGING_ICON_SIZE = 18f
+        const val IDLE_ACTIVITY_OPACITY = 0.28f
         const val LEFT_RIGHT_BOTTOM_SLOT_WIDTH = 19f
         const val LEFT_RIGHT_BOTTOM_SLOT_HEIGHT = 22f
         // Native charging and traffic assets have very different intrinsic ink.

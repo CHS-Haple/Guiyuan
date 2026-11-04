@@ -72,6 +72,7 @@ internal object FeatureSearchIds {
         R.string.single_row_signal_dot_arrangement_title,
         R.string.dual_row_signal_dot_arrangement_title,
         R.string.left_right_activity_title,
+        R.string.left_right_idle_activity_title,
         R.string.left_right_charging_title,
         R.string.left_right_bottom_info_size,
         R.string.mobile_type_bottom_offset,

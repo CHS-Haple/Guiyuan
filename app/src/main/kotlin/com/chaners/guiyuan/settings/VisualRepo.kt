@@ -243,6 +243,10 @@ internal class VisualRepo(context: Context) {
         preferences.edit().putBoolean(activeProfileKey(LEFT_RIGHT_ACTIVITY_KEY), enabled).apply()
     }
 
+    fun setLeftRightShowIdleActivity(enabled: Boolean) {
+        preferences.edit().putBoolean(activeProfileKey(LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY), enabled).apply()
+    }
+
     fun setLeftRightBottomCharging(enabled: Boolean) {
         preferences.edit().putBoolean(activeProfileKey(LEFT_RIGHT_CHARGING_KEY), enabled).apply()
     }
@@ -739,6 +743,7 @@ internal fun SharedPreferences.readVisualCfg(
         dualRowDotArrangement = dualStyle,
         singleRowDotArrangement = singleStyle,
         leftRightShowActivity = flag(LEFT_RIGHT_ACTIVITY_KEY, true),
+        leftRightShowIdleActivity = flag(LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY, false),
         leftRightBottomCharging = flag(LEFT_RIGHT_CHARGING_KEY, false),
         leftRightBottomInfoScale = size(LEFT_RIGHT_BOTTOM_INFO_SCALE_KEY, LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT),
         fixedLowerOpening = flag(LOWER_FIXED_OPENING_KEY, false),
@@ -841,6 +846,9 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     ).putBoolean(
         visualProfileKey(layout, LEFT_RIGHT_ACTIVITY_KEY),
         normalized.leftRightShowActivity,
+    ).putBoolean(
+        visualProfileKey(layout, LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY),
+        normalized.leftRightShowIdleActivity,
     ).putBoolean(
         visualProfileKey(layout, LEFT_RIGHT_CHARGING_KEY),
         normalized.leftRightBottomCharging,

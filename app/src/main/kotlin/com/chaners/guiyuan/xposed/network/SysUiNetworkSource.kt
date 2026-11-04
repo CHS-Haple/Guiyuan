@@ -388,7 +388,10 @@ internal object SysUiNetworkSource {
                             val image = readOrNull { activityField.get(chain.thisObject) as? ImageView }
                             if (image != null && findWifiBinding(image)) {
                                 try {
-                                    onWifiActivity((image.tag as? Number)?.toInt())
+                                    val visible = image.visibility == View.VISIBLE &&
+                                        image.drawable != null
+                                    onWifiActivity((image.tag as? Number)?.toInt()
+                                        ?.takeIf { it > 0 && visible })
                                 } catch (error: Throwable) {
                                     callbackFailed("wifi-activity", error, onRuntimeFailure)
                                 }
@@ -530,7 +533,12 @@ internal object SysUiNetworkSource {
                             val subId = image?.let(::findMobileSubscription)
                             if (image != null && subId != null) {
                                 try {
-                                    onMobileActivity(subId, (image.tag as? Number)?.toInt())
+                                    val visible = image.visibility == View.VISIBLE &&
+                                        image.drawable != null
+                                    onMobileActivity(
+                                        subId,
+                                        (image.tag as? Number)?.toInt()?.takeIf { it > 0 && visible },
+                                    )
                                 } catch (error: Throwable) {
                                     callbackFailed("mobile-activity", error, onRuntimeFailure)
                                 }

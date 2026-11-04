@@ -553,6 +553,19 @@ internal fun FeaturesScreen(
                             onCheckedChange = visualRepo::setLeftRightShowActivity,
                         )
                     }
+                    if (visual.leftRightShowActivity &&
+                        search.matches(R.string.left_right_idle_activity_title)) {
+                        SwitchPreference(
+                            title = stringResource(R.string.left_right_idle_activity_title),
+                            summary = stringResource(R.string.left_right_idle_activity_summary),
+                            checked = visual.leftRightShowIdleActivity,
+                            enabled = featureCfg.enabled,
+                            startAction = {
+                                SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled)
+                            },
+                            onCheckedChange = visualRepo::setLeftRightShowIdleActivity,
+                        )
+                    }
                     if (search.matches(R.string.left_right_charging_title)) {
                         SwitchPreference(
                             title = stringResource(R.string.left_right_charging_title),

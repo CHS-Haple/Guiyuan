@@ -23,6 +23,8 @@
     <string name="signal_dot_arrangement_left_right">Left-right arrangement</string>
     <string name="left_right_activity_title">Network activity indicator</string>
     <string name="left_right_activity_summary">Show native upload and download activity in the bottom slot</string>
+    <string name="left_right_idle_activity_title">Show indicator when idle</string>
+    <string name="left_right_idle_activity_summary">Keep dim upload and download arrows visible while connected, even without traffic</string>
     <string name="left_right_charging_title">Charging icon at bottom</string>
     <string name="left_right_charging_summary">Move the lightning icon to the bottom while charging, ahead of network activity</string>
     <string name="left_right_bottom_info_size">Bottom indicator size</string>
