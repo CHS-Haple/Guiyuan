@@ -192,6 +192,7 @@ internal object ConfigBackupFormat {
             require(listOf(
                 cfg.topTextScale, cfg.topOffsetY, cfg.wifiOffsetY, cfg.mobileTypeOffsetY,
                 cfg.curvedSignalDotOffsetY, cfg.horizontalSignalDotOffsetY, cfg.mobileTypeBottomOffsetY,
+                cfg.leftRightActivityScale, cfg.leftRightActivityOffsetY, cfg.leftRightChargingOffsetY,
                 cfg.topChargingIconScale, cfg.combinedScale, cfg.outerWeightScale,
                 cfg.wifiScale, cfg.airplaneScale, cfg.noSimScale, cfg.mobileTypeScale,
             ).all(Float::isFinite)) { "Nonfinite visual setting" }
@@ -254,7 +255,8 @@ internal object ConfigBackupFormat {
             val values = listOf(
                 cfg.topTextScale, cfg.topOffsetY, cfg.wifiOffsetY, cfg.mobileTypeOffsetY,
                 cfg.curvedSignalDotOffsetY, cfg.horizontalSignalDotOffsetY,
-                cfg.mobileTypeBottomOffsetY,
+                cfg.mobileTypeBottomOffsetY, cfg.leftRightActivityScale,
+                cfg.leftRightActivityOffsetY, cfg.leftRightChargingOffsetY,
                 cfg.topChargingIconScale, cfg.combinedScale, cfg.outerWeightScale,
                 cfg.wifiScale, cfg.airplaneScale, cfg.noSimScale, cfg.mobileTypeScale,
             )
