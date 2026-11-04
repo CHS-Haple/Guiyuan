@@ -98,6 +98,25 @@ internal fun migrateSignalDotArrangementsIfNeeded(
     if (sharedEditor == null) editor.apply()
 }
 
+// The retired opt-in-show switch cannot be inverted into a new opt-in-hide
+// setting: false previously meant default-off, not an explicit hide request.
+internal fun retireLegacyIdleActivityPreference(prefs: SharedPreferences) {
+    val retired = buildSet {
+        add(LEGACY_LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY)
+        for (layout in ContentLayout.entries) {
+            val key = visualProfileKey(layout, LEGACY_LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY)
+            add(key)
+            add(visualModeKey(false, key))
+            add(visualModeKey(true, key))
+        }
+    }
+    val present = retired.filter(prefs::contains)
+    if (present.isEmpty()) return
+    val editor = prefs.edit()
+    present.forEach(editor::remove)
+    editor.apply()
+}
+
 internal const val SHARED_LAYOUT_VISUAL_SCHEMA_KEY = "shared_layout_visual_schema"
 
 internal fun migrateSharedLayoutVisualsIfNeeded(
@@ -201,6 +220,7 @@ internal class VisualRepo(context: Context) {
 
     init {
         migrateVisualPrefsIfNeeded(preferences)
+        retireLegacyIdleActivityPreference(preferences)
     }
 
     val settings: Flow<VisualCfg> =
@@ -243,8 +263,8 @@ internal class VisualRepo(context: Context) {
         preferences.edit().putBoolean(activeProfileKey(LEFT_RIGHT_ACTIVITY_KEY), enabled).apply()
     }
 
-    fun setLeftRightShowIdleActivity(enabled: Boolean) {
-        preferences.edit().putBoolean(activeProfileKey(LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY), enabled).apply()
+    fun setLeftRightHideIdleActivity(enabled: Boolean) {
+        preferences.edit().putBoolean(activeProfileKey(LEFT_RIGHT_HIDE_IDLE_ACTIVITY_KEY), enabled).apply()
     }
 
     fun setLeftRightBottomCharging(enabled: Boolean) {
@@ -757,7 +777,7 @@ internal fun SharedPreferences.readVisualCfg(
         dualRowDotArrangement = dualStyle,
         singleRowDotArrangement = singleStyle,
         leftRightShowActivity = flag(LEFT_RIGHT_ACTIVITY_KEY, true),
-        leftRightShowIdleActivity = flag(LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY, false),
+        leftRightHideIdleActivity = flag(LEFT_RIGHT_HIDE_IDLE_ACTIVITY_KEY, false),
         leftRightBottomCharging = flag(LEFT_RIGHT_CHARGING_KEY, false),
         leftRightActivityScale = size(LEFT_RIGHT_ACTIVITY_SCALE_KEY, LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT),
         leftRightActivityOffsetY = size(LEFT_RIGHT_ACTIVITY_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
@@ -863,8 +883,8 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         visualProfileKey(layout, LEFT_RIGHT_ACTIVITY_KEY),
         normalized.leftRightShowActivity,
     ).putBoolean(
-        visualProfileKey(layout, LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY),
-        normalized.leftRightShowIdleActivity,
+        visualProfileKey(layout, LEFT_RIGHT_HIDE_IDLE_ACTIVITY_KEY),
+        normalized.leftRightHideIdleActivity,
     ).putBoolean(
         visualProfileKey(layout, LEFT_RIGHT_CHARGING_KEY),
         normalized.leftRightBottomCharging,
