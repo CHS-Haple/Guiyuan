@@ -4061,12 +4061,13 @@ internal class StatusPainter(
             visual.centeredMobileSignal && model.centerIndicator is CenterIndicator.MobileType
         val centeredBefore =
             visual.centeredMobileSignal && previousCenter is CenterIndicator.MobileType
-        val outsideAmount = when {
-            centeredNow && !centeredBefore && previousCenter != null ->
-                1f - progress.coerceIn(0f, 1f)
-            !centeredNow && centeredBefore -> progress.coerceIn(0f, 1f)
-            centeredNow -> 0f
-            else -> 1f
+        // A centered frame already owns the charging icon's normal position.
+        // Do not leave the bottom icon fading out on the same frame.
+        if (centeredNow) return
+        val outsideAmount = if (centeredBefore) {
+            progress.coerceIn(0f, 1f)
+        } else {
+            1f
         }
         if (outsideAmount <= 0f) return
 
