@@ -14,10 +14,12 @@ val miuixSourceRevision = providers.gradleProperty("gy.os4.miuixRevision").orNul
 require(miuixSourceRevision == null || (miuixSourceDir != null && Regex("[0-9a-f]{40}").matches(miuixSourceRevision))) {
     "MIUIX source revision must be a full lowercase commit SHA paired with a source directory"
 }
-// Do not report the published dependency baseline as the version of a source-built candidate.
+// Source builds use MIUIX's version-SHA-SNAPSHOT convention, not the published artifact identity.
 val miuixDisplayVersion =
     if (miuixSourceDir == null) miuixVersion
-    else "source ${miuixSourceRevision?.take(8) ?: "(revision unspecified)"}"
+    else miuixSourceRevision?.let { revision ->
+        "${miuixVersion.substringBefore('-')}-${revision.take(8)}-SNAPSHOT"
+    } ?: "source (revision unspecified)"
 val miuixDisplayRevision =
     if (miuixSourceDir == null) miuixRevision
     else miuixSourceRevision ?: "unverified local source"
