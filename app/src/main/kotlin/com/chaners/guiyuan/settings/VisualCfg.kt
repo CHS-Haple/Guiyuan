@@ -205,7 +205,11 @@ internal data class VisualCfg(
     val leftRightShowActivity: Boolean = true,
     val leftRightShowIdleActivity: Boolean = false,
     val leftRightBottomCharging: Boolean = false,
-    val leftRightBottomInfoScale: Float = LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
+    @SerialName("leftRightBottomInfoScale") // B1750 backup field stays readable.
+    val leftRightActivityScale: Float = LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
+    val leftRightChargingScale: Float = LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
+    val leftRightActivityOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    val leftRightChargingOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     // New field; older backup booleans are translated before decoding.
     @SerialName("singleRowDotStyle")
     val singleRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
@@ -229,6 +233,7 @@ internal data class VisualCfg(
     val curvedSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     @SerialName("dualDuoOffsetY") // Backward-compatible V1 backup field.
     val horizontalSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    // Deprecated B1750 setting retained for backup compatibility; left-right dots are fixed.
     val leftRightSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val topChargingIconScale: Float =
         topChargingIconScaleDefault(layout),
@@ -257,7 +262,7 @@ internal data class VisualCfg(
     val dualRowDotOffsetY: Float
         get() = when (dualRowDotArrangement) {
             SignalDotArrangement.HORIZONTAL -> horizontalSignalDotOffsetY
-            SignalDotArrangement.LEFT_RIGHT -> leftRightSignalDotOffsetY
+            SignalDotArrangement.LEFT_RIGHT -> NETWORK_TOP_OFFSET_DEFAULT
             SignalDotArrangement.CURVED -> curvedSignalDotOffsetY
         }
 
@@ -329,11 +334,29 @@ internal fun VisualCfg.normalized(): VisualCfg =
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,
             ),
-        leftRightBottomInfoScale =
-            leftRightBottomInfoScale.finiteIn(
+        leftRightActivityScale =
+            leftRightActivityScale.finiteIn(
                 LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN,
                 LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX,
                 LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
+            ),
+        leftRightChargingScale =
+            leftRightChargingScale.finiteIn(
+                LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN,
+                LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX,
+                LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
+            ),
+        leftRightActivityOffsetY =
+            leftRightActivityOffsetY.finiteIn(
+                NETWORK_TOP_OFFSET_MIN,
+                NETWORK_TOP_OFFSET_MAX,
+                NETWORK_TOP_OFFSET_DEFAULT,
+            ),
+        leftRightChargingOffsetY =
+            leftRightChargingOffsetY.finiteIn(
+                NETWORK_TOP_OFFSET_MIN,
+                NETWORK_TOP_OFFSET_MAX,
+                NETWORK_TOP_OFFSET_DEFAULT,
             ),
         topChargingIconScale =
             topChargingIconScale.finiteIn(
