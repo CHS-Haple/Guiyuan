@@ -375,6 +375,29 @@ internal object SysUiNetworkSource {
                         )
                 }
 
+            // The exact HyperOS collector writes its original activity drawable ID to the View tag.
+            runCatching {
+                val collector = Class.forName(WIFI_ACTIVITY_COLLECTOR_CLASS_NAME, false, classLoader)
+                val activityField = collector.getDeclaredField("\$wifiActivity").apply { isAccessible = true }
+                val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
+                module.hook(method)
+                    .setId(WIFI_ACTIVITY_HOOK_ID)
+                    .intercept(Hooker { chain ->
+                        val result = chain.proceed()
+                        if (active.get()) {
+                            val image = readOrNull { activityField.get(chain.thisObject) as? ImageView }
+                            if (image != null && findWifiBinding(image)) {
+                                try {
+                                    onWifiActivity((image.tag as? Number)?.toInt())
+                                } catch (error: Throwable) {
+                                    callbackFailed("wifi-activity", error, onRuntimeFailure)
+                                }
+                            }
+                        }
+                        result
+                    })
+            }.onSuccess { created += it }.onFailure(::rethrowFatal)
+
             active.set(true)
             BranchInstallResult(
                 handles = created.toList(),
