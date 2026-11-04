@@ -204,10 +204,11 @@ internal data class RenderModel(
                 charging = battery.charging,
                 centerIndicator = centerIndicator,
                 chargingIconResId = battery.chargingIconResId,
-                networkActivityResId = if (centerIndicator is CenterIndicator.Wifi) {
-                    snapshot.wifiActivityResId
-                } else {
-                    snapshot.mobileActivityResIds[selectedSubscriptionId]
+                networkActivityResId = when (centerIndicator) {
+                    is CenterIndicator.Wifi -> snapshot.wifiActivityResId
+                    is CenterIndicator.MobileType ->
+                        snapshot.mobileActivityResIds[selectedSubscriptionId]
+                    else -> null
                 },
                 mobileLevel = mobileLevel,
                 mobileUnavailableMark = mobileUnavailableMark,
