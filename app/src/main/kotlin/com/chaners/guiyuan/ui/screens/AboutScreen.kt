@@ -157,17 +157,19 @@ internal fun AboutScreen(
         foreground = { padding ->
             // Foreground keeps the interactive logo above the scroll hit layer,
             // but it must never draw over the first preference card.
-            val firstCardTopPx =
-                if (listState.firstVisibleItemIndex == 0) {
-                    with(density) { (padding.calculateTopPadding() + spacerHeight).toPx() } -
-                        listState.firstVisibleItemScrollOffset
-                } else {
-                    0f
-                }
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .drawWithContent {
+                        // Read list position in the draw phase so a fling cannot
+                        // paint a stale foreground boundary between recompositions.
+                        val firstCardTopPx =
+                            if (listState.firstVisibleItemIndex == 0) {
+                                (padding.calculateTopPadding() + spacerHeight).toPx() -
+                                    listState.firstVisibleItemScrollOffset
+                            } else {
+                                0f
+                            }
                         clipRect(bottom = firstCardTopPx.coerceIn(0f, size.height)) {
                             drawContent()
                         }
