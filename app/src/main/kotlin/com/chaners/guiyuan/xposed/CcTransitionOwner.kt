@@ -989,7 +989,14 @@ internal object CcTransitionOwner {
                         }
                     aggregateTarget != null ->
                         baseSpecs.map { spec ->
-                            if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
+                            if (spec.component == StatusPainter.TransitionComponent.MOBILE &&
+                                CcTransitionPolicy.canMorphAggregateMobile(
+                                    arrangement = currentSnapshot.visual.dualRowDotArrangement,
+                                    centered = currentSnapshot.visual.centeredMobileSignal &&
+                                        model.centerIndicator is CenterIndicator.MobileType &&
+                                        !model.mobileUnavailableMark,
+                                )
+                            ) {
                                 spec.copy(shapePolicy = StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL)
                             } else spec
                         }

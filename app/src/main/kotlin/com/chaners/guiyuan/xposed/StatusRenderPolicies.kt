@@ -406,6 +406,10 @@ internal object OuterGeometry {
         val firstDotCenterDegrees: Float,
         val dotCenterStepDegrees: Float,
         val balancedEdgeGap: Float,
+        val leftRightBottomSlotEnabled: Boolean,
+        val leftRightStepDegrees: Double,
+        val leftRightWithSlotFirstDegrees: Double,
+        val leftRightBalancedFirstDegrees: Double,
     ) {
         fun bottomDotAngle(index: Int): Double {
             require(index in 0 until DOT_COUNT)
@@ -447,21 +451,13 @@ internal object OuterGeometry {
 
         private fun leftRightDotAngle(index: Int, row: Int): Double {
             require(index in 0 until DOT_COUNT && row in 0..1)
-            val minimumChord = 2f * dualMobileDotRadius + 1f
-            val step = max(
-                17.0,
-                Math.toDegrees(2.0 * kotlin.math.asin(
-                    (minimumChord / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
-                )),
-            )
-            val ringClearance = ringStroke / 2f + dualMobileDotRadius + 2f
-            val endMargin = Math.toDegrees(2.0 * kotlin.math.asin(
-                (ringClearance / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
-            ))
-            val first = minOf(112.0, 180.0 - 3.0 * step - endMargin)
-            val degrees = if (row == 0) first + index * step
-                else 180.0 - first - index * step
-            return Math.toRadians(degrees)
+            val first = if (leftRightBottomSlotEnabled) {
+                leftRightWithSlotFirstDegrees
+            } else {
+                leftRightBalancedFirstDegrees
+            }
+            val angle = first + index * leftRightStepDegrees
+            return Math.toRadians(if (row == 0) angle else 180.0 - angle)
         }
 
         // Balance visible ring-to-dot clearance against adjacent dot spacing.
@@ -513,7 +509,7 @@ internal object OuterGeometry {
             ?.coerceIn(MIN_WEIGHT_SCALE, MAX_WEIGHT_SCALE)
             ?: DEFAULT_WEIGHT_SCALE
 
-    fun resolve(weightScale: Float): Resolved {
+    fun resolve(weightScale: Float, leftRightBottomSlotEnabled: Boolean = true): Resolved {
         val normalized = normalizeWeightScale(weightScale)
         val ringStroke = BASE_RING_STROKE * normalized
         val dotRadius = BASE_MOBILE_DOT_RADIUS * normalized
@@ -552,6 +548,36 @@ internal object OuterGeometry {
             )
 
         val dualDotRadius = DUAL_BASE_DOT_RADIUS * normalized
+        val minimumChord = 2f * dualDotRadius + 1f
+        val leftRightStep = max(
+            15.0,
+            Math.toDegrees(2.0 * kotlin.math.asin(
+                (minimumChord / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
+            )),
+        )
+        val ringClearance = ringStroke / 2f + dualDotRadius + 2f
+        val endMargin = Math.toDegrees(2.0 * kotlin.math.asin(
+            (ringClearance / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
+        ))
+        val outermostAllowed = 180.0 - 3.0 * leftRightStep - endMargin
+        val withSlotFirst = minOf(112.0, outermostAllowed)
+        // When neither bottom feature is enabled, balance *visible edge-to-edge*
+        // clearance, not merely angular center spacing. The half-circle ends
+        // at 0°/180° and is never shortened to balance the split dot clusters.
+        fun visualChordGap(angle: Double, halfWidthSum: Double): Double =
+            2.0 * RING_RADIUS * sin(Math.toRadians(angle / 2.0)) - halfWidthSum
+        var balancedLower = 90.0
+        var balancedUpper = outermostAllowed
+        repeat(20) {
+            val first = (balancedLower + balancedUpper) / 2.0
+            val inner = visualChordGap(2.0 * first - 180.0, 2.0 * dualDotRadius)
+            val edge = visualChordGap(
+                180.0 - first - 3.0 * leftRightStep,
+                dualDotRadius + ringStroke / 2.0,
+            )
+            if (inner > edge) balancedUpper = first else balancedLower = first
+        }
+        val balancedFirst = (balancedLower + balancedUpper) / 2.0
         // Wider only at extreme weights, when neighboring dots would otherwise touch.
         val horizontalDotSpan = max(DUAL_DOT_SPAN, 6f * dualDotRadius + 2f)
         val naturalRowGap = DUAL_BASE_ROW_GAP * normalized
@@ -581,6 +607,10 @@ internal object OuterGeometry {
             firstDotCenterDegrees = firstCenter,
             dotCenterStepDegrees = step,
             balancedEdgeGap = gap,
+            leftRightBottomSlotEnabled = leftRightBottomSlotEnabled,
+            leftRightStepDegrees = leftRightStep,
+            leftRightWithSlotFirstDegrees = withSlotFirst,
+            leftRightBalancedFirstDegrees = balancedFirst,
         )
     }
 

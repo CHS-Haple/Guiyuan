@@ -249,6 +249,11 @@ internal data class VisualCfg(
     val centeredMobileSignal: Boolean
         get() = layout == ContentLayout.MOBILE_CENTER
 
+    // A reserved bottom information slot needs a wider separation between the
+    // two dot groups even when its current native drawable is not visible.
+    val leftRightBottomSlotEnabled: Boolean
+        get() = leftRightShowActivity || leftRightBottomCharging
+
     // Only the outside/bottom dots use these saved choices.
     // Signal-strength-centered dots remain horizontal in the renderer.
     val dualRowDotOffsetY: Float

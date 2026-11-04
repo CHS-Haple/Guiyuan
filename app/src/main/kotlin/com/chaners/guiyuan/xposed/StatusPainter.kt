@@ -175,7 +175,7 @@ internal class StatusPainter(
         canvas.translate(offsetX, offsetY)
         canvas.scale(scale, scale)
 
-        val outerGeometry = resolveOuterGeometry(outerWeightScale)
+        val outerGeometry = resolveOuterGeometry(outerWeightScale, visual.leftRightBottomSlotEnabled)
         val centerGeometry = resolveCenterGeometry(visual)
         drawBattery(
             canvas = canvas,
@@ -378,6 +378,7 @@ internal class StatusPainter(
                     geometry =
                         resolveOuterGeometry(
                             visual.outerWeightScale,
+                            visual.leftRightBottomSlotEnabled,
                         ),
                     centerGeometry =
                         resolveCenterGeometry(visual),
@@ -458,6 +459,7 @@ internal class StatusPainter(
                 val outerGeometry =
                     resolveOuterGeometry(
                         visual.outerWeightScale,
+                        visual.leftRightBottomSlotEnabled,
                     )
                 if (shapePolicy == TransitionShapePolicy.MOBILE_SIGNAL) {
                     drawMobileSignalTransition(
@@ -598,7 +600,7 @@ internal class StatusPainter(
         val offsetX = nativeTransform.offsetX
         val offsetY = nativeTransform.offsetY
         val outerGeometry =
-            resolveOuterGeometry(visual.outerWeightScale)
+            resolveOuterGeometry(visual.outerWeightScale, visual.leftRightBottomSlotEnabled)
         val centerGeometry =
             resolveCenterGeometry(visual)
 
@@ -834,7 +836,7 @@ internal class StatusPainter(
         visual: VisualCfg,
         model: RenderModel,
     ): List<TransitionComponentSpec> {
-        val geometry = resolveOuterGeometry(visual.outerWeightScale)
+        val geometry = resolveOuterGeometry(visual.outerWeightScale, visual.leftRightBottomSlotEnabled)
         val centered = visual.centeredMobileSignal &&
             model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
         val group = if (centered) centeredMobileBounds(geometry, true)
@@ -1186,12 +1188,19 @@ internal class StatusPainter(
         }
     }
 
-    private fun resolveOuterGeometry(weightScale: Float): OuterGeometry.Resolved {
-        val normalized =
-            OuterGeometry.normalizeWeightScale(weightScale)
-        if (cachedOuterWeightScale != normalized) {
+    private fun resolveOuterGeometry(
+        weightScale: Float,
+        leftRightBottomSlotEnabled: Boolean = true,
+    ): OuterGeometry.Resolved {
+        val normalized = OuterGeometry.normalizeWeightScale(weightScale)
+        if (cachedOuterWeightScale != normalized ||
+            cachedOuterGeometry.leftRightBottomSlotEnabled != leftRightBottomSlotEnabled
+        ) {
             cachedOuterWeightScale = normalized
-            cachedOuterGeometry = OuterGeometry.resolve(normalized)
+            cachedOuterGeometry = OuterGeometry.resolve(
+                normalized,
+                leftRightBottomSlotEnabled,
+            )
         }
         return cachedOuterGeometry
     }
@@ -3162,7 +3171,10 @@ internal class StatusPainter(
     }
 
     private fun mobileTypeBottomTranslation(visual: VisualCfg, layout: MobileTypeLayout): Float {
-        val innerBottom = centeredMobileBounds(resolveOuterGeometry(visual.outerWeightScale), true).bottom
+        val innerBottom = centeredMobileBounds(
+            resolveOuterGeometry(visual.outerWeightScale, visual.leftRightBottomSlotEnabled),
+            true,
+        ).bottom
         return CenteredMobileTypePositionPolicy.translation(
             sourceTop = layout.bounds.top,
             mobileBottom = innerBottom,
@@ -4087,9 +4099,11 @@ internal class StatusPainter(
             tint = if (bottomCharging) colors.chargingIconTint else colors.centerTint,
             opacity = opacity * outsideAmount,
             centerX = BATTERY_COMPONENT_CENTER_X,
-            centerY = 92f,
-            maxWidth = LEFT_RIGHT_BOTTOM_SLOT_WIDTH * visual.leftRightBottomInfoScale,
-            maxHeight = LEFT_RIGHT_BOTTOM_SLOT_HEIGHT * visual.leftRightBottomInfoScale,
+            centerY = if (bottomCharging) 101f else 92f,
+            maxWidth = (if (bottomCharging) LEFT_RIGHT_CHARGING_SLOT_WIDTH else LEFT_RIGHT_BOTTOM_SLOT_WIDTH) *
+                visual.leftRightBottomInfoScale,
+            maxHeight = (if (bottomCharging) LEFT_RIGHT_CHARGING_SLOT_HEIGHT else LEFT_RIGHT_BOTTOM_SLOT_HEIGHT) *
+                visual.leftRightBottomInfoScale,
             nativeTransform = nativeTransform,
             pixelAligned = false,
         )
@@ -4303,6 +4317,10 @@ internal class StatusPainter(
         const val BATTERY_TOP_CHARGING_ICON_SIZE = 18f
         const val LEFT_RIGHT_BOTTOM_SLOT_WIDTH = 19f
         const val LEFT_RIGHT_BOTTOM_SLOT_HEIGHT = 22f
+        // Native charging and traffic assets have very different intrinsic ink.
+        // Share the user-facing scale, but preserve independent optical frames.
+        const val LEFT_RIGHT_CHARGING_SLOT_WIDTH = 18f
+        const val LEFT_RIGHT_CHARGING_SLOT_HEIGHT = 26f
         const val BATTERY_TOP_ICON_TEXT_GAP = 1f
         const val BATTERY_TOP_RING_VISUAL_CLEARANCE = 2f
         const val BATTERY_BOTTOM_RING_VISUAL_CLEARANCE = 4f

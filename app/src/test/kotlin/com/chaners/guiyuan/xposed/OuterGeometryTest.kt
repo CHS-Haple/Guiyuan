@@ -391,12 +391,49 @@ class OuterGeometryTest {
                     g.dualDotX(3, 0, SignalDotArrangement.LEFT_RIGHT).toDouble(),
                 ),
             )
-            assertTrue("split four-dot arc needs breathing room", last - first >= 50.9)
+            assertTrue("each split group uses a 15 degree baseline", last - first >= 44.9)
             for (row in 0..1) {
                 val nearestX = kotlin.math.abs(g.dualDotX(0, row, SignalDotArrangement.LEFT_RIGHT))
                 val slotHalfWidth = 19f * 1.2f / 2f
                 assertTrue("bottom slot must clear both SIM dot groups",
                     nearestX - slotHalfWidth - g.dualMobileDotRadius > 0.5f)
+            }
+        }
+    }
+
+    @Test
+    fun disabledBottomSlotBalancesBothOpticalGapsWithoutShorteningTheHalfRing() {
+        for (step in 0..12) {
+            val g = OuterGeometry.resolve(0.7f + step * 0.05f, leftRightBottomSlotEnabled = false)
+            val innerX = g.dualDotX(0, 0, SignalDotArrangement.LEFT_RIGHT)
+            val rightInnerX = g.dualDotX(0, 1, SignalDotArrangement.LEFT_RIGHT)
+            val ringSideX = -OuterGeometry.RING_RADIUS
+            val outerX = g.dualDotX(3, 0, SignalDotArrangement.LEFT_RIGHT)
+            val outerY = g.dualDotY(3, 0, SignalDotArrangement.LEFT_RIGHT)
+            val centerClearance = rightInnerX - innerX - 2f * g.dualMobileDotRadius
+            val ringClearance = sqrt(
+                (outerX - ringSideX) * (outerX - ringSideX) + outerY * outerY,
+            ) - g.dualMobileDotRadius - g.ringStroke / 2f
+            assertTrue("split groups must remain optically separated", centerClearance > 1f)
+            assertEquals("center and ring-side optical spacing", ringClearance, centerClearance, 0.1f)
+            assertEquals(
+                "the complete lower semicircle remains available to the dots",
+                90f, g.followingLowerHalfGap(true, SignalDotArrangement.LEFT_RIGHT, 0f), 0f,
+            )
+            assertEquals(
+                "the upper ring still spans half a circle",
+                180f,
+                com.chaners.guiyuan.xposed.battery.BatteryTopArcPolicy
+                    .drawableRingArcs(topHalfDegrees = 0f, bottomHalfDegrees = 90f)
+                    .sumOf { it.sweepDegrees.toDouble() }.toFloat(),
+                0f,
+            )
+            for (index in 0..3) {
+                assertEquals(
+                    "mirror x",
+                    -g.dualDotX(index, 0, SignalDotArrangement.LEFT_RIGHT),
+                    g.dualDotX(index, 1, SignalDotArrangement.LEFT_RIGHT), 0.0001f,
+                )
             }
         }
     }
