@@ -1,0 +1,12 @@
+<!-- Guiyuan plain ring, matching the 120-unit weight of Material Symbols donut_large. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="120"
+        android:pathData="M480,142 A338,338 0,1 1,480 818 A338,338 0,1 1,480 142 Z" />
+</vector>

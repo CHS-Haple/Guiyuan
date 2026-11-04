@@ -226,6 +226,21 @@ internal class RenderView(
         )
     }
 
+    fun requiredBottomOverflowPx(
+        logicalWidthPx: Int,
+        logicalHeightPx: Int,
+    ): Int {
+        val current = model ?: return 0
+        return painter.requiredBottomOverflowPx(
+            width = logicalWidthPx,
+            height = logicalHeightPx,
+            model = current,
+            visual = visual,
+            previousCenterIndicator = previousCenterIndicator,
+            scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+        )
+    }
+
     fun clearPendingLatency() {
         pendingStateUptimeMs = 0L
         pendingTrace = null

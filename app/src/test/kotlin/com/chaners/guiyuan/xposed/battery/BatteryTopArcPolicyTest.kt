@@ -6,6 +6,94 @@ import org.junit.Test
 
 class BatteryTopArcPolicyTest {
     @Test
+    fun lowerOpeningPreservesMeasuredClearanceAndCenteredMotion() {
+        fun gap(fixed: Boolean, before: Boolean, now: Boolean, fraction: Float, measured: Float = 18f) =
+            BatteryTopArcPolicy.autoBottomHalfGap(measured, if (fixed) 60f else 0f, before, now, fraction)
+        assertEquals(60f, gap(true, false, false, 1f), 0f)
+        assertEquals(18f, gap(false, false, false, 1f), 0f)
+        assertEquals(18f, gap(true, true, true, 1f), 0f)
+        assertEquals(60f, gap(true, false, true, 0f), 0f)
+        assertEquals(39f, gap(true, false, true, 0.5f, measured = 39f), 0f)
+        assertEquals(18f, gap(true, false, true, 1f), 0f)
+        assertEquals(18f, gap(true, true, false, 0f), 0f)
+        assertEquals(30f, gap(true, true, false, 0.5f), 0f)
+        assertEquals(60f, gap(true, true, false, 1f), 0f)
+        assertEquals(70f, gap(true, false, false, 1f, measured = 70f), 0f)
+    }
+
+    @Test
+    fun lowerMobileTextWithAdditionalOpticalClearanceWidensOnlyItsGap() {
+        fun lower(clearance: Float) = BatteryTopArcPolicy.resolveGap(
+            contentLeft = 48f,
+            contentTop = 94f,
+            contentRight = 72f,
+            contentBottom = 112f,
+            ringCenterX = 60f,
+            ringCenterY = 58f,
+            ringRadius = 50f,
+            ringStroke = 4f,
+            visualClearance = clearance,
+            startDegrees = 0f,
+            maxSweep = 180f,
+        )
+        val legacyClearance = lower(2f)
+        val increasedClearance = lower(4f)
+        assertTrue(legacyClearance.sweepDegrees > 0f)
+        assertTrue(increasedClearance.sweepDegrees > legacyClearance.sweepDegrees)
+        val mirroredUpper = BatteryTopArcPolicy.resolveGap(
+            contentLeft = 48f,
+            contentTop = 4f,
+            contentRight = 72f,
+            contentBottom = 22f,
+            ringCenterX = 60f,
+            ringCenterY = 58f,
+            ringRadius = 50f,
+            ringStroke = 4f,
+            visualClearance = 4f,
+            startDegrees = 180f,
+            maxSweep = 180f,
+        )
+        assertEquals(mirroredUpper.sweepDegrees, increasedClearance.sweepDegrees, 0.0002f)
+    }
+
+    @Test
+    fun fullRingIndependentAndSymmetricGapsUseMeasuredOpticalAngles() {
+        val independent = BatteryTopArcPolicy.drawableRingArcs(22f, 34f)
+        assertEquals(
+            listOf(
+                BatteryTopArcPolicy.Arc(124f, 124f),
+                BatteryTopArcPolicy.Arc(292f, 124f),
+            ),
+            independent,
+        )
+        val symmetric = BatteryTopArcPolicy.drawableRingArcs(34f, 34f)
+        assertEquals(
+            listOf(
+                BatteryTopArcPolicy.Arc(124f, 112f),
+                BatteryTopArcPolicy.Arc(304f, 112f),
+            ),
+            symmetric,
+        )
+        assertEquals(248f, independent.sumOf { it.sweepDegrees.toDouble() }.toFloat(), 0.0001f)
+        assertEquals(224f, symmetric.sumOf { it.sweepDegrees.toDouble() }.toFloat(), 0.0001f)
+        val half = BatteryTopArcPolicy.resolve(independent, 50)
+        assertEquals(listOf(independent.first()), half.active)
+        assertEquals(listOf(independent.last()), half.inactive)
+    }
+
+    @Test
+    fun fullRingOneSidedAndAbsentGapsHaveNoOverlappingRoundCaps() {
+        assertEquals(listOf(BatteryTopArcPolicy.Arc(90f, 360f)),
+            BatteryTopArcPolicy.drawableRingArcs(0f, 0f))
+        assertEquals(listOf(BatteryTopArcPolicy.Arc(105f, 330f)),
+            BatteryTopArcPolicy.drawableRingArcs(0f, 15f))
+        assertEquals(listOf(BatteryTopArcPolicy.Arc(285f, 330f)),
+            BatteryTopArcPolicy.drawableRingArcs(15f, 0f))
+        assertEquals(emptyList<BatteryTopArcPolicy.Arc>(),
+            BatteryTopArcPolicy.drawableRingArcs(90f, 90f))
+    }
+
+    @Test
     fun halfBatteryFillsFirstVisibleShoulderBeforeGap() {
         val result =
             BatteryTopArcPolicy.resolve(

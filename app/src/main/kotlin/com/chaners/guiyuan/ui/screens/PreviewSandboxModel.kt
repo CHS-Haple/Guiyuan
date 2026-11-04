@@ -53,6 +53,7 @@ internal enum class PreviewWifiState {
     CONNECTED,
     NO_INTERNET,
     HOTSPOT,
+    DUAL_WIFI,
 }
 
 internal enum class PreviewBatteryMode {
@@ -323,6 +324,9 @@ internal fun previewWifiResourceNames(
 
         PreviewWifiState.HOTSPOT ->
             listOf("stat_sys_hotspot_signal_$level")
+
+        PreviewWifiState.DUAL_WIFI ->
+            listOf("stat_sys_slave_wifi_signal_$level")
     }
 
 private fun previewWifiResourceId(

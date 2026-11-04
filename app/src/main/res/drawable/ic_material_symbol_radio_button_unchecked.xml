@@ -1,0 +1,10 @@
+<!-- Google Material Symbols Outlined W400 24px: radio_button_unchecked; Apache-2.0; source: google/material-design-icons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M12,22q-2.05,0 -3.875,-0.787t-3.187,-2.15Q3.575,17.7 2.788,15.875T2,12q0,-2.075 0.788,-3.9t2.15,-3.175Q6.3,3.575 8.125,2.788T12,2q2.075,0 3.9,0.788T19.075,4.925q1.35,1.35 2.138,3.175T22,12q0,2.05 -0.787,3.875T19.075,19.063q-1.35,1.362 -3.175,2.15T12,22Zm0,-1.5q3.55,0 6.025,-2.487T20.5,12q0,-3.55 -2.475,-6.025t-6.025,-2.475q-3.525,0 -6.012,2.475T3.5,12q0,3.525 2.488,6.013T12,20.5Z" />
+</vector>

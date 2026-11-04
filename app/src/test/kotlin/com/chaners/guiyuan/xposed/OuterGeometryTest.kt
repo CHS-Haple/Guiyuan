@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.DualDotStyle
+import com.chaners.guiyuan.settings.SignalDotArrangement
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -9,6 +9,59 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OuterGeometryTest {
+    @Test
+    fun followingOpeningApproximatelyPreservesTheCurvedDefault() {
+        val g = OuterGeometry.resolve(1f)
+        assertEquals(60f, g.followingLowerHalfGap(false, SignalDotArrangement.CURVED, 0f), 0.1f)
+        assertEquals(60f, g.followingLowerHalfGap(true, SignalDotArrangement.CURVED, 0f), 1.5f)
+    }
+
+    @Test
+    fun followingOpeningTracksDotOffsetsAndWeights() {
+        for (weight in listOf(0.6f, 1f, 1.5f, 2f)) {
+            val g = OuterGeometry.resolve(weight)
+            for (dual in listOf(false, true)) {
+                for (style in SignalDotArrangement.entries) {
+                    val lower = g.followingLowerHalfGap(dual, style, -5f)
+                    val neutral = g.followingLowerHalfGap(dual, style, 0f)
+                    val higher = g.followingLowerHalfGap(dual, style, 5f)
+                    assertTrue("drawable gap", neutral in 0f..90f)
+                    if (dual || style == SignalDotArrangement.HORIZONTAL) {
+                        // Curved paired rows can exchange the closest shoulder during motion.
+                        assertTrue("the opening follows the overall dot displacement", higher >= lower)
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun signalDotArrangementAppliesToSingleSimAndTransitionSourceGeometry() {
+        for (step in 0..28) {
+            val geometry = OuterGeometry.resolve(0.6f + step * 0.05f)
+            val horizontalY = geometry.singleDotY(0, SignalDotArrangement.HORIZONTAL, 0f)
+            for (index in 0..3) {
+                val angle = geometry.bottomDotAngle(index)
+                assertEquals(
+                    cos(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS,
+                    geometry.singleDotX(index, SignalDotArrangement.CURVED), 0.0001f,
+                )
+                assertEquals(
+                    sin(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS,
+                    geometry.singleDotY(index, SignalDotArrangement.CURVED, 0f), 0.0001f,
+                )
+                assertEquals(geometry.horizontalDotX(index),
+                    geometry.singleDotX(index, SignalDotArrangement.HORIZONTAL), 0f)
+                assertEquals("horizontal row at every weight", horizontalY,
+                    geometry.singleDotY(index, SignalDotArrangement.HORIZONTAL, 0f), 0.0001f)
+                assertEquals(horizontalY - 3f,
+                    geometry.singleDotY(index, SignalDotArrangement.HORIZONTAL, 3f), 0.0001f)
+            }
+            val radius = geometry.mobileDotRadius
+            assertTrue(58f + horizontalY + radius < 120f)
+        }
+    }
+
     @Test
     fun defaultOpticalBaselineRestoresPreferred825Ring() {
         val geometry =
@@ -40,6 +93,33 @@ class OuterGeometryTest {
 
 
     @Test
+    fun centeredHorizontalDotsRemainInsideRingAcrossFullWeightRange() {
+        for (step in 0..28) {
+            val weight = 0.6f + step * 0.05f
+            val geometry = OuterGeometry.resolve(weight)
+            for (dual in listOf(false, true)) {
+                val scale = geometry.centeredScale(dual)
+                val radius = (if (dual) geometry.dualMobileDotRadius else geometry.mobileDotRadius) * scale
+                val rows = if (dual) listOf(-0.5f, 0.5f) else listOf(0f)
+                val allowed = OuterGeometry.RING_RADIUS - geometry.ringStroke / 2f - 2f
+                for (row in rows) {
+                    val y = row * geometry.dualRowGap * scale
+                    for (dot in 0..3) {
+                        val x = geometry.horizontalDotX(dot) * scale
+                        assertTrue(
+                            "centered dot crosses ring weight=$weight dual=$dual",
+                            sqrt(x * x + y * y) + radius <= allowed + 0.001f,
+                        )
+                    }
+                }
+                assertTrue("scale never enlarges dots", scale in 0f..1f)
+            }
+        }
+        assertEquals(1f, OuterGeometry.resolve(1f).centeredScale(true), 0f)
+        assertTrue(OuterGeometry.resolve(2f).centeredScale(true) < 1f)
+    }
+
+    @Test
     fun dualRowsKeepTheirOpticalSpacingAcrossWeights() {
         assertEquals(56f, OuterGeometry.DUAL_DOT_SPAN, 0f)
         var lastDotRadius = 0f
@@ -53,7 +133,7 @@ class OuterGeometryTest {
             assertTrue("radius grows with weight $scale", dotRadius > lastDotRadius)
             lastDotRadius = dotRadius
             assertEquals("ring thickness follows same weight $scale", 5.0215f * scale, dotRadius, 0.0001f)
-            val width = geometry.dualDotSpan
+            val width = geometry.horizontalDotSpan
             assertTrue("column clearance $scale", width / 3f > 2f * dotRadius)
             assertTrue("two rows stay apart at $scale", gap > 2f * dotRadius)
             val naturalGap = 14.3f * scale
@@ -111,28 +191,28 @@ class OuterGeometryTest {
         assertEquals(14.3f, default.dualRowGap, 0.0001f)
         assertEquals(14.3f * 0.7f, OuterGeometry.resolve(0.7f).dualRowGap, 0.0001f)
         assertEquals(17.69f, OuterGeometry.resolve(1.3f).dualRowGap, 0.0002f)
-        assertEquals(56f, default.dualDotSpan, 0.0001f)
+        assertEquals(56f, default.horizontalDotSpan, 0.0001f)
         assertTrue(default.dualOpticalRise >= 1.2f)
 
         val max = OuterGeometry.resolve(2f)
         assertEquals(10.043f, max.dualMobileDotRadius, 0.0001f)
         assertEquals(27.7f, max.dualRowGap, 0.0002f)
-        assertEquals(62.258f, max.dualDotSpan, 0.0002f)
+        assertEquals(62.258f, max.horizontalDotSpan, 0.0002f)
         assertEquals(7.53225f, OuterGeometry.resolve(1.5f).dualMobileDotRadius, 0.0001f)
         assertTrue(max.dualOpticalRise > default.dualOpticalRise)
     }
 
     @Test
-    fun duoKeepsDotSizesAndHorizontalSpacingWithFlatRows() {
+    fun horizontalArrangementKeepsDotSizesAndSpacingWithFlatRows() {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
             for (row in 0..1) {
-                val baseline = geometry.dualDotY(0, row, DualDotStyle.DUO)
+                val baseline = geometry.dualDotY(0, row, SignalDotArrangement.HORIZONTAL)
                 for (index in 1..3) {
-                    assertEquals(baseline, geometry.dualDotY(index, row, DualDotStyle.DUO), 0.0001f)
+                    assertEquals(baseline, geometry.dualDotY(index, row, SignalDotArrangement.HORIZONTAL), 0.0001f)
                     assertEquals(
-                        geometry.dualDotSpan / 3f,
-                        geometry.dualDotX(index) - geometry.dualDotX(index - 1),
+                        geometry.horizontalDotSpan / 3f,
+                        geometry.horizontalDotX(index) - geometry.horizontalDotX(index - 1),
                         0.0001f,
                     )
                 }
@@ -140,8 +220,8 @@ class OuterGeometryTest {
             }
             assertEquals(
                 geometry.dualRowGap,
-                geometry.dualDotY(0, 1, DualDotStyle.DUO) -
-                    geometry.dualDotY(0, 0, DualDotStyle.DUO),
+                geometry.dualDotY(0, 1, SignalDotArrangement.HORIZONTAL) -
+                    geometry.dualDotY(0, 0, SignalDotArrangement.HORIZONTAL),
                 0.0002f,
             )
         }
@@ -151,7 +231,7 @@ class OuterGeometryTest {
     fun bothDualStylesApplyTheSameSignedVerticalOffset() {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
-            for (style in DualDotStyle.entries) {
+            for (style in SignalDotArrangement.entries) {
                 for (row in 0..1) {
                     for (index in 0..3) {
                         val original = geometry.dualDotY(index, row, style)
@@ -167,11 +247,11 @@ class OuterGeometryTest {
     fun dualRowSourceCoordinatesRemainSharedAcrossWeights() {
         for (scale in TEST_SCALES) {
             val geometry = OuterGeometry.resolve(scale)
-            val positions = (0 until 4).map(geometry::dualDotX)
+            val positions = (0 until 4).map(geometry::horizontalDotX)
             assertEquals(-positions[3], positions[0], 0.0001f)
             assertEquals(-positions[2], positions[1], 0.0001f)
-            assertEquals(-geometry.dualDotSpan / 2f, positions.first(), 0.0001f)
-            assertEquals(geometry.dualDotSpan / 2f, positions.last(), 0.0001f)
+            assertEquals(-geometry.horizontalDotSpan / 2f, positions.first(), 0.0001f)
+            assertEquals(geometry.horizontalDotSpan / 2f, positions.last(), 0.0001f)
 
             for (index in 0 until 4) {
                 val x = positions[index]

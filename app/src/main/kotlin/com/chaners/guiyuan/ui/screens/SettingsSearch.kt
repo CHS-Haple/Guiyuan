@@ -67,8 +67,11 @@ internal object FeatureSearchIds {
     val layout = intArrayOf(
         R.string.content_layout_title,
         R.string.dual_signal_title,
-        R.string.dual_dot_style_title,
-        R.string.dual_mobile_vertical_offset,
+        R.string.single_row_signal_dot_arrangement_title,
+        R.string.dual_row_signal_dot_arrangement_title,
+        R.string.mobile_type_bottom_offset,
+        R.string.signal_dot_vertical_offset,
+        R.string.battery_lower_opening_title,
         R.string.combined_size,
         R.string.outer_weight,
         R.string.wifi_vertical_offset,
@@ -233,10 +236,21 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
     R.string.aod_combined_status_title -> listOf("息屏显示", "熄屏显示", "常亮显示", "AOD")
     R.string.control_center_tint_transition -> listOf("控制中心变色", "下拉颜色过渡")
     R.string.battery_fill_follow_retract -> listOf("电池段收口", "电量环回收", "电量段动画")
-    R.string.content_layout_title -> listOf("排列", "网络居中", "电量居中")
-    R.string.dual_signal_title -> listOf("双卡", "双 SIM", "双卡信号", "单排信号", "单卡显示")
-    R.string.dual_dot_style_title -> listOf("双卡样式", "Duo", "八点")
-    R.string.dual_mobile_vertical_offset -> listOf("双卡偏移", "双排位置", "双排上下偏移")
+    R.string.content_layout_title -> listOf(
+        "排列", "网络居中", "网络信息居中", "电量居中",
+        "移动信号居中", "信号强度居中", "信号点居中", "网络制式下方", "三种布局",
+    )
+    R.string.dual_signal_title -> listOf("双卡", "双 SIM", "双卡信号点", "双排信号", "双排信号点", "单卡显示")
+    R.string.single_row_signal_dot_arrangement_title -> listOf(
+        "单排信号", "单排信号点", "单卡信号点", "单SIM", "单排样式", "弧形排列", "横向排列",
+        "Single row signal", "Single-row dots", "Curved arrangement", "Horizontal arrangement",
+    )
+    R.string.dual_row_signal_dot_arrangement_title -> listOf(
+        "双排信号", "双卡样式", "Duo", "八点", "双排样式", "弧形排列", "横向排列",
+        "Dual-row dots", "Curved arrangement", "Horizontal arrangement",
+    )
+    R.string.signal_dot_vertical_offset -> listOf("双卡偏移", "双排位置", "双排上下偏移")
+    R.string.battery_lower_opening_title -> listOf("开口", "电量环开口", "弧形开口", "横排开口", "固定开口", "跟随位置", "避让", "Lower opening", "Follow position", "Fixed opening")
     R.string.combined_size -> listOf("整体缩放", "总大小", "三合一大小", "三合一缩放")
     R.string.outer_weight -> listOf("环形粗细", "圆环粗细", "外环宽度", "电量环粗细")
     R.string.wifi_vertical_offset -> listOf("WiFi 位置", "WiFi 垂直位置", "无线位置")

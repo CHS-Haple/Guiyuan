@@ -205,6 +205,20 @@ class PreviewSandboxPolicyTest {
 
 
     @Test
+    fun dualWifiPreviewUsesNativeSlaveWifiResourceFamily() {
+        for (level in 0..3) {
+            assertEquals(
+                listOf("stat_sys_slave_wifi_signal_$level"),
+                previewWifiResourceNames(PreviewWifiState.DUAL_WIFI, level),
+            )
+        }
+        assertFalse(
+            previewWifiResourceNames(PreviewWifiState.DUAL_WIFI, 3)
+                .contains("stat_sys_wifi_signal_3"),
+        )
+    }
+
+    @Test
     fun previewChargingUsesNativeHollowBatteryResourceFamilies() {
         assertEquals(
             listOf(

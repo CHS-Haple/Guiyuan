@@ -69,91 +69,22 @@ class VisualPersistenceTest {
     }
 
     @Test
-    fun firstRuntimeSnapshotUsesMigratedVisualPreferences() {
+    fun resetKeepsNewSharedValuesAfterDualModeAndReinitialization() {
         val prefs = MemoryPreferences()
-        val layout = ContentLayout.BATTERY_CENTER
+        resetVisualPreferences(prefs, BatteryColorSchemeLibrary())
+        assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        assertTrue(prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false))
+
         prefs.edit()
             .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
-            .putString(visualModeKey(true, CONTENT_LAYOUT_KEY), layout.persistedValue)
-            .putBoolean(visualModeKey(true, BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY), false)
-            .putBoolean(visualModeKey(true, CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY), false)
-            .putInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, dual = true), 1400)
-            .putString("other_setting", "untouched")
+            .putFloat(visualProfileKey(ContentLayout.NETWORK_CENTER, WIFI_SIZE_SCALE_KEY), 0.86f)
             .apply()
-
-        // The first runtime snapshot must not observe legacy transition defaults.
-        assertTrue(prefs.readVisualCfg().fillFollowsRetract)
+        val before = prefs.all.toMap()
         migrateVisualPrefsIfNeeded(prefs)
-        val migrated = prefs.readVisualCfg()
-        assertEquals(layout, migrated.layout)
-        assertFalse(migrated.fillFollowsRetract)
-        assertFalse(migrated.ccTintTransition)
-        assertEquals(1000, migrated.mobileTypeWeight)
-        assertEquals(BatteryColorPreset.HYPEROS.persistedValue, prefs.getString(BATTERY_COLOR_PRESET_KEY, null))
-        assertEquals("untouched", prefs.getString("other_setting", null))
-
-        val once = prefs.all.toMap()
-        migrateVisualPrefsIfNeeded(prefs)
-        assertEquals(once, prefs.all)
-    }
-
-    @Test
-    fun displayTransitionsUseActiveModeOnMigrationAndRemainShared() {
-        val prefs = MemoryPreferences()
-        prefs.edit()
-            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
-            .putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, true)
-            .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, false)
-            .putBoolean(visualModeKey(true, BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY), false)
-            .putBoolean(visualModeKey(true, CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY), true)
-            .apply()
-        migrateSharedTransitionsIfNeeded(prefs)
-        assertFalse(prefs.contains(visualModeKey(true, BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY)))
-        assertFalse(prefs.contains(visualModeKey(true, CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY)))
-        assertEquals(1, prefs.getInt(SHARED_TRANSITIONS_SCHEMA_KEY, 0))
-        for (dual in listOf(false, true)) {
-            for (layout in ContentLayout.entries) {
-                val cfg = prefs.readVisualCfg(dual = dual, layoutOverride = layout)
-                assertFalse(cfg.fillFollowsRetract)
-                assertTrue(cfg.ccTintTransition)
-            }
-        }
-        prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false).apply()
-        migrateSharedTransitionsIfNeeded(prefs)
-        assertFalse(prefs.readVisualCfg().fillFollowsRetract)
-        prefs.edit().putVisualCfg(VisualCfg(
-            dualSignal = true,
-            fillFollowsRetract = true,
-            ccTintTransition = false,
-        )).apply()
-        assertTrue(prefs.readVisualCfg(dual = false).fillFollowsRetract)
-        assertFalse(prefs.readVisualCfg(dual = false).ccTintTransition)
-    }
-
-    @Test
-    fun displayTransitionMigrationPreservesLegacySingleMode() {
-        val prefs = MemoryPreferences()
-        prefs.edit().putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, false)
-            .putBoolean(visualModeKey(true, BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY), true)
-            .apply()
-        migrateSharedTransitionsIfNeeded(prefs)
-        assertFalse(prefs.readVisualCfg(dual = false).fillFollowsRetract)
-        assertFalse(prefs.readVisualCfg(dual = true).fillFollowsRetract)
-    }
-    @Test
-    fun duoStyleIsModeWideAndSurvivesLayoutSwitches() {
-        val prefs = MemoryPreferences()
-        prefs.edit()
-            .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), DualDotStyle.DUO.persistedValue)
-            .apply()
-        for (layout in ContentLayout.entries) {
-            assertEquals(DualDotStyle.DUO, prefs.readVisualCfg(dual = true, layoutOverride = layout).dualDotStyle)
-            assertEquals(DualDotStyle.DEFAULT, prefs.readVisualCfg(dual = false, layoutOverride = layout).dualDotStyle)
-        }
-        prefs.edit()
-            .putString(visualModeKey(true, DUAL_DOT_STYLE_KEY), "invalid")
-            .apply()
-        assertEquals(DualDotStyle.DEFAULT, prefs.readVisualCfg(dual = true).dualDotStyle)
+        assertEquals(before, prefs.all)
+        assertEquals(0.86f, prefs.readVisualCfg(dual = true).wifiScale, 0f)
+        assertEquals(0.86f, prefs.readVisualCfg(dual = false).wifiScale, 0f)
     }
 
     @Test
@@ -161,29 +92,94 @@ class VisualPersistenceTest {
         val prefs = MemoryPreferences()
         val dual = VisualCfg(
             dualSignal = true,
-            dualDefaultOffsetY = 4f,
-            dualDuoOffsetY = -7f,
+            curvedSignalDotOffsetY = 4f,
+            horizontalSignalDotOffsetY = -7f,
         )
         prefs.edit().putVisualCfg(dual).apply()
         val network = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
-        assertEquals(4f, network.dualMobileOffsetY, 0f)
-        assertEquals(-7f, network.copy(dualDotStyle = DualDotStyle.DUO).dualMobileOffsetY, 0f)
+        assertEquals(4f, network.activeSignalDotOffsetY, 0f)
+        assertEquals(-7f, network.copy(dualRowDotArrangement = SignalDotArrangement.HORIZONTAL).activeSignalDotOffsetY, 0f)
 
         prefs.edit().putVisualCfg(
             dual.copy(
                 layout = ContentLayout.BATTERY_CENTER,
-                dualDotStyle = DualDotStyle.DUO,
-                dualDefaultOffsetY = -2f,
-                dualDuoOffsetY = 5f,
+                dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+                curvedSignalDotOffsetY = -2f,
+                horizontalSignalDotOffsetY = 5f,
             ),
         ).apply()
         val battery = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.BATTERY_CENTER)
-        assertEquals(5f, battery.dualMobileOffsetY, 0f)
-        assertEquals(-2f, battery.copy(dualDotStyle = DualDotStyle.DEFAULT).dualMobileOffsetY, 0f)
+        assertEquals(5f, battery.activeSignalDotOffsetY, 0f)
+        assertEquals(-2f, battery.copy(dualRowDotArrangement = SignalDotArrangement.CURVED).activeSignalDotOffsetY, 0f)
         val original = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
-        assertEquals(4f, original.dualDefaultOffsetY, 0f)
-        assertEquals(-7f, original.dualDuoOffsetY, 0f)
-        assertEquals(0f, prefs.readVisualCfg(dual = false).dualMobileOffsetY, 0f)
+        assertEquals(4f, original.curvedSignalDotOffsetY, 0f)
+        assertEquals(-7f, original.horizontalSignalDotOffsetY, 0f)
+        assertEquals(-2f, prefs.readVisualCfg(dual = false).activeSignalDotOffsetY, 0f)
+    }
+
+    @Test
+    fun signalDotOffsetSliderWritesVisibleDualRowBankInBatteryCenteredLayout() {
+        val prefs = MemoryPreferences()
+        for (layout in listOf(ContentLayout.NETWORK_CENTER, ContentLayout.BATTERY_CENTER)) {
+            for (dual in listOf(false, true)) {
+                prefs.edit().putVisualCfg(
+                    VisualCfg(
+                        layout = layout,
+                        dualSignal = dual,
+                        dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+                        curvedSignalDotOffsetY = 1f,
+                        horizontalSignalDotOffsetY = 2f,
+                    ),
+                ).apply()
+            }
+        }
+
+        // Reproduce B1726: current layout uses a profile-scoped horizontal arrangement,
+        // but the retired global style preference is absent.
+        prefs.edit()
+            .putString(CONTENT_LAYOUT_KEY, ContentLayout.BATTERY_CENTER.persistedValue)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .apply()
+        assertFalse(prefs.contains(DUAL_ROW_DOT_ARRANGEMENT_KEY))
+        assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg().dualRowDotArrangement)
+        prefs.writeSignalDotOffsetY(-6f)
+
+        val batteryDual = prefs.readVisualCfg()
+        assertEquals(-6f, batteryDual.activeSignalDotOffsetY, 0f)
+        assertEquals(-6f, batteryDual.horizontalSignalDotOffsetY, 0f)
+        assertEquals(1f, batteryDual.curvedSignalDotOffsetY, 0f)
+        assertEquals(2f, prefs.readVisualCfg(
+            dual = true,
+            layoutOverride = ContentLayout.NETWORK_CENTER,
+        ).horizontalSignalDotOffsetY, 0f)
+        assertEquals(-6f, prefs.readVisualCfg(
+            dual = false,
+            layoutOverride = ContentLayout.BATTERY_CENTER,
+        ).horizontalSignalDotOffsetY, 0f)
+
+        // The single-row arrangement controls the single-mode slider's offset bank.
+        prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
+            .putString(
+                visualProfileKey(ContentLayout.BATTERY_CENTER, SINGLE_ROW_DOT_STYLE_KEY),
+                SignalDotArrangement.CURVED.persistedValue,
+            ).apply()
+        prefs.writeSignalDotOffsetY(4f)
+        val batterySingle = prefs.readVisualCfg()
+        assertEquals(4f, batterySingle.activeSignalDotOffsetY, 0f)
+        assertEquals(-6f, batterySingle.horizontalSignalDotOffsetY, 0f)
+        assertEquals(-6f, prefs.readVisualCfg(dual = true).horizontalSignalDotOffsetY, 0f)
+
+        // Switching back to the other layout cannot overwrite the battery bank.
+        prefs.edit()
+            .putString(CONTENT_LAYOUT_KEY, ContentLayout.NETWORK_CENTER.persistedValue)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .apply()
+        prefs.writeSignalDotOffsetY(7f)
+        assertEquals(7f, prefs.readVisualCfg().activeSignalDotOffsetY, 0f)
+        assertEquals(-6f, prefs.readVisualCfg(
+            dual = true,
+            layoutOverride = ContentLayout.BATTERY_CENTER,
+        ).horizontalSignalDotOffsetY, 0f)
     }
 
     @Test
@@ -207,7 +203,7 @@ class VisualPersistenceTest {
             0f,
         )
         assertEquals(
-            3f,
+            -2f,
             topOffsetYUi(prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER).topOffsetY),
             0f,
         )
@@ -222,39 +218,9 @@ class VisualPersistenceTest {
         }
         prefs.edit()
             .putBoolean(visualProfileKey(ContentLayout.BATTERY_CENTER, BATTERY_TOP_READOUT_ENABLED_KEY), false)
-            .putBoolean(visualProfileKey(ContentLayout.BATTERY_CENTER, BATTERY_TOP_READOUT_ENABLED_KEY, dual = true), false)
             .apply()
         assertFalse(prefs.readVisualCfg(dual = false, layoutOverride = ContentLayout.BATTERY_CENTER).showTopReadout)
         assertFalse(prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.BATTERY_CENTER).showTopReadout)
-    }
-
-    @Test
-    fun legacyDualLayoutMigratesToSingleSourceWithoutOverridingLaterChanges() {
-        val prefs = MemoryPreferences()
-        prefs.edit()
-            .putString(CONTENT_LAYOUT_KEY, ContentLayout.NETWORK_CENTER.persistedValue)
-            .putString(visualModeKey(true, CONTENT_LAYOUT_KEY), ContentLayout.BATTERY_CENTER.persistedValue)
-            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
-            .apply()
-        migrateSharedLayoutIfNeeded(prefs)
-        assertEquals(ContentLayout.BATTERY_CENTER, prefs.readLayout())
-        assertTrue(prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false))
-        assertFalse(prefs.contains(visualModeKey(true, CONTENT_LAYOUT_KEY)))
-        prefs.edit()
-            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
-            .putString(CONTENT_LAYOUT_KEY, ContentLayout.NETWORK_CENTER.persistedValue)
-            .apply()
-        migrateSharedLayoutIfNeeded(prefs)
-        assertEquals(ContentLayout.NETWORK_CENTER, prefs.readLayout())
-
-        val previouslySingle = MemoryPreferences()
-        previouslySingle.edit()
-            .putString(CONTENT_LAYOUT_KEY, ContentLayout.NETWORK_CENTER.persistedValue)
-            .putString(visualModeKey(true, CONTENT_LAYOUT_KEY), ContentLayout.BATTERY_CENTER.persistedValue)
-            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
-            .apply()
-        migrateSharedLayoutIfNeeded(previouslySingle)
-        assertEquals(ContentLayout.NETWORK_CENTER, previouslySingle.readLayout())
     }
 
     @Test
@@ -280,84 +246,81 @@ class VisualPersistenceTest {
         prefs.edit().putVisualCfg(dual).apply()
 
         assertEquals(dual.normalized(), prefs.readVisualCfg(dual = true))
-        assertEquals(
-            single.copy(
-                batteryColorPreset = dual.batteryColorPreset,
-                batteryColorModes = dual.batteryColorModes,
-                batteryColorOverrides = dual.batteryColorOverrides,
-            ).normalized(),
-            prefs.readVisualCfg(dual = false),
-        )
+        assertEquals(dual.normalized().copy(dualSignal = false), prefs.readVisualCfg(dual = false))
         assertEquals(ContentLayout.BATTERY_CENTER, prefs.readLayout())
         assertFalse(prefs.all.keys.any { it.startsWith("dual.battery_color_") })
 
         prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false).apply()
         assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg().batteryColorPreset)
-        assertEquals(0.9f, prefs.readVisualCfg().combinedScale, 0.001f)
+        assertEquals(1f, prefs.readVisualCfg().combinedScale, 0.001f)
         prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, true).apply()
         assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg().batteryColorPreset)
         assertEquals(1f, prefs.readVisualCfg().combinedScale, 0.001f)
     }
 
+
     @Test
-    fun savedNativeWeightsMigrateAllBanksWithoutTouchingOtherKeys() {
+    fun oldRemoteDualBankRemainsReadableUntilTheSharedMirrorIsPublished() {
         val prefs = MemoryPreferences()
-        val network = ContentLayout.NETWORK_CENTER
-        val battery = ContentLayout.BATTERY_CENTER
+        val layout = ContentLayout.NETWORK_CENTER
+        val sharedScale = visualProfileKey(layout, WIFI_SIZE_SCALE_KEY)
+        val oldDualScale = visualModeKey(true, sharedScale)
+        val sharedStyle = visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY)
+        val oldDualStyle = visualModeKey(true, sharedStyle)
         prefs.edit()
-            .putInt(MOBILE_TYPE_WEIGHT_KEY, 1400)
-            .putInt(visualProfileKey(network, MOBILE_TYPE_WEIGHT_KEY), 1200)
-            .putInt(visualProfileKey(battery, MOBILE_TYPE_WEIGHT_KEY), 200)
-            .putInt(visualProfileKey(network, MOBILE_TYPE_WEIGHT_KEY, dual = true), 1001)
-            .putInt(visualProfileKey(battery, MOBILE_TYPE_WEIGHT_KEY, dual = true), 1000)
-            .putInt(BATTERY_TOP_TEXT_WEIGHT_KEY, 1400)
-            .putInt(visualProfileKey(network, BATTERY_TOP_TEXT_WEIGHT_KEY), 1100)
-            .putInt(visualProfileKey(battery, BATTERY_TOP_TEXT_WEIGHT_KEY), 200)
-            .putInt(visualProfileKey(network, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), 1001)
-            .putInt(visualProfileKey(battery, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), 1000)
-            .putInt(visualProfileKey(network, WIFI_WEIGHT_KEY), 80)
-            .putString("application_ui_scale", "90")
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putFloat(sharedScale, 0.71f)
+            .putFloat(oldDualScale, 1.13f)
+            .putFloat(visualProfileKey(layout, COMBINED_SCALE_KEY), 0.75f)
+            .putInt(visualModeKey(true, visualProfileKey(layout, WIFI_WEIGHT_KEY)), 120)
+            .putString(sharedStyle, SignalDotArrangement.CURVED.persistedValue)
+            .putString(oldDualStyle, SignalDotArrangement.HORIZONTAL.persistedValue)
             .apply()
 
-        migrateTextWeightRanges(prefs)
+        // SystemUI can read the untouched old remote store before app startup.
+        val before = prefs.all.toMap()
+        val legacy = prefs.readVisualCfg()
+        assertEquals(1.13f, legacy.wifiScale, 0f)
+        assertEquals(120, legacy.wifiWeight)
+        assertEquals(SignalDotArrangement.HORIZONTAL, legacy.dualRowDotArrangement)
+        assertEquals(COMBINED_SCALE_DEFAULT, legacy.combinedScale, 0f)
+        assertEquals(0.71f, prefs.readVisualCfg(dual = false).wifiScale, 0f)
+        assertEquals(before, prefs.all)
 
-        assertEquals(1000, prefs.getInt(MOBILE_TYPE_WEIGHT_KEY, 0))
-        assertEquals(1000, prefs.readVisualCfg(dual = false, layoutOverride = network).mobileTypeWeight)
-        assertEquals(200, prefs.readVisualCfg(dual = false, layoutOverride = battery).mobileTypeWeight)
-        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = network).mobileTypeWeight)
-        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = battery).mobileTypeWeight)
-        assertEquals(1000, prefs.getInt(BATTERY_TOP_TEXT_WEIGHT_KEY, 0))
-        assertEquals(1000, prefs.readVisualCfg(dual = false, layoutOverride = network).topTextWeight)
-        assertEquals(200, prefs.readVisualCfg(dual = false, layoutOverride = battery).topTextWeight)
-        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = network).topTextWeight)
-        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = battery).topTextWeight)
-        migrateTextWeightRanges(prefs)
-        assertEquals(1000, prefs.getInt(BATTERY_TOP_TEXT_WEIGHT_KEY, 0))
-        assertEquals(80, prefs.getInt(visualProfileKey(network, WIFI_WEIGHT_KEY), 0))
-        assertEquals("90", prefs.getString("application_ui_scale", null))
+        // The same writer mirrors new settings and their schema atomically.
+        prefs.edit().putVisualCfg(
+            VisualCfg(
+                layout = layout,
+                dualSignal = true,
+                wifiScale = 0.89f,
+                wifiWeight = 86,
+                combinedScale = 0.83f,
+                dualRowDotArrangement = SignalDotArrangement.CURVED,
+            ),
+        ).apply()
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
+        assertTrue(prefs.contains(oldDualScale))
+        for (dual in listOf(false, true)) {
+            val current = prefs.readVisualCfg(dual = dual, layoutOverride = layout)
+            assertEquals(0.89f, current.wifiScale, 0f)
+            assertEquals(86, current.wifiWeight)
+            assertEquals(0.83f, current.combinedScale, 0f)
+            assertEquals(SignalDotArrangement.CURVED, current.dualRowDotArrangement)
+        }
     }
 
     @Test
-    fun corruptedSavedThicknessIsBoundedBeforeItReachesTheRenderer() {
+    fun freshSharedPreferencesDoNotRequireAnOldDualBank() {
         val prefs = MemoryPreferences()
-        val layout = ContentLayout.NETWORK_CENTER
+        val key = visualProfileKey(ContentLayout.NETWORK_CENTER, WIFI_SIZE_SCALE_KEY)
         prefs.edit()
-            .putInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY), -1)
-            .putInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY), 1401)
-            .putInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), 1401)
-            .putInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, dual = true), -1)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putFloat(key, 0.92f)
             .apply()
-
-        assertEquals(1, prefs.readVisualCfg(dual = false, layoutOverride = layout).topTextWeight)
-        assertEquals(1000, prefs.readVisualCfg(dual = false, layoutOverride = layout).mobileTypeWeight)
-        assertEquals(1000, prefs.readVisualCfg(dual = true, layoutOverride = layout).topTextWeight)
-        assertEquals(1, prefs.readVisualCfg(dual = true, layoutOverride = layout).mobileTypeWeight)
-
-        migrateTextWeightRanges(prefs)
-        assertEquals(1, prefs.getInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY), -1))
-        assertEquals(1000, prefs.getInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY), -1))
-        assertEquals(1000, prefs.getInt(visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY, dual = true), -1))
-        assertEquals(1, prefs.getInt(visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY, dual = true), -1))
+        assertEquals(0.92f, prefs.readVisualCfg().wifiScale, 0f)
     }
 
     @Test
@@ -380,7 +343,7 @@ class VisualPersistenceTest {
 
         local.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false).apply()
         remote.edit().putVisualCfg(local.readVisualCfg()).apply()
-        assertEquals(0.8f, remote.readVisualCfg().combinedScale, 0.001f)
+        assertEquals(1f, remote.readVisualCfg().combinedScale, 0.001f)
         assertEquals(BatteryColorPreset.IOS_STYLE, remote.readVisualCfg().batteryColorPreset)
         assertEquals(BatteryColorPreset.IOS_STYLE, remote.readVisualCfg(dual = true).batteryColorPreset)
 
@@ -399,8 +362,8 @@ class VisualPersistenceTest {
             .putString(BATTERY_COLOR_PRESET_KEY, BatteryColorPreset.IOS_STYLE.persistedValue)
             .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
             .apply()
-        assertEquals(COMBINED_SCALE_DEFAULT, prefs.readVisualCfg().combinedScale, 0.0001f)
-        assertEquals(0f, prefs.readVisualCfg().wifiOffsetY, 0f)
+        assertEquals(0.75f, prefs.readVisualCfg().combinedScale, 0.0001f)
+        assertEquals(-3f, prefs.readVisualCfg().wifiOffsetY, 0f)
         assertEquals(-3f, prefs.readVisualCfg(dual = false).wifiOffsetY, 0f)
         assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg().batteryColorPreset)
         assertEquals(0.75f, prefs.readVisualCfg(dual = false).combinedScale, 0.0001f)
@@ -515,98 +478,6 @@ class VisualPersistenceTest {
     }
 
     @Test
-    fun activeDualMigrationKeepsItsColorsAndRetiresLegacyKeys() {
-        val prefs = MemoryPreferences()
-        prefs.edit()
-            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
-            .putString(BATTERY_COLOR_PRESET_KEY, BatteryColorPreset.RECOMMENDED.persistedValue)
-            .putString(
-                BATTERY_COLOR_MODE_CHARGING_KEY,
-                BatteryColorMode.CUSTOM.persistedValue,
-            )
-            .putInt(BATTERY_COLOR_CHARGING_KEY, 0xFF223344.toInt())
-            .putString(
-                visualModeKey(true, BATTERY_COLOR_PRESET_KEY),
-                BatteryColorPreset.IOS_STYLE.persistedValue,
-            )
-            .putString(
-                visualModeKey(true, BATTERY_COLOR_MODE_CHARGING_KEY),
-                BatteryColorMode.CUSTOM.persistedValue,
-            )
-            .putInt(visualModeKey(true, BATTERY_COLOR_CHARGING_KEY), 0xFF112233.toInt())
-            .putFloat(visualProfileKey(ContentLayout.NETWORK_CENTER, WIFI_SIZE_SCALE_KEY, true), 0.8f)
-            .apply()
-
-        migrateSharedBatteryColorsIfNeeded(prefs)
-        val single = prefs.readVisualCfg(dual = false)
-        val dual = prefs.readVisualCfg(dual = true)
-        assertEquals(single.batteryColorPreset, dual.batteryColorPreset)
-        assertEquals(BatteryColorPreset.IOS_STYLE, single.batteryColorPreset)
-        assertEquals(BatteryColorMode.CUSTOM, single.batteryColorModes.charging)
-        assertEquals(0xFF112233.toInt(), dual.batteryColorOverrides.charging)
-        assertTrue(prefs.getInt(SHARED_BATTERY_COLORS_SCHEMA_KEY, 0) == 1)
-        assertFalse(prefs.all.keys.any { it.startsWith("dual.battery_color_") })
-        assertEquals(0.8f, prefs.readVisualCfg(dual = true).wifiScale, 0.001f)
-
-        val once = prefs.all.toMap()
-        migrateSharedBatteryColorsIfNeeded(prefs)
-        assertEquals(once, prefs.all)
-    }
-
-    @Test
-    fun activeSingleMigrationKeepsSingleColorsAndRemovesDualBank() {
-        val prefs = MemoryPreferences()
-        prefs.edit()
-            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
-            .putString(BATTERY_COLOR_PRESET_KEY, BatteryColorPreset.IOS_STYLE.persistedValue)
-            .putString(
-                visualModeKey(true, BATTERY_COLOR_PRESET_KEY),
-                BatteryColorPreset.RECOMMENDED.persistedValue,
-            )
-            .putInt(visualModeKey(true, BATTERY_COLOR_CHARGING_KEY), 0xFF112233.toInt())
-            .apply()
-        migrateSharedBatteryColorsIfNeeded(prefs)
-
-        assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg(dual = false).batteryColorPreset)
-        assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg(dual = true).batteryColorPreset)
-        assertFalse(prefs.contains(visualModeKey(true, BATTERY_COLOR_CHARGING_KEY)))
-        assertFalse(prefs.contains(visualModeKey(true, BATTERY_COLOR_PRESET_KEY)))
-    }
-
-    @Test
-    fun absentActiveDualKeysDoNotAccidentallyBorrowSingleOverrides() {
-        val prefs = MemoryPreferences()
-        prefs.edit()
-            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
-            .putInt(BATTERY_COLOR_CHARGING_KEY, 0xFF112233.toInt())
-            .putString(BATTERY_COLOR_PRESET_KEY, BatteryColorPreset.IOS_STYLE.persistedValue)
-            .apply()
-
-        migrateSharedBatteryColorsIfNeeded(prefs)
-        assertFalse(prefs.contains(BATTERY_COLOR_CHARGING_KEY))
-        assertFalse(prefs.contains(BATTERY_COLOR_PRESET_KEY))
-        assertEquals(BatteryColorPreset.HYPEROS, prefs.readVisualCfg(dual = false).batteryColorPreset)
-        assertEquals(BatteryColorPreset.HYPEROS, prefs.readVisualCfg(dual = true).batteryColorPreset)
-    }
-
-    @Test
-    fun b1601DualSelectionMigrationKeepsOnlyOneAppliedSchemeKey() {
-        val prefs = MemoryPreferences()
-        prefs.edit()
-            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
-            .putString(BATTERY_COLOR_SCHEME_ACTIVE_KEY, BATTERY_COLOR_SCHEME_HYPEROS_KEY)
-            .putString(BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY, BATTERY_COLOR_SCHEME_IOS_KEY)
-            .putString(visualModeKey(true, BATTERY_COLOR_PRESET_KEY), BatteryColorPreset.IOS_STYLE.persistedValue)
-            .apply()
-
-        migrateSharedBatteryColorsIfNeeded(prefs)
-        assertEquals(BATTERY_COLOR_SCHEME_IOS_KEY, prefs.getString(BATTERY_COLOR_SCHEME_ACTIVE_KEY, null))
-        assertFalse(prefs.contains(BATTERY_COLOR_SCHEME_DUAL_ACTIVE_KEY))
-        assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg(dual = false).batteryColorPreset)
-        assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg(dual = true).batteryColorPreset)
-    }
-
-    @Test
     fun backupRestorationUsesArchivedActiveColorsForBothModes() {
         val prefs = MemoryPreferences()
         val editor = prefs.edit()
@@ -628,36 +499,13 @@ class VisualPersistenceTest {
 
         assertEquals(BatteryColorPreset.RECOMMENDED, prefs.readVisualCfg(dual = false).batteryColorPreset)
         assertEquals(BatteryColorPreset.RECOMMENDED, prefs.readVisualCfg(dual = true).batteryColorPreset)
-        assertEquals(0.8f, prefs.readVisualCfg(dual = false).combinedScale, 0.001f)
+        assertEquals(1f, prefs.readVisualCfg(dual = false).combinedScale, 0.001f)
         assertEquals(1f, prefs.readVisualCfg(dual = true).combinedScale, 0.001f)
-    }
-
-    @Test
-    fun resetThenReapplyInDualModeSurvivesNextMigrationPass() {
-        val prefs = MemoryPreferences()
-        prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, true).apply()
-        migrateSharedBatteryColorsIfNeeded(prefs)
-        resetVisualPreferences(prefs, BatteryColorSchemeLibrary())
-        assertEquals(1, prefs.getInt(SHARED_BATTERY_COLORS_SCHEMA_KEY, 0))
-
-        prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, true).apply()
-        val schemes = BatterySchemeRepo(prefs)
-        schemes.activateScheme(BATTERY_COLOR_SCHEME_IOS_KEY)
-        val saved = prefs.all.toMap()
-        migrateVisualPrefsIfNeeded(prefs)
-
-        assertEquals(BATTERY_COLOR_SCHEME_IOS_KEY, schemes.current().activeSchemeKey)
-        for (dual in listOf(false, true)) {
-            assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg(dual = dual).batteryColorPreset)
-        }
-        assertEquals(saved[BATTERY_COLOR_PRESET_KEY], prefs.getString(BATTERY_COLOR_PRESET_KEY, null))
-        assertFalse(prefs.all.keys.any { it.startsWith("dual.battery_color_") })
     }
 
     @Test
     fun applyingAndEditingSharedSchemeNeverSplitsBatteryColors() {
         val prefs = MemoryPreferences()
-        migrateSharedBatteryColorsIfNeeded(prefs)
         val schemes = BatterySchemeRepo(prefs)
 
         schemes.activateScheme(BATTERY_COLOR_SCHEME_IOS_KEY)
@@ -705,52 +553,360 @@ class VisualPersistenceTest {
     }
 
     @Test
-    fun activeDualMigrationLinksAnExistingMatchingCustomScheme() {
+    fun releasedVersionDotStyleMigratesIntoEachLayoutWithoutLosingSimChoice() {
         val prefs = MemoryPreferences()
-        migrateSharedBatteryColorsIfNeeded(prefs)
-        val schemes = BatterySchemeRepo(prefs)
-        val id = requireNotNull(schemes.createCustom("Existing palette", BATTERY_COLOR_SCHEME_IOS_KEY))
-        val key = customSchemeKey(id)
-        schemes.activateScheme(key)
-        schemes.setCustomColor(id, BatteryColorSlot.CHARGING, 0xFF2468AC.toInt())
-        val customColors = prefs.readVisualCfg()
-        val original = requireNotNull(schemes.current().customById(id))
-        val duplicate = original.copy(id = id + 1)
-        val withDuplicate = schemes.current().copy(
-            activeSchemeKey = duplicate.key,
-            customSchemes = listOf(original, duplicate),
-        )
-        assertEquals(duplicate.key, withDuplicate.matchingKey(customColors))
-
-        val editor = prefs.edit()
-            .putInt(SHARED_BATTERY_COLORS_SCHEMA_KEY, 0)
-            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
-            .putString(BATTERY_COLOR_SCHEME_ACTIVE_KEY, BATTERY_COLOR_SCHEME_HYPEROS_KEY)
-            .putString(
-                visualModeKey(true, BATTERY_COLOR_PRESET_KEY),
-                customColors.batteryColorPreset.persistedValue,
-            )
-        BatteryColorSlot.entries.forEach { slot ->
-            editor.putString(
-                visualModeKey(true, batteryColorModeKey(slot)),
-                customColors.batteryColorModes.modeFor(slot).persistedValue,
-            )
-            customColors.batteryColorOverrides.colorFor(slot)?.let { color ->
-                editor.putInt(visualModeKey(true, batteryColorOverrideKey(slot)), color)
-            }
+        prefs.edit()
+            .putString(visualModeKey(false, LEGACY_DUAL_DOT_STYLE_KEY), SignalDotArrangement.CURVED.persistedValue)
+            .putString(visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY), SignalDotArrangement.HORIZONTAL.persistedValue)
+            .apply()
+        migrateSignalDotArrangementsIfNeeded(prefs)
+        for (layout in ContentLayout.entries) {
+            assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg(false, layout).dualRowDotArrangement)
+            assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg(true, layout).dualRowDotArrangement)
         }
-        editor.apply()
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        assertFalse(prefs.contains(visualModeKey(false, LEGACY_DUAL_DOT_STYLE_KEY)))
+        assertFalse(prefs.contains(visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY)))
+        val snapshot = prefs.all.toMap()
+        migrateSignalDotArrangementsIfNeeded(prefs)
+        assertEquals(snapshot, prefs.all)
+    }
 
-        migrateSharedBatteryColorsIfNeeded(prefs)
+    @Test
+    fun legacySingleRowPreferenceWorksBeforeAppMigration() {
+        val prefs = MemoryPreferences()
+        val key = visualProfileKey(ContentLayout.NETWORK_CENTER, DUAL_ROW_DOT_ARRANGEMENT_KEY)
+        val flat = visualProfileKey(ContentLayout.NETWORK_CENTER, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)
+        prefs.edit().putString(key, SignalDotArrangement.HORIZONTAL.persistedValue)
+            .putBoolean(flat, true).apply()
+        val beforeMigration = prefs.readVisualCfg(true, ContentLayout.NETWORK_CENTER)
+        assertEquals(SignalDotArrangement.HORIZONTAL, beforeMigration.singleRowDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, beforeMigration.dualRowDotArrangement)
+        prefs.edit().putBoolean(flat, false).apply()
+        assertEquals(
+            SignalDotArrangement.CURVED,
+            prefs.readVisualCfg(true, ContentLayout.NETWORK_CENTER).singleRowDotArrangement,
+        )
+    }
 
-        assertEquals(key, schemes.current().activeSchemeKey)
-        assertEquals(customColors.batteryColorModes, prefs.readVisualCfg(dual = false).batteryColorModes)
-        assertEquals(customColors.batteryColorOverrides, prefs.readVisualCfg(dual = true).batteryColorOverrides)
-        assertFalse(prefs.all.keys.any { it.startsWith("dual.battery_color_") })
+    @Test
+    fun legacySingleRowMigrationPreservesActiveModeAndSharesItsChoice() {
+        for (activeDual in listOf(false, true)) {
+            val prefs = MemoryPreferences()
+            val layout = ContentLayout.NETWORK_CENTER
+            prefs.edit().putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3)
+                .putBoolean(DUAL_SIGNAL_ENABLED_KEY, activeDual)
+                .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+                .putString(
+                    visualModeKey(true, visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY)),
+                    SignalDotArrangement.HORIZONTAL.persistedValue,
+                )
+                .putBoolean(
+                    visualModeKey(true, visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)),
+                    true,
+                ).apply()
+            migrateSignalDotArrangementsIfNeeded(prefs)
+            val chosen = if (activeDual) SignalDotArrangement.HORIZONTAL else SignalDotArrangement.CURVED
+            for (dual in listOf(false, true)) {
+                assertEquals(chosen, prefs.readVisualCfg(dual, layout).singleRowDotArrangement)
+                assertFalse(prefs.contains(
+                    visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY),
+                ))
+            }
+            assertEquals(
+                if (activeDual) SignalDotArrangement.HORIZONTAL else SignalDotArrangement.CURVED,
+                prefs.readVisualCfg(true, layout).dualRowDotArrangement,
+            )
+            assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+            val snapshot = prefs.all.toMap()
+            migrateSignalDotArrangementsIfNeeded(prefs)
+            assertEquals(snapshot, prefs.all)
+        }
+    }
+
+    @Test
+    fun threeLayoutsRememberSizesOffsetsAndStylesIndependently() {
+        val prefs = MemoryPreferences()
+        migrateSignalDotArrangementsIfNeeded(prefs)
+        assertEquals(0.85f, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).mobileTypeScale, 0f)
+        assertEquals(-3f, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).mobileTypeBottomOffsetY, 0f)
+        val centered = VisualCfg(
+            layout = ContentLayout.MOBILE_CENTER,
+            dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+            mobileTypeScale = 0.92f,
+            mobileTypeBottomOffsetY = 6f,
+            singleRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+        )
+        prefs.edit().putVisualCfg(centered).apply()
+        val battery = VisualCfg(
+            layout = ContentLayout.BATTERY_CENTER,
+            dualRowDotArrangement = SignalDotArrangement.CURVED,
+            mobileTypeScale = 0.77f,
+        )
+        prefs.edit().putVisualCfg(battery).apply()
+        val centeredSaved = prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER)
+        val batterySaved = prefs.readVisualCfg(false, ContentLayout.BATTERY_CENTER)
+        val normalSaved = prefs.readVisualCfg(false, ContentLayout.NETWORK_CENTER)
+        assertTrue(centeredSaved.centeredMobileSignal)
+        assertEquals(SignalDotArrangement.HORIZONTAL, centeredSaved.dualRowDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, centeredSaved.singleRowDotArrangement)
+        assertEquals(0.92f, centeredSaved.mobileTypeScale, 0f)
+        assertEquals(6f, centeredSaved.mobileTypeBottomOffsetY, 0f)
+        assertEquals(SignalDotArrangement.CURVED, batterySaved.dualRowDotArrangement)
+        assertEquals(0.77f, batterySaved.mobileTypeScale, 0f)
+        assertFalse(normalSaved.centeredMobileSignal)
+        assertEquals(SignalDotArrangement.CURVED, normalSaved.dualRowDotArrangement)
+        assertEquals(1f, normalSaved.mobileTypeScale, 0f)
+    }
+
+    @Test
+    fun bottomLabelOffsetAndStyleAreIsolatedAcrossSingleAndDualBanks() {
+        val prefs = MemoryPreferences()
+        migrateSignalDotArrangementsIfNeeded(prefs)
+        prefs.edit().putVisualCfg(
+            VisualCfg(layout = ContentLayout.MOBILE_CENTER, mobileTypeBottomOffsetY = 2f),
+        ).apply()
+        prefs.edit().putVisualCfg(
+            VisualCfg(
+                layout = ContentLayout.MOBILE_CENTER,
+                dualSignal = true,
+                mobileTypeBottomOffsetY = -7f,
+                dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+            ),
+        ).apply()
+        assertEquals(-7f, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).mobileTypeBottomOffsetY, 0f)
+        assertEquals(-7f, prefs.readVisualCfg(true, ContentLayout.MOBILE_CENTER).mobileTypeBottomOffsetY, 0f)
+        assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(false, ContentLayout.MOBILE_CENTER).dualRowDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, prefs.readVisualCfg(true, ContentLayout.MOBILE_CENTER).dualRowDotArrangement)
+    }
+
+
+    @Test
+    fun migratedLayoutsKeepVisibleDualValuesAndShareAcrossSimSwitches() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.MOBILE_CENTER
+        val shared = visualProfileKey(layout, WIFI_SIZE_SCALE_KEY)
+        val legacyDual = visualModeKey(true, shared)
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putFloat(shared, 0.72f)
+            .putFloat(legacyDual, 1.18f)
+            .putString(CONTENT_LAYOUT_KEY, layout.persistedValue)
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
+            .apply()
+        migrateSharedLayoutVisualsIfNeeded(prefs)
+        assertEquals(1.18f, prefs.readVisualCfg(dual = true).wifiScale, 0f)
+        assertEquals(1.18f, prefs.readVisualCfg(dual = false).wifiScale, 0f)
+        assertFalse(prefs.contains(legacyDual))
+        val snapshot = prefs.all.toMap()
+        migrateSharedLayoutVisualsIfNeeded(prefs)
+        assertEquals(snapshot, prefs.all)
+    }
+
+    @Test
+    fun migratingSingleModeDoesNotOverwriteItsSavedLayoutValues() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.BATTERY_CENTER
+        val shared = visualProfileKey(layout, WIFI_VERTICAL_OFFSET_KEY)
+        prefs.edit()
+            .putFloat(shared, -4f)
+            .putFloat(visualModeKey(true, shared), 7f)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
+            .apply()
+        migrateSharedLayoutVisualsIfNeeded(prefs)
+        assertEquals(-4f, prefs.readVisualCfg(false, layout).wifiOffsetY, 0f)
+        assertEquals(-4f, prefs.readVisualCfg(true, layout).wifiOffsetY, 0f)
+    }
+
+    @Test
+    fun migratingActiveDualKeepsDefaultWhenItsOldBankIsMissing() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.NETWORK_CENTER
+        val canonical = visualProfileKey(layout, WIFI_SIZE_SCALE_KEY)
+        val dualKey = visualModeKey(true, canonical)
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
+            .putFloat(canonical, 0.7f)
+            .putFloat(WIFI_SIZE_SCALE_KEY, 0.6f)
+            .apply()
+
+        migrateVisualPrefsIfNeeded(prefs)
+        assertEquals(WIFI_SIZE_SCALE_DEFAULT, prefs.readVisualCfg(dual = true).wifiScale, 0f)
+        assertEquals(WIFI_SIZE_SCALE_DEFAULT, prefs.readVisualCfg(dual = false).wifiScale, 0f)
+        assertFalse(prefs.contains(canonical))
+        assertFalse(prefs.contains(dualKey))
+        assertFalse(prefs.contains(WIFI_SIZE_SCALE_KEY))
+    }
+
+    @Test
+    fun migratingLegacySingleRootValueMakesItLayoutScoped() {
+        val prefs = MemoryPreferences()
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
+            .putFloat(WIFI_SIZE_SCALE_KEY, 0.82f)
+            .apply()
+
+        migrateVisualPrefsIfNeeded(prefs)
+        for (layout in ContentLayout.entries) {
+            assertEquals(0.82f, prefs.readVisualCfg(false, layout).wifiScale, 0f)
+            assertEquals(0.82f, prefs.readVisualCfg(true, layout).wifiScale, 0f)
+        }
+        assertFalse(prefs.contains(WIFI_SIZE_SCALE_KEY))
+        assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
+    }
+
+    @Test
+    fun b1734V4DualDotBanksSurviveSharedLayoutMigration() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.MOBILE_CENTER
+        val singleDotKey = visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY)
+        val dualDotKey = visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY)
+        val oldDualSingleKey = visualModeKey(true, singleDotKey)
+        val oldDualDotKey = visualModeKey(true, dualDotKey)
+        // B1734 finished the dot arrangement schema, but still kept
+        // separate single/dual preference banks for the same layout.
+        prefs.edit()
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putString(singleDotKey, SignalDotArrangement.CURVED.persistedValue)
+            .putString(dualDotKey, SignalDotArrangement.CURVED.persistedValue)
+            .putString(oldDualSingleKey, SignalDotArrangement.HORIZONTAL.persistedValue)
+            .putString(oldDualDotKey, SignalDotArrangement.HORIZONTAL.persistedValue)
+            .apply()
+
+        migrateVisualPrefsIfNeeded(prefs)
+
+        assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        for (dual in listOf(false, true)) {
+            val result = prefs.readVisualCfg(dual, layout)
+            assertEquals(SignalDotArrangement.HORIZONTAL, result.singleRowDotArrangement)
+            assertEquals(SignalDotArrangement.HORIZONTAL, result.dualRowDotArrangement)
+        }
+        assertFalse(prefs.contains(oldDualSingleKey))
+        assertFalse(prefs.contains(oldDualDotKey))
+        val snapshot = prefs.all.toMap()
+        migrateVisualPrefsIfNeeded(prefs)
+        assertEquals(snapshot, prefs.all)
+    }
+
+    @Test
+    fun combinedLegacyMigrationDoesNotRestoreStaleSingleModeRootStyles() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.NETWORK_CENTER
+        // Legacy per-mode selection is horizontal; these unscoped fields
+        // must not override the dot-style selection staged just before
+        // layout profile flattening in the same SharedPreferences.Editor.
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3)
+            .putString(
+                visualModeKey(false, LEGACY_DUAL_DOT_STYLE_KEY),
+                SignalDotArrangement.HORIZONTAL.persistedValue,
+            )
+            .putString(DUAL_ROW_DOT_ARRANGEMENT_KEY, SignalDotArrangement.CURVED.persistedValue)
+            .putString(SINGLE_ROW_DOT_STYLE_KEY, SignalDotArrangement.HORIZONTAL.persistedValue)
+            .apply()
+
+        migrateVisualPrefsIfNeeded(prefs)
+
+        for (dual in listOf(false, true)) {
+            val cfg = prefs.readVisualCfg(dual, layout)
+            assertEquals(SignalDotArrangement.HORIZONTAL, cfg.dualRowDotArrangement)
+            assertEquals(SignalDotArrangement.CURVED, cfg.singleRowDotArrangement)
+        }
+        assertFalse(prefs.contains(DUAL_ROW_DOT_ARRANGEMENT_KEY))
+        assertFalse(prefs.contains(SINGLE_ROW_DOT_STYLE_KEY))
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
+        val migrated = prefs.all.toMap()
+        migrateVisualPrefsIfNeeded(prefs)
+        assertEquals(migrated, prefs.all)
+    }
+
+    @Test
+    fun freshLegacyMigrationPublishesBothSchemasInOneWrite() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.MOBILE_CENTER
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3)
+            .putString(
+                visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY),
+                SignalDotArrangement.HORIZONTAL.persistedValue,
+            )
+            .putBoolean(
+                visualModeKey(true, visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)),
+                true,
+            )
+            .putFloat(
+                visualModeKey(true, visualProfileKey(layout, WIFI_SIZE_SCALE_KEY)),
+                0.91f,
+            )
+            .apply()
+        val priorWrites = prefs.writeCount
+
+        migrateVisualPrefsIfNeeded(prefs)
+
+        // The old dot-style conversion and profile flattening are one durable write.
+        assertEquals(priorWrites + 1, prefs.writeCount)
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
+        for (dual in listOf(false, true)) {
+            val cfg = prefs.readVisualCfg(dual, layout)
+            assertEquals(SignalDotArrangement.HORIZONTAL, cfg.dualRowDotArrangement)
+            assertEquals(SignalDotArrangement.HORIZONTAL, cfg.singleRowDotArrangement)
+            assertEquals(0.91f, cfg.wifiScale, 0f)
+        }
+        assertFalse(prefs.contains(visualModeKey(true, visualProfileKey(layout, WIFI_SIZE_SCALE_KEY))))
+        val migrated = prefs.all.toMap()
+        migrateVisualPrefsIfNeeded(prefs)
+        assertEquals(migrated, prefs.all)
+        assertEquals(priorWrites + 1, prefs.writeCount)
+    }
+
+    @Test
+    fun preV4DualDotStyleIsRetainedWhenFlatteningOldProfiles() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.MOBILE_CENTER
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 3)
+            .putString(
+                visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY),
+                SignalDotArrangement.HORIZONTAL.persistedValue,
+            )
+            .putBoolean(
+                visualModeKey(true, visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)),
+                true,
+            )
+            .apply()
+
+        migrateVisualPrefsIfNeeded(prefs)
+        val migrated = prefs.readVisualCfg(dual = true, layoutOverride = layout)
+        assertEquals(SignalDotArrangement.HORIZONTAL, migrated.singleRowDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, migrated.dualRowDotArrangement)
+        assertEquals(
+            migrated.copy(dualSignal = false),
+            prefs.readVisualCfg(dual = false, layoutOverride = layout),
+        )
+        assertFalse(prefs.contains(visualModeKey(true, LEGACY_DUAL_DOT_STYLE_KEY)))
+        assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
     }
 
     private class MemoryPreferences : SharedPreferences {
         private val values = mutableMapOf<String, Any>()
+        var writeCount = 0
+            private set
 
         override fun getAll(): MutableMap<String, *> = values.toMutableMap()
         override fun contains(key: String?): Boolean = values.containsKey(key)
@@ -811,6 +967,7 @@ class VisualPersistenceTest {
             }
 
             override fun commit(): Boolean {
+                writeCount++
                 if (clearFirst) values.clear()
                 changes.forEach { (key, value) ->
                     if (value == null) values.remove(key) else values[key] = value

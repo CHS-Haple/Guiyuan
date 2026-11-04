@@ -755,9 +755,15 @@ internal object KeyguardRenderSession {
                     logicalWidthPx = anchorRect.width(),
                     logicalHeightPx = anchorRect.height(),
                 )
+            val bottomOverflowPx =
+                renderView.requiredBottomOverflowPx(
+                    logicalWidthPx = anchorRect.width(),
+                    logicalHeightPx = anchorRect.height(),
+                )
             applyAnchorBounds(
                 bounds = anchorRect,
                 topOverflowPx = topOverflowPx,
+                bottomOverflowPx = bottomOverflowPx,
             )
             layoutReady = true
             if (!layoutLogged) {
@@ -815,12 +821,14 @@ internal object KeyguardRenderSession {
         private fun applyAnchorBounds(
             bounds: Rect,
             topOverflowPx: Int,
+            bottomOverflowPx: Int,
         ) {
             val physical =
                 VerticalOverflowPolicy.resolve(
                     logicalTopPx = bounds.top,
                     logicalHeightPx = bounds.height(),
                     requestedTopOverflowPx = topOverflowPx,
+                    requestedBottomOverflowPx = bottomOverflowPx,
                 )
             renderView.setLogicalViewport(
                 widthPx = bounds.width(),
@@ -846,7 +854,7 @@ internal object KeyguardRenderSession {
                 bounds.left,
                 physical.physicalTopPx,
                 bounds.right,
-                bounds.bottom,
+                bounds.bottom + bottomOverflowPx,
             )
         }
 
