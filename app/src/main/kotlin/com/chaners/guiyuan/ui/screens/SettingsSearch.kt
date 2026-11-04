@@ -19,6 +19,9 @@ import kotlinx.coroutines.withContext
 import com.chaners.guiyuan.R
 import java.util.Locale
 
+private fun foldSearch(text: String): String =
+    text.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+
 // Index terms, not configuration values. The native ICU table supplies Han pronunciations.
 internal class SearchTerm(
     text: String,
@@ -26,26 +29,25 @@ internal class SearchTerm(
     foreign: Boolean = false,
 ) {
     private val allowInitials = !foreign || text.any { it.isLetter() && it.code > 127 }
-    private val plain = fold(text)
+    private val plain = foldSearch(text)
     private val tokens = romanized.lowercase(Locale.ROOT)
         .split(Regex("[^a-z0-9]+"))
         .filter(String::isNotEmpty)
     private val full = tokens.joinToString("")
     private val initials = tokens.joinToString("") { it.take(1) }
 
-    fun matches(input: String, includeInitials: Boolean = true): Boolean {
-        val term = fold(input)
-        return term.isNotEmpty() &&
+    fun matches(input: String, includeInitials: Boolean = true): Boolean =
+        matchesFolded(foldSearch(input), includeInitials)
+
+    fun matchesInitials(input: String): Boolean =
+        matchesInitialsFolded(foldSearch(input))
+
+    internal fun matchesFolded(term: String, includeInitials: Boolean = true): Boolean =
+        term.isNotEmpty() &&
             (term in plain || term in full || (includeInitials && allowInitials && term in initials))
-    }
 
-    fun matchesInitials(input: String): Boolean {
-        val term = fold(input)
-        return term.isNotEmpty() && allowInitials && term in initials
-    }
-
-    private fun fold(text: String) =
-        text.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+    internal fun matchesInitialsFolded(term: String): Boolean =
+        term.isNotEmpty() && allowInitials && term in initials
 }
 
 private val cellularTerms = listOf(
@@ -156,12 +158,13 @@ internal class PageSearch(private val context: Context) {
             null
         } else {
             val terms = index
+            val foldedQuery = foldSearch(query)
             SearchMatches(
                 FeatureSearchIds.all,
-                { id -> terms?.titles?.get(id)?.current?.matches(query) ?: quickMatch(id) },
-                { id -> terms?.aliases?.get(id)?.any { it.matches(query) } ?: quickAlias(id) },
-                { id -> terms?.titles?.get(id)?.other?.any { it.matches(query, includeInitials = false) } == true },
-                { id -> terms?.titles?.get(id)?.other?.any { it.matchesInitials(query) } == true },
+                { id -> terms?.titles?.get(id)?.current?.matchesFolded(foldedQuery) ?: quickMatch(id, foldedQuery) },
+                { id -> terms?.aliases?.get(id)?.any { it.matchesFolded(foldedQuery) } ?: quickAlias(id, foldedQuery) },
+                { id -> terms?.titles?.get(id)?.other?.any { it.matchesFolded(foldedQuery, includeInitials = false) } == true },
+                { id -> terms?.titles?.get(id)?.other?.any { it.matchesInitialsFolded(foldedQuery) } == true },
             )
         }
     }
@@ -182,14 +185,11 @@ internal class PageSearch(private val context: Context) {
 
     // The index may still be preparing when the user types immediately after opening the page.
     // Use only cheap current-language and curated-name checks until the complete index arrives.
-    private fun quickMatch(@StringRes id: Int): Boolean =
-        fold(context.getString(id)).contains(fold(query))
+    private fun quickMatch(@StringRes id: Int, foldedQuery: String): Boolean =
+        foldSearch(context.getString(id)).contains(foldedQuery)
 
-    private fun quickAlias(@StringRes id: Int): Boolean =
-        searchAliases(id).any { fold(it).contains(fold(query)) }
-
-    private fun fold(value: String): String =
-        value.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+    private fun quickAlias(@StringRes id: Int, foldedQuery: String): Boolean =
+        searchAliases(id).any { foldSearch(it).contains(foldedQuery) }
 
     private fun buildIndex(): Index {
         val romanizer = runCatching {
