@@ -3676,6 +3676,19 @@ internal class StatusPainter(
         mobileOffsetY: Float,
         centered: Boolean = false,
     ) {
+        if (row == null && aggregateRows != null && model.dualMobileLevels != null &&
+            style == SignalDotArrangement.LEFT_RIGHT && !centered
+        ) {
+            // The native aggregate has no SIM-to-row identity. Each cluster
+            // changes shape locally rather than mapping to an unknown native row.
+            for (localRow in 0..1) {
+                drawMobileSignalTransition(
+                    canvas, model, tint, opacity, geometry, shapeProgress,
+                    null, null, null, null, localRow, style, mobileOffsetY,
+                )
+            }
+            return
+        }
         val layout =
             when {
                 centered -> resolveCenteredMobileTransitionLayout(geometry, row)
@@ -4453,10 +4466,9 @@ internal class StatusPainter(
         const val NATIVE_STEADY_APPEAR_THRESHOLD = 0.999f
         const val BATTERY_COMPONENT_CENTER_X = 60f
         const val BATTERY_COMPONENT_CENTER_Y = 58f
-        // The six-o'clock ring tangent is y=108. Keep the ink 4 units inside
-        // so even the largest supported bottom icon clears the canvas edge.
+        // Center the native icon ink on the ring's actual six-o'clock tangent.
         const val LEFT_RIGHT_BOTTOM_INK_CENTER_Y =
-            BATTERY_COMPONENT_CENTER_Y + OuterGeometry.RING_RADIUS - 4f
+            BATTERY_COMPONENT_CENTER_Y + OuterGeometry.RING_RADIUS
         const val BATTERY_TOP_TEXT_SIZE = 24f
         const val BATTERY_TOP_CHARGING_ICON_SIZE = 18f
         const val IDLE_ACTIVITY_OPACITY = 0.28f

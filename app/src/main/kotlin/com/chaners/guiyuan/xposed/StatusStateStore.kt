@@ -298,38 +298,49 @@ internal object StatusStateStore {
             offset += MOBILE_STRIDE
         }
 
-        val selectedWifi = observed.wifi.takeUnless { it == WifiState.Unknown } ?: wifi
-        current =
-            Snapshot(
+        val activity = bundle.getIntArray(KEY_MOBILE_ACTIVITY_RES_IDS) ?: IntArray(0)
+        val transferredActivity = buildMap {
+            for (index in 0 until activity.size - 1 step 2) {
+                if (activity[index] >= 0 && activity[index + 1] > 0) {
+                    put(activity[index], activity[index + 1])
+                }
+            }
+        }
+        current = mergeHotReloadSnapshots(
+            saved = Snapshot(
                 battery = battery,
-                wifi = selectedWifi,
-                wifiActivityResId = if (selectedWifi is WifiState.Visible) {
-                    if (observed.wifiActivityObserved) observed.wifiActivityResId
-                    else bundle.getInt(KEY_WIFI_ACTIVITY_RES_ID).takeIf { it > 0 }
-                } else null,
-                wifiActivityObserved = observed.wifiActivityObserved,
-                mobile = mobile.apply { putAll(observed.mobile) },
-                mobileActivityResIds = buildMap {
-                    if (observed.airplaneMode != true) {
-                        val activity = bundle.getIntArray(KEY_MOBILE_ACTIVITY_RES_IDS) ?: IntArray(0)
-                        for (index in 0 until activity.size - 1 step 2) {
-                            if (activity[index] >= 0 && activity[index + 1] > 0) {
-                                put(activity[index], activity[index + 1])
-                            }
-                        }
-                    }
-                    // New collector results take precedence even when they explicitly
-                    // say that the old subscription's activity icon is absent.
-                    observed.mobileActivityObservedIds.forEach { remove(it) }
-                    if (observed.airplaneMode != true) putAll(observed.mobileActivityResIds)
-                },
-                mobileActivityObservedIds = observed.mobileActivityObservedIds,
-                airplaneMode = observed.airplaneMode ?: airplane,
-                mobileRecoveryPending =
-                    bundle.getBoolean(KEY_MOBILE_RECOVERY_PENDING, false),
-            )
+                wifi = wifi,
+                wifiActivityResId = bundle.getInt(KEY_WIFI_ACTIVITY_RES_ID).takeIf { it > 0 },
+                mobile = mobile,
+                mobileActivityResIds = transferredActivity,
+                airplaneMode = airplane,
+                mobileRecoveryPending = bundle.getBoolean(KEY_MOBILE_RECOVERY_PENDING, false),
+            ),
+            fresh = observed,
+        )
         observed.battery?.let(::updateBattery)
         return current
+    }
+
+    // Reconcile two generations without involving Android Bundle serialization.
+    internal fun mergeHotReloadSnapshots(saved: Snapshot, fresh: Snapshot): Snapshot {
+        val wifi = fresh.wifi.takeUnless { it == WifiState.Unknown } ?: saved.wifi
+        return saved.copy(
+            wifi = wifi,
+            wifiActivityResId = if (wifi is WifiState.Visible) {
+                if (fresh.wifiActivityObserved) fresh.wifiActivityResId
+                else saved.wifiActivityResId
+            } else null,
+            wifiActivityObserved = fresh.wifiActivityObserved,
+            mobile = saved.mobile.toSortedMap().apply { putAll(fresh.mobile) },
+            mobileActivityResIds = buildMap {
+                if (fresh.airplaneMode != true) putAll(saved.mobileActivityResIds)
+                fresh.mobileActivityObservedIds.forEach { remove(it) }
+                if (fresh.airplaneMode != true) putAll(fresh.mobileActivityResIds)
+            },
+            mobileActivityObservedIds = fresh.mobileActivityObservedIds,
+            airplaneMode = fresh.airplaneMode ?: saved.airplaneMode,
+        )
     }
 
     private fun encodeSignal(signal: SignalStrength): Int =

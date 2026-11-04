@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import kotlin.math.min
@@ -10,13 +9,6 @@ import kotlin.math.sqrt
 internal object CcTransitionPolicy {
     private const val LATENT_REVEAL_COMPLETE_FRACTION = 0.35f
 
-    // Aggregated native mobile rows have no authoritative SIM-to-row mapping.
-    // Only split left/right dots would have to cross the shared group envelope
-    // during the dot-to-bar morph; their native handoff keeps a rigid source.
-    fun canMorphAggregateMobile(
-        arrangement: SignalDotArrangement,
-        centered: Boolean,
-    ): Boolean = arrangement != SignalDotArrangement.LEFT_RIGHT || centered
     fun geometryProgress(raw: Float): Float =
         if (raw.isFinite()) raw.coerceIn(0f, 1f) else 0f
 

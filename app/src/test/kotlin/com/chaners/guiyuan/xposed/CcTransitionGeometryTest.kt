@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.SignalDotArrangement
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -8,15 +7,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CcTransitionGeometryTest {
-    @Test
-    fun splitLeftRightKeepsRigidHandoffOnlyForUnidentifiedAggregateRows() {
-        val morph = CcTransitionPolicy::canMorphAggregateMobile
-        assertTrue(morph(SignalDotArrangement.CURVED, false))
-        assertTrue(morph(SignalDotArrangement.HORIZONTAL, false))
-        assertTrue(morph(SignalDotArrangement.LEFT_RIGHT, true))
-        assertFalse(morph(SignalDotArrangement.LEFT_RIGHT, false))
-    }
-
     @Test
     fun nativeWifiReflowUsesLastCoherentBatteryRelativeTarget() {
         val normalWifi = floatArrayOf(1195.5f, 240f, 75f, 0f, 0f, 75f)

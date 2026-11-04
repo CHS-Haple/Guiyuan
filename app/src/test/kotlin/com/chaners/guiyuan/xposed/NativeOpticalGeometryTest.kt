@@ -12,7 +12,7 @@ class NativeOpticalGeometryTest {
             for (scale in listOf(0.7f, 1f, 1.2f)) {
                 val w = 18f * scale
                 val h = 26f * scale
-                val anchor = 104f - offset
+                val anchor = 108f - offset
                 val origin = NativeOpticalGeometry.viewportCenterForInkAnchor(
                     anchorX = 60f, anchorY = anchor,
                     drawWidth = w, drawHeight = h,
@@ -27,7 +27,7 @@ class NativeOpticalGeometryTest {
     @Test
     fun opticalInkCenterStaysOnOneBottomAnchorAcrossIconSizes() {
         val anchorX = 60f
-        val anchorY = 104f
+        val anchorY = 108f
         for (size in listOf(0.7f, 1f, 1.2f)) {
             val width = 23f * size
             val height = 28f * size
