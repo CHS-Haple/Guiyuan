@@ -1377,15 +1377,11 @@ internal object CcTransitionOwner {
                                 StatusPainter.TransitionComponent.CENTER &&
                                 model.centerIndicator is CenterIndicator.MobileType
                         )
+                // Motion authority and visibility timing are independent.
+                // Bottom charging follows the dual-mobile geometry but must
+                // retain the same charging clip/reveal timeline as the top bolt.
                 val chargingSourceVisibleFraction =
-                    if (spec.followDualMobileMotion) {
-                        // Hide the bottom bolt during the existing dot-group
-                        // move phase, not during the battery ring's retract.
-                        1f - MobileSignalMorphPolicy.moveProgress(motionProgress)
-                    } else if (
-                        spec.component ==
-                        StatusPainter.TransitionComponent.CHARGING_ICON
-                    ) {
+                    if (spec.component == StatusPainter.TransitionComponent.CHARGING_ICON) {
                         BatteryNumberFollowerPolicy
                             .chargingSourceVisibleFraction(motionProgress)
                     } else {
@@ -1517,17 +1513,11 @@ internal object CcTransitionOwner {
                         spec.component ==
                         StatusPainter.TransitionComponent.CHARGING_ICON
                     ) {
-                        if (spec.followDualMobileMotion &&
-                            chargingSourceVisibleFraction > 0f
-                        ) {
-                            chargingSourceVisibleFraction
-                        } else {
-                            BatteryNumberFollowerPolicy
-                                .chargingVisibleFraction(
-                                    progress = motionProgress,
-                                    targetAvailable = targetGeometry != null,
-                                )
-                        }
+                        BatteryNumberFollowerPolicy
+                            .chargingVisibleFraction(
+                                progress = motionProgress,
+                                targetAvailable = targetGeometry != null,
+                            )
                     } else if (matchedTargetGeometry != null || wifiCenter) {
                         // FINAL may bind after the source changes; FAKE alpha owns the handoff.
                         1f
