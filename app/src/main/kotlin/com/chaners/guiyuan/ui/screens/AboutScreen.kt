@@ -22,6 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
@@ -105,6 +107,14 @@ internal fun AboutScreen(
         }
     }
     val visible by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
+    // The scrolling content owns the foreground boundary; hero pixels must not cover its rows.
+    val aboutContentTop by remember(listState) {
+        derivedStateOf {
+            listState.layoutInfo.visibleItemsInfo
+                .firstOrNull { it.key == "aboutContent" }
+                ?.offset
+        }
+    }
     val collapse by remember {
         derivedStateOf {
             val offset = listState.firstVisibleItemScrollOffset.toFloat()
@@ -151,31 +161,43 @@ internal fun AboutScreen(
             ) {}
         },
         foreground = { padding ->
-            AboutHero(
-                topPadding = padding.calculateTopPadding(),
-                active = visible,
-                backdrop = if (blur) backdrop else null,
-                logoBlend = logoBlend,
-                versionProgress = collapse.first,
-                nameProgress = collapse.second,
-                iconProgress = collapse.third,
-                onHeight = { if (heroHeight != it) heroHeight = it },
-                onIconBottom = {
-                    if (listState.firstVisibleItemIndex == 0 &&
-                        listState.firstVisibleItemScrollOffset == 0 && iconBottom != it
-                    ) iconBottom = it
-                },
-                onNameBottom = {
-                    if (listState.firstVisibleItemIndex == 0 &&
-                        listState.firstVisibleItemScrollOffset == 0 && nameBottom != it
-                    ) nameBottom = it
-                },
-                onVersionBottom = {
-                    if (listState.firstVisibleItemIndex == 0 &&
-                        listState.firstVisibleItemScrollOffset == 0 && versionBottom != it
-                    ) versionBottom = it
-                },
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawWithContent {
+                        // LazyColumn and the hero share the SettingsPage content origin.
+                        // Clip the hero before the first real row even if the fade state lags.
+                        clipRect(bottom = aboutHeroClipBottom(aboutContentTop, size.height)) {
+                            drawContent()
+                        }
+                    },
+            ) {
+                AboutHero(
+                    topPadding = padding.calculateTopPadding(),
+                    active = visible,
+                    backdrop = if (blur) backdrop else null,
+                    logoBlend = logoBlend,
+                    versionProgress = collapse.first,
+                    nameProgress = collapse.second,
+                    iconProgress = collapse.third,
+                    onHeight = { if (heroHeight != it) heroHeight = it },
+                    onIconBottom = {
+                        if (listState.firstVisibleItemIndex == 0 &&
+                            listState.firstVisibleItemScrollOffset == 0 && iconBottom != it
+                        ) iconBottom = it
+                    },
+                    onNameBottom = {
+                        if (listState.firstVisibleItemIndex == 0 &&
+                            listState.firstVisibleItemScrollOffset == 0 && nameBottom != it
+                        ) nameBottom = it
+                    },
+                    onVersionBottom = {
+                        if (listState.firstVisibleItemIndex == 0 &&
+                            listState.firstVisibleItemScrollOffset == 0 && versionBottom != it
+                        ) versionBottom = it
+                    },
+                )
+            }
         },
         overlay = {
             UiOverlayDialog(
@@ -366,6 +388,11 @@ internal fun AboutScreen(
         }
     }
 }
+
+
+/** Prevent a fixed About hero from drawing across the LazyColumn's first content row. */
+internal fun aboutHeroClipBottom(contentTopPx: Int?, viewportHeightPx: Float): Float =
+    (contentTopPx?.toFloat() ?: viewportHeightPx).coerceIn(0f, viewportHeightPx)
 
 @Composable
 internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
