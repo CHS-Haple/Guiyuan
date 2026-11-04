@@ -94,6 +94,7 @@ internal object StatusStateStore {
         current =
             current.copy(
                 mobile = mobile,
+                mobileActivityResIds = if (enabled) emptyMap() else current.mobileActivityResIds,
                 airplaneMode = enabled,
                 mobileRecoveryPending = recoveryPending,
             )
@@ -285,12 +286,15 @@ internal object StatusStateStore {
             offset += MOBILE_STRIDE
         }
 
+        val selectedWifi = observed.wifi.takeUnless { it == WifiState.Unknown } ?: wifi
         current =
             Snapshot(
                 battery = battery,
-                wifi = observed.wifi.takeUnless { it == WifiState.Unknown } ?: wifi,
-                wifiActivityResId = observed.wifiActivityResId
-                    ?: bundle.getInt(KEY_WIFI_ACTIVITY_RES_ID).takeIf { it != 0 },
+                wifi = selectedWifi,
+                wifiActivityResId = if (selectedWifi is WifiState.Visible) {
+                    observed.wifiActivityResId
+                        ?: bundle.getInt(KEY_WIFI_ACTIVITY_RES_ID).takeIf { it > 0 }
+                } else null,
                 mobile = mobile.apply { putAll(observed.mobile) },
                 mobileActivityResIds = buildMap {
                     val activity = bundle.getIntArray(KEY_MOBILE_ACTIVITY_RES_IDS) ?: IntArray(0)
