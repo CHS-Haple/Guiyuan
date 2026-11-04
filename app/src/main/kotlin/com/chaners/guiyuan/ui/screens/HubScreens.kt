@@ -608,7 +608,7 @@ internal fun FeaturesScreen(
                             checked = visual.leftRightShowActivity,
                             enabled = featureCfg.enabled,
                             startAction = {
-                                SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled)
+                                SemanticLeadingIcon(R.drawable.ic_material_symbol_swap_vert, featureCfg.enabled)
                             },
                             onCheckedChange = visualRepo::setLeftRightShowActivity,
                         )
@@ -621,7 +621,7 @@ internal fun FeaturesScreen(
                                 checked = visual.leftRightShowIdleActivity,
                                 enabled = featureCfg.enabled,
                                 startAction = {
-                                    SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled)
+                                    SemanticLeadingIcon(R.drawable.ic_material_symbol_swap_vert, featureCfg.enabled)
                                 },
                                 onCheckedChange = visualRepo::setLeftRightShowIdleActivity,
                             )
@@ -633,7 +633,7 @@ internal fun FeaturesScreen(
                                 title = stringResource(R.string.left_right_activity_size),
                                 startAction = {
                                     SemanticLeadingIcon(
-                                        R.drawable.ic_material_symbol_wifi,
+                                        R.drawable.ic_material_symbol_swap_vert,
                                         featureCfg.enabled,
                                         R.drawable.ic_material_symbol_open_in_full,
                                     )
@@ -658,7 +658,7 @@ internal fun FeaturesScreen(
                                 title = stringResource(R.string.left_right_activity_vertical_offset),
                                 startAction = {
                                     SemanticLeadingIcon(
-                                        R.drawable.ic_material_symbol_wifi,
+                                        R.drawable.ic_material_symbol_swap_vert,
                                         featureCfg.enabled,
                                         R.drawable.ic_material_symbol_height_w500,
                                     )
