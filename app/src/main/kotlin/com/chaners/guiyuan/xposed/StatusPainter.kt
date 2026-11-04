@@ -4072,8 +4072,7 @@ internal class StatusPainter(
         if (outsideAmount <= 0f) return
 
         val chargeIcon = model.chargingIconResId?.takeIf { it > 0 }
-        val bottomCharging = visual.leftRightBottomCharging && model.charging &&
-            chargeIcon != null
+        val bottomCharging = visual.leftRightBottomCharging && model.charging
         val resourceId = if (bottomCharging) chargeIcon
         else if (visual.leftRightShowActivity) model.networkActivityResId
         else null
