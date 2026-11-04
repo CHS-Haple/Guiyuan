@@ -516,6 +516,30 @@ internal object SysUiNetworkSource {
                         )
                 }
 
+            // Keep native mobile activity ownership on the source's bound SIM View.
+            runCatching {
+                val collector = Class.forName(MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME, false, classLoader)
+                val activityField = collector.getDeclaredField("\$leftInOut").apply { isAccessible = true }
+                val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
+                module.hook(method)
+                    .setId(MOBILE_ACTIVITY_HOOK_ID)
+                    .intercept(Hooker { chain ->
+                        val result = chain.proceed()
+                        if (active.get()) {
+                            val image = readOrNull { activityField.get(chain.thisObject) as? ImageView }
+                            val subId = image?.let(::findMobileSubscription)
+                            if (image != null && subId != null) {
+                                try {
+                                    onMobileActivity(subId, (image.tag as? Number)?.toInt())
+                                } catch (error: Throwable) {
+                                    callbackFailed("mobile-activity", error, onRuntimeFailure)
+                                }
+                            }
+                        }
+                        result
+                    })
+            }.onSuccess { created += it }.onFailure(::rethrowFatal)
+
             active.set(true)
             BranchInstallResult(
                 handles = created.toList(),
