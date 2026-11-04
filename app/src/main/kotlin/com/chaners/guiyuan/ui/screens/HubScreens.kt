@@ -621,7 +621,7 @@ internal fun FeaturesScreen(
                                 checked = visual.leftRightShowIdleActivity,
                                 enabled = featureCfg.enabled,
                                 startAction = {
-                                    SemanticLeadingIcon(R.drawable.ic_material_symbol_swap_vert, featureCfg.enabled)
+                                    SemanticLeadingIcon(R.drawable.ic_material_symbol_swap_vert_outline, featureCfg.enabled)
                                 },
                                 onCheckedChange = visualRepo::setLeftRightShowIdleActivity,
                             )
