@@ -447,8 +447,21 @@ internal object OuterGeometry {
 
         private fun leftRightDotAngle(index: Int, row: Int): Double {
             require(index in 0 until DOT_COUNT && row in 0..1)
-            val degrees = if (row == 0) 118f + index * 14f else 62f - index * 14f
-            return Math.toRadians(degrees.toDouble())
+            val minimumChord = 2f * dualMobileDotRadius + 1f
+            val step = max(
+                14.0,
+                Math.toDegrees(2.0 * kotlin.math.asin(
+                    (minimumChord / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
+                )),
+            )
+            val ringClearance = ringStroke / 2f + dualMobileDotRadius + 2f
+            val endMargin = Math.toDegrees(2.0 * kotlin.math.asin(
+                (ringClearance / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
+            ))
+            val first = minOf(118.0, 180.0 - 3.0 * step - endMargin)
+            val degrees = if (row == 0) first + index * step
+                else 180.0 - first - index * step
+            return Math.toRadians(degrees)
         }
 
         // Balance visible ring-to-dot clearance against adjacent dot spacing.
