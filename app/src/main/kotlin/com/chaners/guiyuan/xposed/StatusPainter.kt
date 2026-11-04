@@ -4070,13 +4070,13 @@ internal class StatusPainter(
         }
         if (outsideAmount <= 0f) return
 
-        val chargeIcon = model.chargingIconResId?.takeIf { it != 0 }
+        val chargeIcon = model.chargingIconResId?.takeIf { it > 0 }
         val bottomCharging = visual.leftRightBottomCharging && model.charging &&
             chargeIcon != null
         val resourceId = if (bottomCharging) chargeIcon
         else if (visual.leftRightShowActivity) model.networkActivityResId
         else null
-        if (resourceId == null || resourceId == 0) return
+        if (resourceId == null || resourceId <= 0) return
 
         drawNativeCenterResource(
             canvas = canvas,
@@ -4084,10 +4084,10 @@ internal class StatusPainter(
                 packageName = SYSTEM_UI_PACKAGE,
                 resourceId = resourceId,
             ),
-            tint = if (bottomCharging) colors.chargingIconTint else colors.mobileTint,
+            tint = if (bottomCharging) colors.chargingIconTint else colors.centerTint,
             opacity = opacity * outsideAmount,
             centerX = BATTERY_COMPONENT_CENTER_X,
-            centerY = 109f,
+            centerY = 100f,
             maxWidth = 13f,
             maxHeight = 13f,
             nativeTransform = nativeTransform,
