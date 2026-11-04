@@ -597,22 +597,24 @@ internal fun FeaturesScreen(
                         )
                     }
                 }
-                AnimatedPreferenceGroup(
-                    visible = visual.dualSignal &&
-                        visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT,
-                ) {
-                    if (search.matches(R.string.left_right_activity_title)) {
-                        SwitchPreference(
-                            title = stringResource(R.string.left_right_activity_title),
-                            summary = stringResource(R.string.left_right_activity_summary),
-                            checked = visual.leftRightShowActivity,
-                            enabled = featureCfg.enabled,
-                            startAction = {
-                                SemanticLeadingIcon(R.drawable.ic_material_symbol_swap_vert, featureCfg.enabled)
-                            },
-                            onCheckedChange = visualRepo::setLeftRightShowActivity,
-                        )
-                    }
+                val leftRightArrangement = visual.dualSignal &&
+                    visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT
+                if (search.matches(R.string.left_right_activity_title)) {
+                    SwitchPreference(
+                        title = stringResource(R.string.left_right_activity_title),
+                        summary = stringResource(
+                            if (leftRightArrangement) R.string.left_right_activity_summary
+                            else R.string.left_right_activity_unavailable_summary,
+                        ),
+                        checked = visual.leftRightShowActivity,
+                        enabled = featureCfg.enabled && leftRightArrangement,
+                        startAction = {
+                            SemanticLeadingIcon(R.drawable.ic_material_symbol_swap_vert, featureCfg.enabled && leftRightArrangement)
+                        },
+                        onCheckedChange = visualRepo::setLeftRightShowActivity,
+                    )
+                }
+                AnimatedPreferenceGroup(visible = leftRightArrangement) {
                     AnimatedPreferenceGroup(visible = visual.leftRightShowActivity) {
                         if (search.matches(R.string.left_right_idle_activity_title)) {
                             SwitchPreference(
