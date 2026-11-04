@@ -24,6 +24,8 @@ internal object SysUiNetworkSource {
     const val WIFI_ICON_EMITTER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder\$bind\$1\$1\$2\$1"
     const val WIFI_ICON_EMIT_METHOD_NAME = "emit"
+    private const val WIFI_ACTIVITY_COLLECTOR_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder\$bind\$1\$1\$4\$1"
     const val WIFI_LOCATION_VIEW_MODEL_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.wifi.ui.viewmodel.LocationBasedWifiViewModel"
     private const val WIFI_ICON_VISIBLE_CLASS_NAME =
@@ -55,21 +57,27 @@ internal object SysUiNetworkSource {
     const val MOBILE_SIGNAL_EMITTER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$1\$1\$4\$2"
     const val MOBILE_SIGNAL_EMIT_METHOD_NAME = "emit"
+    private const val MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$1\$1\$8\$1"
 
-    const val HOOK_COUNT = 4
+    const val HOOK_COUNT = 6
 
     private const val WIFI_BIND_HOOK_ID = "combinedstatus.network.wifi.bind"
     private const val WIFI_ICON_HOOK_ID = "combinedstatus.network.wifi.icon"
+    private const val WIFI_ACTIVITY_HOOK_ID = "combinedstatus.network.wifi.activity"
     private const val WIFI_ICON_COLLECTOR_CLASS_ID = 1
     private const val MAX_PARENT_CHAIN_DEPTH = 8
     private const val MOBILE_BIND_HOOK_ID = "combinedstatus.network.mobile.bind"
     private const val MOBILE_SIGNAL_HOOK_ID = "combinedstatus.network.mobile.signal"
+    private const val MOBILE_ACTIVITY_HOOK_ID = "combinedstatus.network.mobile.activity"
 
     private val hookIds = setOf(
         WIFI_BIND_HOOK_ID,
         WIFI_ICON_HOOK_ID,
+        WIFI_ACTIVITY_HOOK_ID,
         MOBILE_BIND_HOOK_ID,
         MOBILE_SIGNAL_HOOK_ID,
+        MOBILE_ACTIVITY_HOOK_ID,
     )
 
     internal fun rethrowFatal(error: Throwable) {
@@ -183,8 +191,10 @@ internal object SysUiNetworkSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onWifiState: (StatusStateStore.WifiState) -> Unit,
+        onWifiActivity: (Int?) -> Unit,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
+        onMobileActivity: (subscriptionId: Int, resourceId: Int?) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -219,6 +229,7 @@ internal object SysUiNetworkSource {
                 module = module,
                 classLoader = classLoader,
                 onWifiState = onWifiState,
+                onWifiActivity = onWifiActivity,
                 onRuntimeFailure = onRuntimeFailure,
                 onEvent = diagnosticEvent,
                 isDetailedDiagnosticsEnabled = diagnosticEnabled,
@@ -228,6 +239,7 @@ internal object SysUiNetworkSource {
                 module = module,
                 classLoader = classLoader,
                 onMobileSignal = onMobileSignal,
+                onMobileActivity = onMobileActivity,
                 onPresentationChanged = onPresentationChanged,
                 onRuntimeFailure = onRuntimeFailure,
                 onEvent = diagnosticEvent,
@@ -246,6 +258,7 @@ internal object SysUiNetworkSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onWifiState: (StatusStateStore.WifiState) -> Unit,
+        onWifiActivity: (Int?) -> Unit,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -379,6 +392,7 @@ internal object SysUiNetworkSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
+        onMobileActivity: (subscriptionId: Int, resourceId: Int?) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
