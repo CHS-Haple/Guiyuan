@@ -21,6 +21,28 @@ class SearchTermTest {
     }
 
     @Test
+    fun preFoldedQueriesPreserveRegularAndInitialsMatches() {
+        val terms = listOf(
+            SearchTerm("网络制式", "wang luo zhi shi"),
+            SearchTerm("Wi-Fi size", "Wi-Fi size", foreign = true),
+            SearchTerm("电量颜色", "dian liang yan se", foreign = true),
+        )
+        val queries = listOf("", "-  ", "5G", "Wi-FI", "wlzs", "wfs", "电量", "DLYS", "颜色")
+        for (term in terms) {
+            for (query in queries) {
+                val folded = query.lowercase(java.util.Locale.ROOT).filter(Char::isLetterOrDigit)
+                assertTrue("Regular match differed for '$query'",
+                    term.matches(query) == term.matchesFolded(folded))
+                assertTrue("Exact-only match differed for '$query'",
+                    term.matches(query, includeInitials = false) ==
+                        term.matchesFolded(folded, includeInitials = false))
+                assertTrue("Initials match differed for '$query'",
+                    term.matchesInitials(query) == term.matchesInitialsFolded(folded))
+            }
+        }
+    }
+
+    @Test
     fun chineseAndPinyinPrefixes() {
         val term = SearchTerm("电量数字", "dian liang shu zi")
         assertTrue(term.matches("电量"))
