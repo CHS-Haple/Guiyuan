@@ -113,6 +113,51 @@ class RenderModelTest {
     }
 
     @Test
+    fun nativeActivityDrawableFollowsOnlyTheSelectedTransport() {
+        val observed = StatusStateStore.Snapshot(
+            battery = StatusStateStore.BatteryState(percent = 81, charging = true),
+            wifi = StatusStateStore.WifiState.Visible(
+                iconResId = 11,
+                signal = SignalStrength.Level(3),
+            ),
+            wifiActivityResId = 120,
+            mobile = mapOf(
+                1 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+            ),
+            mobileActivityResIds = mapOf(1 to 220),
+            airplaneMode = false,
+        )
+        val wifiPresentation = presentation(
+            connectivity = connectivity(SysUiConnectivitySource.Transport.WIFI, true),
+            networkType = mobileType("5G"),
+        )
+        val wifiModel = RenderModel.from(observed, wifiPresentation, 1)
+        assertTrue(wifiModel?.centerIndicator is CenterIndicator.Wifi)
+        assertEquals(120, wifiModel?.networkActivityResId)
+
+        val noWifiActivity = RenderModel.from(
+            observed.copy(wifiActivityResId = null),
+            wifiPresentation,
+            1,
+        )
+        assertNull(noWifiActivity?.networkActivityResId)
+
+        val mobileModel = RenderModel.from(
+            observed.copy(
+                wifi = StatusStateStore.WifiState.Hidden,
+                wifiActivityResId = 120,
+            ),
+            presentation(
+                connectivity = connectivity(SysUiConnectivitySource.Transport.CELLULAR, true),
+                networkType = mobileType("5G"),
+            ),
+            1,
+        )
+        assertTrue(mobileModel?.centerIndicator is CenterIndicator.MobileType)
+        assertEquals(220, mobileModel?.networkActivityResId)
+    }
+
+    @Test
     fun unknownNativeWifiInternetWithCellularDefaultUsesMobilePresentation() {
         val model =
             RenderModel.from(
