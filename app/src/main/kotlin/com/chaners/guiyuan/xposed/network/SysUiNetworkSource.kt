@@ -454,15 +454,18 @@ internal object SysUiNetworkSource {
         onMobileActivity: (Int, Int?) -> Unit,
     ) {
         if (!active.get() || subId < 0 || outerVm == null) return
-        val cellular = outerVm.javaClass.getMethod("getCellProvider").invoke(outerVm) ?: return
-        val type = cellular.javaClass
-        val resource = type.getDeclaredField("inOutResId").apply { isAccessible = true }
-            .get(cellular) ?: return
-        val scope = type.getDeclaredField("scope").apply { isAccessible = true }
-            .get(cellular) ?: return
+        // The native binder collects the outer mobile icon VM's activity Flow.
+        // Do not assume the cellular provider owns a CoroutineScope.
+        val resource = outerVm.javaClass.getDeclaredField("inOutResId")
+            .apply { isAccessible = true }
+            .get(outerVm) ?: return
         val existing = synchronized(this) { mobileActivityFlows[subId] }
         if (existing?.source === resource) return
 
+        // This collector belongs to the module generation, not the host ViewModel.
+        val scope = Class.forName("kotlinx.coroutines.CoroutineScopeKt", false, classLoader)
+            .getMethod("MainScope")
+            .invoke(null) ?: return
         val next = MobileActivityFlowBinding(resource)
         val previous = synchronized(this) { mobileActivityFlows.put(subId, next) }
         previous?.job?.let(::cancelMobileActivityJob)
@@ -612,7 +615,15 @@ internal object SysUiNetworkSource {
                                     subId, outer, active, classLoader, onMobileActivity,
                                 )
                             } catch (error: Throwable) {
-                                callbackFailed("mobile-activity-flow", error, onRuntimeFailure)
+                                rethrowFatal(error)
+                                // Failure to observe an optional Flow must not retire
+                                // the entire combined status presentation.
+                                readOrNull {
+                                    onEvent?.invoke(
+                                        "networkPipeline mobile activityFlow unavailable " +
+                                            "stage=factory type=" + error.javaClass.simpleName,
+                                    )
+                                }
                             }
                         }
                         result
@@ -1536,7 +1547,13 @@ internal object SysUiNetworkSource {
                         subId, iconViewModel, active, classLoader, onMobileActivity,
                     )
                 } catch (error: Throwable) {
-                    callbackFailed("mobile-activity-bind-flow", error, onRuntimeFailure)
+                    rethrowFatal(error)
+                    readOrNull {
+                        onEvent?.invoke(
+                            "networkPipeline mobile activityFlow unavailable " +
+                                "stage=bind type=" + error.javaClass.simpleName,
+                        )
+                    }
                 }
             }
         }
