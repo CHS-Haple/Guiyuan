@@ -107,6 +107,28 @@ class PresentationPoliciesTest {
     }
 
     @Test
+    fun homePrivacyReservesGuiyuanEndWidthIndependentlyOfBatteryHideFlag() {
+        val privacyVisible = HomePrivacyLayoutPolicy.occupiesEnd("START_SHOW_PRIVACY")
+        assertEquals(
+            105,
+            EndReservationPolicy.resolvePaddingEndDelta(
+                nativeHide = false || privacyVisible,
+                actualBatteryWidthPx = 105,
+                requestedSlotWidthPx = 105,
+            ),
+        )
+        val privacyHidden = HomePrivacyLayoutPolicy.occupiesEnd("COMPLETE_HIDE_PRIVACY")
+        assertEquals(
+            0,
+            EndReservationPolicy.resolvePaddingEndDelta(
+                nativeHide = false || privacyHidden,
+                actualBatteryWidthPx = 105,
+                requestedSlotWidthPx = 105,
+            ),
+        )
+    }
+
+    @Test
     fun endReservationKeepsOneResolvedEndBoundaryAcrossBatteryStates() {
         assertEquals(
             0,

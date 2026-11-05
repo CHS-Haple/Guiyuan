@@ -31,11 +31,13 @@ internal object SysUiPresentationOwner {
         "combinedstatus.homePresentation.statusIconsLayout"
     private const val BATTERY_HIDE_HOOK_ID =
         "combinedstatus.homePresentation.batteryHideState"
+    private const val PRIVACY_STATE_HOOK_ID =
+        "combinedstatus.homePresentation.nativePrivacyState"
     private const val ISLAND_SHOWING_HOOK_ID =
         "combinedstatus.homePresentation.fakeIslandShowing"
     private const val CONTROL_CENTER_FAKE_SURFACE = "control-center-fake"
     private const val HOME_SURFACE = "home"
-    private const val HOOK_COUNT = 4
+    private const val HOOK_COUNT = 5
 
     private val representedSlots =
         linkedSetOf("wifi", "mobile", "stacked_mobile", "airplane", "no_sim")
@@ -44,11 +46,13 @@ internal object SysUiPresentationOwner {
     private var measureHook: HookHandle? = null
     private var layoutHook: HookHandle? = null
     private var batteryHideHook: HookHandle? = null
+    private var privacyStateHook: HookHandle? = null
     private var islandShowingHook: HookHandle? = null
     private var ignoredSlotsField: Field? = null
     private var addIgnoredSlotsMethod: java.lang.reflect.Method? = null
     private var setIgnoredSlotsMethod: java.lang.reflect.Method? = null
     private var batteryHideField: Field? = null
+    private var privacyStateField: Field? = null
     private var current: Session? = null
     private var keyguardFamilyCurrent: Session? = null
     private var keyguardFamilySurface: KeyguardFamilySurface? = null
@@ -114,6 +118,7 @@ internal object SysUiPresentationOwner {
                 layoutHook,
                 batteryHideHook,
                 islandShowingHook,
+                privacyStateHook,
             ).size
 
     @Synchronized
@@ -123,6 +128,12 @@ internal object SysUiPresentationOwner {
     @Synchronized
     internal fun homeCarrierVisible(): Boolean =
         current?.isNativeCarrierPresentationVisible() == true
+
+    @Synchronized
+    internal fun homePrivacyOccupiesEnd(batteryHost: ViewGroup): Boolean? =
+        current
+            ?.takeIf { session -> session.ownsBatteryContainer(batteryHost) }
+            ?.nativeHomePrivacyOccupiesEnd()
 
     @Synchronized
     internal fun keyguardSlots(): Set<String> =
@@ -312,6 +323,24 @@ internal object SysUiPresentationOwner {
                     ?.apply { isAccessible = true }
             } ?: return "battery-hide-method-contract-missing"
 
+        // Exact-ROM privacy layout state is independent of native battery hiding.
+        val nativePrivacyField =
+            readOrNull {
+                batteryContainerClass.declaredFields.singleOrNull { candidate ->
+                    candidate.name == "mPrivacyState" &&
+                        candidate.type.name ==
+                            "com.android.systemui.statusbar.phone.MiuiHomePrivacyController\$PrivacyState"
+                }?.apply { isAccessible = true }
+            } ?: return "native-privacy-state-field-missing"
+        val nativePrivacyMethod =
+            readOrNull {
+                batteryContainerClass.declaredMethods.singleOrNull { method ->
+                    method.name == "setPrivacyState" &&
+                        method.parameterTypes.contentEquals(arrayOf(nativePrivacyField.type)) &&
+                        method.returnType == Void.TYPE
+                }?.apply { isAccessible = true }
+            } ?: return "native-privacy-state-method-missing"
+
         val onMeasure =
             readOrNull {
                 containerClass.declaredMethods
@@ -366,6 +395,7 @@ internal object SysUiPresentationOwner {
         addIgnoredSlotsMethod = addIgnoredSlots
         setIgnoredSlotsMethod = setIgnoredSlots
         batteryHideField = hideField
+        privacyStateField = nativePrivacyField
 
         val first =
             runCatching {
@@ -397,7 +427,7 @@ internal object SysUiPresentationOwner {
                 module
                     .hook(batterySetIsHide)
                     .setId(BATTERY_HIDE_HOOK_ID)
-                    .intercept(batteryHideStateHooker())
+                    .intercept(batteryLayoutStateHooker("battery-hide-post-native"))
             }.getOrElse { error ->
                 val failure = rollbackInstall(
                     "battery-hide-hook-" + (error.message ?: error.javaClass.simpleName),
@@ -422,10 +452,25 @@ internal object SysUiPresentationOwner {
                 return failure
             }
 
+        val fifth =
+            runCatching {
+                module
+                    .hook(nativePrivacyMethod)
+                    .setId(PRIVACY_STATE_HOOK_ID)
+                    .intercept(batteryLayoutStateHooker("privacy-state-post-native"))
+            }.getOrElse { error ->
+                val failure = rollbackInstall(
+                    "privacy-state-hook-" + (error.message ?: error.javaClass.simpleName),
+                    listOf(first, second, third, fourth),
+                )
+                rethrowFatal(error)
+                return failure
+            }
         measureHook = first
         layoutHook = second
         batteryHideHook = third
         islandShowingHook = fourth
+        privacyStateHook = fifth
         return null
     }
 
@@ -1110,12 +1155,14 @@ internal object SysUiPresentationOwner {
         val failedLayout = unhook(layoutHook)
         val failedBatteryHide = unhook(batteryHideHook)
         val failedIsland = unhook(islandShowingHook)
+        val failedPrivacyState = unhook(privacyStateHook)
         clearInstallState()
         // Unremoved Hooks still belong to this source: do not reinstall duplicates.
         measureHook = failedMeasure
         layoutHook = failedLayout
         batteryHideHook = failedBatteryHide
         islandShowingHook = failedIsland
+        privacyStateHook = failedPrivacyState
         if (failures.isNotEmpty()) {
             val error = IllegalStateException("presentation-reset-incomplete", failures.first())
             failures.drop(1).forEach(error::addSuppressed)
@@ -1320,7 +1367,7 @@ internal object SysUiPresentationOwner {
         )
         return false
     }
-    private fun batteryHideStateHooker(): Hooker =
+    private fun batteryLayoutStateHooker(source: String): Hooker =
         Hooker { chain ->
             val target = readOrNull { chain.thisObject as? ViewGroup }
                 ?: return@Hooker chain.proceed()
@@ -1333,7 +1380,7 @@ internal object SysUiPresentationOwner {
                         ?: keyguardFamilyCurrent
                             ?.takeIf { candidate -> candidate.ownsBatteryContainer(target) }
                 }
-            afterNativeCallback(session, "battery-hide-post-native") {
+            afterNativeCallback(session, source) {
                 session?.syncEndReservation()
             }
             result
@@ -1492,6 +1539,7 @@ internal object SysUiPresentationOwner {
         layoutHook = remaining.firstOrNull { it.id == LAYOUT_HOOK_ID }
         batteryHideHook = remaining.firstOrNull { it.id == BATTERY_HIDE_HOOK_ID }
         islandShowingHook = remaining.firstOrNull { it.id == ISLAND_SHOWING_HOOK_ID }
+        privacyStateHook = remaining.firstOrNull { it.id == PRIVACY_STATE_HOOK_ID }
         return if (remaining.isEmpty()) reason else reason + "-hook-cleanup-failed"
     }
 
@@ -1500,10 +1548,12 @@ internal object SysUiPresentationOwner {
         layoutHook = null
         batteryHideHook = null
         islandShowingHook = null
+        privacyStateHook = null
         ignoredSlotsField = null
         addIgnoredSlotsMethod = null
         setIgnoredSlotsMethod = null
         batteryHideField = null
+        privacyStateField = null
         controlCenterCurrent = null
         keyguardFamilyCurrent = null
         keyguardFamilySurface = null
@@ -1687,6 +1737,15 @@ internal object SysUiPresentationOwner {
                         clipStates.isNotEmpty() ||
                         appliedPadding != null
                 )
+
+        fun nativeHomePrivacyOccupiesEnd(): Boolean? {
+            if (!active || surfaceName != HOME_SURFACE) return null
+            val container = batteryContainer.get() ?: return null
+            val field = privacyStateField ?: return null
+            val state = readOrNull { (field.get(container) as? Enum<*>)?.name }
+                ?: return null
+            return HomePrivacyLayoutPolicy.occupiesEnd(state)
+        }
 
         fun isNativeCarrierPresentationVisible(): Boolean {
             val carrier = batteryContainer.get() ?: return false
@@ -2371,6 +2430,13 @@ internal object SysUiPresentationOwner {
             val nativeHide =
                 readOrNull { batteryHideField.getBoolean(container) }
                     ?: run { onFailNative("battery-hide-state-unavailable"); return false }
+            val homePrivacyOccupiesEnd =
+                if (surfaceName == HOME_SURFACE) {
+                    nativeHomePrivacyOccupiesEnd()
+                        ?: run { onFailNative("home-privacy-state-unavailable"); return false }
+                } else {
+                    false
+                }
             val actualBatteryWidthPx =
                 (if (batteryView.measuredWidth > 0) batteryView.measuredWidth else batteryView.width)
                     .takeIf { width -> width > 0 }
@@ -2427,7 +2493,7 @@ internal object SysUiPresentationOwner {
                 )
             val requestedReservationDelta =
                 EndReservationPolicy.resolvePaddingEndDelta(
-                    nativeHide = nativeHide,
+                    nativeHide = nativeHide || homePrivacyOccupiesEnd,
                     actualBatteryWidthPx = actualBatteryWidthPx,
                     requestedSlotWidthPx = requestedSlotWidthPx,
                 )
@@ -2496,6 +2562,7 @@ internal object SysUiPresentationOwner {
                 if (shouldReport) {
                     onEvent(
                         eventPrefix + " endReservation nativeHide=" + nativeHide +
+                            " privacyEndOccupied=" + homePrivacyOccupiesEnd +
                             " stableCarrierWidth=" + stableCarrierWidthPx +
                             " actualBatteryWidth=" + actualBatteryWidthPx +
                             " compactSlotWidth=" + compactSlotWidthPx +
