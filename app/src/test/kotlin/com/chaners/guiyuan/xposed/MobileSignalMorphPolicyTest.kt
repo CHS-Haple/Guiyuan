@@ -29,6 +29,24 @@ class MobileSignalMorphPolicyTest {
 
 
     @Test
+    fun leftRightDirectTravelDoesNotReverseBetweenFixedEndpoints() {
+        for ((source, target) in listOf(70f to 20f, -70f to -20f, 10f to 10f)) {
+            val points = (0..100).map { step ->
+                morph.directDotCoordinate(source, target, step / 100f)
+            }
+            assertEquals(source, points.first(), 0f)
+            assertEquals(target, points.last(), 0f)
+            val low = minOf(source, target)
+            val high = maxOf(source, target)
+            assertTrue(points.all { it >= low - 0.0001f && it <= high + 0.0001f })
+            for (i in 1 until points.size) {
+                assertTrue((points[i] - points[i - 1]) * (target - source) >= -0.0001f)
+            }
+        }
+        assertEquals(70f, morph.directDotCoordinate(70f, 20f, Float.NaN), 0f)
+    }
+
+    @Test
     fun collapseEndsAtThirtyPercentWithoutChangingLaterPhases() {
         fun phase(p: Float): Float = morph.handoffProgress(p * p)
         assertEquals(0f, morph.trimProgress(phase(0f)), 0f)

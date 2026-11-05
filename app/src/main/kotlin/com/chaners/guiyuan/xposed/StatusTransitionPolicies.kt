@@ -152,6 +152,13 @@ internal object MobileSignalMorphPolicy {
         return moved + (target - moved) * spread
     }
 
+    // LEFT_RIGHT dots must not travel to a synthetic anchor in the opposite
+    // direction before heading to the native target. Preserve source/endpoint.
+    fun directDotCoordinate(source: Float, target: Float, progress: Float): Float {
+        val p = progress.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0f
+        return source + (target - source) * p
+    }
+
     fun outerSimilarityScale(
         targetWidthRatio: Float?,
         targetHeightRatio: Float?,
