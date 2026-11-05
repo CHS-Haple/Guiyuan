@@ -322,6 +322,15 @@ internal object CcTransitionOwner {
 
         private var cachedNetworkActivityTarget: Pair<Int, TargetWitness>? = null
         private var missingNetworkActivityTarget: MissingNetworkActivityTarget? = null
+        private val nativeIdleMobileActivityResId: Int by lazy(LazyThreadSafetyMode.NONE) {
+            readOrNull {
+                finalStatusIcons.resources.getIdentifier(
+                    "stat_sys_signal_data_left",
+                    "drawable",
+                    "com.android.systemui",
+                )
+            } ?: 0
+        }
         private var nativeWifiRoot: View? = null
         private var nativeWifiSignal: View? = null
         private var wifiTargetReady: Boolean? = null
@@ -2825,9 +2834,13 @@ internal object CcTransitionOwner {
         // drawable resource ID. Match that exact native image in FINAL instead
         // of guessing an activity View ID, scale or destination.
         private fun resolveNativeNetworkActivityTarget(model: RenderModel): TargetWitness? {
-            val resourceId = model.networkActivityResId?.takeIf { it > 0 } ?: return null
             val wifi = model.centerIndicator is CenterIndicator.Wifi
             if (!wifi && model.centerIndicator !is CenterIndicator.MobileType) return null
+            // When the bottom slot draws the opt-in idle arrow, the source has no
+            // activity ID. FINAL instead owns its independently verified idle glyph.
+            val resourceId = model.networkActivityResId?.takeIf { it > 0 }
+                ?: (if (!wifi) nativeIdleMobileActivityResId.takeIf { it > 0 } else null)
+                ?: return null
 
             val native = PresentationStore.snapshot().mobilePresentation
             val selectedSubId = model.effectiveDataSubscriptionId
