@@ -284,10 +284,22 @@ internal fun FeaturesScreen(
         if (!visible) search.close()
     }
     val searching = search.filtering
+    val bothSidesActivitySearch = searching && search.any(
+        R.string.both_sides_activity_title,
+        R.string.both_sides_idle_activity_title,
+        R.string.both_sides_activity_size,
+        R.string.both_sides_activity_vertical_offset,
+    )
+    val bothSidesChargingSearch = searching && search.any(
+        R.string.both_sides_charging_title,
+        R.string.both_sides_charging_vertical_offset,
+    )
+    val bothSidesSearch = bothSidesActivitySearch || bothSidesChargingSearch
     val displayMatches = search.any(*FeatureSearchIds.display)
     val layoutMatches = search.any(*FeatureSearchIds.layout)
     val networkMatches = search.any(*FeatureSearchIds.network)
-    val batteryMatches = search.any(*FeatureSearchIds.battery)
+    val batteryMatches = search.any(*FeatureSearchIds.battery) ||
+        (bothSidesChargingSearch && !visual.showChargingIcon)
     val managementMatches = search.any(*FeatureSearchIds.management)
 
     HubPage(
@@ -480,9 +492,9 @@ internal fun FeaturesScreen(
                 }
                 if (search.matches(R.string.dual_signal_title) ||
                     (searching && !visual.dualSignal &&
-                        search.any(R.string.dual_row_signal_dot_arrangement_title,
+                        (search.any(R.string.dual_row_signal_dot_arrangement_title,
                             R.string.curved_signal_dot_vertical_offset,
-                            R.string.horizontal_signal_dot_vertical_offset))) {
+                            R.string.horizontal_signal_dot_vertical_offset) || bothSidesSearch))) {
                     SwitchPreference(
                         title = stringResource(R.string.dual_signal_title),
                         startAction = {
@@ -518,7 +530,8 @@ internal fun FeaturesScreen(
                     )
                 }
                 AnimatedPreferenceGroup(visible = visual.dualSignal) {
-                    if (search.matches(R.string.dual_row_signal_dot_arrangement_title)) {
+                    if (search.matches(R.string.dual_row_signal_dot_arrangement_title) ||
+                        (bothSidesSearch && visual.dualRowDotArrangement != SignalDotArrangement.BOTH_SIDES)) {
                         UiDropdownPreference(
                             title = stringResource(R.string.dual_row_signal_dot_arrangement_title),
                             summary = stringResource(R.string.outer_signal_dots_only_summary),
@@ -599,7 +612,8 @@ internal fun FeaturesScreen(
                 }
                 val bothSidesArrangement = visual.dualSignal &&
                     visual.dualRowDotArrangement == SignalDotArrangement.BOTH_SIDES
-                if (search.matches(R.string.both_sides_activity_title)) {
+                if (search.matches(R.string.both_sides_activity_title) ||
+                    (bothSidesActivitySearch && !visual.bothSidesShowActivity)) {
                     SwitchPreference(
                         title = stringResource(R.string.both_sides_activity_title),
                         summary = stringResource(
@@ -683,7 +697,8 @@ internal fun FeaturesScreen(
                             )
                         }
                     }
-                    if (search.matches(R.string.both_sides_charging_title)) {
+                    if (search.matches(R.string.both_sides_charging_title) ||
+                        (bothSidesChargingSearch && !visual.bothSidesBottomCharging)) {
                         SwitchPreference(
                             title = stringResource(R.string.both_sides_charging_title),
                             summary = stringResource(R.string.both_sides_charging_summary),
@@ -1161,8 +1176,8 @@ internal fun FeaturesScreen(
 
                 if (search.matches(R.string.battery_charging_icon) ||
                     (searching && !visual.showChargingIcon &&
-                        search.any(R.string.battery_top_charging_icon_size,
-                            R.string.charging_icon_follow_battery_color))) {
+                        (search.any(R.string.battery_top_charging_icon_size,
+                            R.string.charging_icon_follow_battery_color) || bothSidesChargingSearch))) {
                     SwitchPreference(
                         title = stringResource(R.string.battery_charging_icon),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled) },
