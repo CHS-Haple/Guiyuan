@@ -7,6 +7,13 @@ import kotlinx.serialization.json.Json
 
 class VisualCfgTest {
     @Test
+    fun invalidSingleRowTwoSidedStyleNormalizesToCurved() {
+        val invalid = VisualCfg(singleRowDotArrangement = SignalDotArrangement.BOTH_SIDES)
+        assertEquals(SignalDotArrangement.CURVED, invalid.normalized().singleRowDotArrangement)
+        assertEquals(SignalDotArrangement.BOTH_SIDES, invalid.dualRowDotArrangement)
+    }
+
+    @Test
     fun bothSidesKeepsReleasedStyleWireIdentity() {
         assertEquals("left_right", SignalDotArrangement.BOTH_SIDES.persistedValue)
         assertEquals(SignalDotArrangement.BOTH_SIDES, SignalDotArrangement.fromPersisted("left_right"))

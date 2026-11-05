@@ -287,6 +287,9 @@ internal fun Float.finiteIn(min: Float, max: Float, fallback: Float): Float =
 
 internal fun VisualCfg.normalized(): VisualCfg =
     copy(
+        singleRowDotArrangement = singleRowDotArrangement.takeUnless {
+            it == SignalDotArrangement.BOTH_SIDES
+        } ?: SignalDotArrangement.CURVED,
         topTextScale =
             topTextScale.finiteIn(
                 BATTERY_TOP_TEXT_SCALE_MIN,

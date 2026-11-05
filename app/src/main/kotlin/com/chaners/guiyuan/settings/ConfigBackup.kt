@@ -212,6 +212,9 @@ internal object ConfigBackupFormat {
     // structure, unknown enums, color integrity and references still fail.
     private fun normalizeImported(backup: ConfigBackup): ConfigBackup {
         backup.visual.profiles.forEach { cfg ->
+            require(cfg.singleRowDotArrangement != SignalDotArrangement.BOTH_SIDES) {
+                "Two-sided signal dots cannot be a single-row selection"
+            }
             require(BatteryColorSlot.entries.all { slot ->
                 val color = cfg.batteryColorOverrides.colorFor(slot)
                 color == null || color ushr 24 == 0xFF
@@ -279,6 +282,9 @@ internal object ConfigBackupFormat {
             }
         }) { "Conflicting mode-wide visual settings" }
         profiles.forEach { cfg ->
+            require(cfg.singleRowDotArrangement != SignalDotArrangement.BOTH_SIDES) {
+                "Two-sided signal dots cannot be a single-row selection"
+            }
             val values = listOf(
                 cfg.topTextScale, cfg.topOffsetY, cfg.wifiOffsetY, cfg.mobileTypeOffsetY,
                 cfg.curvedSignalDotOffsetY, cfg.horizontalSignalDotOffsetY,

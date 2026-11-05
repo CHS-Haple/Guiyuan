@@ -9,6 +9,19 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class ConfigBackupTest {
+    @Test
+    fun rejectsTwoSidedArrangementInSingleRowBackup() {
+        val valid = ConfigBackupFormat.encode(sample())
+        val invalid = valid.replaceFirst(
+            "\"singleRowDotStyle\":\"DEFAULT\"",
+            "\"singleRowDotStyle\":\"LEFT_RIGHT\"",
+        )
+        assertTrue(invalid != valid)
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigBackupFormat.decode(invalid)
+        }
+    }
+
     @Test fun bothSidesNamesKeepReleasedBackupSchema() {
         val config = VisualCfg(
             dualRowDotArrangement = SignalDotArrangement.BOTH_SIDES,

@@ -7,6 +7,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VisualPersistenceTest {
+    @Test
+    fun invalidStoredSingleRowStyleDoesNotReachSettingsOrRenderer() {
+        val prefs = MemoryPreferences()
+        prefs.edit().putString(
+            visualProfileKey(ContentLayout.NETWORK_CENTER, SINGLE_ROW_DOT_STYLE_KEY),
+            SignalDotArrangement.BOTH_SIDES.persistedValue,
+        ).apply()
+        assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg().singleRowDotArrangement)
+    }
+
 
     @Test
     fun firstDualEnableDefaultsToBothSidesWithoutOverwritingSavedArrangement() {

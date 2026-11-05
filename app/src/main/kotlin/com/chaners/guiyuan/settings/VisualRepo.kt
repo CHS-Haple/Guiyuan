@@ -298,6 +298,9 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setSingleRowDotArrangement(style: SignalDotArrangement) {
+        require(style != SignalDotArrangement.BOTH_SIDES) {
+            "Two-sided signal dots require dual-row mode"
+        }
         preferences.edit().putString(
             activeProfileKey(SINGLE_ROW_DOT_STYLE_KEY),
             style.persistedValue,
