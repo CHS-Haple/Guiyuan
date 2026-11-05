@@ -208,6 +208,20 @@ internal object NativeOpticalGeometry {
             opticalBottom = drawTop + currentOpticalBottom * drawHeight,
         )
     }
+
+    // Offset viewport centers by native ink, rather than transparent padding,
+    // to keep the displayed icon fixed as its size changes.
+    fun viewportCenterForInkAnchor(
+        anchorX: Float,
+        anchorY: Float,
+        drawWidth: Float,
+        drawHeight: Float,
+        opticalCenterX: Float,
+        inkCenterY: Float,
+    ): Pair<Float, Float> = Pair(
+        anchorX - (opticalCenterX - 0.5f) * drawWidth,
+        anchorY - (inkCenterY - 0.5f) * drawHeight,
+    )
 }
 
 
@@ -398,6 +412,7 @@ internal object OuterGeometry {
         val ringStroke: Float,
         val mobileDotRadius: Float,
         val dualMobileDotRadius: Float,
+        val bothSidesMobileDotRadius: Float,
         val horizontalDotSpan: Float,
         val dualRowGap: Float,
         val dualOpticalRise: Float,
@@ -406,6 +421,10 @@ internal object OuterGeometry {
         val firstDotCenterDegrees: Float,
         val dotCenterStepDegrees: Float,
         val balancedEdgeGap: Float,
+        val bothSidesBottomIconVisible: Boolean,
+        val bothSidesStepDegrees: Double,
+        val bothSidesWithSlotFirstDegrees: Double,
+        val bothSidesBalancedFirstDegrees: Double,
     ) {
         fun bottomDotAngle(index: Int): Double {
             require(index in 0 until DOT_COUNT)
@@ -440,8 +459,62 @@ internal object OuterGeometry {
         fun horizontalDotX(index: Int): Float =
             (index - (DOT_COUNT - 1) / 2f) * (horizontalDotSpan / (DOT_COUNT - 1))
 
+        fun dualDotRadius(style: SignalDotArrangement): Float =
+            if (style == SignalDotArrangement.BOTH_SIDES) bothSidesMobileDotRadius
+            else dualMobileDotRadius
+
+        fun dualDotX(index: Int, row: Int, style: SignalDotArrangement): Float =
+            if (style == SignalDotArrangement.BOTH_SIDES) {
+                cos(bothSidesDotAngle(index, row)).toFloat() * RING_RADIUS
+            } else horizontalDotX(index)
+
+        private fun bothSidesDotAngle(index: Int, row: Int): Double {
+            require(index in 0 until DOT_COUNT && row in 0..1)
+            val first = if (bothSidesBottomIconVisible) {
+                bothSidesWithSlotFirstDegrees
+            } else {
+                bothSidesBalancedFirstDegrees
+            }
+            val angle = first + index * bothSidesStepDegrees
+            return Math.toRadians(if (row == 0) angle else 180.0 - angle)
+        }
+
         // Balance visible ring-to-dot clearance against adjacent dot spacing.
-        fun followingLowerHalfGap(dual: Boolean, style: SignalDotArrangement, offsetY: Float): Float {
+        fun followingLowerHalfGap(
+            dual: Boolean,
+            style: SignalDotArrangement,
+            offsetY: Float,
+            additionalContentHalfGap: Float = 0f,
+        ): Float {
+            if (dual && style == SignalDotArrangement.BOTH_SIDES) {
+                // The default layout reserves exactly the same lower half as
+                // fixed mode. Only the *change* in actual dot occupancy moves
+                // the opening when users move the entire lower assembly.
+                fun requiredHalfGap(atOffset: Float): Double {
+                    val clearance = (bothSidesMobileDotRadius + ringStroke / 2f + 2f).toDouble()
+                    val radius = RING_RADIUS.toDouble()
+                    var half = 0.0
+                    for (row in 0..1) for (index in 0 until DOT_COUNT) {
+                        val x = dualDotX(index, row, style).toDouble()
+                        val y = dualDotY(index, row, style, atOffset).toDouble()
+                        val d = sqrt(x * x + y * y)
+                        if (d <= 0.00001 || kotlin.math.abs(d - radius) >= clearance) continue
+                        val spread = if (clearance >= d + radius) 180.0 else Math.toDegrees(
+                            acos(((d * d + radius * radius - clearance * clearance) /
+                                (2.0 * d * radius)).coerceIn(-1.0, 1.0)),
+                        )
+                        val angle = Math.toDegrees(atan2(y, x))
+                        half = max(half, kotlin.math.abs(angle - 90.0) + spread)
+                    }
+                    return half
+                }
+                val baseline = requiredHalfGap(0f)
+                val current = requiredHalfGap(offsetY)
+                return max(
+                    (90.0 + current - baseline).toFloat().coerceIn(72f, 110f),
+                    additionalContentHalfGap.coerceIn(0f, 110f),
+                )
+            }
             val radius = if (dual) dualMobileDotRadius else mobileDotRadius
             val dotGap = if (!dual && style == SignalDotArrangement.CURVED) balancedEdgeGap
                 else (horizontalDotSpan / (DOT_COUNT - 1) - 2f * radius).coerceAtLeast(0f)
@@ -472,6 +545,9 @@ internal object OuterGeometry {
             style: SignalDotArrangement = SignalDotArrangement.CURVED,
             offsetY: Float = 0f,
         ): Float {
+            if (style == SignalDotArrangement.BOTH_SIDES) {
+                return sin(bothSidesDotAngle(index, row)).toFloat() * RING_RADIUS - offsetY
+            }
             val x = if (style == SignalDotArrangement.HORIZONTAL) horizontalDotSpan / 6f else horizontalDotX(index)
             val offset = if (row == 0) -dualRowGap / 2f else dualRowGap / 2f
             return sqrt(RING_RADIUS * RING_RADIUS - x * x) +
@@ -485,7 +561,7 @@ internal object OuterGeometry {
             ?.coerceIn(MIN_WEIGHT_SCALE, MAX_WEIGHT_SCALE)
             ?: DEFAULT_WEIGHT_SCALE
 
-    fun resolve(weightScale: Float): Resolved {
+    fun resolve(weightScale: Float, bothSidesBottomIconVisible: Boolean = true): Resolved {
         val normalized = normalizeWeightScale(weightScale)
         val ringStroke = BASE_RING_STROKE * normalized
         val dotRadius = BASE_MOBILE_DOT_RADIUS * normalized
@@ -524,6 +600,39 @@ internal object OuterGeometry {
             )
 
         val dualDotRadius = DUAL_BASE_DOT_RADIUS * normalized
+        // Eight circles no longer fit the lower semicircle if their radii grow
+        // without bound. Limit only the split presentation at extreme weights.
+        val splitDotRadius = min(dualDotRadius, 6.5f)
+        val minimumChord = 2f * splitDotRadius + 1f
+        val bothSidesStep = max(
+            if (bothSidesBottomIconVisible) 16.0 else 18.0,
+            Math.toDegrees(2.0 * kotlin.math.asin(
+                (minimumChord / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
+            )),
+        )
+        val ringClearance = ringStroke / 2f + splitDotRadius + 2f
+        val endMargin = Math.toDegrees(2.0 * kotlin.math.asin(
+            (ringClearance / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
+        ))
+        val outermostAllowed = 180.0 - 3.0 * bothSidesStep - endMargin
+        val withSlotFirst = minOf(112.0, outermostAllowed)
+        // When neither bottom feature is enabled, balance *visible edge-to-edge*
+        // clearance, not merely angular center spacing. The half-circle ends
+        // at 0°/180° and is never shortened to balance the split dot clusters.
+        fun visualChordGap(angle: Double, halfWidthSum: Double): Double =
+            2.0 * RING_RADIUS * sin(Math.toRadians(angle / 2.0)) - halfWidthSum
+        var balancedLower = 90.0
+        var balancedUpper = outermostAllowed
+        repeat(20) {
+            val first = (balancedLower + balancedUpper) / 2.0
+            val inner = visualChordGap(2.0 * first - 180.0, 2.0 * splitDotRadius)
+            val edge = visualChordGap(
+                180.0 - first - 3.0 * bothSidesStep,
+                splitDotRadius + ringStroke / 2.0,
+            )
+            if (inner > edge) balancedUpper = first else balancedLower = first
+        }
+        val balancedFirst = (balancedLower + balancedUpper) / 2.0
         // Wider only at extreme weights, when neighboring dots would otherwise touch.
         val horizontalDotSpan = max(DUAL_DOT_SPAN, 6f * dualDotRadius + 2f)
         val naturalRowGap = DUAL_BASE_ROW_GAP * normalized
@@ -545,6 +654,7 @@ internal object OuterGeometry {
             ringStroke = ringStroke,
             mobileDotRadius = dotRadius,
             dualMobileDotRadius = dualDotRadius,
+            bothSidesMobileDotRadius = splitDotRadius,
             horizontalDotSpan = horizontalDotSpan,
             dualRowGap = dualRowGap,
             dualOpticalRise = dualOpticalRise,
@@ -553,6 +663,10 @@ internal object OuterGeometry {
             firstDotCenterDegrees = firstCenter,
             dotCenterStepDegrees = step,
             balancedEdgeGap = gap,
+            bothSidesBottomIconVisible = bothSidesBottomIconVisible,
+            bothSidesStepDegrees = bothSidesStep,
+            bothSidesWithSlotFirstDegrees = withSlotFirst,
+            bothSidesBalancedFirstDegrees = balancedFirst,
         )
     }
 

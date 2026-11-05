@@ -25,7 +25,9 @@ internal enum class SignalDotArrangement(val persistedValue: String) {
     @SerialName("DEFAULT")
     CURVED("default"),
     @SerialName("DUO")
-    HORIZONTAL("duo");
+    HORIZONTAL("duo"),
+    @SerialName("LEFT_RIGHT")
+    BOTH_SIDES("left_right");
 
     companion object {
         fun fromPersisted(value: String?): SignalDotArrangement =
@@ -199,7 +201,19 @@ internal data class VisualCfg(
     val dualSignal: Boolean = false,
     // Keep the V1 backup field name readable after the source-model rename.
     @SerialName("dualDotStyle")
-    val dualRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
+    val dualRowDotArrangement: SignalDotArrangement = SignalDotArrangement.BOTH_SIDES,
+    @SerialName("leftRightShowActivity")
+    val bothSidesShowActivity: Boolean = true,
+    @SerialName("leftRightHideIdleActivity")
+    val bothSidesHideIdleActivity: Boolean = false,
+    @SerialName("leftRightBottomCharging")
+    val bothSidesBottomCharging: Boolean = false,
+    @SerialName("leftRightBottomInfoScale") // B1750 backup field stays readable.
+    val bothSidesActivityScale: Float = BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT,
+    @SerialName("leftRightActivityOffsetY")
+    val bothSidesActivityOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    @SerialName("leftRightChargingOffsetY")
+    val bothSidesChargingOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     // New field; older backup booleans are translated before decoding.
     @SerialName("singleRowDotStyle")
     val singleRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
@@ -210,7 +224,8 @@ internal data class VisualCfg(
     val centerFollowsBatteryColor: Boolean = false,
     val showTopReadout: Boolean = topReadoutDefault(layout),
     val topTextFollowsBatteryColor: Boolean = true,
-    val showTopChargingIcon: Boolean = true,
+    @SerialName("showTopChargingIcon") // Preserve V1 backup field identity.
+    val showChargingIcon: Boolean = true,
     val topChargingIconFollowsBatteryColor: Boolean = true,
     val fillFollowsRetract: Boolean = true,
     val ccTintTransition: Boolean = true,
@@ -223,6 +238,9 @@ internal data class VisualCfg(
     val curvedSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     @SerialName("dualDuoOffsetY") // Backward-compatible V1 backup field.
     val horizontalSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    // Deprecated B1750 setting retained for backup compatibility; two-sided dots are fixed.
+    @SerialName("leftRightSignalDotOffsetY")
+    val bothSidesSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val topChargingIconScale: Float =
         topChargingIconScaleDefault(layout),
     val combinedScale: Float = COMBINED_SCALE_DEFAULT,
@@ -244,10 +262,15 @@ internal data class VisualCfg(
     val centeredMobileSignal: Boolean
         get() = layout == ContentLayout.MOBILE_CENTER
 
+
     // Only the outside/bottom dots use these saved choices.
     // Signal-strength-centered dots remain horizontal in the renderer.
     val dualRowDotOffsetY: Float
-        get() = if (dualRowDotArrangement == SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
+        get() = when (dualRowDotArrangement) {
+            SignalDotArrangement.HORIZONTAL -> horizontalSignalDotOffsetY
+            SignalDotArrangement.BOTH_SIDES -> NETWORK_TOP_OFFSET_DEFAULT
+            SignalDotArrangement.CURVED -> curvedSignalDotOffsetY
+        }
 
     val singleRowDotOffsetY: Float
         get() = if (singleRowDotArrangement == SignalDotArrangement.HORIZONTAL) horizontalSignalDotOffsetY else curvedSignalDotOffsetY
@@ -264,6 +287,9 @@ internal fun Float.finiteIn(min: Float, max: Float, fallback: Float): Float =
 
 internal fun VisualCfg.normalized(): VisualCfg =
     copy(
+        singleRowDotArrangement = singleRowDotArrangement.takeUnless {
+            it == SignalDotArrangement.BOTH_SIDES
+        } ?: SignalDotArrangement.CURVED,
         topTextScale =
             topTextScale.finiteIn(
                 BATTERY_TOP_TEXT_SCALE_MIN,
@@ -307,6 +333,30 @@ internal fun VisualCfg.normalized(): VisualCfg =
             ),
         horizontalSignalDotOffsetY =
             horizontalSignalDotOffsetY.finiteIn(
+                NETWORK_TOP_OFFSET_MIN,
+                NETWORK_TOP_OFFSET_MAX,
+                NETWORK_TOP_OFFSET_DEFAULT,
+            ),
+        bothSidesSignalDotOffsetY =
+            bothSidesSignalDotOffsetY.finiteIn(
+                NETWORK_TOP_OFFSET_MIN,
+                NETWORK_TOP_OFFSET_MAX,
+                NETWORK_TOP_OFFSET_DEFAULT,
+            ),
+        bothSidesActivityScale =
+            bothSidesActivityScale.finiteIn(
+                BOTH_SIDES_BOTTOM_INFO_SCALE_MIN,
+                BOTH_SIDES_BOTTOM_INFO_SCALE_MAX,
+                BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT,
+            ),
+        bothSidesActivityOffsetY =
+            bothSidesActivityOffsetY.finiteIn(
+                NETWORK_TOP_OFFSET_MIN,
+                NETWORK_TOP_OFFSET_MAX,
+                NETWORK_TOP_OFFSET_DEFAULT,
+            ),
+        bothSidesChargingOffsetY =
+            bothSidesChargingOffsetY.finiteIn(
                 NETWORK_TOP_OFFSET_MIN,
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,

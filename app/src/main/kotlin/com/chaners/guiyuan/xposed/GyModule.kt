@@ -22,6 +22,7 @@ import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.sandbox.SANDBOX_PREFS
+import com.chaners.guiyuan.ui.screens.PreviewSimCards
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_ICON_KEY
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_KEY
@@ -819,6 +820,14 @@ class GyModule : XposedModule() {
                         )
                     }
                 },
+                onWifiActivity = { resourceId ->
+                    StatusStateStore.updateWifiActivity(resourceId)?.let { snapshot ->
+                        onCombinedStateChanged(
+                            snapshot = snapshot,
+                            trace = markStateCommitted(beginRenderTrace("wifiActivity")),
+                        )
+                    }
+                },
                 onMobileSignal = { subscriptionId, signal ->
                     val trace = beginRenderTrace("mobile")
                     val changed =
@@ -837,6 +846,14 @@ class GyModule : XposedModule() {
                         onCombinedStateChanged(
                             snapshot = StatusStateStore.snapshot(),
                             trace = stateTrace,
+                        )
+                    }
+                },
+                onMobileActivity = { subscriptionId, resourceId ->
+                    StatusStateStore.updateMobileActivity(subscriptionId, resourceId)?.let { snapshot ->
+                        onCombinedStateChanged(
+                            snapshot = snapshot,
+                            trace = markStateCommitted(beginRenderTrace("mobileActivity")),
                         )
                     }
                 },
@@ -4470,7 +4487,7 @@ class GyModule : XposedModule() {
                         "airplane" to received?.airplaneMode,
                         "wifiState" to received?.wifiState,
                         "wifiBars" to received?.wifiSignalLevel,
-                        "dualEnabled" to received?.dualMobile,
+                        "dualEnabled" to received?.simCards?.let { it == PreviewSimCards.BOTH },
                         "dualEffective" to (received?.dualLevels != null),
                         "sim1Bars" to received?.mobileSignalLevel,
                         "sim2Bars" to received?.sim2SignalLevel,
@@ -4502,7 +4519,7 @@ class GyModule : XposedModule() {
                 "mobileFollowsBattery" to settings.mobileFollowsBatteryColor,
                 "networkFollowsBattery" to settings.centerFollowsBatteryColor,
                 "batteryNumber" to settings.showTopReadout,
-                "chargingIcon" to settings.showTopChargingIcon,
+                "chargingIcon" to settings.showChargingIcon,
                 "batteryNumberFollowsBattery" to settings.topTextFollowsBatteryColor,
                 "chargingIconFollowsBattery" to
                     settings.topChargingIconFollowsBatteryColor,
@@ -4580,7 +4597,7 @@ class GyModule : XposedModule() {
                 "mobileFollowsBattery" to visual.mobileFollowsBatteryColor,
                 "networkFollowsBattery" to visual.centerFollowsBatteryColor,
                 "batteryNumber" to visual.showTopReadout,
-                "chargingIcon" to visual.showTopChargingIcon,
+                "chargingIcon" to visual.showChargingIcon,
                 "batteryNumberFollowsBattery" to visual.topTextFollowsBatteryColor,
                 "chargingIconFollowsBattery" to
                     visual.topChargingIconFollowsBatteryColor,

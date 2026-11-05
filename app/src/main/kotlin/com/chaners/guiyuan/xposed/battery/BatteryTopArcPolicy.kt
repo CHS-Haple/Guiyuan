@@ -269,9 +269,19 @@ internal object BatteryTopArcPolicy {
 
     // Angles follow Android Canvas (90 = bottom, 270 = top).
     // A missing gap joins both shoulders into one arc without overlapping round caps.
-    fun drawableRingArcs(topHalfDegrees: Float, bottomHalfDegrees: Float): List<Arc> {
+    fun drawableRingArcs(
+        topHalfDegrees: Float,
+        bottomHalfDegrees: Float,
+        allowExtendedBottomGap: Boolean = false,
+    ): List<Arc> {
         val top = topHalfDegrees.coerceIn(0f, 90f)
-        val bottom = bottomHalfDegrees.coerceIn(0f, 90f)
+        // The split left/right follow mode may retract an arc's lower shoulder
+        // above the equator when dots move upward. Existing layouts keep the
+        // historical 90° cap; fixed mode always remains a half-ring.
+        val bottom = bottomHalfDegrees.coerceIn(
+            0f,
+            if (allowExtendedBottomGap) minOf(110f, 180f - top) else 90f,
+        )
         if (top <= 0f && bottom <= 0f) return listOf(Arc(90f, 360f))
         if (top <= 0f) return listOf(Arc(90f + bottom, 360f - 2f * bottom))
         if (bottom <= 0f) return listOf(Arc(270f + top, 360f - 2f * top))

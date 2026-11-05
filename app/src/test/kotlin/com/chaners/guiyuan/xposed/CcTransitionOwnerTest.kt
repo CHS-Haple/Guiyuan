@@ -255,6 +255,77 @@ class CcTransitionOwnerTest {
     }
 
     @Test
+    fun chargingFollowsEightDotsInsteadOfBatteryNumber() {
+        val top = transitionGeometry(centerX = 20f, centerY = 10f, width = 40f, height = 10f)
+        val bottom = transitionGeometry(centerX = 20f, centerY = 32f, width = 40f, height = 10f)
+        val sourceGroup = requireNotNull(CcTransitionPolicy.dualMobileGroupGeometry(listOf(top, bottom)))
+        // The bolt sits between the two rows, not above the ring.
+        val bolt = transitionGeometry(
+            centerX = sourceGroup[0],
+            centerY = sourceGroup[1],
+            width = 10f,
+            height = 12f,
+        )
+        val topTarget = transitionGeometry(centerX = 108f, centerY = 15f, width = 12f, height = 18f)
+        val bottomTarget = transitionGeometry(centerX = 138f, centerY = 44f, width = 12f, height = 18f)
+        val numberSource = transitionGeometry(centerX = 20f, centerY = -30f, width = 20f, height = 10f)
+        val numberCurrent = transitionGeometry(centerX = 20f, centerY = -80f, width = 20f, height = 10f)
+
+        for (progress in listOf(0f, 0.15f, 0.30f, 0.435f, 0.57f)) {
+            val rows = listOf(top to topTarget, bottom to bottomTarget).map { (source, target) ->
+                CcTransitionPolicy.dualMobileRowMotionGeometry(
+                    source = source,
+                    target = target,
+                    groupTravelX = 65f,
+                    groupTravelY = 8f,
+                    progress = progress,
+                    scalePolicy = StatusPainter.TransitionScalePolicy.SHRINK_ONLY,
+                )
+            }
+            val mobileCurrent = requireNotNull(CcTransitionPolicy.dualMobileGroupGeometry(rows))
+            val follower = requireNotNull(
+                CcTransitionPolicy.followAnchorGeometry(
+                    follower = bolt,
+                    sourceAnchor = sourceGroup,
+                    currentAnchor = mobileCurrent,
+                ),
+            )
+            // Identical center and scaling to the verified dot envelope.
+            assertEquals(mobileCurrent[0], follower[0], 0.0001f)
+            assertEquals(mobileCurrent[1], follower[1], 0.0001f)
+            assertEquals(mobileCurrent[2] / sourceGroup[2] * bolt[2], follower[2], 0.0001f)
+            // The unrelated top battery number moves vertically in the opposite direction.
+            if (progress > 0f) {
+                val batteryFollower = requireNotNull(
+                    CcTransitionPolicy.followAnchorGeometry(
+                        follower = bolt,
+                        sourceAnchor = numberSource,
+                        currentAnchor = numberCurrent,
+                    ),
+                )
+                assertTrue(kotlin.math.abs(follower[1] - batteryFollower[1]) > 10f)
+            }
+        }
+        // Regression: the dot group has not reached its move-phase fade at
+        // 30%, but the established charging source has already disappeared.
+        // Its path may follow these rows; its clip timeline must not.
+        val originalChargingFade = BatteryNumberFollowerPolicy
+        assertTrue(originalChargingFade.chargingSourceVisibleFraction(0.12f) in 0f..1f)
+        assertEquals(0f, originalChargingFade.chargingSourceVisibleFraction(0.30f), 0.0001f)
+        assertEquals(1f, 1f - MobileSignalMorphPolicy.moveProgress(0.30f), 0.0001f)
+        for (progress in listOf(0.05f, 0.12f, 0.18f, 0.30f, 0.57f, 0.90f)) {
+            assertEquals(
+                originalChargingFade.chargingSourceVisibleFraction(progress),
+                originalChargingFade.chargingVisibleFraction(
+                    progress = progress,
+                    targetAvailable = false,
+                ),
+                0.0001f,
+            )
+        }
+    }
+
+    @Test
     fun dualRowsStayVerticallyPairedDuringMovingCollapse() {
         val top = transitionGeometry(centerX = 20f, centerY = 10f, width = 40f, height = 10f)
         val bottom = transitionGeometry(centerX = 20f, centerY = 32f, width = 40f, height = 10f)
@@ -463,6 +534,33 @@ class CcTransitionOwnerTest {
             target = target,
             verifiedAggregateRoot = verified(),
         ))
+        // The only visible FINAL mobile root is owned by SIM1, but the
+        // native activity drawable can represent the selected SIM2 data path.
+        fun activity(
+            state: NativePresentationResolver.Snapshot? = presentation,
+            dataSubId: Int = 4,
+            targetSubId: Int? = 1,
+            soleVisibleRoot: Boolean = true,
+        ) = CcTransitionPolicy.mobileActivityRootMatches(
+            state, dataSubId, targetSubId, soleVisibleRoot,
+        )
+        assertTrue(activity())
+        assertTrue(activity(targetSubId = 4, soleVisibleRoot = false))
+        assertFalse(activity(soleVisibleRoot = false))
+        assertFalse(activity(dataSubId = 7))
+        assertFalse(activity(targetSubId = 7))
+        assertFalse(activity(state = presentation.copy(
+            mode = NativePresentationResolver.Mode.DUAL_SEPARATE,
+        )))
+        assertFalse(activity(state = presentation.copy(
+            platformActiveSubscriptionIds = setOf(1, 7),
+        )))
+        assertFalse(activity(state = presentation.copy(
+            networkTypeSubscriptionId = 1,
+        )))
+        assertTrue(activity(targetSubId = null))
+        assertFalse(activity(state = null))
+
         assertEquals(false, CcTransitionPolicy.matchesDualMobileTypeTarget(
             dataSubId = 4,
             targetSubId = 1,
@@ -602,6 +700,31 @@ class CcTransitionOwnerTest {
             ),
             0.0001f,
         )
+    }
+
+    @Test
+    fun networkActivityFadesOutAndRemainsHiddenAtCcEnd() {
+        val policy = BatteryNumberFollowerPolicy
+        assertEquals(1f, policy.networkActivityVisibleFraction(0f), 0.0001f)
+        for (progress in listOf(0.04f, 0.09f)) {
+            val source = policy.chargingSourceVisibleFraction(progress)
+            assertEquals(
+                source * source * (3f - 2f * source),
+                policy.networkActivityVisibleFraction(progress),
+                0.0001f,
+            )
+        }
+        for (progress in listOf(0.2f, 0.5f, 0.84f, 0.85f, 0.9f, 1f)) {
+            assertEquals(
+                "Network activity must stay hidden after fading out at $progress",
+                0f,
+                policy.networkActivityVisibleFraction(progress),
+                0.0001f,
+            )
+        }
+        // The same stateless native progress restores the source on closing.
+        assertTrue(policy.networkActivityVisibleFraction(0.09f) > 0f)
+        assertEquals(1f, policy.networkActivityVisibleFraction(0f), 0.0001f)
     }
 
     @Test

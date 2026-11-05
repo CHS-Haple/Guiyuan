@@ -56,6 +56,14 @@ internal enum class PreviewWifiState {
     DUAL_WIFI,
 }
 
+// Sandbox-only selection; real status-bar activity still comes from native collectors.
+internal enum class PreviewNetworkActivity {
+    UPLOAD,
+    DOWNLOAD,
+    BOTH,
+    IDLE,
+}
+
 internal enum class PreviewBatteryMode {
     BALANCED,
     POWER_SAVE,
@@ -78,30 +86,26 @@ internal enum class PreviewCenterSource {
 }
 
 internal data class PreviewSandboxUiState(
-    val simPresent: Boolean = true,
     val airplaneMode: Boolean = false,
     val networkMode: PreviewNetworkMode = PreviewNetworkMode.WIFI,
     val mobileNetwork: PreviewMobileNetwork = PreviewMobileNetwork.FIVE_G,
     val mobileSignalLevel: Int = 4,
-    val dualMobile: Boolean = false,
     val sim2SignalLevel: Int = 4,
     val sim2MobileNetwork: PreviewMobileNetwork = PreviewMobileNetwork.FOUR_G,
     val dataSim: PreviewDataSim = PreviewDataSim.SIM1,
     val simCards: PreviewSimCards = PreviewSimCards.BOTH,
     val wifiState: PreviewWifiState = PreviewWifiState.CONNECTED,
     val wifiSignalLevel: Int = 3,
+    val networkActivity: PreviewNetworkActivity = PreviewNetworkActivity.BOTH,
     val batteryPercent: Int = 87,
     val batteryMode: PreviewBatteryMode = PreviewBatteryMode.BALANCED,
     val chargingState: PreviewChargingState = PreviewChargingState.NOT_CHARGING,
 ) {
     val sim1Active: Boolean
-        get() =
-            if (!dualMobile) simPresent
-            else simCards == PreviewSimCards.BOTH || simCards == PreviewSimCards.SIM1_ONLY
+        get() = simCards == PreviewSimCards.BOTH || simCards == PreviewSimCards.SIM1_ONLY
 
     val sim2Active: Boolean
-        get() = dualMobile &&
-            (simCards == PreviewSimCards.BOTH || simCards == PreviewSimCards.SIM2_ONLY)
+        get() = simCards == PreviewSimCards.BOTH || simCards == PreviewSimCards.SIM2_ONLY
 
     val hasSim: Boolean
         get() = sim1Active || sim2Active
@@ -109,22 +113,27 @@ internal data class PreviewSandboxUiState(
     val mobileControlsEnabled: Boolean
         get() = hasSim && !airplaneMode
 
-    val dataSimAvailable: Boolean
-        get() =
-            if (!dualMobile) simPresent
-            else if (dataSim == PreviewDataSim.SIM1) sim1Active else sim2Active
+    val effectiveDataSim: PreviewDataSim?
+        get() = when (simCards) {
+            PreviewSimCards.BOTH -> dataSim
+            PreviewSimCards.SIM1_ONLY -> PreviewDataSim.SIM1
+            PreviewSimCards.SIM2_ONLY -> PreviewDataSim.SIM2
+            PreviewSimCards.NONE -> null
+        }
 
     val dataMobileNetwork: PreviewMobileNetwork
-        get() =
-            if (!dataSimAvailable) PreviewMobileNetwork.NONE
-            else if (dualMobile && dataSim == PreviewDataSim.SIM2) sim2MobileNetwork
-            else mobileNetwork
+        get() = when (effectiveDataSim) {
+            PreviewDataSim.SIM1 -> mobileNetwork
+            PreviewDataSim.SIM2 -> sim2MobileNetwork
+            null -> PreviewMobileNetwork.NONE
+        }
 
     val dataSignalLevel: Int
-        get() =
-            if (!dataSimAvailable) 0
-            else if (dualMobile && dataSim == PreviewDataSim.SIM2) sim2SignalLevel
-            else mobileSignalLevel
+        get() = when (effectiveDataSim) {
+            PreviewDataSim.SIM1 -> mobileSignalLevel
+            PreviewDataSim.SIM2 -> sim2SignalLevel
+            null -> 0
+        }
 
     val displayedSignalLevel: Int
         get() =
@@ -142,6 +151,9 @@ internal data class PreviewSandboxUiState(
                     sim2 = sim2SignalLevel.coerceIn(0, 4),
                 )
             } else null
+
+    fun dualPresentationLevels(dualSignalEnabled: Boolean): DualMobileLevels? =
+        dualLevels.takeIf { dualSignalEnabled }
 
     val mobileOptionsVisible: Boolean
         get() = networkMode == PreviewNetworkMode.MOBILE && mobileControlsEnabled
@@ -211,6 +223,7 @@ internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
 
 internal fun PreviewSandboxUiState.toRenderModel(
     resources: PreviewSysUiResources,
+    dualSignalEnabled: Boolean,
     mobileTypeface: Typeface? = null,
     lowBatteryThreshold: Int = LOW_BATTERY_THRESHOLD_DEFAULT,
     nativeLowColor: Int? = null,
@@ -296,8 +309,20 @@ internal fun PreviewSandboxUiState.toRenderModel(
                 resources = resources,
                 state = chargingState,
             ),
+        networkActivityResId = if (networkActivity == PreviewNetworkActivity.IDLE) {
+            // Null is the native idle contract. The existing user setting
+            // decides whether the dim idle arrows should remain visible.
+            null
+        } else {
+            resources.drawableId(
+                *previewNetworkActivityResourceNames(
+                    centerSource = previewCenterSource(),
+                    state = networkActivity,
+                ).toTypedArray(),
+            )
+        },
         mobileLevel = mobileLevel,
-        dualMobileLevels = dualLevels,
+        dualMobileLevels = dualPresentationLevels(dualSignalEnabled),
         mobileUnavailableMark = airplaneMode || !hasSim,
         effectiveDataSubscriptionId = -1,
         batterySemanticState = semanticState,
@@ -340,6 +365,31 @@ private fun previewWifiResourceId(
             level = level.coerceIn(0, 3),
         ).toTypedArray(),
     )
+
+// All IDs are resolved against the installed SystemUI. Never substitute an
+// app-owned approximation when a requested native variant is unavailable.
+internal fun previewNetworkActivityResourceNames(
+    centerSource: PreviewCenterSource,
+    state: PreviewNetworkActivity,
+): List<String> =
+    when (centerSource) {
+        PreviewCenterSource.WIFI -> when (state) {
+            PreviewNetworkActivity.UPLOAD -> listOf("stat_sys_wifi_out")
+            PreviewNetworkActivity.DOWNLOAD -> listOf("stat_sys_wifi_in")
+            PreviewNetworkActivity.BOTH -> listOf("stat_sys_wifi_inout")
+            PreviewNetworkActivity.IDLE -> emptyList()
+        }
+        PreviewCenterSource.MOBILE -> when (state) {
+            PreviewNetworkActivity.UPLOAD ->
+                listOf("stat_sys_signal_out_left", "stat_sys_signal_out")
+            PreviewNetworkActivity.DOWNLOAD ->
+                listOf("stat_sys_signal_in_left", "stat_sys_signal_in")
+            PreviewNetworkActivity.BOTH ->
+                listOf("stat_sys_signal_inout_left", "stat_sys_signal_inout")
+            PreviewNetworkActivity.IDLE -> emptyList()
+        }
+        else -> emptyList()
+    }
 
 internal fun previewChargingResourceNames(
     state: PreviewChargingState,

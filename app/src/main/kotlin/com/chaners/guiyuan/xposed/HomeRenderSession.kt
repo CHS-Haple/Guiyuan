@@ -284,6 +284,14 @@ internal object HomeRenderSession {
                 layoutProbe()
             }
 
+        // Native privacy-state transitions may change this child while the
+        // battery container itself retains its exact bounds. Follow its
+        // layout callback, not a timer or an estimated privacy width.
+        private val statusIconsLayoutListener =
+            View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                layoutProbe()
+            }
+
         private val carrierLayoutListener =
             View.OnLayoutChangeListener {
                     _,
@@ -321,6 +329,7 @@ internal object HomeRenderSession {
             overlayHost.addOnAttachStateChangeListener(this)
             overlayHost.addOnLayoutChangeListener(overlayHostLayoutListener)
             carrier.addOnLayoutChangeListener(carrierLayoutListener)
+            statusIcons.get()?.addOnLayoutChangeListener(statusIconsLayoutListener)
             probeView.visibility = View.GONE
             (probeView.parent as? ViewGroup)?.removeView(probeView)
             overlayHost.addView(
@@ -385,6 +394,7 @@ internal object HomeRenderSession {
                 { batteryContainer.get()?.removeOnAttachStateChangeListener(this) },
                 { batteryContainer.get()?.removeOnLayoutChangeListener(overlayHostLayoutListener) },
                 { batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) },
+                { statusIcons.get()?.removeOnLayoutChangeListener(statusIconsLayoutListener) },
                 { if (removeVisual) (probeView.parent as? ViewGroup)?.removeView(probeView) },
             )
         }
@@ -450,6 +460,10 @@ internal object HomeRenderSession {
             }
             nativeHandoffActive = active
             if (SandboxHost.active()) update(StatusStateStore.snapshot())
+            // Privacy may already be occupying Home's right end when the module
+            // first takes ownership. No subsequent native layout change is
+            // guaranteed, so reread its laid-out edge before revealing Guiyuan.
+            if (!active) layoutProbe()
             val visible = applyResolvedVisibility()
             emitEvent {
                 "homeRenderHandoff nativeActive=" + nativeHandoffActive +
@@ -679,13 +693,34 @@ internal object HomeRenderSession {
                 return false
             }
 
+            val isRtl = overlayHost.layoutDirection == View.LAYOUT_DIRECTION_RTL
+            val privacyOccupiesEnd =
+                SysUiPresentationOwner.homePrivacyOccupiesEnd(overlayHost)
             val resolved =
-                SteadyLayoutResolver.resolve(
-                    hostWidthPx = hostWidth,
-                    hostHeightPx = hostHeight,
-                    baseCarrierWidthPx = baseCarrierWidth,
-                    isRtl = overlayHost.layoutDirection == View.LAYOUT_DIRECTION_RTL,
-                ) ?: return false
+                if (privacyOccupiesEnd == true) {
+                    val nativeIcons = statusIcons.get() ?: return false
+                    if (nativeIcons.parent !== overlayHost ||
+                        !nativeIcons.isLaidOut || nativeIcons.width <= 0
+                    ) return false
+                    // Exact target onLayout ends the icon group at the privacy
+                    // child's measured boundary. The module's end reservation
+                    // sits inside this group's native edge.
+                    HomePrivacyAnchorPolicy.resolve(
+                        hostWidthPx = hostWidth,
+                        hostHeightPx = hostHeight,
+                        baseCarrierWidthPx = baseCarrierWidth,
+                        statusIconsEndPx =
+                            if (isRtl) nativeIcons.left else nativeIcons.right,
+                        isRtl = isRtl,
+                    )
+                } else {
+                    SteadyLayoutResolver.resolve(
+                        hostWidthPx = hostWidth,
+                        hostHeightPx = hostHeight,
+                        baseCarrierWidthPx = baseCarrierWidth,
+                        isRtl = isRtl,
+                    )
+                } ?: return false
             out.set(resolved.left, 0, resolved.right, hostHeight)
             return out.width() > 0 && out.height() > 0
         }

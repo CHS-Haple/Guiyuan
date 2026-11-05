@@ -29,6 +29,51 @@ class MobileSignalMorphPolicyTest {
 
 
     @Test
+    fun bothSidesCollapseDoesNotSendVisibleDotsInTheOppositeDirection() {
+        // The shrinking outer dot remains in place while visible; it is
+        // packed into the survivor's anchor only once its radius has gone to zero.
+        for (step in 0..99) {
+            assertEquals(-90f, morph.bothSidesDotX(
+                -90f, -40f, -130f, -150f, step / 100f, 0f, 0f,
+            ), 0f)
+        }
+        assertEquals(-40f, morph.bothSidesDotX(-90f, -40f, -130f, -150f, 1f, 0f, 0f), 0f)
+        assertEquals(-130f, morph.bothSidesDotX(-90f, -40f, -130f, -150f, 1f, 1f, 0f), 0f)
+        assertEquals(-150f, morph.bothSidesDotX(-90f, -40f, -130f, -150f, 1f, 1f, 1f), 0f)
+    }
+
+    @Test
+    fun onlyNativeAggregateAnchorsFormVerticalPairAndSpreadHorizontally() {
+        val aggregateX = 25f
+        val upperY = 11f
+        val lowerY = 33f
+        for (source in listOf(-40f, 40f)) {
+            assertEquals(aggregateX, morph.bothSidesDotX(
+                source, source, aggregateX, aggregateX, 0f, 1f, 0f,
+            ), 0f)
+        }
+        for (step in 0..20) {
+            val spread = step / 20f
+            // The per-dot target Y may differ: that must not tilt the spread.
+            for (targetY in listOf(5f, 22f, 45f)) {
+                assertEquals(upperY, morph.bothSidesDotY(
+                    8f, 8f, upperY, targetY, 0f, 1f, 0f,
+                ), 0f)
+                assertEquals(lowerY, morph.bothSidesDotY(
+                    36f, 36f, lowerY, targetY, 0f, 1f, 0f,
+                ), 0f)
+            }
+            assertEquals(aggregateX + (70f - aggregateX) * spread,
+                morph.bothSidesDotX(-40f, -40f, aggregateX, 70f, 0f, 1f, spread), 0.0001f)
+        }
+        // Native final ink may have different Y; match it only as bars morph.
+        assertEquals(22f, morph.bothSidesDotY(8f, 8f, upperY, 22f, 0f, 1f, 1f), 0f)
+        // Separate SIM targets retain independent anchors, no shared-X coercion.
+        assertEquals(-60f, morph.bothSidesDotX(-40f, -40f, -60f, -75f, 0f, 1f, 0f), 0f)
+        assertEquals(60f, morph.bothSidesDotX(40f, 40f, 60f, 75f, 0f, 1f, 0f), 0f)
+    }
+
+    @Test
     fun collapseEndsAtThirtyPercentWithoutChangingLaterPhases() {
         fun phase(p: Float): Float = morph.handoffProgress(p * p)
         assertEquals(0f, morph.trimProgress(phase(0f)), 0f)

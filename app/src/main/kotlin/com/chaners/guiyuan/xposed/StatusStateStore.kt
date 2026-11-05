@@ -45,8 +45,39 @@ internal object StatusStateStore {
             return null
         }
 
-        current = current.copy(wifi = state)
+        current = current.copy(
+            wifi = state,
+            wifiActivityResId = if (state is WifiState.Visible) current.wifiActivityResId else null,
+            wifiActivityObserved = current.wifiActivityObserved || state is WifiState.Hidden,
+        )
         return current
+    }
+
+    @Synchronized
+    fun updateWifiActivity(resourceId: Int?): Snapshot? {
+        // Explicit absence is an observation too: an older Hot Reload snapshot
+        // must not restore a resource after a newer collector has cleared it.
+        val next = resourceId?.takeIf { it > 0 && current.wifi !is WifiState.Hidden }
+        val changed = current.wifiActivityResId != next
+        current = current.copy(
+            wifiActivityResId = next,
+            wifiActivityObserved = true,
+        )
+        return current.takeIf { changed }
+    }
+
+    @Synchronized
+    fun updateMobileActivity(subscriptionId: Int, resourceId: Int?): Snapshot? {
+        if (subscriptionId < 0) return null
+        val next = current.mobileActivityResIds.toMutableMap()
+        if (resourceId == null || resourceId <= 0) next.remove(subscriptionId)
+        else next[subscriptionId] = resourceId
+        val changed = next != current.mobileActivityResIds
+        current = current.copy(
+            mobileActivityResIds = if (changed) next.toSortedMap() else current.mobileActivityResIds,
+            mobileActivityObservedIds = current.mobileActivityObservedIds + subscriptionId,
+        )
+        return current.takeIf { changed }
     }
 
     @Synchronized
@@ -72,6 +103,10 @@ internal object StatusStateStore {
         current =
             current.copy(
                 mobile = mobile,
+                mobileActivityResIds = if (enabled) emptyMap() else current.mobileActivityResIds,
+                mobileActivityObservedIds = if (enabled) {
+                    current.mobileActivityObservedIds + current.mobileActivityResIds.keys
+                } else current.mobileActivityObservedIds,
                 airplaneMode = enabled,
                 mobileRecoveryPending = recoveryPending,
             )
@@ -160,6 +195,13 @@ internal object StatusStateStore {
                     )
                 }
             }
+            putInt(KEY_WIFI_ACTIVITY_RES_ID, current.wifiActivityResId ?: 0)
+            putIntArray(
+                KEY_MOBILE_ACTIVITY_RES_IDS,
+                current.mobileActivityResIds.entries.flatMap { (id, resourceId) ->
+                    listOf(id, resourceId)
+                }.toIntArray(),
+            )
             putBoolean(KEY_MOBILE_RECOVERY_PENDING, current.mobileRecoveryPending)
             putInt(
                 KEY_AIRPLANE,
@@ -256,17 +298,49 @@ internal object StatusStateStore {
             offset += MOBILE_STRIDE
         }
 
-        current =
-            Snapshot(
+        val activity = bundle.getIntArray(KEY_MOBILE_ACTIVITY_RES_IDS) ?: IntArray(0)
+        val transferredActivity = buildMap {
+            for (index in 0 until activity.size - 1 step 2) {
+                if (activity[index] >= 0 && activity[index + 1] > 0) {
+                    put(activity[index], activity[index + 1])
+                }
+            }
+        }
+        current = mergeHotReloadSnapshots(
+            saved = Snapshot(
                 battery = battery,
-                wifi = observed.wifi.takeUnless { it == WifiState.Unknown } ?: wifi,
-                mobile = mobile.apply { putAll(observed.mobile) },
+                wifi = wifi,
+                wifiActivityResId = bundle.getInt(KEY_WIFI_ACTIVITY_RES_ID).takeIf { it > 0 },
+                mobile = mobile,
+                mobileActivityResIds = transferredActivity,
                 airplaneMode = airplane,
-                mobileRecoveryPending =
-                    bundle.getBoolean(KEY_MOBILE_RECOVERY_PENDING, false),
-            )
+                mobileRecoveryPending = bundle.getBoolean(KEY_MOBILE_RECOVERY_PENDING, false),
+            ),
+            fresh = observed,
+        )
         observed.battery?.let(::updateBattery)
         return current
+    }
+
+    // Reconcile two generations without involving Android Bundle serialization.
+    internal fun mergeHotReloadSnapshots(saved: Snapshot, fresh: Snapshot): Snapshot {
+        val wifi = fresh.wifi.takeUnless { it == WifiState.Unknown } ?: saved.wifi
+        return saved.copy(
+            wifi = wifi,
+            wifiActivityResId = if (wifi is WifiState.Visible) {
+                if (fresh.wifiActivityObserved) fresh.wifiActivityResId
+                else saved.wifiActivityResId
+            } else null,
+            wifiActivityObserved = fresh.wifiActivityObserved,
+            mobile = saved.mobile.toSortedMap().apply { putAll(fresh.mobile) },
+            mobileActivityResIds = buildMap {
+                if (fresh.airplaneMode != true) putAll(saved.mobileActivityResIds)
+                fresh.mobileActivityObservedIds.forEach { remove(it) }
+                if (fresh.airplaneMode != true) putAll(fresh.mobileActivityResIds)
+            },
+            mobileActivityObservedIds = fresh.mobileActivityObservedIds,
+            airplaneMode = fresh.airplaneMode ?: saved.airplaneMode,
+        )
     }
 
     private fun encodeSignal(signal: SignalStrength): Int =
@@ -286,7 +360,11 @@ internal object StatusStateStore {
     internal data class Snapshot(
         val battery: BatteryState? = null,
         val wifi: WifiState = WifiState.Unknown,
+        val wifiActivityResId: Int? = null,
+        val wifiActivityObserved: Boolean = false,
         val mobile: Map<Int, MobileState> = emptyMap(),
+        val mobileActivityResIds: Map<Int, Int> = emptyMap(),
+        val mobileActivityObservedIds: Set<Int> = emptySet(),
         val airplaneMode: Boolean? = null,
         val mobileRecoveryPending: Boolean = false,
     )
@@ -325,6 +403,8 @@ internal object StatusStateStore {
     private const val KEY_BATTERY_LOW_SYSTEM_COLOR = "batteryLowSystemColor"
     private const val KEY_WIFI_KIND = "wifiKind"
     private const val KEY_WIFI_RES_ID = "wifiResId"
+    private const val KEY_WIFI_ACTIVITY_RES_ID = "wifiActivityResId"
+    private const val KEY_MOBILE_ACTIVITY_RES_IDS = "mobileActivityResIds"
     private const val KEY_WIFI_SIGNAL = "wifiSignal"
     private const val KEY_WIFI_INTERNET = "wifiInternet"
     private const val KEY_AIRPLANE = "airplane"

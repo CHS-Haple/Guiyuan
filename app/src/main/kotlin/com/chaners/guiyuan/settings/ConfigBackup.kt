@@ -52,6 +52,9 @@ internal data class ConfigBackup(
 internal object ConfigBackupFormat {
     private const val FORMAT = "guiyuan-config"
     private const val SCHEMA = 1
+    private const val PROFILES_JSON_KEY = "profiles"
+    private const val DUAL_DOT_STYLE_JSON_KEY = "dualDotStyle"
+    private const val LEGACY_IDLE_ACTIVITY_JSON_KEY = "leftRightShowIdleActivity"
     const val MAX_BYTES = 256 * 1024
     private val json = Json {
         encodeDefaults = true
@@ -93,7 +96,7 @@ internal object ConfigBackupFormat {
         val root = json.parseToJsonElement(contents).jsonObject
         val schema = root["schemaVersion"]?.jsonPrimitive?.intOrNull
         require(schema == SCHEMA) { "Unsupported schemaVersion: " + schema }
-        val compatibleRoot = upgradeLegacySingleRowStyle(root)
+        val compatibleRoot = upgradeLegacyDualAndIdleSettings(upgradeLegacySingleRowStyle(root))
         requireCanonicalTypes(compatibleRoot, ConfigBackup.serializer().descriptor)
         // Only released 1.0.0 two-layout backups are upgraded. Other
         // profile counts are invalid, never silently filled or truncated.
@@ -121,11 +124,42 @@ internal object ConfigBackupFormat {
         return normalizeImported(upgraded).also(::validate)
     }
 
+    // Missing dual-dot style in older archives meant curved, not the new default.
+    // The retired idle-show preference cannot be interpreted as an opt-in hide.
+    private fun upgradeLegacyDualAndIdleSettings(root: JsonObject): JsonObject {
+        val visual = root["visual"] as? JsonObject ?: return root
+        val profiles = visual[PROFILES_JSON_KEY] as? JsonArray ?: return root
+        if (profiles.none { it is JsonObject &&
+                (DUAL_DOT_STYLE_JSON_KEY !in it || LEGACY_IDLE_ACTIVITY_JSON_KEY in it) }) return root
+        val upgraded = profiles.map(::upgradeLegacyDualProfile)
+        return JsonObject(root + ("visual" to JsonObject(visual +
+            (PROFILES_JSON_KEY to JsonArray(upgraded)))))
+    }
+
+    // Keep legacy wire-format migration strict and leave non-object entries
+    // for canonical schema validation, as before.
+    private fun upgradeLegacyDualProfile(profile: JsonElement): JsonElement {
+        if (profile !is JsonObject) return profile
+        val oldIdle = profile[LEGACY_IDLE_ACTIVITY_JSON_KEY]
+        if (oldIdle != null) {
+            require("leftRightHideIdleActivity" !in profile) {
+                "Conflicting idle activity settings"
+            }
+            require(oldIdle is JsonPrimitive &&
+                !oldIdle.isString && oldIdle.booleanOrNull != null) {
+                "Invalid legacy idle activity setting"
+            }
+        }
+        val fields = profile.filterKeys { it != LEGACY_IDLE_ACTIVITY_JSON_KEY }
+        return JsonObject(if (DUAL_DOT_STYLE_JSON_KEY in fields) fields
+            else fields + (DUAL_DOT_STYLE_JSON_KEY to JsonPrimitive("DEFAULT")))
+    }
+
     // Retire the old boolean without changing the V1 backup schema or
     // accepting conflicting new and legacy representations.
     private fun upgradeLegacySingleRowStyle(root: JsonObject): JsonObject {
         val visual = root["visual"] as? JsonObject ?: return root
-        val profiles = visual["profiles"] as? JsonArray ?: return root
+        val profiles = visual[PROFILES_JSON_KEY] as? JsonArray ?: return root
         if (profiles.none { it is JsonObject && "singleRowFlatDots" in it }) return root
         val converted = profiles.map { profile ->
             if (profile !is JsonObject || "singleRowFlatDots" !in profile) return@map profile
@@ -135,12 +169,12 @@ internal object ConfigBackupFormat {
                 "Invalid legacy single-row style"
             }
             val horizontal = old.booleanOrNull == true &&
-                (profile["dualDotStyle"] as? JsonPrimitive)?.content == "DUO"
+                (profile[DUAL_DOT_STYLE_JSON_KEY] as? JsonPrimitive)?.content == "DUO"
             JsonObject(profile.filterKeys { it != "singleRowFlatDots" } +
                 ("singleRowDotStyle" to JsonPrimitive(if (horizontal) "DUO" else "DEFAULT")))
         }
         return JsonObject(root + ("visual" to JsonObject(visual +
-            ("profiles" to JsonArray(converted)))))
+            (PROFILES_JSON_KEY to JsonArray(converted)))))
     }
 
     // Preserve wire types: kotlinx serialization may otherwise accept quoted
@@ -185,6 +219,9 @@ internal object ConfigBackupFormat {
     // structure, unknown enums, color integrity and references still fail.
     private fun normalizeImported(backup: ConfigBackup): ConfigBackup {
         backup.visual.profiles.forEach { cfg ->
+            require(cfg.singleRowDotArrangement != SignalDotArrangement.BOTH_SIDES) {
+                "Two-sided signal dots cannot be a single-row selection"
+            }
             require(BatteryColorSlot.entries.all { slot ->
                 val color = cfg.batteryColorOverrides.colorFor(slot)
                 color == null || color ushr 24 == 0xFF
@@ -192,6 +229,7 @@ internal object ConfigBackupFormat {
             require(listOf(
                 cfg.topTextScale, cfg.topOffsetY, cfg.wifiOffsetY, cfg.mobileTypeOffsetY,
                 cfg.curvedSignalDotOffsetY, cfg.horizontalSignalDotOffsetY, cfg.mobileTypeBottomOffsetY,
+                cfg.bothSidesActivityScale, cfg.bothSidesActivityOffsetY, cfg.bothSidesChargingOffsetY,
                 cfg.topChargingIconScale, cfg.combinedScale, cfg.outerWeightScale,
                 cfg.wifiScale, cfg.airplaneScale, cfg.noSimScale, cfg.mobileTypeScale,
             ).all(Float::isFinite)) { "Nonfinite visual setting" }
@@ -251,10 +289,14 @@ internal object ConfigBackupFormat {
             }
         }) { "Conflicting mode-wide visual settings" }
         profiles.forEach { cfg ->
+            require(cfg.singleRowDotArrangement != SignalDotArrangement.BOTH_SIDES) {
+                "Two-sided signal dots cannot be a single-row selection"
+            }
             val values = listOf(
                 cfg.topTextScale, cfg.topOffsetY, cfg.wifiOffsetY, cfg.mobileTypeOffsetY,
                 cfg.curvedSignalDotOffsetY, cfg.horizontalSignalDotOffsetY,
-                cfg.mobileTypeBottomOffsetY,
+                cfg.mobileTypeBottomOffsetY, cfg.bothSidesActivityScale,
+                cfg.bothSidesActivityOffsetY, cfg.bothSidesChargingOffsetY,
                 cfg.topChargingIconScale, cfg.combinedScale, cfg.outerWeightScale,
                 cfg.wifiScale, cfg.airplaneScale, cfg.noSimScale, cfg.mobileTypeScale,
             )

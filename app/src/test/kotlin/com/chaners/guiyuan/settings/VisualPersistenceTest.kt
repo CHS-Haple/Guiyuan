@@ -7,6 +7,32 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VisualPersistenceTest {
+    @Test
+    fun invalidStoredSingleRowStyleDoesNotReachSettingsOrRenderer() {
+        val prefs = MemoryPreferences()
+        prefs.edit().putString(
+            visualProfileKey(ContentLayout.NETWORK_CENTER, SINGLE_ROW_DOT_STYLE_KEY),
+            SignalDotArrangement.BOTH_SIDES.persistedValue,
+        ).apply()
+        assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg().singleRowDotArrangement)
+    }
+
+
+    @Test
+    fun firstDualEnableDefaultsToBothSidesWithoutOverwritingSavedArrangement() {
+        val prefs = MemoryPreferences()
+        assertFalse(prefs.dualSignalEnabled())
+        assertEquals(SignalDotArrangement.BOTH_SIDES, prefs.readVisualCfg().dualRowDotArrangement)
+        migrateVisualPrefsIfNeeded(prefs)
+        prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, true).apply()
+        assertEquals(SignalDotArrangement.BOTH_SIDES, prefs.readVisualCfg().dualRowDotArrangement)
+
+        val saved = visualProfileKey(ContentLayout.NETWORK_CENTER, DUAL_ROW_DOT_ARRANGEMENT_KEY)
+        prefs.edit().putString(saved, SignalDotArrangement.CURVED.persistedValue).apply()
+        prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false).apply()
+        prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, true).apply()
+        assertEquals(SignalDotArrangement.CURVED, prefs.readVisualCfg().dualRowDotArrangement)
+    }
 
     @Test
     fun resettingVisualDefaultsPreservesSavedBatterySchemes() {
@@ -92,6 +118,7 @@ class VisualPersistenceTest {
         val prefs = MemoryPreferences()
         val dual = VisualCfg(
             dualSignal = true,
+            dualRowDotArrangement = SignalDotArrangement.CURVED,
             curvedSignalDotOffsetY = 4f,
             horizontalSignalDotOffsetY = -7f,
         )
@@ -614,7 +641,7 @@ class VisualPersistenceTest {
                 ))
             }
             assertEquals(
-                if (activeDual) SignalDotArrangement.HORIZONTAL else SignalDotArrangement.CURVED,
+                if (activeDual) SignalDotArrangement.HORIZONTAL else SignalDotArrangement.BOTH_SIDES,
                 prefs.readVisualCfg(true, layout).dualRowDotArrangement,
             )
             assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
@@ -655,7 +682,7 @@ class VisualPersistenceTest {
         assertEquals(SignalDotArrangement.CURVED, batterySaved.dualRowDotArrangement)
         assertEquals(0.77f, batterySaved.mobileTypeScale, 0f)
         assertFalse(normalSaved.centeredMobileSignal)
-        assertEquals(SignalDotArrangement.CURVED, normalSaved.dualRowDotArrangement)
+        assertEquals(SignalDotArrangement.BOTH_SIDES, normalSaved.dualRowDotArrangement)
         assertEquals(1f, normalSaved.mobileTypeScale, 0f)
     }
 

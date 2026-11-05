@@ -310,6 +310,15 @@ internal object CcTransitionOwner {
                     }
                 }
             }
+        private val nativeIdleMobileActivityResId: Int by lazy(LazyThreadSafetyMode.NONE) {
+            readOrNull {
+                finalStatusIcons.resources.getIdentifier(
+                    "stat_sys_signal_data_left",
+                    "drawable",
+                    "com.android.systemui",
+                )
+            } ?: 0
+        }
         private var nativeWifiRoot: View? = null
         private var nativeWifiSignal: View? = null
         private var wifiTargetReady: Boolean? = null
@@ -516,9 +525,13 @@ internal object CcTransitionOwner {
                 }.filter { (_, root) ->
                     root.visibility == View.VISIBLE && isUsableSlotView(root)
                 }
-            if (targets.isEmpty()) return null
+            val model = currentSnapshot.model
+            val native = PresentationStore.snapshot().mobilePresentation
+            val sourceId = model.networkActivityResId
+            val dataSubId = model.effectiveDataSubscriptionId
 
-            return "targets=${targets.size};" +
+            return "targets=${targets.size}:mode=${native?.mode}:" +
+                "dataSubId=$dataSubId:sourceActivityResId=${sourceId ?: 0}:" +
                 targets.take(4).joinToString(";") { (slot, root) ->
                     val signal =
                         NativeParticipantAccess.findResourceView(
@@ -547,8 +560,32 @@ internal object CcTransitionOwner {
                                     "${rows?.topShape ?: "?"}/${rows?.bottomShape ?: "?"}"
                             }
                         }
-                    "$slot:root=${root.javaClass.simpleName}:subId=${readMobileSubId(root)}:" +
-                        "size=${root.width}x${root.height}:signal=[$children]"
+                    val rootSubId = readMobileSubId(root)
+                    val activity = NativeParticipantAccess.findResourceView(
+                        root = root,
+                        entryName = "mobile_left_mobile_inout",
+                    ) as? ImageView
+                    val activityEvidence = activity?.let { image ->
+                        val tag = (image.tag as? Number)?.toInt()
+                        "visibility=${image.visibility}:shown=${image.isShown}:" +
+                            "attached=${image.isAttachedToWindow}:" +
+                            "size=${image.width}x${image.height}:tag=${tag ?: 0}:" +
+                            "drawable=${image.drawable != null}:" +
+                            "sourceMatch=${sourceId != null && sourceId > 0 && tag == sourceId}:" +
+                            "nativeIdleMatch=${sourceId == null &&
+                                model.centerIndicator is CenterIndicator.MobileType &&
+                                tag == nativeIdleMobileActivityResId}"
+                    } ?: "missing"
+                    val rootOwnsTransport = CcTransitionPolicy.mobileActivityRootMatches(
+                        presentation = native,
+                        dataSubId = dataSubId,
+                        targetSubId = rootSubId,
+                        soleVisibleRoot = targets.size == 1 && targets[0].second === root,
+                    )
+                    "$slot:root=${root.javaClass.simpleName}:subId=$rootSubId:" +
+                        "size=${root.width}x${root.height}:" +
+                        "ownsDataTransport=$rootOwnsTransport:" +
+                        "activity=[$activityEvidence]:signal=[$children]"
                 }
         }
 
@@ -1196,6 +1233,62 @@ internal object CcTransitionOwner {
                     Pair(numberSource, numberCurrent)
                 }
 
+            // The bottom charging bolt is visually part of the two outer
+            // mobile rows, not of the battery-number/ring group. Reuse the
+            // exact eight-dot motion authorities for its source flight.
+            // Separate and aggregate native targets retain their existing
+            // SIM-identity/optical verification; without them, follow the
+            // carrier instead of inventing a destination.
+            val dualMobileFollowerFrames =
+                if (specs.any { it.followDualMobileMotion }) {
+                    dualSpec?.let { mobileSpec ->
+                        val mobileSource = CcTransitionPolicy.componentGeometry(
+                            parentGeometry = sourceParentGeometry,
+                            parentWidth = sourceWidth,
+                            parentHeight = sourceHeight,
+                            bounds = mobileSpec.sourceBounds,
+                        ) ?: return@let null
+                        val carried = carriedSourceGeometry(mobileSource, carrierFrames)
+                        val current =
+                            when {
+                                dualRowTargets != null && dualRowTravel != null &&
+                                    rowSpecs?.size == 2 -> {
+                                    val currentRows = rowSpecs.orEmpty().zip(dualRowTargets).mapNotNull {
+                                        (rowSpec, target) ->
+                                        CcTransitionPolicy.componentGeometry(
+                                            parentGeometry = sourceParentGeometry,
+                                            parentWidth = sourceWidth,
+                                            parentHeight = sourceHeight,
+                                            bounds = rowSpec.sourceBounds,
+                                        )?.let { rowSource ->
+                                            CcTransitionPolicy.dualMobileRowMotionGeometry(
+                                                source = carriedSourceGeometry(rowSource, carrierFrames),
+                                                target = target.second,
+                                                groupTravelX = dualRowTravel[0],
+                                                groupTravelY = dualRowTravel[1],
+                                                progress = motionProgress,
+                                                scalePolicy = rowSpec.scalePolicy,
+                                            )
+                                        }
+                                    }
+                                    CcTransitionPolicy.dualMobileGroupGeometry(currentRows) ?: carried
+                                }
+
+                                aggregateTarget != null ->
+                                    projectedGeometry(
+                                        source = mobileSource,
+                                        target = aggregateTarget.first,
+                                        progress = motionProgress,
+                                        scalePolicy = mobileSpec.scalePolicy,
+                                        carrierFrames = carrierFrames,
+                                    )
+
+                                else -> carried
+                            }
+                        mobileSource to current
+                    }
+                } else null
+
             specs.forEach { spec ->
                 val sourceGeometry =
                     CcTransitionPolicy.componentGeometry(
@@ -1298,39 +1391,32 @@ internal object CcTransitionOwner {
                                 StatusPainter.TransitionComponent.CENTER &&
                                 model.centerIndicator is CenterIndicator.MobileType
                         )
-                val chargingSourceVisibleFraction =
-                    if (
-                        spec.component ==
-                        StatusPainter.TransitionComponent.CHARGING_ICON
-                    ) {
-                        BatteryNumberFollowerPolicy
-                            .chargingSourceVisibleFraction(motionProgress)
-                    } else {
-                        0f
-                    }
-                val chargingSourceLocked =
-                    spec.component ==
-                        StatusPainter.TransitionComponent.CHARGING_ICON &&
-                        chargingSourceVisibleFraction > 0f
+                // Charging and activity share source timing; only charging reveals at FINAL.
+                // Activity fades through source alpha and stays hidden after fade-out.
+                val clippedGlyph =
+                    spec.component == StatusPainter.TransitionComponent.CHARGING_ICON ||
+                        spec.component == StatusPainter.TransitionComponent.NETWORK_ACTIVITY
+                val sourceGlyphVisible =
+                    if (clippedGlyph) {
+                        BatteryNumberFollowerPolicy.chargingSourceVisibleFraction(motionProgress)
+                    } else 0f
+                val sourceGlyphLocked = clippedGlyph && sourceGlyphVisible > 0f
                 val componentMotionProgress =
-                    if (
-                        spec.component ==
-                        StatusPainter.TransitionComponent.CHARGING_ICON
-                    ) {
-                        BatteryNumberFollowerPolicy
-                            .chargingMotionProgress(motionProgress)
-                    } else {
-                        motionProgress
-                    }
+                    if (clippedGlyph) {
+                        BatteryNumberFollowerPolicy.chargingMotionProgress(motionProgress)
+                    } else motionProgress
                 val geometry =
                     when {
-                        chargingSourceLocked -> {
-                            batteryNumberFollowerFrames
-                                ?.let { (numberSource, numberCurrent) ->
+                        sourceGlyphLocked -> {
+                            val followerFrames =
+                                if (spec.followDualMobileMotion) dualMobileFollowerFrames
+                                else batteryNumberFollowerFrames
+                            followerFrames
+                                ?.let { (anchorSource, anchorCurrent) ->
                                     CcTransitionPolicy.followAnchorGeometry(
                                         follower = sourceGeometry,
-                                        sourceAnchor = numberSource,
-                                        currentAnchor = numberCurrent,
+                                        sourceAnchor = anchorSource,
+                                        currentAnchor = anchorCurrent,
                                     )
                                 }
                                 ?: carriedSourceGeometry(
@@ -1427,15 +1513,13 @@ internal object CcTransitionOwner {
                     if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
                         // The ring retracts independently of the final native battery target.
                         1f
-                    } else if (
-                        spec.component ==
-                        StatusPainter.TransitionComponent.CHARGING_ICON
-                    ) {
-                        BatteryNumberFollowerPolicy
-                            .chargingVisibleFraction(
-                                progress = motionProgress,
-                                targetAvailable = targetGeometry != null,
-                            )
+                    } else if (spec.component == StatusPainter.TransitionComponent.NETWORK_ACTIVITY) {
+                        BatteryNumberFollowerPolicy.networkActivityVisibleFraction(motionProgress)
+                    } else if (clippedGlyph) {
+                        BatteryNumberFollowerPolicy.chargingVisibleFraction(
+                            progress = motionProgress,
+                            targetAvailable = matchedTargetGeometry != null,
+                        )
                     } else if (matchedTargetGeometry != null || wifiCenter) {
                         // FINAL may bind after the source changes; FAKE alpha owns the handoff.
                         1f
@@ -1484,11 +1568,11 @@ internal object CcTransitionOwner {
                         bounds = matrixBounds,
                     ) ?: return@forEach
 
-                // The charging glyph hides with the ring even without a native target.
+                // Network activity fades through layer alpha; only charging retains clip exit.
                 val hasTarget = matchedTargetGeometry != null
                 val clipExit =
-                    hasTarget ||
-                        spec.component == StatusPainter.TransitionComponent.CHARGING_ICON
+                    spec.component != StatusPainter.TransitionComponent.NETWORK_ACTIVITY &&
+                        (hasTarget || clippedGlyph)
                 val layerOpacity =
                     opacity * (if (clipExit) 1f else componentVisibleFraction)
                 val save =
@@ -1502,6 +1586,7 @@ internal object CcTransitionOwner {
                         if (
                             spec.component ==
                             StatusPainter.TransitionComponent.CHARGING_ICON &&
+                            !spec.followDualMobileMotion &&
                             batterySourceCenterX != null
                         ) {
                             batterySourceCenterX >= matrixBounds.centerX
@@ -2717,6 +2802,8 @@ internal object CcTransitionOwner {
             model: RenderModel,
             preferredMobileSubId: Int?,
         ): TargetWitness? {
+            // Network activity fades at its source; it has no FINAL reveal target.
+            if (spec.component == StatusPainter.TransitionComponent.NETWORK_ACTIVITY) return null
             if (
                 model.dualMobileLevels != null &&
                 spec.component == StatusPainter.TransitionComponent.MOBILE
@@ -2840,6 +2927,8 @@ internal object CcTransitionOwner {
 
                     StatusPainter.TransitionTarget.BatteryChargingIcon ->
                         resolveBatteryChargingIconTargetWitness()
+
+                    StatusPainter.TransitionTarget.NetworkActivity -> null
 
                     is StatusPainter.TransitionTarget.Slots ->
                         target.preferredSlots.firstNotNullOfOrNull { slot ->

@@ -24,6 +24,8 @@ internal object SysUiNetworkSource {
     const val WIFI_ICON_EMITTER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder\$bind\$1\$1\$2\$1"
     const val WIFI_ICON_EMIT_METHOD_NAME = "emit"
+    private const val WIFI_ACTIVITY_COLLECTOR_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder\$bind\$1\$1\$4\$1"
     const val WIFI_LOCATION_VIEW_MODEL_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.wifi.ui.viewmodel.LocationBasedWifiViewModel"
     private const val WIFI_ICON_VISIBLE_CLASS_NAME =
@@ -55,21 +57,27 @@ internal object SysUiNetworkSource {
     const val MOBILE_SIGNAL_EMITTER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$1\$1\$4\$2"
     const val MOBILE_SIGNAL_EMIT_METHOD_NAME = "emit"
+    private const val MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$1\$1\$8\$1"
 
-    const val HOOK_COUNT = 4
+    const val HOOK_COUNT = 6
 
     private const val WIFI_BIND_HOOK_ID = "combinedstatus.network.wifi.bind"
     private const val WIFI_ICON_HOOK_ID = "combinedstatus.network.wifi.icon"
+    private const val WIFI_ACTIVITY_HOOK_ID = "combinedstatus.network.wifi.activity"
     private const val WIFI_ICON_COLLECTOR_CLASS_ID = 1
     private const val MAX_PARENT_CHAIN_DEPTH = 8
     private const val MOBILE_BIND_HOOK_ID = "combinedstatus.network.mobile.bind"
     private const val MOBILE_SIGNAL_HOOK_ID = "combinedstatus.network.mobile.signal"
+    private const val MOBILE_ACTIVITY_HOOK_ID = "combinedstatus.network.mobile.activity"
 
     private val hookIds = setOf(
         WIFI_BIND_HOOK_ID,
         WIFI_ICON_HOOK_ID,
+        WIFI_ACTIVITY_HOOK_ID,
         MOBILE_BIND_HOOK_ID,
         MOBILE_SIGNAL_HOOK_ID,
+        MOBILE_ACTIVITY_HOOK_ID,
     )
 
     internal fun rethrowFatal(error: Throwable) {
@@ -183,8 +191,10 @@ internal object SysUiNetworkSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onWifiState: (StatusStateStore.WifiState) -> Unit,
+        onWifiActivity: (Int?) -> Unit,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
+        onMobileActivity: (subscriptionId: Int, resourceId: Int?) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -219,6 +229,7 @@ internal object SysUiNetworkSource {
                 module = module,
                 classLoader = classLoader,
                 onWifiState = onWifiState,
+                onWifiActivity = onWifiActivity,
                 onRuntimeFailure = onRuntimeFailure,
                 onEvent = diagnosticEvent,
                 isDetailedDiagnosticsEnabled = diagnosticEnabled,
@@ -228,6 +239,7 @@ internal object SysUiNetworkSource {
                 module = module,
                 classLoader = classLoader,
                 onMobileSignal = onMobileSignal,
+                onMobileActivity = onMobileActivity,
                 onPresentationChanged = onPresentationChanged,
                 onRuntimeFailure = onRuntimeFailure,
                 onEvent = diagnosticEvent,
@@ -246,6 +258,7 @@ internal object SysUiNetworkSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onWifiState: (StatusStateStore.WifiState) -> Unit,
+        onWifiActivity: (Int?) -> Unit,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -362,6 +375,49 @@ internal object SysUiNetworkSource {
                         )
                 }
 
+            // The exact HyperOS collector writes its original activity drawable ID to the View tag.
+            runCatching {
+                val collector = Class.forName(WIFI_ACTIVITY_COLLECTOR_CLASS_NAME, false, classLoader)
+                val activityField = collector.getDeclaredField("\$wifiActivity").apply { isAccessible = true }
+                val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
+                module.hook(method)
+                    .setId(WIFI_ACTIVITY_HOOK_ID)
+                    .intercept(Hooker { chain ->
+                        val result = chain.proceed()
+                        if (active.get()) {
+                            val image = readOrNull { activityField.get(chain.thisObject) as? ImageView }
+                            if (image != null && findWifiBinding(image)) {
+                                try {
+                                    val visible = image.visibility == View.VISIBLE &&
+                                        image.drawable != null
+                                    val taggedResId = (image.tag as? Number)?.toInt()
+                                        ?.takeIf { it > 0 && visible }
+                                    // Capture the native witness before Guiyuan's
+                                    // update may change presentation or masking.
+                                    val nativeWitness =
+                                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                            readOrNull { nativeActivityObservation(image, result) }
+                                        } else null
+                                    onWifiActivity(taggedResId)
+                                    nativeWitness?.let { witness ->
+                                        readOrNull {
+                                            onEvent?.invoke(
+                                                "networkPipeline wifi activityEvent " +
+                                                    "phase=afterNativeProceed/beforeModuleCommit " +
+                                                    "appliedResId=" + (taggedResId ?: 0) +
+                                                    " " + witness,
+                                            )
+                                        }
+                                    }
+                                } catch (error: Throwable) {
+                                    callbackFailed("wifi-activity", error, onRuntimeFailure)
+                                }
+                            }
+                        }
+                        result
+                    })
+            }.onSuccess { created += it }.onFailure(::rethrowFatal)
+
             active.set(true)
             BranchInstallResult(
                 handles = created.toList(),
@@ -375,10 +431,12 @@ internal object SysUiNetworkSource {
         }
     }
 
+
     private fun installMobile(
         module: XposedModule,
         classLoader: ClassLoader,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
+        onMobileActivity: (subscriptionId: Int, resourceId: Int?) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
@@ -443,7 +501,6 @@ internal object SysUiNetworkSource {
                         .getDeclaredMethod("getSubscriptionId")
                         .apply { isAccessible = true }
                 }
-
             created +=
                 atStage("mobile.hook.bind") {
                     module
@@ -453,6 +510,8 @@ internal object SysUiNetworkSource {
                             mobileBindHooker(
                                 active = active,
                                 subscriptionIdMethod = subscriptionIdMethod,
+                                onMobileActivity = onMobileActivity,
+                                classLoader = classLoader,
                                 onPresentationChanged = onPresentationChanged,
                                 onRuntimeFailure = onRuntimeFailure,
                                 onEvent = onEvent,
@@ -479,6 +538,49 @@ internal object SysUiNetworkSource {
                         )
                 }
 
+            // Keep native mobile activity ownership on the source's bound SIM View.
+            runCatching {
+                val collector = Class.forName(MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME, false, classLoader)
+                val activityField = collector.getDeclaredField("\$leftInOut").apply { isAccessible = true }
+                val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
+                module.hook(method)
+                    .setId(MOBILE_ACTIVITY_HOOK_ID)
+                    .intercept(Hooker { chain ->
+                        val result = chain.proceed()
+                        if (active.get()) {
+                            val image = readOrNull { activityField.get(chain.thisObject) as? ImageView }
+                            val subId = image?.let(::findMobileSubscription)
+                            if (image != null && subId != null) {
+                                try {
+                                    val visible = image.visibility == View.VISIBLE &&
+                                        image.drawable != null
+                                    val taggedResId = (image.tag as? Number)?.toInt()
+                                        ?.takeIf { it > 0 && visible }
+                                    val nativeWitness =
+                                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                            readOrNull { nativeActivityObservation(image, result) }
+                                        } else null
+                                    onMobileActivity(subId, taggedResId)
+                                    nativeWitness?.let { witness ->
+                                        readOrNull {
+                                            onEvent?.invoke(
+                                                "networkPipeline mobile activityEvent " +
+                                                    "phase=afterNativeProceed/beforeModuleCommit " +
+                                                    "subId=" + subId +
+                                                    " appliedResId=" + (taggedResId ?: 0) +
+                                                    " " + witness,
+                                            )
+                                        }
+                                    }
+                                } catch (error: Throwable) {
+                                    callbackFailed("mobile-activity", error, onRuntimeFailure)
+                                }
+                            }
+                        }
+                        result
+                    })
+            }.onSuccess { created += it }.onFailure(::rethrowFatal)
+
             active.set(true)
             BranchInstallResult(
                 handles = created.toList(),
@@ -489,6 +591,26 @@ internal object SysUiNetworkSource {
             active.set(false)
             failedBranch("mobile", error, created)
         }
+    }
+
+    // Diagnostic-only witness: native activity may change visibility, image alpha
+    // or drawable state without changing the resource ID we currently transfer.
+    // Do not synthesize an activity event from these observations.
+    private fun nativeActivityObservation(image: ImageView, hookResult: Any?): String {
+        val drawable = image.drawable
+        val nativeId = (image.tag as? Number)?.toInt() ?: 0
+        val nativeName = nativeId.takeIf { it > 0 }?.let { resourceName(image, it) }
+        return "viewId=" + resourceId(image) +
+            " tag=" + nativeId +
+            " tagName=" + (nativeName ?: "none") +
+            " visibility=" + visibilityName(image.visibility) +
+            " shown=" + image.isShown +
+            " viewAlpha=" + image.alpha +
+            " imageAlpha=" + image.imageAlpha +
+            " drawableType=" + (drawable?.javaClass?.simpleName ?: "none") +
+            " drawableAlpha=" + (drawable?.alpha ?: -1) +
+            " drawableLevel=" + (drawable?.level ?: -1) +
+            " nativeResult=" + (hookResult?.javaClass?.simpleName ?: "null")
     }
 
     private fun resolveEmitterMethod(
@@ -1205,6 +1327,8 @@ internal object SysUiNetworkSource {
     private fun mobileBindHooker(
         active: AtomicBoolean,
         subscriptionIdMethod: Method,
+        onMobileActivity: (Int, Int?) -> Unit,
+        classLoader: ClassLoader,
         onPresentationChanged: (() -> Unit)?,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,

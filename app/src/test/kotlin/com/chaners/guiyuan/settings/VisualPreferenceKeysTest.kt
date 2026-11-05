@@ -7,6 +7,14 @@ import org.junit.Test
 
 class VisualPreferenceKeysTest {
     @Test
+    fun bothSidesSourceConstantsKeepPreviousOnDiskKeys() {
+        assertEquals("left_right_activity", BOTH_SIDES_ACTIVITY_KEY)
+        assertEquals("left_right_hide_idle_activity", BOTH_SIDES_HIDE_IDLE_ACTIVITY_KEY)
+        assertEquals("left_right_bottom_info_scale", BOTH_SIDES_ACTIVITY_SCALE_KEY)
+        assertEquals("left_right_signal_dot_offset_y", BOTH_SIDES_SIGNAL_DOT_OFFSET_Y_KEY)
+    }
+
+    @Test
     fun acceptsThreeLayoutsGlobalAndProfileKeys() {
         assertTrue(isVisualPreferenceKey(null)) // SharedPreferences.clear()
         assertTrue(isVisualPreferenceKey(CONTENT_LAYOUT_KEY))
@@ -19,6 +27,8 @@ class VisualPreferenceKeysTest {
         assertTrue(isVisualPreferenceKey(visualProfileKey(ContentLayout.MOBILE_CENTER, MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY)))
         assertTrue(isVisualPreferenceKey(DUAL_PROFILES_INITIALIZED_KEY))
         assertTrue(isVisualPreferenceKey(visualProfileKey(ContentLayout.NETWORK_CENTER, COMBINED_SCALE_KEY)))
+        assertTrue(isVisualPreferenceKey(visualProfileKey(ContentLayout.NETWORK_CENTER, BOTH_SIDES_HIDE_IDLE_ACTIVITY_KEY)))
+        assertFalse(isVisualPreferenceKey(visualProfileKey(ContentLayout.NETWORK_CENTER, LEGACY_BOTH_SIDES_SHOW_IDLE_ACTIVITY_KEY)))
         assertTrue(isVisualPreferenceKey(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY))
         assertTrue(isVisualPreferenceKey(BATTERY_TOP_TEXT_SCALE_KEY))
         assertTrue(isVisualPreferenceKey("mobile_center.battery_top_text_scale"))

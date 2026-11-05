@@ -29,6 +29,32 @@ internal object SteadyLayoutResolver {
     }
 }
 
+/** The exact native Home privacy chip occupies the BatteryContainer end only in two states. */
+internal object HomePrivacyLayoutPolicy {
+    fun occupiesEnd(nativeStateName: String?): Boolean =
+        nativeStateName == "START_SHOW_PRIVACY" ||
+            nativeStateName == "COMPLETE_SHOW_PRIVACY"
+}
+
+/** Reads the *already laid out* native status-icons edge, not an estimated chip width. */
+internal object HomePrivacyAnchorPolicy {
+    fun resolve(
+        hostWidthPx: Int,
+        hostHeightPx: Int,
+        baseCarrierWidthPx: Int,
+        statusIconsEndPx: Int,
+        isRtl: Boolean,
+    ): SteadyLayout? {
+        val normal = SteadyLayoutResolver.resolve(
+            hostWidthPx, hostHeightPx, baseCarrierWidthPx, isRtl,
+        ) ?: return null
+        val left = if (isRtl) statusIconsEndPx else statusIconsEndPx - baseCarrierWidthPx
+        val right = left + baseCarrierWidthPx
+        if (left < 0 || right > hostWidthPx) return null
+        return SteadyLayout(left = left, right = right, visualWidth = normal.visualWidth)
+    }
+}
+
 internal object CompactReservationPolicy {
     /**
      * Painter shrink is centered inside the stable Battery carrier. Native peers only
