@@ -534,6 +534,33 @@ class CcTransitionOwnerTest {
             target = target,
             verifiedAggregateRoot = verified(),
         ))
+        // The only visible FINAL mobile root is owned by SIM1, but the
+        // native activity drawable can represent the selected SIM2 data path.
+        fun activity(
+            state: NativePresentationResolver.Snapshot? = presentation,
+            dataSubId: Int = 4,
+            targetSubId: Int? = 1,
+            soleVisibleRoot: Boolean = true,
+        ) = CcTransitionPolicy.mobileActivityRootMatches(
+            state, dataSubId, targetSubId, soleVisibleRoot,
+        )
+        assertTrue(activity())
+        assertTrue(activity(targetSubId = 4, soleVisibleRoot = false))
+        assertFalse(activity(soleVisibleRoot = false))
+        assertFalse(activity(dataSubId = 7))
+        assertFalse(activity(targetSubId = 7))
+        assertFalse(activity(state = presentation.copy(
+            mode = NativePresentationResolver.Mode.DUAL_SEPARATE,
+        )))
+        assertFalse(activity(state = presentation.copy(
+            platformActiveSubscriptionIds = setOf(1, 7),
+        )))
+        assertFalse(activity(state = presentation.copy(
+            networkTypeSubscriptionId = 1,
+        )))
+        assertTrue(activity(targetSubId = null))
+        assertFalse(activity(state = null))
+
         assertEquals(false, CcTransitionPolicy.matchesDualMobileTypeTarget(
             dataSubId = 4,
             targetSubId = 1,

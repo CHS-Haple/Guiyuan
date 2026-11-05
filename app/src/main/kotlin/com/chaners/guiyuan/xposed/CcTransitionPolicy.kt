@@ -222,6 +222,26 @@ internal object CcTransitionPolicy {
             state.presentationRootSubscriptionId == targetSubId
     }
 
+    // A sole verified aggregate root may belong to the other SIM, even when
+    // its native activity image represents the current data subscription.
+    fun mobileActivityRootMatches(
+        presentation: NativePresentationResolver.Snapshot?,
+        dataSubId: Int,
+        targetSubId: Int?,
+        soleVisibleRoot: Boolean,
+    ): Boolean {
+        if (dataSubId < 0) return false
+        if (targetSubId == dataSubId) return true
+        val state = presentation ?: return false
+        if (!soleVisibleRoot) return false
+        if (targetSubId == null) {
+            return dataSubId in state.activeSubscriptionIds &&
+                (state.activeSubscriptionIds.size == 1 ||
+                    state.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED)
+        }
+        return verifiedAggregateTypeRoot(state, dataSubId, targetSubId, soleVisibleRoot)
+    }
+
     // Order optical roots by the platform's physical SIM slots, never by View order.
     fun dualRootRowIndices(
         mode: NativePresentationResolver.Mode,

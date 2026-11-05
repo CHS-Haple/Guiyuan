@@ -2814,15 +2814,14 @@ internal object CcTransitionOwner {
             }.filter { root ->
                 root.visibility == View.VISIBLE && isUsableSlotView(root)
             }
-            val singleMobileRoot = !wifi && candidateRoots.size == 1 &&
-                native?.activeSubscriptionIds?.contains(selectedSubId) == true &&
-                (native.activeSubscriptionIds.size == 1 ||
-                    native.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED)
             fun ownsSelectedTransport(root: View): Boolean {
                 if (wifi) return NativeParticipantAccess.slotOf(root) == WIFI_SLOT
-                if (selectedSubId < 0) return false
-                return readMobileSubId(root) == selectedSubId ||
-                    (singleMobileRoot && readMobileSubId(root) == null)
+                return CcTransitionPolicy.mobileActivityRootMatches(
+                    presentation = native,
+                    dataSubId = selectedSubId,
+                    targetSubId = readMobileSubId(root),
+                    soleVisibleRoot = candidateRoots.size == 1 && candidateRoots[0] === root,
+                )
             }
             fun nativeImageValid(image: ImageView): Boolean =
                 image.visibility == View.VISIBLE &&
