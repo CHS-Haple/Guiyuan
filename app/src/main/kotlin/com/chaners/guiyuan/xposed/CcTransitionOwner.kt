@@ -588,7 +588,10 @@ internal object CcTransitionOwner {
                             "attached=${image.isAttachedToWindow}:" +
                             "size=${image.width}x${image.height}:tag=${tag ?: 0}:" +
                             "drawable=${image.drawable != null}:" +
-                            "sourceMatch=${sourceId != null && sourceId > 0 && tag == sourceId}"
+                            "sourceMatch=${sourceId != null && sourceId > 0 && tag == sourceId}:" +
+                            "nativeIdleMatch=${sourceId == null &&
+                                model.centerIndicator is CenterIndicator.MobileType &&
+                                tag == nativeIdleMobileActivityResId}"
                     } ?: "missing"
                     val rootOwnsTransport = CcTransitionPolicy.mobileActivityRootMatches(
                         presentation = native,
