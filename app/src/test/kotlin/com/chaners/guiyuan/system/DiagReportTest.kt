@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.system
 
 import com.chaners.guiyuan.settings.DiagLevel
+import io.github.libxposed.service.HookedTarget
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import org.junit.Assert.assertEquals
@@ -105,6 +106,32 @@ class DiagReportTest {
     }
 
     @Test
+    fun appFrameworkSnapshotPreservesConflictingScopeAndRunningTargetEvidence() {
+        val report = report(
+            appFrameworkStatus = XposedStatus.Connected(
+                apiVersion = 102,
+                scopes = emptySet(),
+                runningTargets = mapOf("com.android.systemui" to HookedTarget.State.UP_TO_DATE),
+            ),
+            initialServiceBindTimedOut = true,
+        )
+        assertTrue(report.contains("[App framework]"))
+        assertTrue(report.contains("source=app-service-state-at-export"))
+        assertTrue(report.contains("service=connected"))
+        assertTrue(report.contains("systemUiScopeAuthorized=false"))
+        assertTrue(report.contains("systemUiTargetState=UP_TO_DATE"))
+        assertTrue(report.contains("initialServiceBindTimedOut=true"))
+    }
+
+    @Test
+    fun unobservedAppFrameworkStatusIsNotReportedAsDisabled() {
+        val report = report()
+        assertTrue(report.contains("service=not-observed"))
+        assertTrue(report.contains("initialServiceBindTimedOut=not-observed"))
+        assertFalse(report.contains("systemUiScopeAuthorized=false"))
+    }
+
+    @Test
     fun truncatedCaptureIsDisclosed() {
         assertTrue(report(truncated = true).contains("capture=latest-complete-lines-only"))
     }
@@ -193,6 +220,8 @@ class DiagReportTest {
         collection: RootShell.Result? = null,
         level: DiagLevel = DiagLevel.Detailed,
         clearedAt: LocalDateTime? = null,
+        appFrameworkStatus: XposedStatus? = null,
+        initialServiceBindTimedOut: Boolean? = null,
     ): String {
         val recorded = lines.toList()
         return DiagReport.build(
@@ -219,6 +248,8 @@ class DiagReportTest {
                 runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
                 entries = recorded.map(DiagLogParser::parse),
                 capturedAt = OffsetDateTime.parse("2026-10-08T22:00:00+08:00"),
+                appFrameworkStatus = appFrameworkStatus,
+                initialServiceBindTimedOut = initialServiceBindTimedOut,
             ),
         )
     }

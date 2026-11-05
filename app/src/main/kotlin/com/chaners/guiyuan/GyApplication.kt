@@ -99,6 +99,9 @@ class GyApplication :
         MutableStateFlow<XposedStatus>(XposedStatus.Checking)
     internal val xposedStatus: StateFlow<XposedStatus> =
         _xposedStatus.asStateFlow()
+    // Records the initial startup observation even if the framework binds later.
+    internal var initialServiceBindTimedOut: Boolean = false
+        private set
 
     private val bindTimeout =
         Runnable {
@@ -106,6 +109,7 @@ class GyApplication :
                 xposedService == null &&
                 _xposedStatus.value == XposedStatus.Checking
             ) {
+                initialServiceBindTimedOut = true
                 _xposedStatus.value = XposedStatus.FrameworkUnavailable
             }
         }
