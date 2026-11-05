@@ -1415,33 +1415,23 @@ internal object CcTransitionOwner {
                                 StatusPainter.TransitionComponent.CENTER &&
                                 model.centerIndicator is CenterIndicator.MobileType
                         )
-                // Motion authority and visibility timing are independent.
-                // Bottom charging follows the dual-mobile geometry but must
-                // retain the same charging clip/reveal timeline as the top bolt.
-                val chargingSourceVisibleFraction =
-                    if (spec.component == StatusPainter.TransitionComponent.CHARGING_ICON) {
-                        BatteryNumberFollowerPolicy
-                            .chargingSourceVisibleFraction(motionProgress)
-                    } else {
-                        0f
-                    }
-                val chargingSourceLocked =
-                    spec.component ==
-                        StatusPainter.TransitionComponent.CHARGING_ICON &&
-                        chargingSourceVisibleFraction > 0f
+                // Charging and activity glyphs share one hide/travel/reveal clock.
+                // Their native endpoints and the signal dots retain independent owners.
+                val clippedGlyph =
+                    spec.component == StatusPainter.TransitionComponent.CHARGING_ICON ||
+                        spec.component == StatusPainter.TransitionComponent.NETWORK_ACTIVITY
+                val sourceGlyphVisible =
+                    if (clippedGlyph) {
+                        BatteryNumberFollowerPolicy.chargingSourceVisibleFraction(motionProgress)
+                    } else 0f
+                val sourceGlyphLocked = clippedGlyph && sourceGlyphVisible > 0f
                 val componentMotionProgress =
-                    if (
-                        spec.component ==
-                        StatusPainter.TransitionComponent.CHARGING_ICON
-                    ) {
-                        BatteryNumberFollowerPolicy
-                            .chargingMotionProgress(motionProgress)
-                    } else {
-                        motionProgress
-                    }
+                    if (clippedGlyph) {
+                        BatteryNumberFollowerPolicy.chargingMotionProgress(motionProgress)
+                    } else motionProgress
                 val geometry =
                     when {
-                        chargingSourceLocked -> {
+                        sourceGlyphLocked -> {
                             val followerFrames =
                                 if (spec.followDualMobileMotion) dualMobileFollowerFrames
                                 else batteryNumberFollowerFrames
@@ -1547,14 +1537,11 @@ internal object CcTransitionOwner {
                     if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
                         // The ring retracts independently of the final native battery target.
                         1f
-                    } else if (
-                        spec.component ==
-                        StatusPainter.TransitionComponent.CHARGING_ICON
-                    ) {
+                    } else if (clippedGlyph) {
                         BatteryNumberFollowerPolicy
                             .chargingVisibleFraction(
                                 progress = motionProgress,
-                                targetAvailable = targetGeometry != null,
+                                targetAvailable = matchedTargetGeometry != null,
                             )
                     } else if (matchedTargetGeometry != null || wifiCenter) {
                         // FINAL may bind after the source changes; FAKE alpha owns the handoff.
@@ -1604,11 +1591,9 @@ internal object CcTransitionOwner {
                         bounds = matrixBounds,
                     ) ?: return@forEach
 
-                // The charging glyph hides with the ring even without a native target.
+                // Both glyphs clip at source; native handoff is only revealed with a target.
                 val hasTarget = matchedTargetGeometry != null
-                val clipExit =
-                    hasTarget ||
-                        spec.component == StatusPainter.TransitionComponent.CHARGING_ICON
+                val clipExit = hasTarget || clippedGlyph
                 val layerOpacity =
                     opacity * (if (clipExit) 1f else componentVisibleFraction)
                 val save =

@@ -862,6 +862,7 @@ internal class StatusPainter(
                             target = TransitionTarget.NetworkActivity,
                             shapePolicy = TransitionShapePolicy.RIGID,
                             scalePolicy = TransitionScalePolicy.TARGET,
+                            followDualMobileMotion = true,
                         )
                     }
                 }
