@@ -366,7 +366,7 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
-    fun setTopChargingIcon(enabled: Boolean) {
+    fun setChargingIcon(enabled: Boolean) {
         preferences
             .edit()
             .putBoolean(activeProfileKey(BATTERY_TOP_CHARGING_ICON_ENABLED_KEY), enabled)
@@ -790,7 +790,7 @@ internal fun SharedPreferences.readVisualCfg(
         centerFollowsBatteryColor = flag(CENTER_FOLLOWS_BATTERY_COLOR_KEY, false),
         showTopReadout = flag(BATTERY_TOP_READOUT_ENABLED_KEY, topReadoutDefault(layout)),
         topTextFollowsBatteryColor = flag(BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY, true),
-        showTopChargingIcon = flag(BATTERY_TOP_CHARGING_ICON_ENABLED_KEY, true),
+        showChargingIcon = flag(BATTERY_TOP_CHARGING_ICON_ENABLED_KEY, true),
         topChargingIconFollowsBatteryColor = flag(BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY, true),
         fillFollowsRetract = getBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, true),
         ccTintTransition = getBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, true),
@@ -919,7 +919,7 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         normalized.topTextFollowsBatteryColor,
     ).putBoolean(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_ENABLED_KEY),
-        normalized.showTopChargingIcon,
+        normalized.showChargingIcon,
     ).putBoolean(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY),
         normalized.topChargingIconFollowsBatteryColor,

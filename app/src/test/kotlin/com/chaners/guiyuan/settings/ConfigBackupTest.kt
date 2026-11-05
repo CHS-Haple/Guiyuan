@@ -27,6 +27,17 @@ class ConfigBackupTest {
         batterySchemes = BatteryColorSchemeLibrary(),
     )
 
+    @Test fun chargingMasterKeepsExistingBackupFieldName() {
+        val original = sample().let { backup ->
+            backup.copy(visual = backup.visual.copy(profiles =
+                backup.visual.profiles.map { it.copy(showChargingIcon = false) }))
+        }
+        val encoded = ConfigBackupFormat.encode(original)
+        assertTrue(encoded.contains("\"showTopChargingIcon\":false"))
+        assertFalse(encoded.contains("\"showChargingIcon\""))
+        assertEquals(original, ConfigBackupFormat.decode(encoded))
+    }
+
     @Test fun idleActivityHidingIsOptInAndSurvivesBackups() {
         val selected = VisualCfg(
             layout = ContentLayout.NETWORK_CENTER,

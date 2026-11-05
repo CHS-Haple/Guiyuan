@@ -580,7 +580,7 @@ class VisualCfgTest {
 
         assertEquals(ContentLayout.NETWORK_CENTER, settings.layout)
         assertEquals(true, settings.topTextFollowsBatteryColor)
-        assertEquals(true, settings.showTopChargingIcon)
+        assertEquals(true, settings.showChargingIcon)
         assertEquals(true, settings.topChargingIconFollowsBatteryColor)
     }
 

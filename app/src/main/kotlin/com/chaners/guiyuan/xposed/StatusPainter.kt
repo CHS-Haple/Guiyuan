@@ -1949,7 +1949,7 @@ internal class StatusPainter(
     ): BatteryTopReadoutLayout? {
         val textVisible = visual.showTopReadout
         val chargingSlotVisible =
-            model.charging && visual.showTopChargingIcon &&
+            model.charging && visual.showChargingIcon &&
                 !(resolveLeftRightBottomInformation(model, visual)?.charging == true)
         if (!textVisible && !chargingSlotVisible) return null
 
@@ -4233,7 +4233,7 @@ internal class StatusPainter(
             return LeftRightBottomInformation(resource, charging)
         }
 
-        if (visual.showTopChargingIcon && visual.leftRightBottomCharging && model.charging) {
+        if (visual.showChargingIcon && visual.leftRightBottomCharging && model.charging) {
             model.chargingIconResId?.let { drawableAvailable(it, true) }?.let { return it }
         }
         if (visual.leftRightShowActivity) {

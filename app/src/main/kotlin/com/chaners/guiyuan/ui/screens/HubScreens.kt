@@ -688,14 +688,14 @@ internal fun FeaturesScreen(
                             title = stringResource(R.string.left_right_charging_title),
                             summary = stringResource(R.string.left_right_charging_summary),
                             checked = visual.leftRightBottomCharging,
-                            enabled = featureCfg.enabled && visual.showTopChargingIcon,
+                            enabled = featureCfg.enabled && visual.showChargingIcon,
                             startAction = {
                                 SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled)
                             },
                             onCheckedChange = visualRepo::setLeftRightBottomCharging,
                         )
                     }
-                    AnimatedPreferenceGroup(visible = visual.leftRightBottomCharging && visual.showTopChargingIcon) {
+                    AnimatedPreferenceGroup(visible = visual.leftRightBottomCharging && visual.showChargingIcon) {
                         if (search.matches(R.string.left_right_charging_vertical_offset)) {
                             SliderPreference(
                                 value = visual.leftRightChargingOffsetY,
@@ -1160,20 +1160,20 @@ internal fun FeaturesScreen(
                 }
 
                 if (search.matches(R.string.battery_charging_icon) ||
-                    (searching && !visual.showTopChargingIcon &&
+                    (searching && !visual.showChargingIcon &&
                         search.any(R.string.battery_top_charging_icon_size,
                             R.string.charging_icon_follow_battery_color))) {
                     SwitchPreference(
                         title = stringResource(R.string.battery_charging_icon),
                         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled) },
                         summary = stringResource(R.string.battery_charging_icon_summary),
-                        checked = visual.showTopChargingIcon,
+                        checked = visual.showChargingIcon,
                         enabled = featureCfg.enabled,
-                        onCheckedChange = visualRepo::setTopChargingIcon,
+                        onCheckedChange = visualRepo::setChargingIcon,
                     )
                 }
                 AnimatedPreferenceGroup(
-                    visible = visual.showTopChargingIcon,
+                    visible = visual.showChargingIcon,
                 ) {
                     val chargingIconUiScale =
                         topChargingIconUiScale(

@@ -219,7 +219,8 @@ internal data class VisualCfg(
     val centerFollowsBatteryColor: Boolean = false,
     val showTopReadout: Boolean = topReadoutDefault(layout),
     val topTextFollowsBatteryColor: Boolean = true,
-    val showTopChargingIcon: Boolean = true,
+    @SerialName("showTopChargingIcon") // Preserve V1 backup field identity.
+    val showChargingIcon: Boolean = true,
     val topChargingIconFollowsBatteryColor: Boolean = true,
     val fillFollowsRetract: Boolean = true,
     val ccTintTransition: Boolean = true,
