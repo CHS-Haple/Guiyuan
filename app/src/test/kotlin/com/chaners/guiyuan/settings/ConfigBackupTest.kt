@@ -9,6 +9,30 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class ConfigBackupTest {
+    @Test fun bothSidesNamesKeepReleasedBackupSchema() {
+        val config = VisualCfg(
+            dualRowDotArrangement = SignalDotArrangement.BOTH_SIDES,
+            bothSidesShowActivity = false,
+            bothSidesHideIdleActivity = true,
+            bothSidesBottomCharging = true,
+            bothSidesActivityScale = 1.1f,
+            bothSidesActivityOffsetY = 2f,
+            bothSidesChargingOffsetY = -2f,
+            bothSidesSignalDotOffsetY = 3f,
+        )
+        val encoded = Json.encodeToString(config)
+        for (name in listOf(
+            "dualDotStyle", "leftRightShowActivity", "leftRightHideIdleActivity",
+            "leftRightBottomCharging", "leftRightBottomInfoScale",
+            "leftRightActivityOffsetY", "leftRightChargingOffsetY", "leftRightSignalDotOffsetY",
+        )) {
+            assertTrue("Missing previous backup field: $name", encoded.contains("\"$name\""))
+        }
+        assertTrue(encoded.contains("\"LEFT_RIGHT\""))
+        assertFalse(encoded.contains("\"bothSidesShowActivity\""))
+        assertEquals(config, Json.decodeFromString(VisualCfg.serializer(), encoded))
+    }
+
     private fun sample(): ConfigBackup = ConfigBackup(
         format = "guiyuan-config",
         schemaVersion = 1,
@@ -42,11 +66,11 @@ class ConfigBackupTest {
         val selected = VisualCfg(
             layout = ContentLayout.NETWORK_CENTER,
             dualSignal = true,
-            dualRowDotArrangement = SignalDotArrangement.LEFT_RIGHT,
-            leftRightShowActivity = true,
-            leftRightHideIdleActivity = true,
+            dualRowDotArrangement = SignalDotArrangement.BOTH_SIDES,
+            bothSidesShowActivity = true,
+            bothSidesHideIdleActivity = true,
         )
-        assertFalse(VisualCfg().leftRightHideIdleActivity)
+        assertFalse(VisualCfg().bothSidesHideIdleActivity)
         val original = sample().let { source ->
             source.copy(visual = source.visual.copy(profiles = source.visual.profiles.map { cfg ->
                 if (cfg.dualSignal && cfg.layout == ContentLayout.NETWORK_CENTER) selected else cfg
@@ -59,7 +83,7 @@ class ConfigBackupTest {
         val old = ConfigBackupFormat.encode(sample())
             .replace("\"leftRightHideIdleActivity\":false", "\"leftRightShowIdleActivity\":true")
         val restored = ConfigBackupFormat.decode(old)
-        assertTrue(restored.visual.profiles.none { it.leftRightHideIdleActivity })
+        assertTrue(restored.visual.profiles.none { it.bothSidesHideIdleActivity })
         val conflict = old.replaceFirst(
             "\"leftRightShowIdleActivity\":true",
             "\"leftRightShowIdleActivity\":true,\"leftRightHideIdleActivity\":false",
@@ -69,21 +93,21 @@ class ConfigBackupTest {
         }
     }
 
-    @Test fun leftRightOffsetIsIndependentOfCurvedAndSurvivesBackups() {
+    @Test fun bothSidesOffsetIsIndependentOfCurvedAndSurvivesBackups() {
         val value = VisualCfg(
             dualSignal = true,
-            dualRowDotArrangement = SignalDotArrangement.LEFT_RIGHT,
+            dualRowDotArrangement = SignalDotArrangement.BOTH_SIDES,
             curvedSignalDotOffsetY = -3f,
             horizontalSignalDotOffsetY = 2f,
-            leftRightSignalDotOffsetY = 6f,
+            bothSidesSignalDotOffsetY = 6f,
         )
         assertEquals(0f, value.dualRowDotOffsetY, 0f)
         assertEquals(-3f,
             value.copy(dualRowDotArrangement = SignalDotArrangement.CURVED).dualRowDotOffsetY, 0f)
         assertEquals(2f,
             value.copy(dualRowDotArrangement = SignalDotArrangement.HORIZONTAL).dualRowDotOffsetY, 0f)
-        assertEquals(10f, value.copy(leftRightSignalDotOffsetY = 100f)
-            .normalized().leftRightSignalDotOffsetY, 0f)
+        assertEquals(10f, value.copy(bothSidesSignalDotOffsetY = 100f)
+            .normalized().bothSidesSignalDotOffsetY, 0f)
         val original = sample().let { source ->
             source.copy(visual = source.visual.copy(profiles = source.visual.profiles.map { cfg ->
                 if (cfg.dualSignal) value.copy(layout = cfg.layout) else cfg
@@ -92,25 +116,25 @@ class ConfigBackupTest {
         assertEquals(original, ConfigBackupFormat.decode(ConfigBackupFormat.encode(original)))
     }
 
-    @Test fun leftRightBottomSizeNormalizesAndPersistsInLayoutProfile() {
+    @Test fun bothSidesBottomSizeNormalizesAndPersistsInLayoutProfile() {
         val selected = VisualCfg(
             layout = ContentLayout.NETWORK_CENTER,
             dualSignal = true,
-            dualRowDotArrangement = SignalDotArrangement.LEFT_RIGHT,
-            leftRightActivityScale = 1.15f,
-            leftRightActivityOffsetY = 3f,
-            leftRightChargingOffsetY = -4f,
+            dualRowDotArrangement = SignalDotArrangement.BOTH_SIDES,
+            bothSidesActivityScale = 1.15f,
+            bothSidesActivityOffsetY = 3f,
+            bothSidesChargingOffsetY = -4f,
         )
-        assertEquals(0.7f, selected.copy(leftRightActivityScale = 0.2f)
-            .normalized().leftRightActivityScale, 0.0001f)
-        assertEquals(1.2f, selected.copy(leftRightActivityScale = 4f)
-            .normalized().leftRightActivityScale, 0.0001f)
-        assertEquals(LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT, selected.copy(leftRightActivityScale = Float.NaN)
-            .normalized().leftRightActivityScale, 0.0001f)
-        assertEquals(-10f, selected.copy(leftRightActivityOffsetY = -100f)
-            .normalized().leftRightActivityOffsetY, 0f)
-        assertEquals(10f, selected.copy(leftRightChargingOffsetY = 100f)
-            .normalized().leftRightChargingOffsetY, 0f)
+        assertEquals(0.7f, selected.copy(bothSidesActivityScale = 0.2f)
+            .normalized().bothSidesActivityScale, 0.0001f)
+        assertEquals(1.2f, selected.copy(bothSidesActivityScale = 4f)
+            .normalized().bothSidesActivityScale, 0.0001f)
+        assertEquals(BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT, selected.copy(bothSidesActivityScale = Float.NaN)
+            .normalized().bothSidesActivityScale, 0.0001f)
+        assertEquals(-10f, selected.copy(bothSidesActivityOffsetY = -100f)
+            .normalized().bothSidesActivityOffsetY, 0f)
+        assertEquals(10f, selected.copy(bothSidesChargingOffsetY = 100f)
+            .normalized().bothSidesChargingOffsetY, 0f)
         val source = sample().let { backup ->
             backup.copy(visual = backup.visual.copy(profiles = backup.visual.profiles.map { cfg ->
                 if (cfg.dualSignal && cfg.layout == ContentLayout.NETWORK_CENTER) selected else cfg

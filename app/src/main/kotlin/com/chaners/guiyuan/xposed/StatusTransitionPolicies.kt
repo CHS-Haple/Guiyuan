@@ -156,7 +156,7 @@ internal object MobileSignalMorphPolicy {
     // current X. Only after it becomes fully invisible may it join the
     // surviving dot's X. This prevents an opposite-direction visible detour
     // without removing the collapse -> travel -> spread phases.
-    fun leftRightDotX(
+    fun bothSidesDotX(
         source: Float,
         sourceAnchor: Float,
         targetAnchor: Float,
@@ -173,7 +173,7 @@ internal object MobileSignalMorphPolicy {
     // Horizontal expansion holds the row's Y at the native anchor. If native
     // bars have distinct final Y positions, reconcile those only during the
     // subsequent bar-shape stage, never while the dots spread in X.
-    fun leftRightDotY(
+    fun bothSidesDotY(
         source: Float,
         sourceAnchor: Float,
         targetAnchor: Float,

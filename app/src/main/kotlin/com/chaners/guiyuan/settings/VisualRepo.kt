@@ -75,7 +75,7 @@ internal fun migrateSignalDotArrangementsIfNeeded(
         val dualStyle = prefs.getString(dualKey, null)
             ?.let(SignalDotArrangement::fromPersisted)
             ?: prefs.getString(legacyDual, null)?.let(SignalDotArrangement::fromPersisted)
-            ?: SignalDotArrangement.LEFT_RIGHT
+            ?: SignalDotArrangement.BOTH_SIDES
         val singleKey = oldKey(SINGLE_ROW_DOT_STYLE_KEY)
         val legacySwitch = oldKey(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)
         val singleStyle = if (prefs.contains(singleKey)) {
@@ -103,9 +103,9 @@ internal fun migrateSignalDotArrangementsIfNeeded(
 // setting: false previously meant default-off, not an explicit hide request.
 internal fun retireLegacyIdleActivityPreference(prefs: SharedPreferences) {
     val retired = buildSet {
-        add(LEGACY_LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY)
+        add(LEGACY_BOTH_SIDES_SHOW_IDLE_ACTIVITY_KEY)
         for (layout in ContentLayout.entries) {
-            val key = visualProfileKey(layout, LEGACY_LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY)
+            val key = visualProfileKey(layout, LEGACY_BOTH_SIDES_SHOW_IDLE_ACTIVITY_KEY)
             add(key)
             add(visualModeKey(false, key))
             add(visualModeKey(true, key))
@@ -260,39 +260,39 @@ internal class VisualRepo(context: Context) {
         preferences.edit().putString(activeProfileKey(DUAL_ROW_DOT_ARRANGEMENT_KEY), style.persistedValue).apply()
     }
 
-    fun setLeftRightShowActivity(enabled: Boolean) {
-        preferences.edit().putBoolean(activeProfileKey(LEFT_RIGHT_ACTIVITY_KEY), enabled).apply()
+    fun setBothSidesShowActivity(enabled: Boolean) {
+        preferences.edit().putBoolean(activeProfileKey(BOTH_SIDES_ACTIVITY_KEY), enabled).apply()
     }
 
-    fun setLeftRightHideIdleActivity(enabled: Boolean) {
-        preferences.edit().putBoolean(activeProfileKey(LEFT_RIGHT_HIDE_IDLE_ACTIVITY_KEY), enabled).apply()
+    fun setBothSidesHideIdleActivity(enabled: Boolean) {
+        preferences.edit().putBoolean(activeProfileKey(BOTH_SIDES_HIDE_IDLE_ACTIVITY_KEY), enabled).apply()
     }
 
-    fun setLeftRightBottomCharging(enabled: Boolean) {
-        preferences.edit().putBoolean(activeProfileKey(LEFT_RIGHT_CHARGING_KEY), enabled).apply()
+    fun setBothSidesBottomCharging(enabled: Boolean) {
+        preferences.edit().putBoolean(activeProfileKey(BOTH_SIDES_CHARGING_KEY), enabled).apply()
     }
 
-    fun setLeftRightActivityScale(scale: Float) {
+    fun setBothSidesActivityScale(scale: Float) {
         preferences.edit().putFloat(
-            activeProfileKey(LEFT_RIGHT_ACTIVITY_SCALE_KEY),
+            activeProfileKey(BOTH_SIDES_ACTIVITY_SCALE_KEY),
             scale.finiteIn(
-                LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN,
-                LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX,
-                LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
+                BOTH_SIDES_BOTTOM_INFO_SCALE_MIN,
+                BOTH_SIDES_BOTTOM_INFO_SCALE_MAX,
+                BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT,
             ),
         ).apply()
     }
 
-    fun setLeftRightActivityOffsetY(offset: Float) {
+    fun setBothSidesActivityOffsetY(offset: Float) {
         preferences.edit().putFloat(
-            activeProfileKey(LEFT_RIGHT_ACTIVITY_OFFSET_Y_KEY),
+            activeProfileKey(BOTH_SIDES_ACTIVITY_OFFSET_Y_KEY),
             offset.finiteIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX, NETWORK_TOP_OFFSET_DEFAULT),
         ).apply()
     }
 
-    fun setLeftRightChargingOffsetY(offset: Float) {
+    fun setBothSidesChargingOffsetY(offset: Float) {
         preferences.edit().putFloat(
-            activeProfileKey(LEFT_RIGHT_CHARGING_OFFSET_Y_KEY),
+            activeProfileKey(BOTH_SIDES_CHARGING_OFFSET_Y_KEY),
             offset.finiteIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX, NETWORK_TOP_OFFSET_DEFAULT),
         ).apply()
     }
@@ -639,7 +639,7 @@ internal fun SharedPreferences.writeSignalDotOffsetY(offset: Float) {
     val visual = readVisualCfg()
     val key = when (if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement) {
         SignalDotArrangement.HORIZONTAL -> HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY
-        SignalDotArrangement.LEFT_RIGHT -> return
+        SignalDotArrangement.BOTH_SIDES -> return
         SignalDotArrangement.CURVED -> CURVED_SIGNAL_DOT_OFFSET_Y_KEY
     }
     edit().putFloat(
@@ -763,7 +763,7 @@ internal fun SharedPreferences.readVisualCfg(
         profileString(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, null, legacyDualBank)
             ?: getString(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY), null)
         )?.let(SignalDotArrangement::fromPersisted)
-        ?: SignalDotArrangement.LEFT_RIGHT
+        ?: SignalDotArrangement.BOTH_SIDES
     val singleStyle = profileString(layout, SINGLE_ROW_DOT_STYLE_KEY, null, legacyDualBank)
         ?.let(SignalDotArrangement::fromPersisted)
         ?: if (flag(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, false) &&
@@ -778,12 +778,12 @@ internal fun SharedPreferences.readVisualCfg(
         dualSignal = dual,
         dualRowDotArrangement = dualStyle,
         singleRowDotArrangement = singleStyle,
-        leftRightShowActivity = flag(LEFT_RIGHT_ACTIVITY_KEY, true),
-        leftRightHideIdleActivity = flag(LEFT_RIGHT_HIDE_IDLE_ACTIVITY_KEY, false),
-        leftRightBottomCharging = flag(LEFT_RIGHT_CHARGING_KEY, false),
-        leftRightActivityScale = size(LEFT_RIGHT_ACTIVITY_SCALE_KEY, LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT),
-        leftRightActivityOffsetY = size(LEFT_RIGHT_ACTIVITY_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
-        leftRightChargingOffsetY = size(LEFT_RIGHT_CHARGING_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
+        bothSidesShowActivity = flag(BOTH_SIDES_ACTIVITY_KEY, true),
+        bothSidesHideIdleActivity = flag(BOTH_SIDES_HIDE_IDLE_ACTIVITY_KEY, false),
+        bothSidesBottomCharging = flag(BOTH_SIDES_CHARGING_KEY, false),
+        bothSidesActivityScale = size(BOTH_SIDES_ACTIVITY_SCALE_KEY, BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT),
+        bothSidesActivityOffsetY = size(BOTH_SIDES_ACTIVITY_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
+        bothSidesChargingOffsetY = size(BOTH_SIDES_CHARGING_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
         fixedLowerOpening = flag(LOWER_FIXED_OPENING_KEY, false),
         mobileTypeBottomOffsetY = size(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, mobileTypeBottomOffsetDefault(layout)),
         mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
@@ -801,7 +801,7 @@ internal fun SharedPreferences.readVisualCfg(
         mobileTypeOffsetY = size(MOBILE_TYPE_VERTICAL_OFFSET_KEY, oldNetworkOffset),
         curvedSignalDotOffsetY = size(CURVED_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
         horizontalSignalDotOffsetY = size(HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
-        leftRightSignalDotOffsetY = size(LEFT_RIGHT_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
+        bothSidesSignalDotOffsetY = size(BOTH_SIDES_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
         topChargingIconScale = size(BATTERY_TOP_CHARGING_ICON_SCALE_KEY, topChargingIconScaleDefault(layout)),
         combinedScale = size(COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),
         outerWeightScale = size(OUTER_WEIGHT_SCALE_KEY, OUTER_WEIGHT_SCALE_DEFAULT),
@@ -882,23 +882,23 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY),
         normalized.singleRowDotArrangement.persistedValue,
     ).putBoolean(
-        visualProfileKey(layout, LEFT_RIGHT_ACTIVITY_KEY),
-        normalized.leftRightShowActivity,
+        visualProfileKey(layout, BOTH_SIDES_ACTIVITY_KEY),
+        normalized.bothSidesShowActivity,
     ).putBoolean(
-        visualProfileKey(layout, LEFT_RIGHT_HIDE_IDLE_ACTIVITY_KEY),
-        normalized.leftRightHideIdleActivity,
+        visualProfileKey(layout, BOTH_SIDES_HIDE_IDLE_ACTIVITY_KEY),
+        normalized.bothSidesHideIdleActivity,
     ).putBoolean(
-        visualProfileKey(layout, LEFT_RIGHT_CHARGING_KEY),
-        normalized.leftRightBottomCharging,
+        visualProfileKey(layout, BOTH_SIDES_CHARGING_KEY),
+        normalized.bothSidesBottomCharging,
     ).putFloat(
-        visualProfileKey(layout, LEFT_RIGHT_ACTIVITY_SCALE_KEY),
-        normalized.leftRightActivityScale,
+        visualProfileKey(layout, BOTH_SIDES_ACTIVITY_SCALE_KEY),
+        normalized.bothSidesActivityScale,
     ).putFloat(
-        visualProfileKey(layout, LEFT_RIGHT_ACTIVITY_OFFSET_Y_KEY),
-        normalized.leftRightActivityOffsetY,
+        visualProfileKey(layout, BOTH_SIDES_ACTIVITY_OFFSET_Y_KEY),
+        normalized.bothSidesActivityOffsetY,
     ).putFloat(
-        visualProfileKey(layout, LEFT_RIGHT_CHARGING_OFFSET_Y_KEY),
-        normalized.leftRightChargingOffsetY,
+        visualProfileKey(layout, BOTH_SIDES_CHARGING_OFFSET_Y_KEY),
+        normalized.bothSidesChargingOffsetY,
     ).putBoolean(
         visualProfileKey(layout, LOWER_FIXED_OPENING_KEY),
         normalized.fixedLowerOpening,
@@ -951,8 +951,8 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         visualProfileKey(layout, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY),
         normalized.horizontalSignalDotOffsetY,
     ).putFloat(
-        visualProfileKey(layout, LEFT_RIGHT_SIGNAL_DOT_OFFSET_Y_KEY),
-        normalized.leftRightSignalDotOffsetY,
+        visualProfileKey(layout, BOTH_SIDES_SIGNAL_DOT_OFFSET_Y_KEY),
+        normalized.bothSidesSignalDotOffsetY,
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY),
         normalized.topChargingIconScale,

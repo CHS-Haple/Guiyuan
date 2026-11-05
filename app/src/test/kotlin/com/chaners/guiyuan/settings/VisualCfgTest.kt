@@ -3,8 +3,19 @@ package com.chaners.guiyuan.settings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlinx.serialization.json.Json
 
 class VisualCfgTest {
+    @Test
+    fun bothSidesKeepsReleasedStyleWireIdentity() {
+        assertEquals("left_right", SignalDotArrangement.BOTH_SIDES.persistedValue)
+        assertEquals(SignalDotArrangement.BOTH_SIDES, SignalDotArrangement.fromPersisted("left_right"))
+        assertEquals(
+            "\"LEFT_RIGHT\"",
+            Json.encodeToString(SignalDotArrangement.serializer(), SignalDotArrangement.BOTH_SIDES),
+        )
+    }
+
     @Test
     fun finiteBoundPreservesValidInputsAndRejectsNonFinite() {
         for (invalid in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) {
@@ -41,9 +52,9 @@ class VisualCfgTest {
         assertEquals(1f, settings.combinedScale, 0.0001f)
         assertEquals(1f, settings.outerWeightScale, 0.0001f)
         assertEquals(1f, settings.wifiScale, 0.0001f)
-        assertEquals(0.85f, LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT, 0.0001f)
-        assertEquals(LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT, settings.leftRightActivityScale, 0.0001f)
-        assertEquals(1f, settings.copy(leftRightActivityScale = 1f).normalized().leftRightActivityScale, 0.0001f)
+        assertEquals(0.85f, BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT, 0.0001f)
+        assertEquals(BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT, settings.bothSidesActivityScale, 0.0001f)
+        assertEquals(1f, settings.copy(bothSidesActivityScale = 1f).normalized().bothSidesActivityScale, 0.0001f)
         assertEquals(0f, settings.wifiOffsetY, 0f)
         assertEquals(0f, settings.mobileTypeOffsetY, 0f)
         assertEquals(0f, settings.activeSignalDotOffsetY, 0f)
@@ -115,7 +126,7 @@ class VisualCfgTest {
     fun mobileCenteredIsAnIndependentLayoutWithOwnDefaults() {
         val centered = VisualCfg(layout = ContentLayout.MOBILE_CENTER)
         assertTrue(centered.centeredMobileSignal)
-        assertEquals(SignalDotArrangement.LEFT_RIGHT, centered.dualRowDotArrangement)
+        assertEquals(SignalDotArrangement.BOTH_SIDES, centered.dualRowDotArrangement)
         assertEquals(SignalDotArrangement.CURVED, centered.singleRowDotArrangement)
         assertEquals(0.85f, centered.mobileTypeScale, 0f)
         assertEquals(-3f, centered.mobileTypeBottomOffsetY, 0f)
@@ -174,14 +185,14 @@ class VisualCfgTest {
                         singleRowDotArrangement = singleStyle,
                         curvedSignalDotOffsetY = 2f,
                         horizontalSignalDotOffsetY = 5f,
-                        leftRightSignalDotOffsetY = 7f,
+                        bothSidesSignalDotOffsetY = 7f,
                     )
                     assertEquals(singleStyle, visual.singleRowDotArrangement)
                     assertEquals(dualStyle, visual.dualRowDotArrangement)
                     assertEquals(
                         when (dualStyle) {
                             SignalDotArrangement.HORIZONTAL -> 5f
-                            SignalDotArrangement.LEFT_RIGHT -> 0f
+                            SignalDotArrangement.BOTH_SIDES -> 0f
                             SignalDotArrangement.CURVED -> 2f
                         },
                         visual.dualRowDotOffsetY,
@@ -216,7 +227,7 @@ class VisualCfgTest {
                     mobileTypeOffsetY = invalid,
                     curvedSignalDotOffsetY = invalid,
                     horizontalSignalDotOffsetY = invalid,
-                    leftRightSignalDotOffsetY = invalid,
+                    bothSidesSignalDotOffsetY = invalid,
                     topChargingIconScale = invalid,
                     combinedScale = invalid,
                     outerWeightScale = invalid,
@@ -232,7 +243,7 @@ class VisualCfgTest {
             assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.mobileTypeOffsetY, 0f)
             assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.curvedSignalDotOffsetY, 0f)
             assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.horizontalSignalDotOffsetY, 0f)
-            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.leftRightSignalDotOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.bothSidesSignalDotOffsetY, 0f)
             assertEquals(topChargingIconScaleDefault(raw.layout), normalized.topChargingIconScale, 0f)
             assertEquals(COMBINED_SCALE_DEFAULT, normalized.combinedScale, 0f)
             assertEquals(OUTER_WEIGHT_SCALE_DEFAULT, normalized.outerWeightScale, 0f)

@@ -7,18 +7,18 @@ internal const val DUAL_SIGNAL_ENABLED_KEY = "dual_signal_enabled"
 internal const val DUAL_PROFILES_INITIALIZED_KEY = "dual_profiles_initialized"
 internal const val DUAL_ROW_DOT_ARRANGEMENT_KEY = "content_style"
 internal const val SINGLE_ROW_DOT_STYLE_KEY = "single_row_dot_style"
-internal const val LEFT_RIGHT_ACTIVITY_KEY = "left_right_activity"
+internal const val BOTH_SIDES_ACTIVITY_KEY = "left_right_activity"
 // Retired B1754 preference; earlier "show while idle" does not mean "hide while idle".
-internal const val LEGACY_LEFT_RIGHT_SHOW_IDLE_ACTIVITY_KEY = "left_right_show_idle_activity"
-internal const val LEFT_RIGHT_HIDE_IDLE_ACTIVITY_KEY = "left_right_hide_idle_activity"
-internal const val LEFT_RIGHT_CHARGING_KEY = "left_right_charging"
+internal const val LEGACY_BOTH_SIDES_SHOW_IDLE_ACTIVITY_KEY = "left_right_show_idle_activity"
+internal const val BOTH_SIDES_HIDE_IDLE_ACTIVITY_KEY = "left_right_hide_idle_activity"
+internal const val BOTH_SIDES_CHARGING_KEY = "left_right_charging"
 // Keep the B1750 disk key for the activity icon when splitting the two sizes.
-internal const val LEFT_RIGHT_ACTIVITY_SCALE_KEY = "left_right_bottom_info_scale"
-internal const val LEFT_RIGHT_ACTIVITY_OFFSET_Y_KEY = "left_right_activity_offset_y"
-internal const val LEFT_RIGHT_CHARGING_OFFSET_Y_KEY = "left_right_charging_offset_y"
-internal const val LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT = 0.85f
-internal const val LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN = 0.7f
-internal const val LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX = 1.2f
+internal const val BOTH_SIDES_ACTIVITY_SCALE_KEY = "left_right_bottom_info_scale"
+internal const val BOTH_SIDES_ACTIVITY_OFFSET_Y_KEY = "left_right_activity_offset_y"
+internal const val BOTH_SIDES_CHARGING_OFFSET_Y_KEY = "left_right_charging_offset_y"
+internal const val BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT = 0.85f
+internal const val BOTH_SIDES_BOTTOM_INFO_SCALE_MIN = 0.7f
+internal const val BOTH_SIDES_BOTTOM_INFO_SCALE_MAX = 1.2f
 internal const val LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY = "single_row_flat_dots"
 // v1.0.0 released key, consumed once when introducing three layout profiles.
 internal const val LEGACY_DUAL_DOT_STYLE_KEY = "dual_dot_style"
@@ -26,7 +26,7 @@ internal const val SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY = "shared_content_style_sch
 // Keep the original persisted names; these offsets now serve both SIM modes.
 internal const val CURVED_SIGNAL_DOT_OFFSET_Y_KEY = "dual_default_offset_y"
 internal const val HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY = "dual_duo_offset_y"
-internal const val LEFT_RIGHT_SIGNAL_DOT_OFFSET_Y_KEY = "left_right_signal_dot_offset_y"
+internal const val BOTH_SIDES_SIGNAL_DOT_OFFSET_Y_KEY = "left_right_signal_dot_offset_y"
 // Keep the existing on-disk key although the setting now covers curved rows.
 internal const val LOWER_FIXED_OPENING_KEY = "horizontal_fixed_opening"
 internal const val MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY = "mobile_type_bottom_offset_y"
@@ -93,16 +93,16 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         MOBILE_TYPE_VERTICAL_OFFSET_KEY,
         DUAL_ROW_DOT_ARRANGEMENT_KEY,
         SINGLE_ROW_DOT_STYLE_KEY,
-        LEFT_RIGHT_ACTIVITY_KEY,
-        LEFT_RIGHT_HIDE_IDLE_ACTIVITY_KEY,
-        LEFT_RIGHT_CHARGING_KEY,
-        LEFT_RIGHT_ACTIVITY_SCALE_KEY,
-        LEFT_RIGHT_ACTIVITY_OFFSET_Y_KEY,
-        LEFT_RIGHT_CHARGING_OFFSET_Y_KEY,
+        BOTH_SIDES_ACTIVITY_KEY,
+        BOTH_SIDES_HIDE_IDLE_ACTIVITY_KEY,
+        BOTH_SIDES_CHARGING_KEY,
+        BOTH_SIDES_ACTIVITY_SCALE_KEY,
+        BOTH_SIDES_ACTIVITY_OFFSET_Y_KEY,
+        BOTH_SIDES_CHARGING_OFFSET_Y_KEY,
         MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
         CURVED_SIGNAL_DOT_OFFSET_Y_KEY,
         HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY,
-        LEFT_RIGHT_SIGNAL_DOT_OFFSET_Y_KEY,
+        BOTH_SIDES_SIGNAL_DOT_OFFSET_Y_KEY,
         LOWER_FIXED_OPENING_KEY,
         BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
         COMBINED_SCALE_KEY,

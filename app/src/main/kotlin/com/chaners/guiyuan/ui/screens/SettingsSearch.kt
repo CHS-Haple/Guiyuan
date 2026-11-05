@@ -71,12 +71,12 @@ internal object FeatureSearchIds {
         R.string.dual_signal_title,
         R.string.single_row_signal_dot_arrangement_title,
         R.string.dual_row_signal_dot_arrangement_title,
-        R.string.left_right_activity_title,
-        R.string.left_right_idle_activity_title,
-        R.string.left_right_charging_title,
-        R.string.left_right_activity_size,
-        R.string.left_right_activity_vertical_offset,
-        R.string.left_right_charging_vertical_offset,
+        R.string.both_sides_activity_title,
+        R.string.both_sides_idle_activity_title,
+        R.string.both_sides_charging_title,
+        R.string.both_sides_activity_size,
+        R.string.both_sides_activity_vertical_offset,
+        R.string.both_sides_charging_vertical_offset,
         R.string.mobile_type_bottom_offset,
         R.string.curved_signal_dot_vertical_offset,
         R.string.horizontal_signal_dot_vertical_offset,
@@ -258,12 +258,12 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
     )
     R.string.curved_signal_dot_vertical_offset -> listOf("弧形偏移", "弧形上下位置", "Curved dot offset")
     R.string.horizontal_signal_dot_vertical_offset -> listOf("横向偏移", "横排上下位置", "Horizontal dot offset")
-    R.string.left_right_activity_title -> listOf("上传下载", "网络活动", "流量指示器", "activity indicator")
-    R.string.left_right_idle_activity_title -> listOf("空闲箭头", "保留活动箭头", "隐藏活动箭头", "空闲隐藏", "隐藏空闲网络指示器", "空闲网络活动指示器", "Hide network activity when idle")
-    R.string.left_right_activity_size -> listOf("活动箭头大小", "流量图标大小")
-    R.string.left_right_activity_vertical_offset -> listOf("活动箭头位置", "网络活动上下偏移")
-    R.string.left_right_charging_title -> listOf("底部闪电", "充电图标")
-    R.string.left_right_charging_vertical_offset -> listOf("底部闪电位置", "充电闪电上下偏移")
+    R.string.both_sides_activity_title -> listOf("上传下载", "网络活动", "流量指示器", "activity indicator")
+    R.string.both_sides_idle_activity_title -> listOf("空闲箭头", "保留活动箭头", "隐藏活动箭头", "空闲隐藏", "隐藏空闲网络指示器", "空闲网络活动指示器", "Hide network activity when idle")
+    R.string.both_sides_activity_size -> listOf("活动箭头大小", "流量图标大小")
+    R.string.both_sides_activity_vertical_offset -> listOf("活动箭头位置", "网络活动上下偏移")
+    R.string.both_sides_charging_title -> listOf("底部闪电", "充电图标")
+    R.string.both_sides_charging_vertical_offset -> listOf("底部闪电位置", "充电闪电上下偏移")
     R.string.battery_lower_opening_title -> listOf("开口", "电量环开口", "弧形开口", "横排开口", "固定开口", "跟随位置", "避让", "Lower opening", "Follow position", "Fixed opening")
     R.string.combined_size -> listOf("整体缩放", "总大小", "三合一大小", "三合一缩放")
     R.string.outer_weight -> listOf("环形粗细", "圆环粗细", "外环宽度", "电量环粗细")

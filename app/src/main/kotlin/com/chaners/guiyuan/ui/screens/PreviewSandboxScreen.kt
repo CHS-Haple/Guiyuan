@@ -198,7 +198,7 @@ internal fun PreviewSandboxScreen(
     )
     val activitySupported =
         visual.dualSignal &&
-            visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT &&
+            visual.dualRowDotArrangement == SignalDotArrangement.BOTH_SIDES &&
             state.dualLevels != null
     val batteryModeOptions =
         listOf(

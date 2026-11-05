@@ -95,9 +95,9 @@ import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_DEFAULT
-import com.chaners.guiyuan.settings.LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT
-import com.chaners.guiyuan.settings.LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN
-import com.chaners.guiyuan.settings.LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX
+import com.chaners.guiyuan.settings.BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT
+import com.chaners.guiyuan.settings.BOTH_SIDES_BOTTOM_INFO_SCALE_MIN
+import com.chaners.guiyuan.settings.BOTH_SIDES_BOTTOM_INFO_SCALE_MAX
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_MAX
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_MIN
@@ -230,7 +230,7 @@ internal fun FeaturesScreen(
         stringResource(R.string.signal_dot_arrangement_horizontal),
     )
     val dualSignalDotArrangements = signalDotArrangements +
-        stringResource(R.string.signal_dot_arrangement_left_right)
+        stringResource(R.string.signal_dot_arrangement_both_sides)
     val lowerOpeningOptions = listOf(
         stringResource(R.string.battery_lower_opening_follow),
         stringResource(R.string.battery_lower_opening_fixed),
@@ -574,7 +574,7 @@ internal fun FeaturesScreen(
                         }
                     }
                 }
-                AnimatedPreferenceGroup(visible = activeDotArrangement != SignalDotArrangement.LEFT_RIGHT) {
+                AnimatedPreferenceGroup(visible = activeDotArrangement != SignalDotArrangement.BOTH_SIDES) {
                     if (search.matches(R.string.battery_lower_opening_title)) {
                         UiDropdownPreference(
                             title = stringResource(R.string.battery_lower_opening_title),
@@ -597,30 +597,30 @@ internal fun FeaturesScreen(
                         )
                     }
                 }
-                val leftRightArrangement = visual.dualSignal &&
-                    visual.dualRowDotArrangement == SignalDotArrangement.LEFT_RIGHT
-                if (search.matches(R.string.left_right_activity_title)) {
+                val bothSidesArrangement = visual.dualSignal &&
+                    visual.dualRowDotArrangement == SignalDotArrangement.BOTH_SIDES
+                if (search.matches(R.string.both_sides_activity_title)) {
                     SwitchPreference(
-                        title = stringResource(R.string.left_right_activity_title),
+                        title = stringResource(R.string.both_sides_activity_title),
                         summary = stringResource(
-                            if (leftRightArrangement) R.string.left_right_activity_summary
-                            else R.string.left_right_activity_unavailable_summary,
+                            if (bothSidesArrangement) R.string.both_sides_activity_summary
+                            else R.string.both_sides_activity_unavailable_summary,
                         ),
-                        checked = visual.leftRightShowActivity,
-                        enabled = featureCfg.enabled && leftRightArrangement,
+                        checked = visual.bothSidesShowActivity,
+                        enabled = featureCfg.enabled && bothSidesArrangement,
                         startAction = {
-                            SemanticLeadingIcon(R.drawable.ic_guiyuan_network_activity_triangles, featureCfg.enabled && leftRightArrangement)
+                            SemanticLeadingIcon(R.drawable.ic_guiyuan_network_activity_triangles, featureCfg.enabled && bothSidesArrangement)
                         },
-                        onCheckedChange = visualRepo::setLeftRightShowActivity,
+                        onCheckedChange = visualRepo::setBothSidesShowActivity,
                     )
                 }
-                AnimatedPreferenceGroup(visible = leftRightArrangement) {
-                    AnimatedPreferenceGroup(visible = visual.leftRightShowActivity) {
-                        if (search.matches(R.string.left_right_idle_activity_title)) {
+                AnimatedPreferenceGroup(visible = bothSidesArrangement) {
+                    AnimatedPreferenceGroup(visible = visual.bothSidesShowActivity) {
+                        if (search.matches(R.string.both_sides_idle_activity_title)) {
                             SwitchPreference(
-                                title = stringResource(R.string.left_right_idle_activity_title),
-                                summary = stringResource(R.string.left_right_idle_activity_summary),
-                                checked = visual.leftRightHideIdleActivity,
+                                title = stringResource(R.string.both_sides_idle_activity_title),
+                                summary = stringResource(R.string.both_sides_idle_activity_summary),
+                                checked = visual.bothSidesHideIdleActivity,
                                 enabled = featureCfg.enabled,
                                 startAction = {
                                     SemanticLeadingIcon(
@@ -629,14 +629,14 @@ internal fun FeaturesScreen(
                                         R.drawable.ic_material_symbol_visibility_off,
                                     )
                                 },
-                                onCheckedChange = visualRepo::setLeftRightHideIdleActivity,
+                                onCheckedChange = visualRepo::setBothSidesHideIdleActivity,
                             )
                         }
-                        if (search.matches(R.string.left_right_activity_size)) {
+                        if (search.matches(R.string.both_sides_activity_size)) {
                             SliderPreference(
-                                value = visual.leftRightActivityScale,
-                                onValueChange = visualRepo::setLeftRightActivityScale,
-                                title = stringResource(R.string.left_right_activity_size),
+                                value = visual.bothSidesActivityScale,
+                                onValueChange = visualRepo::setBothSidesActivityScale,
+                                title = stringResource(R.string.both_sides_activity_size),
                                 startAction = {
                                     SemanticLeadingIcon(
                                         R.drawable.ic_guiyuan_network_activity_triangles,
@@ -646,22 +646,22 @@ internal fun FeaturesScreen(
                                 },
                                 valueText = stringResource(
                                     R.string.percent_value,
-                                    (visual.leftRightActivityScale * 100f).roundToInt(),
+                                    (visual.bothSidesActivityScale * 100f).roundToInt(),
                                 ),
-                                valueRange = LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN..LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX,
+                                valueRange = BOTH_SIDES_BOTTOM_INFO_SCALE_MIN..BOTH_SIDES_BOTTOM_INFO_SCALE_MAX,
                                 steps = 9,
                                 showKeyPoints = true,
                                 hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                                keyPoints = listOf(LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT),
+                                keyPoints = listOf(BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT),
                                 magnetThreshold = 0.035f,
                                 enabled = featureCfg.enabled,
                             )
                         }
-                        if (search.matches(R.string.left_right_activity_vertical_offset)) {
+                        if (search.matches(R.string.both_sides_activity_vertical_offset)) {
                             SliderPreference(
-                                value = visual.leftRightActivityOffsetY,
-                                onValueChange = visualRepo::setLeftRightActivityOffsetY,
-                                title = stringResource(R.string.left_right_activity_vertical_offset),
+                                value = visual.bothSidesActivityOffsetY,
+                                onValueChange = visualRepo::setBothSidesActivityOffsetY,
+                                title = stringResource(R.string.both_sides_activity_vertical_offset),
                                 startAction = {
                                     SemanticLeadingIcon(
                                         R.drawable.ic_guiyuan_network_activity_triangles,
@@ -671,7 +671,7 @@ internal fun FeaturesScreen(
                                 },
                                 valueText = stringResource(
                                     R.string.battery_top_offset_value,
-                                    visual.leftRightActivityOffsetY.roundToInt(),
+                                    visual.bothSidesActivityOffsetY.roundToInt(),
                                 ),
                                 valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
                                 steps = 19,
@@ -683,24 +683,24 @@ internal fun FeaturesScreen(
                             )
                         }
                     }
-                    if (search.matches(R.string.left_right_charging_title)) {
+                    if (search.matches(R.string.both_sides_charging_title)) {
                         SwitchPreference(
-                            title = stringResource(R.string.left_right_charging_title),
-                            summary = stringResource(R.string.left_right_charging_summary),
-                            checked = visual.leftRightBottomCharging,
+                            title = stringResource(R.string.both_sides_charging_title),
+                            summary = stringResource(R.string.both_sides_charging_summary),
+                            checked = visual.bothSidesBottomCharging,
                             enabled = featureCfg.enabled && visual.showChargingIcon,
                             startAction = {
                                 SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled)
                             },
-                            onCheckedChange = visualRepo::setLeftRightBottomCharging,
+                            onCheckedChange = visualRepo::setBothSidesBottomCharging,
                         )
                     }
-                    AnimatedPreferenceGroup(visible = visual.leftRightBottomCharging && visual.showChargingIcon) {
-                        if (search.matches(R.string.left_right_charging_vertical_offset)) {
+                    AnimatedPreferenceGroup(visible = visual.bothSidesBottomCharging && visual.showChargingIcon) {
+                        if (search.matches(R.string.both_sides_charging_vertical_offset)) {
                             SliderPreference(
-                                value = visual.leftRightChargingOffsetY,
-                                onValueChange = visualRepo::setLeftRightChargingOffsetY,
-                                title = stringResource(R.string.left_right_charging_vertical_offset),
+                                value = visual.bothSidesChargingOffsetY,
+                                onValueChange = visualRepo::setBothSidesChargingOffsetY,
+                                title = stringResource(R.string.both_sides_charging_vertical_offset),
                                 startAction = {
                                     SemanticLeadingIcon(
                                         R.drawable.ic_material_symbol_bolt,
@@ -710,7 +710,7 @@ internal fun FeaturesScreen(
                             },
                             valueText = stringResource(
                                 R.string.battery_top_offset_value,
-                                visual.leftRightChargingOffsetY.roundToInt(),
+                                visual.bothSidesChargingOffsetY.roundToInt(),
                             ),
                             valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
                             steps = 19,

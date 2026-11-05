@@ -27,7 +27,7 @@ internal enum class SignalDotArrangement(val persistedValue: String) {
     @SerialName("DUO")
     HORIZONTAL("duo"),
     @SerialName("LEFT_RIGHT")
-    LEFT_RIGHT("left_right");
+    BOTH_SIDES("left_right");
 
     companion object {
         fun fromPersisted(value: String?): SignalDotArrangement =
@@ -201,14 +201,19 @@ internal data class VisualCfg(
     val dualSignal: Boolean = false,
     // Keep the V1 backup field name readable after the source-model rename.
     @SerialName("dualDotStyle")
-    val dualRowDotArrangement: SignalDotArrangement = SignalDotArrangement.LEFT_RIGHT,
-    val leftRightShowActivity: Boolean = true,
-    val leftRightHideIdleActivity: Boolean = false,
-    val leftRightBottomCharging: Boolean = false,
+    val dualRowDotArrangement: SignalDotArrangement = SignalDotArrangement.BOTH_SIDES,
+    @SerialName("leftRightShowActivity")
+    val bothSidesShowActivity: Boolean = true,
+    @SerialName("leftRightHideIdleActivity")
+    val bothSidesHideIdleActivity: Boolean = false,
+    @SerialName("leftRightBottomCharging")
+    val bothSidesBottomCharging: Boolean = false,
     @SerialName("leftRightBottomInfoScale") // B1750 backup field stays readable.
-    val leftRightActivityScale: Float = LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
-    val leftRightActivityOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
-    val leftRightChargingOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    val bothSidesActivityScale: Float = BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT,
+    @SerialName("leftRightActivityOffsetY")
+    val bothSidesActivityOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    @SerialName("leftRightChargingOffsetY")
+    val bothSidesChargingOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     // New field; older backup booleans are translated before decoding.
     @SerialName("singleRowDotStyle")
     val singleRowDotArrangement: SignalDotArrangement = SignalDotArrangement.CURVED,
@@ -234,7 +239,8 @@ internal data class VisualCfg(
     @SerialName("dualDuoOffsetY") // Backward-compatible V1 backup field.
     val horizontalSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     // Deprecated B1750 setting retained for backup compatibility; left-right dots are fixed.
-    val leftRightSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
+    @SerialName("leftRightSignalDotOffsetY")
+    val bothSidesSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val topChargingIconScale: Float =
         topChargingIconScaleDefault(layout),
     val combinedScale: Float = COMBINED_SCALE_DEFAULT,
@@ -262,7 +268,7 @@ internal data class VisualCfg(
     val dualRowDotOffsetY: Float
         get() = when (dualRowDotArrangement) {
             SignalDotArrangement.HORIZONTAL -> horizontalSignalDotOffsetY
-            SignalDotArrangement.LEFT_RIGHT -> NETWORK_TOP_OFFSET_DEFAULT
+            SignalDotArrangement.BOTH_SIDES -> NETWORK_TOP_OFFSET_DEFAULT
             SignalDotArrangement.CURVED -> curvedSignalDotOffsetY
         }
 
@@ -328,26 +334,26 @@ internal fun VisualCfg.normalized(): VisualCfg =
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,
             ),
-        leftRightSignalDotOffsetY =
-            leftRightSignalDotOffsetY.finiteIn(
+        bothSidesSignalDotOffsetY =
+            bothSidesSignalDotOffsetY.finiteIn(
                 NETWORK_TOP_OFFSET_MIN,
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,
             ),
-        leftRightActivityScale =
-            leftRightActivityScale.finiteIn(
-                LEFT_RIGHT_BOTTOM_INFO_SCALE_MIN,
-                LEFT_RIGHT_BOTTOM_INFO_SCALE_MAX,
-                LEFT_RIGHT_BOTTOM_INFO_SCALE_DEFAULT,
+        bothSidesActivityScale =
+            bothSidesActivityScale.finiteIn(
+                BOTH_SIDES_BOTTOM_INFO_SCALE_MIN,
+                BOTH_SIDES_BOTTOM_INFO_SCALE_MAX,
+                BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT,
             ),
-        leftRightActivityOffsetY =
-            leftRightActivityOffsetY.finiteIn(
+        bothSidesActivityOffsetY =
+            bothSidesActivityOffsetY.finiteIn(
                 NETWORK_TOP_OFFSET_MIN,
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,
             ),
-        leftRightChargingOffsetY =
-            leftRightChargingOffsetY.finiteIn(
+        bothSidesChargingOffsetY =
+            bothSidesChargingOffsetY.finiteIn(
                 NETWORK_TOP_OFFSET_MIN,
                 NETWORK_TOP_OFFSET_MAX,
                 NETWORK_TOP_OFFSET_DEFAULT,
