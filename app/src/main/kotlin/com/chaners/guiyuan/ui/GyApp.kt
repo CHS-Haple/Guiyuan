@@ -106,7 +106,6 @@ internal fun GyApp(
             return@GyTheme
         }
         var lastDiagSnapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
-        var previewSimPresent by rememberSaveable { mutableStateOf(true) }
         var previewAirplaneMode by rememberSaveable { mutableStateOf(false) }
         var previewNetworkModeIndex by rememberSaveable {
             mutableIntStateOf(PreviewNetworkMode.WIFI.ordinal)
@@ -115,7 +114,6 @@ internal fun GyApp(
             mutableIntStateOf(PreviewMobileNetwork.FIVE_G.ordinal)
         }
         var previewMobileSignalLevel by rememberSaveable { mutableIntStateOf(4) }
-        var previewDualMobile by rememberSaveable { mutableStateOf(false) }
         var previewSim2SignalLevel by rememberSaveable { mutableIntStateOf(4) }
         var previewSim2NetworkIndex by rememberSaveable {
             mutableIntStateOf(PreviewMobileNetwork.FOUR_G.ordinal)
@@ -124,7 +122,7 @@ internal fun GyApp(
             mutableIntStateOf(PreviewDataSim.SIM1.ordinal)
         }
         var previewSimCardsIndex by rememberSaveable {
-            mutableIntStateOf(PreviewSimCards.BOTH.ordinal)
+            mutableIntStateOf(PreviewSimCards.SIM1_ONLY.ordinal)
         }
         var previewWifiStateIndex by rememberSaveable {
             mutableIntStateOf(PreviewWifiState.CONNECTED.ordinal)
@@ -150,12 +148,11 @@ internal fun GyApp(
             ]
         val previewState =
             PreviewSandboxUiState(
-                simPresent = previewSimPresent,
                 airplaneMode = previewAirplaneMode,
                 networkMode =
                     if (
                         savedNetworkMode == PreviewNetworkMode.MOBILE &&
-                        !previewDualMobile &&
+                        previewSimCardsIndex == PreviewSimCards.SIM1_ONLY.ordinal &&
                         savedMobileNetwork == PreviewMobileNetwork.NONE
                     ) {
                         PreviewNetworkMode.NONE
@@ -164,7 +161,6 @@ internal fun GyApp(
                     },
                 mobileNetwork = savedMobileNetwork,
                 mobileSignalLevel = previewMobileSignalLevel,
-                dualMobile = previewDualMobile,
                 sim2SignalLevel = previewSim2SignalLevel,
                 sim2MobileNetwork =
                     PreviewMobileNetwork.entries[
@@ -300,7 +296,6 @@ internal fun GyApp(
                         state = previewState,
                         parasiteActive = sandboxActive,
                         onParasiteChange = { enabled, snapshot -> onSandboxToggle(enabled, snapshot) },
-                        onSimPresentChange = { previewSimPresent = it },
                         onAirplaneModeChange = { previewAirplaneMode = it },
                         onNetworkModeChange = {
                             if (
@@ -317,7 +312,6 @@ internal fun GyApp(
                         onMobileSignalLevelChange = {
                             previewMobileSignalLevel = it
                         },
-                        onDualMobileChange = { previewDualMobile = it },
                         onSim2SignalLevelChange = { previewSim2SignalLevel = it },
                         onSim2NetworkChange = { previewSim2NetworkIndex = it.ordinal },
                         onDataSimChange = { previewDataSimIndex = it.ordinal },

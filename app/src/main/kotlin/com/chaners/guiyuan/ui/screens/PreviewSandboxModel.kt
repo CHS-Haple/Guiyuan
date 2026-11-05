@@ -86,16 +86,14 @@ internal enum class PreviewCenterSource {
 }
 
 internal data class PreviewSandboxUiState(
-    val simPresent: Boolean = true,
     val airplaneMode: Boolean = false,
     val networkMode: PreviewNetworkMode = PreviewNetworkMode.WIFI,
     val mobileNetwork: PreviewMobileNetwork = PreviewMobileNetwork.FIVE_G,
     val mobileSignalLevel: Int = 4,
-    val dualMobile: Boolean = false,
     val sim2SignalLevel: Int = 4,
     val sim2MobileNetwork: PreviewMobileNetwork = PreviewMobileNetwork.FOUR_G,
     val dataSim: PreviewDataSim = PreviewDataSim.SIM1,
-    val simCards: PreviewSimCards = PreviewSimCards.BOTH,
+    val simCards: PreviewSimCards = PreviewSimCards.SIM1_ONLY,
     val wifiState: PreviewWifiState = PreviewWifiState.CONNECTED,
     val wifiSignalLevel: Int = 3,
     val networkActivity: PreviewNetworkActivity = PreviewNetworkActivity.BOTH,
@@ -104,13 +102,10 @@ internal data class PreviewSandboxUiState(
     val chargingState: PreviewChargingState = PreviewChargingState.NOT_CHARGING,
 ) {
     val sim1Active: Boolean
-        get() =
-            if (!dualMobile) simPresent
-            else simCards == PreviewSimCards.BOTH || simCards == PreviewSimCards.SIM1_ONLY
+        get() = simCards == PreviewSimCards.BOTH || simCards == PreviewSimCards.SIM1_ONLY
 
     val sim2Active: Boolean
-        get() = dualMobile &&
-            (simCards == PreviewSimCards.BOTH || simCards == PreviewSimCards.SIM2_ONLY)
+        get() = simCards == PreviewSimCards.BOTH || simCards == PreviewSimCards.SIM2_ONLY
 
     val hasSim: Boolean
         get() = sim1Active || sim2Active
@@ -118,22 +113,27 @@ internal data class PreviewSandboxUiState(
     val mobileControlsEnabled: Boolean
         get() = hasSim && !airplaneMode
 
-    val dataSimAvailable: Boolean
-        get() =
-            if (!dualMobile) simPresent
-            else if (dataSim == PreviewDataSim.SIM1) sim1Active else sim2Active
+    val effectiveDataSim: PreviewDataSim?
+        get() = when (simCards) {
+            PreviewSimCards.BOTH -> dataSim
+            PreviewSimCards.SIM1_ONLY -> PreviewDataSim.SIM1
+            PreviewSimCards.SIM2_ONLY -> PreviewDataSim.SIM2
+            PreviewSimCards.NONE -> null
+        }
 
     val dataMobileNetwork: PreviewMobileNetwork
-        get() =
-            if (!dataSimAvailable) PreviewMobileNetwork.NONE
-            else if (dualMobile && dataSim == PreviewDataSim.SIM2) sim2MobileNetwork
-            else mobileNetwork
+        get() = when (effectiveDataSim) {
+            PreviewDataSim.SIM1 -> mobileNetwork
+            PreviewDataSim.SIM2 -> sim2MobileNetwork
+            null -> PreviewMobileNetwork.NONE
+        }
 
     val dataSignalLevel: Int
-        get() =
-            if (!dataSimAvailable) 0
-            else if (dualMobile && dataSim == PreviewDataSim.SIM2) sim2SignalLevel
-            else mobileSignalLevel
+        get() = when (effectiveDataSim) {
+            PreviewDataSim.SIM1 -> mobileSignalLevel
+            PreviewDataSim.SIM2 -> sim2SignalLevel
+            null -> 0
+        }
 
     val displayedSignalLevel: Int
         get() =

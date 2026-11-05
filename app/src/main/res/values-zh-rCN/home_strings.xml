@@ -44,7 +44,6 @@
     <string name="home_preview_network_mode_mobile">移动</string>
     <string name="home_preview_network_mode_wifi">Wi-Fi</string>
     <string name="home_preview_sim_title">SIM 状态</string>
-    <string name="home_preview_sim_present">已插卡</string>
     <string name="home_preview_sim_absent">未插卡</string>
     <string name="home_preview_sim_both">双卡</string>
     <string name="home_preview_sim1_only">仅 SIM1</string>
@@ -100,8 +99,6 @@
     <string name="home_preview_charging_normal">充电</string>
     <string name="home_preview_charging_super_fast">超级快充</string>
     <string name="home_preview_charging_super_fast_compact">超级快充</string>
-    <string name="home_preview_dual_mobile_title">双排信号点预览</string>
-    <string name="home_preview_dual_mobile_summary">SIM1 内排，SIM2 外排，网络制式跟随流量卡</string>
     <string name="home_preview_sim1_signal_title">SIM1 信号点</string>
     <string name="home_preview_sim2_signal_title">SIM2 信号点</string>
     <string name="home_preview_network_mode_title">网络模式</string>

@@ -15,12 +15,10 @@ import org.junit.Test
 
 class SandboxLeaseTest {
     private val state = PreviewSandboxUiState(
-        simPresent = false,
         airplaneMode = true,
         networkMode = PreviewNetworkMode.MOBILE,
         mobileNetwork = PreviewMobileNetwork.FIVE_GA,
         mobileSignalLevel = 2,
-        dualMobile = true,
         sim2SignalLevel = 1,
         sim2MobileNetwork = PreviewMobileNetwork.LTE,
         dataSim = PreviewDataSim.SIM2,
@@ -49,21 +47,35 @@ class SandboxLeaseTest {
         assertEquals(lease, SandboxLease.decode(lease.encode()))
     }
 
-    @Test fun legacyV2LeaseStillDecodesWithNativeActivityDefault() {
-        val fields = lease.encode().split('|').toMutableList()
-        assertEquals("3", fields[0])
-        fields[0] = "2"
-        fields.removeAt(19)
-        val restored = SandboxLease.decode(fields.joinToString("|"))
-        assertNotNull(restored)
-        assertEquals(PreviewNetworkActivity.BOTH, restored!!.state.networkActivity)
-        assertEquals(state.copy(networkActivity = PreviewNetworkActivity.BOTH), restored.state)
+    @Test fun legacyV2AndV3LeasesPreservePhysicalSimState() {
+        val legacyV3 = lease.encode().split('|').toMutableList().apply {
+            this[0] = "3"
+            add(4, "0")
+            add(9, "1")
+        }
+        assertEquals(state, SandboxLease.decode(legacyV3.joinToString("|"))?.state)
+        val legacyV2 = legacyV3.toMutableList().apply {
+            this[0] = "2"
+            removeAt(19)
+        }
+        assertEquals(
+            state.copy(networkActivity = PreviewNetworkActivity.BOTH),
+            SandboxLease.decode(legacyV2.joinToString("|"))?.state,
+        )
+        val legacySingle = legacyV3.toMutableList().apply {
+            this[4] = "1"
+            this[9] = "0"
+            this[13] = "BOTH"
+        }
+        assertEquals(
+            PreviewSimCards.SIM1_ONLY,
+            SandboxLease.decode(legacySingle.joinToString("|"))?.state?.simCards,
+        )
     }
 
-    @Test fun dualPreviewSurvivesFirstLeaseBeforeAnyUpdates() {
+    @Test fun dualSimStateSurvivesFirstLeaseBeforeAnyUpdates() {
         val selected = PreviewSandboxUiState(
             networkMode = PreviewNetworkMode.WIFI,
-            dualMobile = true,
             simCards = PreviewSimCards.BOTH,
             mobileSignalLevel = 3,
             sim2SignalLevel = 1,
@@ -72,7 +84,7 @@ class SandboxLeaseTest {
             .encode()
             .let(SandboxLease::decode)
         assertNotNull(received)
-        assertTrue(received!!.state.dualMobile)
+        assertEquals(PreviewSimCards.BOTH, received!!.state.simCards)
         assertEquals(com.chaners.guiyuan.xposed.DualMobileLevels(3, 1), received.state.dualLevels)
         assertEquals(PreviewNetworkMode.WIFI, received.state.networkMode)
     }
@@ -93,10 +105,10 @@ class SandboxLeaseTest {
         assertNull(SandboxLease.decode(raw.replace("FIVE_GA", "FAKE_5GA")))
         assertNull(SandboxLease.decode(raw.replace("|13|POWER_SAVE|", "|101|POWER_SAVE|")))
         val malformedSignal = raw.split('|').toMutableList()
-        malformedSignal[10] = "7" // SIM2 level, not the dual-SIM enabled flag.
+        malformedSignal[8] = "7" // SIM2 signal level.
         assertNull(SandboxLease.decode(malformedSignal.joinToString("|")))
         assertNull(SandboxLease.decode(raw.replace("|1|LTE|", "|x|LTE|")))
-        assertNull(SandboxLease.decode(raw.replace("3|13|", "1|13|")))
+        assertNull(SandboxLease.decode(raw.replace("4|13|", "1|13|")))
         assertNull(SandboxLease.decode("x".repeat(401)))
     }
 }

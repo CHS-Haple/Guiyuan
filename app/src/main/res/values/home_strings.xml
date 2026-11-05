@@ -44,7 +44,6 @@
     <string name="home_preview_network_mode_mobile">Mobile</string>
     <string name="home_preview_network_mode_wifi">Wi-Fi</string>
     <string name="home_preview_sim_title">SIM state</string>
-    <string name="home_preview_sim_present">SIM inserted</string>
     <string name="home_preview_sim_absent">No SIM</string>
     <string name="home_preview_sim_both">Both</string>
     <string name="home_preview_sim1_only">SIM 1</string>
@@ -100,8 +99,6 @@
     <string name="home_preview_charging_normal">Charging</string>
     <string name="home_preview_charging_super_fast">Super fast charging</string>
     <string name="home_preview_charging_super_fast_compact">Super fast</string>
-    <string name="home_preview_dual_mobile_title">Dual-row signal dot preview</string>
-    <string name="home_preview_dual_mobile_summary">SIM1 inner, SIM2 outer, network type follows data SIM</string>
     <string name="home_preview_sim1_signal_title">SIM1 signal dots</string>
     <string name="home_preview_sim2_signal_title">SIM2 signal dots</string>
     <string name="home_preview_network_mode_title">Network mode</string>
