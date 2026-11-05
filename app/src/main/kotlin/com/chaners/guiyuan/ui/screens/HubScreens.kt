@@ -295,12 +295,12 @@ internal fun FeaturesScreen(
         R.string.both_sides_charging_vertical_offset,
     )
     val bothSidesSearch = bothSidesActivitySearch || bothSidesChargingSearch
-    val displayMatches = search.any(*FeatureSearchIds.display)
-    val layoutMatches = search.any(*FeatureSearchIds.layout)
-    val networkMatches = search.any(*FeatureSearchIds.network)
-    val batteryMatches = search.any(*FeatureSearchIds.battery) ||
+    val displayMatches = search.anyFrom(FeatureSearchIds.display)
+    val layoutMatches = search.anyFrom(FeatureSearchIds.layout)
+    val networkMatches = search.anyFrom(FeatureSearchIds.network)
+    val batteryMatches = search.anyFrom(FeatureSearchIds.battery) ||
         (bothSidesChargingSearch && !visual.showChargingIcon)
-    val managementMatches = search.any(*FeatureSearchIds.management)
+    val managementMatches = search.anyFrom(FeatureSearchIds.management)
 
     HubPage(
         title = stringResource(R.string.features_title),

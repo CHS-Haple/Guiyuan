@@ -187,7 +187,11 @@ internal class PageSearch(private val context: Context) {
     fun matches(@StringRes title: Int): Boolean =
         matchSet?.matches(title) ?: true
 
-    fun any(vararg ids: Int): Boolean =
+    fun any(vararg ids: Int): Boolean = anyFrom(ids)
+
+    // Reuse stable feature ID arrays instead of copying them via vararg spread
+    // during Compose recomposition.
+    fun anyFrom(ids: IntArray): Boolean =
         !filtering || ids.any(::matches)
 
     // The index may still be preparing when the user types immediately after opening the page.

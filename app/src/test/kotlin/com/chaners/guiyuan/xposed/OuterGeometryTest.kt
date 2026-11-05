@@ -355,6 +355,22 @@ class OuterGeometryTest {
         }
     }
 
+    private fun assertBothSidesNeighborClearance(
+        geometry: OuterGeometry.Resolved,
+        index: Int,
+        weight: Float,
+        dotRadius: Float,
+    ) {
+        for (row in 0..1) {
+            val dx = geometry.dualDotX(index, row, SignalDotArrangement.BOTH_SIDES) -
+                geometry.dualDotX(index - 1, row, SignalDotArrangement.BOTH_SIDES)
+            val dy = geometry.dualDotY(index, row, SignalDotArrangement.BOTH_SIDES) -
+                geometry.dualDotY(index - 1, row, SignalDotArrangement.BOTH_SIDES)
+            assertTrue("dots must not overlap at weight $weight",
+                sqrt(dx * dx + dy * dy) >= 2f * dotRadius + 0.9f)
+        }
+    }
+
     @Test
     fun bothSidesDotsRemainMirroredAndClearAtSupportedRingWeights() {
         for (step in 0..12) {
@@ -371,16 +387,7 @@ class OuterGeometryTest {
                 assertTrue("left group remains left", leftX < 0f)
                 assertTrue("right group remains right", rightX > 0f)
                 assertTrue("lower group remains below center", leftY > 0f)
-                if (index > 0) {
-                    for (row in 0..1) {
-                        val dx = g.dualDotX(index, row, SignalDotArrangement.BOTH_SIDES) -
-                            g.dualDotX(index - 1, row, SignalDotArrangement.BOTH_SIDES)
-                        val dy = g.dualDotY(index, row, SignalDotArrangement.BOTH_SIDES) -
-                            g.dualDotY(index - 1, row, SignalDotArrangement.BOTH_SIDES)
-                        assertTrue("dots must not overlap at weight $weight",
-                            sqrt(dx * dx + dy * dy) >= 2f * dotRadius + 0.9f)
-                    }
-                }
+                if (index > 0) assertBothSidesNeighborClearance(g, index, weight, dotRadius)
             }
             for (row in 0..1) {
                 val x = g.dualDotX(3, row, SignalDotArrangement.BOTH_SIDES)

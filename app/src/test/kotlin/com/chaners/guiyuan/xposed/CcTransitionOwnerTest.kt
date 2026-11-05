@@ -255,7 +255,7 @@ class CcTransitionOwnerTest {
     }
 
     @Test
-    fun bothSidesBottomChargingFollowsEightDotGroupInsteadOfBatteryNumber() {
+    fun chargingFollowsEightDotsInsteadOfBatteryNumber() {
         val top = transitionGeometry(centerX = 20f, centerY = 10f, width = 40f, height = 10f)
         val bottom = transitionGeometry(centerX = 20f, centerY = 32f, width = 40f, height = 10f)
         val sourceGroup = requireNotNull(CcTransitionPolicy.dualMobileGroupGeometry(listOf(top, bottom)))
