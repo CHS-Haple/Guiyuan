@@ -985,34 +985,9 @@ internal object CcTransitionOwner {
                         }.takeIf { it.size == 2 }
                     }
                 }
-            // The aggregate has one optical endpoint; its rows have no verified SIM IDs.
-            val aggregateTarget =
-                if (dualSpec == null || dualRowTargets != null ||
-                    model.mobileUnavailableMark
-                ) null
-                else nativeDualTargets
-                    ?.singleOrNull()
-                    ?.opticalView
-                    ?.let { optical ->
-                        val snapshot = ParticipantVisualSnapshot.resolveView(optical)
-                            ?: return@let null
-                        val rows = snapshot.dualMobileRowsWithinEnvelope()
-                            ?: return@let null
-                        val sample = sample(optical, rootView) ?: return@let null
-                        val bounds = snapshot.envelope
-                        val target = CcTransitionPolicy.componentGeometry(
-                            parentGeometry = sample,
-                            parentWidth = optical.width,
-                            parentHeight = optical.height,
-                            bounds = StatusPainter.TransitionBounds(
-                                bounds.left * optical.width,
-                                bounds.top * optical.height,
-                                bounds.right * optical.width,
-                                bounds.bottom * optical.height,
-                            ),
-                        )?.takeIf { geometry -> geometry.all(Float::isFinite) }
-                        target?.let { it to rows }
-                    }
+            // One native aggregate root cannot independently own both SIM rows.
+            // Keep their source shape and let native FAKE/FINAL alpha own the handoff.
+            val aggregateCrossfade = nativeDualTargets?.size == 1
             val nativeProgress = CcTransitionPolicy.geometryProgress(progress)
             val motionProgress =
                 CcTransitionPolicy.handoffMotionProgress(
@@ -1047,12 +1022,6 @@ internal object CcTransitionOwner {
                             if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
                                 rowSpecs.orEmpty()
                             } else listOf(spec)
-                        }
-                    aggregateTarget != null ->
-                        baseSpecs.map { spec ->
-                            if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
-                                spec.copy(shapePolicy = StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL)
-                            } else spec
                         }
                     else -> baseSpecs
                 }
@@ -1298,15 +1267,6 @@ internal object CcTransitionOwner {
                                     CcTransitionPolicy.dualMobileGroupGeometry(currentRows) ?: carried
                                 }
 
-                                aggregateTarget != null ->
-                                    projectedGeometry(
-                                        source = mobileSource,
-                                        target = aggregateTarget.first,
-                                        progress = motionProgress,
-                                        scalePolicy = mobileSpec.scalePolicy,
-                                        carrierFrames = carrierFrames,
-                                    )
-
                                 else -> carried
                             }
                         mobileSource to current
@@ -1341,15 +1301,14 @@ internal object CcTransitionOwner {
                     } else if (model.dualMobileLevels != null &&
                         spec.component == StatusPainter.TransitionComponent.MOBILE
                     ) {
-                        aggregateTarget?.first
-                            ?: nativeDualTargets?.let { witnesses ->
-                                resolveDualMobileTargetGeometry(
-                                    spec = spec,
-                                    witnesses = witnesses,
-                                    root = rootView,
-                                    sourceGeometry = sourceGeometry,
-                                )
-                            }
+                        if (aggregateCrossfade) null else nativeDualTargets?.let { witnesses ->
+                            resolveDualMobileTargetGeometry(
+                                spec = spec,
+                                witnesses = witnesses,
+                                root = rootView,
+                                sourceGeometry = sourceGeometry,
+                            )
+                        }
                     } else {
                         witness?.let { target ->
                             resolveTargetGeometry(
@@ -1544,7 +1503,12 @@ internal object CcTransitionOwner {
                         geometry
                     }
                 val componentVisibleFraction =
-                    if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
+                    if (aggregateCrossfade &&
+                        spec.component == StatusPainter.TransitionComponent.MOBILE
+                    ) {
+                        // FAKE alpha already fades this source as FINAL takes ownership.
+                        1f
+                    } else if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
                         // The ring retracts independently of the final native battery target.
                         1f
                     } else if (
@@ -1692,10 +1656,6 @@ internal object CcTransitionOwner {
                             null
                         },
                     mobileTargetBars = resolvedMobileTargetBars,
-                    mobileAggregateRows =
-                        if (spec.component == StatusPainter.TransitionComponent.MOBILE) {
-                            aggregateTarget?.second
-                        } else null,
                     mobileRow = spec.mobileRow,
                     batteryNumberTargetWeight =
                         if (
