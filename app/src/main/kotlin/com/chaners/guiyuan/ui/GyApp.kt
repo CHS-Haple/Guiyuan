@@ -122,7 +122,7 @@ internal fun GyApp(
             mutableIntStateOf(PreviewDataSim.SIM1.ordinal)
         }
         var previewSimCardsIndex by rememberSaveable {
-            mutableIntStateOf(PreviewSimCards.SIM1_ONLY.ordinal)
+            mutableIntStateOf(PreviewSimCards.BOTH.ordinal)
         }
         var previewWifiStateIndex by rememberSaveable {
             mutableIntStateOf(PreviewWifiState.CONNECTED.ordinal)

@@ -11,11 +11,14 @@ class PreviewSandboxPolicyTest {
     @Test
     fun simPresenceDrivesPhysicalRowsWithoutChangingSignalStyle() {
         val basic = PreviewSandboxUiState(networkMode = PreviewNetworkMode.MOBILE)
-        assertEquals(PreviewSimCards.SIM1_ONLY, basic.simCards)
-        assertEquals(null, basic.dualLevels)
+        assertEquals(PreviewSimCards.BOTH, basic.simCards)
+        assertEquals(DualMobileLevels(4, 4), basic.dualLevels)
         assertTrue(basic.sim1Active)
-        assertFalse(basic.sim2Active)
-        val both = basic.copy(simCards = PreviewSimCards.BOTH, mobileSignalLevel = 3, sim2SignalLevel = 1)
+        assertTrue(basic.sim2Active)
+        val sim1Only = basic.copy(simCards = PreviewSimCards.SIM1_ONLY)
+        assertEquals(null, sim1Only.dualLevels)
+        assertFalse(sim1Only.sim2Active)
+        val both = basic.copy(mobileSignalLevel = 3, sim2SignalLevel = 1)
         assertEquals(DualMobileLevels(3, 1), both.dualLevels)
         assertEquals(null, both.copy(airplaneMode = true).dualLevels)
         assertEquals(PreviewCenterSource.AIRPLANE, both.copy(airplaneMode = true).previewCenterSource())

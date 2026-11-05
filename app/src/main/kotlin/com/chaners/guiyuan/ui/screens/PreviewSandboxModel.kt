@@ -93,7 +93,7 @@ internal data class PreviewSandboxUiState(
     val sim2SignalLevel: Int = 4,
     val sim2MobileNetwork: PreviewMobileNetwork = PreviewMobileNetwork.FOUR_G,
     val dataSim: PreviewDataSim = PreviewDataSim.SIM1,
-    val simCards: PreviewSimCards = PreviewSimCards.SIM1_ONLY,
+    val simCards: PreviewSimCards = PreviewSimCards.BOTH,
     val wifiState: PreviewWifiState = PreviewWifiState.CONNECTED,
     val wifiSignalLevel: Int = 3,
     val networkActivity: PreviewNetworkActivity = PreviewNetworkActivity.BOTH,
