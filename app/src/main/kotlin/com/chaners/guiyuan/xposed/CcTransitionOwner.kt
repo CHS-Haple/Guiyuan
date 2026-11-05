@@ -2839,13 +2839,14 @@ internal object CcTransitionOwner {
         private fun resolveNativeNetworkActivityTarget(model: RenderModel): TargetWitness? {
             val wifi = model.centerIndicator is CenterIndicator.Wifi
             if (!wifi && model.centerIndicator !is CenterIndicator.MobileType) return null
-            // When the bottom slot draws the opt-in idle arrow, the source has no
-            // activity ID. FINAL instead owns its independently verified idle glyph.
-            val resourceId = model.networkActivityResId?.takeIf { it > 0 }
-                ?: (if (!wifi) nativeIdleMobileActivityResId.takeIf { it > 0 } else null)
-                ?: return null
-
             val native = PresentationStore.snapshot().mobilePresentation
+            // The observed aggregated FINAL uses its own idle glyph even when
+            // the current data SIM reports no active native resource.
+            val resourceId = model.networkActivityResId?.takeIf { it > 0 }
+                ?: (if (!wifi && native?.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED) {
+                    nativeIdleMobileActivityResId.takeIf { it > 0 }
+                } else null)
+                ?: return null
             val selectedSubId = model.effectiveDataSubscriptionId
             val candidateRoots = if (wifi) {
                 slotViews(finalStatusIcons, WIFI_SLOT)
