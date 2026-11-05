@@ -1,6 +1,6 @@
 <!-- Original Guiyuan asset: simplified upload/download direction marks.
      Two congruent isosceles triangles, about 15% flatter than equilateral.
-     Kept in the left optical region to retain both marks beside the existing badge.
+     Centered symmetrically in the shared 24dp optical box; badge masking stays shared.
      No vendor resource path is copied. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
@@ -9,5 +9,5 @@
     android:viewportHeight="24">
     <path
         android:fillColor="#FF000000"
-        android:pathData="M8,1.5 L2.6,9.5 L13.4,9.5 Z M2.6,12.5 L13.4,12.5 L8,20.5 Z" />
+        android:pathData="M12,2.5 L6.6,10.5 L17.4,10.5 Z M6.6,13.5 L17.4,13.5 L12,21.5 Z" />
 </vector>
