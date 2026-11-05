@@ -22,6 +22,7 @@ import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.sandbox.SANDBOX_PREFS
+import com.chaners.guiyuan.ui.screens.PreviewSimCards
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_ICON_KEY
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_KEY
@@ -4486,7 +4487,7 @@ class GyModule : XposedModule() {
                         "airplane" to received?.airplaneMode,
                         "wifiState" to received?.wifiState,
                         "wifiBars" to received?.wifiSignalLevel,
-                        "dualEnabled" to received?.dualMobile,
+                        "dualEnabled" to received?.simCards?.let { it == PreviewSimCards.BOTH },
                         "dualEffective" to (received?.dualLevels != null),
                         "sim1Bars" to received?.mobileSignalLevel,
                         "sim2Bars" to received?.sim2SignalLevel,
