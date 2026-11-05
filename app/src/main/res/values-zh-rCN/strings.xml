@@ -34,7 +34,7 @@
     <string name="left_right_activity_size">网络活动指示器大小</string>
     <string name="left_right_activity_vertical_offset">网络活动指示器上下偏移</string>
     <string name="left_right_charging_title">底部充电闪电</string>
-    <string name="left_right_charging_summary">左右分布时将充电闪电移至圆环底部，优先于网络活动指示器</string>
+    <string name="left_right_charging_summary">左右分布时将充电闪电移至圆环底部，显示优先于网络活动指示器</string>
     <string name="left_right_charging_vertical_offset">底部充电闪电上下偏移</string>
     <string name="curved_signal_dot_vertical_offset">弧形信号点上下偏移</string>
     <string name="horizontal_signal_dot_vertical_offset">横向信号点上下偏移</string>
