@@ -163,7 +163,7 @@ internal object DiagLogReader {
                 ) {
                     false
                 } else {
-                    val first = event.fields["sessionId"]?.let(firstIndexBySession::get)
+                    val first = event.fields["sessionId"]?.let { id -> firstIndexBySession[id] }
                     first != null && (latestStart == null || first > latestStart.first)
                 }
             }
