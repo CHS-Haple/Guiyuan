@@ -238,7 +238,7 @@ internal data class VisualCfg(
     val curvedSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     @SerialName("dualDuoOffsetY") // Backward-compatible V1 backup field.
     val horizontalSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
-    // Deprecated B1750 setting retained for backup compatibility; left-right dots are fixed.
+    // Deprecated B1750 setting retained for backup compatibility; two-sided dots are fixed.
     @SerialName("leftRightSignalDotOffsetY")
     val bothSidesSignalDotOffsetY: Float = NETWORK_TOP_OFFSET_DEFAULT,
     val topChargingIconScale: Float =

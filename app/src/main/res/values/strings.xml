@@ -20,7 +20,7 @@
     <string name="mobile_type_bottom_offset">Network type vertical offset</string>
     <string name="signal_dot_arrangement_curved">Curved distribution</string>
     <string name="signal_dot_arrangement_horizontal">Horizontal distribution</string>
-    <string name="signal_dot_arrangement_both_sides">two-sided distribution</string>
+    <string name="signal_dot_arrangement_both_sides">Two-sided distribution</string>
     <string name="both_sides_activity_title">Bottom network activity indicator</string>
     <string name="both_sides_activity_summary">Show upload and download status at the bottom in two-sided distribution</string>
     <string name="both_sides_activity_unavailable_summary">Available only with dual-SIM signal dots in two-sided distribution</string>

@@ -1747,7 +1747,7 @@ internal class StatusPainter(
             ).coerceIn(0f, 90f)
         }
         val topHalf = halfGap(topAvoidance, center = 270f, start = 180f)
-        // A stored opening choice from another arrangement cannot override left-right auto avoidance.
+        // A stored opening choice from another arrangement cannot override two-sided auto avoidance.
         val bothSidesSelected = visual.dualSignal &&
             visual.dualRowDotArrangement == SignalDotArrangement.BOTH_SIDES
         val fixedOpening = visual.fixedLowerOpening && !bothSidesSelected
