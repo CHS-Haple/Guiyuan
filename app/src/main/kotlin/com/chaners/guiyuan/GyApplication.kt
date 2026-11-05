@@ -102,6 +102,33 @@ class GyApplication :
     // Records the initial startup observation even if the framework binds later.
     internal var initialServiceBindTimedOut: Boolean = false
         private set
+    // Bounded app-process observations; only the main-thread status writer mutates them.
+    private val frameworkTransitions = ArrayDeque<String>(12).apply {
+        addLast("uptimeMs=${SystemClock.uptimeMillis()} service=checking")
+    }
+    private var omittedFrameworkTransitions = 0
+
+    internal fun frameworkTransitionSnapshot(): Pair<List<String>, Int> =
+        frameworkTransitions.toList() to omittedFrameworkTransitions
+
+    private fun setXposedStatus(status: XposedStatus) {
+        _xposedStatus.value = status
+        val observed = when (status) {
+            XposedStatus.Checking -> "service=checking"
+            XposedStatus.FrameworkUnavailable -> "service=unavailable"
+            XposedStatus.QueryUnavailable -> "service=query-unavailable"
+            is XposedStatus.Connected ->
+                "service=connected apiVersion=${status.apiVersion} " +
+                    "systemUiScopeAuthorized=${status.sysUiInScope} " +
+                    "systemUiTargetState=${status.runningTargets[SYS_UI_PROCESS]?.name ?: "absent"}"
+        }
+        if (frameworkTransitions.lastOrNull()?.substringAfter(' ') == observed) return
+        if (frameworkTransitions.size == 12) {
+            frameworkTransitions.removeFirst()
+            omittedFrameworkTransitions++
+        }
+        frameworkTransitions.addLast("uptimeMs=${SystemClock.uptimeMillis()} $observed")
+    }
 
     private val bindTimeout =
         Runnable {
@@ -110,7 +137,7 @@ class GyApplication :
                 _xposedStatus.value == XposedStatus.Checking
             ) {
                 initialServiceBindTimedOut = true
-                _xposedStatus.value = XposedStatus.FrameworkUnavailable
+                setXposedStatus(XposedStatus.FrameworkUnavailable)
             }
         }
 
@@ -180,7 +207,7 @@ class GyApplication :
                 lastMirror = null
                 finishScopeRequest(false)
                 finishHotReload()
-                _xposedStatus.value = XposedStatus.FrameworkUnavailable
+                setXposedStatus(XposedStatus.FrameworkUnavailable)
             }
         }
     }
@@ -322,7 +349,7 @@ class GyApplication :
     }
 
     private fun refreshXposedStatus(service: XposedService) {
-        _xposedStatus.value =
+        setXposedStatus(
             runCatching {
                 XposedStatus.Connected(
                     apiVersion = service.apiVersion,
@@ -335,7 +362,8 @@ class GyApplication :
                     "Unable to query Xposed runtime status: " + throwable.message,
                 )
                 XposedStatus.QueryUnavailable
-            }
+            },
+        )
     }
 
     // App prefs are authoritative; replay on bind, retry after errors, skip identical commits.

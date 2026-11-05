@@ -71,6 +71,7 @@ internal object DiagReport {
             appendLine()
             appendLine("[App framework]")
             appendLine("source=app-service-state-at-export")
+            appendLine("featureEnabled=" + (snapshot.appFeatureEnabled?.toString() ?: "not-observed"))
             appendLine(
                 "initialServiceBindTimedOut=" +
                     (snapshot.initialServiceBindTimedOut?.toString() ?: "not-observed"),
@@ -89,6 +90,15 @@ internal object DiagReport {
                             (status.runningTargets["com.android.systemui"]?.name ?: "absent"),
                     )
                 }
+            }
+            if (snapshot.appFrameworkTransitions.isNotEmpty()) {
+                appendLine("transitionsSource=app-process-observations")
+                appendLine("transitionsOmitted=" + snapshot.omittedFrameworkTransitions)
+                snapshot.appFrameworkTransitions.forEachIndexed { index, event ->
+                    appendLine("transition[$index]=$event")
+                }
+            } else {
+                appendLine("transitionsSource=not-observed")
             }
             appendLine()
             appendLine("[Diagnostics state]")

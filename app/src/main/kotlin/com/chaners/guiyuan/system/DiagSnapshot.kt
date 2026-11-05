@@ -4,6 +4,7 @@ import android.content.Context
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.DiagRepo
+import com.chaners.guiyuan.settings.FeatureRepo
 import java.time.OffsetDateTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -17,6 +18,9 @@ internal data class DiagSnapshot(
     val capturedAt: OffsetDateTime,
     val appFrameworkStatus: XposedStatus? = null,
     val initialServiceBindTimedOut: Boolean? = null,
+    val appFeatureEnabled: Boolean? = null,
+    val appFrameworkTransitions: List<String> = emptyList(),
+    val omittedFrameworkTransitions: Int = 0,
 ) {
     companion object {
         // Capture once so the screen and exported report describe the same runtime session.
@@ -32,6 +36,7 @@ internal data class DiagSnapshot(
                 }
 
             val app = appCtx as? GyApplication
+            val (transitions, omitted) = app?.frameworkTransitionSnapshot() ?: (emptyList<String>() to 0)
             return DiagSnapshot(
                 env = env,
                 level = level,
@@ -41,6 +46,9 @@ internal data class DiagSnapshot(
                 capturedAt = OffsetDateTime.now(),
                 appFrameworkStatus = app?.xposedStatus?.value,
                 initialServiceBindTimedOut = app?.initialServiceBindTimedOut,
+                appFeatureEnabled = app?.let { FeatureRepo(it).current().enabled },
+                appFrameworkTransitions = transitions,
+                omittedFrameworkTransitions = omitted,
             )
         }
     }
