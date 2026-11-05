@@ -31,7 +31,7 @@
     <string name="home_preview_activity_both">Both</string>
     <string name="home_preview_activity_idle">Idle</string>
     <string name="left_right_idle_activity_title">Hide network activity indicator when idle</string>
-    <string name="left_right_idle_activity_summary">Hide activity arrows while connected but idle; leave off to keep dim arrows</string>
+    <string name="left_right_idle_activity_summary">Hide the network activity indicator when there is no data activity</string>
     <string name="left_right_activity_size">Network activity indicator size</string>
     <string name="left_right_activity_vertical_offset">Network activity indicator vertical offset</string>
     <string name="left_right_charging_title">Bottom charging bolt</string>
