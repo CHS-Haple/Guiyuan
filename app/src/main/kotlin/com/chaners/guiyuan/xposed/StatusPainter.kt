@@ -3843,7 +3843,7 @@ internal class StatusPainter(
                     targetBars = shapes,
                     pairedAnchorX = anchors[0],
                     pairedAnchorY = anchors[index + 1],
-                    directTravelProgress = if (!centered && style == SignalDotArrangement.LEFT_RIGHT) phase else null,
+                    leftRightStagedMotion = !centered && style == SignalDotArrangement.LEFT_RIGHT,
                     targetDots = if (index == 0) {
                         aggregateRows.topShape == ParticipantVisualSnapshot.RowShape.DOTS
                     } else {
@@ -3872,7 +3872,7 @@ internal class StatusPainter(
                 targetWidthRatio = targetWidthRatio,
                 targetHeightRatio = targetHeightRatio,
                 targetBars = exactBars,
-                directTravelProgress = if (!centered && style == SignalDotArrangement.LEFT_RIGHT) phase else null,
+                leftRightStagedMotion = !centered && style == SignalDotArrangement.LEFT_RIGHT,
             )
             return
         }
@@ -3891,20 +3891,26 @@ internal class StatusPainter(
             if (dotRadius <= 0f) continue
             val source = layout.sourceCenters[index]
             val target = layout.targetCenters[index]
-            val centerX = if (!centered && style == SignalDotArrangement.LEFT_RIGHT) {
-                MobileSignalMorphPolicy.directDotCoordinate(source.x, target.x, phase)
-            } else {
-                MobileSignalMorphPolicy.dotCoordinate(
-                    source.x, anchor.x, first.x, target.x, dotTrim, move, spread,
-                )
-            }
-            val centerY = if (!centered && style == SignalDotArrangement.LEFT_RIGHT) {
-                MobileSignalMorphPolicy.directDotCoordinate(source.y, target.y, phase)
-            } else {
-                MobileSignalMorphPolicy.dotCoordinate(
-                    source.y, anchor.y, first.y, target.y, dotTrim, move, spread,
-                )
-            }
+            val centerX =
+                if (!centered && style == SignalDotArrangement.LEFT_RIGHT) {
+                    MobileSignalMorphPolicy.leftRightDotX(
+                        source.x, anchor.x, first.x, target.x, dotTrim, move, spread,
+                    )
+                } else {
+                    MobileSignalMorphPolicy.dotCoordinate(
+                        source.x, anchor.x, first.x, target.x, dotTrim, move, spread,
+                    )
+                }
+            val centerY =
+                if (!centered && style == SignalDotArrangement.LEFT_RIGHT) {
+                    MobileSignalMorphPolicy.leftRightDotY(
+                        source.y, anchor.y, first.y, target.y, dotTrim, move, barProgress,
+                    )
+                } else {
+                    MobileSignalMorphPolicy.dotCoordinate(
+                        source.y, anchor.y, first.y, target.y, dotTrim, move, spread,
+                    )
+                }
             val targetBarHeight =
                 MobileSignalMorphPolicy.targetBarHeight(
                     index = index,
@@ -3953,7 +3959,7 @@ internal class StatusPainter(
         targetBars: List<TransitionNormalizedBounds>,
         pairedAnchorX: Float? = null,
         pairedAnchorY: Float? = null,
-        directTravelProgress: Float? = null,
+        leftRightStagedMotion: Boolean = false,
         targetDots: Boolean = false,
     ) {
         val diameter = radius * 2f
@@ -4029,16 +4035,26 @@ internal class StatusPainter(
                 if (targetDots) (targetTop + targetBottom) / 2f
                 else targetBottom - diameter / 2f
 
-            val rowCenterX = directTravelProgress?.let { p ->
-                MobileSignalMorphPolicy.directDotCoordinate(source.x, targetBarCenterX, p)
-            } ?: MobileSignalMorphPolicy.dotCoordinate(
-                source.x, anchor.x, firstX, targetBarCenterX, dotTrim, move, spread,
-            )
-            val rowCenterY = directTravelProgress?.let { p ->
-                MobileSignalMorphPolicy.directDotCoordinate(source.y, targetBottomCenterY, p)
-            } ?: MobileSignalMorphPolicy.dotCoordinate(
-                source.y, anchor.y, firstY, targetBottomCenterY, dotTrim, move, spread,
-            )
+            val rowCenterX =
+                if (leftRightStagedMotion) {
+                    MobileSignalMorphPolicy.leftRightDotX(
+                        source.x, anchor.x, firstX, targetBarCenterX, dotTrim, move, spread,
+                    )
+                } else {
+                    MobileSignalMorphPolicy.dotCoordinate(
+                        source.x, anchor.x, firstX, targetBarCenterX, dotTrim, move, spread,
+                    )
+                }
+            val rowCenterY =
+                if (leftRightStagedMotion) {
+                    MobileSignalMorphPolicy.leftRightDotY(
+                        source.y, anchor.y, firstY, targetBottomCenterY, dotTrim, move, barProgress,
+                    )
+                } else {
+                    MobileSignalMorphPolicy.dotCoordinate(
+                        source.y, anchor.y, firstY, targetBottomCenterY, dotTrim, move, spread,
+                    )
+                }
             val startLeft = rowCenterX - dotRadius
             val startRight = rowCenterX + dotRadius
             val startTop = rowCenterY - dotRadius

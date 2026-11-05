@@ -152,11 +152,39 @@ internal object MobileSignalMorphPolicy {
         return moved + (target - moved) * spread
     }
 
-    // LEFT_RIGHT dots must not travel to a synthetic anchor in the opposite
-    // direction before heading to the native target. Preserve source/endpoint.
-    fun directDotCoordinate(source: Float, target: Float, progress: Float): Float {
-        val p = progress.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0f
-        return source + (target - source) * p
+    // In the left/right split arrangement, an outgoing dot shrinks at its
+    // current X. Only after it becomes fully invisible may it join the
+    // surviving dot's X. This prevents an opposite-direction visible detour
+    // without removing the collapse -> travel -> spread phases.
+    fun leftRightDotX(
+        source: Float,
+        sourceAnchor: Float,
+        targetAnchor: Float,
+        target: Float,
+        trim: Float,
+        move: Float,
+        spread: Float,
+    ): Float {
+        val packed = if (trim >= 1f) sourceAnchor else source
+        val moved = packed + (targetAnchor - packed) * move
+        return moved + (target - moved) * spread
+    }
+
+    // Horizontal expansion holds the row's Y at the native anchor. If native
+    // bars have distinct final Y positions, reconcile those only during the
+    // subsequent bar-shape stage, never while the dots spread in X.
+    fun leftRightDotY(
+        source: Float,
+        sourceAnchor: Float,
+        targetAnchor: Float,
+        target: Float,
+        trim: Float,
+        move: Float,
+        barProgress: Float,
+    ): Float {
+        val packed = source + (sourceAnchor - source) * trim
+        val moved = packed + (targetAnchor - packed) * move
+        return moved + (target - moved) * barProgress
     }
 
     fun outerSimilarityScale(
