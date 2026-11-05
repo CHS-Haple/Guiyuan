@@ -1415,8 +1415,8 @@ internal object CcTransitionOwner {
                                 StatusPainter.TransitionComponent.CENTER &&
                                 model.centerIndicator is CenterIndicator.MobileType
                         )
-                // Charging and activity share source clipping and hidden travel.
-                // Activity alone skips the destination reveal clip.
+                // Charging and activity share source timing and hidden travel.
+                // Activity fades instead of clipping and skips target reveal clipping.
                 val clippedGlyph =
                     spec.component == StatusPainter.TransitionComponent.CHARGING_ICON ||
                         spec.component == StatusPainter.TransitionComponent.NETWORK_ACTIVITY
@@ -1595,9 +1595,11 @@ internal object CcTransitionOwner {
                         bounds = matrixBounds,
                     ) ?: return@forEach
 
-                // Both glyphs clip at source; native handoff is only revealed with a target.
+                // Network activity fades through layer alpha; only charging retains clip exit.
                 val hasTarget = matchedTargetGeometry != null
-                val clipExit = hasTarget || clippedGlyph
+                val clipExit =
+                    spec.component != StatusPainter.TransitionComponent.NETWORK_ACTIVITY &&
+                        (hasTarget || clippedGlyph)
                 val layerOpacity =
                     opacity * (if (clipExit) 1f else componentVisibleFraction)
                 val save =

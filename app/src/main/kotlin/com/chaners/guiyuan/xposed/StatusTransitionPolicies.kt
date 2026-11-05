@@ -63,7 +63,7 @@ internal object BatteryNumberFollowerPolicy {
         targetAvailable: Boolean,
     ): Float {
         val sourceVisible = chargingSourceVisibleFraction(progress)
-        if (sourceVisible > 0f) return sourceVisible
+        if (sourceVisible > 0f) return smooth(sourceVisible)
         // No target reveal clip: show the whole icon at the charging reveal boundary.
         return if (targetAvailable &&
             progress.coerceIn(0f, 1f) >= CHARGING_TARGET_REVEAL_START
