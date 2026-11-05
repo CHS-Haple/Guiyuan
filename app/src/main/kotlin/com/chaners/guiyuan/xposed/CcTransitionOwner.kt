@@ -532,9 +532,14 @@ internal object CcTransitionOwner {
                 }.filter { (_, root) ->
                     root.visibility == View.VISIBLE && isUsableSlotView(root)
                 }
-            if (targets.isEmpty()) return null
+            val model = currentSnapshot.model
+            val native = PresentationStore.snapshot().mobilePresentation
+            val sourceId = model.networkActivityResId
+            val dataSubId = model.effectiveDataSubscriptionId
 
-            return "targets=${targets.size};" +
+            return "targets=${targets.size}:mode=${native?.mode}:" +
+                "dataSubId=$dataSubId:sourceActivityResId=${sourceId ?: 0}:" +
+                "negativeCached=${missingNetworkActivityTarget != null};" +
                 targets.take(4).joinToString(";") { (slot, root) ->
                     val signal =
                         NativeParticipantAccess.findResourceView(
@@ -563,8 +568,29 @@ internal object CcTransitionOwner {
                                     "${rows?.topShape ?: "?"}/${rows?.bottomShape ?: "?"}"
                             }
                         }
-                    "$slot:root=${root.javaClass.simpleName}:subId=${readMobileSubId(root)}:" +
-                        "size=${root.width}x${root.height}:signal=[$children]"
+                    val rootSubId = readMobileSubId(root)
+                    val activity = NativeParticipantAccess.findResourceView(
+                        root = root,
+                        entryName = "mobile_left_mobile_inout",
+                    ) as? ImageView
+                    val activityEvidence = activity?.let { image ->
+                        val tag = (image.tag as? Number)?.toInt()
+                        "visibility=${image.visibility}:shown=${image.isShown}:" +
+                            "attached=${image.isAttachedToWindow}:" +
+                            "size=${image.width}x${image.height}:tag=${tag ?: 0}:" +
+                            "drawable=${image.drawable != null}:" +
+                            "sourceMatch=${sourceId != null && sourceId > 0 && tag == sourceId}"
+                    } ?: "missing"
+                    val rootOwnsTransport = CcTransitionPolicy.mobileActivityRootMatches(
+                        presentation = native,
+                        dataSubId = dataSubId,
+                        targetSubId = rootSubId,
+                        soleVisibleRoot = targets.size == 1 && targets[0].second === root,
+                    )
+                    "$slot:root=${root.javaClass.simpleName}:subId=$rootSubId:" +
+                        "size=${root.width}x${root.height}:" +
+                        "ownsDataTransport=$rootOwnsTransport:" +
+                        "activity=[$activityEvidence]:signal=[$children]"
                 }
         }
 
