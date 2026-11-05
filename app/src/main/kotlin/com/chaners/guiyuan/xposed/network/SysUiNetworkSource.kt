@@ -14,7 +14,10 @@ import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.lang.reflect.InvocationTargetException
+import java.lang.reflect.Modifier
 import java.util.WeakHashMap
+import java.util.concurrent.CancellationException
+import java.util.function.Consumer
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiNetworkSource {
@@ -57,10 +60,12 @@ internal object SysUiNetworkSource {
     const val MOBILE_SIGNAL_EMITTER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$1\$1\$4\$2"
     const val MOBILE_SIGNAL_EMIT_METHOD_NAME = "emit"
+    private const val MOBILE_FACTORY_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.mobile.ui.viewmodel.MobileIconsViewModel"
     private const val MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$1\$1\$8\$1"
 
-    const val HOOK_COUNT = 6
+    const val HOOK_COUNT = 7
 
     private const val WIFI_BIND_HOOK_ID = "combinedstatus.network.wifi.bind"
     private const val WIFI_ICON_HOOK_ID = "combinedstatus.network.wifi.icon"
@@ -68,6 +73,7 @@ internal object SysUiNetworkSource {
     private const val WIFI_ICON_COLLECTOR_CLASS_ID = 1
     private const val MAX_PARENT_CHAIN_DEPTH = 8
     private const val MOBILE_BIND_HOOK_ID = "combinedstatus.network.mobile.bind"
+    private const val MOBILE_FACTORY_HOOK_ID = "combinedstatus.network.mobile.activityFlow"
     private const val MOBILE_SIGNAL_HOOK_ID = "combinedstatus.network.mobile.signal"
     private const val MOBILE_ACTIVITY_HOOK_ID = "combinedstatus.network.mobile.activity"
 
@@ -76,6 +82,7 @@ internal object SysUiNetworkSource {
         WIFI_ICON_HOOK_ID,
         WIFI_ACTIVITY_HOOK_ID,
         MOBILE_BIND_HOOK_ID,
+        MOBILE_FACTORY_HOOK_ID,
         MOBILE_SIGNAL_HOOK_ID,
         MOBILE_ACTIVITY_HOOK_ID,
     )
@@ -116,6 +123,9 @@ internal object SysUiNetworkSource {
     private val lastWifiEvents = WeakHashMap<ImageView, String>()
     private val lastWifiTaggedResources = WeakHashMap<ImageView, Int?>()
     private val lastMobileEvents = WeakHashMap<ImageView, String>()
+    private class MobileActivityFlowBinding(val source: Any, var job: Any? = null)
+    private val mobileActivityFlows = HashMap<Int, MobileActivityFlowBinding>()
+    private var mobileActivityActive: AtomicBoolean? = null
 
     @Volatile
     private var wifiSeedContract: WifiSeedContract? = null
@@ -431,6 +441,89 @@ internal object SysUiNetworkSource {
         }
     }
 
+
+    private fun cancelMobileActivityJob(job: Any) {
+        job.javaClass.getMethod("cancel", CancellationException::class.java).invoke(job, null)
+    }
+
+    private fun observeMobileActivityFlow(
+        subId: Int,
+        outerVm: Any?,
+        active: AtomicBoolean,
+        classLoader: ClassLoader,
+        onMobileActivity: (Int, Int?) -> Unit,
+    ) {
+        if (!active.get() || subId < 0 || outerVm == null) return
+        val cellular = outerVm.javaClass.getMethod("getCellProvider").invoke(outerVm) ?: return
+        val type = cellular.javaClass
+        val resource = type.getDeclaredField("inOutResId").apply { isAccessible = true }
+            .get(cellular) ?: return
+        val scope = type.getDeclaredField("scope").apply { isAccessible = true }
+            .get(cellular) ?: return
+        val existing = synchronized(this) { mobileActivityFlows[subId] }
+        if (existing?.source === resource) return
+
+        val next = MobileActivityFlowBinding(resource)
+        val previous = synchronized(this) { mobileActivityFlows.put(subId, next) }
+        previous?.job?.let(::cancelMobileActivityJob)
+        try {
+            val flowClass = Class.forName("kotlinx.coroutines.flow.Flow", false, classLoader)
+            val scopeClass = Class.forName("kotlinx.coroutines.CoroutineScope", false, classLoader)
+            val adapterClass = Class.forName("com.android.systemui.util.kotlin.JavaAdapter", false, classLoader)
+            val collect = adapterClass.getDeclaredMethod(
+                "alwaysCollectFlow", scopeClass, flowClass, Consumer::class.java,
+            ).apply { isAccessible = true }
+            check(Modifier.isStatic(collect.modifiers))
+            val receiver = Consumer<Any?> { value ->
+                if (active.get() && synchronized(this) { mobileActivityFlows[subId] === next }) {
+                    onMobileActivity(subId, (value as? Number)?.toInt()?.takeIf { it > 0 })
+                }
+            }
+            val job = requireNotNull(collect.invoke(null, scope, resource, receiver))
+            val current = synchronized(this) {
+                if (mobileActivityFlows[subId] === next) {
+                    next.job = job
+                    true
+                } else false
+            }
+            if (!current) {
+                cancelMobileActivityJob(job)
+                return
+            }
+            // Seed from the same native StateFlow before the first asynchronous callback.
+            val initial = resource.javaClass.getMethod("getValue").invoke(resource)
+            receiver.accept(initial)
+        } catch (error: Throwable) {
+            synchronized(this) {
+                if (mobileActivityFlows[subId] === next) mobileActivityFlows.remove(subId)
+            }
+            next.job?.let { runCatching { cancelMobileActivityJob(it) } }
+            throw error
+        }
+    }
+
+    /** Stop the old module generation's native collectors before unhooking. */
+    fun releaseMobileActivityFlows() {
+        val jobs = synchronized(this) {
+            mobileActivityActive?.set(false)
+            mobileActivityActive = null
+            mobileActivityFlows.values.mapNotNull { it.job }.also { mobileActivityFlows.clear() }
+        }
+        var failure: Throwable? = null
+        jobs.forEach { job ->
+            try {
+                cancelMobileActivityJob(job)
+            } catch (error: Throwable) {
+                rethrowFatal(error)
+                if (failure == null) failure = error else failure?.addSuppressed(error)
+            }
+        }
+        failure?.let { throw IllegalStateException("mobile-activity-flow-release-failed", it) }
+    }
+
+    private fun hasMobileActivityFlow(subId: Int): Boolean =
+        synchronized(this) { mobileActivityFlows[subId]?.job != null }
+
     private fun installMobile(
         module: XposedModule,
         classLoader: ClassLoader,
@@ -443,6 +536,7 @@ internal object SysUiNetworkSource {
     ): BranchInstallResult {
         val created = mutableListOf<HookHandle>()
         val active = AtomicBoolean(false)
+        synchronized(this) { mobileActivityActive = active }
 
         return try {
             val mobileBinderClass =
@@ -500,6 +594,30 @@ internal object SysUiNetworkSource {
                         .getDeclaredMethod("getSubscriptionId")
                         .apply { isAccessible = true }
                 }
+            val factoryMethod = atStage("mobile.resolve.activityFactory") {
+                Class.forName(MOBILE_FACTORY_CLASS_NAME, false, classLoader)
+                    .getDeclaredMethod("createViewModel", Int::class.javaPrimitiveType)
+                    .apply { isAccessible = true }
+            }
+            created += atStage("mobile.hook.activityFactory") {
+                module.hook(factoryMethod)
+                    .setId(MOBILE_FACTORY_HOOK_ID)
+                    .intercept(Hooker { chain ->
+                        val result = chain.proceed()
+                        if (active.get()) {
+                            try {
+                                val subId = (chain.getArg(0) as? Number)?.toInt() ?: -1
+                                val outer = result?.javaClass?.getMethod("getThird")?.invoke(result)
+                                observeMobileActivityFlow(
+                                    subId, outer, active, classLoader, onMobileActivity,
+                                )
+                            } catch (error: Throwable) {
+                                callbackFailed("mobile-activity-flow", error, onRuntimeFailure)
+                            }
+                        }
+                        result
+                    })
+            }
 
             created +=
                 atStage("mobile.hook.bind") {
@@ -510,6 +628,8 @@ internal object SysUiNetworkSource {
                             mobileBindHooker(
                                 active = active,
                                 subscriptionIdMethod = subscriptionIdMethod,
+                                onMobileActivity = onMobileActivity,
+                                classLoader = classLoader,
                                 onPresentationChanged = onPresentationChanged,
                                 onRuntimeFailure = onRuntimeFailure,
                                 onEvent = onEvent,
@@ -548,7 +668,7 @@ internal object SysUiNetworkSource {
                         if (active.get()) {
                             val image = readOrNull { activityField.get(chain.thisObject) as? ImageView }
                             val subId = image?.let(::findMobileSubscription)
-                            if (image != null && subId != null) {
+                            if (image != null && subId != null && !hasMobileActivityFlow(subId)) {
                                 try {
                                     val visible = image.visibility == View.VISIBLE &&
                                         image.drawable != null
@@ -1325,6 +1445,8 @@ internal object SysUiNetworkSource {
     private fun mobileBindHooker(
         active: AtomicBoolean,
         subscriptionIdMethod: Method,
+        onMobileActivity: (Int, Int?) -> Unit,
+        classLoader: ClassLoader,
         onPresentationChanged: (() -> Unit)?,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
@@ -1403,6 +1525,18 @@ internal object SysUiNetworkSource {
             }
         if (bindingChanged) {
             readOrNull { bindingLog?.let { onEvent?.invoke(it) } }
+        }
+        // Existing ViewModels can survive a Guiyuan Hot Reload.
+        pending?.subscriptionId?.let { subId ->
+            if (active.get() && boundRoot != null) {
+                try {
+                    observeMobileActivityFlow(
+                        subId, iconViewModel, active, classLoader, onMobileActivity,
+                    )
+                } catch (error: Throwable) {
+                    callbackFailed("mobile-activity-bind-flow", error, onRuntimeFailure)
+                }
+            }
         }
         // A native binder can replace a child even if the SIM ID stays the same.
         if (boundRoot != null) {
