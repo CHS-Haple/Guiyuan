@@ -3860,7 +3860,6 @@ class GyModule : XposedModule() {
         release { NativeStatusObserver.deactivate() }
         release { StatusBarStableSession.detach() }
         release { NativeStatusInventory.detach() }
-        release { SysUiNetworkSource.releaseMobileActivityFlows() }
         release { SysUiCoreRuntime.detach() }
         release { SysUiPresentationRuntime.resetRuntimeState() }
         release { SysUiKeyguardHostResolver.resetRuntimeState() }
