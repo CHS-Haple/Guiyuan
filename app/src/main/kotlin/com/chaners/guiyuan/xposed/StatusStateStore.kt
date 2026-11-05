@@ -59,6 +59,7 @@ internal object StatusStateStore {
         // must not restore a resource after a newer collector has cleared it.
         val next = resourceId?.takeIf { it > 0 && current.wifi !is WifiState.Hidden }
         val changed = current.wifiActivityResId != next
+        if (!changed && current.wifiActivityObserved) return null
         current = current.copy(
             wifiActivityResId = next,
             wifiActivityObserved = true,
@@ -69,13 +70,22 @@ internal object StatusStateStore {
     @Synchronized
     fun updateMobileActivity(subscriptionId: Int, resourceId: Int?): Snapshot? {
         if (subscriptionId < 0) return null
-        val next = current.mobileActivityResIds.toMutableMap()
-        if (resourceId == null || resourceId <= 0) next.remove(subscriptionId)
-        else next[subscriptionId] = resourceId
-        val changed = next != current.mobileActivityResIds
+        val nextResourceId = resourceId?.takeIf { it > 0 }
+        val changed = current.mobileActivityResIds[subscriptionId] != nextResourceId
+        val firstObservation = subscriptionId !in current.mobileActivityObservedIds
+        if (!changed && !firstObservation) return null
+
+        val nextResources = if (changed) {
+            current.mobileActivityResIds.toMutableMap().apply {
+                if (nextResourceId == null) remove(subscriptionId)
+                else put(subscriptionId, nextResourceId)
+            }.toSortedMap()
+        } else current.mobileActivityResIds
         current = current.copy(
-            mobileActivityResIds = if (changed) next.toSortedMap() else current.mobileActivityResIds,
-            mobileActivityObservedIds = current.mobileActivityObservedIds + subscriptionId,
+            mobileActivityResIds = nextResources,
+            mobileActivityObservedIds = if (firstObservation) {
+                current.mobileActivityObservedIds + subscriptionId
+            } else current.mobileActivityObservedIds,
         )
         return current.takeIf { changed }
     }

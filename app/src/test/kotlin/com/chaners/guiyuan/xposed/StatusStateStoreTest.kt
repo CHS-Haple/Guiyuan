@@ -39,6 +39,32 @@ class StatusStateStoreTest {
 
 
     @Test
+    fun repeatedNativeActivityObservationsAvoidReplacingUnchangedSnapshots() {
+        StatusStateStore.restoreHotReloadState(null)
+        // The first empty reading must still mark the source as observed.
+        assertNull(StatusStateStore.updateWifiActivity(null))
+        assertNull(StatusStateStore.updateMobileActivity(1, null))
+        val observed = StatusStateStore.snapshot()
+        assertTrue(observed.wifiActivityObserved)
+        assertTrue(1 in observed.mobileActivityObservedIds)
+
+        assertNull(StatusStateStore.updateWifiActivity(0))
+        assertNull(StatusStateStore.updateMobileActivity(1, 0))
+        assertTrue(observed === StatusStateStore.snapshot())
+
+        // Actual activity transitions still publish snapshots; repeats do not.
+        val wifi = StatusStateStore.updateWifiActivity(120) ?: error("expected wifi change")
+        val mobile = StatusStateStore.updateMobileActivity(1, 220)
+            ?: error("expected mobile change")
+        assertEquals(120, wifi.wifiActivityResId)
+        assertEquals(220, mobile.mobileActivityResIds[1])
+        assertNull(StatusStateStore.updateWifiActivity(120))
+        assertNull(StatusStateStore.updateMobileActivity(1, 220))
+        assertTrue(mobile === StatusStateStore.snapshot())
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
     fun newerActivityClearWinsOverOldHotReloadTransfer() {
         StatusStateStore.restoreHotReloadState(null)
         val wifi = StatusStateStore.WifiState.Visible(
