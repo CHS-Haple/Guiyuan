@@ -20,7 +20,8 @@ class ConfigBackupTest {
             bothSidesChargingOffsetY = -2f,
             bothSidesSignalDotOffsetY = 3f,
         )
-        val encoded = Json.encodeToString(config)
+        val codec = Json { encodeDefaults = true }
+        val encoded = codec.encodeToString(config)
         for (name in listOf(
             "dualDotStyle", "leftRightShowActivity", "leftRightHideIdleActivity",
             "leftRightBottomCharging", "leftRightBottomInfoScale",
@@ -30,7 +31,7 @@ class ConfigBackupTest {
         }
         assertTrue(encoded.contains("\"LEFT_RIGHT\""))
         assertFalse(encoded.contains("\"bothSidesShowActivity\""))
-        assertEquals(config, Json.decodeFromString(VisualCfg.serializer(), encoded))
+        assertEquals(config, codec.decodeFromString(VisualCfg.serializer(), encoded))
     }
 
     private fun sample(): ConfigBackup = ConfigBackup(
