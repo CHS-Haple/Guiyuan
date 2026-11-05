@@ -703,6 +703,42 @@ class CcTransitionOwnerTest {
     }
 
     @Test
+    fun networkActivityKeepsChargingSourceClipButShowsCompleteTargetImmediately() {
+        val policy = BatteryNumberFollowerPolicy
+        val sourceProgress = 0.09f
+        assertEquals(
+            policy.chargingSourceVisibleFraction(sourceProgress),
+            policy.networkActivityVisibleFraction(sourceProgress, targetAvailable = true),
+            0.0001f,
+        )
+        assertEquals(
+            0f,
+            policy.networkActivityVisibleFraction(0.84f, targetAvailable = true),
+            0.0001f,
+        )
+        assertEquals(
+            1f,
+            policy.networkActivityVisibleFraction(0.85f, targetAvailable = true),
+            0.0001f,
+        )
+        assertEquals(
+            1f,
+            policy.networkActivityVisibleFraction(1f, targetAvailable = true),
+            0.0001f,
+        )
+        assertEquals(
+            0f,
+            policy.networkActivityVisibleFraction(0.85f, targetAvailable = false),
+            0.0001f,
+        )
+        assertEquals(
+            1f,
+            policy.networkActivityVisibleFraction(0f, targetAvailable = false),
+            0.0001f,
+        )
+    }
+
+    @Test
     fun chargingGlyphNeverUsesItsOwnTargetMotionWhileSourceClipRemains() {
         val policy = BatteryNumberFollowerPolicy
         val hideEnd = 0.181f

@@ -58,6 +58,18 @@ internal object BatteryNumberFollowerPolicy {
         return smooth(reveal)
     }
 
+    fun networkActivityVisibleFraction(
+        progress: Float,
+        targetAvailable: Boolean,
+    ): Float {
+        val sourceVisible = chargingSourceVisibleFraction(progress)
+        if (sourceVisible > 0f) return sourceVisible
+        // No target reveal clip: show the whole icon at the charging reveal boundary.
+        return if (targetAvailable &&
+            progress.coerceIn(0f, 1f) >= CHARGING_TARGET_REVEAL_START
+        ) 1f else 0f
+    }
+
     internal fun chargingSourceVisibleFraction(progress: Float): Float {
         val ringLifetime = chargingRingLifetimeProgress(progress)
         return (

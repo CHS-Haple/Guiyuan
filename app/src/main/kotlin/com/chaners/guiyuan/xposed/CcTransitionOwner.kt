@@ -1415,8 +1415,8 @@ internal object CcTransitionOwner {
                                 StatusPainter.TransitionComponent.CENTER &&
                                 model.centerIndicator is CenterIndicator.MobileType
                         )
-                // Charging and activity glyphs share one hide/travel/reveal clock.
-                // Their native endpoints and the signal dots retain independent owners.
+                // Charging and activity share source clipping and hidden travel.
+                // Activity alone skips the destination reveal clip.
                 val clippedGlyph =
                     spec.component == StatusPainter.TransitionComponent.CHARGING_ICON ||
                         spec.component == StatusPainter.TransitionComponent.NETWORK_ACTIVITY
@@ -1537,12 +1537,16 @@ internal object CcTransitionOwner {
                     if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
                         // The ring retracts independently of the final native battery target.
                         1f
+                    } else if (spec.component == StatusPainter.TransitionComponent.NETWORK_ACTIVITY) {
+                        BatteryNumberFollowerPolicy.networkActivityVisibleFraction(
+                            progress = motionProgress,
+                            targetAvailable = matchedTargetGeometry != null,
+                        )
                     } else if (clippedGlyph) {
-                        BatteryNumberFollowerPolicy
-                            .chargingVisibleFraction(
-                                progress = motionProgress,
-                                targetAvailable = matchedTargetGeometry != null,
-                            )
+                        BatteryNumberFollowerPolicy.chargingVisibleFraction(
+                            progress = motionProgress,
+                            targetAvailable = matchedTargetGeometry != null,
+                        )
                     } else if (matchedTargetGeometry != null || wifiCenter) {
                         // FINAL may bind after the source changes; FAKE alpha owns the handoff.
                         1f
