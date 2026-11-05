@@ -306,6 +306,10 @@ class CcTransitionOwnerTest {
                 assertTrue(kotlin.math.abs(follower[1] - batteryFollower[1]) > 10f)
             }
         }
+    }
+
+    @Test
+    fun chargingSourceVisibilityUsesIndependentFadeTimeline() {
         // Regression: the dot group has not reached its move-phase fade at
         // 30%, but the established charging source has already disappeared.
         // Its path may follow these rows; its clip timeline must not.
