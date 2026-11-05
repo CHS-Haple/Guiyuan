@@ -22,6 +22,9 @@ import java.util.Locale
 private fun foldSearch(text: String): String =
     text.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
 
+// Compiled once for all locale titles and aliases when the search index is built.
+private val SEARCH_TOKEN_SEPARATOR = Regex("[^a-z0-9]+")
+
 // Index terms, not configuration values. The native ICU table supplies Han pronunciations.
 internal class SearchTerm(
     text: String,
@@ -31,7 +34,7 @@ internal class SearchTerm(
     private val allowInitials = !foreign || text.any { it.isLetter() && it.code > 127 }
     private val plain = foldSearch(text)
     private val tokens = romanized.lowercase(Locale.ROOT)
-        .split(Regex("[^a-z0-9]+"))
+        .split(SEARCH_TOKEN_SEPARATOR)
         .filter(String::isNotEmpty)
     private val full = tokens.joinToString("")
     private val initials = tokens.joinToString("") { it.take(1) }
