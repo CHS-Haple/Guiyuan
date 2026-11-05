@@ -703,47 +703,28 @@ class CcTransitionOwnerTest {
     }
 
     @Test
-    fun networkActivityFadesItsSourceAndShowsCompleteTargetImmediately() {
+    fun networkActivityFadesOutAndRemainsHiddenAtCcEnd() {
         val policy = BatteryNumberFollowerPolicy
-        val sourceProgress = 0.09f
-        val sourceFraction = policy.chargingSourceVisibleFraction(sourceProgress)
-        assertEquals(
-            sourceFraction * sourceFraction * (3f - 2f * sourceFraction),
-            policy.networkActivityVisibleFraction(sourceProgress, targetAvailable = true),
-            0.0001f,
-        )
-        val earlyFraction = policy.chargingSourceVisibleFraction(0.04f)
-        assertTrue(earlyFraction in 0f..1f)
-        assertEquals(
-            earlyFraction * earlyFraction * (3f - 2f * earlyFraction),
-            policy.networkActivityVisibleFraction(0.04f, targetAvailable = false),
-            0.0001f,
-        )
-        assertEquals(
-            0f,
-            policy.networkActivityVisibleFraction(0.84f, targetAvailable = true),
-            0.0001f,
-        )
-        assertEquals(
-            1f,
-            policy.networkActivityVisibleFraction(0.85f, targetAvailable = true),
-            0.0001f,
-        )
-        assertEquals(
-            1f,
-            policy.networkActivityVisibleFraction(1f, targetAvailable = true),
-            0.0001f,
-        )
-        assertEquals(
-            0f,
-            policy.networkActivityVisibleFraction(0.85f, targetAvailable = false),
-            0.0001f,
-        )
-        assertEquals(
-            1f,
-            policy.networkActivityVisibleFraction(0f, targetAvailable = false),
-            0.0001f,
-        )
+        assertEquals(1f, policy.networkActivityVisibleFraction(0f), 0.0001f)
+        for (progress in listOf(0.04f, 0.09f)) {
+            val source = policy.chargingSourceVisibleFraction(progress)
+            assertEquals(
+                source * source * (3f - 2f * source),
+                policy.networkActivityVisibleFraction(progress),
+                0.0001f,
+            )
+        }
+        for (progress in listOf(0.2f, 0.5f, 0.84f, 0.85f, 0.9f, 1f)) {
+            assertEquals(
+                "Network activity must stay hidden after fading out at $progress",
+                0f,
+                policy.networkActivityVisibleFraction(progress),
+                0.0001f,
+            )
+        }
+        // The same stateless native progress restores the source on closing.
+        assertTrue(policy.networkActivityVisibleFraction(0.09f) > 0f)
+        assertEquals(1f, policy.networkActivityVisibleFraction(0f), 0.0001f)
     }
 
     @Test

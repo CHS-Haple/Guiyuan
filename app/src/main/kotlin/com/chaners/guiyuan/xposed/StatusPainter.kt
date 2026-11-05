@@ -849,8 +849,8 @@ internal class StatusPainter(
                 }
         }
 
-        // This is the same native-asset draw path as the steady bottom activity
-        // icon; CC owns its destination, while absent targets use the existing exit.
+        // Draw the steady bottom activity icon at the CC source only.
+        // It fades out without revealing a final native target.
         if (!(visual.centeredMobileSignal && model.centerIndicator is CenterIndicator.MobileType)) {
             resolveBothSidesBottomInformation(model, visual)
                 ?.takeUnless { it.charging }
