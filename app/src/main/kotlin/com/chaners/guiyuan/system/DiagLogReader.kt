@@ -143,6 +143,14 @@ internal object DiagLogReader {
                     ?.takeIf { event -> event.fields["sessionId"] != null }
                     ?.let { event -> index to event }
             }
+        // Reuse the earliest event index for each generation while inspecting
+        // failed reloads and selecting the current session.
+        val firstIndexBySession = mutableMapOf<String, Int>()
+        tagged.forEach { (index, event) ->
+            event.fields["sessionId"]?.let { id ->
+                firstIndexBySession.getOrPut(id) { index }
+            }
+        }
         val latestStart =
             tagged.lastOrNull { (_, event) ->
                 event.event == "module.loaded" || event.event == "module.reloaded"
@@ -155,10 +163,7 @@ internal object DiagLogReader {
                 ) {
                     false
                 } else {
-                    val id = event.fields["sessionId"]
-                    val first =
-                        tagged.firstOrNull { (_, prior) -> prior.fields["sessionId"] == id }
-                            ?.first
+                    val first = event.fields["sessionId"]?.let(firstIndexBySession::get)
                     first != null && (latestStart == null || first > latestStart.first)
                 }
             }
@@ -168,9 +173,7 @@ internal object DiagLogReader {
                 ?.fields
                 ?.get("sessionId")
         if (sessionId != null) {
-            val start =
-                tagged.firstOrNull { (_, event) -> event.fields["sessionId"] == sessionId }?.first
-                    ?: return lines
+            val start = firstIndexBySession[sessionId] ?: return lines
             val stale =
                 tagged.asSequence()
                     .filter { (index, event) ->
