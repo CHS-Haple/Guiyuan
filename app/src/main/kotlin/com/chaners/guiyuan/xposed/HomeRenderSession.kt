@@ -460,6 +460,10 @@ internal object HomeRenderSession {
             }
             nativeHandoffActive = active
             if (SandboxHost.active()) update(StatusStateStore.snapshot())
+            // Privacy may already be occupying Home's right end when the module
+            // first takes ownership. No subsequent native layout change is
+            // guaranteed, so reread its laid-out edge before revealing Guiyuan.
+            if (!active) layoutProbe()
             val visible = applyResolvedVisibility()
             emitEvent {
                 "homeRenderHandoff nativeActive=" + nativeHandoffActive +
