@@ -624,7 +624,7 @@ internal fun FeaturesScreen(
                                 enabled = featureCfg.enabled,
                                 startAction = {
                                     SemanticLeadingIcon(
-                                        R.drawable.ic_material_symbol_swap_vert,
+                                        R.drawable.ic_guiyuan_network_activity_triangles,
                                         featureCfg.enabled,
                                         R.drawable.ic_material_symbol_visibility_off,
                                     )
