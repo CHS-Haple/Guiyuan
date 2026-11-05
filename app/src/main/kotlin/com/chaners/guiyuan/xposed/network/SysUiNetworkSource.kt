@@ -452,6 +452,7 @@ internal object SysUiNetworkSource {
         active: AtomicBoolean,
         classLoader: ClassLoader,
         onMobileActivity: (Int, Int?) -> Unit,
+        onRuntimeFailure: (String, Throwable) -> Unit,
     ) {
         if (!active.get() || subId < 0 || outerVm == null) return
         // The native binder collects the outer mobile icon VM's activity Flow.
@@ -479,7 +480,13 @@ internal object SysUiNetworkSource {
             check(Modifier.isStatic(collect.modifiers))
             val receiver = Consumer<Any?> { value ->
                 if (active.get() && synchronized(this) { mobileActivityFlows[subId] === next }) {
-                    onMobileActivity(subId, (value as? Number)?.toInt()?.takeIf { it > 0 })
+                    try {
+                        onMobileActivity(subId, (value as? Number)?.toInt()?.takeIf { it > 0 })
+                    } catch (error: Throwable) {
+                        // Rendering failures remain safety-critical; observing the
+                        // optional source is not.
+                        callbackFailed("mobile-activity", error, onRuntimeFailure)
+                    }
                 }
             }
             val job = requireNotNull(collect.invoke(null, scope, resource, receiver))
@@ -613,6 +620,7 @@ internal object SysUiNetworkSource {
                                 val outer = result?.javaClass?.getMethod("getThird")?.invoke(result)
                                 observeMobileActivityFlow(
                                     subId, outer, active, classLoader, onMobileActivity,
+                                    onRuntimeFailure,
                                 )
                             } catch (error: Throwable) {
                                 rethrowFatal(error)
@@ -1545,6 +1553,7 @@ internal object SysUiNetworkSource {
                 try {
                     observeMobileActivityFlow(
                         subId, iconViewModel, active, classLoader, onMobileActivity,
+                        onRuntimeFailure,
                     )
                 } catch (error: Throwable) {
                     rethrowFatal(error)
