@@ -69,38 +69,6 @@ internal object DiagReport {
                     },
             )
             appendLine()
-            appendLine("[App framework]")
-            appendLine("source=app-service-state-at-export")
-            appendLine("featureEnabled=" + (snapshot.appFeatureEnabled?.toString() ?: "not-observed"))
-            appendLine(
-                "initialServiceBindTimedOut=" +
-                    (snapshot.initialServiceBindTimedOut?.toString() ?: "not-observed"),
-            )
-            when (val status = snapshot.appFrameworkStatus) {
-                null -> appendLine("service=not-observed")
-                XposedStatus.Checking -> appendLine("service=checking")
-                XposedStatus.FrameworkUnavailable -> appendLine("service=unavailable")
-                XposedStatus.QueryUnavailable -> appendLine("service=query-unavailable")
-                is XposedStatus.Connected -> {
-                    appendLine("service=connected")
-                    appendLine("apiVersion=" + status.apiVersion)
-                    appendLine("systemUiScopeAuthorized=" + status.sysUiInScope)
-                    appendLine(
-                        "systemUiTargetState=" +
-                            (status.runningTargets["com.android.systemui"]?.name ?: "absent"),
-                    )
-                }
-            }
-            if (snapshot.appFrameworkTransitions.isNotEmpty()) {
-                appendLine("transitionsSource=app-process-observations")
-                appendLine("transitionsOmitted=" + snapshot.omittedFrameworkTransitions)
-                snapshot.appFrameworkTransitions.forEachIndexed { index, event ->
-                    appendLine("transition[$index]=$event")
-                }
-            } else {
-                appendLine("transitionsSource=not-observed")
-            }
-            appendLine()
             appendLine("[Diagnostics state]")
             appendLine("requestedLevel=" + requested)
             appendLine("runtimeLevel=" + runtimeLevel)

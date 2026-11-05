@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.system
 
 import com.chaners.guiyuan.settings.DiagLevel
-import io.github.libxposed.service.HookedTarget
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import org.junit.Assert.assertEquals
@@ -106,65 +105,6 @@ class DiagReportTest {
     }
 
     @Test
-    fun appFrameworkSnapshotPreservesConflictingScopeAndRunningTargetEvidence() {
-        val report = report(
-            appFrameworkStatus = XposedStatus.Connected(
-                apiVersion = 102,
-                scopes = emptySet(),
-                runningTargets = mapOf("com.android.systemui" to HookedTarget.State.UP_TO_DATE),
-            ),
-            initialServiceBindTimedOut = true,
-        )
-        assertTrue(report.contains("[App framework]"))
-        assertTrue(report.contains("source=app-service-state-at-export"))
-        assertTrue(report.contains("service=connected"))
-        assertTrue(report.contains("systemUiScopeAuthorized=false"))
-        assertTrue(report.contains("systemUiTargetState=UP_TO_DATE"))
-        assertTrue(report.contains("initialServiceBindTimedOut=true"))
-    }
-
-    @Test
-    fun unobservedAppFrameworkStatusIsNotReportedAsDisabled() {
-        val report = report()
-        assertTrue(report.contains("service=not-observed"))
-        assertTrue(report.contains("initialServiceBindTimedOut=not-observed"))
-        assertFalse(report.contains("systemUiScopeAuthorized=false"))
-    }
-
-    @Test
-    fun startupFrameworkTransitionsRemainVisibleAfterConnectionRecovers() {
-        val report = report(
-            appFrameworkStatus = XposedStatus.Connected(
-                apiVersion = 102,
-                scopes = setOf("com.android.systemui"),
-                runningTargets = mapOf("com.android.systemui" to HookedTarget.State.UP_TO_DATE),
-            ),
-            appFeatureEnabled = true,
-            appFrameworkTransitions = listOf(
-                "uptimeMs=10 service=checking",
-                "uptimeMs=1010 service=unavailable",
-                "uptimeMs=1040 service=connected apiVersion=102 systemUiScopeAuthorized=true systemUiTargetState=UP_TO_DATE",
-            ),
-        )
-        assertTrue(report.contains("featureEnabled=true"))
-        assertTrue(report.contains("systemUiScopeAuthorized=true"))
-        assertTrue(report.contains("transitionsSource=app-process-observations"))
-        assertTrue(report.contains("transitionsOmitted=0"))
-        assertTrue(report.contains("transition[1]=uptimeMs=1010 service=unavailable"))
-        assertTrue(report.contains("transition[2]=uptimeMs=1040 service=connected"))
-    }
-
-    @Test
-    fun boundedAppTransitionsDiscloseOmittedHistory() {
-        val report = report(
-            appFrameworkTransitions = listOf("uptimeMs=60 service=query-unavailable"),
-            omittedFrameworkTransitions = 4,
-        )
-        assertTrue(report.contains("transitionsOmitted=4"))
-        assertTrue(report.contains("transition[0]=uptimeMs=60 service=query-unavailable"))
-    }
-
-    @Test
     fun truncatedCaptureIsDisclosed() {
         assertTrue(report(truncated = true).contains("capture=latest-complete-lines-only"))
     }
@@ -253,11 +193,6 @@ class DiagReportTest {
         collection: RootShell.Result? = null,
         level: DiagLevel = DiagLevel.Detailed,
         clearedAt: LocalDateTime? = null,
-        appFrameworkStatus: XposedStatus? = null,
-        initialServiceBindTimedOut: Boolean? = null,
-        appFeatureEnabled: Boolean? = null,
-        appFrameworkTransitions: List<String> = emptyList(),
-        omittedFrameworkTransitions: Int = 0,
     ): String {
         val recorded = lines.toList()
         return DiagReport.build(
@@ -284,11 +219,6 @@ class DiagReportTest {
                 runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
                 entries = recorded.map(DiagLogParser::parse),
                 capturedAt = OffsetDateTime.parse("2026-10-08T22:00:00+08:00"),
-                appFrameworkStatus = appFrameworkStatus,
-                initialServiceBindTimedOut = initialServiceBindTimedOut,
-                appFeatureEnabled = appFeatureEnabled,
-                appFrameworkTransitions = appFrameworkTransitions,
-                omittedFrameworkTransitions = omittedFrameworkTransitions,
             ),
         )
     }
