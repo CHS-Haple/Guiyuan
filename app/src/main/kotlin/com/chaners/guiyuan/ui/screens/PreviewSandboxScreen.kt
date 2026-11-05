@@ -593,7 +593,7 @@ internal fun PreviewSandboxScreen(
                             enabled = activitySupported,
                             startAction = {
                                 SemanticLeadingIcon(
-                                    iconRes = R.drawable.ic_material_symbol_swap_vert,
+                                    iconRes = R.drawable.ic_guiyuan_network_activity_triangles,
                                     detailRes = R.drawable.ic_material_symbol_swap_horiz,
                                 )
                             },

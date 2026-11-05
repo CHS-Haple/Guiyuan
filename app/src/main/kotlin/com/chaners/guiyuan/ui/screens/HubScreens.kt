@@ -609,7 +609,7 @@ internal fun FeaturesScreen(
                         checked = visual.leftRightShowActivity,
                         enabled = featureCfg.enabled && leftRightArrangement,
                         startAction = {
-                            SemanticLeadingIcon(R.drawable.ic_material_symbol_swap_vert, featureCfg.enabled && leftRightArrangement)
+                            SemanticLeadingIcon(R.drawable.ic_guiyuan_network_activity_triangles, featureCfg.enabled && leftRightArrangement)
                         },
                         onCheckedChange = visualRepo::setLeftRightShowActivity,
                     )
@@ -639,7 +639,7 @@ internal fun FeaturesScreen(
                                 title = stringResource(R.string.left_right_activity_size),
                                 startAction = {
                                     SemanticLeadingIcon(
-                                        R.drawable.ic_material_symbol_swap_vert,
+                                        R.drawable.ic_guiyuan_network_activity_triangles,
                                         featureCfg.enabled,
                                         R.drawable.ic_material_symbol_open_in_full,
                                     )
@@ -664,7 +664,7 @@ internal fun FeaturesScreen(
                                 title = stringResource(R.string.left_right_activity_vertical_offset),
                                 startAction = {
                                     SemanticLeadingIcon(
-                                        R.drawable.ic_material_symbol_swap_vert,
+                                        R.drawable.ic_guiyuan_network_activity_triangles,
                                         featureCfg.enabled,
                                         R.drawable.ic_material_symbol_height_w500,
                                     )
