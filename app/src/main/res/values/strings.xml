@@ -30,7 +30,7 @@
     <string name="home_preview_activity_download">Download</string>
     <string name="home_preview_activity_both">Both</string>
     <string name="home_preview_activity_idle">Idle</string>
-    <string name="left_right_idle_activity_title">Hide activity arrows when idle</string>
+    <string name="left_right_idle_activity_title">Hide network activity indicator when idle</string>
     <string name="left_right_idle_activity_summary">Hide activity arrows while connected but idle; leave off to keep dim arrows</string>
     <string name="left_right_activity_size">Network activity indicator size</string>
     <string name="left_right_activity_vertical_offset">Network activity indicator vertical offset</string>
