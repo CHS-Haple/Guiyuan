@@ -108,6 +108,7 @@ class VisualPersistenceTest {
         val prefs = MemoryPreferences()
         val dual = VisualCfg(
             dualSignal = true,
+            dualRowDotArrangement = SignalDotArrangement.CURVED,
             curvedSignalDotOffsetY = 4f,
             horizontalSignalDotOffsetY = -7f,
         )
