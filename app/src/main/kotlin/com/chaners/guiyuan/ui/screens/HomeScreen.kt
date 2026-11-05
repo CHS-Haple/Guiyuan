@@ -526,8 +526,12 @@ private fun HomePreviewSandboxCard(
     modifier: Modifier = Modifier,
 ) {
     val lowBatteryThreshold = featureSettings.value.lowBatteryThreshold
-    val model = remember(state, resources, lowBatteryThreshold, LocalConfiguration.current) {
-        state.toRenderModel(resources, lowBatteryThreshold = lowBatteryThreshold)
+    val model = remember(state, visual.dualSignal, resources, lowBatteryThreshold, LocalConfiguration.current) {
+        state.toRenderModel(
+            resources,
+            dualSignalEnabled = visual.dualSignal,
+            lowBatteryThreshold = lowBatteryThreshold,
+        )
     }
 
     Card(

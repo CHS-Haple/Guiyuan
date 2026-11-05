@@ -146,8 +146,12 @@ internal fun PreviewSandboxScreen(
         FeatureRepo(context.applicationContext)
     }
     val feature by featureRepo.settings.collectAsState(initial = featureRepo.current())
-    val renderModel = remember(state, feature.lowBatteryThreshold, resourceResolver, LocalConfiguration.current) {
-        state.toRenderModel(resourceResolver, lowBatteryThreshold = feature.lowBatteryThreshold)
+    val renderModel = remember(state, visual.dualSignal, feature.lowBatteryThreshold, resourceResolver, LocalConfiguration.current) {
+        state.toRenderModel(
+            resourceResolver,
+            dualSignalEnabled = visual.dualSignal,
+            lowBatteryThreshold = feature.lowBatteryThreshold,
+        )
     }
 
     val networkModeOptions =

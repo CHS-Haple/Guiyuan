@@ -22,6 +22,24 @@ class PreviewSandboxPolicyTest {
     }
 
     @Test
+    fun dualPresentationRequiresBothPhysicalSimAndFeatureSwitch() {
+        val both = PreviewSandboxUiState(
+            networkMode = PreviewNetworkMode.MOBILE,
+            simCards = PreviewSimCards.BOTH,
+            dataSim = PreviewDataSim.SIM2,
+            mobileSignalLevel = 4,
+            sim2SignalLevel = 1,
+        )
+        assertEquals(DualMobileLevels(4, 1), both.dualLevels)
+        assertEquals(null, both.dualPresentationLevels(false))
+        assertEquals(DualMobileLevels(4, 1), both.dualPresentationLevels(true))
+        assertEquals(1, both.displayedSignalLevel)
+        assertEquals(null, both.copy(simCards = PreviewSimCards.SIM1_ONLY).dualPresentationLevels(true))
+        assertEquals(null, both.copy(simCards = PreviewSimCards.SIM2_ONLY).dualPresentationLevels(true))
+        assertEquals(null, both.copy(airplaneMode = true).dualPresentationLevels(true))
+    }
+
+    @Test
     fun dataSimChoiceOnlyAppliesWhenBothCardsArePresent() {
         val both = PreviewSandboxUiState(
             networkMode = PreviewNetworkMode.MOBILE,

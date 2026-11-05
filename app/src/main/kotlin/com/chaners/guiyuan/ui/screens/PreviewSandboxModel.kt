@@ -152,6 +152,9 @@ internal data class PreviewSandboxUiState(
                 )
             } else null
 
+    fun dualPresentationLevels(dualSignalEnabled: Boolean): DualMobileLevels? =
+        dualLevels.takeIf { dualSignalEnabled }
+
     val mobileOptionsVisible: Boolean
         get() = networkMode == PreviewNetworkMode.MOBILE && mobileControlsEnabled
 }
@@ -220,6 +223,7 @@ internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
 
 internal fun PreviewSandboxUiState.toRenderModel(
     resources: PreviewSysUiResources,
+    dualSignalEnabled: Boolean,
     mobileTypeface: Typeface? = null,
     lowBatteryThreshold: Int = LOW_BATTERY_THRESHOLD_DEFAULT,
     nativeLowColor: Int? = null,
@@ -318,7 +322,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
             )
         },
         mobileLevel = mobileLevel,
-        dualMobileLevels = dualLevels,
+        dualMobileLevels = dualPresentationLevels(dualSignalEnabled),
         mobileUnavailableMark = airplaneMode || !hasSim,
         effectiveDataSubscriptionId = -1,
         batterySemanticState = semanticState,
