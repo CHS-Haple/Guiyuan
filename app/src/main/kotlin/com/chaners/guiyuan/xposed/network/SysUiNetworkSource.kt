@@ -707,6 +707,8 @@ internal object SysUiNetworkSource {
             )
         } catch (error: InstallStageException) {
             active.set(false)
+            runCatching { releaseMobileActivityFlows() }
+                .onFailure(::rethrowFatal)
             failedBranch("mobile", error, created)
         }
     }
