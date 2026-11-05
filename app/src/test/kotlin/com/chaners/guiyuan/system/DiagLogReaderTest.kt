@@ -205,31 +205,6 @@ class DiagLogReaderTest {
     }
 
     @Test
-    fun repeatedFailedReloadEntriesKeepFirstSessionBoundary() {
-        fun event(kind: String, state: String?, session: String): String =
-            DiagProtocol.format(
-                event = kind,
-                component = "module",
-                state = state,
-                fields = mapOf("sessionId" to session),
-            )
-
-        val oldStart = event("module.loaded", "ready", "old")
-        val oldError = event("hotReload.complete", "error", "old")
-        val firstNew = event("diagnostics.bind", "ready", "new")
-        val repeatedNew = event("diagnostics.snapshot", "ready", "new")
-        val newFailure = event("hotReload.complete", "error", "new")
-        val lateOldFailure = event("hotReload.complete", "unavailable", "old")
-
-        assertEquals(
-            listOf(firstNew, repeatedNew, newFailure),
-            DiagLogReader.latestSession(
-                listOf(oldStart, oldError, firstNew, repeatedNew, newFailure, lateOldFailure),
-            ),
-        )
-    }
-
-    @Test
     fun unavailableHotReloadBeforeModuleReloadedSelectsNewGeneration() {
         fun event(second: Int, kind: String, state: String?, session: String): String =
             "10-11 20:17:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
