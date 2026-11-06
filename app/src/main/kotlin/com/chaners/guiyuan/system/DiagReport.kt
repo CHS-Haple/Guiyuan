@@ -73,26 +73,29 @@ internal object DiagReport {
         val log = snapshot.log
         val level = snapshot.level
         val requested = level.name.lowercase()
-        // Level changes do not carry binding state; keep their observations separate.
-        val diagnostics =
-            snapshot.entries
-                .asReversed()
-                .filter { entry ->
-                    entry.structured &&
-                        entry.component == "diagnostics" &&
-                        (runtimeEvents.sessionId == null ||
-                            entry.fields["sessionId"] == runtimeEvents.sessionId)
+        // A new bind/snapshot supersedes the old level, even when it reports no level.
+        // Level-only changes preserve the most recent observed binding.
+        var runtimeLevel = "not-observed"
+        var runtimeBinding = "not-observed"
+        for (entry in snapshot.entries) {
+            if (
+                !entry.structured ||
+                entry.component != "diagnostics" ||
+                (runtimeEvents.sessionId != null &&
+                    entry.fields["sessionId"] != runtimeEvents.sessionId)
+            ) {
+                continue
+            }
+            when (entry.event) {
+                "diagnostics.bind", "diagnostics.snapshot" -> {
+                    runtimeBinding = entry.state ?: "not-observed"
+                    runtimeLevel = entry.fields["level"] ?: "not-observed"
                 }
-        val runtimeLevel =
-            diagnostics.firstNotNullOfOrNull { it.fields["level"] } ?: "not-observed"
-        val runtimeBinding =
-            diagnostics.firstNotNullOfOrNull { entry ->
-                if (entry.event == "diagnostics.bind" || entry.event == "diagnostics.snapshot") {
-                    entry.state
-                } else {
-                    null
+                "diagnostics.level" -> {
+                    runtimeLevel = entry.fields["level"] ?: "not-observed"
                 }
-            } ?: "not-observed"
+            }
+        }
         appendLine("[Diagnostics state]")
         appendLine("requestedLevel=" + requested)
         appendLine("runtimeLevel=" + runtimeLevel)
