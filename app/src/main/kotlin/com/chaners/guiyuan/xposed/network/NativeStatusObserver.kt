@@ -34,6 +34,9 @@ internal object NativeStatusObserver {
         readOrNull { eventSink?.takeIf { diagnosticsEnabled() }?.invoke(message()) }
     }
 
+    private fun tintText(color: Int?): String =
+        color?.toUInt()?.toString(16)?.padStart(8, '0') ?: "none"
+
     private const val HOME_MANAGER_CLASS =
         "com.android.systemui.statusbar.phone.ui.DarkIconManager"
     private const val STATUS_BAR_ICON_CONTROLLER_IMPL_CLASS =
@@ -622,11 +625,7 @@ internal object NativeStatusObserver {
             reportEvent {
                 "statusIconPresentation source=" + source +
                     " tint=" +
-                    (presentation.appliedTint
-                        ?.toUInt()
-                        ?.toString(16)
-                        ?.padStart(8, '0')
-                        ?: "none") +
+                    tintText(presentation.appliedTint) +
                     " tintAuthority=" +
                     when {
                         locationAwareTint != null -> "dispatcher-location-aware"
@@ -635,23 +634,11 @@ internal object NativeStatusObserver {
                         else -> "cached-fallback"
                     } +
                     " locationAwareTint=" +
-                    (locationAwareTint
-                        ?.toUInt()
-                        ?.toString(16)
-                        ?.padStart(8, '0')
-                        ?: "none") +
+                    tintText(locationAwareTint) +
                     " peerTint=" +
-                    (peerTint
-                        ?.toUInt()
-                        ?.toString(16)
-                        ?.padStart(8, '0')
-                        ?: "none") +
+                    tintText(peerTint) +
                     " managerFallbackTint=" +
-                    (managerFallbackTint
-                        ?.toUInt()
-                        ?.toString(16)
-                        ?.padStart(8, '0')
-                        ?: "none") +
+                    tintText(managerFallbackTint) +
                     " tintAnchorSlot=" +
                     (tintAnchor?.let(NativeParticipantAccess::slotOf) ?: "none") +
                     " tintAnchorClass=" +
