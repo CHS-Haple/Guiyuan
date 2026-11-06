@@ -145,10 +145,8 @@ android {
             initWith(getByName("release"))
             matchingFallbacks += listOf("release")
             isDebuggable = false
+            // Keep routine diagnostics identical to Release; Canary validates candidate code, not extra probes.
             buildConfigField("String", "BUILD_CHANNEL", "\"canary\"")
-            buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
-            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
-            buildConfigField("boolean", deepDiagnosticsBuildField, "true")
         }
     }
 
