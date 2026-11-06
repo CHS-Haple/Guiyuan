@@ -52,6 +52,7 @@ internal data class ConfigBackup(
 internal object ConfigBackupFormat {
     private const val FORMAT = "guiyuan-config"
     private const val SCHEMA = 1
+    private const val VISUAL_JSON_KEY = "visual"
     private const val PROFILES_JSON_KEY = "profiles"
     private const val DUAL_DOT_STYLE_JSON_KEY = "dualDotStyle"
     private const val LEGACY_IDLE_ACTIVITY_JSON_KEY = "leftRightShowIdleActivity"
@@ -129,12 +130,12 @@ internal object ConfigBackupFormat {
     // Missing dual-dot style in older archives meant curved, not the new default.
     // The retired idle-show preference cannot be interpreted as an opt-in hide.
     private fun upgradeLegacyDualAndIdleSettings(root: JsonObject): JsonObject {
-        val visual = root["visual"] as? JsonObject ?: return root
+        val visual = root[VISUAL_JSON_KEY] as? JsonObject ?: return root
         val profiles = visual[PROFILES_JSON_KEY] as? JsonArray ?: return root
         if (profiles.none { it is JsonObject &&
                 (DUAL_DOT_STYLE_JSON_KEY !in it || LEGACY_IDLE_ACTIVITY_JSON_KEY in it) }) return root
         val upgraded = profiles.map(::upgradeLegacyDualProfile)
-        return JsonObject(root + ("visual" to JsonObject(visual +
+        return JsonObject(root + (VISUAL_JSON_KEY to JsonObject(visual +
             (PROFILES_JSON_KEY to JsonArray(upgraded)))))
     }
 
@@ -160,7 +161,7 @@ internal object ConfigBackupFormat {
     // Retire the old boolean without changing the V1 backup schema or
     // accepting conflicting new and legacy representations.
     private fun upgradeLegacySingleRowStyle(root: JsonObject): JsonObject {
-        val visual = root["visual"] as? JsonObject ?: return root
+        val visual = root[VISUAL_JSON_KEY] as? JsonObject ?: return root
         val profiles = visual[PROFILES_JSON_KEY] as? JsonArray ?: return root
         if (profiles.none { it is JsonObject && LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY in it }) return root
         val converted = profiles.map { profile ->
@@ -175,7 +176,7 @@ internal object ConfigBackupFormat {
             JsonObject(profile.filterKeys { it != LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY } +
                 (SINGLE_ROW_DOT_STYLE_JSON_KEY to JsonPrimitive(if (horizontal) "DUO" else "DEFAULT")))
         }
-        return JsonObject(root + ("visual" to JsonObject(visual +
+        return JsonObject(root + (VISUAL_JSON_KEY to JsonObject(visual +
             (PROFILES_JSON_KEY to JsonArray(converted)))))
     }
 
