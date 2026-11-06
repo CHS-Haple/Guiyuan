@@ -6,28 +6,42 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class DiagProtocolTest {
+    private companion object {
+        const val SOURCE_INSTALL_EVENT = "source.install"
+        const val MODULE_LOADED_EVENT = "module.loaded"
+        const val NETWORK_COMPONENT = "network"
+        const val MODULE_COMPONENT = "module"
+        const val READY_STATE = "ready"
+        const val HOOKS_FIELD = "hooks"
+        const val HOOK_COUNT = "4"
+        const val SOURCE_TO_DRAW_FIELD = "sourceToDrawUs"
+        const val SESSION_ID_FIELD = "sessionId"
+        const val SEQUENCE_FIELD = "sequence"
+        const val UPTIME_MS_FIELD = "uptimeMs"
+    }
+
     @Test
     fun formattedEventRoundTripsStructuredFields() {
         val line =
             DiagProtocol.format(
-                event = "source.install",
-                component = "network",
-                state = "ready",
+                event = SOURCE_INSTALL_EVENT,
+                component = NETWORK_COMPONENT,
+                state = READY_STATE,
                 fields =
                     mapOf(
                         "source" to "cold start",
-                        "hooks" to "4",
+                        HOOKS_FIELD to HOOK_COUNT,
                     ),
             )
 
         val parsed = requireNotNull(DiagProtocol.parse(line))
 
         assertEquals(DiagProtocol.SchemaVersion, parsed.schemaVersion)
-        assertEquals("source.install", parsed.event)
-        assertEquals("network", parsed.component)
-        assertEquals("ready", parsed.state)
+        assertEquals(SOURCE_INSTALL_EVENT, parsed.event)
+        assertEquals(NETWORK_COMPONENT, parsed.component)
+        assertEquals(READY_STATE, parsed.state)
         assertEquals("cold start", parsed.fields["source"])
-        assertEquals("4", parsed.fields["hooks"])
+        assertEquals(HOOK_COUNT, parsed.fields[HOOKS_FIELD])
     }
 
     @Test
@@ -38,13 +52,13 @@ class DiagProtocolTest {
                     DiagProtocol.format(
                         event = "pipeline.latency",
                         component = "renderLatency",
-                        fields = mapOf("sourceToDrawUs" to "1200"),
+                        fields = mapOf(SOURCE_TO_DRAW_FIELD to "1200"),
                     ),
                 ),
             )
 
         assertNull(parsed.state)
-        assertEquals("1200", parsed.fields["sourceToDrawUs"])
+        assertEquals("1200", parsed.fields[SOURCE_TO_DRAW_FIELD])
     }
 
     @Test
@@ -57,7 +71,7 @@ class DiagProtocolTest {
             )
 
         assertEquals(0, parsed.schemaVersion)
-        assertEquals("module.loaded", parsed.event)
+        assertEquals(MODULE_LOADED_EVENT, parsed.event)
     }
 
     @Test
@@ -65,15 +79,15 @@ class DiagProtocolTest {
         val lines =
             listOf(
                 DiagProtocol.format(
-                    event = "source.install",
-                    component = "network",
+                    event = SOURCE_INSTALL_EVENT,
+                    component = NETWORK_COMPONENT,
                     state = "error",
                 ),
                 DiagProtocol.format(
-                    event = "source.install",
-                    component = "network",
-                    state = "ready",
-                    fields = mapOf("hooks" to "4"),
+                    event = SOURCE_INSTALL_EVENT,
+                    component = NETWORK_COMPONENT,
+                    state = READY_STATE,
+                    fields = mapOf(HOOKS_FIELD to HOOK_COUNT),
                 ),
             )
 
@@ -81,11 +95,11 @@ class DiagProtocolTest {
             requireNotNull(
                 RuntimeEventSnapshot
                     .fromLines(lines)
-                    .component("network"),
+                    .component(NETWORK_COMPONENT),
             )
 
-        assertEquals("ready", network.state)
-        assertEquals("4", network.fields["hooks"])
+        assertEquals(READY_STATE, network.state)
+        assertEquals(HOOK_COUNT, network.fields[HOOKS_FIELD])
     }
 
     @Test
@@ -93,62 +107,62 @@ class DiagProtocolTest {
         val lines =
             listOf(
                 DiagProtocol.format(
-                    event = "module.loaded",
-                    component = "module",
-                    state = "ready",
+                    event = MODULE_LOADED_EVENT,
+                    component = MODULE_COMPONENT,
+                    state = READY_STATE,
                     fields =
                         mapOf(
-                            "sessionId" to "old",
-                            "sequence" to "1",
-                            "uptimeMs" to "100",
+                            SESSION_ID_FIELD to "old",
+                            SEQUENCE_FIELD to "1",
+                            UPTIME_MS_FIELD to "100",
                         ),
                 ),
                 DiagProtocol.format(
-                    event = "source.install",
-                    component = "network",
+                    event = SOURCE_INSTALL_EVENT,
+                    component = NETWORK_COMPONENT,
                     state = "error",
                     fields =
                         mapOf(
-                            "sessionId" to "old",
-                            "sequence" to "2",
-                            "uptimeMs" to "110",
+                            SESSION_ID_FIELD to "old",
+                            SEQUENCE_FIELD to "2",
+                            UPTIME_MS_FIELD to "110",
                         ),
                 ),
                 DiagProtocol.format(
-                    event = "module.loaded",
-                    component = "module",
-                    state = "ready",
+                    event = MODULE_LOADED_EVENT,
+                    component = MODULE_COMPONENT,
+                    state = READY_STATE,
                     fields =
                         mapOf(
-                            "sessionId" to "new",
-                            "sequence" to "1",
-                            "uptimeMs" to "200",
+                            SESSION_ID_FIELD to "new",
+                            SEQUENCE_FIELD to "1",
+                            UPTIME_MS_FIELD to "200",
                         ),
                 ),
                 DiagProtocol.format(
-                    event = "source.install",
-                    component = "network",
-                    state = "ready",
+                    event = SOURCE_INSTALL_EVENT,
+                    component = NETWORK_COMPONENT,
+                    state = READY_STATE,
                     fields =
                         mapOf(
-                            "sessionId" to "new",
-                            "sequence" to "2",
-                            "uptimeMs" to "210",
-                            "hooks" to "4",
+                            SESSION_ID_FIELD to "new",
+                            SEQUENCE_FIELD to "2",
+                            UPTIME_MS_FIELD to "210",
+                            HOOKS_FIELD to HOOK_COUNT,
                         ),
                 ),
             )
 
         val snapshot = RuntimeEventSnapshot.fromLines(lines)
-        val network = requireNotNull(snapshot.component("network"))
+        val network = requireNotNull(snapshot.component(NETWORK_COMPONENT))
 
         assertEquals("new", snapshot.sessionId)
         assertEquals(DiagProtocol.SchemaVersion, snapshot.schemaVersion)
-        assertEquals("ready", network.state)
-        assertEquals("4", network.fields["hooks"])
-        assertFalse(network.fields.containsKey("sessionId"))
-        assertFalse(network.fields.containsKey("sequence"))
-        assertFalse(network.fields.containsKey("uptimeMs"))
+        assertEquals(READY_STATE, network.state)
+        assertEquals(HOOK_COUNT, network.fields[HOOKS_FIELD])
+        assertFalse(network.fields.containsKey(SESSION_ID_FIELD))
+        assertFalse(network.fields.containsKey(SEQUENCE_FIELD))
+        assertFalse(network.fields.containsKey(UPTIME_MS_FIELD))
     }
 
     @Test
@@ -156,19 +170,19 @@ class DiagProtocolTest {
         val lines =
             listOf(
                 DiagProtocol.format(
-                    event = "source.install",
-                    component = "network",
-                    state = "ready",
-                    fields = mapOf("hooks" to "4"),
+                    event = SOURCE_INSTALL_EVENT,
+                    component = NETWORK_COMPONENT,
+                    state = READY_STATE,
+                    fields = mapOf(HOOKS_FIELD to HOOK_COUNT),
                 ),
                 DiagProtocol.format(
                     event = "pipeline.latency",
-                    component = "network",
+                    component = NETWORK_COMPONENT,
                     state = "observed",
                     fields =
                         mapOf(
                             "healthSnapshot" to "false",
-                            "sourceToDrawUs" to "1200",
+                            SOURCE_TO_DRAW_FIELD to "1200",
                         ),
                 ),
             )
@@ -177,12 +191,12 @@ class DiagProtocolTest {
             requireNotNull(
                 RuntimeEventSnapshot
                     .fromLines(lines)
-                    .component("network"),
+                    .component(NETWORK_COMPONENT),
             )
 
-        assertEquals("ready", network.state)
-        assertEquals("source.install", network.event)
-        assertEquals("4", network.fields["hooks"])
+        assertEquals(READY_STATE, network.state)
+        assertEquals(SOURCE_INSTALL_EVENT, network.event)
+        assertEquals(HOOK_COUNT, network.fields[HOOKS_FIELD])
     }
 
     @Test
@@ -191,9 +205,9 @@ class DiagProtocolTest {
             RuntimeEventSnapshot.fromLines(
                 listOf(
                     DiagProtocol.format(
-                        event = "module.loaded",
-                        component = "module",
-                        state = "ready",
+                        event = MODULE_LOADED_EVENT,
+                        component = MODULE_COMPONENT,
+                        state = READY_STATE,
                     ),
                 ),
             )
