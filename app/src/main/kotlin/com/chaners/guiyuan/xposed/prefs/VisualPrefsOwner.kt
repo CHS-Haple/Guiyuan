@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
@@ -90,7 +91,7 @@ internal object VisualPrefsOwner {
                 try {
                     unbindLocked()
                 } catch (cleanup: Throwable) {
-                    if (cleanup is VirtualMachineError || cleanup is ThreadDeath) throw cleanup
+                    SysUiPresentationRuntime.throwIfFatal(cleanup)
                     if (cleanup !== error) error.addSuppressed(cleanup)
                 } finally {
                     // A reentrant new binding must not be cleared by the failed old callback.
