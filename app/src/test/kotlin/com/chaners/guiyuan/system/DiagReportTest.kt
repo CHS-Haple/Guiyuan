@@ -223,7 +223,7 @@ class DiagReportTest {
 
     @Test
     fun truncatedCaptureIsDisclosed() {
-        assertTrue(report(logOptions = ReportLogOptions(truncated = true)).contains("capture=latest-complete-lines-only"))
+        assertTrue(report(truncated = true).contains("capture=latest-complete-lines-only"))
     }
 
     @Test
@@ -257,7 +257,7 @@ class DiagReportTest {
     @Test
     fun captureTruncationAndReportLineLimitAreBothDisclosed() {
         val limit = DiagReport.exportLineLimit(DiagLevel.Detailed)
-        val result = report(*Array(limit + 3) { "record-${it + 1}" }, logOptions = ReportLogOptions(truncated = true))
+        val result = report(*Array(limit + 3) { "record-${it + 1}" }, truncated = true)
         assertTrue(result.contains("capture=latest-complete-lines-only"))
         assertTrue(result.contains("omittedEarlierSessionLines=3"))
         assertTrue(result.contains("lines=${limit}\n"))
@@ -289,7 +289,7 @@ class DiagReportTest {
     fun scopedHistoryClearIsDeclaredWithoutClaimingSourceDeletion() {
         val output = report(
             "new-event",
-            clearedAt = LocalDateTime.parse("2026-10-30T23:00:10"),
+            logOptions = ReportLogOptions(clearedAt = LocalDateTime.parse("2026-10-30T23:00:10")),
         )
         assertTrue(output.contains("visibleHistorySince=2026-10-30T23:00:10"))
         assertTrue(output.contains("historyClearScope=guiyuan-view-and-report-only"))
@@ -324,16 +324,16 @@ class DiagReportTest {
             )
 
     private data class ReportLogOptions(
-        val truncated: Boolean = false,
+        val clearedAt: LocalDateTime? = null,
         val liveSystemUiPids: Set<String> = setOf("18802"),
         val source: DiagLogReader.Source = DiagLogReader.Source.LspModules,
     )
 
     private fun report(
         vararg lines: String,
+        truncated: Boolean = false,
         collection: RootShell.Result? = null,
         level: DiagLevel = DiagLevel.Detailed,
-        clearedAt: LocalDateTime? = null,
         logOptions: ReportLogOptions = ReportLogOptions(),
     ): String {
         val recorded = lines.toList()
@@ -353,10 +353,10 @@ class DiagReportTest {
                 level = level,
                 log = DiagLogReader.Snapshot(
                     source = logOptions.source,
-                    result = collection ?: RootShell.Result(0, recorded.joinToString("\n"), false, null, logOptions.truncated),
+                    result = collection ?: RootShell.Result(0, recorded.joinToString("\n"), false, null, truncated),
                     lines = recorded,
                     sessionLines = recorded,
-                    clearedAt = clearedAt,
+                    clearedAt = logOptions.clearedAt,
                 ),
                 runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
                 entries = recorded.map(DiagLogParser::parse),
