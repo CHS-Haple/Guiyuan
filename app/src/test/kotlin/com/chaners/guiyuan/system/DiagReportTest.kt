@@ -93,8 +93,15 @@ class DiagReportTest {
         val rebindWithoutLevel = diagEvent(BIND_EVENT, state = READY_STATE)
 
         assertTrue(report(bound, detailed, unavailable).contains(DETAIL_UNCONFIRMED))
-        assertTrue(report(bound, detailed, snapshotWithoutLevel).contains(DETAIL_UNCONFIRMED))
-        assertTrue(report(bound, detailed, rebindWithoutLevel).contains(DETAIL_UNCONFIRMED))
+        val newerSnapshot = report(bound, detailed, snapshotWithoutLevel)
+        assertTrue(newerSnapshot.contains(DETAIL_UNCONFIRMED))
+        assertTrue(newerSnapshot.contains("runtimeLevel=not-observed"))
+        assertTrue(newerSnapshot.contains("runtimeBinding=ready"))
+
+        val newerBinding = report(bound, detailed, rebindWithoutLevel)
+        assertTrue(newerBinding.contains(DETAIL_UNCONFIRMED))
+        assertTrue(newerBinding.contains("runtimeLevel=not-observed"))
+        assertTrue(newerBinding.contains("runtimeBinding=ready"))
     }
 
     @Test
