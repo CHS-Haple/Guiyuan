@@ -29,6 +29,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.booleanOrNull
 
+private const val BACKUP_FILE_TOO_LARGE_MESSAGE = "File exceeds 256 KiB"
+
 @Serializable
 internal data class VisualBackup(
     val singleLayout: ContentLayout,
@@ -84,7 +86,7 @@ internal object ConfigBackupFormat {
     }
 
     fun decode(bytes: ByteArray): ConfigBackup {
-        require(bytes.size <= MAX_BYTES) { "File exceeds 256 KiB" }
+        require(bytes.size <= MAX_BYTES) { BACKUP_FILE_TOO_LARGE_MESSAGE }
         val text = Charsets.UTF_8.newDecoder()
             .onMalformedInput(CodingErrorAction.REPORT)
             .onUnmappableCharacter(CodingErrorAction.REPORT)
@@ -94,7 +96,7 @@ internal object ConfigBackupFormat {
     }
 
     fun decode(contents: String): ConfigBackup {
-        require(contents.toByteArray(Charsets.UTF_8).size <= MAX_BYTES) { "File exceeds 256 KiB" }
+        require(contents.toByteArray(Charsets.UTF_8).size <= MAX_BYTES) { BACKUP_FILE_TOO_LARGE_MESSAGE }
         checkJsonStructure(contents)
         val root = json.parseToJsonElement(contents).jsonObject
         val schema = root["schemaVersion"]?.jsonPrimitive?.intOrNull
@@ -453,7 +455,7 @@ internal class ConfigBackupFiles(private val context: Context) {
         val bytes = context.contentResolver.openInputStream(uri)?.use { stream ->
             stream.readNBytes(ConfigBackupFormat.MAX_BYTES + 1)
         } ?: error("Cannot read configuration file")
-        require(bytes.size <= ConfigBackupFormat.MAX_BYTES) { "File exceeds 256 KiB" }
+        require(bytes.size <= ConfigBackupFormat.MAX_BYTES) { BACKUP_FILE_TOO_LARGE_MESSAGE }
         ConfigBackupFormat.decode(bytes)
     }
 
