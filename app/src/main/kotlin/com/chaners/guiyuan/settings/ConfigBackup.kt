@@ -165,16 +165,21 @@ internal object ConfigBackupFormat {
         val profiles = visual[PROFILES_JSON_KEY] as? JsonArray ?: return root
         if (profiles.none { it is JsonObject && LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY in it }) return root
         val converted = profiles.map { profile ->
-            if (profile !is JsonObject || LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY !in profile) return@map profile
-            require(SINGLE_ROW_DOT_STYLE_JSON_KEY !in profile) { "Conflicting single-row styles" }
-            val old = profile[LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY] as? JsonPrimitive
-            require(old != null && !old.isString && old.booleanOrNull != null) {
-                "Invalid legacy single-row style"
+            if (profile is JsonObject && LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY in profile) {
+                require(SINGLE_ROW_DOT_STYLE_JSON_KEY !in profile) {
+                    "Conflicting single-row styles"
+                }
+                val old = profile[LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY] as? JsonPrimitive
+                require(old != null && !old.isString && old.booleanOrNull != null) {
+                    "Invalid legacy single-row style"
+                }
+                val horizontal = old.booleanOrNull == true &&
+                    (profile[DUAL_DOT_STYLE_JSON_KEY] as? JsonPrimitive)?.content == "DUO"
+                JsonObject(profile.filterKeys { it != LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY } +
+                    (SINGLE_ROW_DOT_STYLE_JSON_KEY to JsonPrimitive(if (horizontal) "DUO" else "DEFAULT")))
+            } else {
+                profile
             }
-            val horizontal = old.booleanOrNull == true &&
-                (profile[DUAL_DOT_STYLE_JSON_KEY] as? JsonPrimitive)?.content == "DUO"
-            JsonObject(profile.filterKeys { it != LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY } +
-                (SINGLE_ROW_DOT_STYLE_JSON_KEY to JsonPrimitive(if (horizontal) "DUO" else "DEFAULT")))
         }
         return JsonObject(root + (VISUAL_JSON_KEY to JsonObject(visual +
             (PROFILES_JSON_KEY to JsonArray(converted)))))
