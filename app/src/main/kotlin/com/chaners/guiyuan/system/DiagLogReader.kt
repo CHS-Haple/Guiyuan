@@ -123,13 +123,16 @@ internal object DiagLogReader {
         output
             .lineSequence()
             .filter { line ->
-                if (MODULE_LOG_TAG !in line) return@filter false
-                if ("com.chaners.guiyuan" in line) return@filter true
-
-                val entry = DiagLogParser.parse(line)
-                entry.framework == "logcat" &&
-                    entry.tag == MODULE_LOG_TAG &&
-                    entry.structured
+                when {
+                    MODULE_LOG_TAG !in line -> false
+                    "com.chaners.guiyuan" in line -> true
+                    else -> {
+                        val entry = DiagLogParser.parse(line)
+                        entry.framework == "logcat" &&
+                            entry.tag == MODULE_LOG_TAG &&
+                            entry.structured
+                    }
+                }
             }
             .toList()
 
