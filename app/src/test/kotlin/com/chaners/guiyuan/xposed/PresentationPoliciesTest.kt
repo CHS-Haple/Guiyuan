@@ -1,7 +1,9 @@
 package com.chaners.guiyuan.xposed
 
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -39,6 +41,53 @@ class PresentationPoliciesTest {
             }.exceptionOrNull()
         assertTrue(error === addError)
         assertEquals(listOf(rollbackError), error?.suppressed?.toList())
+    }
+
+    @Test
+    fun reflectedFatalRestoreFailureStopsIndependentSlotRemovals() {
+        val fatal = OutOfMemoryError("native-slot-restore")
+        val slots =
+            object : ArrayList<String>() {
+                override fun remove(element: String): Boolean {
+                    if (element == "mobile") throw InvocationTargetException(fatal)
+                    return super.remove(element)
+                }
+            }
+        slots.addAll(listOf("native", "mobile", "wifi"))
+
+        val error = runCatching {
+            OwnedEntries.restore(slots, listOf("wifi", "mobile"))
+        }.exceptionOrNull()
+
+        assertSame(fatal, error)
+        // No later sibling writes after a VM-fatal restoration error.
+        assertEquals(listOf("native", "mobile", "wifi"), slots)
+    }
+
+    @Test
+    fun reflectedFatalRollbackFailureOutranksOrdinarySlotAdditionFailure() {
+        val addError = IllegalStateException("add-failed")
+        val fatal = OutOfMemoryError("slot-rollback-fatal")
+        val slots =
+            object : ArrayList<String>() {
+                override fun add(element: String): Boolean {
+                    if (element == "airplane") throw addError
+                    return super.add(element)
+                }
+
+                override fun remove(element: String): Boolean {
+                    if (element == "mobile") throw InvocationTargetException(fatal)
+                    return super.remove(element)
+                }
+            }
+        slots.add("native")
+
+        val error = runCatching {
+            OwnedEntries.add(slots, listOf("mobile", "airplane"))
+        }.exceptionOrNull()
+
+        assertSame(fatal, error)
+        assertEquals(listOf("native", "mobile"), slots)
     }
 
     @Test

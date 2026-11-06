@@ -5,6 +5,7 @@ import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.readVisualCfg
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
@@ -90,7 +91,7 @@ internal object VisualPrefsOwner {
                 try {
                     unbindLocked()
                 } catch (cleanup: Throwable) {
-                    if (cleanup is VirtualMachineError || cleanup is ThreadDeath) throw cleanup
+                    SysUiPresentationRuntime.throwIfFatal(cleanup)
                     if (cleanup !== error) error.addSuppressed(cleanup)
                 } finally {
                     // A reentrant new binding must not be cleared by the failed old callback.
