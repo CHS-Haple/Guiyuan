@@ -24,17 +24,17 @@ internal data class DiagSnapshot(
         var bound = false
         var level: String? = null
         entries.forEach { entry ->
+            val fromSystemUi =
+                entry.hostPkg == "com.android.systemui" ||
+                    (
+                        log.source == DiagLogReader.Source.LogcatFallback &&
+                            entry.framework == "logcat" &&
+                            entry.tag == "CombinedStatus"
+                    )
             if (
                 !entry.structured ||
+                !fromSystemUi ||
                 entry.pid !in liveSystemUiPids ||
-                (
-                    entry.hostPkg != "com.android.systemui" &&
-                        !(
-                            log.source == DiagLogReader.Source.LogcatFallback &&
-                                entry.framework == "logcat" &&
-                                entry.tag == "CombinedStatus"
-                            )
-                    ) ||
                 entry.component != "diagnostics" ||
                 entry.fields["sessionId"] != session
             ) {
