@@ -6,6 +6,25 @@ import org.junit.Test
 
 class DiagLogReaderTest {
     @Test
+    fun legacySessionSelectionKeepsLatestNativeStartAndMatchingPid() {
+        fun line(time: String, pid: Int, message: String) =
+            "11-06 08:49:$time.000 $pid $pid I CombinedStatus: $message"
+
+        val oldStart = line("10", 1100, "Module loaded in com.android.systemui")
+        val oldUpdate = line("11", 1100, "battery.reconcile old")
+        val currentStart = line("12", 2200, "Module loaded in com.android.systemui")
+        val delayedOld = line("13", 1100, "battery.reconcile stale")
+        val currentUpdate = line("14", 2200, "battery.reconcile current")
+
+        assertEquals(
+            listOf(currentStart, currentUpdate),
+            DiagLogReader.latestSession(
+                listOf(oldStart, oldUpdate, currentStart, delayedOld, currentUpdate),
+            ),
+        )
+    }
+
+    @Test
     fun clearedHistoryRetainsOnlyNewLsposedLogs() {
         fun line(time: String, event: String) =
             "[ 2026-10-30T23:00:$time 1000: 6303: 6303 I/LSPosedFramework ] " +
