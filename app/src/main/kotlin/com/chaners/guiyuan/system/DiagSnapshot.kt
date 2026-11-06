@@ -26,8 +26,15 @@ internal data class DiagSnapshot(
         entries.forEach { entry ->
             if (
                 !entry.structured ||
-                entry.hostPkg != "com.android.systemui" ||
                 entry.pid !in liveSystemUiPids ||
+                (
+                    entry.hostPkg != "com.android.systemui" &&
+                        !(
+                            log.source == DiagLogReader.Source.LogcatFallback &&
+                                entry.framework == "logcat" &&
+                                entry.tag == "CombinedStatus"
+                            )
+                    ) ||
                 entry.component != "diagnostics" ||
                 entry.fields["sessionId"] != session
             ) {
