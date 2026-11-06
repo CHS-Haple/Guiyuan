@@ -52,7 +52,7 @@ internal object NativeStatusInventory {
                     try {
                         schedule(hostView, onSnapshot = onSnapshot)
                     } catch (error: Throwable) {
-                        if (error is VirtualMachineError || error is ThreadDeath) throw error
+                        SysUiPresentationRuntime.throwIfFatal(error)
                         Log.w("Guiyuan[NativeProbe]", "Deferred native probe failed", error)
                     }
                 }

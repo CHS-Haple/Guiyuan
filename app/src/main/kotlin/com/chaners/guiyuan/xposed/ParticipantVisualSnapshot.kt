@@ -181,9 +181,7 @@ internal object ParticipantVisualSnapshot {
                     resources = resources,
                 )
             }.getOrElse { error ->
-                if (error is VirtualMachineError || error is ThreadDeath) {
-                    throw error
-                }
+                SysUiPresentationRuntime.throwIfFatal(error)
                 null
             }
         drawableCache

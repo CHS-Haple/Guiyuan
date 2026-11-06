@@ -2895,7 +2895,7 @@ class GyModule : XposedModule() {
             try {
                 action()
             } catch (failure: Throwable) {
-                if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                SysUiPresentationRuntime.throwIfFatal(failure)
                 cleanupFailures += step + ":" + failure.javaClass.simpleName
             }
         }
@@ -3843,7 +3843,7 @@ class GyModule : XposedModule() {
             try {
                 action()
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                SysUiPresentationRuntime.throwIfFatal(error)
                 errors.add(error)
             }
         }
@@ -4449,7 +4449,7 @@ class GyModule : XposedModule() {
             try {
                 action()
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                SysUiPresentationRuntime.throwIfFatal(error)
                 failures.add(error)
             }
         }
