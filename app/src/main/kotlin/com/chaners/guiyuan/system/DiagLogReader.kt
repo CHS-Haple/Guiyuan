@@ -54,10 +54,16 @@ internal object DiagLogReader {
     }
 
     private const val LSP_CMD =
-        "for f in \$(ls -1t /data/adb/lspd/log/modules_*.log " +
-            "/data/adb/lspd/log.old/modules_*.log 2>/dev/null | head -n 8); do " +
-            "if grep -Fq 'com.chaners.guiyuan' \"\$f\"; then " +
-            "grep -F 'com.chaners.guiyuan' \"\$f\" || true; break; fi; done"
+        "files=\$(ls -1t /data/adb/lspd/log/modules_*.log " +
+            "/data/adb/lspd/log.old/modules_*.log 2>/dev/null | head -n 8); " +
+            "fallback=''; selected=''; " +
+            "for f in \$files; do " +
+            "if [ -z \"\$fallback\" ] && grep -Fq 'com.chaners.guiyuan' \"\$f\"; then " +
+            "fallback=\"\$f\"; fi; " +
+            "if grep -F 'com.chaners.guiyuan' \"\$f\" | " +
+            "grep -Fq '(com.android.systemui)'; then selected=\"\$f\"; break; fi; done; " +
+            "target=\${selected:-\$fallback}; " +
+            "if [ -n \"\$target\" ]; then grep -F 'com.chaners.guiyuan' \"\$target\" || true; fi"
 
     private const val LOGCAT_CMD =
         "logcat -d -b all -v threadtime -t 3000"
@@ -114,14 +120,19 @@ internal object DiagLogReader {
         )
     }
 
-    internal fun filterModuleLines(output: String): List<String> =
-        output
-            .lineSequence()
-            .filter { line ->
-                line.contains("com.chaners.guiyuan") &&
-                    line.contains(MODULE_LOG_TAG)
-            }
-            .toList()
+    internal fun filterModuleLines(output: String): List<String> {
+        val lines =
+            output.lineSequence()
+                .filter { line ->
+                    line.contains("com.chaners.guiyuan") &&
+                        line.contains(MODULE_LOG_TAG)
+                }
+                .toList()
+        val systemUi = lines.filter { line ->
+            DiagLogParser.parse(line).hostPkg == "com.android.systemui"
+        }
+        return systemUi.ifEmpty { lines }
+    }
 
     internal fun filterLogcatLines(output: String): List<String> =
         output
