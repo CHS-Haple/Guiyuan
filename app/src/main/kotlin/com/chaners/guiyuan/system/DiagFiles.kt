@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.system
 
+import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
@@ -87,31 +88,7 @@ internal object DiagFiles {
                 error("Unable to publish managed diagnostic report")
             }
 
-            if (BuildConfig.DEBUG) {
-                val probe = runCatching {
-                    val mimeType = resolver.getType(uri)
-                    val size = resolver
-                        .openFileDescriptor(uri, "r")
-                        ?.use { descriptor -> descriptor.statSize }
-                        ?: -1L
-                    val readable = resolver
-                        .openInputStream(uri)
-                        ?.use { input ->
-                            input.read()
-                            true
-                        }
-                        ?: false
-
-                    "mime=$mimeType descriptorSize=$size selfReadable=$readable"
-                }.getOrElse { error ->
-                    "probeError=${error.javaClass.simpleName}"
-                }
-
-                val message =
-                    "prepare transport=mediaStore scheme=${uri.scheme} " +
-                        "authority=${uri.authority} relativePath=$SHARE_PATH $probe"
-                Log.i(LOG_TAG, message)
-            }
+            if (BuildConfig.DEBUG) logPreparedReport(resolver, uri)
 
             ShareFile(uri = uri)
         }.onFailure { error ->
@@ -125,6 +102,32 @@ internal object DiagFiles {
                 Log.e(LOG_TAG, message)
             }
         }.getOrNull()
+    }
+
+    private fun logPreparedReport(resolver: ContentResolver, uri: Uri) {
+        val probe = runCatching {
+            val mimeType = resolver.getType(uri)
+            val size = resolver
+                .openFileDescriptor(uri, "r")
+                ?.use { descriptor -> descriptor.statSize }
+                ?: -1L
+            val readable = resolver
+                .openInputStream(uri)
+                ?.use { input ->
+                    input.read()
+                    true
+                }
+                ?: false
+
+            "mime=$mimeType descriptorSize=$size selfReadable=$readable"
+        }.getOrElse { error ->
+            "probeError=${error.javaClass.simpleName}"
+        }
+
+        val message =
+            "prepare transport=mediaStore scheme=${uri.scheme} " +
+                "authority=${uri.authority} relativePath=$SHARE_PATH $probe"
+        Log.i(LOG_TAG, message)
     }
 
     fun logIntent(
