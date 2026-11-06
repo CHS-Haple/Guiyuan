@@ -55,6 +55,7 @@ private const val ABOUT_LICENSE_URL = "https://github.com/CHS-Haple/Guiyuan/blob
 private const val GPL_LICENSE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
 private const val ABOUT_VALUE_SEPARATOR = "｜"
 private const val APACHE_LICENSE_ID = "Apache-2.0"
+private const val ANDROIDX_MAINTAINER = "AndroidX"
 private const val ANDROIDX_UPSTREAM_URL = "https://github.com/androidx/androidx"
 
 private data class AboutDependency(
@@ -419,28 +420,28 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                     name = "AndroidX Core",
                     version = BuildConfig.ANDROIDX_CORE_VERSION,
                     license = APACHE_LICENSE_ID,
-                    maintainer = "AndroidX",
+                    maintainer = ANDROIDX_MAINTAINER,
                     upstreamUrl = ANDROIDX_UPSTREAM_URL,
                 ),
                 AboutDependency(
                     name = "AndroidX Activity Compose",
                     version = BuildConfig.ACTIVITY_COMPOSE_VERSION,
                     license = APACHE_LICENSE_ID,
-                    maintainer = "AndroidX",
+                    maintainer = ANDROIDX_MAINTAINER,
                     upstreamUrl = ANDROIDX_UPSTREAM_URL,
                 ),
                 AboutDependency(
                     name = "AndroidX Navigation Event Compose",
                     version = BuildConfig.NAVIGATION_EVENT_COMPOSE_VERSION,
                     license = APACHE_LICENSE_ID,
-                    maintainer = "AndroidX",
+                    maintainer = ANDROIDX_MAINTAINER,
                     upstreamUrl = ANDROIDX_UPSTREAM_URL,
                 ),
                 AboutDependency(
                     name = "AndroidX DataStore Preferences",
                     version = BuildConfig.DATASTORE_PREFERENCES_VERSION,
                     license = APACHE_LICENSE_ID,
-                    maintainer = "AndroidX",
+                    maintainer = ANDROIDX_MAINTAINER,
                     upstreamUrl = ANDROIDX_UPSTREAM_URL,
                 ),
                 AboutDependency(
