@@ -70,7 +70,7 @@ class DiagReportTest {
             listOf(settings, systemUiBound, systemUiDetailed).joinToString("\n"),
         )
         assertEquals(2, collected.size)
-        assertTrue(report(*collected.toTypedArray()).contains(DETAIL_CONFIRMED))
+        assertTrue(report(collected[0], collected[1]).contains(DETAIL_CONFIRMED))
     }
 
     @Test
