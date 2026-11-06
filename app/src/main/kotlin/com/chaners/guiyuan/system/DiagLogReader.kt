@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 
 internal object DiagLogReader {
     private const val TIMEOUT_SEC = 10L
+    private const val MODULE_LOG_TAG = "CombinedStatus"
     private const val HISTORY_PREFS = "guiyuan_diagnostics_history"
     private const val CLEAR_BOUNDARY_KEY = "cleared_at_local"
 
@@ -112,7 +113,7 @@ internal object DiagLogReader {
             .lineSequence()
             .filter { line ->
                 line.contains("com.chaners.guiyuan") &&
-                    line.contains("CombinedStatus")
+                    line.contains(MODULE_LOG_TAG)
             }
             .toList()
 
@@ -120,12 +121,12 @@ internal object DiagLogReader {
         output
             .lineSequence()
             .filter { line ->
-                if ("CombinedStatus" !in line) return@filter false
+                if (MODULE_LOG_TAG !in line) return@filter false
                 if ("com.chaners.guiyuan" in line) return@filter true
 
                 val entry = DiagLogParser.parse(line)
                 entry.framework == "logcat" &&
-                    entry.tag == "CombinedStatus" &&
+                    entry.tag == MODULE_LOG_TAG &&
                     entry.structured
             }
             .toList()
