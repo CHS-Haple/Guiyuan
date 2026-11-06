@@ -1604,12 +1604,7 @@ class GyModule : XposedModule() {
             try {
                 block()
             } catch (cleanupError: Throwable) {
-                if (
-                    cleanupError is VirtualMachineError ||
-                    cleanupError is ThreadDeath
-                ) {
-                    throw cleanupError
-                }
+                SysUiPresentationRuntime.throwIfFatal(cleanupError)
                 cleanupFailures += step + ":" + cleanupError.javaClass.simpleName
             }
         }
