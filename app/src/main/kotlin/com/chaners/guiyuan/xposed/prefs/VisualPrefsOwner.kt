@@ -1,11 +1,11 @@
 package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
-import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.readVisualCfg
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
