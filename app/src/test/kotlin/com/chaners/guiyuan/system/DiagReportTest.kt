@@ -59,6 +59,29 @@ class DiagReportTest {
             event("com.android.systemui", "current", "diagnostics.bind", "ready")
 
         assertTrue(report(nativeBound, nativeDetailed).contains("systemUiDetailedConfirmed=true"))
+        val logcatReady =
+            "11-06 16:35:38.396 18802 18802 I CombinedStatus: " +
+                DiagProtocol.format(
+                    event = "diagnostics.bind",
+                    component = "diagnostics",
+                    state = "ready",
+                    fields = mapOf("sessionId" to "current", "level" to "detailed"),
+                )
+        assertTrue(
+            report(logcatReady, source = DiagLogReader.Source.LogcatFallback)
+                .contains("systemUiDetailedConfirmed=true"),
+        )
+        assertTrue(
+            report(logcatReady, source = DiagLogReader.Source.LspModules)
+                .contains("systemUiDetailedConfirmed=false"),
+        )
+        assertTrue(
+            report(
+                logcatReady,
+                source = DiagLogReader.Source.LogcatFallback,
+                liveSystemUiPids = setOf("9999"),
+            ).contains("systemUiDetailedConfirmed=false"),
+        )
         assertTrue(
             report(nativeBound, nativeDetailed, level = DiagLevel.General)
                 .contains("systemUiDetailedConfirmed=false"),
@@ -276,6 +299,7 @@ class DiagReportTest {
         level: DiagLevel = DiagLevel.Detailed,
         clearedAt: LocalDateTime? = null,
         liveSystemUiPids: Set<String> = setOf("18802"),
+        source: DiagLogReader.Source = DiagLogReader.Source.LspModules,
     ): String {
         val recorded = lines.toList()
         return DiagReport.build(
@@ -293,7 +317,7 @@ class DiagReportTest {
                 ),
                 level = level,
                 log = DiagLogReader.Snapshot(
-                    source = DiagLogReader.Source.LspModules,
+                    source = source,
                     result = collection ?: RootShell.Result(0, recorded.joinToString("\n"), false, null, truncated),
                     lines = recorded,
                     sessionLines = recorded,
