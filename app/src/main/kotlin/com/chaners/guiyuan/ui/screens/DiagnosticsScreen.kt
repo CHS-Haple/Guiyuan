@@ -627,6 +627,11 @@ internal fun logRowKey(entry: LogEntry, index: Int): String = "${entry.key}:$ind
 private const val MAX_DETAIL_FIELDS = 5
 private const val LOG_FIELD_SOURCE = "source"
 private const val LOG_FIELD_REASON = "reason"
+private const val LOG_FIELD_TRANSPORT = "transport"
+private const val LOG_FIELD_TRANSFERRED_CHARGING = "transferredCharging"
+private const val LOG_FIELD_NATIVE_CHARGING = "nativeCharging"
+private const val LOG_FIELD_NATIVE_PERCENT = "nativePercent"
+private const val LOG_FIELD_LEVEL = "level"
 private const val LOG_BOOLEAN_TRUE = "true"
 private const val LOG_BOOLEAN_FALSE = "false"
 private const val EVENT_CONNECTIVITY = "connectivity"
@@ -1325,7 +1330,7 @@ internal fun isRuntimeLog(entry: LogEntry, focusedCategory: LogCategory? = null)
         return true
     }
     // The connectivity source still emits a legacy INFO record.
-    if (entry.event == EVENT_CONNECTIVITY && "transport" in entry.fields) return true
+    if (entry.event == EVENT_CONNECTIVITY && LOG_FIELD_TRANSPORT in entry.fields) return true
     if (entry.event == EVENT_CONNECTIVITY_DELIVERY_FAILED) return true
     if (!entry.structured) return false
     return when (entry.event) {
@@ -1458,7 +1463,7 @@ private fun logSummary(
 
     if (entry.event == EVENT_CONNECTIVITY) {
         return buildList {
-            fields["transport"]?.let { add(transportLabel(context, it)) }
+            fields[LOG_FIELD_TRANSPORT]?.let { add(transportLabel(context, it)) }
             if (fields["validated"] == LOG_BOOLEAN_TRUE) {
                 add(context.getString(R.string.diagnostics_log_summary_validated))
             }
@@ -1476,8 +1481,8 @@ private fun logSummary(
     }
 
     if (entry.event == EVENT_BATTERY_RECONCILE) {
-        val previous = chargingStateLabel(context, fields["transferredCharging"])
-        val native = chargingStateLabel(context, fields["nativeCharging"])
+        val previous = chargingStateLabel(context, fields[LOG_FIELD_TRANSFERRED_CHARGING])
+        val native = chargingStateLabel(context, fields[LOG_FIELD_NATIVE_CHARGING])
         val charging =
             when {
                 previous != null && native != null ->
@@ -1485,7 +1490,7 @@ private fun logSummary(
                 native != null -> context.getString(R.string.diagnostics_log_battery_native, native)
                 else -> entry.state?.let { stateLabel(context, it) }
             }
-        val percent = fields["nativePercent"]?.toIntOrNull()?.takeIf { it in 0..100 }
+        val percent = fields[LOG_FIELD_NATIVE_PERCENT]?.toIntOrNull()?.takeIf { it in 0..100 }
         return join(
             charging,
             percent?.let { context.getString(R.string.diagnostics_log_battery_percent, it) },
@@ -1530,10 +1535,10 @@ private fun logSummary(
             EVENT_VISUAL_SETTINGS_CHANGED -> join(state, reason)
 
             EVENT_DIAGNOSTICS_LEVEL -> join(
-                when (fields["level"]) {
+                when (fields[LOG_FIELD_LEVEL]) {
                     "detailed" -> context.getString(R.string.diagnostics_mode_detailed)
                     "general" -> context.getString(R.string.diagnostics_mode_basic)
-                    else -> fields["level"]
+                    else -> fields[LOG_FIELD_LEVEL]
                 },
                 reason,
             )
@@ -1764,5 +1769,5 @@ private val LOG_META_FIELDS =
 
 private val DETAIL_FIELD_PRIORITY = listOf(LOG_FIELD_REASON, LOG_FIELD_SOURCE, "traceId", "target", "owner")
 private val BATTERY_DETAIL_PRIORITY = listOf(
-    "transferredCharging", "nativeCharging", "nativePercent", LOG_FIELD_SOURCE, LOG_FIELD_REASON,
+    LOG_FIELD_TRANSFERRED_CHARGING, LOG_FIELD_NATIVE_CHARGING, LOG_FIELD_NATIVE_PERCENT, LOG_FIELD_SOURCE, LOG_FIELD_REASON,
 )
