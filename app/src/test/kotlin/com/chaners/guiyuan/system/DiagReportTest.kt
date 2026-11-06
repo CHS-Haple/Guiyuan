@@ -27,6 +27,47 @@ class DiagReportTest {
     }
 
     @Test
+    fun detailedModeIsConfirmedOnlyByCurrentSystemUiSession() {
+        fun event(
+            process: String,
+            session: String,
+            action: String,
+            state: String? = null,
+            level: String? = null,
+        ): String =
+            "[ 2026-11-06T16:35:38.396 1000: 18802: 18802 I/LSPosedFramework ] " +
+                "($process) [com.chaners.guiyuan,CombinedStatus,1,0,1] " +
+                DiagProtocol.format(
+                    event = action,
+                    component = "diagnostics",
+                    state = state,
+                    fields = buildMap {
+                        put("sessionId", session)
+                        if (level != null) put("level", level)
+                    },
+                )
+
+        val nativeBound = event("com.android.systemui", "current", "diagnostics.bind", "ready", "general")
+        val nativeDetailed = event("com.android.systemui", "current", "diagnostics.level", level = "detailed")
+        val settingsDetailed =
+            event("com.android.settings:remote", "current", "diagnostics.bind", "ready", "detailed")
+        val unavailable =
+            event("com.android.systemui", "current", "diagnostics.snapshot", "unavailable", "detailed")
+
+        assertTrue(report(nativeBound, nativeDetailed).contains("systemUiDetailedConfirmed=true"))
+        assertFalse(report(settingsDetailed).contains("systemUiDetailedConfirmed=true"))
+        assertTrue(report(settingsDetailed).contains("systemUiDetailedConfirmed=false"))
+        assertTrue(report(nativeBound, nativeDetailed, unavailable).contains("systemUiDetailedConfirmed=false"))
+        assertTrue(
+            report(
+                nativeBound,
+                nativeDetailed,
+                event("com.android.systemui", "next", "diagnostics.bind", "ready", "general"),
+            ).contains("systemUiDetailedConfirmed=false"),
+        )
+    }
+
+    @Test
     fun missingRuntimeLevelIsNotMistakenForBindingFailure() {
         val report = report(
             DiagProtocol.format(
