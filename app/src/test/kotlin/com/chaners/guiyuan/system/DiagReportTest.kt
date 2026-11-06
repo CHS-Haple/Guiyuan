@@ -60,6 +60,10 @@ class DiagReportTest {
 
         assertTrue(report(nativeBound, nativeDetailed).contains("systemUiDetailedConfirmed=true"))
         assertTrue(
+            report(nativeBound, nativeDetailed, level = DiagLevel.General)
+                .contains("systemUiDetailedConfirmed=false"),
+        )
+        assertTrue(
             report(nativeBound, nativeDetailed, liveSystemUiPids = setOf("other-pid"))
                 .contains("systemUiDetailedConfirmed=false"),
         )
