@@ -614,6 +614,38 @@ internal fun DiagnosticsScreen(
 internal fun logRowKey(entry: LogEntry, index: Int): String = "${entry.key}:$index"
 
 private const val MAX_DETAIL_FIELDS = 5
+private const val EVENT_CONNECTIVITY = "connectivity"
+private const val EVENT_CONNECTIVITY_DELIVERY_FAILED = "connectivity.delivery-failed"
+private const val EVENT_PIPELINE_LATENCY = "pipeline.latency"
+private const val EVENT_BATTERY_RECONCILE = "battery.reconcile"
+private const val EVENT_MODULE_LOADED = "module.loaded"
+private const val EVENT_MODULE_RELOADED = "module.reloaded"
+private const val EVENT_COMPATIBILITY_PROBE = "compatibility.probe"
+private const val EVENT_COMPATIBILITY_REVALIDATED = "compatibility.revalidated"
+private const val EVENT_HOOK_INSTALL = "hook.install"
+private const val EVENT_HOOK_REPLACE = "hook.replace"
+private const val EVENT_SOURCE_INSTALL = "source.install"
+private const val EVENT_SOURCE_ATTACH = "source.attach"
+private const val EVENT_RUNTIME_ATTACH = "runtime.attach"
+private const val EVENT_RUNTIME_TEARDOWN = "runtime.teardown"
+private const val EVENT_RUNTIME_PREFERENCES_BIND = "runtimePreferences.bind"
+private const val EVENT_DIAGNOSTICS_BIND = "diagnostics.bind"
+private const val EVENT_HOST_RESTORE = "host.restore"
+private const val EVENT_SESSION_ATTACH = "session.attach"
+private const val EVENT_PRESENTATION_CUTOVER = "presentation.cutover"
+private const val EVENT_PRESENTATION_FAIL_NATIVE = "presentation.failNative"
+private const val EVENT_RENDERER_ATTACH = "renderer.attach"
+private const val EVENT_DIAGNOSTICS_LEVEL = "diagnostics.level"
+private const val EVENT_VISUAL_SETTINGS_CHANGED = "visualSettings.changed"
+private const val EVENT_FEATURE_SETTINGS_CHANGED = "featureSettings.changed"
+private const val EVENT_HOT_RELOAD_PREPARE = "hotReload.prepare"
+private const val EVENT_HOT_RELOAD_GENERATION_HANDOFF = "hotReload.generationHandoff"
+private const val EVENT_HOT_RELOAD_RESTORE = "hotReload.restore"
+private const val EVENT_HOT_RELOAD_COMPLETE = "hotReload.complete"
+private const val EVENT_MOBILE_RECOVERY = "mobile.recovery"
+private const val EVENT_SCENE_STABLE_FAMILY = "scene.stableFamily"
+private const val EVENT_AOD_STATE = "aod.state"
+private const val EVENT_AOD_TARGET = "aod.target"
 
 private fun logProgress(progress: Float, index: Int): Float {
     // Off-screen rows share the last visible row's start.
@@ -1271,11 +1303,11 @@ internal fun isRuntimeLog(entry: LogEntry, focusedCategory: LogCategory? = null)
         return true
     }
     // The connectivity source still emits a legacy INFO record.
-    if (entry.event == "connectivity" && "transport" in entry.fields) return true
-    if (entry.event == "connectivity.delivery-failed") return true
+    if (entry.event == EVENT_CONNECTIVITY && "transport" in entry.fields) return true
+    if (entry.event == EVENT_CONNECTIVITY_DELIVERY_FAILED) return true
     if (!entry.structured) return false
     return when (entry.event) {
-        "pipeline.latency" -> focusedCategory == LogCategory.Performance
+        EVENT_PIPELINE_LATENCY -> focusedCategory == LogCategory.Performance
         "presentation.resolve" -> focusedCategory == LogCategory.Display
         else -> entry.event in RUNTIME_EVENTS
     }
@@ -1283,7 +1315,7 @@ internal fun isRuntimeLog(entry: LogEntry, focusedCategory: LogCategory? = null)
 
 internal fun logDetailFields(entry: LogEntry): List<Pair<String, String>> {
     val priority =
-        if (entry.event == "battery.reconcile") BATTERY_DETAIL_PRIORITY else DETAIL_FIELD_PRIORITY
+        if (entry.event == EVENT_BATTERY_RECONCILE) BATTERY_DETAIL_PRIORITY else DETAIL_FIELD_PRIORITY
     return entry.fields
         .asSequence()
         .filter { (key, _) -> key !in LOG_META_FIELDS }
@@ -1329,46 +1361,46 @@ private fun logTitle(
 ): String {
     val res =
         when (entry.event) {
-            "module.loaded" -> R.string.diagnostics_log_event_module_loaded
-            "module.reloaded" -> R.string.diagnostics_log_event_module_reloaded
-            "compatibility.probe",
-            "compatibility.revalidated",
+            EVENT_MODULE_LOADED -> R.string.diagnostics_log_event_module_loaded
+            EVENT_MODULE_RELOADED -> R.string.diagnostics_log_event_module_reloaded
+            EVENT_COMPATIBILITY_PROBE,
+            EVENT_COMPATIBILITY_REVALIDATED,
             -> R.string.diagnostics_log_event_compatibility
-            "hook.install",
-            "hook.replace",
+            EVENT_HOOK_INSTALL,
+            EVENT_HOOK_REPLACE,
             -> R.string.diagnostics_log_event_hook
-            "source.install",
-            "source.attach",
+            EVENT_SOURCE_INSTALL,
+            EVENT_SOURCE_ATTACH,
             -> R.string.diagnostics_log_event_source
-            "runtime.attach" -> R.string.diagnostics_log_event_runtime_attach
-            "runtime.teardown" -> R.string.diagnostics_log_event_runtime_teardown
-            "runtimePreferences.bind" -> R.string.diagnostics_log_event_runtime_preferences
-            "diagnostics.bind" -> R.string.diagnostics_log_event_diagnostics_bind
+            EVENT_RUNTIME_ATTACH -> R.string.diagnostics_log_event_runtime_attach
+            EVENT_RUNTIME_TEARDOWN -> R.string.diagnostics_log_event_runtime_teardown
+            EVENT_RUNTIME_PREFERENCES_BIND -> R.string.diagnostics_log_event_runtime_preferences
+            EVENT_DIAGNOSTICS_BIND -> R.string.diagnostics_log_event_diagnostics_bind
             "host.capture" -> R.string.diagnostics_log_event_host_capture
-            "host.restore" -> R.string.diagnostics_log_event_host_restore
-            "session.attach" -> R.string.diagnostics_log_event_session_attach
-            "presentation.cutover" -> R.string.diagnostics_log_event_presentation_cutover
-            "presentation.failNative" -> R.string.diagnostics_log_event_fail_native
+            EVENT_HOST_RESTORE -> R.string.diagnostics_log_event_host_restore
+            EVENT_SESSION_ATTACH -> R.string.diagnostics_log_event_session_attach
+            EVENT_PRESENTATION_CUTOVER -> R.string.diagnostics_log_event_presentation_cutover
+            EVENT_PRESENTATION_FAIL_NATIVE -> R.string.diagnostics_log_event_fail_native
             "presentation.resolve" -> R.string.diagnostics_log_event_presentation_resolve
-            "renderer.attach" -> R.string.diagnostics_log_event_renderer_attach
+            EVENT_RENDERER_ATTACH -> R.string.diagnostics_log_event_renderer_attach
             "diagnostics.snapshot" -> R.string.diagnostics_log_event_diagnostics_snapshot
-            "diagnostics.level" -> R.string.diagnostics_log_event_diagnostics_level
-            "pipeline.latency" -> R.string.diagnostics_log_event_pipeline_latency
-            "visualSettings.changed" -> R.string.diagnostics_log_event_visual_settings
-            "featureSettings.changed" -> R.string.diagnostics_log_event_feature_settings
+            EVENT_DIAGNOSTICS_LEVEL -> R.string.diagnostics_log_event_diagnostics_level
+            EVENT_PIPELINE_LATENCY -> R.string.diagnostics_log_event_pipeline_latency
+            EVENT_VISUAL_SETTINGS_CHANGED -> R.string.diagnostics_log_event_visual_settings
+            EVENT_FEATURE_SETTINGS_CHANGED -> R.string.diagnostics_log_event_feature_settings
             "hotReload.cleanup" -> R.string.diagnostics_log_event_hot_reload_cleanup
-            "battery.reconcile" -> R.string.diagnostics_log_event_battery_reconcile
-            "hotReload.prepare" -> R.string.diagnostics_log_event_hot_reload_prepare
-            "hotReload.generationHandoff" -> R.string.diagnostics_log_event_hot_reload_handoff
+            EVENT_BATTERY_RECONCILE -> R.string.diagnostics_log_event_battery_reconcile
+            EVENT_HOT_RELOAD_PREPARE -> R.string.diagnostics_log_event_hot_reload_prepare
+            EVENT_HOT_RELOAD_GENERATION_HANDOFF -> R.string.diagnostics_log_event_hot_reload_handoff
             "hotReload.migration" -> R.string.diagnostics_log_event_hot_reload_migration
-            "hotReload.restore" -> R.string.diagnostics_log_event_hot_reload_restore
-            "hotReload.complete" -> R.string.diagnostics_log_event_hot_reload
-            "mobile.recovery" -> R.string.diagnostics_log_event_mobile_recovery
-            "scene.stableFamily" -> R.string.diagnostics_log_event_scene_stable
-            "aod.state" -> R.string.diagnostics_log_event_aod_state
-            "aod.target" -> R.string.diagnostics_log_event_aod_target
-            "connectivity" -> R.string.diagnostics_log_event_connectivity
-            "connectivity.delivery-failed" -> R.string.diagnostics_log_event_connectivity_failure
+            EVENT_HOT_RELOAD_RESTORE -> R.string.diagnostics_log_event_hot_reload_restore
+            EVENT_HOT_RELOAD_COMPLETE -> R.string.diagnostics_log_event_hot_reload
+            EVENT_MOBILE_RECOVERY -> R.string.diagnostics_log_event_mobile_recovery
+            EVENT_SCENE_STABLE_FAMILY -> R.string.diagnostics_log_event_scene_stable
+            EVENT_AOD_STATE -> R.string.diagnostics_log_event_aod_state
+            EVENT_AOD_TARGET -> R.string.diagnostics_log_event_aod_target
+            EVENT_CONNECTIVITY -> R.string.diagnostics_log_event_connectivity
+            EVENT_CONNECTIVITY_DELIVERY_FAILED -> R.string.diagnostics_log_event_connectivity_failure
             "networkPipeline.wifi.iconEvent" -> R.string.diagnostics_log_event_wifi_icon
             "statusIconPresentation" -> R.string.diagnostics_log_event_status_icon_presentation
             "tintCommit" -> R.string.diagnostics_log_event_tint_commit
@@ -1391,7 +1423,7 @@ private fun logSummary(
     fun join(vararg parts: String?): String =
         parts.filterNotNull().filter(String::isNotBlank).joinToString(separator)
 
-    if (entry.event == "connectivity.delivery-failed") {
+    if (entry.event == EVENT_CONNECTIVITY_DELIVERY_FAILED) {
         return join(
             fields["source"]?.let {
                 context.getString(R.string.diagnostics_log_summary_source, sourceLabel(context, it))
@@ -1400,7 +1432,7 @@ private fun logSummary(
         ).ifBlank { fallback }
     }
 
-    if (entry.event == "connectivity") {
+    if (entry.event == EVENT_CONNECTIVITY) {
         return buildList {
             fields["transport"]?.let { add(transportLabel(context, it)) }
             if (fields["validated"] == "true") {
@@ -1419,7 +1451,7 @@ private fun logSummary(
         }.joinToString(separator).ifBlank { fallback }
     }
 
-    if (entry.event == "battery.reconcile") {
+    if (entry.event == EVENT_BATTERY_RECONCILE) {
         val previous = chargingStateLabel(context, fields["transferredCharging"])
         val native = chargingStateLabel(context, fields["nativeCharging"])
         val charging =
@@ -1436,7 +1468,7 @@ private fun logSummary(
         ).ifBlank { fallback }
     }
 
-    if (entry.event == "pipeline.latency") {
+    if (entry.event == EVENT_PIPELINE_LATENCY) {
         return join(
             fields["sourceToDrawUs"]?.toLongOrNull()?.let { micros ->
                 context.getString(R.string.diagnostics_log_summary_total_time, formatMicros(micros))
@@ -1464,16 +1496,16 @@ private fun logSummary(
 
     val summary =
         when (entry.event) {
-            "featureSettings.changed" -> join(
+            EVENT_FEATURE_SETTINGS_CHANGED -> join(
                 switchLabel(context, R.string.diagnostics_log_setting_combined, fields["combinedStatusEnabled"]),
                 switchLabel(context, R.string.diagnostics_log_setting_keyguard, fields["keyguardEnabled"]),
                 switchLabel(context, R.string.diagnostics_log_setting_aod, fields["aodEnabled"]),
                 reason,
             ).ifBlank { join(state, reason) }
 
-            "visualSettings.changed" -> join(state, reason)
+            EVENT_VISUAL_SETTINGS_CHANGED -> join(state, reason)
 
-            "diagnostics.level" -> join(
+            EVENT_DIAGNOSTICS_LEVEL -> join(
                 when (fields["level"]) {
                     "detailed" -> context.getString(R.string.diagnostics_mode_detailed)
                     "general" -> context.getString(R.string.diagnostics_mode_basic)
@@ -1482,7 +1514,7 @@ private fun logSummary(
                 reason,
             )
 
-            "scene.stableFamily" -> {
+            EVENT_SCENE_STABLE_FAMILY -> {
                 val previous = fields["previous"]?.takeUnless { it.equals("UNKNOWN", true) }
                 val change =
                     if (previous != null && state != null) {
@@ -1493,25 +1525,25 @@ private fun logSummary(
                 join(change, reason)
             }
 
-            "presentation.failNative" -> join(reason)
+            EVENT_PRESENTATION_FAIL_NATIVE -> join(reason)
 
-            "aod.state", "aod.target", "presentation.cutover",
-            "compatibility.probe", "compatibility.revalidated",
-            "hook.install", "hook.replace", "source.install", "source.attach",
+            EVENT_AOD_STATE, EVENT_AOD_TARGET, EVENT_PRESENTATION_CUTOVER,
+            EVENT_COMPATIBILITY_PROBE, EVENT_COMPATIBILITY_REVALIDATED,
+            EVENT_HOOK_INSTALL, EVENT_HOOK_REPLACE, EVENT_SOURCE_INSTALL, EVENT_SOURCE_ATTACH,
             -> join(state, reason)
 
             else -> {
                 val alreadyTold =
                     !problem && reason == null &&
                         when (entry.event) {
-                            "module.loaded", "module.reloaded", "runtime.attach",
-                            "runtimePreferences.bind", "diagnostics.bind",
-                            "host.restore", "session.attach", "renderer.attach",
-                            "hotReload.restore", "hotReload.complete",
-                            "hotReload.generationHandoff", "mobile.recovery",
+                            EVENT_MODULE_LOADED, EVENT_MODULE_RELOADED, EVENT_RUNTIME_ATTACH,
+                            EVENT_RUNTIME_PREFERENCES_BIND, EVENT_DIAGNOSTICS_BIND,
+                            EVENT_HOST_RESTORE, EVENT_SESSION_ATTACH, EVENT_RENDERER_ATTACH,
+                            EVENT_HOT_RELOAD_RESTORE, EVENT_HOT_RELOAD_COMPLETE,
+                            EVENT_HOT_RELOAD_GENERATION_HANDOFF, EVENT_MOBILE_RECOVERY,
                             -> entry.state.equals("ready", true)
-                            "runtime.teardown" -> entry.state.equals("released", true)
-                            "hotReload.prepare" -> entry.state.equals("preparing", true)
+                            EVENT_RUNTIME_TEARDOWN -> entry.state.equals("released", true)
+                            EVENT_HOT_RELOAD_PREPARE -> entry.state.equals("preparing", true)
                             else -> false
                         }
                 join(
@@ -1656,38 +1688,38 @@ private fun formatMicros(micros: Long): String =
 
 private val RUNTIME_EVENTS =
     setOf(
-        "module.loaded",
-        "module.reloaded",
+        EVENT_MODULE_LOADED,
+        EVENT_MODULE_RELOADED,
         "diagnostics.snapshot",
-        "battery.reconcile",
-        "compatibility.probe",
-        "compatibility.revalidated",
-        "hook.install",
-        "hook.replace",
-        "source.install",
-        "source.attach",
-        "runtime.attach",
-        "runtime.teardown",
-        "runtimePreferences.bind",
-        "diagnostics.bind",
-        "diagnostics.level",
+        EVENT_BATTERY_RECONCILE,
+        EVENT_COMPATIBILITY_PROBE,
+        EVENT_COMPATIBILITY_REVALIDATED,
+        EVENT_HOOK_INSTALL,
+        EVENT_HOOK_REPLACE,
+        EVENT_SOURCE_INSTALL,
+        EVENT_SOURCE_ATTACH,
+        EVENT_RUNTIME_ATTACH,
+        EVENT_RUNTIME_TEARDOWN,
+        EVENT_RUNTIME_PREFERENCES_BIND,
+        EVENT_DIAGNOSTICS_BIND,
+        EVENT_DIAGNOSTICS_LEVEL,
         "host.capture",
-        "host.restore",
-        "session.attach",
-        "presentation.cutover",
-        "presentation.failNative",
-        "renderer.attach",
-        "featureSettings.changed",
-        "visualSettings.changed",
-        "hotReload.prepare",
-        "hotReload.generationHandoff",
+        EVENT_HOST_RESTORE,
+        EVENT_SESSION_ATTACH,
+        EVENT_PRESENTATION_CUTOVER,
+        EVENT_PRESENTATION_FAIL_NATIVE,
+        EVENT_RENDERER_ATTACH,
+        EVENT_FEATURE_SETTINGS_CHANGED,
+        EVENT_VISUAL_SETTINGS_CHANGED,
+        EVENT_HOT_RELOAD_PREPARE,
+        EVENT_HOT_RELOAD_GENERATION_HANDOFF,
         "hotReload.migration",
-        "hotReload.restore",
-        "hotReload.complete",
-        "mobile.recovery",
-        "scene.stableFamily",
-        "aod.state",
-        "aod.target",
+        EVENT_HOT_RELOAD_RESTORE,
+        EVENT_HOT_RELOAD_COMPLETE,
+        EVENT_MOBILE_RECOVERY,
+        EVENT_SCENE_STABLE_FAMILY,
+        EVENT_AOD_STATE,
+        EVENT_AOD_TARGET,
     )
 
 private val LOG_META_FIELDS =
