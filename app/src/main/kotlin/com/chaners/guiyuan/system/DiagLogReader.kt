@@ -202,6 +202,10 @@ internal object DiagLogReader {
                 }
         }
 
+        return latestSessionFromLegacyMarkers(lines)
+    }
+
+    private fun latestSessionFromLegacyMarkers(lines: List<String>): List<String> {
         val buildToken = "build=" + BuildConfig.BUILD_ID
         val buildAnchor =
             lines.indexOfLast { line ->
