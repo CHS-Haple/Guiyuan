@@ -406,27 +406,27 @@ internal object ConfigBackupFormat {
                         }
                     }
                 }
-            } else {
-                when (char) {
-                    '"' -> {
-                        quoted = true
-                        start = index
-                    }
-                    '{' -> parents.add(mutableSetOf())
-                    '[' -> parents.add(null)
-                    '}' -> {
-                        require(parents.isNotEmpty() && parents.removeAt(parents.lastIndex) != null) {
-                            "Invalid JSON object nesting"
-                        }
-                    }
-                    ']' -> {
-                        require(parents.isNotEmpty() && parents.removeAt(parents.lastIndex) == null) {
-                            "Invalid JSON array nesting"
-                        }
+                continue
+            }
+            when (char) {
+                '"' -> {
+                    quoted = true
+                    start = index
+                }
+                '{' -> parents.add(mutableSetOf())
+                '[' -> parents.add(null)
+                '}' -> {
+                    require(parents.isNotEmpty() && parents.removeAt(parents.lastIndex) != null) {
+                        "Invalid JSON object nesting"
                     }
                 }
-                require(parents.size <= 16) { "JSON nesting limit exceeded" }
+                ']' -> {
+                    require(parents.isNotEmpty() && parents.removeAt(parents.lastIndex) == null) {
+                        "Invalid JSON array nesting"
+                    }
+                }
             }
+            require(parents.size <= 16) { "JSON nesting limit exceeded" }
         }
         require(!quoted && parents.isEmpty()) { "Incomplete JSON" }
     }
