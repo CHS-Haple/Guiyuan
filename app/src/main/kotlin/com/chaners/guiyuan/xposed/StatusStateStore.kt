@@ -335,6 +335,10 @@ internal object StatusStateStore {
     // Reconcile two generations without involving Android Bundle serialization.
     internal fun mergeHotReloadSnapshots(saved: Snapshot, fresh: Snapshot): Snapshot {
         val wifi = fresh.wifi.takeUnless { it == WifiState.Unknown } ?: saved.wifi
+        val airplaneMode = fresh.airplaneMode ?: saved.airplaneMode
+        // Fresh recovery must survive handoff; an active airplane mode cancels it.
+        val mobileRecoveryPending =
+            airplaneMode != true && (saved.mobileRecoveryPending || fresh.mobileRecoveryPending)
         return saved.copy(
             wifi = wifi,
             wifiActivityResId = if (wifi is WifiState.Visible) {
@@ -349,7 +353,8 @@ internal object StatusStateStore {
                 if (fresh.airplaneMode != true) putAll(fresh.mobileActivityResIds)
             },
             mobileActivityObservedIds = fresh.mobileActivityObservedIds,
-            airplaneMode = fresh.airplaneMode ?: saved.airplaneMode,
+            mobileRecoveryPending = mobileRecoveryPending,
+            airplaneMode = airplaneMode,
         )
     }
 
