@@ -18,6 +18,7 @@ internal data class DiagSnapshot(
 ) {
     // Only the selected SystemUI generation can confirm that the runtime setting took effect.
     internal fun isRuntimeDetailConfirmed(): Boolean {
+        if (level != DiagLevel.Detailed) return false
         val session = runtimeEvents.sessionId ?: return false
         if (liveSystemUiPids.isEmpty()) return false
         var bound = false
