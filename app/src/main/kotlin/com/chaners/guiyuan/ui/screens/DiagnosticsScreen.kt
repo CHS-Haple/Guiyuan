@@ -614,6 +614,10 @@ internal fun DiagnosticsScreen(
 internal fun logRowKey(entry: LogEntry, index: Int): String = "${entry.key}:$index"
 
 private const val MAX_DETAIL_FIELDS = 5
+private const val LOG_FIELD_SOURCE = "source"
+private const val LOG_FIELD_REASON = "reason"
+private const val LOG_BOOLEAN_TRUE = "true"
+private const val LOG_BOOLEAN_FALSE = "false"
 private const val EVENT_CONNECTIVITY = "connectivity"
 private const val EVENT_CONNECTIVITY_DELIVERY_FAILED = "connectivity.delivery-failed"
 private const val EVENT_PIPELINE_LATENCY = "pipeline.latency"
@@ -1425,7 +1429,7 @@ private fun logSummary(
 
     if (entry.event == EVENT_CONNECTIVITY_DELIVERY_FAILED) {
         return join(
-            fields["source"]?.let {
+            fields[LOG_FIELD_SOURCE]?.let {
                 context.getString(R.string.diagnostics_log_summary_source, sourceLabel(context, it))
             },
             fields["type"],
@@ -1435,16 +1439,16 @@ private fun logSummary(
     if (entry.event == EVENT_CONNECTIVITY) {
         return buildList {
             fields["transport"]?.let { add(transportLabel(context, it)) }
-            if (fields["validated"] == "true") {
+            if (fields["validated"] == LOG_BOOLEAN_TRUE) {
                 add(context.getString(R.string.diagnostics_log_summary_validated))
             }
-            if (fields["internetCapability"] == "true") {
+            if (fields["internetCapability"] == LOG_BOOLEAN_TRUE) {
                 add(context.getString(R.string.diagnostics_log_summary_internet))
             }
             val mobileState =
                 when (fields["mobileDataEnabled"]) {
-                    "true" -> R.string.diagnostics_log_summary_mobile_data_on
-                    "false" -> R.string.diagnostics_log_summary_mobile_data_off
+                    LOG_BOOLEAN_TRUE -> R.string.diagnostics_log_summary_mobile_data_on
+                    LOG_BOOLEAN_FALSE -> R.string.diagnostics_log_summary_mobile_data_off
                     else -> null
                 }
             mobileState?.let { add(context.getString(it)) }
@@ -1473,7 +1477,7 @@ private fun logSummary(
             fields["sourceToDrawUs"]?.toLongOrNull()?.let { micros ->
                 context.getString(R.string.diagnostics_log_summary_total_time, formatMicros(micros))
             },
-            fields["source"]?.let {
+            fields[LOG_FIELD_SOURCE]?.let {
                 context.getString(R.string.diagnostics_log_summary_source, sourceLabel(context, it))
             },
         ).ifBlank { fallback }
@@ -1482,17 +1486,17 @@ private fun logSummary(
     if (entry.event == "tintCommit" || entry.event == "homeRenderTint") {
         return join(
             fields["applied"] ?: fields["statusIcon"],
-            fields["source"]?.let {
+            fields[LOG_FIELD_SOURCE]?.let {
                 context.getString(R.string.diagnostics_log_summary_source, sourceLabel(context, it))
             },
         ).ifBlank { fallback }
     }
 
     val state = entry.state?.let { stateLabel(context, it) }
-    val reason = fields["reason"]?.takeIf(String::isNotBlank)?.let { reasonLabel(context, it) }
+    val reason = fields[LOG_FIELD_REASON]?.takeIf(String::isNotBlank)?.let { reasonLabel(context, it) }
     val problem = entry.level == LogLevel.Warning ||
         entry.level == LogLevel.Error || entry.level == LogLevel.Fatal
-    val source = fields["source"]?.let { sourceLabel(context, it) }
+    val source = fields[LOG_FIELD_SOURCE]?.let { sourceLabel(context, it) }
 
     val summary =
         when (entry.event) {
@@ -1566,8 +1570,8 @@ private fun switchLabel(
 ): String? {
     val state =
         when (value) {
-            "true" -> R.string.diagnostics_log_switch_on
-            "false" -> R.string.diagnostics_log_switch_off
+            LOG_BOOLEAN_TRUE -> R.string.diagnostics_log_switch_on
+            LOG_BOOLEAN_FALSE -> R.string.diagnostics_log_switch_off
             else -> return null
         }
     return context.getString(
@@ -1659,8 +1663,8 @@ private fun transportLabel(context: Context, value: String): String =
 
 internal fun chargingStateRes(value: String): Int? =
     when (value.lowercase(Locale.ROOT)) {
-        "true" -> R.string.diagnostics_log_charging_on
-        "false" -> R.string.diagnostics_log_charging_off
+        LOG_BOOLEAN_TRUE -> R.string.diagnostics_log_charging_on
+        LOG_BOOLEAN_FALSE -> R.string.diagnostics_log_charging_off
         else -> null
     }
 
@@ -1731,7 +1735,7 @@ private val LOG_META_FIELDS =
         "sampling",
     )
 
-private val DETAIL_FIELD_PRIORITY = listOf("reason", "source", "traceId", "target", "owner")
+private val DETAIL_FIELD_PRIORITY = listOf(LOG_FIELD_REASON, LOG_FIELD_SOURCE, "traceId", "target", "owner")
 private val BATTERY_DETAIL_PRIORITY = listOf(
-    "transferredCharging", "nativeCharging", "nativePercent", "source", "reason",
+    "transferredCharging", "nativeCharging", "nativePercent", LOG_FIELD_SOURCE, LOG_FIELD_REASON,
 )
