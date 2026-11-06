@@ -15,7 +15,7 @@ import org.junit.Test
 
 class ColorPolicyTest {
     @Test
-    fun normalUsesResolvedStatusIconTintAcrossLayers() {
+    fun nativeBatteryAppliedTintWinsOverStalePeerTintAcrossLayers() {
         val colors =
             ColorPolicy.resolve(
                 model = model(),
@@ -25,11 +25,11 @@ class ColorPolicyTest {
                         statusIconTint = 0xff445566.toInt(),
                     ),
             )
-        assertEquals(0xff445566.toInt(), colors.centerTint)
-        assertEquals(0xff445566.toInt(), colors.mobileTint)
-        assertEquals(0xff445566.toInt(), colors.batteryTint)
-        assertEquals(0xff445566.toInt(), colors.batteryTextTint)
-        assertEquals(0xff445566.toInt(), colors.chargingIconTint)
+        assertEquals(0xff112233.toInt(), colors.centerTint)
+        assertEquals(0xff112233.toInt(), colors.mobileTint)
+        assertEquals(0xff112233.toInt(), colors.batteryTint)
+        assertEquals(0xff112233.toInt(), colors.batteryTextTint)
+        assertEquals(0xff112233.toInt(), colors.chargingIconTint)
     }
 
     @Test
@@ -52,8 +52,8 @@ class ColorPolicyTest {
                         batteryColorPreset = BatteryColorPreset.HYPEROS,
                     ),
             )
-        assertEquals(0xff556677.toInt(), colors.centerTint)
-        assertEquals(0xff556677.toInt(), colors.mobileTint)
+        assertEquals(0xffddeeff.toInt(), colors.centerTint)
+        assertEquals(0xffddeeff.toInt(), colors.mobileTint)
         assertEquals(HyperOsBatteryPalette.CHARGING, colors.batteryTint)
         assertEquals(HyperOsBatteryPalette.CHARGING, colors.batteryTextTint)
         assertEquals(HyperOsBatteryPalette.CHARGING, colors.chargingIconTint)
@@ -75,8 +75,8 @@ class ColorPolicyTest {
                         statusIconTint = 0xff445566.toInt(),
                     ),
             )
-        assertEquals(0xff445566.toInt(), colors.centerTint)
-        assertEquals(0xff445566.toInt(), colors.mobileTint)
+        assertEquals(0xff112233.toInt(), colors.centerTint)
+        assertEquals(0xff112233.toInt(), colors.mobileTint)
         assertEquals(
             HyperOsBatteryPalette.PERFORMANCE,
             colors.batteryTint,
@@ -120,7 +120,7 @@ class ColorPolicyTest {
 
 
     @Test
-    fun batteryTextAndChargingIconCanUseStatusTintIndependently() {
+    fun batteryTextAndChargingIconUseNativeTintIndependentlyOfPalette() {
         val semanticColor = 0xff1dcd3a.toInt()
         val statusTint = 0xff445566.toInt()
         val colors =
@@ -144,8 +144,26 @@ class ColorPolicyTest {
             )
 
         assertEquals(semanticColor, colors.batteryTint)
-        assertEquals(statusTint, colors.batteryTextTint)
-        assertEquals(statusTint, colors.chargingIconTint)
+        assertEquals(0xff112233.toInt(), colors.batteryTextTint)
+        assertEquals(0xff112233.toInt(), colors.chargingIconTint)
+    }
+
+    @Test
+    fun nativeBlackWhiteTransitionsDoNotWaitForPeerTint() {
+        val white = 0xffeeeeee.toInt()
+        val black = 0xff111111.toInt()
+        val darkPage = ColorPolicy.resolve(
+            model = model(),
+            tintState = TintState(appliedTint = white, statusIconTint = black),
+        )
+        val lightPage = ColorPolicy.resolve(
+            model = model(),
+            tintState = TintState(appliedTint = black, statusIconTint = white),
+        )
+        assertEquals(white, darkPage.centerTint)
+        assertEquals(white, darkPage.mobileTint)
+        assertEquals(black, lightPage.centerTint)
+        assertEquals(black, lightPage.mobileTint)
     }
 
     @Test
