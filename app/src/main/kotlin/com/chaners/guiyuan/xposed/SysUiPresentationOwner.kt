@@ -53,6 +53,13 @@ internal object SysUiPresentationOwner {
     private const val REASON_STATUS_ICON_GROUP_RELEASED = "status-icon-group-released"
     private const val LOG_LIVE_WIDTH = " liveWidth="
     private const val LOG_APPLIED_WIDTH = " appliedWidth="
+    private const val LOG_CARRIER_RESERVATION_END_PADDING = "carrierReservation=status-icons-end-padding "
+    private const val LOG_NATIVE_IGNORED_SLOT_EXCLUSION = " slotExclusion=session-native-ignored-slots "
+    private const val LOG_BATTERY_CARRIER_CLIP_AUTHORITY = "carrierAuthority=battery_icon_container visualMask=clipBounds "
+    private const val LOG_NEXT_NATIVE_STATUS_ICON_LAYOUT = " next=native-status-icons-onLayout"
+    private const val LOG_CC_FAKE_SESSION_OWNER = " owner=control-center-fake-session"
+    private const val LOG_APPLIED_PADDING_END = " appliedPaddingEnd="
+    private const val LOG_NATIVE_WIDTH = " nativeWidth="
 
     private val representedSlots =
         linkedSetOf("wifi", "mobile", "stacked_mobile", "airplane", "no_sim")
@@ -578,7 +585,7 @@ internal object SysUiPresentationOwner {
                 LOG_REPRESENTED_SLOTS + representedSlots.joinToString(",") +
                 LOG_MASKED_VIEWS + masked +
                 " slotExclusion=scoped-native-measure-layout " +
-                    "carrierReservation=status-icons-end-padding " +
+                    LOG_CARRIER_RESERVATION_END_PADDING +
                     "carrierAuthority=battery_icon_container visualMask=clipBounds",
         )
         return Result.Active(representedSlots.size, masked, false)
@@ -1479,9 +1486,9 @@ internal object SysUiPresentationOwner {
                 " active carrier=MiuiStatusBatteryContainer.overlay " +
                 LOG_REPRESENTED_SLOTS + representedSlots.joinToString(",") +
                 LOG_MASKED_VIEWS + maskedViews +
-                " slotExclusion=session-native-ignored-slots " +
-                "carrierReservation=status-icons-end-padding " +
-                "carrierAuthority=battery_icon_container visualMask=clipBounds " +
+                LOG_NATIVE_IGNORED_SLOT_EXCLUSION +
+                LOG_CARRIER_RESERVATION_END_PADDING +
+                LOG_BATTERY_CARRIER_CLIP_AUTHORITY +
                 "motion=keyguard-system-icons-inherited cutover=" +
                 if (surface == KeyguardFamilySurface.AOD) {
                     "stable-aod-layout-ready"
@@ -1511,9 +1518,9 @@ internal object SysUiPresentationOwner {
             "controlCenterPresentation active carrier=QS_FAKE.system_icon_area " +
                 LOG_REPRESENTED_SLOTS + representedSlots.joinToString(",") +
                 LOG_MASKED_VIEWS + maskedViews +
-                " slotExclusion=session-native-ignored-slots " +
+                LOG_NATIVE_IGNORED_SLOT_EXCLUSION +
                 "carrierReservation=qs-fake-capacity-lease+status-icons-end-padding " +
-                "carrierAuthority=battery_icon_container visualMask=clipBounds " +
+                LOG_BATTERY_CARRIER_CLIP_AUTHORITY +
                 "cutover=compact-layout-ready nativeLayoutReservationOwner=single",
         )
         controlCenterReadySink?.invoke(active)
@@ -1809,7 +1816,7 @@ internal object SysUiPresentationOwner {
                         eventPrefix +
                             " deferredLayoutRetarget state=resumed" +
                             " nativeLayoutOwnership=active" +
-                            " next=native-status-icons-onLayout",
+                            LOG_NEXT_NATIVE_STATUS_ICON_LAYOUT,
                     )
                 }
                 if (
@@ -1954,7 +1961,7 @@ internal object SysUiPresentationOwner {
                 eventPrefix +
                     " deferredLayoutCommit state=pending" +
                     LOG_MASKED_VIEWS + masked +
-                    " next=native-status-icons-onLayout",
+                    LOG_NEXT_NATIVE_STATUS_ICON_LAYOUT,
             )
             return masked
         }
@@ -2589,7 +2596,7 @@ internal object SysUiPresentationOwner {
                             " paddingEndDelta=" + reservationDelta +
                             " capacityClamped=" + (reservationDelta != requestedReservationDelta) +
                             " basePaddingEnd=" + baseline.end +
-                            " appliedPaddingEnd=" + target.end +
+                            LOG_APPLIED_PADDING_END + target.end +
                             " fakeCarrierWidth=" + (appliedFakeCarrierWidthPx ?: -1) +
                             " fakeCarrierCapacityDelta=" + capacityDeltaPx +
                             " fakeCarrierCapacityRequired=" + capacityReservationDeltaPx +
@@ -2619,7 +2626,7 @@ internal object SysUiPresentationOwner {
                             onEvent(
                                 eventPrefix + " endReservation restore=skipped reason=writer-changed " +
                                     "livePaddingEnd=" + live.end +
-                                    " appliedPaddingEnd=" + applied.end,
+                                    LOG_APPLIED_PADDING_END + applied.end,
                             )
                         } else {
                             group.setPaddingRelative(
@@ -2720,7 +2727,7 @@ internal object SysUiPresentationOwner {
                                 LOG_LIVE_WIDTH + adoptedNativeWidthPx +
                                 LOG_APPLIED_WIDTH + existingAppliedWidthPx +
                                 " previousNativeWidth=" + (previousNativeWidthPx ?: -1) +
-                                " owner=control-center-fake-session",
+                                LOG_CC_FAKE_SESSION_OWNER,
                         )
                     }
 
@@ -2780,10 +2787,10 @@ internal object SysUiPresentationOwner {
             onEvent(
                 eventPrefix +
                     " fakeCarrierCapacity lease=active" +
-                    " nativeWidth=" + baselineWidthPx +
+                    LOG_NATIVE_WIDTH + baselineWidthPx +
                     " leasedWidth=" + parentContentWidthPx +
                     " capacityDelta=" + capacityDeltaPx +
-                    " owner=control-center-fake-session",
+                    LOG_CC_FAKE_SESSION_OWNER,
             )
             return capacityDeltaPx
         }
@@ -2958,7 +2965,7 @@ internal object SysUiPresentationOwner {
                         " firstObserved=" + boundary +
                         LOG_LIVE_WIDTH + liveWidth +
                         LOG_APPLIED_WIDTH + appliedWidth +
-                        " nativeWidth=" + nativeFakeCarrierLayoutWidthPx +
+                        LOG_NATIVE_WIDTH + nativeFakeCarrierLayoutWidthPx +
                         " viewWidth=" + hostView.width +
                         " measuredWidth=" + hostView.measuredWidth +
                         " layoutRequested=" + hostView.isLayoutRequested +
