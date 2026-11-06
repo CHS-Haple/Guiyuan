@@ -58,7 +58,7 @@ internal data class DiagSnapshot(
             val level = DiagRepo(appCtx).current()
             val log = DiagLogReader.read(appCtx)
             val liveSystemUiPids =
-                if (level == DiagLevel.Detailed) {
+                if (level == DiagLevel.Detailed && log.result.isSuccess && log.sessionLines.isNotEmpty()) {
                     val pidResult = RootShell.execute(
                         context = appCtx,
                         command = "/system/bin/pidof com.android.systemui",
