@@ -186,7 +186,7 @@ internal object OwnedEntries {
             try {
                 restore(target, applied)
             } catch (cleanup: Throwable) {
-                if (cleanup is VirtualMachineError || cleanup is ThreadDeath) throw cleanup
+                SysUiPresentationRuntime.throwIfFatal(cleanup)
                 if (cleanup !== error) error.addSuppressed(cleanup)
             }
             throw error
@@ -202,7 +202,7 @@ internal object OwnedEntries {
             try {
                 target.remove(entry)
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                SysUiPresentationRuntime.throwIfFatal(error)
                 if (failure == null) failure = error else failure?.addSuppressed(error)
             }
         }
