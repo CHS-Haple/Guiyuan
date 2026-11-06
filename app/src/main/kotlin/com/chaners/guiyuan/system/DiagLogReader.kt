@@ -9,6 +9,8 @@ import kotlinx.coroutines.withContext
 internal object DiagLogReader {
     private const val TIMEOUT_SEC = 10L
     private const val MODULE_LOG_TAG = "CombinedStatus"
+    private const val SESSION_ID_FIELD = "sessionId"
+    private const val MODULE_LOADED_MESSAGE = "Module loaded in com.android.systemui"
     private const val HISTORY_PREFS = "guiyuan_diagnostics_history"
     private const val CLEAR_BOUNDARY_KEY = "cleared_at_local"
 
@@ -141,14 +143,14 @@ internal object DiagLogReader {
             lines.mapIndexedNotNull { index, line ->
                 if ("sessionId=" !in line) return@mapIndexedNotNull null
                 DiagProtocol.parse(line)
-                    ?.takeIf { event -> event.fields["sessionId"] != null }
+                    ?.takeIf { event -> event.fields[SESSION_ID_FIELD] != null }
                     ?.let { event -> index to event }
             }
         // Reuse the earliest event index for each generation while inspecting
         // failed reloads and selecting the current session.
         val firstIndexBySession = mutableMapOf<String, Int>()
         tagged.forEach { (index, event) ->
-            event.fields["sessionId"]?.let { id ->
+            event.fields[SESSION_ID_FIELD]?.let { id ->
                 firstIndexBySession.getOrPut(id) { index }
             }
         }
@@ -164,7 +166,7 @@ internal object DiagLogReader {
                 ) {
                     false
                 } else {
-                    val first = event.fields["sessionId"]?.let { id -> firstIndexBySession[id] }
+                    val first = event.fields[SESSION_ID_FIELD]?.let { id -> firstIndexBySession[id] }
                     first != null && (latestStart == null || first > latestStart.first)
                 }
             }
@@ -172,13 +174,13 @@ internal object DiagLogReader {
             (failedNewGeneration ?: latestStart ?: tagged.lastOrNull())
                 ?.second
                 ?.fields
-                ?.get("sessionId")
+                ?.get(SESSION_ID_FIELD)
         if (sessionId != null) {
             val start = firstIndexBySession[sessionId] ?: return lines
             val stale =
                 tagged.asSequence()
                     .filter { (index, event) ->
-                        index >= start && event.fields["sessionId"] != sessionId
+                        index >= start && event.fields[SESSION_ID_FIELD] != sessionId
                     }
                     .map { it.first }
                     .toSet()
@@ -195,7 +197,7 @@ internal object DiagLogReader {
             lines.indexOfLast { line ->
                 line.contains(buildToken) &&
                     (
-                        line.contains("Module loaded in com.android.systemui") ||
+                        line.contains(MODULE_LOADED_MESSAGE) ||
                             line.contains("Hot reload completed")
                     )
             }
@@ -204,7 +206,7 @@ internal object DiagLogReader {
                 buildAnchor
             } else {
                 lines.indexOfLast { line ->
-                    line.contains("Module loaded in com.android.systemui")
+                    line.contains(MODULE_LOADED_MESSAGE)
                 }
             }
 
@@ -216,7 +218,7 @@ internal object DiagLogReader {
         val start =
             (anchor downTo 0).firstOrNull { index ->
                 pidOf(lines[index]) == pid &&
-                    lines[index].contains("Module loaded in com.android.systemui")
+                    lines[index].contains(MODULE_LOADED_MESSAGE)
             } ?: anchor
 
         return lines
