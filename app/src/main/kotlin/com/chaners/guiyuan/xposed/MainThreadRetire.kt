@@ -43,12 +43,16 @@ internal class MainThreadRetire(
             }
         fun cancelQueued(): Boolean {
             if (!phase.compareAndSet(Phase.Queued, Phase.Cancelled)) return false
-            try {
-                cancel(task)
-            } finally {
-                // Fatal dispatch must not leave an old View mutation queued.
-                dispatchFatal?.let { throw it }
-            }
+            // Attempt cancellation before choosing which failure to propagate.
+            // Keep the original fatal-dispatch priority if cancellation also fails.
+            val cancelFailure =
+                try {
+                    cancel(task)
+                    null
+                } catch (error: Throwable) {
+                    error
+                }
+            (dispatchFatal ?: cancelFailure)?.let { throw it }
             return true
         }
         if (!posted && cancelQueued()) return false
