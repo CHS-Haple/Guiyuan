@@ -34,8 +34,10 @@ internal data class DiagSnapshot(
             }
             if (entry.event == "diagnostics.bind" || entry.event == "diagnostics.snapshot") {
                 bound = entry.state == "ready"
+                level = entry.fields["level"]
+            } else if (entry.event == "diagnostics.level") {
+                level = entry.fields["level"]
             }
-            entry.fields["level"]?.let { level = it }
         }
         return bound && level == "detailed"
     }
