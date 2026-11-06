@@ -23,6 +23,9 @@ internal object CcRenderSession {
     private const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
     private const val MAX_PREARM_LAYOUT_ATTEMPTS = 2
+    private const val CC_MAIN_THREAD_REQUIRED = "main-thread-required"
+    private const val CC_SCENE_INELIGIBLE = "scene-ineligible"
+    private const val FAKE_ROOT_LAYOUT_LOG_PREFIX = "source=fake-root-first-layout attempt="
 
     private var current: Session? = null
     private var pendingPrearm: PendingPrearm? = null
@@ -41,7 +44,7 @@ internal object CcRenderSession {
         onProjectionReadinessChanged: (Boolean) -> Unit,
     ): PrearmResult {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
-            return PrearmResult.Failure("main-thread-required")
+            return PrearmResult.Failure(CC_MAIN_THREAD_REQUIRED)
         }
         if (host.javaClass.name != FAKE_ROOT_CLASS_NAME) {
             return PrearmResult.Failure("fake-root-type-mismatch")
@@ -83,7 +86,7 @@ internal object CcRenderSession {
         onProjectionReadinessChanged: (Boolean) -> Unit,
     ): AttachFailure? {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
-            return AttachFailure("main-thread-required")
+            return AttachFailure(CC_MAIN_THREAD_REQUIRED)
         }
         if (host.javaClass.name != FAKE_ROOT_CLASS_NAME) {
             return AttachFailure("fake-root-type-mismatch")
@@ -179,7 +182,7 @@ internal object CcRenderSession {
         val session = current
         session?.setSceneEligible(eligible)
         if (!eligible) {
-            SysUiPresentationOwner.deactivateCc("scene-ineligible")
+            SysUiPresentationOwner.deactivateCc(CC_SCENE_INELIGIBLE)
         } else {
             session?.prepareNativePresentation(reused = true)
         }
@@ -203,7 +206,7 @@ internal object CcRenderSession {
         transferredCompactReady: Boolean = false,
     ): AttachFailure? {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
-            return AttachFailure("main-thread-required")
+            return AttachFailure(CC_MAIN_THREAD_REQUIRED)
         }
         if (
             !canRestoreAfterReload(
@@ -295,7 +298,7 @@ internal object CcRenderSession {
         session?.setFeatureEnabled(cfg.enabled)
         if (!cfg.enabled || !sceneEligible) {
             SysUiPresentationOwner.deactivateCc(
-                if (!cfg.enabled) "feature-disabled" else "scene-ineligible",
+                if (!cfg.enabled) "feature-disabled" else CC_SCENE_INELIGIBLE,
             )
         } else {
             session?.prepareNativePresentation(reused = true)
@@ -370,7 +373,7 @@ internal object CcRenderSession {
             if (pendingPrearm === pending) pendingPrearm = null
             pending.emit(
                 "controlCenterProjection prearm state=armed " +
-                    "source=fake-root-first-layout attempt=" + attempt,
+                    FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt,
             )
             return
         }
@@ -381,7 +384,7 @@ internal object CcRenderSession {
         if (retry) {
             pending.emit(
                 "controlCenterProjection prearm state=deferred " +
-                    "source=fake-root-first-layout attempt=" + attempt +
+                    FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt +
                     " reason=" + failure.reason +
                     " next=native-root-layout",
             )
@@ -391,7 +394,7 @@ internal object CcRenderSession {
                 abortPrearm(pending, error)
                 pending.emit(
                     "controlCenterProjection prearm state=failed " +
-                        "source=fake-root-first-layout attempt=" + attempt +
+                        FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt +
                         " reason=layout-request-failed type=" + error.javaClass.simpleName +
                         " fallback=native-qs-fake",
                 )
@@ -401,7 +404,7 @@ internal object CcRenderSession {
             if (pendingPrearm === pending) pendingPrearm = null
             pending.emit(
                 "controlCenterProjection prearm state=failed " +
-                    "source=fake-root-first-layout attempt=" + attempt +
+                    FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt +
                     " reason=" + failure.reason +
                     " fallback=native-qs-fake",
             )
@@ -729,7 +732,7 @@ internal object CcRenderSession {
             if (!featureEnabled || !sceneEligible) {
                 nativePresentationReady = false
                 syncPresentation(
-                    if (!featureEnabled) "feature-ineligible" else "scene-ineligible",
+                    if (!featureEnabled) "feature-ineligible" else CC_SCENE_INELIGIBLE,
                 )
                 return null
             }

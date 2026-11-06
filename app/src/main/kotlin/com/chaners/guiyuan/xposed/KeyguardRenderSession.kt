@@ -14,6 +14,9 @@ import com.chaners.guiyuan.xposed.network.SysUiCarrierMetrics
 import java.lang.ref.WeakReference
 
 internal object KeyguardRenderSession {
+    private const val HOST_VISUAL_LOG_PREFIX = " hostVisual={"
+    private const val NATIVE_CC_LOG_PREFIX = " nativeCc="
+    private const val OVERLAY_VISIBLE_LOG_PREFIX = " overlayVisible="
     private var current: Session? = null
     private val retirement = RetirementGate<Session>()
 
@@ -340,8 +343,8 @@ internal object KeyguardRenderSession {
                             "keyguardAodWitness source=renderView.onDraw" +
                                 " shown=true statusIconsAlpha=" +
                                 statusIcons.get()?.alpha +
-                                " hostVisual={" + visualChainSummary(host.get()) + "}" +
-                                " nativeCc=" + SysUiCcSource.nativeVisualState()
+                                HOST_VISUAL_LOG_PREFIX + visualChainSummary(host.get()) + "}" +
+                                NATIVE_CC_LOG_PREFIX + SysUiCcSource.nativeVisualState()
                         }
                     }
                 },
@@ -483,7 +486,7 @@ internal object KeyguardRenderSession {
                             "keyguardAodWitness source=session-stop" +
                                 " shownDuringAod=" + aodShown +
                                 " freshVisibleDraw=" + drewAod +
-                                " nativeCc=" + SysUiCcSource.nativeVisualState()
+                                NATIVE_CC_LOG_PREFIX + SysUiCcSource.nativeVisualState()
                         }
                     }
                 },
@@ -517,7 +520,7 @@ internal object KeyguardRenderSession {
             val visible = applyResolvedVisibility()
             emitEvent {
                 scene.logPrefix + "Feature enabled=" + featureEnabled +
-                    " overlayVisible=" + visible +
+                    OVERLAY_VISIBLE_LOG_PREFIX + visible +
                     " nativeHandoffActive=" + nativeHandoffActive
             }
             dispatchPresentationReadiness("feature")
@@ -529,7 +532,7 @@ internal object KeyguardRenderSession {
             val visible = applyResolvedVisibility()
             emitEvent {
                 scene.logPrefix + "Handoff nativeActive=" + nativeHandoffActive +
-                    " overlayVisible=" + visible
+                    OVERLAY_VISIBLE_LOG_PREFIX + visible
             }
         }
 
@@ -638,12 +641,12 @@ internal object KeyguardRenderSession {
                     " animToAod=" + (update.animToAod ?: "unavailable") +
                     " sceneEligible=" + sceneEligible +
                     " eligibilityAuthority=scene-policy" +
-                    " overlayVisible=" + visible +
+                    OVERLAY_VISIBLE_LOG_PREFIX + visible +
                     " childAlpha=" + renderView.alpha +
                     " batteryAlphaReadOnly=" + battery.alpha +
                     " statusIconsAlphaReadOnly=" + (statusIcons.get()?.alpha ?: -1f) +
                     " systemIconsAlphaReadOnly=" + (systemIcons.get()?.alpha ?: -1f) +
-                    " hostVisual={" + visualChainSummary(host.get()) + "}" +
+                    HOST_VISUAL_LOG_PREFIX + visualChainSummary(host.get()) + "}" +
                     " contentVisual={" +
                     visualChainSummary(
                         host.get()?.let { owner ->
@@ -661,8 +664,8 @@ internal object KeyguardRenderSession {
                 "keyguardAodWitness source=renderView.visibility" +
                     " shown=true statusIconsAlpha=" +
                     statusIcons.get()?.alpha +
-                    " hostVisual={" + visualChainSummary(host.get()) + "}" +
-                    " nativeCc=" + SysUiCcSource.nativeVisualState()
+                    HOST_VISUAL_LOG_PREFIX + visualChainSummary(host.get()) + "}" +
+                    NATIVE_CC_LOG_PREFIX + SysUiCcSource.nativeVisualState()
             }
         }
 
