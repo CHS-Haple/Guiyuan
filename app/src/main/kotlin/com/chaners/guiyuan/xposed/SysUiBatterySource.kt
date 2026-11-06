@@ -366,6 +366,7 @@ internal object SysUiBatterySource {
                     .intercept(
                         Hooker { chain ->
                             val result = chain.proceed()
+                            probe("stage=meter-hook method=updateChargeAndText ready=$hooksReady")
                             if (!hooksReady) return@Hooker result
                             val meterView = readOrNull { chain.thisObject as? View }
                                 ?: return@Hooker result
