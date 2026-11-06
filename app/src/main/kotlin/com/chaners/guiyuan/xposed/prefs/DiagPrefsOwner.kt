@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.isDiagKey
@@ -70,7 +71,7 @@ internal object DiagPrefsOwner {
                 try {
                     unbindLocked()
                 } catch (cleanup: Throwable) {
-                    if (cleanup is VirtualMachineError || cleanup is ThreadDeath) throw cleanup
+                    SysUiPresentationRuntime.throwIfFatal(cleanup)
                     if (cleanup !== error) error.addSuppressed(cleanup)
                 }
             }
