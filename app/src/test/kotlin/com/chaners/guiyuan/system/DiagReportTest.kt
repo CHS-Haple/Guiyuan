@@ -20,7 +20,7 @@ class DiagReportTest {
             "[Runtime log]",
             "[Report]",
         )
-        val positions = sections.map(exported::indexOf)
+        val positions = sections.map { section -> exported.indexOf(section) }
         assertTrue(positions.all { it >= 0 })
         assertTrue(positions.zipWithNext().all { (before, after) -> before < after })
         assertTrue(exported.contains("test-event"))
