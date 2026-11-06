@@ -67,6 +67,10 @@ internal object SysUiNetworkSource {
     private const val WIFI_ACTIVITY_HOOK_ID = "combinedstatus.network.wifi.activity"
     private const val WIFI_ICON_COLLECTOR_CLASS_ID = 1
     private const val MAX_PARENT_CHAIN_DEPTH = 8
+    private const val WIFI_SEED_LOG_PREFIX = "networkPipeline wifi seed source="
+    private const val ROOT_ID_LOG_FIELD = " rootId="
+    private const val PARENT_CHAIN_LOG_FIELD = " parentChain="
+    private const val LAYOUT_LOG_FIELD = " layout="
     private const val MOBILE_BIND_HOOK_ID = "combinedstatus.network.mobile.bind"
     private const val MOBILE_SIGNAL_HOOK_ID = "combinedstatus.network.mobile.signal"
     private const val MOBILE_ACTIVITY_HOOK_ID = "combinedstatus.network.mobile.activity"
@@ -740,9 +744,9 @@ internal object SysUiNetworkSource {
             wifiRoots.keys.forEach { root ->
                 add(
                     "nativeSlot binding=wifi root=" + root.javaClass.simpleName +
-                        " rootId=" + resourceId(root) +
-                        " parentChain=" + parentChain(root) +
-                        " layout=" + layoutToken(root),
+                        ROOT_ID_LOG_FIELD + resourceId(root) +
+                        PARENT_CHAIN_LOG_FIELD + parentChain(root) +
+                        LAYOUT_LOG_FIELD + layoutToken(root),
                 )
             }
             mobileRoots.forEach { (root, binding) ->
@@ -750,9 +754,9 @@ internal object SysUiNetworkSource {
                     add(
                         "nativeSlot binding=mobile subId=" + subscriptionId +
                             " root=" + root.javaClass.simpleName +
-                            " rootId=" + resourceId(root) +
-                            " parentChain=" + parentChain(root) +
-                            " layout=" + layoutToken(root),
+                            ROOT_ID_LOG_FIELD + resourceId(root) +
+                            PARENT_CHAIN_LOG_FIELD + parentChain(root) +
+                            LAYOUT_LOG_FIELD + layoutToken(root),
                     )
                 }
             }
@@ -849,10 +853,10 @@ internal object SysUiNetworkSource {
                         "networkPipeline wifi bound " +
                         "stage=beforeProceed " +
                         "root=" + boundRoot.javaClass.simpleName +
-                        " rootId=" + resourceId(boundRoot) +
+                        ROOT_ID_LOG_FIELD + resourceId(boundRoot) +
                         " vm=" + viewModel?.javaClass?.simpleName +
-                        " parentChain=" + parentChain(boundRoot) +
-                        " layout=" + layoutToken(boundRoot),
+                        PARENT_CHAIN_LOG_FIELD + parentChain(boundRoot) +
+                        LAYOUT_LOG_FIELD + layoutToken(boundRoot),
                     )
                 }
                 readWifiSeed(
@@ -976,7 +980,7 @@ internal object SysUiNetworkSource {
             contract.wifiIconGetter
                 ?: run {
                     reportSeed(onEvent,
-                        "networkPipeline wifi seed source=" + source +
+                        WIFI_SEED_LOG_PREFIX + source +
                             " state=unavailable reason=getWifiIcon-missing",
                     )
                     return null
@@ -988,14 +992,14 @@ internal object SysUiNetworkSource {
             }.getOrElse { error ->
                 rethrowFatal(error)
                 reportSeed(onEvent,
-                    "networkPipeline wifi seed source=" + source +
+                    WIFI_SEED_LOG_PREFIX + source +
                         " state=unavailable reason=wifiIcon-read-" +
                         error.javaClass.simpleName,
                 )
                 return null
             } ?: run {
                 reportSeed(onEvent,
-                    "networkPipeline wifi seed source=" + source +
+                    WIFI_SEED_LOG_PREFIX + source +
                         " state=unavailable reason=wifiIcon-null",
                 )
                 return null
@@ -1011,7 +1015,7 @@ internal object SysUiNetworkSource {
                     ?.apply { isAccessible = true }
             } ?: run {
                     reportSeed(onEvent,
-                        "networkPipeline wifi seed source=" + source +
+                        WIFI_SEED_LOG_PREFIX + source +
                             " state=unavailable reason=stateFlow-value-missing " +
                             "flow=" + flow.javaClass.name,
                     )
@@ -1024,7 +1028,7 @@ internal object SysUiNetworkSource {
             }.getOrElse { error ->
                 rethrowFatal(error)
                 reportSeed(onEvent,
-                    "networkPipeline wifi seed source=" + source +
+                    WIFI_SEED_LOG_PREFIX + source +
                         " state=unavailable reason=stateFlow-value-" +
                         error.javaClass.simpleName,
                 )
@@ -1040,7 +1044,7 @@ internal object SysUiNetworkSource {
             )
 
         reportSeed(onEvent,
-            "networkPipeline wifi seed source=" + source +
+            WIFI_SEED_LOG_PREFIX + source +
                 " state=" + (if (semantic.state != null) "ready" else "unavailable") +
                 " getter=" + getter.name +
                 " flow=" + flow.javaClass.simpleName +
@@ -1374,12 +1378,12 @@ internal object SysUiNetworkSource {
                         "networkPipeline mobile bound " +
                             "stage=beforeProceed " +
                             "root=" + boundRoot.javaClass.simpleName +
-                            " rootId=" + resourceId(boundRoot) +
+                            ROOT_ID_LOG_FIELD + resourceId(boundRoot) +
                             " locationVm=" + locationViewModel?.javaClass?.simpleName +
                             " subId=" + subscriptionId +
                             " iconVm=" + (iconViewModel?.javaClass?.simpleName ?: "none") +
-                            " parentChain=" + parentChain(boundRoot) +
-                            " layout=" + layoutToken(boundRoot)
+                            PARENT_CHAIN_LOG_FIELD + parentChain(boundRoot) +
+                            LAYOUT_LOG_FIELD + layoutToken(boundRoot)
                     }
                 }
             }

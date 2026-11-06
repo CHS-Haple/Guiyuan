@@ -11,6 +11,7 @@ internal object NativeParticipantAccess {
         "com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView"
     private const val DEPENDENCY =
         "com.android.systemui.Dependency"
+    private const val REFLECTED_STRING_TYPE = "java.lang.String"
     private val STATUS_BAR_ICON_CONTROLLER_CANDIDATES =
         listOf(
             "com.android.systemui.statusbar.phone.ui.StatusBarIconController",
@@ -89,7 +90,7 @@ internal object NativeParticipantAccess {
                     .firstOrNull { method ->
                         method.name == "getIconHolder" &&
                             method.parameterTypes.map { type -> type.name } ==
-                                listOf("int", "java.lang.String")
+                                listOf("int", REFLECTED_STRING_TYPE)
                     }?.apply { isAccessible = true }
             } ?: return null
         return readOrNull { getter.invoke(iconList, tag, slot) }
@@ -145,19 +146,19 @@ internal object NativeParticipantAccess {
         val params = method.parameterTypes.map { type -> type.name }
         return when {
             method.name == "removeAllIconsForSlot" &&
-                params == listOf("java.lang.String", "boolean") ->
+                params == listOf(REFLECTED_STRING_TYPE, "boolean") ->
                 RemovalMode.REMOVE_ALL_SLOT_PIPELINE_FLAG
 
             method.name == "removeAllIconsForSlot" &&
-                params == listOf("java.lang.String") ->
+                params == listOf(REFLECTED_STRING_TYPE) ->
                 RemovalMode.REMOVE_ALL_SLOT
 
             method.name == "removeIcon" &&
-                params == listOf("java.lang.String", "int") ->
+                params == listOf(REFLECTED_STRING_TYPE, "int") ->
                 RemovalMode.REMOVE_TAGGED
 
             method.name == "removeIcon" &&
-                params == listOf("java.lang.String") ->
+                params == listOf(REFLECTED_STRING_TYPE) ->
                 RemovalMode.REMOVE_SLOT
 
             else -> null
