@@ -348,9 +348,9 @@ internal object StatusStateStore {
             wifiActivityObserved = fresh.wifiActivityObserved,
             mobile = saved.mobile.toSortedMap().apply { putAll(fresh.mobile) },
             mobileActivityResIds = buildMap {
-                if (fresh.airplaneMode != true) putAll(saved.mobileActivityResIds)
+                if (airplaneMode != true) putAll(saved.mobileActivityResIds)
                 fresh.mobileActivityObservedIds.forEach { remove(it) }
-                if (fresh.airplaneMode != true) putAll(fresh.mobileActivityResIds)
+                if (airplaneMode != true) putAll(fresh.mobileActivityResIds)
             },
             mobileActivityObservedIds = fresh.mobileActivityObservedIds,
             mobileRecoveryPending = mobileRecoveryPending,
