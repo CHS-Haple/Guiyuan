@@ -1,10 +1,10 @@
 package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
-import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.isDiagKey
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 
 internal object DiagPrefsOwner {
     private data class Binding(
