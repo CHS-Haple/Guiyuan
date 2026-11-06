@@ -1,9 +1,9 @@
 package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
-import java.lang.reflect.InvocationTargetException
 import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
 import com.chaners.guiyuan.settings.DiagLevel
+import java.lang.reflect.InvocationTargetException
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
