@@ -55,6 +55,8 @@ internal object ConfigBackupFormat {
     private const val PROFILES_JSON_KEY = "profiles"
     private const val DUAL_DOT_STYLE_JSON_KEY = "dualDotStyle"
     private const val LEGACY_IDLE_ACTIVITY_JSON_KEY = "leftRightShowIdleActivity"
+    private const val LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY = "singleRowFlatDots"
+    private const val SINGLE_ROW_DOT_STYLE_JSON_KEY = "singleRowDotStyle"
     const val MAX_BYTES = 256 * 1024
     private val json = Json {
         encodeDefaults = true
@@ -160,18 +162,18 @@ internal object ConfigBackupFormat {
     private fun upgradeLegacySingleRowStyle(root: JsonObject): JsonObject {
         val visual = root["visual"] as? JsonObject ?: return root
         val profiles = visual[PROFILES_JSON_KEY] as? JsonArray ?: return root
-        if (profiles.none { it is JsonObject && "singleRowFlatDots" in it }) return root
+        if (profiles.none { it is JsonObject && LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY in it }) return root
         val converted = profiles.map { profile ->
-            if (profile !is JsonObject || "singleRowFlatDots" !in profile) return@map profile
-            require("singleRowDotStyle" !in profile) { "Conflicting single-row styles" }
-            val old = profile["singleRowFlatDots"] as? JsonPrimitive
+            if (profile !is JsonObject || LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY !in profile) return@map profile
+            require(SINGLE_ROW_DOT_STYLE_JSON_KEY !in profile) { "Conflicting single-row styles" }
+            val old = profile[LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY] as? JsonPrimitive
             require(old != null && !old.isString && old.booleanOrNull != null) {
                 "Invalid legacy single-row style"
             }
             val horizontal = old.booleanOrNull == true &&
                 (profile[DUAL_DOT_STYLE_JSON_KEY] as? JsonPrimitive)?.content == "DUO"
-            JsonObject(profile.filterKeys { it != "singleRowFlatDots" } +
-                ("singleRowDotStyle" to JsonPrimitive(if (horizontal) "DUO" else "DEFAULT")))
+            JsonObject(profile.filterKeys { it != LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY } +
+                (SINGLE_ROW_DOT_STYLE_JSON_KEY to JsonPrimitive(if (horizontal) "DUO" else "DEFAULT")))
         }
         return JsonObject(root + ("visual" to JsonObject(visual +
             (PROFILES_JSON_KEY to JsonArray(converted)))))
