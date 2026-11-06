@@ -271,7 +271,6 @@ internal object ConfigBackupFormat {
     }
 
     private fun validateMetadata(backup: ConfigBackup) {
-
         require(backup.format == FORMAT) { "Not a Guiyuan configuration file" }
         require(backup.schemaVersion == SCHEMA) { "Unsupported schemaVersion: " + backup.schemaVersion }
         require(backup.feature.lowBatteryThreshold in LOW_BATTERY_THRESHOLD_MIN..LOW_BATTERY_THRESHOLD_MAX) {
