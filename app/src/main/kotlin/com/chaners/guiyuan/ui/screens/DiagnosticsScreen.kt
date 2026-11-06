@@ -282,6 +282,7 @@ internal fun DiagnosticsScreen(
     val hasCapturedSessionLines = snapshot?.log?.sessionLines?.isNotEmpty() == true
     val captureTruncated = snapshot?.log?.result?.truncated == true && hasCapturedSessionLines
     val omittedEarlierLines = snapshot?.let(DiagReport::omittedEarlierLines) ?: 0
+    val detailedConfirmed = remember(snapshot) { snapshot?.isRuntimeDetailConfirmed() == true }
     val showRootGuide = !hasCapturedSessionLines && collectionFailed
     val integrityNotice =
         listOfNotNull(
@@ -289,7 +290,7 @@ internal fun DiagnosticsScreen(
                 stringResource(
                     when {
                         !BuildConfig.RUNTIME_DIAGNOSTICS -> R.string.diagnostics_detail_unavailable
-                        snapshot?.isRuntimeDetailConfirmed() == true -> R.string.diagnostics_detail_confirmed
+                        detailedConfirmed -> R.string.diagnostics_detail_confirmed
                         else -> R.string.diagnostics_detail_unconfirmed
                     },
                 )
