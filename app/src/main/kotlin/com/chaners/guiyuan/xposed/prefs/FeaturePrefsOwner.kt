@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import android.os.SystemClock
 import com.chaners.guiyuan.settings.FEATURE_AOD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
@@ -80,7 +81,7 @@ internal object FeaturePrefsOwner {
                 try {
                     unbindLocked()
                 } catch (cleanup: Throwable) {
-                    if (cleanup is VirtualMachineError || cleanup is ThreadDeath) throw cleanup
+                    SysUiPresentationRuntime.throwIfFatal(cleanup)
                     if (cleanup !== error) error.addSuppressed(cleanup)
                 } finally {
                     // A reentrant new binding must not be cleared by the failed old callback.
