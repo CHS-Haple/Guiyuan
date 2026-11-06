@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed.network
 
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -7,6 +8,22 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SysUiDefaultDataSubSourceTest {
+    @Test
+    fun wrappedFatalRegistrationErrorKeepsOriginalIdentity() {
+        val fatal = OutOfMemoryError("data-subscription-register")
+        val result = runCatching {
+            SysUiDefaultDataSubSource.rethrowFatal(InvocationTargetException(fatal))
+        }.exceptionOrNull()
+        assertSame(fatal, result)
+    }
+
+    @Test
+    fun ordinaryWrappedRegistrationFailureRemainsRecoverable() {
+        SysUiDefaultDataSubSource.rethrowFatal(
+            InvocationTargetException(IllegalStateException("register-failed")),
+        )
+    }
+
     @Test
     fun failureRetainsNativeSubscriptionButRetriesDelivery() {
         SysUiDefaultDataSubSource.detach()

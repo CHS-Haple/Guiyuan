@@ -11,7 +11,7 @@ import android.telephony.TelephonyManager
 import java.lang.reflect.InvocationTargetException
 
 internal object SysUiConnectivitySource {
-    private fun rethrowFatal(error: Throwable) {
+    internal fun rethrowFatal(error: Throwable) {
         val cause = (error as? InvocationTargetException)?.targetException ?: error
         if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
     }
@@ -152,11 +152,11 @@ internal object SysUiConnectivitySource {
             try {
                 detach()
             } catch (failure: Throwable) {
-                if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(failure)
+                rethrowFatal(error)
                 throw failure
             }
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            rethrowFatal(error)
             false
         }
     }
@@ -172,7 +172,7 @@ internal object SysUiConnectivitySource {
                     try {
                         telephony.unregisterTelephonyCallback(old)
                     } catch (error: Throwable) {
-                        if (error is VirtualMachineError || error is ThreadDeath) throw error
+                        rethrowFatal(error)
                         return
                     }
                 }
@@ -198,7 +198,7 @@ internal object SysUiConnectivitySource {
                             telephony.registerTelephonyCallback(context.mainExecutor, observer)
                             true
                         } catch (error: Throwable) {
-                            if (error is VirtualMachineError || error is ThreadDeath) throw error
+                            rethrowFatal(error)
                             false
                         }
                     if (registered) {
@@ -227,7 +227,7 @@ internal object SysUiConnectivitySource {
                 dataTelephony = null
                 dataCallback = null
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 failures.add(error)
             }
         } else {
@@ -243,7 +243,7 @@ internal object SysUiConnectivitySource {
                 manager = null
                 callback = null
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 if (error is IllegalArgumentException) {
                     // Android rejects an unregistered callback; no owner remains.
                     manager = null
