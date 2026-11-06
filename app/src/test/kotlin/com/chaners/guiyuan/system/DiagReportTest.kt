@@ -10,6 +10,23 @@ import org.junit.Test
 
 class DiagReportTest {
     @Test
+    fun reportSectionsRetainTheirExportOrder() {
+        val exported = report("test-event", level = DiagLevel.General)
+        val sections = listOf(
+            "[App]",
+            "[Diagnostics state]",
+            "[Device]",
+            "[Runtime snapshot]",
+            "[Runtime log]",
+            "[Report]",
+        )
+        val positions = sections.map(exported::indexOf)
+        assertTrue(positions.all { it >= 0 })
+        assertTrue(positions.zipWithNext().all { (before, after) -> before < after })
+        assertTrue(exported.contains("test-event"))
+    }
+
+    @Test
     fun missingRuntimeLevelIsNotMistakenForBindingFailure() {
         val report = report(
             DiagProtocol.format(
