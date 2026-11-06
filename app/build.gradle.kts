@@ -118,6 +118,7 @@ android {
             buildConfigField("String", "BUILD_CHANNEL", "\"debug\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "true")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+            buildConfigField("boolean", "DEEP_DIAGNOSTICS", "true")
             buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
             if (hapleSigningEnabled) {
                 signingConfig = signingConfigs.getByName("haple")
@@ -126,7 +127,8 @@ android {
         release {
             buildConfigField("String", "BUILD_CHANNEL", "\"release\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
-            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "false")
+            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+            buildConfigField("boolean", "DEEP_DIAGNOSTICS", "false")
             buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
             isMinifyEnabled = true
             isShrinkResources = true
@@ -145,6 +147,7 @@ android {
             buildConfigField("String", "BUILD_CHANNEL", "\"canary\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+            buildConfigField("boolean", "DEEP_DIAGNOSTICS", "true")
         }
     }
 
