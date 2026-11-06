@@ -139,21 +139,21 @@ class OuterGeometryTest {
         weight: Float,
         dual: Boolean,
     ) {
-    val scale = geometry.centeredScale(dual)
-    val radius = (if (dual) geometry.dualMobileDotRadius else geometry.mobileDotRadius) * scale
-    val rows = if (dual) listOf(-0.5f, 0.5f) else listOf(0f)
-    val allowed = OuterGeometry.RING_RADIUS - geometry.ringStroke / 2f - 2f
-    for (row in rows) {
-        val y = row * geometry.dualRowGap * scale
-        for (dot in 0..3) {
-            val x = geometry.horizontalDotX(dot) * scale
-            assertTrue(
-                "centered dot crosses ring weight=$weight dual=$dual",
-                sqrt(x * x + y * y) + radius <= allowed + 0.001f,
-            )
+        val scale = geometry.centeredScale(dual)
+        val radius = (if (dual) geometry.dualMobileDotRadius else geometry.mobileDotRadius) * scale
+        val rows = if (dual) listOf(-0.5f, 0.5f) else listOf(0f)
+        val allowed = OuterGeometry.RING_RADIUS - geometry.ringStroke / 2f - 2f
+        for (row in rows) {
+            val y = row * geometry.dualRowGap * scale
+            for (dot in 0..3) {
+                val x = geometry.horizontalDotX(dot) * scale
+                assertTrue(
+                    "centered dot crosses ring weight=$weight dual=$dual",
+                    sqrt(x * x + y * y) + radius <= allowed + 0.001f,
+                )
+            }
         }
-    }
-    assertTrue("scale never enlarges dots", scale in 0f..1f)
+        assertTrue("scale never enlarges dots", scale in 0f..1f)
     }
 
     @Test
@@ -282,13 +282,13 @@ class OuterGeometryTest {
         geometry: OuterGeometry.Resolved,
         style: SignalDotArrangement,
     ) {
-    for (row in 0..1) {
-        for (index in 0..3) {
-            val original = geometry.dualDotY(index, row, style)
-            assertEquals(original - 8f, geometry.dualDotY(index, row, style, 8f), 0.0001f)
-            assertEquals(original + 10f, geometry.dualDotY(index, row, style, -10f), 0.0001f)
+        for (row in 0..1) {
+            for (index in 0..3) {
+                val original = geometry.dualDotY(index, row, style)
+                assertEquals(original - 8f, geometry.dualDotY(index, row, style, 8f), 0.0001f)
+                assertEquals(original + 10f, geometry.dualDotY(index, row, style, -10f), 0.0001f)
+            }
         }
-    }
     }
 
     @Test
