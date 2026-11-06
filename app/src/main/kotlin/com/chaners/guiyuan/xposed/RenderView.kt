@@ -21,6 +21,7 @@ internal class RenderView(
     private val onDrawn: ((View) -> Unit)? = null,
     private val onShownChanged: ((View) -> Unit)? = null,
     private val preview: Boolean = false,
+    private val batteryProbeScene: String? = null,
     private val onStateRendered: ((
         latencyMs: Long,
         committedOnMainThread: Boolean,
@@ -41,6 +42,9 @@ internal class RenderView(
 
     @Volatile
     private var model: RenderModel? = null
+
+    @Volatile
+    private var pendingBatteryDraw: RenderModel? = null
 
     private var previousCenterIndicator: CenterIndicator? = null
     private var centerTransitionFraction = 1f
@@ -101,6 +105,21 @@ internal class RenderView(
 
         val previousModel = this.model
         this.model = model
+        if (
+            batteryProbeScene != null && model != null &&
+            (previousModel?.batteryPercent != model.batteryPercent ||
+                previousModel.charging != model.charging)
+        ) {
+            pendingBatteryDraw = model
+            runCatching {
+                android.util.Log.i(
+                    "GuiyuanBatteryProbe",
+                    "stage=set-model scene=$batteryProbeScene percent=${model.batteryPercent} " +
+                        "charging=${model.charging} attached=$isAttachedToWindow " +
+                        "shown=$isShown visibility=$visibility alpha=$alpha",
+                )
+            }.onFailure(SysUiHotReload::rethrowFatal)
+        }
         if (onStateRendered != null) {
             pendingStateUptimeMs = SystemClock.uptimeMillis()
             pendingStateCommittedOnMainThread =
@@ -412,6 +431,20 @@ internal class RenderView(
         )
         canvas.restoreToCount(viewportSave)
         onDrawn?.invoke(this)
+
+        // One receipt per battery-model change; do not log animation frames.
+        if (batteryProbeScene != null && pendingBatteryDraw === current) {
+            pendingBatteryDraw = null
+            runCatching {
+                android.util.Log.i(
+                    "GuiyuanBatteryProbe",
+                    "stage=draw scene=$batteryProbeScene percent=${current.batteryPercent} " +
+                        "charging=${current.charging} attached=$isAttachedToWindow " +
+                        "shown=$isShown visibility=$visibility alpha=$alpha " +
+                        "size=${width}x${height}",
+                )
+            }.onFailure(SysUiHotReload::rethrowFatal)
+        }
 
         val report = onStateRendered ?: return
         val committedAt = pendingStateUptimeMs

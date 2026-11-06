@@ -8,10 +8,12 @@ import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
 
 internal class RenderController(
     private val view: RenderView,
+    private val batteryProbeScene: String? = null,
 ) {
     private var stableModel: RenderModel? = null
     private var stableReal: RenderModel? = null
     private var stableTint: TintState? = null
+    private var lastBatteryProbe: StatusStateStore.BatteryState? = null
 
     fun update(
         snapshot: StatusStateStore.Snapshot,
@@ -37,6 +39,25 @@ internal class RenderController(
         if (model != previous) {
             stableModel = model
             if (model != null) view.setModel(model, trace)
+        }
+
+        // Temporary battery-only diagnostic. Observe model decisions, not every frame.
+        val inputBattery = snapshot.battery
+        if (batteryProbeScene != null && inputBattery != lastBatteryProbe) {
+            lastBatteryProbe = inputBattery
+            if (inputBattery != null) {
+                runCatching {
+                    android.util.Log.i(
+                        "GuiyuanBatteryProbe",
+                        "stage=model scene=$batteryProbeScene " +
+                            "inputPercent=${inputBattery.percent} inputCharging=${inputBattery.charging} " +
+                            "candidateComplete=${real != null} retainedStable=${real == null && model != null} " +
+                            "changed=${model != previous} modelPercent=${model?.batteryPercent} " +
+                            "modelCharging=${model?.charging} attached=${view.isAttachedToWindow} " +
+                            "shown=${view.isShown} alpha=${view.alpha}",
+                    )
+                }.onFailure(SysUiHotReload::rethrowFatal)
+            }
         }
 
         return ModelUpdate(

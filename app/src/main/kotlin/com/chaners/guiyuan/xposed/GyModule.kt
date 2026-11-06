@@ -576,6 +576,13 @@ class GyModule : XposedModule() {
                 SysUiBatterySource.reconcileHostBatteryState(capture.host) { state ->
                     StatusStateStore.updateBattery(state)?.let { restoredSnapshot = it }
                 }
+            runCatching {
+                android.util.Log.i(
+                    "GuiyuanBatteryProbe",
+                    "stage=reconcile available=${liveBattery != null} " +
+                        "percent=${liveBattery?.percent} charging=${liveBattery?.charging}",
+                )
+            }.onFailure(SysUiHotReload::rethrowFatal)
             logDiagnostic(
                 level = if (liveBattery != null) Log.INFO else Log.WARN,
                 event = "battery.reconcile",

@@ -239,7 +239,7 @@ internal object HomeRenderSession {
         private val batteryView = WeakReference(batteryView)
         private val batteryCarrier = WeakReference(batteryCarrier)
         private val probeView =
-            RenderView(host.context) { latencyMs, committedOnMainThread, sample ->
+            RenderView(host.context, batteryProbeScene = "home") { latencyMs, committedOnMainThread, sample ->
                 if (sample != null && onLatencySample != null) {
                     // Telemetry runs from RenderView.onDraw; it never owns drawing.
                     SysUiPresentationRuntime.emitPassiveDiagnostic {
@@ -253,7 +253,7 @@ internal object HomeRenderSession {
                     }
                 }
             }
-        private val renderController = RenderController(probeView)
+        private val renderController = RenderController(probeView, batteryProbeScene = "home")
         private var readyLogged = false
         private var layoutLogged = false
         private var deferredStateLogged = false

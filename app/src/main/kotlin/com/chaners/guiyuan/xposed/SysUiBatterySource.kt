@@ -219,7 +219,8 @@ internal object SysUiBatterySource {
             ) {
                 probe(
                     "stage=read method=$sourceMethod valid=${state != null} " +
-                        "percent=${state?.percent} charging=${state?.charging}"
+                        "percent=${state?.percent} charging=${state?.charging} " +
+                        "view=${System.identityHashCode(iconView)}"
                 )
             }
             if (state == null) return
@@ -308,7 +309,8 @@ internal object SysUiBatterySource {
                         if (hookId == LEVEL_HOOK_ID || hookId == CHARGE_HOOK_ID) {
                             probe(
                                 "stage=hook method=${method.name} ready=$hooksReady " +
-                                    "receiver=${chain.thisObject?.javaClass?.name ?: "none"}"
+                                    "receiver=${chain.thisObject?.javaClass?.name ?: "none"} " +
+                                    "view=${System.identityHashCode(chain.thisObject)}"
                             )
                         }
                         if (!hooksReady) return@Hooker result
@@ -366,7 +368,10 @@ internal object SysUiBatterySource {
                     .intercept(
                         Hooker { chain ->
                             val result = chain.proceed()
-                            probe("stage=meter-hook method=updateChargeAndText ready=$hooksReady")
+                            probe(
+                                "stage=meter-hook method=updateChargeAndText ready=$hooksReady " +
+                                    "view=${System.identityHashCode(chain.thisObject)}"
+                            )
                             if (!hooksReady) return@Hooker result
                             val meterView = readOrNull { chain.thisObject as? View }
                                 ?: return@Hooker result
