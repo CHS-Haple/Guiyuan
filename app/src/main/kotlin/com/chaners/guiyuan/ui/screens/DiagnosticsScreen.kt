@@ -634,18 +634,24 @@ private const val EVENT_RUNTIME_ATTACH = "runtime.attach"
 private const val EVENT_RUNTIME_TEARDOWN = "runtime.teardown"
 private const val EVENT_RUNTIME_PREFERENCES_BIND = "runtimePreferences.bind"
 private const val EVENT_DIAGNOSTICS_BIND = "diagnostics.bind"
+private const val EVENT_HOST_CAPTURE = "host.capture"
 private const val EVENT_HOST_RESTORE = "host.restore"
 private const val EVENT_SESSION_ATTACH = "session.attach"
+private const val EVENT_PRESENTATION_RESOLVE = "presentation.resolve"
 private const val EVENT_PRESENTATION_CUTOVER = "presentation.cutover"
 private const val EVENT_PRESENTATION_FAIL_NATIVE = "presentation.failNative"
 private const val EVENT_RENDERER_ATTACH = "renderer.attach"
+private const val EVENT_DIAGNOSTICS_SNAPSHOT = "diagnostics.snapshot"
 private const val EVENT_DIAGNOSTICS_LEVEL = "diagnostics.level"
 private const val EVENT_VISUAL_SETTINGS_CHANGED = "visualSettings.changed"
 private const val EVENT_FEATURE_SETTINGS_CHANGED = "featureSettings.changed"
 private const val EVENT_HOT_RELOAD_PREPARE = "hotReload.prepare"
 private const val EVENT_HOT_RELOAD_GENERATION_HANDOFF = "hotReload.generationHandoff"
+private const val EVENT_HOT_RELOAD_MIGRATION = "hotReload.migration"
 private const val EVENT_HOT_RELOAD_RESTORE = "hotReload.restore"
 private const val EVENT_HOT_RELOAD_COMPLETE = "hotReload.complete"
+private const val EVENT_TINT_COMMIT = "tintCommit"
+private const val EVENT_HOME_RENDER_TINT = "homeRenderTint"
 private const val EVENT_MOBILE_RECOVERY = "mobile.recovery"
 private const val EVENT_SCENE_STABLE_FAMILY = "scene.stableFamily"
 private const val EVENT_AOD_STATE = "aod.state"
@@ -1312,7 +1318,7 @@ internal fun isRuntimeLog(entry: LogEntry, focusedCategory: LogCategory? = null)
     if (!entry.structured) return false
     return when (entry.event) {
         EVENT_PIPELINE_LATENCY -> focusedCategory == LogCategory.Performance
-        "presentation.resolve" -> focusedCategory == LogCategory.Display
+        EVENT_PRESENTATION_RESOLVE -> focusedCategory == LogCategory.Display
         else -> entry.event in RUNTIME_EVENTS
     }
 }
@@ -1380,14 +1386,14 @@ private fun logTitle(
             EVENT_RUNTIME_TEARDOWN -> R.string.diagnostics_log_event_runtime_teardown
             EVENT_RUNTIME_PREFERENCES_BIND -> R.string.diagnostics_log_event_runtime_preferences
             EVENT_DIAGNOSTICS_BIND -> R.string.diagnostics_log_event_diagnostics_bind
-            "host.capture" -> R.string.diagnostics_log_event_host_capture
+            EVENT_HOST_CAPTURE -> R.string.diagnostics_log_event_host_capture
             EVENT_HOST_RESTORE -> R.string.diagnostics_log_event_host_restore
             EVENT_SESSION_ATTACH -> R.string.diagnostics_log_event_session_attach
             EVENT_PRESENTATION_CUTOVER -> R.string.diagnostics_log_event_presentation_cutover
             EVENT_PRESENTATION_FAIL_NATIVE -> R.string.diagnostics_log_event_fail_native
-            "presentation.resolve" -> R.string.diagnostics_log_event_presentation_resolve
+            EVENT_PRESENTATION_RESOLVE -> R.string.diagnostics_log_event_presentation_resolve
             EVENT_RENDERER_ATTACH -> R.string.diagnostics_log_event_renderer_attach
-            "diagnostics.snapshot" -> R.string.diagnostics_log_event_diagnostics_snapshot
+            EVENT_DIAGNOSTICS_SNAPSHOT -> R.string.diagnostics_log_event_diagnostics_snapshot
             EVENT_DIAGNOSTICS_LEVEL -> R.string.diagnostics_log_event_diagnostics_level
             EVENT_PIPELINE_LATENCY -> R.string.diagnostics_log_event_pipeline_latency
             EVENT_VISUAL_SETTINGS_CHANGED -> R.string.diagnostics_log_event_visual_settings
@@ -1396,7 +1402,7 @@ private fun logTitle(
             EVENT_BATTERY_RECONCILE -> R.string.diagnostics_log_event_battery_reconcile
             EVENT_HOT_RELOAD_PREPARE -> R.string.diagnostics_log_event_hot_reload_prepare
             EVENT_HOT_RELOAD_GENERATION_HANDOFF -> R.string.diagnostics_log_event_hot_reload_handoff
-            "hotReload.migration" -> R.string.diagnostics_log_event_hot_reload_migration
+            EVENT_HOT_RELOAD_MIGRATION -> R.string.diagnostics_log_event_hot_reload_migration
             EVENT_HOT_RELOAD_RESTORE -> R.string.diagnostics_log_event_hot_reload_restore
             EVENT_HOT_RELOAD_COMPLETE -> R.string.diagnostics_log_event_hot_reload
             EVENT_MOBILE_RECOVERY -> R.string.diagnostics_log_event_mobile_recovery
@@ -1407,8 +1413,8 @@ private fun logTitle(
             EVENT_CONNECTIVITY_DELIVERY_FAILED -> R.string.diagnostics_log_event_connectivity_failure
             "networkPipeline.wifi.iconEvent" -> R.string.diagnostics_log_event_wifi_icon
             "statusIconPresentation" -> R.string.diagnostics_log_event_status_icon_presentation
-            "tintCommit" -> R.string.diagnostics_log_event_tint_commit
-            "homeRenderTint" -> R.string.diagnostics_log_event_home_tint
+            EVENT_TINT_COMMIT -> R.string.diagnostics_log_event_tint_commit
+            EVENT_HOME_RENDER_TINT -> R.string.diagnostics_log_event_home_tint
             else -> null
         }
     return res?.let(context::getString)
@@ -1483,7 +1489,7 @@ private fun logSummary(
         ).ifBlank { fallback }
     }
 
-    if (entry.event == "tintCommit" || entry.event == "homeRenderTint") {
+    if (entry.event == EVENT_TINT_COMMIT || entry.event == EVENT_HOME_RENDER_TINT) {
         return join(
             fields["applied"] ?: fields["statusIcon"],
             fields[LOG_FIELD_SOURCE]?.let {
@@ -1694,7 +1700,7 @@ private val RUNTIME_EVENTS =
     setOf(
         EVENT_MODULE_LOADED,
         EVENT_MODULE_RELOADED,
-        "diagnostics.snapshot",
+        EVENT_DIAGNOSTICS_SNAPSHOT,
         EVENT_BATTERY_RECONCILE,
         EVENT_COMPATIBILITY_PROBE,
         EVENT_COMPATIBILITY_REVALIDATED,
@@ -1707,7 +1713,7 @@ private val RUNTIME_EVENTS =
         EVENT_RUNTIME_PREFERENCES_BIND,
         EVENT_DIAGNOSTICS_BIND,
         EVENT_DIAGNOSTICS_LEVEL,
-        "host.capture",
+        EVENT_HOST_CAPTURE,
         EVENT_HOST_RESTORE,
         EVENT_SESSION_ATTACH,
         EVENT_PRESENTATION_CUTOVER,
@@ -1717,7 +1723,7 @@ private val RUNTIME_EVENTS =
         EVENT_VISUAL_SETTINGS_CHANGED,
         EVENT_HOT_RELOAD_PREPARE,
         EVENT_HOT_RELOAD_GENERATION_HANDOFF,
-        "hotReload.migration",
+        EVENT_HOT_RELOAD_MIGRATION,
         EVENT_HOT_RELOAD_RESTORE,
         EVENT_HOT_RELOAD_COMPLETE,
         EVENT_MOBILE_RECOVERY,
