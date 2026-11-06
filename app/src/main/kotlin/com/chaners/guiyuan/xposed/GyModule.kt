@@ -1817,6 +1817,8 @@ class GyModule : XposedModule() {
                 pendingMobileTypeDrawable = pendingMobileTypeDrawable,
             )
         reportFontAxis(presentation.networkType)
+        val previousPresentation =
+            if (detailedDiagnosticsEnabled) null else PresentationStore.snapshot().mobilePresentation
         val changed =
             PresentationStore.updateMobilePresentation(presentation)
         val recoveryCompleted =
@@ -1836,6 +1838,34 @@ class GyModule : XposedModule() {
                 } else {
                     trace
                 }
+            // General diagnostics record only material authority/presentation transitions.
+            // Do not format per-signal updates or run native probes in the default mode.
+            if (
+                changed != null &&
+                !detailedDiagnosticsEnabled &&
+                (
+                    previousPresentation == null ||
+                        previousPresentation.mode != presentation.mode ||
+                        previousPresentation.effectiveDataSubscriptionId != presentation.effectiveDataSubscriptionId ||
+                        previousPresentation.nativeMobileReplacementReady != presentation.nativeMobileReplacementReady ||
+                        previousPresentation.activeSubscriptionAuthority != presentation.activeSubscriptionAuthority ||
+                        previousPresentation.visibleRoots != presentation.visibleRoots
+                )
+            ) {
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "presentation.summary",
+                    component = "mobilePresentation",
+                    state = "observed",
+                    "mode" to presentation.mode.name,
+                    "activeSubAuthority" to presentation.activeSubscriptionAuthority,
+                    "activeSubCount" to presentation.activeSubscriptionIds.size,
+                    "visibleRoots" to presentation.visibleRoots,
+                    "effectiveDataSubId" to presentation.effectiveDataSubscriptionId,
+                    "networkTypeSource" to presentation.networkType?.source?.name,
+                    "nativeMobileReplacementReady" to presentation.nativeMobileReplacementReady,
+                )
+            }
             if (detailedDiagnosticsEnabled && changed != null) {
                 val platformIds = presentation.platformActiveSubscriptionIds?.sorted()
                 val mobile = StatusStateStore.snapshot().mobile
@@ -1872,7 +1902,8 @@ class GyModule : XposedModule() {
                     "nativeMobileReplacementReady" to presentation.nativeMobileReplacementReady,
                 )
             }
-            if (detailedDiagnosticsEnabled && recoveryCompleted != null) {
+            if (recoveryCompleted != null) {
+                // This is an already-resolved recovery completion, not a recurring probe.
                 logDiagnostic(
                     level = Log.INFO,
                     event = "mobile.recovery",
