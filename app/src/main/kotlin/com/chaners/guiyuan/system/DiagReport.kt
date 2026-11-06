@@ -73,30 +73,29 @@ internal object DiagReport {
         val log = snapshot.log
         val level = snapshot.level
         val requested = level.name.lowercase()
-        // A new bind/snapshot supersedes the old level, even when it omits that field.
-        // Level-only changes preserve the most recent binding.
+        // The newest bind/snapshot supersedes older level evidence even when its level is absent.
+        // A level-only event does not supersede the last observed binding.
         val diagnostics =
-            snapshot.entries.filter { entry ->
+            snapshot.entries.asReversed().filter { entry ->
                 entry.structured &&
                     entry.component == "diagnostics" &&
                     (runtimeEvents.sessionId == null ||
                         entry.fields["sessionId"] == runtimeEvents.sessionId)
             }
-        var runtimeLevel: String? = null
-        var runtimeBinding: String? = null
-        for (entry in diagnostics) {
-            when (entry.event) {
-                "diagnostics.bind", "diagnostics.snapshot" -> {
-                    runtimeBinding = entry.state
-                    runtimeLevel = entry.fields["level"]
-                }
-                "diagnostics.level" -> runtimeLevel = entry.fields["level"]
-            }
-        }
+        val runtimeLevel =
+            diagnostics.firstOrNull { entry ->
+                entry.event == "diagnostics.bind" ||
+                    entry.event == "diagnostics.snapshot" ||
+                    entry.event == "diagnostics.level"
+            }?.fields?.get("level") ?: "not-observed"
+        val runtimeBinding =
+            diagnostics.firstOrNull { entry ->
+                entry.event == "diagnostics.bind" || entry.event == "diagnostics.snapshot"
+            }?.state ?: "not-observed"
         appendLine("[Diagnostics state]")
         appendLine("requestedLevel=" + requested)
-        appendLine("runtimeLevel=" + (runtimeLevel ?: "not-observed"))
-        appendLine("runtimeBinding=" + (runtimeBinding ?: "not-observed"))
+        appendLine("runtimeLevel=" + runtimeLevel)
+        appendLine("runtimeBinding=" + runtimeBinding)
         appendLine("systemUiDetailedConfirmed=" + snapshot.isRuntimeDetailConfirmed())
         if (log.clearedAt != null) {
             appendLine("visibleHistorySince=" + log.clearedAt)
