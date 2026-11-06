@@ -20,9 +20,10 @@ internal object ColorPolicy {
         visualSettings: VisualCfg = VisualCfg(),
         batteryColorPreferences: BatteryColorPrefs? = null,
     ): RenderColors {
-        // The scene's native battery DarkReceiver has already applied this tint.
-        // Peer status-icon samples can lag behind native dark/light updates.
-        val nativeParticipantTint = tintState.appliedTint
+        val nativeParticipantTint =
+            tintState.statusIconTint
+                ?.takeIf { color -> (color ushr 24) != 0 }
+                ?: tintState.appliedTint
         val batteryTint =
             BatteryColorPolicy.resolve(
                 state = model.batterySemanticState,

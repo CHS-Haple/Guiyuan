@@ -139,6 +139,79 @@ class StatusStateStoreTest {
     }
 
     @Test
+    fun freshMobileRecoveryPendingSurvivesHotReloadMerge() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateAirplaneMode(false)
+        val saved = StatusStateStore.snapshot()
+
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateAirplaneMode(true)
+        StatusStateStore.updateAirplaneMode(false)
+        val fresh = StatusStateStore.snapshot()
+        assertTrue(fresh.mobileRecoveryPending)
+
+        val merged = StatusStateStore.mergeHotReloadSnapshots(saved, fresh)
+        assertEquals(false, merged.airplaneMode)
+        assertTrue(merged.mobileRecoveryPending)
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
+    fun freshAirplaneModeCancelsTransferredMobileRecovery() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateAirplaneMode(true)
+        StatusStateStore.updateAirplaneMode(false)
+        val saved = StatusStateStore.snapshot()
+        assertTrue(saved.mobileRecoveryPending)
+
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateAirplaneMode(true)
+        val fresh = StatusStateStore.snapshot()
+        assertFalse(fresh.mobileRecoveryPending)
+
+        val merged = StatusStateStore.mergeHotReloadSnapshots(saved, fresh)
+        assertEquals(true, merged.airplaneMode)
+        assertFalse(merged.mobileRecoveryPending)
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
+    fun unobservedFreshAirplaneModeRetainsSavedRecovery() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateAirplaneMode(true)
+        StatusStateStore.updateAirplaneMode(false)
+        val saved = StatusStateStore.snapshot()
+        assertTrue(saved.mobileRecoveryPending)
+
+        StatusStateStore.restoreHotReloadState(null)
+        val merged =
+            StatusStateStore.mergeHotReloadSnapshots(saved, StatusStateStore.snapshot())
+        assertEquals(false, merged.airplaneMode)
+        assertTrue(merged.mobileRecoveryPending)
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
+    fun transferredAirplaneModeMasksActivityWhenFreshAirplaneIsUnobserved() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateAirplaneMode(true)
+        val saved = StatusStateStore.snapshot()
+        assertTrue(saved.mobileActivityResIds.isEmpty())
+
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateMobileActivity(4, 220)
+        val fresh = StatusStateStore.snapshot()
+        assertNull(fresh.airplaneMode)
+        assertEquals(220, fresh.mobileActivityResIds[4])
+
+        val merged = StatusStateStore.mergeHotReloadSnapshots(saved, fresh)
+        assertEquals(true, merged.airplaneMode)
+        assertTrue(merged.mobileActivityResIds.isEmpty())
+        assertFalse(merged.mobileRecoveryPending)
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
     fun airplaneExitStartsFreshMobileRecoveryAndClearsCachedSignal() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)

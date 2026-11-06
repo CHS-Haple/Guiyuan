@@ -167,6 +167,50 @@ class ColorPolicyTest {
     }
 
     @Test
+    fun chargingColorDoesNotReplaceStatusForegroundUnlessUserLinksIt() {
+        val green = HyperOsBatteryPalette.CHARGING
+        val custom = VisualCfg(
+            batteryColorPreset = BatteryColorPreset.HYPEROS,
+            topTextFollowsBatteryColor = false,
+            topChargingIconFollowsBatteryColor = false,
+        )
+        for (foreground in listOf(0xe6ffffff.toInt(), 0xbf000000.toInt())) {
+            val model = model(
+                state = BatterySemanticState.CHARGING,
+                systemColor = green,
+            )
+            val colors = ColorPolicy.resolve(
+                model = model,
+                tintState = TintState(
+                    appliedTint = foreground,
+                    statusIconTint = if (foreground == 0xe6ffffff.toInt()) 0xbf000000.toInt() else 0xe6ffffff.toInt(),
+                ),
+                visualSettings = custom,
+            )
+            assertEquals(foreground, colors.centerTint)
+            assertEquals(foreground, colors.mobileTint)
+            assertEquals(foreground, colors.batteryTextTint)
+            assertEquals(foreground, colors.chargingIconTint)
+            assertEquals(green, colors.batteryTint)
+
+            val linked = ColorPolicy.resolve(
+                model = model,
+                tintState = TintState(appliedTint = foreground),
+                visualSettings = custom.copy(
+                    mobileFollowsBatteryColor = true,
+                    centerFollowsBatteryColor = true,
+                    topTextFollowsBatteryColor = true,
+                    topChargingIconFollowsBatteryColor = true,
+                ),
+            )
+            assertEquals(green, linked.centerTint)
+            assertEquals(green, linked.mobileTint)
+            assertEquals(green, linked.batteryTextTint)
+            assertEquals(green, linked.chargingIconTint)
+        }
+    }
+
+    @Test
     fun invalidStatusIconTintFallsBackToBatteryAnchorTint() {
         val colors =
             ColorPolicy.resolve(
