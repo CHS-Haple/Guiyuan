@@ -87,6 +87,7 @@ internal object SysUiBatterySource {
         onChargingIconResource: (Int) -> Unit,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
         check(!hooksReady && failedInstallHandles.isEmpty()) { "battery-hooks-already-installed" }
 
@@ -194,7 +195,7 @@ internal object SysUiBatterySource {
         fun report(message: () -> String) {
             val sink = onEvent ?: return
             try {
-                sink(message())
+                if (isDetailedDiagnosticsEnabled()) sink(message())
             } catch (error: Throwable) {
                 rethrowFatal(error)
                 if (warned.compareAndSet(false, true)) {
