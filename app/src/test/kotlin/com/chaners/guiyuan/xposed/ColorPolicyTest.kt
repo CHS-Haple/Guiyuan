@@ -183,7 +183,12 @@ class ColorPolicyTest {
                 model = model,
                 tintState = TintState(
                     appliedTint = foreground,
-                    statusIconTint = if (foreground == 0xe6ffffff.toInt()) 0xbf000000.toInt() else 0xe6ffffff.toInt(),
+                    statusIconTint =
+                        if (foreground == 0xe6ffffff.toInt()) {
+                            0xbf000000.toInt()
+                        } else {
+                            0xe6ffffff.toInt()
+                        },
                 ),
                 visualSettings = custom,
             )
