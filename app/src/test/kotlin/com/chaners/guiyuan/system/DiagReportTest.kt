@@ -53,6 +53,10 @@ class DiagReportTest {
             event("com.android.settings:remote", "current", "diagnostics.bind", "ready", "detailed")
         val unavailable =
             event("com.android.systemui", "current", "diagnostics.snapshot", "unavailable", "detailed")
+        val readyWithoutLevel =
+            event("com.android.systemui", "current", "diagnostics.snapshot", "ready")
+        val readyRebindWithoutLevel =
+            event("com.android.systemui", "current", "diagnostics.bind", "ready")
 
         assertTrue(report(nativeBound, nativeDetailed).contains("systemUiDetailedConfirmed=true"))
         assertTrue(
@@ -66,6 +70,14 @@ class DiagReportTest {
         assertFalse(report(settingsDetailed).contains("systemUiDetailedConfirmed=true"))
         assertTrue(report(settingsDetailed).contains("systemUiDetailedConfirmed=false"))
         assertTrue(report(nativeBound, nativeDetailed, unavailable).contains("systemUiDetailedConfirmed=false"))
+        assertTrue(
+            report(nativeBound, nativeDetailed, readyWithoutLevel)
+                .contains("systemUiDetailedConfirmed=false"),
+        )
+        assertTrue(
+            report(nativeBound, nativeDetailed, readyRebindWithoutLevel)
+                .contains("systemUiDetailedConfirmed=false"),
+        )
         assertTrue(
             report(
                 nativeBound,
