@@ -11,7 +11,7 @@ internal object SysUiDefaultDataSubSource {
     private const val DEFAULT_DATA_SUBSCRIPTION_CHANGED_ACTION =
         "android.intent.action.ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED"
 
-    private fun rethrowFatal(error: Throwable) {
+    internal fun rethrowFatal(error: Throwable) {
         val cause = (error as? InvocationTargetException)?.targetException ?: error
         if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
     }
@@ -87,7 +87,7 @@ internal object SysUiDefaultDataSubSource {
                     )
                     true
                 } catch (error: Throwable) {
-                    if (error is VirtualMachineError || error is ThreadDeath) throw error
+                    rethrowFatal(error)
                     false
                 }
 
