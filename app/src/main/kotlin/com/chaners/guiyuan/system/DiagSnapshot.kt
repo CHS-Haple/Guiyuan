@@ -50,16 +50,20 @@ internal data class DiagSnapshot(
             val env = RuntimeEnv.resolve(appCtx)
             val level = DiagRepo(appCtx).current()
             val log = DiagLogReader.read(appCtx)
-            val pidResult = RootShell.execute(
-                context = appCtx,
-                command = "/system/bin/pidof com.android.systemui",
-                timeoutSeconds = 3L,
-            )
             val liveSystemUiPids =
-                if (pidResult.isSuccess) {
-                    pidResult.output.split(Regex("\\s+"))
-                        .filter { pid -> pid.isNotBlank() && pid.all(Char::isDigit) }
-                        .toSet()
+                if (level == DiagLevel.Detailed) {
+                    val pidResult = RootShell.execute(
+                        context = appCtx,
+                        command = "/system/bin/pidof com.android.systemui",
+                        timeoutSeconds = 3L,
+                    )
+                    if (pidResult.isSuccess) {
+                        pidResult.output.split(Regex("\\s+"))
+                            .filter { pid -> pid.isNotBlank() && pid.all(Char::isDigit) }
+                            .toSet()
+                    } else {
+                        emptySet()
+                    }
                 } else {
                     emptySet()
                 }
