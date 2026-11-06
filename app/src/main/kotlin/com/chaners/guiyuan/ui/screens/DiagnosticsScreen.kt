@@ -649,6 +649,7 @@ private const val EVENT_HOST_CAPTURE = "host.capture"
 private const val EVENT_HOST_RESTORE = "host.restore"
 private const val EVENT_SESSION_ATTACH = "session.attach"
 private const val EVENT_PRESENTATION_RESOLVE = "presentation.resolve"
+private const val EVENT_PRESENTATION_SUMMARY = "presentation.summary"
 private const val EVENT_PRESENTATION_CUTOVER = "presentation.cutover"
 private const val EVENT_PRESENTATION_FAIL_NATIVE = "presentation.failNative"
 private const val EVENT_RENDERER_ATTACH = "renderer.attach"
@@ -1402,7 +1403,9 @@ private fun logTitle(
             EVENT_SESSION_ATTACH -> R.string.diagnostics_log_event_session_attach
             EVENT_PRESENTATION_CUTOVER -> R.string.diagnostics_log_event_presentation_cutover
             EVENT_PRESENTATION_FAIL_NATIVE -> R.string.diagnostics_log_event_fail_native
-            EVENT_PRESENTATION_RESOLVE -> R.string.diagnostics_log_event_presentation_resolve
+            EVENT_PRESENTATION_RESOLVE,
+            EVENT_PRESENTATION_SUMMARY,
+            -> R.string.diagnostics_log_event_presentation_resolve
             EVENT_RENDERER_ATTACH -> R.string.diagnostics_log_event_renderer_attach
             EVENT_DIAGNOSTICS_SNAPSHOT -> R.string.diagnostics_log_event_diagnostics_snapshot
             EVENT_DIAGNOSTICS_LEVEL -> R.string.diagnostics_log_event_diagnostics_level
@@ -1547,6 +1550,12 @@ private fun logSummary(
             }
 
             EVENT_PRESENTATION_FAIL_NATIVE -> join(reason)
+
+            EVENT_PRESENTATION_SUMMARY -> join(
+                fields["mode"],
+                fields["activeSubAuthority"],
+                fields["effectiveDataSubId"]?.let { "subId=$it" },
+            )
 
             EVENT_AOD_STATE, EVENT_AOD_TARGET, EVENT_PRESENTATION_CUTOVER,
             EVENT_COMPATIBILITY_PROBE, EVENT_COMPATIBILITY_REVALIDATED,
@@ -1729,6 +1738,7 @@ private val RUNTIME_EVENTS =
         EVENT_SESSION_ATTACH,
         EVENT_PRESENTATION_CUTOVER,
         EVENT_PRESENTATION_FAIL_NATIVE,
+        EVENT_PRESENTATION_SUMMARY,
         EVENT_RENDERER_ATTACH,
         EVENT_FEATURE_SETTINGS_CHANGED,
         EVENT_VISUAL_SETTINGS_CHANGED,
