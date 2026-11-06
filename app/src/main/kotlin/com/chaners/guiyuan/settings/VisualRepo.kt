@@ -118,6 +118,21 @@ internal fun retireLegacyIdleActivityPreference(prefs: SharedPreferences) {
     editor.apply()
 }
 
+private fun copyLegacyVisualValue(
+    editor: SharedPreferences.Editor,
+    canonical: String,
+    key: String,
+    value: Any,
+) {
+    when (value) {
+        is Boolean -> editor.putBoolean(canonical, value)
+        is Float -> editor.putFloat(canonical, value)
+        is Int -> editor.putInt(canonical, value)
+        is String -> editor.putString(canonical, value)
+        else -> error("Unexpected saved visual preference type: $key")
+    }
+}
+
 internal const val SHARED_LAYOUT_VISUAL_SCHEMA_KEY = "shared_layout_visual_schema"
 
 internal fun migrateSharedLayoutVisualsIfNeeded(
@@ -140,30 +155,19 @@ internal fun migrateSharedLayoutVisualsIfNeeded(
             val migratedStyle = preserveMigratedSignalStyles &&
                 (key == DUAL_ROW_DOT_ARRANGEMENT_KEY || key == SINGLE_ROW_DOT_STYLE_KEY)
             if (activeDual) {
-                when (val value = stored[previousDual]) {
-                    is Boolean -> editor.putBoolean(canonical, value)
-                    is Float -> editor.putFloat(canonical, value)
-                    is Int -> editor.putInt(canonical, value)
-                    is String -> editor.putString(canonical, value)
-                    null -> {
-                        // A missing dual-bank value meant the layout default,
-                        // not the single-bank value, in the previous version.
-                        // The earlier dot-style migration has already selected
-                        // the effective active style and must not be undone.
-                        if (!migratedStyle) editor.remove(canonical)
-                    }
-                    else -> error("Unexpected saved visual preference type: $key")
+                val value = stored[previousDual]
+                if (value != null) {
+                    copyLegacyVisualValue(editor, canonical, key, value)
+                } else if (!migratedStyle) {
+                    // A missing dual-bank value meant the layout default, not the
+                    // old single-bank value. Preserve already migrated dot styles.
+                    editor.remove(canonical)
                 }
             } else if (!stored.containsKey(canonical) && !migratedStyle) {
                 // Earlier single-mode installations may still use unscoped
                 // preference names. Materialize those values per layout.
-                when (val value = stored[key]) {
-                    is Boolean -> editor.putBoolean(canonical, value)
-                    is Float -> editor.putFloat(canonical, value)
-                    is Int -> editor.putInt(canonical, value)
-                    is String -> editor.putString(canonical, value)
-                    null -> Unit
-                    else -> error("Unexpected saved visual preference type: $key")
+                stored[key]?.let { value ->
+                    copyLegacyVisualValue(editor, canonical, key, value)
                 }
             }
             editor.remove(previousDual)
