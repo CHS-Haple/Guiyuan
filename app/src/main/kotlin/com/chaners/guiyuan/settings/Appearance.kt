@@ -250,8 +250,10 @@ internal class AppearanceRepo(context: Context) {
 
     suspend fun setPaletteStyle(style: ThemePaletteStyle) {
         store.edit { prefs ->
-            val spec = decodeColorSpec(prefs[colorSpecKey]) ?: return@edit
-            if (style in palettesFor(spec)) prefs[paletteStyleKey] = style.name
+            val spec = decodeColorSpec(prefs[colorSpecKey])
+            if (spec != null && style in palettesFor(spec)) {
+                prefs[paletteStyleKey] = style.name
+            }
         }
     }
 

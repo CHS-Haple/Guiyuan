@@ -35,17 +35,21 @@ internal object DiagLogReader {
     ): List<String> {
         if (boundary == null) return lines
         return lines.filter { line ->
-            val stamp = DiagLogParser.parse(line).timestamp ?: return@filter false
-            val time = runCatching {
-                if ('T' in stamp) {
-                    LocalDateTime.parse(stamp)
-                } else {
-                    // logcat uses MM-dd without a year; the bounded read is recent.
-                    val candidate = LocalDateTime.parse("${now.year}-${stamp.replace(' ', 'T')}")
-                    if (candidate.isAfter(now.plusDays(1))) candidate.minusYears(1) else candidate
-                }
-            }.getOrNull()
-            time != null && time.isAfter(boundary)
+            val stamp = DiagLogParser.parse(line).timestamp
+            if (stamp == null) {
+                false
+            } else {
+                val time = runCatching {
+                    if ('T' in stamp) {
+                        LocalDateTime.parse(stamp)
+                    } else {
+                        // logcat uses MM-dd without a year; the bounded read is recent.
+                        val candidate = LocalDateTime.parse("${now.year}-${stamp.replace(' ', 'T')}")
+                        if (candidate.isAfter(now.plusDays(1))) candidate.minusYears(1) else candidate
+                    }
+                }.getOrNull()
+                time != null && time.isAfter(boundary)
+            }
         }
     }
 
@@ -144,10 +148,13 @@ internal object DiagLogReader {
         // The new generation can fail before module.reloaded; old teardown may log later.
         val tagged =
             lines.mapIndexedNotNull { index, line ->
-                if ("sessionId=" !in line) return@mapIndexedNotNull null
-                DiagProtocol.parse(line)
-                    ?.takeIf { event -> event.fields[SESSION_ID_FIELD] != null }
-                    ?.let { event -> index to event }
+                if ("sessionId=" in line) {
+                    DiagProtocol.parse(line)
+                        ?.takeIf { event -> event.fields[SESSION_ID_FIELD] != null }
+                        ?.let { event -> index to event }
+                } else {
+                    null
+                }
             }
         // Reuse the earliest event index for each generation while inspecting
         // failed reloads and selecting the current session.
@@ -195,6 +202,10 @@ internal object DiagLogReader {
                 }
         }
 
+        return latestSessionFromLegacyMarkers(lines)
+    }
+
+    private fun latestSessionFromLegacyMarkers(lines: List<String>): List<String> {
         val buildToken = "build=" + BuildConfig.BUILD_ID
         val buildAnchor =
             lines.indexOfLast { line ->
