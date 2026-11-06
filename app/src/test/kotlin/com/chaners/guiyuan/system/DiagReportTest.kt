@@ -55,6 +55,14 @@ class DiagReportTest {
             event("com.android.systemui", "current", "diagnostics.snapshot", "unavailable", "detailed")
 
         assertTrue(report(nativeBound, nativeDetailed).contains("systemUiDetailedConfirmed=true"))
+        assertTrue(
+            report(nativeBound, nativeDetailed, liveSystemUiPids = setOf("other-pid"))
+                .contains("systemUiDetailedConfirmed=false"),
+        )
+        assertTrue(
+            report(nativeBound, nativeDetailed, liveSystemUiPids = emptySet())
+                .contains("systemUiDetailedConfirmed=false"),
+        )
         assertFalse(report(settingsDetailed).contains("systemUiDetailedConfirmed=true"))
         assertTrue(report(settingsDetailed).contains("systemUiDetailedConfirmed=false"))
         assertTrue(report(nativeBound, nativeDetailed, unavailable).contains("systemUiDetailedConfirmed=false"))
@@ -251,6 +259,7 @@ class DiagReportTest {
         collection: RootShell.Result? = null,
         level: DiagLevel = DiagLevel.Detailed,
         clearedAt: LocalDateTime? = null,
+        liveSystemUiPids: Set<String> = setOf("18802"),
     ): String {
         val recorded = lines.toList()
         return DiagReport.build(
@@ -277,6 +286,7 @@ class DiagReportTest {
                 runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
                 entries = recorded.map(DiagLogParser::parse),
                 capturedAt = OffsetDateTime.parse("2026-10-08T22:00:00+08:00"),
+                liveSystemUiPids = liveSystemUiPids,
             ),
         )
     }
