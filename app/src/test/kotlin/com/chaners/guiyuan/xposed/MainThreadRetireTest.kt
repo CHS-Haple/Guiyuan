@@ -260,6 +260,44 @@ class MainThreadRetireTest {
     }
 
     @Test
+    fun fatalDispatchRetainsPriorityWhenQueuedCancellationAlsoFails() {
+        val fatal = OutOfMemoryError("dispatch")
+        val cancelFailure = IllegalStateException("cancel")
+        var queued: Runnable? = null
+        var cancellationAttempted = false
+        var touched = false
+        val actual =
+            runCatching {
+                MainThreadRetire(
+                    post = { task -> queued = task; throw fatal },
+                    cancel = {
+                        cancellationAttempted = true
+                        throw cancelFailure
+                    },
+                ).run { touched = true }
+            }.exceptionOrNull()
+
+        assertSame(fatal, actual)
+        assertTrue(cancellationAttempted)
+        queued!!.run()
+        assertFalse(touched)
+    }
+
+    @Test
+    fun cancellationFailurePropagatesWhenDispatchIsNotFatal() {
+        val failure = IllegalStateException("cancel")
+        val actual =
+            runCatching {
+                MainThreadRetire(
+                    post = { false },
+                    cancel = { throw failure },
+                ).run {}
+            }.exceptionOrNull()
+
+        assertSame(failure, actual)
+    }
+
+    @Test
     fun startedCleanupFinishesBeforeFatalDispatchEscapes() {
         val started = CountDownLatch(1)
         val release = CountDownLatch(1)
