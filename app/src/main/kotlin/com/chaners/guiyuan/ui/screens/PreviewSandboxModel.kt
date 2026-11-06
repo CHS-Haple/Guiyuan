@@ -169,7 +169,7 @@ internal class PreviewSysUiResources(
                 .resources
         }.onFailure(::rethrowSandboxFatal).getOrNull()
 
-    fun drawableId(vararg names: String): Int? =
+    fun drawableId(names: List<String>): Int? =
         resources
             ?.let { systemResources ->
                 names
@@ -259,7 +259,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
 
             PreviewCenterSource.NO_SIM ->
                 resources
-                    .drawableId("stat_sys_no_sim")
+                    .drawableId(listOf("stat_sys_no_sim"))
                     ?.let { resourceId ->
                         CenterIndicator.NoSim(
                             PresentationStore.NativeIconResource(
@@ -315,10 +315,10 @@ internal fun PreviewSandboxUiState.toRenderModel(
             null
         } else {
             resources.drawableId(
-                *previewNetworkActivityResourceNames(
+                previewNetworkActivityResourceNames(
                     centerSource = previewCenterSource(),
                     state = networkActivity,
-                ).toTypedArray(),
+                ),
             )
         },
         mobileLevel = mobileLevel,
@@ -360,10 +360,10 @@ private fun previewWifiResourceId(
     level: Int,
 ): Int? =
     resources.drawableId(
-        *previewWifiResourceNames(
+        previewWifiResourceNames(
             state = state,
             level = level.coerceIn(0, 3),
-        ).toTypedArray(),
+        ),
     )
 
 // All IDs are resolved against the installed SystemUI. Never substitute an
@@ -414,7 +414,7 @@ private fun previewChargingResourceId(
 ): Int? {
     val names = previewChargingResourceNames(state)
     if (names.isEmpty()) return null
-    return resources.drawableId(*names.toTypedArray())
+    return resources.drawableId(names)
 }
 
 private fun previewBatterySemanticColor(
