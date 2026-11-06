@@ -2,7 +2,6 @@ package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
 import android.os.SystemClock
-import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import com.chaners.guiyuan.settings.FEATURE_AOD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
 import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
