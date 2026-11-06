@@ -43,6 +43,9 @@ internal object NativeStatusObserver {
     private const val DARK_ICON_DISPATCHER_CLASS =
         "com.android.systemui.plugins.DarkIconDispatcher"
     private const val DARK_ICON_DISPATCHER_FIELD = "mDarkIconDispatcher"
+    private const val TINT_AREAS_FIELD = "mTintAreas"
+    private const val ICON_TINT_FIELD = "mIconTint"
+    private const val MANAGER_COLOR_FIELD = "mColor"
     private const val HOME_MANAGER_REGISTERED_SOURCE = "homeManagerRegistered"
 
     private const val HOME_ICON_ADDED_HOOK_ID =
@@ -88,7 +91,7 @@ internal object NativeStatusObserver {
 
     // Cache reflective lookups, not the live SystemUI tint values.
     private val tintFieldNames =
-        setOf(DARK_ICON_DISPATCHER_FIELD, "mTintAreas", "mIconTint", "mColor")
+        setOf(DARK_ICON_DISPATCHER_FIELD, TINT_AREAS_FIELD, ICON_TINT_FIELD, MANAGER_COLOR_FIELD)
     private val tintFieldsByClass =
         ConcurrentHashMap<Class<*>, List<Field>>()
     private val tintMethodByManagerClass =
@@ -730,11 +733,11 @@ internal object NativeStatusObserver {
             readObjectField(manager, DARK_ICON_DISPATCHER_FIELD)
                 ?: return null
         val iconTint =
-            readIntField(dispatcher, "mIconTint")
+            readIntField(dispatcher, ICON_TINT_FIELD)
                 ?.takeIf(StatusIconTintPolicy::isVisibleTint)
                 ?: return null
         val tintAreas =
-            readObjectField(dispatcher, "mTintAreas")
+            readObjectField(dispatcher, TINT_AREAS_FIELD)
                 as? Collection<*>
                 ?: return null
 
@@ -765,14 +768,14 @@ internal object NativeStatusObserver {
     private fun resolveManagerFallbackTint(manager: Any?): Int? {
         manager ?: return null
 
-        readIntField(manager, "mColor")
+        readIntField(manager, MANAGER_COLOR_FIELD)
             ?.takeIf(StatusIconTintPolicy::isVisibleTint)
             ?.let { return it }
 
         val dispatcher =
             readObjectField(manager, DARK_ICON_DISPATCHER_FIELD)
                 ?: return null
-        return readIntField(dispatcher, "mIconTint")
+        return readIntField(dispatcher, ICON_TINT_FIELD)
             ?.takeIf(StatusIconTintPolicy::isVisibleTint)
     }
 
