@@ -51,8 +51,8 @@ class DiagReportTest {
 
         assertTrue(report(bound, detailed).contains(DETAIL_CONFIRMED))
         assertTrue(report(bound, detailed, level = DiagLevel.General).contains(DETAIL_UNCONFIRMED))
-        assertTrue(report(bound, detailed, liveSystemUiPids = setOf("other-pid")).contains(DETAIL_UNCONFIRMED))
-        assertTrue(report(bound, detailed, liveSystemUiPids = emptySet()).contains(DETAIL_UNCONFIRMED))
+        assertTrue(report(bound, detailed, logOptions = ReportLogOptions(liveSystemUiPids = setOf("other-pid"))).contains(DETAIL_UNCONFIRMED))
+        assertTrue(report(bound, detailed, logOptions = ReportLogOptions(liveSystemUiPids = emptySet())).contains(DETAIL_UNCONFIRMED))
     }
 
     @Test
@@ -108,18 +108,20 @@ class DiagReportTest {
                     fields = mapOf(SESSION_FIELD to CURRENT_SESSION, LEVEL_FIELD to DETAILED_LEVEL),
                 )
         assertTrue(
-            report(logcatReady, source = DiagLogReader.Source.LogcatFallback)
+            report(logcatReady, logOptions = ReportLogOptions(source = DiagLogReader.Source.LogcatFallback))
                 .contains(DETAIL_CONFIRMED),
         )
         assertTrue(
-            report(logcatReady, source = DiagLogReader.Source.LspModules)
+            report(logcatReady, logOptions = ReportLogOptions(source = DiagLogReader.Source.LspModules))
                 .contains(DETAIL_UNCONFIRMED),
         )
         assertTrue(
             report(
                 logcatReady,
-                source = DiagLogReader.Source.LogcatFallback,
-                liveSystemUiPids = setOf("9999"),
+                logOptions = ReportLogOptions(
+                    source = DiagLogReader.Source.LogcatFallback,
+                    liveSystemUiPids = setOf("9999"),
+                ),
             ).contains(DETAIL_UNCONFIRMED),
         )
     }
@@ -221,7 +223,7 @@ class DiagReportTest {
 
     @Test
     fun truncatedCaptureIsDisclosed() {
-        assertTrue(report(truncated = true).contains("capture=latest-complete-lines-only"))
+        assertTrue(report(logOptions = ReportLogOptions(truncated = true)).contains("capture=latest-complete-lines-only"))
     }
 
     @Test
@@ -255,7 +257,7 @@ class DiagReportTest {
     @Test
     fun captureTruncationAndReportLineLimitAreBothDisclosed() {
         val limit = DiagReport.exportLineLimit(DiagLevel.Detailed)
-        val result = report(*Array(limit + 3) { "record-${it + 1}" }, truncated = true)
+        val result = report(*Array(limit + 3) { "record-${it + 1}" }, logOptions = ReportLogOptions(truncated = true))
         assertTrue(result.contains("capture=latest-complete-lines-only"))
         assertTrue(result.contains("omittedEarlierSessionLines=3"))
         assertTrue(result.contains("lines=${limit}\n"))
@@ -321,14 +323,18 @@ class DiagReportTest {
                 },
             )
 
+    private data class ReportLogOptions(
+        val truncated: Boolean = false,
+        val liveSystemUiPids: Set<String> = setOf("18802"),
+        val source: DiagLogReader.Source = DiagLogReader.Source.LspModules,
+    )
+
     private fun report(
         vararg lines: String,
-        truncated: Boolean = false,
         collection: RootShell.Result? = null,
         level: DiagLevel = DiagLevel.Detailed,
         clearedAt: LocalDateTime? = null,
-        liveSystemUiPids: Set<String> = setOf("18802"),
-        source: DiagLogReader.Source = DiagLogReader.Source.LspModules,
+        logOptions: ReportLogOptions = ReportLogOptions(),
     ): String {
         val recorded = lines.toList()
         return DiagReport.build(
@@ -346,8 +352,8 @@ class DiagReportTest {
                 ),
                 level = level,
                 log = DiagLogReader.Snapshot(
-                    source = source,
-                    result = collection ?: RootShell.Result(0, recorded.joinToString("\n"), false, null, truncated),
+                    source = logOptions.source,
+                    result = collection ?: RootShell.Result(0, recorded.joinToString("\n"), false, null, logOptions.truncated),
                     lines = recorded,
                     sessionLines = recorded,
                     clearedAt = clearedAt,
@@ -355,7 +361,7 @@ class DiagReportTest {
                 runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
                 entries = recorded.map(DiagLogParser::parse),
                 capturedAt = OffsetDateTime.parse("2026-10-08T22:00:00+08:00"),
-                liveSystemUiPids = liveSystemUiPids,
+                liveSystemUiPids = logOptions.liveSystemUiPids,
             ),
         )
     }
