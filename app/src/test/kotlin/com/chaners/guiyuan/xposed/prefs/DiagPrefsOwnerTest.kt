@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
+import java.lang.reflect.InvocationTargetException
 import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
 import com.chaners.guiyuan.settings.DiagLevel
 import org.junit.After
@@ -121,6 +122,32 @@ class DiagPrefsOwnerTest {
     }
 
     @Test
+    fun reflectedFatalUnregisterFailureEscapesFailedInitialBinding() {
+        val prefs = FakePreferences()
+        val ordinary = IllegalStateException("initial-delivery")
+        val fatal = OutOfMemoryError("unregister-fatal")
+        prefs.unregisterFailure = InvocationTargetException(fatal)
+        try {
+            val actual =
+                runCatching {
+                    DiagPrefsOwner.bind(
+                    prefs = prefs,
+                    forceDetailed = false,
+                    onChanged = { throw ordinary },
+                )
+                }.exceptionOrNull()
+            assertSame(fatal, actual)
+            assertFalse(DiagPrefsOwner.isBound)
+            assertEquals(1, prefs.listenerCount)
+        } finally {
+            // The failed listener unregister must remain retryable after the fatal.
+            prefs.unregisterFailure = null
+            DiagPrefsOwner.unbind()
+        }
+        assertEquals(0, prefs.listenerCount)
+    }
+
+    @Test
     fun devProbeForcesDetail() {
         val prefs = FakePreferences()
         val observed = mutableListOf<Boolean>()
@@ -179,7 +206,7 @@ class DiagPrefsOwnerTest {
         var lastListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
             private set
 
-        var unregisterFailure: RuntimeException? = null
+        var unregisterFailure: Throwable? = null
 
         val listenerCount: Int
             get() = listeners.size
