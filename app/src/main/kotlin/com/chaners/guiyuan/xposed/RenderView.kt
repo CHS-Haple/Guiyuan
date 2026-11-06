@@ -108,7 +108,7 @@ internal class RenderView(
         if (
             batteryProbeScene != null && model != null &&
             (previousModel?.batteryPercent != model.batteryPercent ||
-                previousModel.charging != model.charging)
+                previousModel?.charging != model.charging)
         ) {
             pendingBatteryDraw = model
             runCatching {
