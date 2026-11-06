@@ -15,6 +15,28 @@ internal data class DiagSnapshot(
     val entries: List<LogEntry>,
     val capturedAt: OffsetDateTime,
 ) {
+    // Only the selected SystemUI generation can confirm that the runtime setting took effect.
+    internal fun isRuntimeDetailConfirmed(): Boolean {
+        val session = runtimeEvents.sessionId ?: return false
+        var bound = false
+        var level: String? = null
+        entries.forEach { entry ->
+            if (
+                !entry.structured ||
+                entry.hostPkg != "com.android.systemui" ||
+                entry.component != "diagnostics" ||
+                entry.fields["sessionId"] != session
+            ) {
+                return@forEach
+            }
+            if (entry.event == "diagnostics.bind" || entry.event == "diagnostics.snapshot") {
+                bound = entry.state == "ready"
+            }
+            entry.fields["level"]?.let { level = it }
+        }
+        return bound && level == "detailed"
+    }
+
     companion object {
         // Capture once so the screen and exported report describe the same runtime session.
         suspend fun capture(context: Context): DiagSnapshot {
