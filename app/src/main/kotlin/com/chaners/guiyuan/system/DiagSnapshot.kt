@@ -14,13 +14,12 @@ internal data class DiagSnapshot(
     val runtimeEvents: RuntimeEventSnapshot,
     val entries: List<LogEntry>,
     val capturedAt: OffsetDateTime,
-    val liveSystemUiPids: Set<String> = emptySet(),
 ) {
     // Only the selected SystemUI generation can confirm that the runtime setting took effect.
     internal fun isRuntimeDetailConfirmed(): Boolean {
         if (level != DiagLevel.Detailed) return false
         val session = runtimeEvents.sessionId ?: return false
-        if (liveSystemUiPids.isEmpty()) return false
+        if (log.liveSystemUiPids.isEmpty()) return false
         var bound = false
         var level: String? = null
         for (entry in entries) {
@@ -34,7 +33,7 @@ internal data class DiagSnapshot(
             if (
                 !entry.structured ||
                 !fromSystemUi ||
-                entry.pid !in liveSystemUiPids ||
+                entry.pid !in log.liveSystemUiPids ||
                 entry.component != "diagnostics" ||
                 entry.fields["sessionId"] != session
             ) {
@@ -83,11 +82,10 @@ internal data class DiagSnapshot(
             return DiagSnapshot(
                 env = env,
                 level = level,
-                log = log,
+                log = log.copy(liveSystemUiPids = liveSystemUiPids),
                 runtimeEvents = runtimeEvents,
                 entries = entries,
                 capturedAt = OffsetDateTime.now(),
-                liveSystemUiPids = liveSystemUiPids,
             )
         }
     }

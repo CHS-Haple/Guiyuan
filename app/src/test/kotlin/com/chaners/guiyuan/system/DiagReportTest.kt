@@ -357,11 +357,11 @@ class DiagReportTest {
                     lines = recorded,
                     sessionLines = recorded,
                     clearedAt = logOptions.clearedAt,
+                    liveSystemUiPids = logOptions.liveSystemUiPids,
                 ),
                 runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
                 entries = recorded.map(DiagLogParser::parse),
                 capturedAt = OffsetDateTime.parse("2026-10-08T22:00:00+08:00"),
-                liveSystemUiPids = logOptions.liveSystemUiPids,
             ),
         )
     }
