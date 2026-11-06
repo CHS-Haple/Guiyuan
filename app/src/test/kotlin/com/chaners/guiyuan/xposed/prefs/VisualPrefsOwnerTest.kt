@@ -1,10 +1,10 @@
 package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
-import java.lang.reflect.InvocationTargetException
 import com.chaners.guiyuan.settings.DUAL_SIGNAL_ENABLED_KEY
 import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.settings.VisualCfg
+import java.lang.reflect.InvocationTargetException
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
