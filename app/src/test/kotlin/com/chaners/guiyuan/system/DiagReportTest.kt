@@ -19,6 +19,12 @@ class DiagReportTest {
         const val LEVEL_FIELD = "level"
         const val DETAIL_CONFIRMED = "systemUiDetailedConfirmed=true"
         const val DETAIL_UNCONFIRMED = "systemUiDetailedConfirmed=false"
+        const val READY_STATE = "ready"
+        const val UNAVAILABLE_STATE = "unavailable"
+        const val DETAILED_LEVEL = "detailed"
+        const val GENERAL_LEVEL = "general"
+        const val CURRENT_SESSION = "current"
+        const val TEST_SESSION = "test-session"
     }
 
     @Test
@@ -40,8 +46,8 @@ class DiagReportTest {
 
     @Test
     fun detailedModeRequiresLiveSystemUiPidAndMatchingPreference() {
-        val bound = diagEvent(BIND_EVENT, state = "ready", level = "general")
-        val detailed = diagEvent(LEVEL_EVENT, level = "detailed")
+        val bound = diagEvent(BIND_EVENT, state = READY_STATE, level = GENERAL_LEVEL)
+        val detailed = diagEvent(LEVEL_EVENT, level = DETAILED_LEVEL)
 
         assertTrue(report(bound, detailed).contains(DETAIL_CONFIRMED))
         assertTrue(report(bound, detailed, level = DiagLevel.General).contains(DETAIL_UNCONFIRMED))
@@ -51,22 +57,22 @@ class DiagReportTest {
 
     @Test
     fun otherProcessAndNewSessionCannotConfirmDetailedMode() {
-        val settings = diagEvent(BIND_EVENT, state = "ready", level = "detailed", process = "com.android.settings:remote")
+        val settings = diagEvent(BIND_EVENT, state = READY_STATE, level = DETAILED_LEVEL, process = "com.android.settings:remote")
         assertTrue(report(settings).contains(DETAIL_UNCONFIRMED))
 
-        val bound = diagEvent(BIND_EVENT, state = "ready", level = "general")
-        val detailed = diagEvent(LEVEL_EVENT, level = "detailed")
-        val next = diagEvent(BIND_EVENT, state = "ready", level = "general", session = "next")
+        val bound = diagEvent(BIND_EVENT, state = READY_STATE, level = GENERAL_LEVEL)
+        val detailed = diagEvent(LEVEL_EVENT, level = DETAILED_LEVEL)
+        val next = diagEvent(BIND_EVENT, state = READY_STATE, level = GENERAL_LEVEL, session = "next")
         assertTrue(report(bound, detailed, next).contains(DETAIL_UNCONFIRMED))
     }
 
     @Test
     fun newerBindingOrSnapshotCannotRetainStaleDetailedLevel() {
-        val bound = diagEvent(BIND_EVENT, state = "ready", level = "general")
-        val detailed = diagEvent(LEVEL_EVENT, level = "detailed")
-        val unavailable = diagEvent(SNAPSHOT_EVENT, state = "unavailable", level = "detailed")
-        val snapshotWithoutLevel = diagEvent(SNAPSHOT_EVENT, state = "ready")
-        val rebindWithoutLevel = diagEvent(BIND_EVENT, state = "ready")
+        val bound = diagEvent(BIND_EVENT, state = READY_STATE, level = GENERAL_LEVEL)
+        val detailed = diagEvent(LEVEL_EVENT, level = DETAILED_LEVEL)
+        val unavailable = diagEvent(SNAPSHOT_EVENT, state = UNAVAILABLE_STATE, level = DETAILED_LEVEL)
+        val snapshotWithoutLevel = diagEvent(SNAPSHOT_EVENT, state = READY_STATE)
+        val rebindWithoutLevel = diagEvent(BIND_EVENT, state = READY_STATE)
 
         assertTrue(report(bound, detailed, unavailable).contains(DETAIL_UNCONFIRMED))
         assertTrue(report(bound, detailed, snapshotWithoutLevel).contains(DETAIL_UNCONFIRMED))
@@ -80,8 +86,8 @@ class DiagReportTest {
                 DiagProtocol.format(
                     event = BIND_EVENT,
                     component = DIAGNOSTIC_COMPONENT,
-                    state = "ready",
-                    fields = mapOf(SESSION_FIELD to "current", LEVEL_FIELD to "detailed"),
+                    state = READY_STATE,
+                    fields = mapOf(SESSION_FIELD to CURRENT_SESSION, LEVEL_FIELD to DETAILED_LEVEL),
                 )
         assertTrue(
             report(logcatReady, source = DiagLogReader.Source.LogcatFallback)
@@ -106,8 +112,8 @@ class DiagReportTest {
             DiagProtocol.format(
                 event = "presentation.resolve",
                 component = "statusIcons",
-                state = "ready",
-                fields = mapOf(SESSION_FIELD to "test-session"),
+                state = READY_STATE,
+                fields = mapOf(SESSION_FIELD to TEST_SESSION),
             ),
         )
         assertTrue(report.contains("requestedLevel=detailed"))
@@ -121,8 +127,8 @@ class DiagReportTest {
             DiagProtocol.format(
                 event = BIND_EVENT,
                 component = DIAGNOSTIC_COMPONENT,
-                state = "ready",
-                fields = mapOf(LEVEL_FIELD to "general", SESSION_FIELD to "test-session"),
+                state = READY_STATE,
+                fields = mapOf(LEVEL_FIELD to GENERAL_LEVEL, SESSION_FIELD to TEST_SESSION),
             ),
         )
         assertTrue(report.contains("runtimeLevel=general"))
@@ -135,8 +141,8 @@ class DiagReportTest {
             DiagProtocol.format(
                 event = BIND_EVENT,
                 component = DIAGNOSTIC_COMPONENT,
-                state = "unavailable",
-                fields = mapOf(SESSION_FIELD to "test-session"),
+                state = UNAVAILABLE_STATE,
+                fields = mapOf(SESSION_FIELD to TEST_SESSION),
             ),
         )
         assertTrue(report.contains("runtimeLevel=not-observed"))
@@ -149,8 +155,8 @@ class DiagReportTest {
             DiagProtocol.format(
                 event = SNAPSHOT_EVENT,
                 component = DIAGNOSTIC_COMPONENT,
-                state = "unavailable",
-                fields = mapOf(LEVEL_FIELD to "detailed", SESSION_FIELD to "test-session"),
+                state = UNAVAILABLE_STATE,
+                fields = mapOf(LEVEL_FIELD to DETAILED_LEVEL, SESSION_FIELD to TEST_SESSION),
             ),
         )
         assertTrue(report.contains("runtimeLevel=detailed"))
@@ -163,13 +169,13 @@ class DiagReportTest {
             DiagProtocol.format(
                 event = BIND_EVENT,
                 component = DIAGNOSTIC_COMPONENT,
-                state = "ready",
-                fields = mapOf(LEVEL_FIELD to "general", SESSION_FIELD to "current"),
+                state = READY_STATE,
+                fields = mapOf(LEVEL_FIELD to GENERAL_LEVEL, SESSION_FIELD to CURRENT_SESSION),
             ),
             DiagProtocol.format(
                 event = LEVEL_EVENT,
                 component = DIAGNOSTIC_COMPONENT,
-                fields = mapOf(LEVEL_FIELD to "detailed", SESSION_FIELD to "current"),
+                fields = mapOf(LEVEL_FIELD to DETAILED_LEVEL, SESSION_FIELD to CURRENT_SESSION),
             ),
         )
         assertTrue(report.contains("runtimeLevel=detailed"))
@@ -182,13 +188,13 @@ class DiagReportTest {
             DiagProtocol.format(
                 event = BIND_EVENT,
                 component = DIAGNOSTIC_COMPONENT,
-                state = "ready",
-                fields = mapOf(LEVEL_FIELD to "general", SESSION_FIELD to "previous"),
+                state = READY_STATE,
+                fields = mapOf(LEVEL_FIELD to GENERAL_LEVEL, SESSION_FIELD to "previous"),
             ),
             DiagProtocol.format(
                 event = LEVEL_EVENT,
                 component = DIAGNOSTIC_COMPONENT,
-                fields = mapOf(LEVEL_FIELD to "detailed", SESSION_FIELD to "current"),
+                fields = mapOf(LEVEL_FIELD to DETAILED_LEVEL, SESSION_FIELD to CURRENT_SESSION),
             ),
         )
         assertTrue(report.contains("runtimeLevel=detailed"))
@@ -242,8 +248,8 @@ class DiagReportTest {
         val raw = DiagProtocol.format(
             event = SNAPSHOT_EVENT,
             component = DIAGNOSTIC_COMPONENT,
-            state = "ready",
-            fields = mapOf(SESSION_FIELD to "test-session"),
+            state = READY_STATE,
+            fields = mapOf(SESSION_FIELD to TEST_SESSION),
         )
         val report = report(
             raw,
@@ -283,7 +289,7 @@ class DiagReportTest {
         state: String? = null,
         level: String? = null,
         process: String = SYSUI_PACKAGE,
-        session: String = "current",
+        session: String = CURRENT_SESSION,
     ): String =
         "[ 2026-11-06T16:35:38.396 1000: 18802: 18802 I/LSPosedFramework ] " +
             "($process) [com.chaners.guiyuan,CombinedStatus,1,0,1] " +
