@@ -23,7 +23,7 @@ internal data class DiagSnapshot(
         if (liveSystemUiPids.isEmpty()) return false
         var bound = false
         var level: String? = null
-        entries.forEach { entry ->
+        for (entry in entries) {
             val fromSystemUi =
                 entry.hostPkg == "com.android.systemui" ||
                     (
@@ -38,7 +38,7 @@ internal data class DiagSnapshot(
                 entry.component != "diagnostics" ||
                 entry.fields["sessionId"] != session
             ) {
-                return@forEach
+                continue
             }
             if (entry.event == "diagnostics.bind" || entry.event == "diagnostics.snapshot") {
                 bound = entry.state == "ready"
