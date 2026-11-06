@@ -54,6 +54,8 @@ private const val ABOUT_PROJECT_URL = "https://github.com/CHS-Haple/Guiyuan"
 private const val ABOUT_LICENSE_URL = "https://github.com/CHS-Haple/Guiyuan/blob/main/LICENSE"
 private const val GPL_LICENSE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
 private const val ABOUT_VALUE_SEPARATOR = "｜"
+private const val APACHE_LICENSE_ID = "Apache-2.0"
+private const val ANDROIDX_UPSTREAM_URL = "https://github.com/androidx/androidx"
 
 private data class AboutDependency(
     val name: String,
@@ -402,49 +404,49 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                 AboutDependency(
                     name = "libxposed service",
                     version = BuildConfig.LIBXPOSED_VERSION,
-                    license = "Apache-2.0",
+                    license = APACHE_LICENSE_ID,
                     maintainer = "libxposed",
                     upstreamUrl = "https://github.com/libxposed/service",
                 ),
                 AboutDependency(
                     name = "MIUIX",
                     version = miuixVersion,
-                    license = "Apache-2.0",
+                    license = APACHE_LICENSE_ID,
                     maintainer = "compose-miuix-ui",
                     upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
                 ),
                 AboutDependency(
                     name = "AndroidX Core",
                     version = BuildConfig.ANDROIDX_CORE_VERSION,
-                    license = "Apache-2.0",
+                    license = APACHE_LICENSE_ID,
                     maintainer = "AndroidX",
-                    upstreamUrl = "https://github.com/androidx/androidx",
+                    upstreamUrl = ANDROIDX_UPSTREAM_URL,
                 ),
                 AboutDependency(
                     name = "AndroidX Activity Compose",
                     version = BuildConfig.ACTIVITY_COMPOSE_VERSION,
-                    license = "Apache-2.0",
+                    license = APACHE_LICENSE_ID,
                     maintainer = "AndroidX",
-                    upstreamUrl = "https://github.com/androidx/androidx",
+                    upstreamUrl = ANDROIDX_UPSTREAM_URL,
                 ),
                 AboutDependency(
                     name = "AndroidX Navigation Event Compose",
                     version = BuildConfig.NAVIGATION_EVENT_COMPOSE_VERSION,
-                    license = "Apache-2.0",
+                    license = APACHE_LICENSE_ID,
                     maintainer = "AndroidX",
-                    upstreamUrl = "https://github.com/androidx/androidx",
+                    upstreamUrl = ANDROIDX_UPSTREAM_URL,
                 ),
                 AboutDependency(
                     name = "AndroidX DataStore Preferences",
                     version = BuildConfig.DATASTORE_PREFERENCES_VERSION,
-                    license = "Apache-2.0",
+                    license = APACHE_LICENSE_ID,
                     maintainer = "AndroidX",
-                    upstreamUrl = "https://github.com/androidx/androidx",
+                    upstreamUrl = ANDROIDX_UPSTREAM_URL,
                 ),
                 AboutDependency(
                     name = "kotlinx.serialization",
                     version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
-                    license = "Apache-2.0",
+                    license = APACHE_LICENSE_ID,
                     maintainer = "Kotlin",
                     upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
                 ),
@@ -456,7 +458,7 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                 AboutDependency(
                     name = "libxposed API",
                     version = BuildConfig.LIBXPOSED_VERSION,
-                    license = "Apache-2.0",
+                    license = APACHE_LICENSE_ID,
                     maintainer = "libxposed",
                     upstreamUrl = "https://github.com/libxposed/api",
                 ),
@@ -468,7 +470,7 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
                 AboutDependency(
                     name = "Gradle Wrapper",
                     version = BuildConfig.GRADLE_VERSION,
-                    license = "Apache-2.0",
+                    license = APACHE_LICENSE_ID,
                     maintainer = "Gradle",
                     upstreamUrl = "https://github.com/gradle/gradle",
                 ),
