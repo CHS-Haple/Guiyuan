@@ -374,6 +374,12 @@ class ConfigBackupTest {
     }
 
 
+    @Test
+    fun escapedQuoteInValidArchiveStringSurvivesStructureScan() {
+        val backup = sample().copy(appVersion = "1.2.3 \"stable\"")
+        assertEquals(backup, ConfigBackupFormat.decode(ConfigBackupFormat.encode(backup)))
+    }
+
     @Test fun duplicateAndEscapedJsonKeysAreRejected() {
         val json = ConfigBackupFormat.encode(sample())
         val duplicated = json.replaceFirst(

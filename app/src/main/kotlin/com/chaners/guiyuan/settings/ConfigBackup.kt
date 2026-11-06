@@ -265,6 +265,12 @@ internal object ConfigBackupFormat {
     }
 
     fun validate(backup: ConfigBackup) {
+        validateMetadata(backup)
+        validateVisualProfiles(backup)
+        validateBatterySchemes(backup)
+    }
+
+    private fun validateMetadata(backup: ConfigBackup) {
         require(backup.format == FORMAT) { "Not a Guiyuan configuration file" }
         require(backup.schemaVersion == SCHEMA) { "Unsupported schemaVersion: " + backup.schemaVersion }
         require(backup.feature.lowBatteryThreshold in LOW_BATTERY_THRESHOLD_MIN..LOW_BATTERY_THRESHOLD_MAX) {
@@ -277,7 +283,9 @@ internal object ConfigBackupFormat {
             backup.createdAt.length <= 64 &&
                 runCatching { OffsetDateTime.parse(backup.createdAt) }.isSuccess
         ) { "Invalid createdAt" }
+    }
 
+    private fun validateVisualProfiles(backup: ConfigBackup) {
         val expected = listOf(false, true).flatMap { dual ->
             ContentLayout.entries.map { layout -> dual to layout }
         }.toSet()
@@ -324,7 +332,9 @@ internal object ConfigBackupFormat {
             backup.visual.dualLayout in ContentLayout.entries) {
             "Invalid selected content layout"
         }
+    }
 
+    private fun validateBatterySchemes(backup: ConfigBackup) {
         val schemes = backup.batterySchemes
         require(
             schemes.customSchemes.size <= BATTERY_COLOR_SCHEME_CUSTOM_MAX &&
@@ -395,27 +405,27 @@ internal object ConfigBackupFormat {
                         }
                     }
                 }
-            } else {
-                when (char) {
-                    '"' -> {
-                        quoted = true
-                        start = index
-                    }
-                    '{' -> parents.add(mutableSetOf())
-                    '[' -> parents.add(null)
-                    '}' -> {
-                        require(parents.isNotEmpty() && parents.removeAt(parents.lastIndex) != null) {
-                            "Invalid JSON object nesting"
-                        }
-                    }
-                    ']' -> {
-                        require(parents.isNotEmpty() && parents.removeAt(parents.lastIndex) == null) {
-                            "Invalid JSON array nesting"
-                        }
+                continue
+            }
+            when (char) {
+                '"' -> {
+                    quoted = true
+                    start = index
+                }
+                '{' -> parents.add(mutableSetOf())
+                '[' -> parents.add(null)
+                '}' -> {
+                    require(parents.isNotEmpty() && parents.removeAt(parents.lastIndex) != null) {
+                        "Invalid JSON object nesting"
                     }
                 }
-                require(parents.size <= 16) { "JSON nesting limit exceeded" }
+                ']' -> {
+                    require(parents.isNotEmpty() && parents.removeAt(parents.lastIndex) == null) {
+                        "Invalid JSON array nesting"
+                    }
+                }
             }
+            require(parents.size <= 16) { "JSON nesting limit exceeded" }
         }
         require(!quoted && parents.isEmpty()) { "Incomplete JSON" }
     }
