@@ -78,6 +78,11 @@ class VisualCfgTest {
         assertEquals(true, VisualCfg(layout = ContentLayout.BATTERY_CENTER).showTopReadout)
         assertEquals(false, VisualCfg(layout = ContentLayout.BATTERY_CENTER, showTopReadout = false).showTopReadout)
 
+    }
+
+    @Test
+    fun newGeometryControlsClampOutOfRangeInputs() {
+        val settings = VisualCfg()
         val normalized =
             settings.copy(
                 combinedScale = 9f,
