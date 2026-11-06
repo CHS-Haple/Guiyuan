@@ -56,6 +56,24 @@ class DiagReportTest {
     }
 
     @Test
+    fun systemUiFirstCollectionConfirmsDetailEvenWithSettingsLogsPresent() {
+        val settings = diagEvent(
+            BIND_EVENT,
+            state = READY_STATE,
+            level = DETAILED_LEVEL,
+            process = "com.android.settings:remote",
+        )
+        val systemUiBound = diagEvent(BIND_EVENT, state = READY_STATE, level = GENERAL_LEVEL)
+        val systemUiDetailed = diagEvent(LEVEL_EVENT, level = DETAILED_LEVEL)
+
+        val collected = DiagLogReader.filterModuleLines(
+            listOf(settings, systemUiBound, systemUiDetailed).joinToString("\n"),
+        )
+        assertEquals(2, collected.size)
+        assertTrue(report(*collected.toTypedArray()).contains(DETAIL_CONFIRMED))
+    }
+
+    @Test
     fun otherProcessAndNewSessionCannotConfirmDetailedMode() {
         val settings = diagEvent(BIND_EVENT, state = READY_STATE, level = DETAILED_LEVEL, process = "com.android.settings:remote")
         assertTrue(report(settings).contains(DETAIL_UNCONFIRMED))
