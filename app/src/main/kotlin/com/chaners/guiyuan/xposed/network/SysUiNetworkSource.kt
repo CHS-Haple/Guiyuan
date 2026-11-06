@@ -953,7 +953,7 @@ internal object SysUiNetworkSource {
                     ?.let { root to it }
             } ?: run {
                 reportSeed(onEvent,
-                    "networkPipeline wifi seed source=hotReloadRestore " +
+                    WIFI_SEED_LOG_PREFIX + "hotReloadRestore " +
                         "state=unavailable reason=view-model-not-transferred",
                 )
                 return null
