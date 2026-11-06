@@ -395,14 +395,7 @@ internal object ConfigBackupFormat {
                     char == '\\' -> escape = true
                     char == '"' -> {
                         quoted = false
-                        var next = index + 1
-                        while (next < contents.length && contents[next].isWhitespace()) next++
-                        if (next < contents.length && contents[next] == ':' && parents.lastOrNull() != null) {
-                            val key = json.decodeFromString<String>(contents.substring(start, index + 1))
-                            require(key.length <= 128 && parents.last()!!.add(key)) {
-                                "Duplicate or invalid JSON key"
-                            }
-                        }
+                        checkObjectKey(contents, start, index, parents.lastOrNull())
                     }
                 }
                 continue
@@ -428,6 +421,23 @@ internal object ConfigBackupFormat {
             require(parents.size <= 16) { "JSON nesting limit exceeded" }
         }
         require(!quoted && parents.isEmpty()) { "Incomplete JSON" }
+    }
+
+    // Keys are decoded before deduplication so escaped spellings cannot hide duplicates.
+    private fun checkObjectKey(
+        contents: String,
+        start: Int,
+        end: Int,
+        keys: MutableSet<String>?,
+    ) {
+        if (keys == null) return
+        var next = end + 1
+        while (next < contents.length && contents[next].isWhitespace()) next++
+        if (next >= contents.length || contents[next] != ':') return
+        val key = json.decodeFromString<String>(contents.substring(start, end + 1))
+        require(key.length <= 128 && keys.add(key)) {
+            "Duplicate or invalid JSON key"
+        }
     }
 }
 
