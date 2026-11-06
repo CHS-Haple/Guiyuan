@@ -1685,6 +1685,7 @@ class GyModule : XposedModule() {
                         }
                 },
                 onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
+                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
             )
         }.onSuccess { hooks ->
             val ready = hooks == SysUiBatterySource.HOOK_COUNT
