@@ -97,6 +97,7 @@ internal object DiagReport {
         appendLine("requestedLevel=" + requested)
         appendLine("runtimeLevel=" + runtimeLevel)
         appendLine("runtimeBinding=" + runtimeBinding)
+        appendLine("systemUiDetailedConfirmed=" + snapshot.isRuntimeDetailConfirmed())
         if (log.clearedAt != null) {
             appendLine("visibleHistorySince=" + log.clearedAt)
             appendLine("historyClearScope=guiyuan-view-and-report-only")
