@@ -732,6 +732,33 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun legacyVisualMigrationRejectsUnsupportedValueTypesWithoutPublishingSchema() {
+        val layout = ContentLayout.NETWORK_CENTER
+        for (activeDual in listOf(false, true)) {
+            val prefs = MemoryPreferences()
+            val sourceKey =
+                if (activeDual) {
+                    visualModeKey(true, visualProfileKey(layout, WIFI_SIZE_SCALE_KEY))
+                } else {
+                    WIFI_SIZE_SCALE_KEY
+                }
+            prefs.edit()
+                .putBoolean(DUAL_SIGNAL_ENABLED_KEY, activeDual)
+                .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+                .putLong(sourceKey, 42L)
+                .apply()
+            val before = prefs.all.toMap()
+
+            val failure =
+                runCatching { migrateSharedLayoutVisualsIfNeeded(prefs) }.exceptionOrNull()
+
+            assertEquals("Unexpected saved visual preference type: $WIFI_SIZE_SCALE_KEY", failure?.message)
+            assertEquals(before, prefs.all)
+            assertFalse(prefs.contains(SHARED_LAYOUT_VISUAL_SCHEMA_KEY))
+        }
+    }
+
+    @Test
     fun migratingSingleModeDoesNotOverwriteItsSavedLayoutValues() {
         val prefs = MemoryPreferences()
         val layout = ContentLayout.BATTERY_CENTER
