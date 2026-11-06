@@ -49,24 +49,24 @@ internal object StatusBarHostCapture {
             try {
                 chain.thisObject
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                SysUiPresentationRuntime.throwIfFatal(error)
                 return@Hooker result
             }
         host?.let { captured ->
             try {
                 SysUiHostRegistry.capture(captured)?.let(onCaptured)
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                SysUiPresentationRuntime.throwIfFatal(error)
                 // Nonfatal callback failures must not replace the native return.
                 try {
                     SysUiHostRegistry.discardIfCurrent(captured)
                 } catch (failure: Throwable) {
-                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                    SysUiPresentationRuntime.throwIfFatal(failure)
                 }
                 try {
                     Log.w("Guiyuan[HostCapture]", "Host attachment failed", error)
                 } catch (failure: Throwable) {
-                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                    SysUiPresentationRuntime.throwIfFatal(failure)
                 }
             }
         }
