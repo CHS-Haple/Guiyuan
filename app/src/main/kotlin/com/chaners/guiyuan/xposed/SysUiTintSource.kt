@@ -244,26 +244,25 @@ internal object SysUiTintSource {
                     Delivery(state).also { deliveredStates[sourceView] = it }
                 }
             }
-        if (delivery != null) {
+        if (delivery == null) return state
+        try {
+            onTintState(TintUpdate(sourceView, state))
+        } catch (error: Throwable) {
+            rethrowFatal(error)
             try {
-                onTintState(TintUpdate(sourceView, state))
-            } catch (error: Throwable) {
-                rethrowFatal(error)
-                try {
-                    onRuntimeFailure(error)
-                } catch (failure: Throwable) {
-                    rethrowFatal(failure)
-                    if (failure !== error) error.addSuppressed(failure)
-                } finally {
-                    // Keep the failed delivery marked during native ownership cleanup.
-                    synchronized(this) {
-                        if (deliveredStates[sourceView] === delivery) {
-                            deliveredStates.remove(sourceView)
-                        }
+                onRuntimeFailure(error)
+            } catch (failure: Throwable) {
+                rethrowFatal(failure)
+                if (failure !== error) error.addSuppressed(failure)
+            } finally {
+                // Keep the failed delivery marked during native ownership cleanup.
+                synchronized(this) {
+                    if (deliveredStates[sourceView] === delivery) {
+                        deliveredStates.remove(sourceView)
                     }
                 }
-                return null
             }
+            return null
         }
         return state
     }
