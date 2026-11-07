@@ -214,6 +214,9 @@ class MainThreadRetireTest {
         assertEquals(1, changes.get())
     }
 
+}
+
+class MainThreadRetireFailureTest {
     @Test
     fun fatalCleanupRetainsItsIdentity() {
         val fatal = ThreadDeath()
