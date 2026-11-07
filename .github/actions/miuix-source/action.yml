@@ -7,7 +7,7 @@ runs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: compose-miuix-ui/miuix
-        ref: f4cfe9b0adaa5151b68ec169ed18d470b957a6f6
+        ref: b7a5f08f5a8c20350406e1665a97fbf99b5d9c8c
         path: miuix-upstream
         persist-credentials: false
     - name: Verify exact source revision and dialog dependencies
@@ -47,17 +47,17 @@ runs:
         catalog_patch="none"
         if [[ "$source_agp" != "$app_agp" ]]; then
           # Only authorize the build-tool version line; keep all MIUIX UI code identical.
-          [[ "$source_agp" == "9.4.1" && "$app_agp" == "9.5.0" ]] || {
+          [[ "$source_agp" == "9.5.1" && "$app_agp" == "9.5.0" ]] || {
             echo "::error::Unreviewed MIUIX/app AGP combination: $source_agp / $app_agp"
             exit 1
           }
-          test "$(grep -Ec '^agp = "9\.4\.1"$' "$catalog")" = 1
-          sed -i 's/^agp = "9\.4\.1"$/agp = "9.5.0"/' "$catalog"
+          test "$(grep -Ec '^agp = "9\.5\.1"$' "$catalog")" = 1
+          sed -i 's/^agp = "9\.5\.1"$/agp = "9.5.0"/' "$catalog"
           test "$(git -C miuix-upstream diff --name-only)" = "gradle/libs.versions.toml"
           test "$(git -C miuix-upstream diff --numstat)" = "$(printf '1\t1\tgradle/libs.versions.toml')"
-          git -C miuix-upstream diff --unified=0 -- gradle/libs.versions.toml | grep -Fx -- '-agp = "9.4.1"'
+          git -C miuix-upstream diff --unified=0 -- gradle/libs.versions.toml | grep -Fx -- '-agp = "9.5.1"'
           git -C miuix-upstream diff --unified=0 -- gradle/libs.versions.toml | grep -Fx -- '+agp = "9.5.0"'
-          catalog_patch="agp:9.4.1->9.5.0"
+          catalog_patch="agp:9.5.1->9.5.0"
         fi
         test "$(sed -nE 's/^agp = "([^"]+)"$/\1/p' "$catalog")" = "$app_agp"
         test "$(git -C miuix-upstream rev-parse HEAD)" = "$expected"
