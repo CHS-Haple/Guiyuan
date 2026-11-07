@@ -131,7 +131,7 @@ class DiagReportTest {
         assertEquals(300, DiagReport.exportLineLimit(DiagLevel.General))
         assertEquals(1500, DiagReport.exportLineLimit(DiagLevel.Detailed))
 
-        val exported = report(List(305) { "record-${it + 1}" }, level = DiagLevel.General)
+        val exported = report(recordLines(305), level = DiagLevel.General)
         assertTrue(exported.contains("lines=300\n"))
         assertTrue(exported.contains("omittedEarlierSessionLines=5"))
         assertFalse(exported.contains("\nrecord-5\n"))
@@ -142,11 +142,11 @@ class DiagReportTest {
     @Test
     fun reportLineLimitIsDisclosedOnlyWhenEarlierSessionLinesAreOmitted() {
         val limit = DiagReport.exportLineLimit(DiagLevel.Detailed)
-        val exactlyAtLimit = report(List(limit) { "record-${it + 1}" })
+        val exactlyAtLimit = report(recordLines(limit))
         assertFalse(exactlyAtLimit.contains("omittedEarlierSessionLines="))
         assertFalse(exactlyAtLimit.contains("report=latest-session-lines-only"))
 
-        val oneOverLimit = report(List(limit + 1) { "record-${it + 1}" })
+        val oneOverLimit = report(recordLines(limit + 1))
         assertTrue(oneOverLimit.contains("lines=${limit}\n"))
         assertTrue(oneOverLimit.contains("report=latest-session-lines-only"))
         assertTrue(oneOverLimit.contains("omittedEarlierSessionLines=1"))
@@ -157,7 +157,7 @@ class DiagReportTest {
     @Test
     fun captureTruncationAndReportLineLimitAreBothDisclosed() {
         val limit = DiagReport.exportLineLimit(DiagLevel.Detailed)
-        val result = report(List(limit + 3) { "record-${it + 1}" }, truncated = true)
+        val result = report(recordLines(limit + 3), truncated = true)
         assertTrue(result.contains("capture=latest-complete-lines-only"))
         assertTrue(result.contains("omittedEarlierSessionLines=3"))
         assertTrue(result.contains("lines=${limit}\n"))
@@ -203,6 +203,9 @@ class DiagReportTest {
         assertTrue(report.contains("collection=exit:1"))
         assertTrue(report.contains("[Device]"))
     }
+
+    private fun recordLines(count: Int): List<String> =
+        List(count) { "record-${it + 1}" }
 
     private fun report(
         vararg lines: String,
