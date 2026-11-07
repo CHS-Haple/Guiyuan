@@ -1,7 +1,9 @@
 package com.chaners.guiyuan.xposed.network
 
 import java.lang.reflect.InvocationTargetException
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -30,6 +32,59 @@ class SysUiNetworkSourceTest {
         assertFalse(eligible(homeClass, "mobile", "other_view", true, true))
         assertFalse(eligible("com.android.systemui.statusbar.pipeline.mobile.ui.view.Other", "mobile",
             "mobile_combo", true, true))
+    }
+
+    @Test
+    fun nativeOwnerIsRequiredEvenWhenBinderHasAValidId() {
+        assertNull(
+            SysUiNetworkSource.consistentHomeMobileSubscription(
+                nativeId = null,
+                binderObserved = true,
+                binderId = 1,
+            ),
+        )
+        assertNull(
+            SysUiNetworkSource.consistentHomeMobileSubscription(
+                nativeId = -1,
+                binderObserved = false,
+                binderId = null,
+            ),
+        )
+    }
+
+    @Test
+    fun nativeOwnerCanRecoverMissingBinderButRejectsConflictingReceipts() {
+        assertEquals(
+            2,
+            SysUiNetworkSource.consistentHomeMobileSubscription(
+                nativeId = 2,
+                binderObserved = false,
+                binderId = null,
+            ),
+        )
+        assertEquals(
+            2,
+            SysUiNetworkSource.consistentHomeMobileSubscription(
+                nativeId = 2,
+                binderObserved = true,
+                binderId = 2,
+            ),
+        )
+        assertNull(
+            SysUiNetworkSource.consistentHomeMobileSubscription(
+                nativeId = 2,
+                binderObserved = true,
+                binderId = 1,
+            ),
+        )
+        // An invalid explicit Binder bind must block stale native ownership.
+        assertNull(
+            SysUiNetworkSource.consistentHomeMobileSubscription(
+                nativeId = 2,
+                binderObserved = true,
+                binderId = null,
+            ),
+        )
     }
 
     @Test
