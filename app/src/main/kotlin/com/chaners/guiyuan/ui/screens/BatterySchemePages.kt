@@ -330,60 +330,82 @@ private fun BatterySchemePageContent(
                         null
                     },
             )
-            BatterySchemeActionArea {
-                TextButton(
-                    text =
-                        stringResource(
-                            if (isActive) {
-                                R.string.battery_color_scheme_applied
-                            } else {
-                                R.string.battery_color_scheme_apply
-                            },
-                        ),
-                    onClick = onApply,
-                    enabled = !isActive,
-                    minWidth = 26.dp,
-                    minHeight = 26.dp,
-                    cornerRadius = SnackbarDefaults.ActionCornerRadius,
-                    insideMargin = SnackbarDefaults.ActionInsideMargin,
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                    textStyle = TextStyle(fontSize = 15.sp),
-                )
-            }
-            Card(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .onSizeChanged { size ->
-                            onSettingsCardMeasured(size.height)
-                        },
-            ) {
-                BatteryColorSlot.entries.forEach { slot ->
-                    val color =
-                        when {
-                            builtIn != null -> batteryBuiltInColor(builtIn, slot)
-                            custom != null ->
-                                batterySchemeEntryColor(custom.entries.entryFor(slot), slot)
-                            else -> null
-                        }
-                    val followsSystem =
-                        when {
-                            builtIn != null -> color == null
-                            custom != null ->
-                                custom.entries.entryFor(slot).source ==
-                                    BatteryColorSchemeSource.FOLLOW_SYSTEM ||
-                                    color == null
-                            else -> true
-                        }
-                    BatteryModeSettingItem(
-                        slot = slot,
-                        color = color,
-                        followsSystem = followsSystem,
-                        enabled = custom != null || canCreateCustom,
-                        onClick = { onSlotClick(slot) },
-                    )
+            BatterySchemeApplyAction(isActive, onApply)
+            BatterySchemeSettingsCard(
+                builtIn = builtIn,
+                custom = custom,
+                canCreateCustom = canCreateCustom,
+                onSlotClick = onSlotClick,
+                onSettingsCardMeasured = onSettingsCardMeasured,
+            )
+        }
+    }
+}
+
+@Composable
+private fun BatterySchemeApplyAction(isActive: Boolean, onApply: () -> Unit) {
+    BatterySchemeActionArea {
+        TextButton(
+            text =
+                stringResource(
+                    if (isActive) {
+                        R.string.battery_color_scheme_applied
+                    } else {
+                        R.string.battery_color_scheme_apply
+                    },
+                ),
+            onClick = onApply,
+            enabled = !isActive,
+            minWidth = 26.dp,
+            minHeight = 26.dp,
+            cornerRadius = SnackbarDefaults.ActionCornerRadius,
+            insideMargin = SnackbarDefaults.ActionInsideMargin,
+            colors = ButtonDefaults.textButtonColorsPrimary(),
+            textStyle = TextStyle(fontSize = 15.sp),
+        )
+    }
+}
+
+@Composable
+private fun BatterySchemeSettingsCard(
+    builtIn: BatteryBuiltInColorScheme?,
+    custom: BatteryCustomColorScheme?,
+    canCreateCustom: Boolean,
+    onSlotClick: (BatteryColorSlot) -> Unit,
+    onSettingsCardMeasured: (Int) -> Unit,
+) {
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .onSizeChanged { size ->
+                    onSettingsCardMeasured(size.height)
+                },
+    ) {
+        BatteryColorSlot.entries.forEach { slot ->
+            val color =
+                when {
+                    builtIn != null -> batteryBuiltInColor(builtIn, slot)
+                    custom != null ->
+                        batterySchemeEntryColor(custom.entries.entryFor(slot), slot)
+                    else -> null
                 }
-            }
+            val followsSystem =
+                when {
+                    builtIn != null -> color == null
+                    custom != null ->
+                        custom.entries.entryFor(slot).source ==
+                            BatteryColorSchemeSource.FOLLOW_SYSTEM ||
+                            color == null
+                    else -> true
+                }
+            BatteryModeSettingItem(
+                slot = slot,
+                color = color,
+                followsSystem = followsSystem,
+                enabled = custom != null || canCreateCustom,
+                onClick = { onSlotClick(slot) },
+            )
         }
     }
 }
@@ -540,94 +562,104 @@ private fun BatteryAddSchemePage(
                     if (enabled) PressFeedbackType.Sink else PressFeedbackType.None,
                 onClick = if (enabled) onClick else null,
             ) {
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp, vertical = 22.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Surface(
-                        modifier = Modifier.size(FloatingActionButtonDefaults.MinWidth),
-                        shape = CircleShape,
-                        color =
-                            if (enabled) MiuixTheme.colorScheme.primary
-                            else MiuixTheme.colorScheme.disabledPrimaryButton,
-                        shadowElevation = 0.dp,
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(32.dp),
-                                tint =
-                                    if (enabled) MiuixTheme.colorScheme.onPrimary
-                                    else MiuixTheme.colorScheme.disabledOnPrimaryButton,
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(14.dp))
-                    Text(
-                        text =
-                            if (enabled) stringResource(R.string.battery_scheme_new_summary)
-                            else stringResource(R.string.battery_scheme_full_summary, BATTERY_COLOR_SCHEME_CUSTOM_MAX),
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(24.dp))
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(9.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.battery_scheme_capacity),
-                                style = MiuixTheme.textStyles.body2,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
-                            Text(
-                                text = "$count / $BATTERY_COLOR_SCHEME_CUSTOM_MAX",
-                                style = MiuixTheme.textStyles.body2,
-                            )
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(7.dp),
-                        ) {
-                            repeat(BATTERY_COLOR_SCHEME_CUSTOM_MAX) { index ->
-                                Surface(
-                                    modifier = Modifier.weight(1f).height(6.dp),
-                                    shape = CircleShape,
-                                    color =
-                                        if (index < count) MiuixTheme.colorScheme.primary
-                                        else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.14f),
-                                ) {}
-                            }
-                        }
-                        Text(
-                            text =
-                                if (enabled) stringResource(
-                                    R.string.battery_scheme_remaining,
-                                    BATTERY_COLOR_SCHEME_CUSTOM_MAX - count,
-                                ) else stringResource(R.string.battery_scheme_full_hint),
-                            style = MiuixTheme.textStyles.footnote2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
+                BatteryAddSchemeCardBody(count, enabled)
             }
         }
+    }
+}
+
+@Composable
+private fun BatteryAddSchemeCardBody(count: Int, enabled: Boolean) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 22.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Surface(
+            modifier = Modifier.size(FloatingActionButtonDefaults.MinWidth),
+            shape = CircleShape,
+            color =
+                if (enabled) MiuixTheme.colorScheme.primary
+                else MiuixTheme.colorScheme.disabledPrimaryButton,
+            shadowElevation = 0.dp,
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                    tint =
+                        if (enabled) MiuixTheme.colorScheme.onPrimary
+                        else MiuixTheme.colorScheme.disabledOnPrimaryButton,
+                )
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        Text(
+            text =
+                if (enabled) stringResource(R.string.battery_scheme_new_summary)
+                else stringResource(R.string.battery_scheme_full_summary, BATTERY_COLOR_SCHEME_CUSTOM_MAX),
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(24.dp))
+        BatterySchemeCapacityStatus(count, enabled)
+    }
+}
+
+@Composable
+private fun BatterySchemeCapacityStatus(count: Int, enabled: Boolean) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(9.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.battery_scheme_capacity),
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+            Text(
+                text = "$count / $BATTERY_COLOR_SCHEME_CUSTOM_MAX",
+                style = MiuixTheme.textStyles.body2,
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
+            repeat(BATTERY_COLOR_SCHEME_CUSTOM_MAX) { index ->
+                Surface(
+                    modifier = Modifier.weight(1f).height(6.dp),
+                    shape = CircleShape,
+                    color =
+                        if (index < count) MiuixTheme.colorScheme.primary
+                        else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.14f),
+                ) {}
+            }
+        }
+        Text(
+            text =
+                if (enabled) stringResource(
+                    R.string.battery_scheme_remaining,
+                    BATTERY_COLOR_SCHEME_CUSTOM_MAX - count,
+                ) else stringResource(R.string.battery_scheme_full_hint),
+            style = MiuixTheme.textStyles.footnote2,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
