@@ -737,15 +737,16 @@ internal object SysUiNetworkSource {
                 root.isAttachedToWindow && binding.subscriptionId != null }
 
     @Synchronized
-    fun mobilePresentationBindings(): List<MobilePresentationBinding> =
-        buildList {
-            val homeGroup = currentNativeHomeMobileGroup() ?: return@buildList
+    fun mobilePresentationBindings(): List<MobilePresentationBinding> {
+        val homeGroup = currentNativeHomeMobileGroup() ?: return emptyList()
+        return buildList {
             for (index in 0 until homeGroup.childCount) {
                 val root = homeGroup.getChildAt(index) as? ViewGroup ?: continue
                 val id = resolvedHomeMobileSubscription(root, homeGroup) ?: continue
                 add(MobilePresentationBinding(root, id))
             }
         }
+    }
 
     @Synchronized
     fun bindingTopologyLines(): List<String> =
@@ -924,7 +925,7 @@ internal object SysUiNetworkSource {
         val icons = NativeParticipantAccess.groupFor(host) ?: return null
         val battery = icons.parent as? ViewGroup ?: return null
         if (
-            icons.javaClass.name != "com.android.systemui.statusbar.views.MiuiStatusIconContainer" ||
+            icons.javaClass.name != NATIVE_HOME_ICON_GROUP_CLASS_NAME ||
             battery.javaClass.name != "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer" ||
             battery.parent !== host ||
             icons.childCount > 64
@@ -1586,7 +1587,7 @@ internal object SysUiNetworkSource {
         val nativeHome =
             view.isAttachedToWindow &&
                 wifi.isAttachedToWindow &&
-                icons.javaClass.name == "com.android.systemui.statusbar.views.MiuiStatusIconContainer" &&
+                icons.javaClass.name == NATIVE_HOME_ICON_GROUP_CLASS_NAME &&
                 battery.javaClass.name == "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer" &&
                 battery.parent === SysUiHostRegistry.current()
         if (nativeHome) {
