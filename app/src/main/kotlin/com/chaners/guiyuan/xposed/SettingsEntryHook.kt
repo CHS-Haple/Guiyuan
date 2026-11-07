@@ -238,14 +238,14 @@ internal object SettingsEntryHook {
         return BitmapDrawable(context.resources, output)
     }
 
-    private fun Class<*>.findField(name: String): Field {
+    internal fun Class<*>.findField(name: String): Field {
         var current: Class<*>? = this
         while (current != null) {
             val clazz = current
             val field = try {
                 clazz.getDeclaredField(name)
-            } catch (error: Throwable) {
-                rethrowFatal(error)
+            } catch (_: NoSuchFieldException) {
+                // Only genuine absence permits looking for an inherited field.
                 null
             }
             if (field != null) return field.apply { isAccessible = true }
