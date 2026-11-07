@@ -255,7 +255,7 @@ internal object HomeRenderSession {
             }
         private val renderController = RenderController(probeView)
         private var readyLogged = false
-        private var lastMobileRenderIdentity: Pair<Boolean, Int>? = null
+        private var lastMobileRenderIdentity: Pair<Int?, Int>? = null
         private var layoutLogged = false
         private var deferredStateLogged = false
         private var rejectedTintLogged = false
@@ -556,7 +556,9 @@ internal object HomeRenderSession {
 
             val model = update.model
             if (model != null && isDetailedDiagnosticsEnabled()) {
-                val identity = (model.mobileLevel != null) to model.effectiveDataSubscriptionId
+                // Signal levels can change without changing the selected SIM or nullability.
+                // Keep only actual model transitions, never per-frame render noise.
+                val identity = model.mobileLevel to model.effectiveDataSubscriptionId
                 if (identity != lastMobileRenderIdentity) {
                     lastMobileRenderIdentity = identity
                     emitEvent {
