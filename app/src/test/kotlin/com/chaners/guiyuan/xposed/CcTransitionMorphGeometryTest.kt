@@ -242,13 +242,9 @@ class CcTransitionMorphGeometryTest {
         }
     }
 
-    @Test
-    fun aggregateTypeCanUseTheSoleNativeRootWithoutChangingDataSubscription() {
-        val target = NativePresentationResolver.NetworkType(
-            "5G", false, NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
-        )
-        val source = CenterIndicator.MobileType("5G", false, InternetState.VALIDATED)
-        val presentation = NativePresentationResolver.Snapshot(
+    // One validated native fixture shared by independent type and activity contracts.
+    private fun aggregateRootPresentation(): NativePresentationResolver.Snapshot =
+        NativePresentationResolver.Snapshot(
             mode = NativePresentationResolver.Mode.DUAL_AGGREGATED,
             boundRoots = 2,
             visibleRoots = 1,
@@ -258,8 +254,14 @@ class CcTransitionMorphGeometryTest {
             presentationRootSubscriptionId = 1,
             effectiveDataSubscriptionId = 4,
             networkTypeSubscriptionId = 4,
-            networkType = target,
+            networkType = NativePresentationResolver.NetworkType(
+                "5G", false, NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
+            ),
         )
+
+    @Test
+    fun aggregateTypeRequiresSoleVerifiedNativeRoot() {
+        val presentation = aggregateRootPresentation()
         fun verified(
             state: NativePresentationResolver.Snapshot? = presentation,
             dataSubId: Int = 4,
@@ -285,13 +287,11 @@ class CcTransitionMorphGeometryTest {
         assertEquals(false, verified(dataSubId = 7))
         assertEquals(false, verified(targetSubId = 7))
         assertEquals(false, verified(state = null))
-        assertTrue(CcTransitionPolicy.matchesDualMobileTypeTarget(
-            dataSubId = 4,
-            targetSubId = 1,
-            source = source,
-            target = target,
-            verifiedAggregateRoot = verified(),
-        ))
+    }
+
+    @Test
+    fun aggregateMobileActivityKeepsTheSelectedDataPathOnOneNativeRoot() {
+        val presentation = aggregateRootPresentation()
         // The only visible FINAL mobile root is owned by SIM1, but the
         // native activity drawable can represent the selected SIM2 data path.
         fun activity(
@@ -318,27 +318,45 @@ class CcTransitionMorphGeometryTest {
         )))
         assertTrue(activity(targetSubId = null))
         assertFalse(activity(state = null))
+    }
 
+    @Test
+    fun aggregateTypeHandoffRejectsMismatchedNativeLabelOrTypography() {
+        val presentation = aggregateRootPresentation()
+        val target = requireNotNull(presentation.networkType)
+        val source = CenterIndicator.MobileType("5G", false, InternetState.VALIDATED)
+        val verifiedAggregateRoot = CcTransitionPolicy.verifiedAggregateTypeRoot(
+            presentation, 4, 1, true,
+        )
+        assertTrue(CcTransitionPolicy.matchesDualMobileTypeTarget(
+            dataSubId = 4,
+            targetSubId = 1,
+            source = source,
+            target = target,
+            verifiedAggregateRoot = verifiedAggregateRoot,
+        ))
         assertEquals(false, CcTransitionPolicy.matchesDualMobileTypeTarget(
             dataSubId = 4,
             targetSubId = 1,
             source = source,
             target = target.copy(label = "4G"),
-            verifiedAggregateRoot = verified(),
+            verifiedAggregateRoot = verifiedAggregateRoot,
         ))
         assertEquals(false, CcTransitionPolicy.matchesDualMobileTypeTarget(
             dataSubId = 4,
             targetSubId = 1,
             source = source,
             target = null,
-            verifiedAggregateRoot = verified(),
+            verifiedAggregateRoot = verifiedAggregateRoot,
         ))
         assertEquals(false, CcTransitionPolicy.matchesDualMobileTypeTarget(
             dataSubId = 4,
             targetSubId = 1,
             source = source,
             target = target.copy(enhanced = true),
-            verifiedAggregateRoot = verified(),
+            verifiedAggregateRoot = verifiedAggregateRoot,
         ))
     }
+    }
+
 }
