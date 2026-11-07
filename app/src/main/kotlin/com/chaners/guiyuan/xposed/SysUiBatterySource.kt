@@ -102,6 +102,21 @@ internal object SysUiBatterySource {
             Class.forName(BATTERY_METER_VIEW_CLASS_NAME, false, classLoader)
         val levelField = iconClass.requiredField("mLevel")
         val chargingField = iconClass.requiredField("mCharging")
+        // Temporary diagnostic reads; never used as additional event authorities.
+        val meterIconField = meterClass.optionalField("mBatteryIconView")
+        val meterLevelField = meterClass.optionalField("mLevel")
+        val meterChargingField = meterClass.optionalField("mCharging")
+        val deoptPropertyMethod =
+            readOrNull {
+                Class.forName("android.os.SystemProperties")
+                    .getDeclaredMethod(
+                        "getBoolean",
+                        String::class.java,
+                        Boolean::class.javaPrimitiveType,
+                    ).apply { isAccessible = true }
+            }
+        val deoptAttempted = AtomicBoolean(false)
+        if (deoptPropertyMethod == null) probe("stage=deopt-property-unavailable")
         val progressStatusMethod =
             iconClass.getDeclaredMethod("getProgressStatus")
                 .apply { isAccessible = true }
@@ -305,11 +320,30 @@ internal object SysUiBatterySource {
                 .setId(hookId)
                 .intercept(
                     Hooker { chain ->
-                        val result = chain.proceed()
-                        if (hookId == LEVEL_HOOK_ID || hookId == CHARGE_HOOK_ID) {
+                        val traced =
+                            hookId == LEVEL_HOOK_ID || hookId == CHARGE_HOOK_ID ||
+                                hookId == POWER_SAVE_HOOK_ID || hookId == PERFORMANCE_HOOK_ID
+                        if (traced) {
                             probe(
-                                "stage=hook method=${method.name} ready=$hooksReady " +
-                                    "receiver=${chain.thisObject?.javaClass?.name ?: "none"} " +
+                                "stage=hook-enter method=${method.name} ready=$hooksReady " +
+                                    "view=${System.identityHashCode(chain.thisObject)}"
+                            )
+                        }
+                        val result =
+                            try {
+                                chain.proceed()
+                            } catch (error: Throwable) {
+                                if (traced) {
+                                    probe(
+                                        "stage=hook-throw method=${method.name} " +
+                                            "error=${error.javaClass.simpleName}"
+                                    )
+                                }
+                                throw error
+                            }
+                        if (traced) {
+                            probe(
+                                "stage=hook-return method=${method.name} ready=$hooksReady " +
                                     "view=${System.identityHashCode(chain.thisObject)}"
                             )
                         }
@@ -359,6 +393,40 @@ internal object SysUiBatterySource {
         val updateChargeAndTextMethod =
             meterClass.getDeclaredMethod(UPDATE_CHARGE_AND_TEXT_METHOD_NAME)
                 .apply { isAccessible = true }
+
+        // Explicit, opt-in, one-time deoptimization experiment only.
+        // The meter Hook is entered from the actual controller callback on level/charge
+        // changes. Post to the host thread so the current native caller returns first.
+        fun requestCallerDeopt(meterView: View) {
+            if (deoptAttempted.get() || deoptPropertyMethod == null) return
+            val requested =
+                readOrNull {
+                    deoptPropertyMethod.invoke(null, "debug.guiyuan.battery_deopt", false) as? Boolean
+                } == true
+            if (!requested || !deoptAttempted.compareAndSet(false, true)) return
+            val posted =
+                meterView.post {
+                    if (!hooksReady) {
+                        probe("stage=deopt-skipped reason=hooks-not-ready")
+                        return@post
+                    }
+                    val callers =
+                        listOf(levelMethod, chargeMethod, powerSaveMethod, performanceMethod)
+                    val outcome =
+                        callers.joinToString(separator = " ") { caller ->
+                            try {
+                                "${caller.name}=${module.deoptimize(caller)}"
+                            } catch (error: Throwable) {
+                                rethrowFatal(error)
+                                "${caller.name}=${error.javaClass.simpleName}"
+                            }
+                        }
+                    probe("stage=deopt-completed $outcome")
+                }
+            probe("stage=deopt-scheduled posted=$posted")
+            if (!posted) deoptAttempted.set(false)
+        }
+
         val handles = ArrayList<HookHandle>(HOOK_COUNT)
         try {
             handles +=
@@ -368,13 +436,33 @@ internal object SysUiBatterySource {
                     .intercept(
                         Hooker { chain ->
                             val result = chain.proceed()
+                            val meterView = readOrNull { chain.thisObject as? View }
+                            val iconView =
+                                meterView?.let { view ->
+                                    meterIconField?.let { field -> readOrNull { field.get(view) } }
+                                }
+                            val meterLevel =
+                                meterView?.let { view ->
+                                    meterLevelField?.let { field -> readOrNull { field.getInt(view) } }
+                                }
+                            val meterCharging =
+                                meterView?.let { view ->
+                                    meterChargingField?.let { field ->
+                                        readOrNull { field.getBoolean(view) }
+                                    }
+                                }
+                            val iconLevel =
+                                iconView?.let { view -> readOrNull { levelField.getInt(view) } }
+                            val iconCharging =
+                                iconView?.let { view -> readOrNull { chargingField.getBoolean(view) } }
                             probe(
                                 "stage=meter-hook method=updateChargeAndText ready=$hooksReady " +
-                                    "view=${System.identityHashCode(chain.thisObject)}"
+                                    "view=${System.identityHashCode(chain.thisObject)} " +
+                                    "meterPercent=$meterLevel meterCharging=$meterCharging " +
+                                    "iconPercent=$iconLevel iconCharging=$iconCharging"
                             )
-                            if (!hooksReady) return@Hooker result
-                            val meterView = readOrNull { chain.thisObject as? View }
-                                ?: return@Hooker result
+                            if (!hooksReady || meterView == null) return@Hooker result
+                            requestCallerDeopt(meterView)
                             try {
                                 publishChargingGlyph(
                                     meterView = meterView,
