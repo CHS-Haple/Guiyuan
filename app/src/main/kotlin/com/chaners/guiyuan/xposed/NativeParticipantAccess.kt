@@ -106,11 +106,11 @@ internal object NativeParticipantAccess {
             handles.controller.readField("mIconGroups") as? Iterable<*>
                 ?: return 0
         var removed = 0
-        managers.forEach { manager ->
-            manager ?: return@forEach
+        for (manager in managers) {
+            if (manager == null) continue
             val map =
                 manager.readField("mBindableIcons") as? MutableMap<Any?, Any?>
-                    ?: return@forEach
+                    ?: continue
             val current = map[slot]
             if (current != null && (expectedHolder == null || current === expectedHolder)) {
                 map.remove(slot)
@@ -289,14 +289,10 @@ internal object NativeParticipantAccess {
                     }?.apply { isAccessible = true }
             } ?: return null
 
-        STATUS_BAR_ICON_CONTROLLER_CANDIDATES.forEach { className ->
-            val controllerType =
-                classOrNull(className, classLoader)
-                    ?: return@forEach
+        for (className in STATUS_BAR_ICON_CONTROLLER_CANDIDATES) {
+            val controllerType = classOrNull(className, classLoader) ?: continue
             val controller = readOrNull { getMethod.invoke(null, controllerType) }
-            if (controller != null) {
-                return controller
-            }
+            if (controller != null) return controller
         }
         return null
     }
