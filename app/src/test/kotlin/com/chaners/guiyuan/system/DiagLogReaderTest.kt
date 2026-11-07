@@ -115,7 +115,6 @@ class DiagLogReaderTest {
 
 }
 
-// Session selection is independent from log-source filtering.
 class DiagLogReaderSessionTest {
     @Test
     fun logcatSessionKeepsOnlyCurrentProcessAfterInterleavedRestart() {
