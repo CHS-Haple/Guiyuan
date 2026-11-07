@@ -284,10 +284,8 @@ fun BoxScope.GlassTransformPopup(
     LaunchedEffect(show) {
         if (show) {
             hasOpened = true
-        } else {
-            if (hasOpened) {
-                snapshotFlow { visibility.isIdle && !visibility.currentState }.first { it }
-            }
+        } else if (hasOpened) {
+            snapshotFlow { visibility.isIdle && !visibility.currentState }.first { it }
             hasOpened = false
             onFinished?.invoke()
         }
