@@ -1,12 +1,13 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
-// Modified from upstream (2026): popup interaction and transform integration.
+// Modified from upstream (2026): popup interaction, transform integration and root-host exit lifecycle.
 
 package top.yukonga.miuix.kmp.glass
 
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.rememberTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
@@ -22,6 +24,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -40,6 +44,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import top.yukonga.miuix.kmp.blur.Backdrop
+import kotlinx.coroutines.flow.first
 import kotlin.math.roundToInt
 
 /**
@@ -246,6 +251,7 @@ fun Modifier.glassPopupAnchorValue(anchor: GlassPopupAnchor): Modifier = this
  * @param contentPadding Padding around the items.
  * @param onMeasured Called with the size the panel settles at. A second menu opened from one of its
  *   rows is measured at least this wide.
+ * @param onDismissFinished Called after the full closing transform; used by root-hosted menus.
  * @param content The items.
  */
 @Composable
@@ -266,9 +272,26 @@ fun BoxScope.GlassTransformPopup(
     gap: Dp = 0.dp,
     contentPadding: PaddingValues = PaddingValues(vertical = GlassPopupDefaults.ContentPaddingVertical),
     onMeasured: ((Size) -> Unit)? = null,
+    onDismissFinished: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val transition = updateTransition(show, label = "glassTransformPopup")
+    // Root PopupLayout mounts only on demand. Begin at the closed endpoint for the first opening.
+    val visibility = remember { MutableTransitionState(false) }
+    visibility.targetState = show
+    val transition = rememberTransition(visibility, label = "glassTransformPopup")
+    val onFinished by rememberUpdatedState(onDismissFinished)
+    var hasOpened by remember { mutableStateOf(false) }
+    LaunchedEffect(show) {
+        if (show) {
+            hasOpened = true
+        } else {
+            if (hasOpened) {
+                snapshotFlow { visibility.isIdle && !visibility.currentState }.first { it }
+            }
+            hasOpened = false
+            onFinished?.invoke()
+        }
+    }
     val bounds = transition.animateFloat(
         transitionSpec = { GlassMotion.transformBounds(targetState) },
         label = "glassTransformBounds",

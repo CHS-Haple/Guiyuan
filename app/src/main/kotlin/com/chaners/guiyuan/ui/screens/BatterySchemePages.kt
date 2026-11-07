@@ -41,12 +41,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -109,7 +106,10 @@ import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.glass.GlassIconButton
-import top.yukonga.miuix.kmp.glass.GlassDropdownPopupContent
+import top.yukonga.miuix.kmp.glass.GlassTransformPopup
+import top.yukonga.miuix.kmp.glass.glassPopupAnchor
+import top.yukonga.miuix.kmp.glass.glassPopupAnchorContent
+import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
 import top.yukonga.miuix.kmp.glass.GlassPopupItem
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
@@ -814,7 +814,8 @@ private fun BatterySchemeManageMenu(
         val haptic = LocalHapticFeedback.current
         var expanded by remember { mutableStateOf(false) }
         val mounted = remember { mutableStateOf(false) }
-        var anchorBounds by remember { mutableStateOf(Rect.Zero) }
+        val anchor = rememberGlassPopupAnchor()
+        var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
         TooltipBox(text = stringResource(R.string.battery_custom_scheme_manage)) {
             GlassIconButton(
@@ -825,11 +826,13 @@ private fun BatterySchemeManageMenu(
                         haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
                     }
                 },
-                modifier = modifier.onGloballyPositioned { anchorBounds = it.boundsInRoot() },
+                modifier = modifier.glassPopupAnchor(anchor, cornerRadius = 20.dp, floating = true),
+                backdrop = backdrop,
             ) {
                 Icon(
                     imageVector = Os4GlassMore,
                     contentDescription = stringResource(R.string.battery_custom_scheme_manage),
+                    modifier = Modifier.glassPopupAnchorContent(anchor),
                 )
             }
         }
@@ -844,27 +847,33 @@ private fun BatterySchemeManageMenu(
                 exitTransition = ExitTransition.None,
                 renderInRootScaffold = true,
             ) {
-                var hostOrigin by remember { mutableStateOf(Offset.Zero) }
-                Box(
-                    modifier = Modifier.fillMaxSize().onGloballyPositioned {
-                        hostOrigin = it.positionInRoot()
-                    },
-                ) {
-                    GlassDropdownPopupContent(
+                Box(Modifier.fillMaxSize()) {
+                    GlassTransformPopup(
                         show = expanded,
                         onDismissRequest = { expanded = false },
-                        anchorBounds = anchorBounds,
-                        coordinateOrigin = hostOrigin,
+                        anchor = anchor,
                         backdrop = backdrop,
-                        onDismissFinished = { mounted.value = false },
+                        simplified = true,
+                        anchorContent = {
+                            Icon(
+                                imageVector = Os4GlassMore,
+                                contentDescription = null,
+                            )
+                        },
+                        onDismissFinished = {
+                            mounted.value = false
+                            val action = pendingAction
+                            pendingAction = null
+                            action?.invoke()
+                        },
                     ) {
                         GlassPopupItem(
                             text = stringResource(R.string.battery_custom_scheme_rename),
                             icon = Os4GlassEdit,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                pendingAction = onRename
                                 expanded = false
-                                onRename()
                             },
                         )
                         GlassPopupItem(
@@ -873,8 +882,8 @@ private fun BatterySchemeManageMenu(
                             enabled = canCopy,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                pendingAction = onCopy
                                 expanded = false
-                                onCopy()
                             },
                         )
                         HorizontalDivider(
@@ -889,8 +898,8 @@ private fun BatterySchemeManageMenu(
                             icon = Os4GlassDelete,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                pendingAction = onDelete
                                 expanded = false
-                                onDelete()
                             },
                         )
                     }
