@@ -739,21 +739,10 @@ internal object SysUiNetworkSource {
     @Synchronized
     fun mobilePresentationBindings(): List<MobilePresentationBinding> =
         buildList {
-            mobileRoots.forEach { (root, binding) ->
-                val subscriptionId = binding.subscriptionId
-                if (root.isAttachedToWindow && subscriptionId != null) {
-                    add(MobilePresentationBinding(root, subscriptionId))
-                }
-            }
-            // SystemUI may create/attach existing mobile roots without replaying
-            // MiuiMobileIconBinder.bind() after our hook installation. Read only
-            // the authoritative Home DarkIconManager's direct mobile children.
             val homeGroup = currentNativeHomeMobileGroup() ?: return@buildList
             for (index in 0 until homeGroup.childCount) {
                 val root = homeGroup.getChildAt(index) as? ViewGroup ?: continue
-                // A live binder (even a rejected invalid ID) owns this root.
-                if (mobileRoots.containsKey(root)) continue
-                val id = nativeHomeMobileSubscription(root, homeGroup) ?: continue
+                val id = resolvedHomeMobileSubscription(root, homeGroup) ?: continue
                 add(MobilePresentationBinding(root, id))
             }
         }
@@ -1611,19 +1600,36 @@ internal object SysUiNetworkSource {
         var current: View? = view
         while (current != null) {
             val root = current as? ViewGroup
-            if (root != null && mobileRoots.containsKey(root)) {
-                // Explicit binder ownership, including its invalid sentinel,
-                // must not be overwritten by a fallback read.
-                return mobileRoots[root]?.subscriptionId
-            }
             if (root?.javaClass?.name == NATIVE_MOBILE_VIEW_CLASS_NAME) {
                 val homeGroup = currentNativeHomeMobileGroup() ?: return null
-                return nativeHomeMobileSubscription(root, homeGroup)
+                return resolvedHomeMobileSubscription(root, homeGroup)
             }
+            // Do not resurrect a stale or non-Home Binder receipt.
+            if (root != null && mobileRoots.containsKey(root)) return null
             current = current.parent as? View
         }
         return null
     }
+
+    // An explicit Binder receipt is a consistency witness. Neither a stale
+    // receipt nor a failed native read may invent the owner of a Home signal.
+    private fun resolvedHomeMobileSubscription(root: ViewGroup, group: ViewGroup): Int? {
+        val nativeId = nativeHomeMobileSubscription(root, group)
+        return consistentHomeMobileSubscription(
+            nativeId = nativeId,
+            binderObserved = mobileRoots.containsKey(root),
+            binderId = mobileRoots[root]?.subscriptionId,
+        )
+    }
+
+    internal fun consistentHomeMobileSubscription(
+        nativeId: Int?,
+        binderObserved: Boolean,
+        binderId: Int?,
+    ): Int? =
+        nativeId?.takeIf { id ->
+            id >= 0 && (!binderObserved || binderId == id)
+        }
 
     private fun currentNativeHomeMobileGroup(): ViewGroup? {
         val host = SysUiHostRegistry.current() ?: return null
