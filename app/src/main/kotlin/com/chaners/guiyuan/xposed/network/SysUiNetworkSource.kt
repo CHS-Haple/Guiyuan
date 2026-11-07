@@ -907,17 +907,20 @@ internal object SysUiNetworkSource {
     private fun nativeWifiViewModel(root: ViewGroup): Any? =
         readOrNull {
             val parentClass = root.javaClass.superclass
-            if (parentClass.name != MODERN_STATUS_BAR_VIEW_CLASS_NAME) return@readOrNull null
-            val binding =
+            if (parentClass.name == MODERN_STATUS_BAR_VIEW_CLASS_NAME) {
                 parentClass.getDeclaredField("binding")
                     .apply { isAccessible = true }
                     .get(root)
-                    ?: return@readOrNull null
-            if (binding.javaClass.name != WIFI_VIEW_BINDING_CLASS_NAME) return@readOrNull null
-            binding.javaClass.getDeclaredField("\$viewModel")
-                .apply { isAccessible = true }
-                .get(binding)
-                ?.takeIf { it.javaClass.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME }
+                    ?.takeIf { it.javaClass.name == WIFI_VIEW_BINDING_CLASS_NAME }
+                    ?.let { binding ->
+                        binding.javaClass.getDeclaredField("\$viewModel")
+                            .apply { isAccessible = true }
+                            .get(binding)
+                            ?.takeIf { it.javaClass.name == HOME_WIFI_VIEW_MODEL_CLASS_NAME }
+                    }
+            } else {
+                null
+            }
         }
 
     private fun nativeHomeWifiBinding(): Pair<ViewGroup, Any>? {
@@ -1678,8 +1681,8 @@ internal object SysUiNetworkSource {
     private fun parentChain(view: View): String =
         buildList {
             var current: View? = view
-            repeat(MAX_PARENT_CHAIN_DEPTH) {
-                val value = current ?: return@repeat
+            for (index in 0 until MAX_PARENT_CHAIN_DEPTH) {
+                val value = current ?: break
                 add(
                     value.javaClass.simpleName +
                         "[" + resourceId(value) + "]",
