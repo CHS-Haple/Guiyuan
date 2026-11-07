@@ -34,23 +34,30 @@ class PresentationCapacityLeaseTest {
     @Test
     fun homePrivacyReservesGuiyuanEndWidthIndependentlyOfBatteryHideFlag() {
         val privacyVisible = HomePrivacyLayoutPolicy.occupiesEnd("START_SHOW_PRIVACY")
-        assertEquals(
-            105,
-            EndReservationPolicy.resolvePaddingEndDelta(
-                nativeHide = false || privacyVisible,
-                actualBatteryWidthPx = 105,
-                requestedSlotWidthPx = 105,
-            ),
-        )
         val privacyHidden = HomePrivacyLayoutPolicy.occupiesEnd("COMPLETE_HIDE_PRIVACY")
-        assertEquals(
-            0,
-            EndReservationPolicy.resolvePaddingEndDelta(
-                nativeHide = false || privacyHidden,
-                actualBatteryWidthPx = 105,
-                requestedSlotWidthPx = 105,
-            ),
-        )
+        assertTrue(privacyVisible)
+        assertFalse(privacyHidden)
+
+        for (nativeHide in listOf(false, true)) {
+            assertEquals(
+                "Privacy must retain the end slot when nativeHide=$nativeHide",
+                105,
+                EndReservationPolicy.resolvePaddingEndDelta(
+                    nativeHide = nativeHide || privacyVisible,
+                    actualBatteryWidthPx = 105,
+                    requestedSlotWidthPx = 105,
+                ),
+            )
+            assertEquals(
+                "Without privacy, only nativeHide reserves the end slot",
+                if (nativeHide) 105 else 0,
+                EndReservationPolicy.resolvePaddingEndDelta(
+                    nativeHide = nativeHide || privacyHidden,
+                    actualBatteryWidthPx = 105,
+                    requestedSlotWidthPx = 105,
+                ),
+            )
+        }
     }
 
     @Test
