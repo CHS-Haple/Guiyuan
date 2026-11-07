@@ -278,10 +278,20 @@ internal fun HomeScreen(
 
 private data class CardPaint(val accent: Color, val gradient: Brush)
 
+private data class CardTargetColors(
+    val accent: Color,
+    val surface: Color,
+    val container: Color,
+)
+
+// Resolve palette targets separately; keep the existing animation and gradient geometry unchanged.
 @Composable
-private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): CardPaint {
+private fun runtimeCardTargetColors(
+    tone: RuntimeStatusTone,
+    enabled: Boolean,
+): CardTargetColors {
     val targetAccentColor =
-        when (state.tone) {
+        when (tone) {
             RuntimeStatusTone.Success -> RuntimeSuccessAccent
             RuntimeStatusTone.Warning -> RuntimeWarningAccent
             RuntimeStatusTone.Error -> MiuixTheme.colorScheme.error
@@ -298,7 +308,7 @@ private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): Car
         }
     val surfaceColor = MiuixTheme.colorScheme.surfaceContainer
     val targetContainerColor =
-        when (state.tone) {
+        when (tone) {
             RuntimeStatusTone.Neutral ->
                 if (enabled) {
                     surfaceColor
@@ -312,6 +322,19 @@ private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): Car
                     .copy(alpha = 0.15f)
                     .compositeOver(surfaceColor)
         }
+    return CardTargetColors(
+        accent = targetAccentColor,
+        surface = surfaceColor,
+        container = targetContainerColor,
+    )
+}
+
+@Composable
+private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): CardPaint {
+    val targets = runtimeCardTargetColors(state.tone, enabled)
+    val targetAccentColor = targets.accent
+    val surfaceColor = targets.surface
+    val targetContainerColor = targets.container
     val accentColor by
         animateColorAsState(
             targetValue = targetAccentColor,
