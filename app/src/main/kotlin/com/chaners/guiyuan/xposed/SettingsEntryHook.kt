@@ -244,8 +244,8 @@ internal object SettingsEntryHook {
             val clazz = current
             val field = try {
                 clazz.getDeclaredField(name)
-            } catch (error: Throwable) {
-                rethrowFatal(error)
+            } catch (_: NoSuchFieldException) {
+                // Only genuine absence permits looking for an inherited field.
                 null
             }
             if (field != null) return field.apply { isAccessible = true }
