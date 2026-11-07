@@ -789,6 +789,24 @@ internal object SysUiNetworkSource {
                     )
                 }
             }
+            // Report the independent OEM recovery source, not a fabricated
+            // binder receipt. Only the verified current Home group qualifies.
+            val homeGroup = currentNativeHomeMobileGroup()
+            if (homeGroup != null) {
+                for (index in 0 until homeGroup.childCount) {
+                    val root = homeGroup.getChildAt(index) as? ViewGroup ?: continue
+                    if (mobileRoots.containsKey(root)) continue
+                    val subscriptionId =
+                        nativeHomeMobileSubscription(root, homeGroup) ?: continue
+                    add(
+                        "nativeSlot binding=mobile-native-home subId=" + subscriptionId +
+                            " root=" + root.javaClass.simpleName +
+                            ROOT_ID_LOG_FIELD + resourceId(root) +
+                            PARENT_CHAIN_LOG_FIELD + parentChain(root) +
+                            LAYOUT_LOG_FIELD + layoutToken(root),
+                    )
+                }
+            }
         }
 
     private inline fun <T> atStage(
