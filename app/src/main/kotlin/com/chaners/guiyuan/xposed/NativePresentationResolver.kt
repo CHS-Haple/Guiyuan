@@ -268,13 +268,21 @@ internal object NativePresentationResolver {
     // The static native glyph face is available even when Wi-Fi hides the mobile type.
     // Follow SystemUI's own fallback selection; never substitute a guessed app font.
     fun sandboxMobileTypeface(context: Context): Typeface? = readOrNull {
-        val (face, path) = verifiedMobileFont(context) ?: return@readOrNull null
-        val file = File(path)
-        if (!file.isFile || file.length() !in 1..(64L * 1024 * 1024)) return@readOrNull null
-        val axis = FileInputStream(file).channel.use { channel ->
-            FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
-        }?.let(NativeFontAxis::checked)
-        face.takeIf { axis != null }
+        val verified = verifiedMobileFont(context)
+        if (verified == null) {
+            null
+        } else {
+            val (face, path) = verified
+            val file = File(path)
+            if (file.isFile && file.length() in 1..(64L * 1024 * 1024)) {
+                val axis = FileInputStream(file).channel.use { channel ->
+                    FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
+                }?.let(NativeFontAxis::checked)
+                face.takeIf { axis != null }
+            } else {
+                null
+            }
+        }
     }
 
     // This static SystemUI face remains authoritative when no mobile type is visible.
@@ -282,15 +290,19 @@ internal object NativePresentationResolver {
         val loader = context.classLoader
         val clazz = loader.loadClass(SysUiMobileTypeSource.CLASS_NAME)
         val face = clazz.getField("sMiproTypeface").get(null) as? Typeface
-            ?: return@readOrNull null
-        val paint = Paint()
-        clazz.getMethod("setMiuiStatusBarTypeface", Array<Paint>::class.java)
-            .invoke(null, arrayOf(paint) as Any)
-        if (paint.typeface !== face) return@readOrNull null
-        val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
-        val path = config.getField("FONT_MIPRO_PATH").get(null) as? String
-            ?: return@readOrNull null
-        face to path
+        if (face == null) {
+            null
+        } else {
+            val paint = Paint()
+            clazz.getMethod("setMiuiStatusBarTypeface", Array<Paint>::class.java)
+                .invoke(null, arrayOf(paint) as Any)
+            if (paint.typeface === face) {
+                val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
+                (config.getField("FONT_MIPRO_PATH").get(null) as? String)?.let { face to it }
+            } else {
+                null
+            }
+        }
     }
 
     // Only the exact Typeface built from MiuiConfigs.FONT_MIPRO_PATH proves file identity.
