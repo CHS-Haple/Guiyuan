@@ -52,16 +52,7 @@ internal object FeaturePrefsOwner {
                 while (latest.source === changed && latest.token === token && latest.cfg != next) {
                     val pending = latest.copy(cfg = next)
                     if (state.compareAndSet(latest, pending)) {
-                        try {
-                            val changedAtNs = changed.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L)
-                            val receivedAtNs =
-                                if (changedAtNs > 0L) SystemClock.elapsedRealtimeNanos() else 0L
-                            onChanged(next, transportLatencyNs(changedAtNs, receivedAtNs))
-                        } catch (error: Throwable) {
-                            // A failed older callback cannot undo a newer reentrant update.
-                            state.compareAndSet(pending, latest)
-                            throw error
-                        }
+                        deliverCommittedChange(latest, pending, changed, next, onChanged)
                         break
                     }
                     latest = state.get()
@@ -77,21 +68,44 @@ internal object FeaturePrefsOwner {
             listener.onSharedPreferenceChanged(source, null)
             current()
         } catch (error: Throwable) {
-            if (state.get().token === token) {
-                try {
-                    unbindLocked()
-                } catch (cleanup: Throwable) {
-                    SysUiPresentationRuntime.throwIfFatal(cleanup)
-                    if (cleanup !== error) error.addSuppressed(cleanup)
-                } finally {
-                    // A reentrant new binding must not be cleared by the failed old callback.
-                    val retired = state.get()
-                    if (retired.source == null && retired.token == null) {
-                        state.compareAndSet(retired, State(null, null, disabled))
-                    }
-                }
-            }
+            retireFailedBinding(token, error)
             throw error
+        }
+    }
+
+    // A committed generation owns its callback failure until a newer generation wins.
+    private fun deliverCommittedChange(
+        previous: State,
+        pending: State,
+        changed: SharedPreferences,
+        next: FeatureCfg,
+        onChanged: (FeatureCfg, Long?) -> Unit,
+    ) {
+        try {
+            val changedAtNs = changed.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L)
+            val receivedAtNs =
+                if (changedAtNs > 0L) SystemClock.elapsedRealtimeNanos() else 0L
+            onChanged(next, transportLatencyNs(changedAtNs, receivedAtNs))
+        } catch (error: Throwable) {
+            // A failed older callback cannot undo a newer reentrant update.
+            state.compareAndSet(pending, previous)
+            throw error
+        }
+    }
+
+    // Do not retire a new binding when its replaced generation fails late.
+    private fun retireFailedBinding(token: Any, error: Throwable) {
+        if (state.get().token !== token) return
+        try {
+            unbindLocked()
+        } catch (cleanup: Throwable) {
+            SysUiPresentationRuntime.throwIfFatal(cleanup)
+            if (cleanup !== error) error.addSuppressed(cleanup)
+        } finally {
+            val retired = state.get()
+            if (retired.source == null && retired.token == null) {
+                state.compareAndSet(retired, State(null, null, disabled))
+            }
         }
     }
 
