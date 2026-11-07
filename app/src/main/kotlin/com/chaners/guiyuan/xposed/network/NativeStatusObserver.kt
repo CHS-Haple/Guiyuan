@@ -34,6 +34,12 @@ internal object NativeStatusObserver {
         readOrNull { eventSink?.takeIf { diagnosticsEnabled() }?.invoke(message()) }
     }
 
+    // Bounded mobile evidence is available in opt-in Detailed mode on Canary
+    // and Release; heavyweight scene/geometry probes keep their Deep gate.
+    private inline fun reportMobileEvent(message: () -> String) {
+        readOrNull { eventSink?.takeIf { lightweightDiagnosticsEnabled() }?.invoke(message()) }
+    }
+
     private fun tintText(color: Int?): String =
         color?.toUInt()?.toString(16)?.padStart(8, '0') ?: "none"
 
@@ -78,6 +84,7 @@ internal object NativeStatusObserver {
     private var observationAttachedSink: ((String) -> Unit)? = null
     private var eventSink: ((String) -> Unit)? = null
     private var diagnosticsEnabled: () -> Boolean = { false }
+    private var lightweightDiagnosticsEnabled: () -> Boolean = { false }
     private var statusPresentationSink:
         ((PresentationStore.StatusIconPresentation) -> Unit)? = null
     private var airplaneSlotAccessor: Method? = null
@@ -114,6 +121,7 @@ internal object NativeStatusObserver {
         classLoader: ClassLoader,
         onEvent: ((String) -> Unit)? = null,
         isDetailedDiagnosticsEnabled: () -> Boolean = { false },
+        isLightweightDiagnosticsEnabled: () -> Boolean = { false },
         onObservationAttached: ((String) -> Unit)? = null,
         onStatusPresentationChanged:
             ((PresentationStore.StatusIconPresentation) -> Unit)? = null,
@@ -122,6 +130,7 @@ internal object NativeStatusObserver {
         if (installedHandles.isNotEmpty()) {
             eventSink = onEvent
             diagnosticsEnabled = isDetailedDiagnosticsEnabled
+            lightweightDiagnosticsEnabled = isLightweightDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             return null
@@ -255,6 +264,7 @@ internal object NativeStatusObserver {
             installIncomplete = false
             eventSink = onEvent
             diagnosticsEnabled = isDetailedDiagnosticsEnabled
+            lightweightDiagnosticsEnabled = isLightweightDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             null
@@ -282,6 +292,7 @@ internal object NativeStatusObserver {
             pendingObservationSource = null
             eventSink = onEvent
             diagnosticsEnabled = isDetailedDiagnosticsEnabled
+            lightweightDiagnosticsEnabled = isLightweightDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             rethrowFatal(error)
@@ -326,7 +337,7 @@ internal object NativeStatusObserver {
         activeGroup = WeakReference(group)
         refreshStatusPresentationLocked("observerAttach")
 
-        reportEvent {
+        reportMobileEvent {
             "nativeNetworkSuppression observerOnly source=" + source + " " +
                 "manager=" + manager.javaClass.name +
                 " group=" + group.javaClass.name +
@@ -358,6 +369,7 @@ internal object NativeStatusObserver {
         nativeMobileSubIdsHookState = "unavailable"
         eventSink = null
         diagnosticsEnabled = { false }
+        lightweightDiagnosticsEnabled = { false }
         observationAttachedSink = null
         statusPresentationSink = null
         airplaneSlotAccessor = null
@@ -432,7 +444,7 @@ internal object NativeStatusObserver {
             // Capture the exact list passed by MobileUiAdapter before the native
             // controller has a chance to modify the argument or retained list.
             val incoming = readOrNull {
-                if (diagnosticsEnabled()) {
+                if (lightweightDiagnosticsEnabled()) {
                     (chain.getArg(0) as? List<*>)?.toList()
                 } else null
             }
@@ -448,7 +460,7 @@ internal object NativeStatusObserver {
                         }
                     }
                     if (changed) {
-                        reportEvent {
+                        reportMobileEvent {
                             "networkPipeline nativeMobileSubIds " +
                                 "source=StatusBarIconControllerImpl.setNewMobileIconSubIds " +
                                 "phase=preNativeArg/postNativeLog " +
@@ -725,7 +737,7 @@ internal object NativeStatusObserver {
     // Home's native slot owner can reveal a mobile root even when our binder
     // mapping never received a callback. Observation never claims that root.
     private fun observeNativeMobileTree(group: ViewGroup, source: String) {
-        val sink = eventSink?.takeIf { diagnosticsEnabled() } ?: return
+        val sink = eventSink?.takeIf { lightweightDiagnosticsEnabled() } ?: return
         if (group.childCount > 64) return
         val roots = buildList {
             for (index in 0 until group.childCount) {
