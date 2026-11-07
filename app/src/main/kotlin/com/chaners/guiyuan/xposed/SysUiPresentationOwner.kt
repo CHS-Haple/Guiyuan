@@ -3224,10 +3224,10 @@ internal object SysUiPresentationOwner {
             val snapshot = states.toList()
             states.clear()
             var restored = 0
-            snapshot.forEach { state ->
+            for (state in snapshot) {
                 try {
                     val view = state.view.get()
-                    if (view == null || view.clipBounds != state.appliedClip) return@forEach
+                    if (view == null || view.clipBounds != state.appliedClip) continue
                     if (restoreClipState(state)) {
                         restored += 1
                     } else if (view.clipBounds == state.appliedClip) {
