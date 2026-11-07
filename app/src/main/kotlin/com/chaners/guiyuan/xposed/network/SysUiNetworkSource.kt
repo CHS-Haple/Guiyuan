@@ -1615,10 +1615,11 @@ internal object SysUiNetworkSource {
     // receipt nor a failed native read may invent the owner of a Home signal.
     private fun resolvedHomeMobileSubscription(root: ViewGroup, group: ViewGroup): Int? {
         val nativeId = nativeHomeMobileSubscription(root, group)
+        val binder = mobileRoots[root]
         return consistentHomeMobileSubscription(
             nativeId = nativeId,
-            binderObserved = mobileRoots.containsKey(root),
-            binderId = mobileRoots[root]?.subscriptionId,
+            binderObserved = binder != null,
+            binderId = binder?.subscriptionId,
         )
     }
 
