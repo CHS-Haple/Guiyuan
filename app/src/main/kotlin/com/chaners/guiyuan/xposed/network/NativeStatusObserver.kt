@@ -429,27 +429,32 @@ internal object NativeStatusObserver {
 
     private fun nativeMobileSubIdsHooker(): Hooker =
         Hooker { chain ->
+            // Capture the exact list passed by MobileUiAdapter before the native
+            // controller has a chance to modify the argument or retained list.
+            val incoming = readOrNull {
+                if (diagnosticsEnabled()) {
+                    (chain.getArg(0) as? List<*>)?.toList()
+                } else null
+            }
             val result = chain.proceed()
             observeAfterNative(result, { reportObservationFailure("nativeMobileSubIds", it) }) {
-                if (diagnosticsEnabled()) {
-                    val raw = chain.getArg(0) as? List<*>
-                    if (raw != null) {
-                        val ids = raw.mapNotNull { (it as? Number)?.toInt() }
-                        val changed = synchronized(this) {
-                            if (lastNativeMobileSubIds == ids) false
-                            else {
-                                lastNativeMobileSubIds = ids
-                                true
-                            }
+                if (incoming != null) {
+                    val ids = incoming.mapNotNull { (it as? Number)?.toInt() }
+                    val changed = synchronized(this) {
+                        if (lastNativeMobileSubIds == ids) false
+                        else {
+                            lastNativeMobileSubIds = ids
+                            true
                         }
-                        if (changed) {
-                            reportEvent {
-                                "networkPipeline nativeMobileSubIds " +
-                                    "source=StatusBarIconControllerImpl.setNewMobileIconSubIds " +
-                                    "count=" + raw.size +
-                                    " ids=" + ids.joinToString(",") +
-                                    " allNumeric=" + (ids.size == raw.size)
-                            }
+                    }
+                    if (changed) {
+                        reportEvent {
+                            "networkPipeline nativeMobileSubIds " +
+                                "source=StatusBarIconControllerImpl.setNewMobileIconSubIds " +
+                                "phase=preNativeArg/postNativeLog " +
+                                "count=" + incoming.size +
+                                " ids=" + ids.joinToString(",") +
+                                " allNumeric=" + (ids.size == incoming.size)
                         }
                     }
                 }
