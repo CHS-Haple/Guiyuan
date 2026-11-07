@@ -69,15 +69,18 @@ internal object NativeFontAxis {
         max: String,
     ): State = runCatching {
         val boot = bootCount(context)
-        if (boot < 0 || prefs.getInt(BOOT, -1) != boot) return@runCatching State.Pending
-        state(
-            reported = prefs.getBoolean(REPORTED, false),
-            axis = FontWeightAxis(
-                min = prefs.getFloat(min, Float.NaN),
-                default = prefs.getFloat(default, Float.NaN),
-                max = prefs.getFloat(max, Float.NaN),
-            ),
-        )
+        if (boot < 0 || prefs.getInt(BOOT, -1) != boot) {
+            State.Pending
+        } else {
+            state(
+                reported = prefs.getBoolean(REPORTED, false),
+                axis = FontWeightAxis(
+                    min = prefs.getFloat(min, Float.NaN),
+                    default = prefs.getFloat(default, Float.NaN),
+                    max = prefs.getFloat(max, Float.NaN),
+                ),
+            )
+        }
     }.onFailure(::rethrowFatal).getOrDefault(State.Pending)
 
     fun observe(context: Context): Flow<State> =

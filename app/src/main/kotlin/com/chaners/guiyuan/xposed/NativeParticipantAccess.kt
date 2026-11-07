@@ -259,12 +259,11 @@ internal object NativeParticipantAccess {
 
     private fun Any.readField(name: String): Any? =
         readOrNull {
-            val field =
-                generateSequence(javaClass) { clazz -> clazz.superclass }
-                    .mapNotNull { clazz -> clazz.declaredFields.firstOrNull { it.name == name } }
-                    .firstOrNull() ?: return@readOrNull null
-            field.isAccessible = true
-            field.get(this)
+            generateSequence(javaClass) { clazz -> clazz.superclass }
+                .mapNotNull { clazz -> clazz.declaredFields.firstOrNull { it.name == name } }
+                .firstOrNull()
+                ?.apply { isAccessible = true }
+                ?.get(this)
         }
 
     private fun resolveStatusBarIconController(
