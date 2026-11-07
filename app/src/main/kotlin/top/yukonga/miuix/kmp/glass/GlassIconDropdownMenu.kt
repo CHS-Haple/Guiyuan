@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -62,7 +63,8 @@ fun BoxScope.GlassIconDropdownMenu(
 ) {
     val density = LocalDensity.current
     var submenu by remember { mutableStateOf(false) }
-    var primaryClosed by remember { mutableStateOf(false) }
+    val exitGate = remember { GlassMenuExitGate() }
+    val latestDismissFinished by rememberUpdatedState(onDismissFinished)
     var submenuPresent by remember { mutableStateOf(false) }
     var submenuPath by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     var submenuAnchor by remember { mutableStateOf(Rect.Zero) }
@@ -82,7 +84,7 @@ fun BoxScope.GlassIconDropdownMenu(
         label = "glassCascadeVisibility",
     )
     LaunchedEffect(show) {
-        if (show) primaryClosed = false else submenu = false
+        if (show) exitGate.reset() else submenu = false
     }
 
     val primaryBackdrop = rememberLayerBackdrop()
@@ -122,8 +124,7 @@ fun BoxScope.GlassIconDropdownMenu(
             visuals = visuals,
             onMeasured = { primaryWidth = with(density) { it.width.toDp() } },
             onDismissFinished = {
-                primaryClosed = true
-                if (!submenuPresent) onDismissFinished?.invoke()
+                exitGate.primaryDismissed(submenuPresent, latestDismissFinished)
             },
         ) {
             groups.forEachIndexed { groupIndex, entry ->
@@ -201,7 +202,7 @@ fun BoxScope.GlassIconDropdownMenu(
             onDismissFinished = {
                 submenuPresent = false
                 submenuPath = null
-                if (primaryClosed) onDismissFinished?.invoke()
+                exitGate.secondaryDismissed(latestDismissFinished)
             },
         ) {
             submenuItem?.let { parent ->
@@ -243,4 +244,34 @@ private fun GlassMenuDivider() {
         ),
         thickness = GlassPopupDefaults.DividerThickness,
     )
+}
+
+// Guiyuan root-host integration. Keep this small state machine apart from upstream menu rendering.
+// The host may unmount only after the primary AND (if opened) secondary panel have exited.
+internal class GlassMenuExitGate {
+    private var primaryClosed = false
+    private var completed = false
+
+    fun reset() {
+        primaryClosed = false
+        completed = false
+    }
+
+    fun primaryDismissed(
+        secondaryPresent: Boolean,
+        onDismissFinished: (() -> Unit)?,
+    ) {
+        primaryClosed = true
+        if (!secondaryPresent) complete(onDismissFinished)
+    }
+
+    fun secondaryDismissed(onDismissFinished: (() -> Unit)?) {
+        if (primaryClosed) complete(onDismissFinished)
+    }
+
+    private fun complete(onDismissFinished: (() -> Unit)?) {
+        if (completed) return
+        completed = true
+        onDismissFinished?.invoke()
+    }
 }
