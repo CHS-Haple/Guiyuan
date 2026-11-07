@@ -298,9 +298,12 @@ internal object NativePresentationResolver {
         readOrNull {
             val clazz = drawable.javaClass
             val original = clazz.getField("sMiproTypeface").get(null) as? Typeface
-            if (original !== face) return@readOrNull null
-            val configs = clazz.classLoader!!.loadClass("com.miui.utils.configs.MiuiConfigs")
-            configs.getField("FONT_MIPRO_PATH").get(null) as? String
+            if (original === face) {
+                val configs = clazz.classLoader!!.loadClass("com.miui.utils.configs.MiuiConfigs")
+                configs.getField("FONT_MIPRO_PATH").get(null) as? String
+            } else {
+                null
+            }
         }
 
     // Snapshot the verified native Paint; never retain its mutable SystemUI owner.

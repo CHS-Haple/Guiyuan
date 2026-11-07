@@ -106,14 +106,17 @@ internal object SandboxHost {
                 lease.state.previewCenterSource() ==
                 com.chaners.guiyuan.ui.screens.PreviewCenterSource.MOBILE &&
                 verifiedFace == null
-            ) return@runCatching null
-            lease.state.toRenderModel(
-                resolver,
-                dualSignalEnabled = VisualPrefsOwner.current().dualSignal,
-                mobileTypeface = verifiedFace,
-                lowBatteryThreshold = FeaturePrefsOwner.current().lowBatteryThreshold,
-                nativeLowColor = StatusStateStore.snapshot().battery?.lowSystemColor,
-            )
+            ) {
+                null
+            } else {
+                lease.state.toRenderModel(
+                    resolver,
+                    dualSignalEnabled = VisualPrefsOwner.current().dualSignal,
+                    mobileTypeface = verifiedFace,
+                    lowBatteryThreshold = FeaturePrefsOwner.current().lowBatteryThreshold,
+                    nativeLowColor = StatusStateStore.snapshot().battery?.lowSystemColor,
+                )
+            }
         }.getOrElse { error ->
             rethrowSandboxFatal(error)
             null

@@ -745,10 +745,11 @@ internal object NativeStatusObserver {
                             method.parameterTypes[2] ==
                                 Int::class.javaPrimitiveType
                     }?.also { tintMethodByManagerClass[managerClass] = it }
-                    ?: return@readOrNull null
-            (getTint.invoke(null, tintAreas, anchorView, iconTint) as? Number)
-                ?.toInt()
-                ?.takeIf(StatusIconTintPolicy::isVisibleTint)
+            getTint?.let { method ->
+                (method.invoke(null, tintAreas, anchorView, iconTint) as? Number)
+                    ?.toInt()
+                    ?.takeIf(StatusIconTintPolicy::isVisibleTint)
+            }
         }
     }
 
