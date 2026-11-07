@@ -9,6 +9,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SysUiNetworkSourceTest {
+    private companion object {
+        const val HOME_CLASS =
+            "com.android.systemui.statusbar.pipeline.mobile.ui.view.ModernStatusBarMobileView"
+        const val MOBILE_SLOT = "mobile"
+        const val MOBILE_RESOURCE = "mobile_combo"
+    }
+
     @Test
     fun nativeMobileFallbackRequiresVerifiedCurrentHomeRoot() {
         val eligible = { className: String, slot: String?, resourceEntry: String?,
@@ -21,17 +28,15 @@ class SysUiNetworkSourceTest {
                 directHomeChild = directHomeChild,
             )
         }
-        val homeClass =
-            "com.android.systemui.statusbar.pipeline.mobile.ui.view.ModernStatusBarMobileView"
-        assertTrue(eligible(homeClass, "mobile", "mobile_combo", true, true))
+        assertTrue(eligible(HOME_CLASS, MOBILE_SLOT, MOBILE_RESOURCE, true, true))
 
         // Identically named keyguard/QS/QS_FAKE views are not Home children.
-        assertFalse(eligible(homeClass, "mobile", "mobile_combo", true, false))
-        assertFalse(eligible(homeClass, "mobile", "mobile_combo", false, true))
-        assertFalse(eligible(homeClass, "stacked_mobile", "mobile_combo", true, true))
-        assertFalse(eligible(homeClass, "mobile", "other_view", true, true))
-        assertFalse(eligible("com.android.systemui.statusbar.pipeline.mobile.ui.view.Other", "mobile",
-            "mobile_combo", true, true))
+        assertFalse(eligible(HOME_CLASS, MOBILE_SLOT, MOBILE_RESOURCE, true, false))
+        assertFalse(eligible(HOME_CLASS, MOBILE_SLOT, MOBILE_RESOURCE, false, true))
+        assertFalse(eligible(HOME_CLASS, "stacked_mobile", MOBILE_RESOURCE, true, true))
+        assertFalse(eligible(HOME_CLASS, MOBILE_SLOT, "other_view", true, true))
+        assertFalse(eligible("com.android.systemui.statusbar.pipeline.mobile.ui.view.Other",
+            MOBILE_SLOT, MOBILE_RESOURCE, true, true))
     }
 
     @Test
