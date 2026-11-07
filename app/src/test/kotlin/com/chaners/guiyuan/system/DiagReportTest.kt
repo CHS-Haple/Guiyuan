@@ -131,7 +131,7 @@ class DiagReportTest {
         assertEquals(300, DiagReport.exportLineLimit(DiagLevel.General))
         assertEquals(1500, DiagReport.exportLineLimit(DiagLevel.Detailed))
 
-        val exported = report(*Array(305) { "record-${it + 1}" }, level = DiagLevel.General)
+        val exported = report(recordLines(305), level = DiagLevel.General)
         assertTrue(exported.contains("lines=300\n"))
         assertTrue(exported.contains("omittedEarlierSessionLines=5"))
         assertFalse(exported.contains("\nrecord-5\n"))
@@ -142,11 +142,11 @@ class DiagReportTest {
     @Test
     fun reportLineLimitIsDisclosedOnlyWhenEarlierSessionLinesAreOmitted() {
         val limit = DiagReport.exportLineLimit(DiagLevel.Detailed)
-        val exactlyAtLimit = report(*Array(limit) { "record-${it + 1}" })
+        val exactlyAtLimit = report(recordLines(limit))
         assertFalse(exactlyAtLimit.contains("omittedEarlierSessionLines="))
         assertFalse(exactlyAtLimit.contains("report=latest-session-lines-only"))
 
-        val oneOverLimit = report(*Array(limit + 1) { "record-${it + 1}" })
+        val oneOverLimit = report(recordLines(limit + 1))
         assertTrue(oneOverLimit.contains("lines=${limit}\n"))
         assertTrue(oneOverLimit.contains("report=latest-session-lines-only"))
         assertTrue(oneOverLimit.contains("omittedEarlierSessionLines=1"))
@@ -157,7 +157,7 @@ class DiagReportTest {
     @Test
     fun captureTruncationAndReportLineLimitAreBothDisclosed() {
         val limit = DiagReport.exportLineLimit(DiagLevel.Detailed)
-        val result = report(*Array(limit + 3) { "record-${it + 1}" }, truncated = true)
+        val result = report(recordLines(limit + 3), truncated = true)
         assertTrue(result.contains("capture=latest-complete-lines-only"))
         assertTrue(result.contains("omittedEarlierSessionLines=3"))
         assertTrue(result.contains("lines=${limit}\n"))
@@ -204,14 +204,33 @@ class DiagReportTest {
         assertTrue(report.contains("[Device]"))
     }
 
+    private fun recordLines(count: Int): List<String> =
+        List(count) { "record-${it + 1}" }
+
     private fun report(
         vararg lines: String,
         truncated: Boolean = false,
         collection: RootShell.Result? = null,
         level: DiagLevel = DiagLevel.Detailed,
         clearedAt: LocalDateTime? = null,
+    ): String =
+        report(
+            lines = lines.asList(),
+            truncated = truncated,
+            collection = collection,
+            level = level,
+            clearedAt = clearedAt,
+        )
+
+
+    private fun report(
+        lines: List<String>,
+        truncated: Boolean = false,
+        collection: RootShell.Result? = null,
+        level: DiagLevel = DiagLevel.Detailed,
+        clearedAt: LocalDateTime? = null,
     ): String {
-        val recorded = lines.toList()
+        val recorded = lines
         return DiagReport.build(
             DiagSnapshot(
                 env = RuntimeEnv(
