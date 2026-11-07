@@ -103,6 +103,9 @@ class SearchTermTest {
         assertFalse(color.matches("字重"))
     }
 
+}
+
+class SearchAliasesTest {
     @Test
     fun cellularSynonymsCoverOnlyRelatedFunctions() {
         val cellularEntries = listOf(
@@ -223,6 +226,9 @@ class SearchTermTest {
         assertFalse(defaults.any { SearchTerm(it, it).matches("Import") })
     }
 
+}
+
+class SearchBilingualTest {
     @Test
     fun nativeInitialsAreNotConfusedWithForeignLatinInitials() {
         val native = SearchTerm("Wi-Fi 上下偏移", "Wi-Fi shang xia pian yi")

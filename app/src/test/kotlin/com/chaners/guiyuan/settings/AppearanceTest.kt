@@ -69,6 +69,9 @@ class AppearanceTest {
         )
     }
 
+}
+
+class AppearanceCompatibilityTest {
     @Test
     fun appScaleDefaultsTo100PercentAndClampsStoredValues() {
         assertEquals(100, Appearance().uiScalePercent)
@@ -170,6 +173,9 @@ class AppearanceTest {
         assertEquals(old, experimental.copy(uiStyle = UiStyle.OS3))
     }
 
+}
+
+class AppearanceNavigationTest {
     @Test
     fun storedFloatingStyleWinsOverLegacyFlags() {
         val result =
@@ -311,6 +317,9 @@ class AppearanceTest {
         }
     }
 
+}
+
+class AppearanceThemeModeTest {
     @Test
     fun legacyDynamicModeMigratesToSystemWithDynamicColor() {
         val result =
