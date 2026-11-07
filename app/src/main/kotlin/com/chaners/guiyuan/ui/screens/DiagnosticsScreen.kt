@@ -1006,6 +1006,68 @@ private fun DiagMenu(
 }
 
 @Composable
+private fun LogCardMeta(entry: LogEntry, category: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LogLevelTag(entry.level)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = category,
+            modifier = Modifier.weight(1f),
+            style = MiuixTheme.textStyles.footnote2,
+            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        entry.time?.let { time ->
+            Text(
+                text = time,
+                style = MiuixTheme.textStyles.footnote2,
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LogCardExpanded(entry: LogEntry, expanded: Boolean) {
+    AnimatedVisibility(
+        visible = expanded,
+        enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+    ) {
+        Column {
+            Spacer(modifier = Modifier.height(10.dp))
+            LogDetail(
+                label = "event",
+                value = entry.event ?: "—",
+            )
+            entry.component?.let { component ->
+                LogDetail(
+                    label = "component",
+                    value = component,
+                )
+            }
+            entry.state?.let { state ->
+                LogDetail(
+                    label = "state",
+                    value = state,
+                )
+            }
+
+            logDetailFields(entry).forEach { (key, value) ->
+                LogDetail(
+                    label = key,
+                    value = value,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun LogCard(
     context: Context,
     entry: LogEntry,
@@ -1035,28 +1097,7 @@ private fun LogCard(
             )
         },
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            LogLevelTag(entry.level)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = category,
-                modifier = Modifier.weight(1f),
-                style = MiuixTheme.textStyles.footnote2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            entry.time?.let { time ->
-                Text(
-                    text = time,
-                    style = MiuixTheme.textStyles.footnote2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                )
-            }
-        }
+        LogCardMeta(entry, category)
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = title,
@@ -1080,38 +1121,7 @@ private fun LogCard(
             )
         }
 
-        AnimatedVisibility(
-            visible = expanded,
-            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
-        ) {
-            Column {
-                Spacer(modifier = Modifier.height(10.dp))
-                LogDetail(
-                    label = "event",
-                    value = entry.event ?: "—",
-                )
-                entry.component?.let { component ->
-                    LogDetail(
-                        label = "component",
-                        value = component,
-                    )
-                }
-                entry.state?.let { state ->
-                    LogDetail(
-                        label = "state",
-                        value = state,
-                    )
-                }
-
-                logDetailFields(entry).forEach { (key, value) ->
-                    LogDetail(
-                        label = key,
-                        value = value,
-                    )
-                }
-            }
-        }
+        LogCardExpanded(entry, expanded)
     }
 }
 
