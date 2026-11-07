@@ -829,30 +829,30 @@ private fun logFilterEntries(
     onReset: () -> Unit,
 ): List<DropdownEntry> =
     listOf(
-                DropdownEntry(
-                    items =
-                        listOf(
-                            DropdownItem(
-                                text = stringResource(R.string.diagnostics_filter_levels),
-                                children = levelItems,
-                            ),
-                            DropdownItem(
-                                text = stringResource(R.string.diagnostics_filter_categories),
-                                children = categoryItems,
-                            ),
-                        ),
+        DropdownEntry(
+            items =
+                listOf(
+                    DropdownItem(
+                        text = stringResource(R.string.diagnostics_filter_levels),
+                        children = levelItems,
+                    ),
+                    DropdownItem(
+                        text = stringResource(R.string.diagnostics_filter_categories),
+                        children = categoryItems,
+                    ),
                 ),
-                DropdownEntry(
-                    items =
-                        listOf(
-                            DropdownItem(
-                                text = stringResource(R.string.diagnostics_filter_reset),
-                                enabled = filterActive,
-                                onClick = onReset,
-                            ),
-                        ),
+        ),
+        DropdownEntry(
+            items =
+                listOf(
+                    DropdownItem(
+                        text = stringResource(R.string.diagnostics_filter_reset),
+                        enabled = filterActive,
+                        onClick = onReset,
+                    ),
                 ),
-            )
+        ),
+    )
 
 @Composable
 private fun LogFilterMenu(
@@ -934,16 +934,16 @@ private fun diagLevelEntry(
             )
         }
     return DropdownEntry(
-            items =
-                listOf(
-                    DropdownItem(
-                        text = stringResource(R.string.diagnostics_mode_title),
-                        summary = currentLevelLabel,
-                        enabled = canChangeLevel,
-                        children = levelItems,
-                    ),
+        items =
+            listOf(
+                DropdownItem(
+                    text = stringResource(R.string.diagnostics_mode_title),
+                    summary = currentLevelLabel,
+                    enabled = canChangeLevel,
+                    children = levelItems,
                 ),
-        )
+            ),
+    )
 }
 
 @Composable
