@@ -258,6 +258,7 @@ internal object HomeRenderSession {
         private var layoutLogged = false
         private var deferredStateLogged = false
         private var rejectedTintLogged = false
+        private var nativeTintObserved = false
         // Control Center handoff is coordinator-owned. Source visibility is
         // diagnostic context only until a projected carrier is ready.
         private var controlCenterAllowsHome = true
@@ -343,7 +344,9 @@ internal object HomeRenderSession {
                 transferred = initialTintState,
                 allowLiveSeed = allowLiveTintSeed,
                 liveState = {
-                    SysUiTintSource.currentState(battery)
+                    SysUiTintSource.currentState(battery)?.also { state ->
+                        if (state.isVisible) nativeTintObserved = true
+                    }
                 },
             )?.let { seed ->
                 applyTintState(seed.state, seed.source)
@@ -481,13 +484,14 @@ internal object HomeRenderSession {
             if (update.sourceView !== battery) {
                 return
             }
+            if (update.state.isVisible) nativeTintObserved = true
             applyTintState(update.state, "darkReceiver")
         }
 
         fun updateStatusIconTint(statusIconTint: Int?) {
             val resolved =
                 TintAuthority.resolveStatusIconEvent(
-                    previous = renderController.currentTintState(),
+                    nativeTintObserved = nativeTintObserved,
                     liveStatusIconTint = statusIconTint,
                 ) ?: return
             applyTintState(resolved, "statusIcons")
