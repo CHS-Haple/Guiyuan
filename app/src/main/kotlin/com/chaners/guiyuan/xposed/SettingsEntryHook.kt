@@ -238,7 +238,7 @@ internal object SettingsEntryHook {
         return BitmapDrawable(context.resources, output)
     }
 
-    private fun Class<*>.findField(name: String): Field {
+    internal fun Class<*>.findField(name: String): Field {
         var current: Class<*>? = this
         while (current != null) {
             val clazz = current
