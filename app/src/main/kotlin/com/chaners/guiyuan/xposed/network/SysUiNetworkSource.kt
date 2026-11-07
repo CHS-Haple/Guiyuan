@@ -45,6 +45,10 @@ internal object SysUiNetworkSource {
 
     const val MOBILE_BINDER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder"
+    private const val NATIVE_MOBILE_VIEW_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.mobile.ui.view.ModernStatusBarMobileView"
+    private const val NATIVE_HOME_ICON_GROUP_CLASS_NAME =
+        "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
     const val MOBILE_BIND_METHOD_NAME = "bind"
     const val MOBILE_LOCATION_VIEW_MODEL_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.viewmodel.LocationBasedMobileViewModel"
@@ -117,6 +121,9 @@ internal object SysUiNetworkSource {
     private class MobileBinding(val subscriptionId: Int?)
 
     private val mobileRoots = WeakHashMap<ViewGroup, MobileBinding>()
+    // Native getSubId() is stable for the SystemUI root class; look up its
+    // reflective method once. Never cache a native root or subscription value.
+    private var nativeMobileSubIdMethod: Method? = null
     private val lastWifiEvents = WeakHashMap<ImageView, String>()
     private val lastWifiTaggedResources = WeakHashMap<ImageView, Int?>()
     private val lastMobileEvents = WeakHashMap<ImageView, String>()
@@ -649,6 +656,7 @@ internal object SysUiNetworkSource {
         lastWifiEvents.clear()
         lastWifiTaggedResources.clear()
         lastMobileEvents.clear()
+        nativeMobileSubIdMethod = null
         wifiSeedContract = null
     }
 
@@ -681,6 +689,7 @@ internal object SysUiNetworkSource {
         lastWifiEvents.clear()
         lastWifiTaggedResources.clear()
         lastMobileEvents.clear()
+        nativeMobileSubIdMethod = null
 
         val payload = raw as? Array<*>
         val wifi = payload?.getOrNull(0) as? List<*>
@@ -729,12 +738,23 @@ internal object SysUiNetworkSource {
 
     @Synchronized
     fun mobilePresentationBindings(): List<MobilePresentationBinding> =
-        mobileRoots.mapNotNull { (root, binding) ->
-            val subscriptionId = binding.subscriptionId
-            if (root.isAttachedToWindow && subscriptionId != null) {
-                MobilePresentationBinding(root, subscriptionId)
-            } else {
-                null
+        buildList {
+            mobileRoots.forEach { (root, binding) ->
+                val subscriptionId = binding.subscriptionId
+                if (root.isAttachedToWindow && subscriptionId != null) {
+                    add(MobilePresentationBinding(root, subscriptionId))
+                }
+            }
+            // SystemUI may create/attach existing mobile roots without replaying
+            // MiuiMobileIconBinder.bind() after our hook installation. Read only
+            // the authoritative Home DarkIconManager's direct mobile children.
+            val homeGroup = currentNativeHomeMobileGroup() ?: return@buildList
+            for (index in 0 until homeGroup.childCount) {
+                val root = homeGroup.getChildAt(index) as? ViewGroup ?: continue
+                // A live binder (even a rejected invalid ID) owns this root.
+                if (mobileRoots.containsKey(root)) continue
+                val id = nativeHomeMobileSubscription(root, homeGroup) ?: continue
+                add(MobilePresentationBinding(root, id))
             }
         }
 
@@ -1590,13 +1610,61 @@ internal object SysUiNetworkSource {
     private fun findMobileSubscription(view: View): Int? {
         var current: View? = view
         while (current != null) {
-            val group = current as? ViewGroup
-            if (group != null && mobileRoots.containsKey(group)) {
-                return mobileRoots[group]?.subscriptionId
+            val root = current as? ViewGroup
+            if (root != null && mobileRoots.containsKey(root)) {
+                // Explicit binder ownership, including its invalid sentinel,
+                // must not be overwritten by a fallback read.
+                return mobileRoots[root]?.subscriptionId
+            }
+            if (root?.javaClass?.name == NATIVE_MOBILE_VIEW_CLASS_NAME) {
+                val homeGroup = currentNativeHomeMobileGroup() ?: return null
+                return nativeHomeMobileSubscription(root, homeGroup)
             }
             current = current.parent as? View
         }
         return null
+    }
+
+    private fun currentNativeHomeMobileGroup(): ViewGroup? {
+        val host = SysUiHostRegistry.current() ?: return null
+        val group = NativeParticipantAccess.groupFor(host) ?: return null
+        return group.takeIf {
+            it.javaClass.name == NATIVE_HOME_ICON_GROUP_CLASS_NAME &&
+                it.childCount <= 64
+        }
+    }
+
+    // This is a true view-owner check, not an inference from a SIM index or
+    // an image's resource. Keyguard, QS and QS_FAKE roots never qualify.
+    internal fun isNativeHomeMobileRootIdentity(
+        className: String,
+        slot: String?,
+        resourceEntry: String?,
+        attached: Boolean,
+        directHomeChild: Boolean,
+    ): Boolean =
+        className == NATIVE_MOBILE_VIEW_CLASS_NAME &&
+            slot == "mobile" &&
+            resourceEntry == "mobile_combo" &&
+            attached &&
+            directHomeChild
+
+    private fun nativeHomeMobileSubscription(root: ViewGroup, homeGroup: ViewGroup): Int? {
+        if (!isNativeHomeMobileRootIdentity(
+                className = root.javaClass.name,
+                slot = NativeParticipantAccess.slotOf(root),
+                resourceEntry = NativeParticipantAccess.resourceEntryName(root),
+                attached = root.isAttachedToWindow,
+                directHomeChild = root.parent === homeGroup,
+            )
+        ) return null
+        return readOrNull {
+            val getter =
+                nativeMobileSubIdMethod
+                    ?.takeIf { it.declaringClass.isInstance(root) }
+                    ?: root.javaClass.getMethod("getSubId").also { nativeMobileSubIdMethod = it }
+            (getter.invoke(root) as? Number)?.toInt()?.takeIf { it >= 0 }
+        }
     }
 
     private fun parentChain(view: View): String =
