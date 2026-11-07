@@ -6,6 +6,23 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ConnectivityPolicyTest {
+    private val gateMobileType =
+        NativePresentationResolver.NetworkType(
+            label = "LTE",
+            enhanced = false,
+            source = NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_SINGLE,
+        )
+
+    private val gateConnected =
+        SysUiConnectivitySource.State(
+            known = true,
+            transport = SysUiConnectivitySource.Transport.CELLULAR,
+            validated = true,
+            hasInternetCapability = true,
+            mobileDataEnabled = true,
+        )
+
+
     @Test
     fun systemUiWifiNoInternetWinsEvenWhenCellularIsDefault() {
         val result =
@@ -197,22 +214,7 @@ class ConnectivityPolicyTest {
     }
 
     @Test
-    fun transportGatesDoNotInventMobileOrWifiPresentations() {
-        val native =
-            NativePresentationResolver.NetworkType(
-                label = "LTE",
-                enhanced = false,
-                source = NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_SINGLE,
-            )
-        val connected =
-            SysUiConnectivitySource.State(
-                known = true,
-                transport = SysUiConnectivitySource.Transport.CELLULAR,
-                validated = true,
-                hasInternetCapability = true,
-                mobileDataEnabled = true,
-            )
-
+    fun disabledMobileDataBlocksKnownTransportPresentation() {
         for (transport in listOf(
             SysUiConnectivitySource.Transport.CELLULAR,
             SysUiConnectivitySource.Transport.VPN,
@@ -223,23 +225,27 @@ class ConnectivityPolicyTest {
                 ConnectivityPolicy.resolve(
                     wifi = StatusStateStore.WifiState.Hidden,
                     airplaneMode = false,
-                    connectivity = connected.copy(
+                    connectivity = gateConnected.copy(
                         transport = transport,
                         mobileDataEnabled = false,
                     ),
-                    mobileType = native,
+                    mobileType = gateMobileType,
                 ),
             )
         }
+    }
+
+    @Test
+    fun unknownVpnAndInactiveTransportsRemainNativeSafe() {
         assertEquals(
             null,
             ConnectivityPolicy.resolve(
                 wifi = StatusStateStore.WifiState.Unknown,
                 airplaneMode = false,
-                connectivity = connected.copy(
+                connectivity = gateConnected.copy(
                     transport = SysUiConnectivitySource.Transport.VPN,
                 ),
-                mobileType = native,
+                mobileType = gateMobileType,
             ),
         )
         assertEquals(
@@ -247,11 +253,11 @@ class ConnectivityPolicyTest {
             ConnectivityPolicy.resolve(
                 wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = false,
-                connectivity = connected.copy(
+                connectivity = gateConnected.copy(
                     transport = SysUiConnectivitySource.Transport.OTHER,
                     mobileDataEnabled = null,
                 ),
-                mobileType = native,
+                mobileType = gateMobileType,
             ),
         )
         assertEquals(
@@ -259,10 +265,10 @@ class ConnectivityPolicyTest {
             ConnectivityPolicy.resolve(
                 wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = false,
-                connectivity = connected.copy(
+                connectivity = gateConnected.copy(
                     transport = SysUiConnectivitySource.Transport.WIFI,
                 ),
-                mobileType = native,
+                mobileType = gateMobileType,
             ),
         )
         assertEquals(
@@ -270,10 +276,10 @@ class ConnectivityPolicyTest {
             ConnectivityPolicy.resolve(
                 wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = false,
-                connectivity = connected.copy(
+                connectivity = gateConnected.copy(
                     transport = SysUiConnectivitySource.Transport.NONE,
                 ),
-                mobileType = native,
+                mobileType = gateMobileType,
             ),
         )
     }
