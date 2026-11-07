@@ -957,10 +957,34 @@ class VisualPersistenceTest {
         assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
     }
 
+
+    @Test
+    fun isolatedDotArrangementMigrationReportsFailedDiskCommit() {
+        val prefs = MemoryPreferences()
+        prefs.edit().putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1).apply()
+        prefs.failNextCommit = true
+
+        val failure = runCatching { migrateVisualPrefsIfNeeded(prefs) }.exceptionOrNull()
+
+        assertEquals("Could not commit dot arrangement migration", failure?.message)
+    }
+
+    @Test
+    fun isolatedSharedLayoutMigrationReportsFailedDiskCommit() {
+        val prefs = MemoryPreferences()
+        prefs.edit().putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4).apply()
+        prefs.failNextCommit = true
+
+        val failure = runCatching { migrateVisualPrefsIfNeeded(prefs) }.exceptionOrNull()
+
+        assertEquals("Could not commit shared layout migration", failure?.message)
+    }
+
     private class MemoryPreferences : SharedPreferences {
         private val values = mutableMapOf<String, Any>()
         var writeCount = 0
             private set
+        var failNextCommit = false
 
         override fun getAll(): MutableMap<String, *> = values.toMutableMap()
         override fun contains(key: String?): Boolean = values.containsKey(key)
@@ -1026,7 +1050,10 @@ class VisualPersistenceTest {
                 changes.forEach { (key, value) ->
                     if (value == null) values.remove(key) else values[key] = value
                 }
-                return true
+                // SharedPreferences may update memory even when durable commit fails.
+                val durable = !failNextCommit
+                failNextCommit = false
+                return durable
             }
 
             override fun apply() {
