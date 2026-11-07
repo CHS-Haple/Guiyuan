@@ -227,8 +227,7 @@ internal fun PreviewSandboxUiState.previewCenterIndicator(
     mobileTypeface: Typeface? = null,
 ): CenterIndicator {
     val wifiLevel = wifiSignalLevel.coerceIn(0, 3)
-    return
-        when (previewCenterSource()) {
+    return when (previewCenterSource()) {
             PreviewCenterSource.WIFI ->
                 CenterIndicator.Wifi(
                     segments = wifiLevel,
@@ -290,7 +289,7 @@ internal fun PreviewSandboxUiState.previewBatterySemanticState(
                     BatterySemanticState.SUPER_POWER_SAVE
             }
         }
-    val semanticState = BatterySemanticState.atThreshold(
+    return BatterySemanticState.atThreshold(
         baseState,
         batteryPercent,
         lowBatteryThreshold,
