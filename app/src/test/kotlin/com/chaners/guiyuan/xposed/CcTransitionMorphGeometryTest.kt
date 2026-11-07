@@ -357,6 +357,4 @@ class CcTransitionMorphGeometryTest {
             verifiedAggregateRoot = verifiedAggregateRoot,
         ))
     }
-    }
-
 }
