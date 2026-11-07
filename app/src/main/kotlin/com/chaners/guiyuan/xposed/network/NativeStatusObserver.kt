@@ -59,7 +59,7 @@ internal object NativeStatusObserver {
     private const val STATUS_ICON_VISIBILITY_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.airplaneVisibility"
 
-    private val observableTargetSlots = setOf("wifi", "mobile", NO_SIM_SLOT)
+    private val observableTargetSlots = setOf("wifi", "mobile", "stacked_mobile", NO_SIM_SLOT)
     private val representedTintSlots =
         setOf("combined_status", "wifi", "mobile", "stacked_mobile", NO_SIM_SLOT, AIRPLANE_SLOT)
 
