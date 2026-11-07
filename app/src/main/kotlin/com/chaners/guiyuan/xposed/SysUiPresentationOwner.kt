@@ -3179,34 +3179,32 @@ internal object SysUiPresentationOwner {
             while (iterator.hasNext()) {
                 val state = iterator.next()
                 val view = state.view.get()
-                if (view == null || view !in targets) {
-                    if (view != null && view.clipBounds == state.appliedClip) {
-                        val restored = runCatching { restoreClipState(state) }
-                            .onFailure(::rethrowFatal)
-                            .getOrDefault(false)
-                        if (!restored) {
-                            onFailNative("native-clip-release-unverified")
-                            return
-                        }
+                if (view != null && view in targets) continue
+                if (view != null && view.clipBounds == state.appliedClip) {
+                    val restored = runCatching { restoreClipState(state) }
+                        .onFailure(::rethrowFatal)
+                        .getOrDefault(false)
+                    if (!restored) {
+                        onFailNative("native-clip-release-unverified")
+                        return
                     }
-                    iterator.remove()
                 }
+                iterator.remove()
             }
 
             for (view in targets) {
-                if (states.none { state -> state.view.get() === view }) {
-                    val nativeClip = view.clipBounds?.let(::Rect)
-                    val applied = Rect(0, 0, 0, 0)
-                    // Own the rollback receipt before a setter can partially write.
-                    states += ClipState(WeakReference(view), nativeClip, applied)
-                    val appliedOk = runCatching {
-                        view.clipBounds = applied
-                        view.clipBounds == applied
-                    }.onFailure(::rethrowFatal).getOrDefault(false)
-                    if (!appliedOk) {
-                        onFailNative("native-clip-apply-unverified")
-                        return
-                    }
+                if (states.any { state -> state.view.get() === view }) continue
+                val nativeClip = view.clipBounds?.let(::Rect)
+                val applied = Rect(0, 0, 0, 0)
+                // Own the rollback receipt before a setter can partially write.
+                states += ClipState(WeakReference(view), nativeClip, applied)
+                val appliedOk = runCatching {
+                    view.clipBounds = applied
+                    view.clipBounds == applied
+                }.onFailure(::rethrowFatal).getOrDefault(false)
+                if (!appliedOk) {
+                    onFailNative("native-clip-apply-unverified")
+                    return
                 }
             }
         }
@@ -3226,16 +3224,15 @@ internal object SysUiPresentationOwner {
             val snapshot = states.toList()
             states.clear()
             var restored = 0
-            snapshot.forEach { state ->
+            for (state in snapshot) {
                 try {
                     val view = state.view.get()
-                    if (view != null && view.clipBounds == state.appliedClip) {
-                        if (restoreClipState(state)) {
-                            restored += 1
-                        } else if (view.clipBounds == state.appliedClip) {
-                            states += state
-                            failures += IllegalStateException("native-clip-restore-incomplete")
-                        }
+                    if (view == null || view.clipBounds != state.appliedClip) continue
+                    if (restoreClipState(state)) {
+                        restored += 1
+                    } else if (view.clipBounds == state.appliedClip) {
+                        states += state
+                        failures += IllegalStateException("native-clip-restore-incomplete")
                     }
                 } catch (error: Throwable) {
                     rethrowFatal(error)
