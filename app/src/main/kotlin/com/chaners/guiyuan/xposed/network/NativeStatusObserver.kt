@@ -55,6 +55,8 @@ internal object NativeStatusObserver {
         "combinedstatus.nativeNetworkSuppression.homeIconAdded"
     private const val HOME_MANAGER_REGISTERED_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.homeManagerRegistered"
+    private const val MOBILE_SUB_IDS_HOOK_ID =
+        "combinedstatus.nativeNetworkSuppression.mobileSubIds"
     // Retain the existing Hook ID even though this is now observation-only.
     private const val STATUS_ICON_VISIBILITY_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.airplaneVisibility"
@@ -69,6 +71,7 @@ internal object NativeStatusObserver {
     private var activeManager: Any? = null
     private var activeGroup: WeakReference<ViewGroup>? = null
     private var lastNativeMobileTree: String? = null
+    private var lastNativeMobileSubIds: List<Int>? = null
     private var pendingObservationHost: WeakReference<View>? = null
     private var pendingObservationSource: String? = null
     private var observationAttachedSink: ((String) -> Unit)? = null
@@ -222,6 +225,26 @@ internal object NativeStatusObserver {
                     .hook(airplaneVisibility)
                     .setId(STATUS_ICON_VISIBILITY_HOOK_ID)
                     .intercept(statusIconVisibilityHooker())
+
+            // The OEM adapter may deliberately send an empty modern-mobile list
+            // when it enters the stackable path. This observes the native decision.
+            val mobileSubIdsMethod =
+                statusBarIconController.declaredMethods.firstOrNull { method ->
+                    method.name == "setNewMobileIconSubIds" &&
+                        method.parameterCount == 1 &&
+                        java.util.List::class.java.isAssignableFrom(method.parameterTypes[0])
+                }?.apply { isAccessible = true }
+            if (mobileSubIdsMethod != null) {
+                runCatching {
+                    module.hook(mobileSubIdsMethod)
+                        .setId(MOBILE_SUB_IDS_HOOK_ID)
+                        .intercept(nativeMobileSubIdsHooker())
+                }.onSuccess { created += it }
+                    .onFailure { error ->
+                        rethrowFatal(error)
+                        Log.w("Guiyuan[NativeObserver]", "Mobile subscription observation unavailable", error)
+                    }
+            }
 
             installedHandles.clear()
             installedHandles.addAll(created)
@@ -395,6 +418,36 @@ internal object NativeStatusObserver {
                     }
                 }
             }
+        }
+
+    private fun nativeMobileSubIdsHooker(): Hooker =
+        Hooker { chain ->
+            val result = chain.proceed()
+            observeAfterNative(result, { reportObservationFailure("nativeMobileSubIds", it) }) {
+                if (diagnosticsEnabled()) {
+                    val raw = chain.getArg(0) as? List<*>
+                    if (raw != null) {
+                        val ids = raw.mapNotNull { (it as? Number)?.toInt() }
+                        val changed = synchronized(this) {
+                            if (lastNativeMobileSubIds == ids) false
+                            else {
+                                lastNativeMobileSubIds = ids
+                                true
+                            }
+                        }
+                        if (changed) {
+                            reportEvent {
+                                "networkPipeline nativeMobileSubIds " +
+                                    "source=StatusBarIconControllerImpl.setNewMobileIconSubIds " +
+                                    "count=" + raw.size +
+                                    " ids=" + ids.joinToString(",") +
+                                    " allNumeric=" + (ids.size == raw.size)
+                            }
+                        }
+                    }
+                }
+            }
+            result
         }
 
     private fun homeManagerRegisteredHooker(): Hooker =
@@ -958,6 +1011,7 @@ internal object NativeStatusObserver {
         activeManager = null
         activeGroup = null
         lastNativeMobileTree = null
+        lastNativeMobileSubIds = null
         lastDelivery = Delivery(PresentationStore.StatusIconPresentation())
     }
 
