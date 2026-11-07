@@ -12,12 +12,15 @@ import com.chaners.guiyuan.xposed.RenderModelTestFixtures.connectivity
 import com.chaners.guiyuan.xposed.RenderModelTestFixtures.presentation
 import com.chaners.guiyuan.xposed.RenderModelTestFixtures.mobileType
 
+// Native no-SIM icons in these scenarios belong to the SystemUI resource package.
+private const val NATIVE_SYSTEMUI_PACKAGE = "com.android.systemui"
+
 class RenderModelUnavailableTest {
     @Test
     fun nativeNoSimPresentationOverridesStaleMobileSignalAndType() {
         val noSimIcon =
             PresentationStore.NativeIconResource(
-                packageName = "com.android.systemui",
+                packageName = NATIVE_SYSTEMUI_PACKAGE,
                 resourceId = 42,
             )
         val model =
@@ -69,7 +72,7 @@ class RenderModelUnavailableTest {
     fun nativeNoSimWithWifiSuppressesStaleMobileButKeepsWifiCenter() {
         val noSimIcon =
             PresentationStore.NativeIconResource(
-                packageName = "com.android.systemui",
+                packageName = NATIVE_SYSTEMUI_PACKAGE,
                 resourceId = 42,
             )
         val model =
@@ -126,7 +129,7 @@ class RenderModelUnavailableTest {
     fun noSimWithoutWifiKeepsUnavailableMarkAlongsideNativeNoSimCenter() {
         val noSimIcon =
             PresentationStore.NativeIconResource(
-                packageName = "com.android.systemui",
+                packageName = NATIVE_SYSTEMUI_PACKAGE,
                 resourceId = 42,
             )
         val model =
@@ -162,7 +165,7 @@ class RenderModelUnavailableTest {
     fun noSimWithWifiKeepsUnavailableMarkWhileWifiOwnsCenter() {
         val noSimIcon =
             PresentationStore.NativeIconResource(
-                packageName = "com.android.systemui",
+                packageName = NATIVE_SYSTEMUI_PACKAGE,
                 resourceId = 42,
             )
         val model =

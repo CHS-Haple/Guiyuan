@@ -71,7 +71,7 @@ class RenderModelSubscriptionTest {
     }
 
     @Test
-    fun unknownDualSignalKeepsOtherRowButUnavailableOrMissingFallsBack() {
+    fun unknownDualSignalKeepsOtherRowAndZeroRemainsAvailable() {
         val source = snapshot(
             wifi = StatusStateStore.WifiState.Hidden,
             mobile = mapOf(
@@ -123,6 +123,18 @@ class RenderModelSubscriptionTest {
             DualMobileLevels(4, 0),
             RenderModel.from(zeroSim2, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
         )
+    }
+
+    @Test
+    fun unavailableOrMissingDualSignalFallsBackToSingleRow() {
+        val source = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(1)),
+            ),
+        )
+        val native = dualPresentation(slotSubscriptionIds = mapOf(0 to 14, 1 to 3))
         assertNull(
             RenderModel.from(
                 source.copy(
