@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -175,57 +176,44 @@ private fun SummaryField(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Image(
-                painter = painterResource(icon),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(primary),
-                modifier = Modifier.size(18.dp),
-            )
-            Text(
-                text = value,
-                style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
-                color = primary,
-            )
-            if (alongside != null) {
-                Text(
-                    text = alongside,
-                    modifier = Modifier.weight(1f, fill = false),
-                    style = MiuixTheme.textStyles.body2,
-                    color = companion,
-                )
-            }
-        }
+        SummaryLine(icon, value, alongside, primary, companion)
         details.forEach { detail ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Image(
-                    painter = painterResource(detail.icon),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(primary),
-                    modifier = Modifier.size(18.dp),
-                )
-                Text(
-                    text = detail.value,
-                    style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
-                    color = primary,
-                )
-                if (detail.alongside != null) {
-                    Text(
-                        text = detail.alongside,
-                        modifier = Modifier.weight(1f, fill = false),
-                        style = MiuixTheme.textStyles.body2,
-                        color = companion,
-                    )
-                }
-            }
+            SummaryLine(detail.icon, detail.value, detail.alongside, primary, companion)
+        }
+    }
+}
+
+@Composable
+private fun SummaryLine(
+    @DrawableRes icon: Int,
+    value: String,
+    alongside: String?,
+    primary: Color,
+    companion: Color,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Image(
+            painter = painterResource(icon),
+            contentDescription = null,
+            colorFilter = ColorFilter.tint(primary),
+            modifier = Modifier.size(18.dp),
+        )
+        Text(
+            text = value,
+            style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
+            color = primary,
+        )
+        if (alongside != null) {
+            Text(
+                text = alongside,
+                modifier = Modifier.weight(1f, fill = false),
+                style = MiuixTheme.textStyles.body2,
+                color = companion,
+            )
         }
     }
 }
