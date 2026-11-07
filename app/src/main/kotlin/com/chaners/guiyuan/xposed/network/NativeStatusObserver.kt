@@ -68,6 +68,7 @@ internal object NativeStatusObserver {
     private val failedObservations = mutableSetOf<String>()
     private var activeManager: Any? = null
     private var activeGroup: WeakReference<ViewGroup>? = null
+    private var lastNativeMobileTree: String? = null
     private var pendingObservationHost: WeakReference<View>? = null
     private var pendingObservationSource: String? = null
     private var observationAttachedSink: ((String) -> Unit)? = null
@@ -582,6 +583,7 @@ internal object NativeStatusObserver {
         observedNoSimVisible: Boolean? = null,
     ) {
         val group = activeGroup?.get() ?: return
+        observeNativeMobileTree(group, source)
         val noSimView =
             observedNoSimView
                 ?: (0 until group.childCount)
@@ -653,6 +655,51 @@ internal object NativeStatusObserver {
             }
         }
 
+    }
+
+    // Home's native slot owner can reveal a mobile root even when our binder
+    // mapping never received a callback. Observation never claims that root.
+    private fun observeNativeMobileTree(group: ViewGroup, source: String) {
+        val sink = eventSink?.takeIf { diagnosticsEnabled() } ?: return
+        if (group.childCount > 64) return
+        val roots = buildList {
+            for (index in 0 until group.childCount) {
+                val child = group.getChildAt(index)
+                val slot = NativeParticipantAccess.slotOf(child)
+                if (slot == "mobile" || slot == "stacked_mobile") {
+                    add(slot to child)
+                }
+            }
+        }
+        val identity = roots.joinToString(";") { (slot, root) ->
+            slot + ":" + System.identityHashCode(root)
+        }
+        if (lastNativeMobileTree == identity) return
+        lastNativeMobileTree = identity
+        val details = roots.take(4).joinToString(";") { (slot, root) ->
+            val nativeSubId = readOrNull {
+                (root.javaClass.methods.firstOrNull { method ->
+                    method.name == "getSubId" && method.parameterCount == 0
+                }?.invoke(root) as? Number)?.toInt()
+            }
+            val image = NativeParticipantAccess.findResourceView(root, "mobile_signal") as? ImageView
+            val taggedResId = (image?.tag as? Number)?.toInt()?.takeIf { it > 0 }
+            slot + ":" + root.javaClass.simpleName +
+                ",rootId=" + (NativeParticipantAccess.resourceEntryName(root) ?: "none") +
+                ",subId=" + (nativeSubId ?: -1) +
+                ",rootVisibility=" + root.visibility +
+                ",signalView=" + (image != null) +
+                ",signalTag=" + (taggedResId ?: 0) +
+                ",signalDrawable=" + (image?.drawable != null)
+        }
+        readOrNull {
+            sink(
+                "networkPipeline nativeMobileTree source=" + source +
+                    " groupChildren=" + group.childCount +
+                    " roots=" + roots.size +
+                    " native=" + details.ifEmpty { "none" },
+            )
+        }
     }
 
     @Synchronized
@@ -904,6 +951,7 @@ internal object NativeStatusObserver {
         failedObservations.clear()
         activeManager = null
         activeGroup = null
+        lastNativeMobileTree = null
         lastDelivery = Delivery(PresentationStore.StatusIconPresentation())
     }
 
