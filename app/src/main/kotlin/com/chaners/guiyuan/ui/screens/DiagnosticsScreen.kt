@@ -799,6 +799,62 @@ private fun DiagActionButton(
 }
 
 @Composable
+private fun filterOptionItems(
+    options: List<FilterOption>,
+    mask: Int,
+    onMaskChange: (Int) -> Unit,
+): List<DropdownItem> =
+    options.map { option ->
+        val selected = mask and option.bit != 0
+        DropdownItem(
+            text = stringResource(option.titleRes),
+            selected = selected,
+            onClick = {
+                onMaskChange(
+                    toggleMask(
+                        mask = mask,
+                        bit = option.bit,
+                        checked = !selected,
+                    ),
+                )
+            },
+        )
+    }
+
+@Composable
+private fun logFilterEntries(
+    levelItems: List<DropdownItem>,
+    categoryItems: List<DropdownItem>,
+    filterActive: Boolean,
+    onReset: () -> Unit,
+): List<DropdownEntry> =
+    listOf(
+                DropdownEntry(
+                    items =
+                        listOf(
+                            DropdownItem(
+                                text = stringResource(R.string.diagnostics_filter_levels),
+                                children = levelItems,
+                            ),
+                            DropdownItem(
+                                text = stringResource(R.string.diagnostics_filter_categories),
+                                children = categoryItems,
+                            ),
+                        ),
+                ),
+                DropdownEntry(
+                    items =
+                        listOf(
+                            DropdownItem(
+                                text = stringResource(R.string.diagnostics_filter_reset),
+                                enabled = filterActive,
+                                onClick = onReset,
+                            ),
+                        ),
+                ),
+            )
+
+@Composable
 private fun LogFilterMenu(
     title: String,
     levelMask: Int,
@@ -810,66 +866,9 @@ private fun LogFilterMenu(
     val filterActive =
         levelMask != LEVEL_ALL ||
             categoryMask != CAT_ALL
-    val levelItems =
-        LevelOptions.map { option ->
-            val selected = levelMask and option.bit != 0
-            DropdownItem(
-                text = stringResource(option.titleRes),
-                selected = selected,
-                onClick = {
-                    onLevelMaskChange(
-                        toggleMask(
-                            mask = levelMask,
-                            bit = option.bit,
-                            checked = !selected,
-                        ),
-                    )
-                },
-            )
-        }
-    val categoryItems =
-        CategoryOptions.map { option ->
-            val selected = categoryMask and option.bit != 0
-            DropdownItem(
-                text = stringResource(option.titleRes),
-                selected = selected,
-                onClick = {
-                    onCategoryMaskChange(
-                        toggleMask(
-                            mask = categoryMask,
-                            bit = option.bit,
-                            checked = !selected,
-                        ),
-                    )
-                },
-            )
-        }
-    val entries =
-        listOf(
-            DropdownEntry(
-                items =
-                    listOf(
-                        DropdownItem(
-                            text = stringResource(R.string.diagnostics_filter_levels),
-                            children = levelItems,
-                        ),
-                        DropdownItem(
-                            text = stringResource(R.string.diagnostics_filter_categories),
-                            children = categoryItems,
-                        ),
-                    ),
-            ),
-            DropdownEntry(
-                items =
-                    listOf(
-                        DropdownItem(
-                            text = stringResource(R.string.diagnostics_filter_reset),
-                            enabled = filterActive,
-                            onClick = onReset,
-                        ),
-                    ),
-            ),
-        )
+    val levelItems = filterOptionItems(LevelOptions, levelMask, onLevelMaskChange)
+    val categoryItems = filterOptionItems(CategoryOptions, categoryMask, onCategoryMaskChange)
+    val entries = logFilterEntries(levelItems, categoryItems, filterActive, onReset)
 
     val icon: @Composable () -> Unit = {
         BadgedBox(
@@ -905,18 +904,11 @@ private fun LogFilterMenu(
 }
 
 @Composable
-private fun DiagMenu(
-    title: String,
+private fun diagLevelEntry(
     diagnosticsLevel: DiagLevel,
     canChangeLevel: Boolean,
-    canScrollTop: Boolean,
-    canScrollBottom: Boolean,
-    canClear: Boolean,
     onDiagLevelChange: (DiagLevel) -> Unit,
-    onScrollTop: () -> Unit,
-    onScrollBottom: () -> Unit,
-    onClear: () -> Unit,
-) {
+): DropdownEntry {
     val currentLevelLabel =
         stringResource(
             if (diagnosticsLevel == DiagLevel.Detailed) {
@@ -941,19 +933,35 @@ private fun DiagMenu(
                 onClick = { onDiagLevelChange(level) },
             )
         }
+    return DropdownEntry(
+            items =
+                listOf(
+                    DropdownItem(
+                        text = stringResource(R.string.diagnostics_mode_title),
+                        summary = currentLevelLabel,
+                        enabled = canChangeLevel,
+                        children = levelItems,
+                    ),
+                ),
+        )
+}
+
+@Composable
+private fun DiagMenu(
+    title: String,
+    diagnosticsLevel: DiagLevel,
+    canChangeLevel: Boolean,
+    canScrollTop: Boolean,
+    canScrollBottom: Boolean,
+    canClear: Boolean,
+    onDiagLevelChange: (DiagLevel) -> Unit,
+    onScrollTop: () -> Unit,
+    onScrollBottom: () -> Unit,
+    onClear: () -> Unit,
+) {
     val entries =
         listOf(
-            DropdownEntry(
-                items =
-                    listOf(
-                        DropdownItem(
-                            text = stringResource(R.string.diagnostics_mode_title),
-                            summary = currentLevelLabel,
-                            enabled = canChangeLevel,
-                            children = levelItems,
-                        ),
-                    ),
-            ),
+            diagLevelEntry(diagnosticsLevel, canChangeLevel, onDiagLevelChange),
             DropdownEntry(
                 items =
                     listOf(
@@ -981,23 +989,18 @@ private fun DiagMenu(
             ),
         )
 
+    val icon: @Composable () -> Unit = {
+        Icon(
+            imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassMore else MiuixIcons.More,
+            contentDescription = title,
+            modifier = Modifier.size(24.dp),
+        )
+    }
     TooltipBox(text = title) {
         if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
-            Os4CascadingMenu(entries = entries) {
-                Icon(
-                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassMore else MiuixIcons.More,
-                    contentDescription = title,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
+            Os4CascadingMenu(entries = entries, content = icon)
         } else {
-            WindowIconCascadingDropdownMenu(entries = entries) {
-                Icon(
-                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassMore else MiuixIcons.More,
-                    contentDescription = title,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
+            WindowIconCascadingDropdownMenu(entries = entries, content = icon)
         }
     }
 }
