@@ -95,29 +95,29 @@ internal object DiagLogReader {
 
         // A cleared LSP history may have no new entries; filter logcat too before fallback.
         if (lspLines.isNotEmpty() || !lspResult.isSuccess) {
-            return@withContext Snapshot(
+            Snapshot(
                 source = Source.LspModules,
                 result = lspResult,
                 lines = lspLines,
                 sessionLines = latestSession(lspLines),
                 clearedAt = boundary,
             )
-        }
-
-        val logcatResult =
-            RootShell.execute(
-                context = context,
-                command = LOGCAT_CMD,
-                timeoutSeconds = TIMEOUT_SEC,
+        } else {
+            val logcatResult =
+                RootShell.execute(
+                    context = context,
+                    command = LOGCAT_CMD,
+                    timeoutSeconds = TIMEOUT_SEC,
+                )
+            val logcatLines = afterHistoryClear(filterLogcatLines(logcatResult.output), boundary)
+            Snapshot(
+                source = Source.LogcatFallback,
+                result = logcatResult,
+                lines = logcatLines,
+                sessionLines = latestSession(logcatLines),
+                clearedAt = boundary,
             )
-        val logcatLines = afterHistoryClear(filterLogcatLines(logcatResult.output), boundary)
-        Snapshot(
-            source = Source.LogcatFallback,
-            result = logcatResult,
-            lines = logcatLines,
-            sessionLines = latestSession(logcatLines),
-            clearedAt = boundary,
-        )
+        }
     }
 
     internal fun filterModuleLines(output: String): List<String> {
