@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.settings
 
-import android.content.SharedPreferences
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
