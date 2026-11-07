@@ -147,6 +147,12 @@ internal fun AppSettingsRows(
         checked = iconHidden,
         onCheckedChange = onIconHiddenChange,
     )
+    AppSettingsEntryRows(entryState)
+
+}
+
+@Composable
+private fun AppSettingsEntryRows(entryState: AppSettingsEntryState) {
     UiDropdownPreference(
         items = listOf(
             stringResource(R.string.settings_entry_disabled),

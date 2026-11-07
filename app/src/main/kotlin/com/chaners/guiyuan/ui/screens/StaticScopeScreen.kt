@@ -105,46 +105,7 @@ private fun StaticScopeItem(
     BasicComponent(
         insideMargin = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
         startAction = { StaticScopeIcon(packageName, fallbackIcon) },
-        endActions = {
-            val label =
-                when (status) {
-                    ScopeState.Authorized -> stringResource(R.string.runtime_scope_authorized)
-                    ScopeState.Unauthorized -> stringResource(R.string.runtime_scope_disabled)
-                    ScopeState.Missing -> stringResource(R.string.runtime_scope_not_installed)
-                    ScopeState.Failed -> stringResource(R.string.runtime_scope_error)
-                    ScopeState.Unknown -> "—"
-                }
-            val color =
-                when (status) {
-                    ScopeState.Authorized -> MiuixTheme.colorScheme.primary
-                    ScopeState.Failed -> MiuixTheme.colorScheme.error
-                    else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
-                }
-            val backgroundAlpha =
-                when (status) {
-                    ScopeState.Authorized, ScopeState.Failed -> 0.12f
-                    else -> 0.07f
-                }
-            Surface(
-                modifier = Modifier.heightIn(min = 20.dp),
-                shape = RoundedCornerShape(5.dp),
-                color = color.copy(alpha = backgroundAlpha),
-                contentColor = color,
-            ) {
-                Box(
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = label,
-                        fontSize = MiuixTheme.textStyles.footnote2.fontSize,
-                        fontWeight = FontWeight.SemiBold,
-                        color = color,
-                        maxLines = 1,
-                    )
-                }
-            }
-        },
+        endActions = { StaticScopeStatusBadge(status) },
     ) {
         Text(
             text = name,
@@ -176,6 +137,48 @@ private fun StaticScopeItem(
         fontWeight = FontWeight.Medium,
         color = MiuixTheme.colorScheme.onSurface,
     )
+}
+
+@Composable
+private fun StaticScopeStatusBadge(status: ScopeState) {
+    val label =
+        when (status) {
+            ScopeState.Authorized -> stringResource(R.string.runtime_scope_authorized)
+            ScopeState.Unauthorized -> stringResource(R.string.runtime_scope_disabled)
+            ScopeState.Missing -> stringResource(R.string.runtime_scope_not_installed)
+            ScopeState.Failed -> stringResource(R.string.runtime_scope_error)
+            ScopeState.Unknown -> "—"
+        }
+    val color =
+        when (status) {
+            ScopeState.Authorized -> MiuixTheme.colorScheme.primary
+            ScopeState.Failed -> MiuixTheme.colorScheme.error
+            else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
+        }
+    val backgroundAlpha =
+        when (status) {
+            ScopeState.Authorized, ScopeState.Failed -> 0.12f
+            else -> 0.07f
+        }
+    Surface(
+        modifier = Modifier.heightIn(min = 20.dp),
+        shape = RoundedCornerShape(5.dp),
+        color = color.copy(alpha = backgroundAlpha),
+        contentColor = color,
+    ) {
+        Box(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = label,
+                fontSize = MiuixTheme.textStyles.footnote2.fontSize,
+                fontWeight = FontWeight.SemiBold,
+                color = color,
+                maxLines = 1,
+            )
+        }
+    }
 }
 
 @Composable
