@@ -120,6 +120,7 @@ internal object SysUiNetworkSource {
     private val lastWifiEvents = WeakHashMap<ImageView, String>()
     private val lastWifiTaggedResources = WeakHashMap<ImageView, Int?>()
     private val lastMobileEvents = WeakHashMap<ImageView, String>()
+    private val unmappedMobileSignalViews = WeakHashMap<ImageView, Boolean>()
 
     @Volatile
     private var wifiSeedContract: WifiSeedContract? = null
@@ -649,6 +650,7 @@ internal object SysUiNetworkSource {
         lastWifiEvents.clear()
         lastWifiTaggedResources.clear()
         lastMobileEvents.clear()
+        unmappedMobileSignalViews.clear()
         wifiSeedContract = null
     }
 
@@ -681,6 +683,7 @@ internal object SysUiNetworkSource {
         lastWifiEvents.clear()
         lastWifiTaggedResources.clear()
         lastMobileEvents.clear()
+        unmappedMobileSignalViews.clear()
 
         val payload = raw as? Array<*>
         val wifi = payload?.getOrNull(0) as? List<*>
@@ -1357,6 +1360,7 @@ internal object SysUiNetworkSource {
                 locationViewModel?.javaClass?.name == HOME_MOBILE_VIEW_MODEL_CLASS_NAME
             }
         var bindingLog: String? = null
+        var skippedBindLog: String? = null
         var bindingChanged = false
         var pending: MobileBinding? = null
         var previous: MobileBinding? = null
@@ -1386,6 +1390,17 @@ internal object SysUiNetworkSource {
                             LAYOUT_LOG_FIELD + layoutToken(boundRoot)
                     }
                 }
+            } else if (root != null && onEvent != null && isDetailedDiagnosticsEnabled()) {
+                // Report the rejected runtime type without accepting another scene as Home.
+                skippedBindLog = readOrNull {
+                    "networkPipeline mobile bindSkipped " +
+                        "reason=non-home-view-model stage=beforeProceed " +
+                        "root=" + root.javaClass.name +
+                        ROOT_ID_LOG_FIELD + resourceId(root) +
+                        " locationVm=" + (locationViewModel?.javaClass?.name ?: "null") +
+                        " iconVm=" + (iconViewModel?.javaClass?.name ?: "null") +
+                        PARENT_CHAIN_LOG_FIELD + parentChain(root)
+                }
             }
         } catch (error: Throwable) {
             rethrowFatal(error)
@@ -1412,6 +1427,7 @@ internal object SysUiNetworkSource {
         if (bindingChanged) {
             readOrNull { bindingLog?.let { onEvent?.invoke(it) } }
         }
+        readOrNull { skippedBindLog?.let { onEvent?.invoke(it) } }
         // A native binder can replace a child even if the SIM ID stays the same.
         if (boundRoot != null) {
             try {
@@ -1511,6 +1527,22 @@ internal object SysUiNetworkSource {
                                         ?: resourceId?.let { id -> resourceName(image, id) }
                                         ?: "n/a")
                             }
+                        }
+                    }
+                } else if (classId == 0 && onEvent != null && isDetailedDiagnosticsEnabled()) {
+                    // One witness per image; the original native emitter still proceeds.
+                    val firstUnmapped = synchronized(this) {
+                        unmappedMobileSignalViews.put(image, true) != true
+                    }
+                    if (firstUnmapped) {
+                        readOrNull {
+                            onEvent?.invoke(
+                                "networkPipeline mobile signalUnmapped " +
+                                    "stage=beforeProceed viewId=" + resourceId(image) +
+                                    " value=" + ((value as? Number)?.toString()
+                                        ?: value?.javaClass?.simpleName ?: "null") +
+                                    PARENT_CHAIN_LOG_FIELD + parentChain(image),
+                            )
                         }
                     }
                 }
