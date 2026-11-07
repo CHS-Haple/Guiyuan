@@ -628,13 +628,11 @@ class CcTransitionOwnerTest {
     }
 
     @Test
-    fun chargingGlyphUsesOpaqueClipHideAndAcceleratedLateReveal() {
+    fun chargingGlyphSourceHideUsesOpaqueRingClip() {
         val policy = BatteryNumberFollowerPolicy
         val hideStart = 0f
         val hideMid = 0.09f
         val hideEnd = 0.181f
-        val revealStart = 0.85f
-        val revealEnd = 0.90f
 
         assertEquals(0f, policy.chargingRingLifetimeProgress(hideStart), 0.001f)
         assertEquals(0.40f, policy.chargingRingLifetimeProgress(0.18f), 0.001f)
@@ -669,6 +667,15 @@ class CcTransitionOwnerTest {
             ),
             0.0001f,
         )
+
+    }
+
+    @Test
+    fun chargingGlyphTargetRevealStartsAfterSourceHide() {
+        val policy = BatteryNumberFollowerPolicy
+        val hideEnd = 0.181f
+        val revealStart = 0.85f
+        val revealEnd = 0.90f
 
         // The glyph is fully clipped before its independent target travel starts.
         assertTrue(policy.chargingMotionProgress(hideEnd + 0.05f) > 0f)

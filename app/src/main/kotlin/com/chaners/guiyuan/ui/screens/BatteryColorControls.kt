@@ -192,9 +192,10 @@ internal fun BatteryColorBottomSheet(
                     ),
             )
         },
-        allowDismiss = !detailVisible,
+        // Keep the parent inert until the child sheet's native dismiss animation finishes.
+        allowDismiss = detailRequest == null,
         onDismissRequest = {
-            if (!detailVisible) {
+            if (detailRequest == null) {
                 onDismiss()
             }
         },
