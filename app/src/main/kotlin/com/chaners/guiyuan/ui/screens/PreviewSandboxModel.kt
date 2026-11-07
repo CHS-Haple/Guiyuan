@@ -221,22 +221,13 @@ internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
         else -> PreviewCenterSource.MOBILE
     }
 
-internal fun PreviewSandboxUiState.toRenderModel(
+// Sandbox-only center glyph selection; native SystemUI observations are not changed.
+internal fun PreviewSandboxUiState.previewCenterIndicator(
     resources: PreviewSysUiResources,
-    dualSignalEnabled: Boolean,
     mobileTypeface: Typeface? = null,
-    lowBatteryThreshold: Int = LOW_BATTERY_THRESHOLD_DEFAULT,
-    nativeLowColor: Int? = null,
-): RenderModel {
+): CenterIndicator {
     val wifiLevel = wifiSignalLevel.coerceIn(0, 3)
-    val mobileLevel =
-        if (mobileControlsEnabled) {
-            displayedSignalLevel.coerceIn(0, 4)
-        } else {
-            null
-        }
-
-    val center =
+    return
         when (previewCenterSource()) {
             PreviewCenterSource.WIFI ->
                 CenterIndicator.Wifi(
@@ -280,7 +271,12 @@ internal fun PreviewSandboxUiState.toRenderModel(
                     typeface = mobileTypeface,
                 )
         }
+}
 
+// Keep charging and native battery modes ahead of the user-defined low threshold.
+internal fun PreviewSandboxUiState.previewBatterySemanticState(
+    lowBatteryThreshold: Int = LOW_BATTERY_THRESHOLD_DEFAULT,
+): BatterySemanticState {
     val charging = chargingState != PreviewChargingState.NOT_CHARGING
     val baseState =
         if (charging) {
@@ -299,6 +295,24 @@ internal fun PreviewSandboxUiState.toRenderModel(
         batteryPercent,
         lowBatteryThreshold,
     )
+}
+
+internal fun PreviewSandboxUiState.toRenderModel(
+    resources: PreviewSysUiResources,
+    dualSignalEnabled: Boolean,
+    mobileTypeface: Typeface? = null,
+    lowBatteryThreshold: Int = LOW_BATTERY_THRESHOLD_DEFAULT,
+    nativeLowColor: Int? = null,
+): RenderModel {
+    val mobileLevel =
+        if (mobileControlsEnabled) {
+            displayedSignalLevel.coerceIn(0, 4)
+        } else {
+            null
+        }
+    val charging = chargingState != PreviewChargingState.NOT_CHARGING
+    val center = previewCenterIndicator(resources, mobileTypeface)
+    val semanticState = previewBatterySemanticState(lowBatteryThreshold)
 
     return RenderModel(
         batteryPercent = batteryPercent.coerceIn(0, 100),
