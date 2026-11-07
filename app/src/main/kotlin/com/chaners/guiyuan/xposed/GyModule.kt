@@ -766,6 +766,7 @@ class GyModule : XposedModule() {
                 classLoader = classLoader,
                 onEvent = ::logRuntimeEvent,
                 isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                isLightweightDiagnosticsEnabled = { detailedDiagnosticsEnabled },
                 onObservationAttached = { observationSource ->
                     logDiagnostic(
                         level = Log.INFO,
