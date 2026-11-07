@@ -121,6 +121,8 @@ internal object SysUiNetworkSource {
     private val lastWifiTaggedResources = WeakHashMap<ImageView, Int?>()
     private val lastMobileEvents = WeakHashMap<ImageView, String>()
     private val unmappedMobileSignalViews = WeakHashMap<ImageView, Boolean>()
+    private val skippedMobileBindRoots = WeakHashMap<ViewGroup, String>()
+    private var missingMobileSignalImageReported = false
 
     @Volatile
     private var wifiSeedContract: WifiSeedContract? = null
@@ -651,6 +653,8 @@ internal object SysUiNetworkSource {
         lastWifiTaggedResources.clear()
         lastMobileEvents.clear()
         unmappedMobileSignalViews.clear()
+        skippedMobileBindRoots.clear()
+        missingMobileSignalImageReported = false
         wifiSeedContract = null
     }
 
@@ -684,6 +688,8 @@ internal object SysUiNetworkSource {
         lastWifiTaggedResources.clear()
         lastMobileEvents.clear()
         unmappedMobileSignalViews.clear()
+        skippedMobileBindRoots.clear()
+        missingMobileSignalImageReported = false
 
         val payload = raw as? Array<*>
         val wifi = payload?.getOrNull(0) as? List<*>
@@ -1377,9 +1383,14 @@ internal object SysUiNetworkSource {
                 pending = candidate
                 previous = synchronized(this) { mobileRoots.put(boundRoot, candidate) }
                 bindingChanged = previous?.subscriptionId != nextId
-                if (bindingChanged && onEvent != null && isDetailedDiagnosticsEnabled()) {
+                synchronized(this) { skippedMobileBindRoots.remove(boundRoot) }
+                if (
+                    (bindingChanged || (nextId == null && previous == null)) &&
+                    onEvent != null && isDetailedDiagnosticsEnabled()
+                ) {
                     bindingLog = readOrNull {
-                        "networkPipeline mobile bound " +
+                        "networkPipeline mobile " +
+                            (if (nextId == null) "bindInvalid " else "bound ") +
                             "stage=beforeProceed " +
                             "root=" + boundRoot.javaClass.simpleName +
                             ROOT_ID_LOG_FIELD + resourceId(boundRoot) +
@@ -1391,15 +1402,20 @@ internal object SysUiNetworkSource {
                     }
                 }
             } else if (root != null && onEvent != null && isDetailedDiagnosticsEnabled()) {
-                // Report the rejected runtime type without accepting another scene as Home.
-                skippedBindLog = readOrNull {
-                    "networkPipeline mobile bindSkipped " +
-                        "reason=non-home-view-model stage=beforeProceed " +
-                        "root=" + root.javaClass.name +
-                        ROOT_ID_LOG_FIELD + resourceId(root) +
-                        " locationVm=" + (locationViewModel?.javaClass?.name ?: "null") +
-                        " iconVm=" + (iconViewModel?.javaClass?.name ?: "null") +
-                        PARENT_CHAIN_LOG_FIELD + parentChain(root)
+                val type = locationViewModel?.javaClass?.name ?: "null"
+                val firstType = synchronized(this) {
+                    skippedMobileBindRoots.put(root, type) != type
+                }
+                if (firstType) {
+                    skippedBindLog = readOrNull {
+                        "networkPipeline mobile bindSkipped " +
+                            "reason=non-home-view-model stage=beforeProceed " +
+                            "root=" + root.javaClass.name +
+                            ROOT_ID_LOG_FIELD + resourceId(root) +
+                            " locationVm=" + type +
+                            " iconVm=" + (iconViewModel?.javaClass?.name ?: "null") +
+                            PARENT_CHAIN_LOG_FIELD + parentChain(root)
+                    }
                 }
             }
         } catch (error: Throwable) {
@@ -1486,6 +1502,7 @@ internal object SysUiNetworkSource {
             if (image != null) {
                 val subscriptionId = findMobileSubscription(image)
                 if (subscriptionId != null) {
+                    synchronized(this) { unmappedMobileSignalViews.remove(image) }
                     val valueText = when (value) {
                         is Number -> value.toLong().toString()
                         null -> "null"
@@ -1544,6 +1561,19 @@ internal object SysUiNetworkSource {
                                     PARENT_CHAIN_LOG_FIELD + parentChain(image),
                             )
                         }
+                    }
+                }
+            } else if (classId == 0 && onEvent != null && isDetailedDiagnosticsEnabled()) {
+                val firstMissing = synchronized(this) {
+                    if (missingMobileSignalImageReported) false
+                    else {
+                        missingMobileSignalImageReported = true
+                        true
+                    }
+                }
+                if (firstMissing) {
+                    readOrNull {
+                        onEvent?.invoke("networkPipeline mobile signalImageMissing stage=beforeProceed")
                     }
                 }
             }
