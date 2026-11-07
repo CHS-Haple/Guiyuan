@@ -827,7 +827,9 @@ private fun BatterySchemeManageMenu(
                     }
                 },
                 modifier = modifier.glassPopupAnchor(anchor, cornerRadius = 20.dp, floating = true),
-                backdrop = backdrop,
+                // The sheet records the button itself in sheetBackdrop. Do not sample that same
+                // layer from the button: it creates a recursive HWUI RenderNode dependency.
+                // Retain the native fallback used before this migration; the popup is root-hosted.
             ) {
                 Icon(
                     imageVector = Os4GlassMore,
