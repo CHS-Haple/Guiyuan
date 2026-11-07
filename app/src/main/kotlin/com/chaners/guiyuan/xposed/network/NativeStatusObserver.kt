@@ -685,7 +685,7 @@ internal object NativeStatusObserver {
             val image = NativeParticipantAccess.findResourceView(root, "mobile_signal") as? ImageView
             val taggedResId = (image?.tag as? Number)?.toInt()?.takeIf { it > 0 }
             val taggedName = taggedResId?.let { id ->
-                readOrNull { image.resources.getResourceEntryName(id) }
+                readOrNull { image?.resources?.getResourceEntryName(id) }
             }
             slot + ":" + root.javaClass.simpleName +
                 ",rootId=" + (NativeParticipantAccess.resourceEntryName(root) ?: "none") +
