@@ -72,6 +72,7 @@ internal object NativeStatusObserver {
     private var activeGroup: WeakReference<ViewGroup>? = null
     private var lastNativeMobileTree: String? = null
     private var lastNativeMobileSubIds: List<Int>? = null
+    private var nativeMobileSubIdsHookState = "unavailable"
     private var pendingObservationHost: WeakReference<View>? = null
     private var pendingObservationSource: String? = null
     private var observationAttachedSink: ((String) -> Unit)? = null
@@ -234,16 +235,19 @@ internal object NativeStatusObserver {
                         method.parameterCount == 1 &&
                         java.util.List::class.java.isAssignableFrom(method.parameterTypes[0])
                 }?.apply { isAccessible = true }
+            nativeMobileSubIdsHookState = if (mobileSubIdsMethod == null) "method-missing" else "hook-failed"
             if (mobileSubIdsMethod != null) {
                 runCatching {
                     module.hook(mobileSubIdsMethod)
                         .setId(MOBILE_SUB_IDS_HOOK_ID)
                         .intercept(nativeMobileSubIdsHooker())
-                }.onSuccess { created += it }
-                    .onFailure { error ->
-                        rethrowFatal(error)
-                        Log.w("Guiyuan[NativeObserver]", "Mobile subscription observation unavailable", error)
-                    }
+                }.onSuccess {
+                    created += it
+                    nativeMobileSubIdsHookState = "installed"
+                }.onFailure { error ->
+                    rethrowFatal(error)
+                    Log.w("Guiyuan[NativeObserver]", "Mobile subscription observation unavailable", error)
+                }
             }
 
             installedHandles.clear()
@@ -267,6 +271,7 @@ internal object NativeStatusObserver {
             installedHandles.clear()
             installedHandles.addAll(remaining)
             installIncomplete = remaining.isNotEmpty()
+            nativeMobileSubIdsHookState = "unavailable"
             airplaneSlotAccessor = null
             statusIconVisibleAccessor = null
             statusIconSourceAccessor = null
@@ -324,7 +329,8 @@ internal object NativeStatusObserver {
         reportEvent {
             "nativeNetworkSuppression observerOnly source=" + source + " " +
                 "manager=" + manager.javaClass.name +
-                " group=" + group.javaClass.name
+                " group=" + group.javaClass.name +
+                " mobileSubIdsHook=" + nativeMobileSubIdsHookState
         }
         return Result.Active
     }
@@ -349,6 +355,7 @@ internal object NativeStatusObserver {
         deactivate()
         installedHandles.clear()
         installIncomplete = false
+        nativeMobileSubIdsHookState = "unavailable"
         eventSink = null
         diagnosticsEnabled = { false }
         observationAttachedSink = null
