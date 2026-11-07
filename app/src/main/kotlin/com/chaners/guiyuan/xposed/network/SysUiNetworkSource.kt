@@ -45,6 +45,10 @@ internal object SysUiNetworkSource {
 
     const val MOBILE_BINDER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder"
+    private const val NATIVE_MOBILE_VIEW_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.mobile.ui.view.ModernStatusBarMobileView"
+    private const val NATIVE_HOME_ICON_GROUP_CLASS_NAME =
+        "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
     const val MOBILE_BIND_METHOD_NAME = "bind"
     const val MOBILE_LOCATION_VIEW_MODEL_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.viewmodel.LocationBasedMobileViewModel"
@@ -117,9 +121,15 @@ internal object SysUiNetworkSource {
     private class MobileBinding(val subscriptionId: Int?)
 
     private val mobileRoots = WeakHashMap<ViewGroup, MobileBinding>()
+    // Native getSubId() is stable for the SystemUI root class; look up its
+    // reflective method once. Never cache a native root or subscription value.
+    private var nativeMobileSubIdMethod: Method? = null
     private val lastWifiEvents = WeakHashMap<ImageView, String>()
     private val lastWifiTaggedResources = WeakHashMap<ImageView, Int?>()
     private val lastMobileEvents = WeakHashMap<ImageView, String>()
+    private val unmappedMobileSignalViews = WeakHashMap<ImageView, Boolean>()
+    private val skippedMobileBindRoots = WeakHashMap<ViewGroup, String>()
+    private var missingMobileSignalImageReported = false
 
     @Volatile
     private var wifiSeedContract: WifiSeedContract? = null
@@ -649,6 +659,10 @@ internal object SysUiNetworkSource {
         lastWifiEvents.clear()
         lastWifiTaggedResources.clear()
         lastMobileEvents.clear()
+        unmappedMobileSignalViews.clear()
+        skippedMobileBindRoots.clear()
+        missingMobileSignalImageReported = false
+        nativeMobileSubIdMethod = null
         wifiSeedContract = null
     }
 
@@ -681,6 +695,10 @@ internal object SysUiNetworkSource {
         lastWifiEvents.clear()
         lastWifiTaggedResources.clear()
         lastMobileEvents.clear()
+        unmappedMobileSignalViews.clear()
+        skippedMobileBindRoots.clear()
+        missingMobileSignalImageReported = false
+        nativeMobileSubIdMethod = null
 
         val payload = raw as? Array<*>
         val wifi = payload?.getOrNull(0) as? List<*>
@@ -729,12 +747,23 @@ internal object SysUiNetworkSource {
 
     @Synchronized
     fun mobilePresentationBindings(): List<MobilePresentationBinding> =
-        mobileRoots.mapNotNull { (root, binding) ->
-            val subscriptionId = binding.subscriptionId
-            if (root.isAttachedToWindow && subscriptionId != null) {
-                MobilePresentationBinding(root, subscriptionId)
-            } else {
-                null
+        buildList {
+            mobileRoots.forEach { (root, binding) ->
+                val subscriptionId = binding.subscriptionId
+                if (root.isAttachedToWindow && subscriptionId != null) {
+                    add(MobilePresentationBinding(root, subscriptionId))
+                }
+            }
+            // SystemUI may create/attach existing mobile roots without replaying
+            // MiuiMobileIconBinder.bind() after our hook installation. Read only
+            // the authoritative Home DarkIconManager's direct mobile children.
+            val homeGroup = currentNativeHomeMobileGroup() ?: return@buildList
+            for (index in 0 until homeGroup.childCount) {
+                val root = homeGroup.getChildAt(index) as? ViewGroup ?: continue
+                // A live binder (even a rejected invalid ID) owns this root.
+                if (mobileRoots.containsKey(root)) continue
+                val id = nativeHomeMobileSubscription(root, homeGroup) ?: continue
+                add(MobilePresentationBinding(root, id))
             }
         }
 
@@ -753,6 +782,24 @@ internal object SysUiNetworkSource {
                 binding.subscriptionId?.let { subscriptionId ->
                     add(
                         "nativeSlot binding=mobile subId=" + subscriptionId +
+                            " root=" + root.javaClass.simpleName +
+                            ROOT_ID_LOG_FIELD + resourceId(root) +
+                            PARENT_CHAIN_LOG_FIELD + parentChain(root) +
+                            LAYOUT_LOG_FIELD + layoutToken(root),
+                    )
+                }
+            }
+            // Report the independent OEM recovery source, not a fabricated
+            // binder receipt. Only the verified current Home group qualifies.
+            val homeGroup = currentNativeHomeMobileGroup()
+            if (homeGroup != null) {
+                for (index in 0 until homeGroup.childCount) {
+                    val root = homeGroup.getChildAt(index) as? ViewGroup ?: continue
+                    if (mobileRoots.containsKey(root)) continue
+                    val subscriptionId =
+                        nativeHomeMobileSubscription(root, homeGroup) ?: continue
+                    add(
+                        "nativeSlot binding=mobile-native-home subId=" + subscriptionId +
                             " root=" + root.javaClass.simpleName +
                             ROOT_ID_LOG_FIELD + resourceId(root) +
                             PARENT_CHAIN_LOG_FIELD + parentChain(root) +
@@ -1328,6 +1375,19 @@ internal object SysUiNetworkSource {
             taggedResId != previousTaggedResId &&
             SysUiSignalParser.isHotspotWifiResource(taggedResource)
 
+    private fun nativeMobileBindIdentity(root: ViewGroup, viewModel: Any?): String {
+        val nativeSubId = readOrNull {
+            (root.javaClass.methods.firstOrNull { method ->
+                method.name == "getSubId" && method.parameterCount == 0
+            }?.invoke(root) as? Number)?.toInt()
+        }
+        val location = readOrNull {
+            (viewModel?.javaClass?.getField("location")?.get(viewModel) as? Enum<*>)?.name
+        }
+        return " nativeViewSubId=" + (nativeSubId ?: -1) +
+            " nativeLocation=" + (location ?: "unknown")
+    }
+
     private fun mobileBindHooker(
         active: AtomicBoolean,
         subscriptionIdMethod: Method,
@@ -1357,6 +1417,7 @@ internal object SysUiNetworkSource {
                 locationViewModel?.javaClass?.name == HOME_MOBILE_VIEW_MODEL_CLASS_NAME
             }
         var bindingLog: String? = null
+        var skippedBindLog: String? = null
         var bindingChanged = false
         var pending: MobileBinding? = null
         var previous: MobileBinding? = null
@@ -1373,17 +1434,40 @@ internal object SysUiNetworkSource {
                 pending = candidate
                 previous = synchronized(this) { mobileRoots.put(boundRoot, candidate) }
                 bindingChanged = previous?.subscriptionId != nextId
-                if (bindingChanged && onEvent != null && isDetailedDiagnosticsEnabled()) {
+                synchronized(this) { skippedMobileBindRoots.remove(boundRoot) }
+                if (
+                    (bindingChanged || (nextId == null && previous == null)) &&
+                    onEvent != null && isDetailedDiagnosticsEnabled()
+                ) {
                     bindingLog = readOrNull {
-                        "networkPipeline mobile bound " +
+                        "networkPipeline mobile " +
+                            (if (nextId == null) "bindInvalid " else "bound ") +
                             "stage=beforeProceed " +
                             "root=" + boundRoot.javaClass.simpleName +
                             ROOT_ID_LOG_FIELD + resourceId(boundRoot) +
                             " locationVm=" + locationViewModel?.javaClass?.simpleName +
                             " subId=" + subscriptionId +
                             " iconVm=" + (iconViewModel?.javaClass?.simpleName ?: "none") +
+                            nativeMobileBindIdentity(boundRoot, locationViewModel) +
                             PARENT_CHAIN_LOG_FIELD + parentChain(boundRoot) +
                             LAYOUT_LOG_FIELD + layoutToken(boundRoot)
+                    }
+                }
+            } else if (root != null && onEvent != null && isDetailedDiagnosticsEnabled()) {
+                val type = locationViewModel?.javaClass?.name ?: "null"
+                val firstType = synchronized(this) {
+                    skippedMobileBindRoots.put(root, type) != type
+                }
+                if (firstType) {
+                    skippedBindLog = readOrNull {
+                        "networkPipeline mobile bindSkipped " +
+                            "reason=non-home-view-model stage=beforeProceed " +
+                            "root=" + root.javaClass.name +
+                            ROOT_ID_LOG_FIELD + resourceId(root) +
+                            " locationVm=" + type +
+                            " iconVm=" + (iconViewModel?.javaClass?.name ?: "null") +
+                            nativeMobileBindIdentity(root, locationViewModel) +
+                            PARENT_CHAIN_LOG_FIELD + parentChain(root)
                     }
                 }
             }
@@ -1409,9 +1493,8 @@ internal object SysUiNetworkSource {
                 }
                 throw error
             }
-        if (bindingChanged) {
-            readOrNull { bindingLog?.let { onEvent?.invoke(it) } }
-        }
+        readOrNull { bindingLog?.let { onEvent?.invoke(it) } }
+        readOrNull { skippedBindLog?.let { onEvent?.invoke(it) } }
         // A native binder can replace a child even if the SIM ID stays the same.
         if (boundRoot != null) {
             try {
@@ -1470,6 +1553,7 @@ internal object SysUiNetworkSource {
             if (image != null) {
                 val subscriptionId = findMobileSubscription(image)
                 if (subscriptionId != null) {
+                    synchronized(this) { unmappedMobileSignalViews.remove(image) }
                     val valueText = when (value) {
                         is Number -> value.toLong().toString()
                         null -> "null"
@@ -1513,6 +1597,35 @@ internal object SysUiNetworkSource {
                             }
                         }
                     }
+                } else if (classId == 0 && onEvent != null && isDetailedDiagnosticsEnabled()) {
+                    // One witness per image; the original native emitter still proceeds.
+                    val firstUnmapped = synchronized(this) {
+                        unmappedMobileSignalViews.put(image, true) != true
+                    }
+                    if (firstUnmapped) {
+                        readOrNull {
+                            onEvent?.invoke(
+                                "networkPipeline mobile signalUnmapped " +
+                                    "stage=beforeProceed viewId=" + resourceId(image) +
+                                    " value=" + ((value as? Number)?.toString()
+                                        ?: value?.javaClass?.simpleName ?: "null") +
+                                    PARENT_CHAIN_LOG_FIELD + parentChain(image),
+                            )
+                        }
+                    }
+                }
+            } else if (classId == 0 && onEvent != null && isDetailedDiagnosticsEnabled()) {
+                val firstMissing = synchronized(this) {
+                    if (missingMobileSignalImageReported) false
+                    else {
+                        missingMobileSignalImageReported = true
+                        true
+                    }
+                }
+                if (firstMissing) {
+                    readOrNull {
+                        onEvent?.invoke("networkPipeline mobile signalImageMissing stage=beforeProceed")
+                    }
                 }
             }
         } catch (error: Throwable) {
@@ -1543,7 +1656,21 @@ internal object SysUiNetworkSource {
                 }
             }
         }
-        readOrNull { eventLog?.let { onEvent?.invoke(it) } }
+        // Keep the semantic resource sampled before native writes and the
+        // applied image state after the same original emitter in one event.
+        readOrNull {
+            eventLog?.let { sampled ->
+                val nativeSuffix =
+                    if (classId == 0) {
+                        " nativeAfterTag=" + ((image?.tag as? Number)?.toInt() ?: 0) +
+                            " nativeAfterDrawable=" + (image?.drawable != null) +
+                            " nativeAfterVisibility=" + (image?.visibility ?: -1)
+                    } else {
+                        ""
+                    }
+                onEvent?.invoke(sampled + nativeSuffix)
+            }
+        }
         result
     }
 
@@ -1590,13 +1717,61 @@ internal object SysUiNetworkSource {
     private fun findMobileSubscription(view: View): Int? {
         var current: View? = view
         while (current != null) {
-            val group = current as? ViewGroup
-            if (group != null && mobileRoots.containsKey(group)) {
-                return mobileRoots[group]?.subscriptionId
+            val root = current as? ViewGroup
+            if (root != null && mobileRoots.containsKey(root)) {
+                // Explicit binder ownership, including its invalid sentinel,
+                // must not be overwritten by a fallback read.
+                return mobileRoots[root]?.subscriptionId
+            }
+            if (root?.javaClass?.name == NATIVE_MOBILE_VIEW_CLASS_NAME) {
+                val homeGroup = currentNativeHomeMobileGroup() ?: return null
+                return nativeHomeMobileSubscription(root, homeGroup)
             }
             current = current.parent as? View
         }
         return null
+    }
+
+    private fun currentNativeHomeMobileGroup(): ViewGroup? {
+        val host = SysUiHostRegistry.current() ?: return null
+        val group = NativeParticipantAccess.groupFor(host) ?: return null
+        return group.takeIf {
+            it.javaClass.name == NATIVE_HOME_ICON_GROUP_CLASS_NAME &&
+                it.childCount <= 64
+        }
+    }
+
+    // This is a true view-owner check, not an inference from a SIM index or
+    // an image's resource. Keyguard, QS and QS_FAKE roots never qualify.
+    internal fun isNativeHomeMobileRootIdentity(
+        className: String,
+        slot: String?,
+        resourceEntry: String?,
+        attached: Boolean,
+        directHomeChild: Boolean,
+    ): Boolean =
+        className == NATIVE_MOBILE_VIEW_CLASS_NAME &&
+            slot == "mobile" &&
+            resourceEntry == "mobile_combo" &&
+            attached &&
+            directHomeChild
+
+    private fun nativeHomeMobileSubscription(root: ViewGroup, homeGroup: ViewGroup): Int? {
+        if (!isNativeHomeMobileRootIdentity(
+                className = root.javaClass.name,
+                slot = NativeParticipantAccess.slotOf(root),
+                resourceEntry = NativeParticipantAccess.resourceEntryName(root),
+                attached = root.isAttachedToWindow,
+                directHomeChild = root.parent === homeGroup,
+            )
+        ) return null
+        return readOrNull {
+            val getter =
+                nativeMobileSubIdMethod
+                    ?.takeIf { it.declaringClass.isInstance(root) }
+                    ?: root.javaClass.getMethod("getSubId").also { nativeMobileSubIdMethod = it }
+            (getter.invoke(root) as? Number)?.toInt()?.takeIf { it >= 0 }
+        }
     }
 
     private fun parentChain(view: View): String =

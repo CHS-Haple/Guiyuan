@@ -34,6 +34,12 @@ internal object NativeStatusObserver {
         readOrNull { eventSink?.takeIf { diagnosticsEnabled() }?.invoke(message()) }
     }
 
+    // Bounded mobile evidence is available in opt-in Detailed mode on Canary
+    // and Release; heavyweight scene/geometry probes keep their Deep gate.
+    private inline fun reportMobileEvent(message: () -> String) {
+        readOrNull { eventSink?.takeIf { lightweightDiagnosticsEnabled() }?.invoke(message()) }
+    }
+
     private fun tintText(color: Int?): String =
         color?.toUInt()?.toString(16)?.padStart(8, '0') ?: "none"
 
@@ -55,11 +61,17 @@ internal object NativeStatusObserver {
         "combinedstatus.nativeNetworkSuppression.homeIconAdded"
     private const val HOME_MANAGER_REGISTERED_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.homeManagerRegistered"
+    private const val MOBILE_SUB_IDS_HOOK_ID =
+        "combinedstatus.nativeNetworkSuppression.mobileSubIds"
+    private const val MOBILE_ADAPTER_DECISION_HOOK_ID =
+        "combinedstatus.nativeNetworkSuppression.mobileAdapterDecision"
+    private const val MOBILE_VIEW_LOGGER_CLASS =
+        "com.android.systemui.statusbar.pipeline.mobile.ui.MobileViewLogger"
     // Retain the existing Hook ID even though this is now observation-only.
     private const val STATUS_ICON_VISIBILITY_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.airplaneVisibility"
 
-    private val observableTargetSlots = setOf("wifi", "mobile", NO_SIM_SLOT)
+    private val observableTargetSlots = setOf("wifi", "mobile", "stacked_mobile", NO_SIM_SLOT)
     private val representedTintSlots =
         setOf("combined_status", "wifi", "mobile", "stacked_mobile", NO_SIM_SLOT, AIRPLANE_SLOT)
 
@@ -68,11 +80,17 @@ internal object NativeStatusObserver {
     private val failedObservations = mutableSetOf<String>()
     private var activeManager: Any? = null
     private var activeGroup: WeakReference<ViewGroup>? = null
+    private var lastNativeMobileTree: String? = null
+    private var lastNativeMobileSubIds: List<Int>? = null
+    private var nativeMobileSubIdsHookState = "unavailable"
+    private var nativeMobileAdapterHookState = "unavailable"
+    private var lastNativeMobileAdapterDecision: Pair<List<Int>, Boolean>? = null
     private var pendingObservationHost: WeakReference<View>? = null
     private var pendingObservationSource: String? = null
     private var observationAttachedSink: ((String) -> Unit)? = null
     private var eventSink: ((String) -> Unit)? = null
     private var diagnosticsEnabled: () -> Boolean = { false }
+    private var lightweightDiagnosticsEnabled: () -> Boolean = { false }
     private var statusPresentationSink:
         ((PresentationStore.StatusIconPresentation) -> Unit)? = null
     private var airplaneSlotAccessor: Method? = null
@@ -109,6 +127,7 @@ internal object NativeStatusObserver {
         classLoader: ClassLoader,
         onEvent: ((String) -> Unit)? = null,
         isDetailedDiagnosticsEnabled: () -> Boolean = { false },
+        isLightweightDiagnosticsEnabled: () -> Boolean = { false },
         onObservationAttached: ((String) -> Unit)? = null,
         onStatusPresentationChanged:
             ((PresentationStore.StatusIconPresentation) -> Unit)? = null,
@@ -117,6 +136,7 @@ internal object NativeStatusObserver {
         if (installedHandles.isNotEmpty()) {
             eventSink = onEvent
             diagnosticsEnabled = isDetailedDiagnosticsEnabled
+            lightweightDiagnosticsEnabled = isLightweightDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             return null
@@ -222,11 +242,62 @@ internal object NativeStatusObserver {
                     .setId(STATUS_ICON_VISIBILITY_HOOK_ID)
                     .intercept(statusIconVisibilityHooker())
 
+            // The OEM adapter may deliberately send an empty modern-mobile list
+            // when it enters the stackable path. This observes the native decision.
+            val mobileSubIdsMethod =
+                statusBarIconController.declaredMethods.firstOrNull { method ->
+                    method.name == "setNewMobileIconSubIds" &&
+                        method.parameterCount == 1 &&
+                        java.util.List::class.java.isAssignableFrom(method.parameterTypes[0])
+                }?.apply { isAccessible = true }
+            nativeMobileSubIdsHookState = if (mobileSubIdsMethod == null) "method-missing" else "hook-failed"
+            if (mobileSubIdsMethod != null) {
+                runCatching {
+                    module.hook(mobileSubIdsMethod)
+                        .setId(MOBILE_SUB_IDS_HOOK_ID)
+                        .intercept(nativeMobileSubIdsHooker())
+                }.onSuccess {
+                    created += it
+                    nativeMobileSubIdsHookState = "installed"
+                }.onFailure { error ->
+                    rethrowFatal(error)
+                    Log.w("Guiyuan[NativeObserver]", "Mobile subscription observation unavailable", error)
+                }
+            }
+
+            // The verified OEM adapter logger receives both the unfiltered
+            // subscriptions and isStackable before it submits the effective
+            // ordinary-mobile list to StatusBarIconControllerImpl.
+            val adapterLogMethod = readOrNull {
+                Class.forName(MOBILE_VIEW_LOGGER_CLASS, false, classLoader)
+                    .getDeclaredMethod(
+                        "logUiAdapterSubIdsSentToIconController",
+                        java.util.List::class.java,
+                        java.lang.Boolean.TYPE,
+                    ).apply { isAccessible = true }
+            }
+            nativeMobileAdapterHookState =
+                if (adapterLogMethod == null) "method-missing" else "hook-failed"
+            if (adapterLogMethod != null) {
+                runCatching {
+                    module.hook(adapterLogMethod)
+                        .setId(MOBILE_ADAPTER_DECISION_HOOK_ID)
+                        .intercept(nativeMobileAdapterDecisionHooker())
+                }.onSuccess {
+                    created += it
+                    nativeMobileAdapterHookState = "installed"
+                }.onFailure { error ->
+                    rethrowFatal(error)
+                    Log.w("Guiyuan[NativeObserver]", "Mobile adapter decision observation unavailable", error)
+                }
+            }
+
             installedHandles.clear()
             installedHandles.addAll(created)
             installIncomplete = false
             eventSink = onEvent
             diagnosticsEnabled = isDetailedDiagnosticsEnabled
+            lightweightDiagnosticsEnabled = isLightweightDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             null
@@ -243,6 +314,8 @@ internal object NativeStatusObserver {
             installedHandles.clear()
             installedHandles.addAll(remaining)
             installIncomplete = remaining.isNotEmpty()
+            nativeMobileSubIdsHookState = "unavailable"
+            nativeMobileAdapterHookState = "unavailable"
             airplaneSlotAccessor = null
             statusIconVisibleAccessor = null
             statusIconSourceAccessor = null
@@ -253,6 +326,7 @@ internal object NativeStatusObserver {
             pendingObservationSource = null
             eventSink = onEvent
             diagnosticsEnabled = isDetailedDiagnosticsEnabled
+            lightweightDiagnosticsEnabled = isLightweightDiagnosticsEnabled
             observationAttachedSink = onObservationAttached
             statusPresentationSink = onStatusPresentationChanged
             rethrowFatal(error)
@@ -297,10 +371,12 @@ internal object NativeStatusObserver {
         activeGroup = WeakReference(group)
         refreshStatusPresentationLocked("observerAttach")
 
-        reportEvent {
+        reportMobileEvent {
             "nativeNetworkSuppression observerOnly source=" + source + " " +
                 "manager=" + manager.javaClass.name +
-                " group=" + group.javaClass.name
+                " group=" + group.javaClass.name +
+                " mobileSubIdsHook=" + nativeMobileSubIdsHookState +
+                " mobileAdapterHook=" + nativeMobileAdapterHookState
         }
         return Result.Active
     }
@@ -325,8 +401,11 @@ internal object NativeStatusObserver {
         deactivate()
         installedHandles.clear()
         installIncomplete = false
+        nativeMobileSubIdsHookState = "unavailable"
+        nativeMobileAdapterHookState = "unavailable"
         eventSink = null
         diagnosticsEnabled = { false }
+        lightweightDiagnosticsEnabled = { false }
         observationAttachedSink = null
         statusPresentationSink = null
         airplaneSlotAccessor = null
@@ -394,6 +473,77 @@ internal object NativeStatusObserver {
                     }
                 }
             }
+        }
+
+    private fun nativeMobileSubIdsHooker(): Hooker =
+        Hooker { chain ->
+            // Capture the exact list passed by MobileUiAdapter before the native
+            // controller has a chance to modify the argument or retained list.
+            val incoming = readOrNull {
+                if (lightweightDiagnosticsEnabled()) {
+                    (chain.getArg(0) as? List<*>)?.toList()
+                } else null
+            }
+            val result = chain.proceed()
+            observeAfterNative(result, { reportObservationFailure("nativeMobileSubIds", it) }) {
+                if (incoming != null) {
+                    val ids = incoming.mapNotNull { (it as? Number)?.toInt() }
+                    val changed = synchronized(this) {
+                        if (lastNativeMobileSubIds == ids) false
+                        else {
+                            lastNativeMobileSubIds = ids
+                            true
+                        }
+                    }
+                    if (changed) {
+                        reportMobileEvent {
+                            "networkPipeline nativeMobileSubIds " +
+                                "source=StatusBarIconControllerImpl.setNewMobileIconSubIds " +
+                                "phase=preNativeArg/postNativeLog " +
+                                "count=" + incoming.size +
+                                " ids=" + ids.joinToString(",") +
+                                " allNumeric=" + (ids.size == incoming.size)
+                        }
+                    }
+                }
+            }
+            result
+        }
+
+    private fun nativeMobileAdapterDecisionHooker(): Hooker =
+        Hooker { chain ->
+            val incoming = readOrNull {
+                if (!lightweightDiagnosticsEnabled()) null else {
+                    val list = (chain.getArg(0) as? List<*>)?.toList()
+                    val stackable = chain.getArg(1) as? Boolean
+                    if (list == null || stackable == null) null else list to stackable
+                }
+            }
+            val result = chain.proceed()
+            observeAfterNative(result, { reportObservationFailure("nativeMobileAdapter", it) }) {
+                if (incoming != null) {
+                    val ids = incoming.first.mapNotNull { (it as? Number)?.toInt() }
+                    val value = ids to incoming.second
+                    val changed = synchronized(this) {
+                        if (lastNativeMobileAdapterDecision == value) false
+                        else {
+                            lastNativeMobileAdapterDecision = value
+                            true
+                        }
+                    }
+                    if (changed) {
+                        reportMobileEvent {
+                            "networkPipeline nativeMobileAdapterDecision " +
+                                "source=MobileViewLogger.logUiAdapterSubIdsSentToIconController " +
+                                "count=" + incoming.first.size +
+                                " ids=" + ids.joinToString(",") +
+                                " allNumeric=" + (ids.size == incoming.first.size) +
+                                " isStackable=" + incoming.second
+                        }
+                    }
+                }
+            }
+            result
         }
 
     private fun homeManagerRegisteredHooker(): Hooker =
@@ -582,6 +732,7 @@ internal object NativeStatusObserver {
         observedNoSimVisible: Boolean? = null,
     ) {
         val group = activeGroup?.get() ?: return
+        observeNativeMobileTree(group, source)
         val noSimView =
             observedNoSimView
                 ?: (0 until group.childCount)
@@ -653,6 +804,60 @@ internal object NativeStatusObserver {
             }
         }
 
+    }
+
+    // Home's native slot owner can reveal a mobile root even when our binder
+    // mapping never received a callback. Observation never claims that root.
+    private fun observeNativeMobileTree(group: ViewGroup, source: String) {
+        val sink = eventSink?.takeIf { lightweightDiagnosticsEnabled() } ?: return
+        if (group.childCount > 64) return
+        val roots = buildList {
+            for (index in 0 until group.childCount) {
+                val child = group.getChildAt(index)
+                val slot = NativeParticipantAccess.slotOf(child)
+                if (slot == "mobile" || slot == "stacked_mobile") {
+                    add(slot to child)
+                }
+            }
+        }
+        val details = roots.take(4).joinToString(";") { (slot, root) ->
+            val nativeSubId = readOrNull {
+                (root.javaClass.methods.firstOrNull { method ->
+                    method.name == "getSubId" && method.parameterCount == 0
+                }?.invoke(root) as? Number)?.toInt()
+            }
+            val image = NativeParticipantAccess.findResourceView(root, "mobile_signal") as? ImageView
+            val taggedResId = (image?.tag as? Number)?.toInt()?.takeIf { it > 0 }
+            val taggedName = taggedResId?.let { id ->
+                readOrNull { image?.resources?.getResourceEntryName(id) }
+            }
+            slot + ":" + root.javaClass.simpleName +
+                ",rootId=" + (NativeParticipantAccess.resourceEntryName(root) ?: "none") +
+                ",subId=" + (nativeSubId ?: -1) +
+                ",rootVisibility=" + root.visibility +
+                ",clipEmpty=" + (root.clipBounds?.isEmpty == true) +
+                ",signalView=" + (image != null) +
+                ",signalVisibility=" + (image?.visibility ?: -1) +
+                ",signalTag=" + (taggedResId ?: 0) +
+                ",signalName=" + (taggedName ?: "none") +
+                ",signalDrawable=" + (image?.drawable != null)
+        }
+        // A root can keep the same identity while its native subscription,
+        // signal resource or visibility changes. Deduplicate the observation,
+        // not only the View instance, so a single report retains those changes.
+        val signature = roots.joinToString(";") { (slot, root) ->
+            slot + ":" + System.identityHashCode(root)
+        } + "|" + details
+        if (lastNativeMobileTree == signature) return
+        lastNativeMobileTree = signature
+        readOrNull {
+            sink(
+                "networkPipeline nativeMobileTree source=" + source +
+                    " groupChildren=" + group.childCount +
+                    " roots=" + roots.size +
+                    " native=" + details.ifEmpty { "none" },
+            )
+        }
     }
 
     @Synchronized
@@ -904,6 +1109,9 @@ internal object NativeStatusObserver {
         failedObservations.clear()
         activeManager = null
         activeGroup = null
+        lastNativeMobileTree = null
+        lastNativeMobileSubIds = null
+        lastNativeMobileAdapterDecision = null
         lastDelivery = Delivery(PresentationStore.StatusIconPresentation())
     }
 

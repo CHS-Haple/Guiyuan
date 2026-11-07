@@ -73,30 +73,30 @@ internal object DiagReport {
         val log = snapshot.log
         val level = snapshot.level
         val requested = level.name.lowercase()
-        // Level changes do not carry binding state; keep their observations separate.
+        // The newest bind/snapshot supersedes older level evidence even when its level is absent.
+        // A level-only event does not supersede the last observed binding.
         val diagnostics =
-            snapshot.entries
-                .asReversed()
-                .filter { entry ->
-                    entry.structured &&
-                        entry.component == "diagnostics" &&
-                        (runtimeEvents.sessionId == null ||
-                            entry.fields["sessionId"] == runtimeEvents.sessionId)
-                }
+            snapshot.entries.asReversed().filter { entry ->
+                entry.structured &&
+                    entry.component == "diagnostics" &&
+                    (runtimeEvents.sessionId == null ||
+                        entry.fields["sessionId"] == runtimeEvents.sessionId)
+            }
         val runtimeLevel =
-            diagnostics.firstNotNullOfOrNull { it.fields["level"] } ?: "not-observed"
+            diagnostics.firstOrNull { entry ->
+                entry.event == "diagnostics.bind" ||
+                    entry.event == "diagnostics.snapshot" ||
+                    entry.event == "diagnostics.level"
+            }?.fields?.get("level") ?: "not-observed"
         val runtimeBinding =
-            diagnostics.firstNotNullOfOrNull { entry ->
-                if (entry.event == "diagnostics.bind" || entry.event == "diagnostics.snapshot") {
-                    entry.state
-                } else {
-                    null
-                }
-            } ?: "not-observed"
+            diagnostics.firstOrNull { entry ->
+                entry.event == "diagnostics.bind" || entry.event == "diagnostics.snapshot"
+            }?.state ?: "not-observed"
         appendLine("[Diagnostics state]")
         appendLine("requestedLevel=" + requested)
         appendLine("runtimeLevel=" + runtimeLevel)
         appendLine("runtimeBinding=" + runtimeBinding)
+        appendLine("systemUiDetailedConfirmed=" + snapshot.isRuntimeDetailConfirmed())
         if (log.clearedAt != null) {
             appendLine("visibleHistorySince=" + log.clearedAt)
             appendLine("historyClearScope=guiyuan-view-and-report-only")

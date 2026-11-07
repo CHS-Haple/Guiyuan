@@ -11,10 +11,14 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class DiagnosticsLogPresentationTest {
-    private fun structured(event: String, fields: Map<String, String> = emptyMap()) =
+    private fun structured(
+        event: String,
+        fields: Map<String, String> = emptyMap(),
+        component: String = "diagnostics",
+    ) =
         DiagLogParser.parse(
             "10-29 09:20:12.456 1200 1200 I CombinedStatus: " +
-                DiagProtocol.format(event, "diagnostics", fields = fields),
+                DiagProtocol.format(event, component, fields = fields),
         )
 
     private fun legacy(message: String, level: String = "I") =
@@ -28,6 +32,19 @@ class DiagnosticsLogPresentationTest {
         assertTrue(isRuntimeLog(legacy("connectivity delivery-failed source=callback type=IllegalStateException")))
         assertFalse(isRuntimeLog(legacy("unrelated traceInfo=value")))
         assertTrue(isRuntimeLog(legacy("unrelated traceInfo=value", level = "W")))
+    }
+
+    @Test
+    fun generalMobilePresentationSummaryRemainsVisibleWithoutDetailFilter() {
+        val entry = structured(
+            "presentation.summary",
+            mapOf("mode" to "SINGLE", "nativeMobileReplacementReady" to "false"),
+            component = "mobilePresentation",
+        )
+        assertEquals(LogCategory.Network, entry.category)
+        assertTrue(isRuntimeLog(entry))
+        assertTrue(isRuntimeLog(entry, LogCategory.Network))
+        assertTrue(isRuntimeLog(entry, LogCategory.Display))
     }
 
     @Test

@@ -9,6 +9,26 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DiagReportTest {
+    private companion object {
+        const val SYSUI_PACKAGE = "com.android.systemui"
+        const val DIAGNOSTIC_COMPONENT = "diagnostics"
+        const val BIND_EVENT = "diagnostics.bind"
+        const val SNAPSHOT_EVENT = "diagnostics.snapshot"
+        const val LEVEL_EVENT = "diagnostics.level"
+        const val SESSION_FIELD = "sessionId"
+        const val LEVEL_FIELD = "level"
+        const val DETAIL_CONFIRMED = "systemUiDetailedConfirmed=true"
+        const val DETAIL_UNCONFIRMED = "systemUiDetailedConfirmed=false"
+        const val RUNTIME_LEVEL_NOT_OBSERVED = "runtimeLevel=not-observed"
+        const val RUNTIME_BINDING_READY = "runtimeBinding=ready"
+        const val READY_STATE = "ready"
+        const val UNAVAILABLE_STATE = "unavailable"
+        const val DETAILED_LEVEL = "detailed"
+        const val GENERAL_LEVEL = "general"
+        const val CURRENT_SESSION = "current"
+        const val TEST_SESSION = "test-session"
+    }
+
     @Test
     fun reportSectionsRetainTheirExportOrder() {
         val exported = report("test-event", level = DiagLevel.General)
@@ -27,17 +47,106 @@ class DiagReportTest {
     }
 
     @Test
+    fun detailedModeRequiresLiveSystemUiPidAndMatchingPreference() {
+        val bound = diagEvent(BIND_EVENT, state = READY_STATE, level = GENERAL_LEVEL)
+        val detailed = diagEvent(LEVEL_EVENT, level = DETAILED_LEVEL)
+
+        assertTrue(report(bound, detailed).contains(DETAIL_CONFIRMED))
+        assertTrue(report(bound, detailed, level = DiagLevel.General).contains(DETAIL_UNCONFIRMED))
+        assertTrue(report(bound, detailed, logOptions = ReportLogOptions(liveSystemUiPids = setOf("other-pid"))).contains(DETAIL_UNCONFIRMED))
+        assertTrue(report(bound, detailed, logOptions = ReportLogOptions(liveSystemUiPids = emptySet())).contains(DETAIL_UNCONFIRMED))
+    }
+
+    @Test
+    fun systemUiFirstCollectionConfirmsDetailEvenWithSettingsLogsPresent() {
+        val settings = diagEvent(
+            BIND_EVENT,
+            state = READY_STATE,
+            level = DETAILED_LEVEL,
+            process = "com.android.settings:remote",
+        )
+        val systemUiBound = diagEvent(BIND_EVENT, state = READY_STATE, level = GENERAL_LEVEL)
+        val systemUiDetailed = diagEvent(LEVEL_EVENT, level = DETAILED_LEVEL)
+
+        val collected = DiagLogReader.filterModuleLines(
+            listOf(settings, systemUiBound, systemUiDetailed).joinToString("\n"),
+        )
+        assertEquals(2, collected.size)
+        assertTrue(report(collected[0], collected[1]).contains(DETAIL_CONFIRMED))
+    }
+
+    @Test
+    fun otherProcessAndNewSessionCannotConfirmDetailedMode() {
+        val settings = diagEvent(BIND_EVENT, state = READY_STATE, level = DETAILED_LEVEL, process = "com.android.settings:remote")
+        assertTrue(report(settings).contains(DETAIL_UNCONFIRMED))
+
+        val bound = diagEvent(BIND_EVENT, state = READY_STATE, level = GENERAL_LEVEL)
+        val detailed = diagEvent(LEVEL_EVENT, level = DETAILED_LEVEL)
+        val next = diagEvent(BIND_EVENT, state = READY_STATE, level = GENERAL_LEVEL, session = "next")
+        assertTrue(report(bound, detailed, next).contains(DETAIL_UNCONFIRMED))
+    }
+
+    @Test
+    fun newerBindingOrSnapshotCannotRetainStaleDetailedLevel() {
+        val bound = diagEvent(BIND_EVENT, state = READY_STATE, level = GENERAL_LEVEL)
+        val detailed = diagEvent(LEVEL_EVENT, level = DETAILED_LEVEL)
+        val unavailable = diagEvent(SNAPSHOT_EVENT, state = UNAVAILABLE_STATE, level = DETAILED_LEVEL)
+        val snapshotWithoutLevel = diagEvent(SNAPSHOT_EVENT, state = READY_STATE)
+        val rebindWithoutLevel = diagEvent(BIND_EVENT, state = READY_STATE)
+
+        assertTrue(report(bound, detailed, unavailable).contains(DETAIL_UNCONFIRMED))
+        val newerSnapshot = report(bound, detailed, snapshotWithoutLevel)
+        assertTrue(newerSnapshot.contains(DETAIL_UNCONFIRMED))
+        assertTrue(newerSnapshot.contains(RUNTIME_LEVEL_NOT_OBSERVED))
+        assertTrue(newerSnapshot.contains(RUNTIME_BINDING_READY))
+
+        val newerBinding = report(bound, detailed, rebindWithoutLevel)
+        assertTrue(newerBinding.contains(DETAIL_UNCONFIRMED))
+        assertTrue(newerBinding.contains(RUNTIME_LEVEL_NOT_OBSERVED))
+        assertTrue(newerBinding.contains(RUNTIME_BINDING_READY))
+    }
+
+    @Test
+    fun logcatFallbackRequiresMatchingSourceAndLivePid() {
+        val logcatReady =
+            "11-06 16:35:38.396 18802 18802 I CombinedStatus: " +
+                DiagProtocol.format(
+                    event = BIND_EVENT,
+                    component = DIAGNOSTIC_COMPONENT,
+                    state = READY_STATE,
+                    fields = mapOf(SESSION_FIELD to CURRENT_SESSION, LEVEL_FIELD to DETAILED_LEVEL),
+                )
+        assertTrue(
+            report(logcatReady, logOptions = ReportLogOptions(source = DiagLogReader.Source.LogcatFallback))
+                .contains(DETAIL_CONFIRMED),
+        )
+        assertTrue(
+            report(logcatReady, logOptions = ReportLogOptions(source = DiagLogReader.Source.LspModules))
+                .contains(DETAIL_UNCONFIRMED),
+        )
+        assertTrue(
+            report(
+                logcatReady,
+                logOptions = ReportLogOptions(
+                    source = DiagLogReader.Source.LogcatFallback,
+                    liveSystemUiPids = setOf("9999"),
+                ),
+            ).contains(DETAIL_UNCONFIRMED),
+        )
+    }
+
+    @Test
     fun missingRuntimeLevelIsNotMistakenForBindingFailure() {
         val report = report(
             DiagProtocol.format(
                 event = "presentation.resolve",
                 component = "statusIcons",
-                state = "ready",
-                fields = mapOf("sessionId" to "test-session"),
+                state = READY_STATE,
+                fields = mapOf(SESSION_FIELD to TEST_SESSION),
             ),
         )
         assertTrue(report.contains("requestedLevel=detailed"))
-        assertTrue(report.contains("runtimeLevel=not-observed"))
+        assertTrue(report.contains(RUNTIME_LEVEL_NOT_OBSERVED))
         assertTrue(report.contains("runtimeBinding=not-observed"))
     }
 
@@ -45,27 +154,27 @@ class DiagReportTest {
     fun observedRuntimeLevelIsPreserved() {
         val report = report(
             DiagProtocol.format(
-                event = "diagnostics.bind",
-                component = "diagnostics",
-                state = "ready",
-                fields = mapOf("level" to "general", "sessionId" to "test-session"),
+                event = BIND_EVENT,
+                component = DIAGNOSTIC_COMPONENT,
+                state = READY_STATE,
+                fields = mapOf(LEVEL_FIELD to GENERAL_LEVEL, SESSION_FIELD to TEST_SESSION),
             ),
         )
         assertTrue(report.contains("runtimeLevel=general"))
-        assertTrue(report.contains("runtimeBinding=ready"))
+        assertTrue(report.contains(RUNTIME_BINDING_READY))
     }
 
     @Test
     fun actualUnavailableBindingRemainsVisible() {
         val report = report(
             DiagProtocol.format(
-                event = "diagnostics.bind",
-                component = "diagnostics",
-                state = "unavailable",
-                fields = mapOf("sessionId" to "test-session"),
+                event = BIND_EVENT,
+                component = DIAGNOSTIC_COMPONENT,
+                state = UNAVAILABLE_STATE,
+                fields = mapOf(SESSION_FIELD to TEST_SESSION),
             ),
         )
-        assertTrue(report.contains("runtimeLevel=not-observed"))
+        assertTrue(report.contains(RUNTIME_LEVEL_NOT_OBSERVED))
         assertTrue(report.contains("runtimeBinding=unavailable"))
     }
 
@@ -73,10 +182,10 @@ class DiagReportTest {
     fun unavailableSnapshotRetainsObservedLevelAndFailure() {
         val report = report(
             DiagProtocol.format(
-                event = "diagnostics.snapshot",
-                component = "diagnostics",
-                state = "unavailable",
-                fields = mapOf("level" to "detailed", "sessionId" to "test-session"),
+                event = SNAPSHOT_EVENT,
+                component = DIAGNOSTIC_COMPONENT,
+                state = UNAVAILABLE_STATE,
+                fields = mapOf(LEVEL_FIELD to DETAILED_LEVEL, SESSION_FIELD to TEST_SESSION),
             ),
         )
         assertTrue(report.contains("runtimeLevel=detailed"))
@@ -87,34 +196,34 @@ class DiagReportTest {
     fun levelChangeRetainsObservedBinding() {
         val report = report(
             DiagProtocol.format(
-                event = "diagnostics.bind",
-                component = "diagnostics",
-                state = "ready",
-                fields = mapOf("level" to "general", "sessionId" to "current"),
+                event = BIND_EVENT,
+                component = DIAGNOSTIC_COMPONENT,
+                state = READY_STATE,
+                fields = mapOf(LEVEL_FIELD to GENERAL_LEVEL, SESSION_FIELD to CURRENT_SESSION),
             ),
             DiagProtocol.format(
-                event = "diagnostics.level",
-                component = "diagnostics",
-                fields = mapOf("level" to "detailed", "sessionId" to "current"),
+                event = LEVEL_EVENT,
+                component = DIAGNOSTIC_COMPONENT,
+                fields = mapOf(LEVEL_FIELD to DETAILED_LEVEL, SESSION_FIELD to CURRENT_SESSION),
             ),
         )
         assertTrue(report.contains("runtimeLevel=detailed"))
-        assertTrue(report.contains("runtimeBinding=ready"))
+        assertTrue(report.contains(RUNTIME_BINDING_READY))
     }
 
     @Test
     fun earlierSessionDoesNotSupplyBinding() {
         val report = report(
             DiagProtocol.format(
-                event = "diagnostics.bind",
-                component = "diagnostics",
-                state = "ready",
-                fields = mapOf("level" to "general", "sessionId" to "previous"),
+                event = BIND_EVENT,
+                component = DIAGNOSTIC_COMPONENT,
+                state = READY_STATE,
+                fields = mapOf(LEVEL_FIELD to GENERAL_LEVEL, SESSION_FIELD to "previous"),
             ),
             DiagProtocol.format(
-                event = "diagnostics.level",
-                component = "diagnostics",
-                fields = mapOf("level" to "detailed", "sessionId" to "current"),
+                event = LEVEL_EVENT,
+                component = DIAGNOSTIC_COMPONENT,
+                fields = mapOf(LEVEL_FIELD to DETAILED_LEVEL, SESSION_FIELD to CURRENT_SESSION),
             ),
         )
         assertTrue(report.contains("runtimeLevel=detailed"))
@@ -166,10 +275,10 @@ class DiagReportTest {
     @Test
     fun timedOutCollectionRetainsPartialEvidenceAndFailureStatus() {
         val raw = DiagProtocol.format(
-            event = "diagnostics.snapshot",
-            component = "diagnostics",
-            state = "ready",
-            fields = mapOf("sessionId" to "test-session"),
+            event = SNAPSHOT_EVENT,
+            component = DIAGNOSTIC_COMPONENT,
+            state = READY_STATE,
+            fields = mapOf(SESSION_FIELD to TEST_SESSION),
         )
         val report = report(
             raw,
@@ -189,7 +298,7 @@ class DiagReportTest {
     fun scopedHistoryClearIsDeclaredWithoutClaimingSourceDeletion() {
         val output = report(
             "new-event",
-            clearedAt = LocalDateTime.parse("2026-10-30T23:00:10"),
+            logOptions = ReportLogOptions(clearedAt = LocalDateTime.parse("2026-10-30T23:00:10")),
         )
         assertTrue(output.contains("visibleHistorySince=2026-10-30T23:00:10"))
         assertTrue(output.contains("historyClearScope=guiyuan-view-and-report-only"))
@@ -204,12 +313,37 @@ class DiagReportTest {
         assertTrue(report.contains("[Device]"))
     }
 
+    private fun diagEvent(
+        event: String,
+        state: String? = null,
+        level: String? = null,
+        process: String = SYSUI_PACKAGE,
+        session: String = CURRENT_SESSION,
+    ): String =
+        "[ 2026-11-06T16:35:38.396 1000: 18802: 18802 I/LSPosedFramework ] " +
+            "($process) [com.chaners.guiyuan,CombinedStatus,1,0,1] " +
+            DiagProtocol.format(
+                event = event,
+                component = DIAGNOSTIC_COMPONENT,
+                state = state,
+                fields = buildMap {
+                    put(SESSION_FIELD, session)
+                    if (level != null) put(LEVEL_FIELD, level)
+                },
+            )
+
+    private data class ReportLogOptions(
+        val clearedAt: LocalDateTime? = null,
+        val liveSystemUiPids: Set<String> = setOf("18802"),
+        val source: DiagLogReader.Source = DiagLogReader.Source.LspModules,
+    )
+
     private fun report(
         vararg lines: String,
         truncated: Boolean = false,
         collection: RootShell.Result? = null,
         level: DiagLevel = DiagLevel.Detailed,
-        clearedAt: LocalDateTime? = null,
+        logOptions: ReportLogOptions = ReportLogOptions(),
     ): String {
         val recorded = lines.toList()
         return DiagReport.build(
@@ -227,11 +361,12 @@ class DiagReportTest {
                 ),
                 level = level,
                 log = DiagLogReader.Snapshot(
-                    source = DiagLogReader.Source.LspModules,
+                    source = logOptions.source,
                     result = collection ?: RootShell.Result(0, recorded.joinToString("\n"), false, null, truncated),
                     lines = recorded,
                     sessionLines = recorded,
-                    clearedAt = clearedAt,
+                    clearedAt = logOptions.clearedAt,
+                    liveSystemUiPids = logOptions.liveSystemUiPids,
                 ),
                 runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
                 entries = recorded.map(DiagLogParser::parse),
