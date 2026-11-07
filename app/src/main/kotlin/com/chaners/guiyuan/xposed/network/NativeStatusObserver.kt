@@ -63,6 +63,10 @@ internal object NativeStatusObserver {
         "combinedstatus.nativeNetworkSuppression.homeManagerRegistered"
     private const val MOBILE_SUB_IDS_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.mobileSubIds"
+    private const val MOBILE_ADAPTER_DECISION_HOOK_ID =
+        "combinedstatus.nativeNetworkSuppression.mobileAdapterDecision"
+    private const val MOBILE_VIEW_LOGGER_CLASS =
+        "com.android.systemui.statusbar.pipeline.mobile.ui.MobileViewLogger"
     // Retain the existing Hook ID even though this is now observation-only.
     private const val STATUS_ICON_VISIBILITY_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.airplaneVisibility"
@@ -79,6 +83,8 @@ internal object NativeStatusObserver {
     private var lastNativeMobileTree: String? = null
     private var lastNativeMobileSubIds: List<Int>? = null
     private var nativeMobileSubIdsHookState = "unavailable"
+    private var nativeMobileAdapterHookState = "unavailable"
+    private var lastNativeMobileAdapterDecision: Pair<List<Int>, Boolean>? = null
     private var pendingObservationHost: WeakReference<View>? = null
     private var pendingObservationSource: String? = null
     private var observationAttachedSink: ((String) -> Unit)? = null
@@ -259,6 +265,33 @@ internal object NativeStatusObserver {
                 }
             }
 
+            // The verified OEM adapter logger receives both the unfiltered
+            // subscriptions and isStackable before it submits the effective
+            // ordinary-mobile list to StatusBarIconControllerImpl.
+            val adapterLogMethod = readOrNull {
+                Class.forName(MOBILE_VIEW_LOGGER_CLASS, false, classLoader)
+                    .getDeclaredMethod(
+                        "logUiAdapterSubIdsSentToIconController",
+                        java.util.List::class.java,
+                        java.lang.Boolean.TYPE,
+                    ).apply { isAccessible = true }
+            }
+            nativeMobileAdapterHookState =
+                if (adapterLogMethod == null) "method-missing" else "hook-failed"
+            if (adapterLogMethod != null) {
+                runCatching {
+                    module.hook(adapterLogMethod)
+                        .setId(MOBILE_ADAPTER_DECISION_HOOK_ID)
+                        .intercept(nativeMobileAdapterDecisionHooker())
+                }.onSuccess {
+                    created += it
+                    nativeMobileAdapterHookState = "installed"
+                }.onFailure { error ->
+                    rethrowFatal(error)
+                    Log.w("Guiyuan[NativeObserver]", "Mobile adapter decision observation unavailable", error)
+                }
+            }
+
             installedHandles.clear()
             installedHandles.addAll(created)
             installIncomplete = false
@@ -282,6 +315,7 @@ internal object NativeStatusObserver {
             installedHandles.addAll(remaining)
             installIncomplete = remaining.isNotEmpty()
             nativeMobileSubIdsHookState = "unavailable"
+            nativeMobileAdapterHookState = "unavailable"
             airplaneSlotAccessor = null
             statusIconVisibleAccessor = null
             statusIconSourceAccessor = null
@@ -341,7 +375,8 @@ internal object NativeStatusObserver {
             "nativeNetworkSuppression observerOnly source=" + source + " " +
                 "manager=" + manager.javaClass.name +
                 " group=" + group.javaClass.name +
-                " mobileSubIdsHook=" + nativeMobileSubIdsHookState
+                " mobileSubIdsHook=" + nativeMobileSubIdsHookState +
+                " mobileAdapterHook=" + nativeMobileAdapterHookState
         }
         return Result.Active
     }
@@ -367,6 +402,7 @@ internal object NativeStatusObserver {
         installedHandles.clear()
         installIncomplete = false
         nativeMobileSubIdsHookState = "unavailable"
+        nativeMobileAdapterHookState = "unavailable"
         eventSink = null
         diagnosticsEnabled = { false }
         lightweightDiagnosticsEnabled = { false }
@@ -467,6 +503,42 @@ internal object NativeStatusObserver {
                                 "count=" + incoming.size +
                                 " ids=" + ids.joinToString(",") +
                                 " allNumeric=" + (ids.size == incoming.size)
+                        }
+                    }
+                }
+            }
+            result
+        }
+
+    private fun nativeMobileAdapterDecisionHooker(): Hooker =
+        Hooker { chain ->
+            val incoming = readOrNull {
+                if (!lightweightDiagnosticsEnabled()) null else {
+                    val list = (chain.getArg(0) as? List<*>)?.toList()
+                    val stackable = chain.getArg(1) as? Boolean
+                    if (list == null || stackable == null) null else list to stackable
+                }
+            }
+            val result = chain.proceed()
+            observeAfterNative(result, { reportObservationFailure("nativeMobileAdapter", it) }) {
+                if (incoming != null) {
+                    val ids = incoming.first.mapNotNull { (it as? Number)?.toInt() }
+                    val value = ids to incoming.second
+                    val changed = synchronized(this) {
+                        if (lastNativeMobileAdapterDecision == value) false
+                        else {
+                            lastNativeMobileAdapterDecision = value
+                            true
+                        }
+                    }
+                    if (changed) {
+                        reportMobileEvent {
+                            "networkPipeline nativeMobileAdapterDecision " +
+                                "source=MobileViewLogger.logUiAdapterSubIdsSentToIconController " +
+                                "count=" + incoming.first.size +
+                                " ids=" + ids.joinToString(",") +
+                                " allNumeric=" + (ids.size == incoming.first.size) +
+                                " isStackable=" + incoming.second
                         }
                     }
                 }
@@ -1039,6 +1111,7 @@ internal object NativeStatusObserver {
         activeGroup = null
         lastNativeMobileTree = null
         lastNativeMobileSubIds = null
+        lastNativeMobileAdapterDecision = null
         lastDelivery = Delivery(PresentationStore.StatusIconPresentation())
     }
 
