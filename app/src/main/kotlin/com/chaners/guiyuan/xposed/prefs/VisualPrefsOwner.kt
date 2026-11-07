@@ -65,12 +65,7 @@ internal object VisualPrefsOwner {
                 while (latest.source === changed && latest.token === token && latest.cfg != next) {
                     val pending = latest.copy(cfg = next)
                     if (state.compareAndSet(latest, pending)) {
-                        try {
-                            onChanged(next)
-                        } catch (error: Throwable) {
-                            state.compareAndSet(pending, latest)
-                            throw error
-                        }
+                        deliverCommittedChange(latest, pending, next, onChanged)
                         break
                     }
                     latest = state.get()
@@ -87,21 +82,39 @@ internal object VisualPrefsOwner {
             listener.onSharedPreferenceChanged(source, null)
             current()
         } catch (error: Throwable) {
-            if (state.get().token === token) {
-                try {
-                    unbindLocked()
-                } catch (cleanup: Throwable) {
-                    SysUiPresentationRuntime.throwIfFatal(cleanup)
-                    if (cleanup !== error) error.addSuppressed(cleanup)
-                } finally {
-                    // A reentrant new binding must not be cleared by the failed old callback.
-                    val retired = state.get()
-                    if (retired.source == null && retired.token == null) {
-                        state.compareAndSet(retired, State(null, null, VisualCfg()))
-                    }
-                }
-            }
+            retireFailedBinding(token, error)
             throw error
+        }
+    }
+
+    // A committed generation owns its callback failure until a newer generation wins.
+    private fun deliverCommittedChange(
+        previous: State,
+        pending: State,
+        next: VisualCfg,
+        onChanged: (VisualCfg) -> Unit,
+    ) {
+        try {
+            onChanged(next)
+        } catch (error: Throwable) {
+            state.compareAndSet(pending, previous)
+            throw error
+        }
+    }
+
+    // Do not retire a new binding when its replaced generation fails late.
+    private fun retireFailedBinding(token: Any, error: Throwable) {
+        if (state.get().token !== token) return
+        try {
+            unbindLocked()
+        } catch (cleanup: Throwable) {
+            SysUiPresentationRuntime.throwIfFatal(cleanup)
+            if (cleanup !== error) error.addSuppressed(cleanup)
+        } finally {
+            val retired = state.get()
+            if (retired.source == null && retired.token == null) {
+                state.compareAndSet(retired, State(null, null, VisualCfg()))
+            }
         }
     }
 
