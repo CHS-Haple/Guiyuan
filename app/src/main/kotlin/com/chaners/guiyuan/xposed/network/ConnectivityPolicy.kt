@@ -13,55 +13,12 @@ internal object ConnectivityPolicy {
         mobileType: NativePresentationResolver.NetworkType?,
         noSimIcon: PresentationStore.NativeIconResource? = null,
     ): CenterIndicator? {
-        val wifiVisible =
-            wifi as? StatusStateStore.WifiState.Visible
-        val wifiSegments =
-            when (val signal = wifiVisible?.signal) {
-                null -> null
-                SignalStrength.Unknown -> null
-                SignalStrength.Unavailable -> null
-                is SignalStrength.Level -> wifiSegments(signal.value)
-            }
-
-        if (
-            wifiVisible != null &&
-            (wifiVisible.iconResId != null || wifiSegments != null)
-        ) {
-            resolvedWifiInternet(
-                wifi = wifiVisible,
-                connectivity = connectivity,
-            )?.let { internet ->
-                return CenterIndicator.Wifi(
-                    segments = wifiSegments ?: 0,
-                    internet = internet,
-                    nativeResourceId = wifiVisible.iconResId,
-                )
-            }
-        }
+        resolveWifi(wifi, connectivity)?.let { return it }
+        if (airplaneMode) return CenterIndicator.Airplane
+        if (noSimIcon != null) return CenterIndicator.NoSim(noSimIcon)
 
         if (!connectivity.known) {
-            if (airplaneMode) {
-                return CenterIndicator.Airplane
-            }
-            if (noSimIcon != null) {
-                return CenterIndicator.NoSim(noSimIcon)
-            }
-            return mobileType?.let {
-                CenterIndicator.MobileType(
-                    label = it.label,
-                    enhanced = it.enhanced,
-                    typeface = it.typeface,
-                    fontPath = it.fontPath,
-                    internet = InternetState.UNKNOWN,
-                )
-            }
-        }
-
-        if (airplaneMode) {
-            return CenterIndicator.Airplane
-        }
-        if (noSimIcon != null) {
-            return CenterIndicator.NoSim(noSimIcon)
+            return mobileType?.asCenterIndicator(InternetState.UNKNOWN)
         }
 
         return when (connectivity.transport) {
@@ -69,15 +26,8 @@ internal object ConnectivityPolicy {
                 if (connectivity.mobileDataEnabled == false) {
                     CenterIndicator.Empty
                 } else {
-                    mobileType?.let {
-                        CenterIndicator.MobileType(
-                            label = it.label,
-                            enhanced = it.enhanced,
-                            typeface = it.typeface,
-                    fontPath = it.fontPath,
-                            internet = connectivity.internetState(),
-                        )
-                    } ?: CenterIndicator.Empty
+                    mobileType?.asCenterIndicator(connectivity.internetState())
+                        ?: CenterIndicator.Empty
                 }
 
             SysUiConnectivitySource.Transport.VPN ->
@@ -85,37 +35,52 @@ internal object ConnectivityPolicy {
                     wifi != StatusStateStore.WifiState.Hidden -> null
                     connectivity.mobileDataEnabled == false -> CenterIndicator.Empty
                     else ->
-                        mobileType?.let {
-                            CenterIndicator.MobileType(
-                                label = it.label,
-                                enhanced = it.enhanced,
-                                typeface = it.typeface,
-                    fontPath = it.fontPath,
-                                internet = connectivity.internetState(),
-                            )
-                        } ?: CenterIndicator.Empty
+                        mobileType?.asCenterIndicator(connectivity.internetState())
+                            ?: CenterIndicator.Empty
                 }
 
             SysUiConnectivitySource.Transport.OTHER ->
                 if (connectivity.mobileDataEnabled == true && mobileType != null) {
-                    CenterIndicator.MobileType(
-                        label = mobileType.label,
-                        enhanced = mobileType.enhanced,
-                        typeface = mobileType.typeface,
-                        fontPath = mobileType.fontPath,
-                        internet = connectivity.internetState(),
-                    )
+                    mobileType.asCenterIndicator(connectivity.internetState())
                 } else {
                     CenterIndicator.Empty
                 }
 
-            SysUiConnectivitySource.Transport.NONE ->
-                CenterIndicator.Empty
-
-            SysUiConnectivitySource.Transport.WIFI ->
-                null
+            SysUiConnectivitySource.Transport.NONE -> CenterIndicator.Empty
+            SysUiConnectivitySource.Transport.WIFI -> null
         }
     }
+
+    private fun resolveWifi(
+        wifi: StatusStateStore.WifiState,
+        connectivity: SysUiConnectivitySource.State,
+    ): CenterIndicator.Wifi? {
+        val visible = wifi as? StatusStateStore.WifiState.Visible ?: return null
+        val segments =
+            when (val signal = visible.signal) {
+                SignalStrength.Unknown -> null
+                SignalStrength.Unavailable -> null
+                is SignalStrength.Level -> wifiSegments(signal.value)
+            }
+        if (visible.iconResId == null && segments == null) return null
+        val internet = resolvedWifiInternet(visible, connectivity) ?: return null
+        return CenterIndicator.Wifi(
+            segments = segments ?: 0,
+            internet = internet,
+            nativeResourceId = visible.iconResId,
+        )
+    }
+
+    private fun NativePresentationResolver.NetworkType.asCenterIndicator(
+        internet: InternetState,
+    ): CenterIndicator.MobileType =
+        CenterIndicator.MobileType(
+            label = label,
+            enhanced = enhanced,
+            typeface = typeface,
+            fontPath = fontPath,
+            internet = internet,
+        )
 
     fun wifiReplacementReady(
         wifi: StatusStateStore.WifiState,
