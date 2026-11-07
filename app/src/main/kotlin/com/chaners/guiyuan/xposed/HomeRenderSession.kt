@@ -255,6 +255,7 @@ internal object HomeRenderSession {
             }
         private val renderController = RenderController(probeView)
         private var readyLogged = false
+        private var lastMobileRenderIdentity: Pair<Boolean, Int>? = null
         private var layoutLogged = false
         private var deferredStateLogged = false
         private var rejectedTintLogged = false
@@ -554,6 +555,20 @@ internal object HomeRenderSession {
             }
 
             val model = update.model
+            if (model != null && isDetailedDiagnosticsEnabled()) {
+                val identity = (model.mobileLevel != null) to model.effectiveDataSubscriptionId
+                if (identity != lastMobileRenderIdentity) {
+                    lastMobileRenderIdentity = identity
+                    emitEvent {
+                        "homeRenderMobile observed=" + (model.mobileLevel != null) +
+                            " level=" + (model.mobileLevel ?: -1) +
+                            " selectedSubId=" + model.effectiveDataSubscriptionId +
+                            " unavailableMark=" + model.mobileUnavailableMark +
+                            " center=" + model.centerIndicator.javaClass.simpleName +
+                            " source=render-model"
+                    }
+                }
+            }
             if (update.candidateComplete && model != null) {
                 modelReady = true
             }
