@@ -19,6 +19,8 @@ class DiagReportTest {
         const val LEVEL_FIELD = "level"
         const val DETAIL_CONFIRMED = "systemUiDetailedConfirmed=true"
         const val DETAIL_UNCONFIRMED = "systemUiDetailedConfirmed=false"
+        const val RUNTIME_LEVEL_NOT_OBSERVED = "runtimeLevel=not-observed"
+        const val RUNTIME_BINDING_READY = "runtimeBinding=ready"
         const val READY_STATE = "ready"
         const val UNAVAILABLE_STATE = "unavailable"
         const val DETAILED_LEVEL = "detailed"
@@ -95,13 +97,13 @@ class DiagReportTest {
         assertTrue(report(bound, detailed, unavailable).contains(DETAIL_UNCONFIRMED))
         val newerSnapshot = report(bound, detailed, snapshotWithoutLevel)
         assertTrue(newerSnapshot.contains(DETAIL_UNCONFIRMED))
-        assertTrue(newerSnapshot.contains("runtimeLevel=not-observed"))
-        assertTrue(newerSnapshot.contains("runtimeBinding=ready"))
+        assertTrue(newerSnapshot.contains(RUNTIME_LEVEL_NOT_OBSERVED))
+        assertTrue(newerSnapshot.contains(RUNTIME_BINDING_READY))
 
         val newerBinding = report(bound, detailed, rebindWithoutLevel)
         assertTrue(newerBinding.contains(DETAIL_UNCONFIRMED))
-        assertTrue(newerBinding.contains("runtimeLevel=not-observed"))
-        assertTrue(newerBinding.contains("runtimeBinding=ready"))
+        assertTrue(newerBinding.contains(RUNTIME_LEVEL_NOT_OBSERVED))
+        assertTrue(newerBinding.contains(RUNTIME_BINDING_READY))
     }
 
     @Test
@@ -144,7 +146,7 @@ class DiagReportTest {
             ),
         )
         assertTrue(report.contains("requestedLevel=detailed"))
-        assertTrue(report.contains("runtimeLevel=not-observed"))
+        assertTrue(report.contains(RUNTIME_LEVEL_NOT_OBSERVED))
         assertTrue(report.contains("runtimeBinding=not-observed"))
     }
 
@@ -159,7 +161,7 @@ class DiagReportTest {
             ),
         )
         assertTrue(report.contains("runtimeLevel=general"))
-        assertTrue(report.contains("runtimeBinding=ready"))
+        assertTrue(report.contains(RUNTIME_BINDING_READY))
     }
 
     @Test
@@ -172,7 +174,7 @@ class DiagReportTest {
                 fields = mapOf(SESSION_FIELD to TEST_SESSION),
             ),
         )
-        assertTrue(report.contains("runtimeLevel=not-observed"))
+        assertTrue(report.contains(RUNTIME_LEVEL_NOT_OBSERVED))
         assertTrue(report.contains("runtimeBinding=unavailable"))
     }
 
@@ -206,7 +208,7 @@ class DiagReportTest {
             ),
         )
         assertTrue(report.contains("runtimeLevel=detailed"))
-        assertTrue(report.contains("runtimeBinding=ready"))
+        assertTrue(report.contains(RUNTIME_BINDING_READY))
     }
 
     @Test
