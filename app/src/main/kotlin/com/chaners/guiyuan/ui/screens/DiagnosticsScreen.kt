@@ -1442,7 +1442,7 @@ private fun logSummary(context: Context, entry: LogEntry): String {
 }
 
 // The same nonblank part/join contract applies to every compact diagnostic event.
-private fun joinLogSummaryParts(separator: String, vararg parts: String?): String =
+internal fun joinLogSummaryParts(separator: String, vararg parts: String?): String =
     parts.filterNotNull().filter(String::isNotBlank).joinToString(separator)
 
 // Network observations encode transport and delivery, not session lifecycle.

@@ -135,4 +135,11 @@ class DiagnosticsLogPresentationTest {
         assertTrue(shouldElideLogSummaryState(entry("hotReload.prepare", "preparing"), null, false))
         assertFalse(shouldElideLogSummaryState(entry("connectivity", "ready"), null, false))
     }
+
+    @Test
+    fun compactLogSummaryPartJoinerPreservesSeparatorAndOmitsBlankFields() {
+        assertEquals("native · tint", joinLogSummaryParts(" · ", null, "", "native", " ", "tint"))
+        assertEquals("", joinLogSummaryParts(" · ", null, "", " "))
+        assertEquals("warning", joinLogSummaryParts(" · ", "warning"))
+    }
 }
