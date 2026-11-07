@@ -221,66 +221,61 @@ internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
         else -> PreviewCenterSource.MOBILE
     }
 
-internal fun PreviewSandboxUiState.toRenderModel(
+// Sandbox-only center glyph selection; native SystemUI observations are not changed.
+internal fun PreviewSandboxUiState.previewCenterIndicator(
     resources: PreviewSysUiResources,
-    dualSignalEnabled: Boolean,
     mobileTypeface: Typeface? = null,
-    lowBatteryThreshold: Int = LOW_BATTERY_THRESHOLD_DEFAULT,
-    nativeLowColor: Int? = null,
-): RenderModel {
+): CenterIndicator {
     val wifiLevel = wifiSignalLevel.coerceIn(0, 3)
-    val mobileLevel =
-        if (mobileControlsEnabled) {
-            displayedSignalLevel.coerceIn(0, 4)
-        } else {
-            null
-        }
+    return when (previewCenterSource()) {
+        PreviewCenterSource.WIFI ->
+            CenterIndicator.Wifi(
+                segments = wifiLevel,
+                internet =
+                    if (wifiState == PreviewWifiState.NO_INTERNET) {
+                        InternetState.NO_INTERNET
+                    } else {
+                        InternetState.VALIDATED
+                    },
+                nativeResourceId =
+                    previewWifiResourceId(
+                        resources = resources,
+                        state = wifiState,
+                        level = wifiLevel,
+                    ),
+            )
 
-    val center =
-        when (previewCenterSource()) {
-            PreviewCenterSource.WIFI ->
-                CenterIndicator.Wifi(
-                    segments = wifiLevel,
-                    internet =
-                        if (wifiState == PreviewWifiState.NO_INTERNET) {
-                            InternetState.NO_INTERNET
-                        } else {
-                            InternetState.VALIDATED
-                        },
-                    nativeResourceId =
-                        previewWifiResourceId(
-                            resources = resources,
-                            state = wifiState,
-                            level = wifiLevel,
+        PreviewCenterSource.AIRPLANE -> CenterIndicator.Airplane
+
+        PreviewCenterSource.NO_SIM ->
+            resources
+                .drawableId(listOf("stat_sys_no_sim"))
+                ?.let { resourceId ->
+                    CenterIndicator.NoSim(
+                        PresentationStore.NativeIconResource(
+                            packageName = SYSTEM_UI_PACKAGE,
+                            resourceId = resourceId,
                         ),
-                )
+                    )
+                }
+                ?: CenterIndicator.Empty
 
-            PreviewCenterSource.AIRPLANE -> CenterIndicator.Airplane
+        PreviewCenterSource.EMPTY -> CenterIndicator.Empty
 
-            PreviewCenterSource.NO_SIM ->
-                resources
-                    .drawableId(listOf("stat_sys_no_sim"))
-                    ?.let { resourceId ->
-                        CenterIndicator.NoSim(
-                            PresentationStore.NativeIconResource(
-                                packageName = SYSTEM_UI_PACKAGE,
-                                resourceId = resourceId,
-                            ),
-                        )
-                    }
-                    ?: CenterIndicator.Empty
+        PreviewCenterSource.MOBILE ->
+            CenterIndicator.MobileType(
+                label = dataMobileNetwork.systemLabel,
+                enhanced = false,
+                internet = InternetState.VALIDATED,
+                typeface = mobileTypeface,
+            )
+    }
+}
 
-            PreviewCenterSource.EMPTY -> CenterIndicator.Empty
-
-            PreviewCenterSource.MOBILE ->
-                CenterIndicator.MobileType(
-                    label = dataMobileNetwork.systemLabel,
-                    enhanced = false,
-                    internet = InternetState.VALIDATED,
-                    typeface = mobileTypeface,
-                )
-        }
-
+// Keep charging and native battery modes ahead of the user-defined low threshold.
+internal fun PreviewSandboxUiState.previewBatterySemanticState(
+    lowBatteryThreshold: Int = LOW_BATTERY_THRESHOLD_DEFAULT,
+): BatterySemanticState {
     val charging = chargingState != PreviewChargingState.NOT_CHARGING
     val baseState =
         if (charging) {
@@ -294,11 +289,29 @@ internal fun PreviewSandboxUiState.toRenderModel(
                     BatterySemanticState.SUPER_POWER_SAVE
             }
         }
-    val semanticState = BatterySemanticState.atThreshold(
+    return BatterySemanticState.atThreshold(
         baseState,
         batteryPercent,
         lowBatteryThreshold,
     )
+}
+
+internal fun PreviewSandboxUiState.toRenderModel(
+    resources: PreviewSysUiResources,
+    dualSignalEnabled: Boolean,
+    mobileTypeface: Typeface? = null,
+    lowBatteryThreshold: Int = LOW_BATTERY_THRESHOLD_DEFAULT,
+    nativeLowColor: Int? = null,
+): RenderModel {
+    val mobileLevel =
+        if (mobileControlsEnabled) {
+            displayedSignalLevel.coerceIn(0, 4)
+        } else {
+            null
+        }
+    val charging = chargingState != PreviewChargingState.NOT_CHARGING
+    val center = previewCenterIndicator(resources, mobileTypeface)
+    val semanticState = previewBatterySemanticState(lowBatteryThreshold)
 
     return RenderModel(
         batteryPercent = batteryPercent.coerceIn(0, 100),
