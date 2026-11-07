@@ -156,21 +156,20 @@ internal fun migrateSharedLayoutVisualsIfNeeded(
             // overwrite its effective active-mode selection.
             val migratedStyle = preserveMigratedSignalStyles &&
                 (key == DUAL_ROW_DOT_ARRANGEMENT_KEY || key == SINGLE_ROW_DOT_STYLE_KEY)
-            if (activeDual) {
-                val value = stored[previousDual]
-                if (value != null) {
-                    copyLegacyVisualValue(editor, canonical, key, value)
-                } else if (!migratedStyle) {
-                    // A missing dual-bank value meant the layout default, not the
-                    // old single-bank value. Preserve already migrated dot styles.
-                    editor.remove(canonical)
-                }
-            } else if (!stored.containsKey(canonical) && !migratedStyle) {
-                // Earlier single-mode installations may still use unscoped
-                // preference names. Materialize those values per layout.
-                stored[key]?.let { value ->
-                    copyLegacyVisualValue(editor, canonical, key, value)
-                }
+            // The retired dual bank wins when active. Otherwise a saved layout
+            // value wins over the old unscoped single-mode value. Staged dot
+            // styles must never be overwritten before the shared editor commits.
+            val legacyValue = when {
+                activeDual -> stored[previousDual]
+                migratedStyle || stored.containsKey(canonical) -> null
+                else -> stored[key]
+            }
+            if (legacyValue != null) {
+                copyLegacyVisualValue(editor, canonical, key, legacyValue)
+            } else if (activeDual && !migratedStyle) {
+                // A missing active dual value meant the layout default, not a
+                // stale single-mode value. Preserve staged dot styles above.
+                editor.remove(canonical)
             }
             editor.remove(previousDual)
         }
