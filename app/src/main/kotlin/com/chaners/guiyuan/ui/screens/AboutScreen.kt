@@ -54,18 +54,6 @@ private const val ABOUT_PROJECT_URL = "https://github.com/CHS-Haple/Guiyuan"
 private const val ABOUT_LICENSE_URL = "https://github.com/CHS-Haple/Guiyuan/blob/main/LICENSE"
 private const val GPL_LICENSE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
 private const val ABOUT_VALUE_SEPARATOR = "｜"
-private const val APACHE_LICENSE_ID = "Apache-2.0"
-private const val ANDROIDX_MAINTAINER = "AndroidX"
-private const val ANDROIDX_UPSTREAM_URL = "https://github.com/androidx/androidx"
-
-private data class AboutDependency(
-    val name: String,
-    val version: String?,
-    val license: String,
-    val maintainer: String,
-    val upstreamUrl: String,
-)
-
 @Composable
 internal fun AboutScreen(
     onBack: () -> Unit,
@@ -399,91 +387,9 @@ internal fun AboutScreen(
 internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
     val uriHandler = LocalUriHandler.current
     val miuixVersion = BuildConfig.MIUIX_VERSION
-    val runtimeDependencies =
-        remember(miuixVersion) {
-            listOf(
-                AboutDependency(
-                    name = "libxposed service",
-                    version = BuildConfig.LIBXPOSED_VERSION,
-                    license = APACHE_LICENSE_ID,
-                    maintainer = "libxposed",
-                    upstreamUrl = "https://github.com/libxposed/service",
-                ),
-                AboutDependency(
-                    name = "MIUIX",
-                    version = miuixVersion,
-                    license = APACHE_LICENSE_ID,
-                    maintainer = "compose-miuix-ui",
-                    upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
-                ),
-                AboutDependency(
-                    name = "AndroidX Core",
-                    version = BuildConfig.ANDROIDX_CORE_VERSION,
-                    license = APACHE_LICENSE_ID,
-                    maintainer = ANDROIDX_MAINTAINER,
-                    upstreamUrl = ANDROIDX_UPSTREAM_URL,
-                ),
-                AboutDependency(
-                    name = "AndroidX Activity Compose",
-                    version = BuildConfig.ACTIVITY_COMPOSE_VERSION,
-                    license = APACHE_LICENSE_ID,
-                    maintainer = ANDROIDX_MAINTAINER,
-                    upstreamUrl = ANDROIDX_UPSTREAM_URL,
-                ),
-                AboutDependency(
-                    name = "AndroidX Navigation Event Compose",
-                    version = BuildConfig.NAVIGATION_EVENT_COMPOSE_VERSION,
-                    license = APACHE_LICENSE_ID,
-                    maintainer = ANDROIDX_MAINTAINER,
-                    upstreamUrl = ANDROIDX_UPSTREAM_URL,
-                ),
-                AboutDependency(
-                    name = "AndroidX DataStore Preferences",
-                    version = BuildConfig.DATASTORE_PREFERENCES_VERSION,
-                    license = APACHE_LICENSE_ID,
-                    maintainer = ANDROIDX_MAINTAINER,
-                    upstreamUrl = ANDROIDX_UPSTREAM_URL,
-                ),
-                AboutDependency(
-                    name = "kotlinx.serialization",
-                    version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
-                    license = APACHE_LICENSE_ID,
-                    maintainer = "Kotlin",
-                    upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
-                ),
-            )
-        }
-    val compileTimeDependencies =
-        remember {
-            listOf(
-                AboutDependency(
-                    name = "libxposed API",
-                    version = BuildConfig.LIBXPOSED_VERSION,
-                    license = APACHE_LICENSE_ID,
-                    maintainer = "libxposed",
-                    upstreamUrl = "https://github.com/libxposed/api",
-                ),
-            )
-        }
-    val developmentDependencies =
-        remember {
-            listOf(
-                AboutDependency(
-                    name = "Gradle Wrapper",
-                    version = BuildConfig.GRADLE_VERSION,
-                    license = APACHE_LICENSE_ID,
-                    maintainer = "Gradle",
-                    upstreamUrl = "https://github.com/gradle/gradle",
-                ),
-                AboutDependency(
-                    name = "JUnit 4",
-                    version = BuildConfig.JUNIT_VERSION,
-                    license = "EPL-1.0",
-                    maintainer = "junit-team",
-                    upstreamUrl = "https://github.com/junit-team/junit4",
-                ),
-            )
-        }
+    val runtimeDependencies = remember(miuixVersion) { aboutRuntimeDependencies(miuixVersion) }
+    val compileTimeDependencies = remember { aboutCompileTimeDependencies() }
+    val developmentDependencies = remember { aboutDevelopmentDependencies() }
 
     SettingsPage(
         title = stringResource(R.string.about_third_party_title),
