@@ -1618,7 +1618,21 @@ internal object SysUiNetworkSource {
                 }
             }
         }
-        readOrNull { eventLog?.let { onEvent?.invoke(it) } }
+        // Keep the semantic resource sampled before native writes and the
+        // applied image state after the same original emitter in one event.
+        readOrNull {
+            eventLog?.let { sampled ->
+                val nativeSuffix =
+                    if (classId == 0) {
+                        " nativeAfterTag=" + ((image?.tag as? Number)?.toInt() ?: 0) +
+                            " nativeAfterDrawable=" + (image?.drawable != null) +
+                            " nativeAfterVisibility=" + (image?.visibility ?: -1)
+                    } else {
+                        ""
+                    }
+                onEvent?.invoke(sampled + nativeSuffix)
+            }
+        }
         result
     }
 
