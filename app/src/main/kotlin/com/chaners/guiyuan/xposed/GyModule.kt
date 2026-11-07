@@ -2023,17 +2023,8 @@ class GyModule : XposedModule() {
 
     private fun onTintStateUpdate(update: SysUiTintSource.TintUpdate) {
         KeyguardRenderSession.onTintUpdate(update)
-        val liveStatusIconTint =
-            NativeStatusObserver.currentAppliedStatusIconTint()
-        val resolvedState =
-            TintAuthority.resolveBatteryEvent(
-                batteryState = update.state,
-                liveStatusIconTint = liveStatusIconTint,
-            )
-        val resolvedUpdate = update.copy(state = resolvedState)
-        HomeRenderSession.onTintUpdate(resolvedUpdate)
-        CcRenderSession.onTintUpdate(resolvedUpdate)
-
+        HomeRenderSession.onTintUpdate(update)
+        CcRenderSession.onTintUpdate(update)
     }
 
     private fun onFullAodStarted() {
