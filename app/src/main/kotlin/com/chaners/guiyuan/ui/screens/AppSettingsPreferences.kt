@@ -148,7 +148,6 @@ internal fun AppSettingsRows(
         onCheckedChange = onIconHiddenChange,
     )
     AppSettingsEntryRows(entryState)
-
 }
 
 @Composable
