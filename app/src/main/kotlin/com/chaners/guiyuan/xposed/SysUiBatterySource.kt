@@ -96,6 +96,7 @@ internal object SysUiBatterySource {
             Class.forName(BATTERY_METER_VIEW_CLASS_NAME, false, classLoader)
         val levelField = iconClass.requiredField("mLevel")
         val chargingField = iconClass.requiredField("mCharging")
+        val meterIconField = meterClass.requiredField("mBatteryIconView")
         val progressStatusMethod =
             iconClass.getDeclaredMethod("getProgressStatus")
                 .apply { isAccessible = true }
@@ -231,7 +232,7 @@ internal object SysUiBatterySource {
                 return
             }
             report {
-                "batteryState source=MiuiBatteryMeterIconView." + sourceMethod +
+                "batteryState source=" + sourceMethod +
                     " percent=" + state.percent +
                     " charging=" + state.charging +
                     " semantic=" + (state.semanticState?.name ?: "unavailable") +
@@ -284,40 +285,49 @@ internal object SysUiBatterySource {
                     Hooker { chain ->
                         val result = chain.proceed()
                         if (!hooksReady) return@Hooker result
-                        val iconView = readOrNull { chain.thisObject as? View }
+                        val targetView = readOrNull { chain.thisObject as? View }
                             ?: return@Hooker result
-                        try {
-                            publish(
-                                iconView = iconView,
-                                sourceMethod = method.name,
-                            )
-                        } catch (error: Throwable) {
-                            fallback("state", error)
+                        val iconView =
+                            when {
+                                iconClass.isInstance(targetView) -> targetView
+                                meterClass.isInstance(targetView) ->
+                                    readOrNull { meterIconField.get(targetView) as? View }
+                                else -> null
+                            }
+                        if (iconView != null) {
+                            try {
+                                publish(
+                                    iconView = iconView,
+                                    sourceMethod = method.declaringClass.simpleName + "." + method.name,
+                                )
+                            } catch (error: Throwable) {
+                                fallback("state", error)
+                            }
                         }
                         result
                     },
                 )
 
         val levelMethod =
-            iconClass.getDeclaredMethod(
+            meterClass.getDeclaredMethod(
                 BATTERY_LEVEL_METHOD_NAME,
                 Int::class.javaPrimitiveType,
                 Boolean::class.javaPrimitiveType,
                 Boolean::class.javaPrimitiveType,
             ).apply { isAccessible = true }
         val chargeMethod =
-            iconClass.getDeclaredMethod(
+            meterClass.getDeclaredMethod(
                 CHARGE_STATE_METHOD_NAME,
                 Boolean::class.javaPrimitiveType,
                 Boolean::class.javaPrimitiveType,
             ).apply { isAccessible = true }
         val powerSaveMethod =
-            iconClass.getDeclaredMethod(
+            meterClass.getDeclaredMethod(
                 POWER_SAVE_METHOD_NAME,
                 Boolean::class.javaPrimitiveType,
             ).apply { isAccessible = true }
         val performanceMethod =
-            iconClass.getDeclaredMethod(
+            meterClass.getDeclaredMethod(
                 PERFORMANCE_METHOD_NAME,
                 Boolean::class.javaPrimitiveType,
             ).apply { isAccessible = true }
