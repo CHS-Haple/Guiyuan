@@ -693,12 +693,12 @@ internal object SysUiNetworkSource {
 
         val payload = raw as? Array<*>
         val wifi = payload?.getOrNull(0) as? List<*>
-        wifi.orEmpty().forEach { value ->
+        for (value in wifi.orEmpty()) {
             val pair = value as? Array<*>
             val root =
                 (pair?.getOrNull(0) as? ViewGroup)
                     ?: (value as? ViewGroup)
-                    ?: return@forEach
+                    ?: continue
             val viewModel =
                 pair
                     ?.getOrNull(1)
@@ -709,10 +709,10 @@ internal object SysUiNetworkSource {
         }
 
         val mobile = payload?.getOrNull(1) as? List<*>
-        mobile.orEmpty().forEach { value ->
-            val pair = value as? Array<*> ?: return@forEach
-            val root = pair.getOrNull(0) as? ViewGroup ?: return@forEach
-            val subscriptionId = (pair.getOrNull(1) as? Number)?.toInt() ?: return@forEach
+        for (value in mobile.orEmpty()) {
+            val pair = value as? Array<*> ?: continue
+            val root = pair.getOrNull(0) as? ViewGroup ?: continue
+            val subscriptionId = (pair.getOrNull(1) as? Number)?.toInt() ?: continue
             if (subscriptionId >= 0) {
                 mobileRoots[root] = MobileBinding(subscriptionId)
             }
