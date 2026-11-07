@@ -96,7 +96,9 @@ internal fun migrateSignalDotArrangementsIfNeeded(
     editor.remove(DUAL_ROW_DOT_ARRANGEMENT_KEY)
         .remove(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)
         .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
-    if (sharedEditor == null) editor.apply()
+    if (sharedEditor == null) {
+        check(editor.commit()) { "Could not commit dot arrangement migration" }
+    }
 }
 
 // The retired opt-in-show switch cannot be inverted into a new opt-in-hide
@@ -176,7 +178,9 @@ internal fun migrateSharedLayoutVisualsIfNeeded(
     PROFILE_VISUAL_BASE_KEYS.forEach { editor.remove(it) }
     editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
         .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
-    if (sharedEditor == null) editor.commit()
+    if (sharedEditor == null) {
+        check(editor.commit()) { "Could not commit shared layout migration" }
+    }
 }
 
 // Migrations must finish before the app mirrors its first runtime snapshot.

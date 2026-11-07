@@ -462,13 +462,7 @@ internal object KeyguardRenderSession {
                 VisualPrefsOwner.current(),
             )
             SysUiTintSource.currentState(battery)?.let { state ->
-                applyTintState(
-                    TintAuthority.resolveBatteryEvent(
-                        batteryState = state,
-                        liveStatusIconTint = null,
-                    ),
-                    "seed",
-                )
+                applyTintState(state, "seed")
             }
             layoutProbe()
         }
@@ -673,10 +667,7 @@ internal object KeyguardRenderSession {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) return
             applyTintState(
-                TintAuthority.resolveBatteryEvent(
-                    batteryState = update.state,
-                    liveStatusIconTint = null,
-                ),
+                update.state,
                 if (scene == Scene.AOD) "aod-battery" else "keyguard-battery",
             )
         }

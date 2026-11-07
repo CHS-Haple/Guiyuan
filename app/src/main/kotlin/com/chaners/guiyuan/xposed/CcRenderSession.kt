@@ -888,16 +888,7 @@ internal object CcRenderSession {
             batteryState: TintState,
             source: String,
         ) {
-            val peerTint =
-                statusIcons.get()?.let(
-                    NativeStatusObserver::currentStatusIconTint,
-                )
-            val resolved =
-                TintAuthority.resolveBatteryEvent(
-                    batteryState,
-                    peerTint,
-                )
-            val tintUpdate = renderController.updateTint(resolved)
+            val tintUpdate = renderController.updateTint(batteryState)
             if (currentTint != tintUpdate.resolved) {
                 currentTint = tintUpdate.resolved
                 transitionStateVersion += 1
