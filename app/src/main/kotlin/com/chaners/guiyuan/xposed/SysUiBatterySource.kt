@@ -37,6 +37,12 @@ internal object SysUiBatterySource {
     private const val PERFORMANCE_HOOK_ID = "combinedstatus.battery.performance"
     private const val MIUI_OPTIMIZATION_HOOK_ID = "combinedstatus.battery.miui-optimization"
     private const val CHARGING_GLYPH_HOOK_ID = "combinedstatus.battery.charging-glyph"
+    // Temporary, non-shipping probe; remove this branch after root-cause evidence.
+    private const val PROBE_TAG = "GuiyuanBatteryProbe"
+
+    private fun probe(event: String) {
+        readOrNull { Log.i(PROBE_TAG, event) }
+    }
 
     @Volatile
     private var hooksReady = false
@@ -207,7 +213,17 @@ internal object SysUiBatterySource {
             iconView: View,
             sourceMethod: String,
         ) {
-            val state = readState(iconView) ?: return
+            val state = readState(iconView)
+            if (sourceMethod == BATTERY_LEVEL_METHOD_NAME ||
+                sourceMethod == CHARGE_STATE_METHOD_NAME
+            ) {
+                probe(
+                    "stage=read method=$sourceMethod valid=${state != null} " +
+                        "percent=${state?.percent} charging=${state?.charging} " +
+                        "view=${System.identityHashCode(iconView)}"
+                )
+            }
+            if (state == null) return
             val delivery =
                 synchronized(this) {
                     if (!state.charging) {
@@ -220,10 +236,17 @@ internal object SysUiBatterySource {
                     } else {
                         Delivery(state).also { lastDelivery = it }
                     }
-                } ?: return
+                }
+            if (delivery == null) {
+                probe("stage=dedupe method=$sourceMethod percent=${state.percent} charging=${state.charging}")
+                return
+            }
+            probe("stage=delivery-start method=$sourceMethod percent=${state.percent} charging=${state.charging}")
             try {
                 onBatteryState(state)
+                probe("stage=delivery-return method=$sourceMethod")
             } catch (error: Throwable) {
+                probe("stage=delivery-failed method=$sourceMethod exception=${error.javaClass.simpleName}")
                 fallback("state", error)
                 synchronized(this) {
                     if (lastDelivery === delivery) lastDelivery = null
@@ -283,6 +306,13 @@ internal object SysUiBatterySource {
                 .intercept(
                     Hooker { chain ->
                         val result = chain.proceed()
+                        if (hookId == LEVEL_HOOK_ID || hookId == CHARGE_HOOK_ID) {
+                            probe(
+                                "stage=hook method=${method.name} ready=$hooksReady " +
+                                    "receiver=${chain.thisObject?.javaClass?.name ?: "none"} " +
+                                    "view=${System.identityHashCode(chain.thisObject)}"
+                            )
+                        }
                         if (!hooksReady) return@Hooker result
                         val iconView = readOrNull { chain.thisObject as? View }
                             ?: return@Hooker result
@@ -338,6 +368,10 @@ internal object SysUiBatterySource {
                     .intercept(
                         Hooker { chain ->
                             val result = chain.proceed()
+                            probe(
+                                "stage=meter-hook method=updateChargeAndText ready=$hooksReady " +
+                                    "view=${System.identityHashCode(chain.thisObject)}"
+                            )
                             if (!hooksReady) return@Hooker result
                             val meterView = readOrNull { chain.thisObject as? View }
                                 ?: return@Hooker result

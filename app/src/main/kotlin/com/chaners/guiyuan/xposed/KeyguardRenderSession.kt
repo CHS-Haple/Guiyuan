@@ -334,6 +334,7 @@ internal object KeyguardRenderSession {
         private val renderView =
             RenderView(
                 resolved.host.context,
+                batteryProbeScene = "keyguard",
                 onShownChanged = ::observeAodVisibility,
                 onDrawn = { view ->
                     observeAodVisibility(view)
@@ -349,7 +350,7 @@ internal object KeyguardRenderSession {
                     }
                 },
             )
-        private val renderController = RenderController(renderView)
+        private val renderController = RenderController(renderView, batteryProbeScene = "keyguard")
         private val anchorRect = Rect()
 
         private var featureEnabled = initialFeatureEnabled

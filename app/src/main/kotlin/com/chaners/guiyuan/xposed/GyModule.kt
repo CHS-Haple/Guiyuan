@@ -576,6 +576,13 @@ class GyModule : XposedModule() {
                 SysUiBatterySource.reconcileHostBatteryState(capture.host) { state ->
                     StatusStateStore.updateBattery(state)?.let { restoredSnapshot = it }
                 }
+            runCatching {
+                android.util.Log.i(
+                    "GuiyuanBatteryProbe",
+                    "stage=reconcile available=${liveBattery != null} " +
+                        "percent=${liveBattery?.percent} charging=${liveBattery?.charging}",
+                )
+            }.onFailure(SysUiHotReload::rethrowFatal)
             logDiagnostic(
                 level = if (liveBattery != null) Log.INFO else Log.WARN,
                 event = "battery.reconcile",
@@ -1664,11 +1671,22 @@ class GyModule : XposedModule() {
                 },
                 onBatteryState = { state ->
                     val trace = beginRenderTrace("battery")
-                    StatusStateStore.updateBattery(state)?.let { snapshot ->
+                    val snapshot = StatusStateStore.updateBattery(state)
+                    runCatching {
+                        Log.i(
+                            "GuiyuanBatteryProbe",
+                            "stage=store changed=${snapshot != null} " +
+                                "percent=${state.percent} charging=${state.charging}",
+                        )
+                    }.onFailure(SysUiHotReload::rethrowFatal)
+                    snapshot?.let {
                         onCombinedStateChanged(
-                            snapshot = snapshot,
+                            snapshot = it,
                             trace = markStateCommitted(trace),
                         )
+                        runCatching {
+                            Log.i("GuiyuanBatteryProbe", "stage=renderer-dispatched")
+                        }.onFailure(SysUiHotReload::rethrowFatal)
                     }
                 },
                 onChargingIconResource = { resourceId ->
