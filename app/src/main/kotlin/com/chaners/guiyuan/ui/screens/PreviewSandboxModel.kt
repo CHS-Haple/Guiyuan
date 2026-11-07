@@ -228,48 +228,48 @@ internal fun PreviewSandboxUiState.previewCenterIndicator(
 ): CenterIndicator {
     val wifiLevel = wifiSignalLevel.coerceIn(0, 3)
     return when (previewCenterSource()) {
-            PreviewCenterSource.WIFI ->
-                CenterIndicator.Wifi(
-                    segments = wifiLevel,
-                    internet =
-                        if (wifiState == PreviewWifiState.NO_INTERNET) {
-                            InternetState.NO_INTERNET
-                        } else {
-                            InternetState.VALIDATED
-                        },
-                    nativeResourceId =
-                        previewWifiResourceId(
-                            resources = resources,
-                            state = wifiState,
-                            level = wifiLevel,
+        PreviewCenterSource.WIFI ->
+            CenterIndicator.Wifi(
+                segments = wifiLevel,
+                internet =
+                    if (wifiState == PreviewWifiState.NO_INTERNET) {
+                        InternetState.NO_INTERNET
+                    } else {
+                        InternetState.VALIDATED
+                    },
+                nativeResourceId =
+                    previewWifiResourceId(
+                        resources = resources,
+                        state = wifiState,
+                        level = wifiLevel,
+                    ),
+            )
+
+        PreviewCenterSource.AIRPLANE -> CenterIndicator.Airplane
+
+        PreviewCenterSource.NO_SIM ->
+            resources
+                .drawableId(listOf("stat_sys_no_sim"))
+                ?.let { resourceId ->
+                    CenterIndicator.NoSim(
+                        PresentationStore.NativeIconResource(
+                            packageName = SYSTEM_UI_PACKAGE,
+                            resourceId = resourceId,
                         ),
-                )
+                    )
+                }
+                ?: CenterIndicator.Empty
 
-            PreviewCenterSource.AIRPLANE -> CenterIndicator.Airplane
+        PreviewCenterSource.EMPTY -> CenterIndicator.Empty
 
-            PreviewCenterSource.NO_SIM ->
-                resources
-                    .drawableId(listOf("stat_sys_no_sim"))
-                    ?.let { resourceId ->
-                        CenterIndicator.NoSim(
-                            PresentationStore.NativeIconResource(
-                                packageName = SYSTEM_UI_PACKAGE,
-                                resourceId = resourceId,
-                            ),
-                        )
-                    }
-                    ?: CenterIndicator.Empty
-
-            PreviewCenterSource.EMPTY -> CenterIndicator.Empty
-
-            PreviewCenterSource.MOBILE ->
-                CenterIndicator.MobileType(
-                    label = dataMobileNetwork.systemLabel,
-                    enhanced = false,
-                    internet = InternetState.VALIDATED,
-                    typeface = mobileTypeface,
-                )
-        }
+        PreviewCenterSource.MOBILE ->
+            CenterIndicator.MobileType(
+                label = dataMobileNetwork.systemLabel,
+                enhanced = false,
+                internet = InternetState.VALIDATED,
+                typeface = mobileTypeface,
+            )
+    }
 }
 
 // Keep charging and native battery modes ahead of the user-defined low threshold.

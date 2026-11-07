@@ -39,7 +39,7 @@ class PreviewSandboxBatterySemanticsTest {
     }
 
     @Test
-    fun balancedModeUsesStrictLowThresholdAfterClamping() {
+    fun balancedModeUsesStrictLowThreshold() {
         val preview = PreviewSandboxUiState(
             chargingState = PreviewChargingState.NOT_CHARGING,
             batteryMode = PreviewBatteryMode.BALANCED,
