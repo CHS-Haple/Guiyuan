@@ -1337,6 +1337,19 @@ internal object SysUiNetworkSource {
             taggedResId != previousTaggedResId &&
             SysUiSignalParser.isHotspotWifiResource(taggedResource)
 
+    private fun nativeMobileBindIdentity(root: ViewGroup, viewModel: Any?): String {
+        val nativeSubId = readOrNull {
+            (root.javaClass.methods.firstOrNull { method ->
+                method.name == "getSubId" && method.parameterCount == 0
+            }?.invoke(root) as? Number)?.toInt()
+        }
+        val location = readOrNull {
+            (viewModel?.javaClass?.getField("location")?.get(viewModel) as? Enum<*>)?.name
+        }
+        return " nativeViewSubId=" + (nativeSubId ?: -1) +
+            " nativeLocation=" + (location ?: "unknown")
+    }
+
     private fun mobileBindHooker(
         active: AtomicBoolean,
         subscriptionIdMethod: Method,
@@ -1397,6 +1410,7 @@ internal object SysUiNetworkSource {
                             " locationVm=" + locationViewModel?.javaClass?.simpleName +
                             " subId=" + subscriptionId +
                             " iconVm=" + (iconViewModel?.javaClass?.simpleName ?: "none") +
+                            nativeMobileBindIdentity(boundRoot, locationViewModel) +
                             PARENT_CHAIN_LOG_FIELD + parentChain(boundRoot) +
                             LAYOUT_LOG_FIELD + layoutToken(boundRoot)
                     }
@@ -1414,6 +1428,7 @@ internal object SysUiNetworkSource {
                             ROOT_ID_LOG_FIELD + resourceId(root) +
                             " locationVm=" + type +
                             " iconVm=" + (iconViewModel?.javaClass?.name ?: "null") +
+                            nativeMobileBindIdentity(root, locationViewModel) +
                             PARENT_CHAIN_LOG_FIELD + parentChain(root)
                     }
                 }
@@ -1440,9 +1455,7 @@ internal object SysUiNetworkSource {
                 }
                 throw error
             }
-        if (bindingChanged) {
-            readOrNull { bindingLog?.let { onEvent?.invoke(it) } }
-        }
+        readOrNull { bindingLog?.let { onEvent?.invoke(it) } }
         readOrNull { skippedBindLog?.let { onEvent?.invoke(it) } }
         // A native binder can replace a child even if the SIM ID stays the same.
         if (boundRoot != null) {
