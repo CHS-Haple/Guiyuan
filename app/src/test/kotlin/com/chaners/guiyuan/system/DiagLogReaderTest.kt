@@ -113,6 +113,9 @@ class DiagLogReaderTest {
         assertEquals(listOf(lspModule), DiagLogReader.filterModuleLines(lspModule))
     }
 
+}
+
+class DiagLogReaderSessionTest {
     @Test
     fun logcatSessionKeepsOnlyCurrentProcessAfterInterleavedRestart() {
         fun event(pid: Int, second: Int, session: String): String =
