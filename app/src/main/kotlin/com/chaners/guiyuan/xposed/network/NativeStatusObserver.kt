@@ -731,11 +731,6 @@ internal object NativeStatusObserver {
                 }
             }
         }
-        val identity = roots.joinToString(";") { (slot, root) ->
-            slot + ":" + System.identityHashCode(root)
-        }
-        if (lastNativeMobileTree == identity) return
-        lastNativeMobileTree = identity
         val details = roots.take(4).joinToString(";") { (slot, root) ->
             val nativeSubId = readOrNull {
                 (root.javaClass.methods.firstOrNull { method ->
@@ -758,6 +753,14 @@ internal object NativeStatusObserver {
                 ",signalName=" + (taggedName ?: "none") +
                 ",signalDrawable=" + (image?.drawable != null)
         }
+        // A root can keep the same identity while its native subscription,
+        // signal resource or visibility changes. Deduplicate the observation,
+        // not only the View instance, so a single report retains those changes.
+        val signature = roots.joinToString(";") { (slot, root) ->
+            slot + ":" + System.identityHashCode(root)
+        } + "|" + details
+        if (lastNativeMobileTree == signature) return
+        lastNativeMobileTree = signature
         readOrNull {
             sink(
                 "networkPipeline nativeMobileTree source=" + source +
