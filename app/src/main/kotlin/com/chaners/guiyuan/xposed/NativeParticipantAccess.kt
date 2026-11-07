@@ -270,36 +270,35 @@ internal object NativeParticipantAccess {
     private fun resolveStatusBarIconController(
         classLoader: ClassLoader,
         manager: Any,
-    ): Any? {
-        val dependencyClass = classOrNull(DEPENDENCY, classLoader)
-        if (dependencyClass != null) {
-            val getMethod =
-                readOrNull {
-                    dependencyClass
-                        .allMethods()
-                        .firstOrNull { method ->
-                            method.name == "get" &&
-                                java.lang.reflect.Modifier.isStatic(method.modifiers) &&
-                                method.parameterTypes.contentEquals(
-                                    arrayOf<Class<*>>(Class::class.java),
-                                )
-                        }?.apply { isAccessible = true }
-                }
+    ): Any? =
+        dependencyStatusBarIconController(classLoader)
+            ?: manager.readField("mController")
 
-            if (getMethod != null) {
-                STATUS_BAR_ICON_CONTROLLER_CANDIDATES.forEach { className ->
-                    val controllerType =
-                        classOrNull(className, classLoader)
-                            ?: return@forEach
-                    val controller = readOrNull { getMethod.invoke(null, controllerType) }
-                    if (controller != null) {
-                        return controller
-                    }
-                }
+    private fun dependencyStatusBarIconController(classLoader: ClassLoader): Any? {
+        val dependencyClass = classOrNull(DEPENDENCY, classLoader) ?: return null
+        val getMethod =
+            readOrNull {
+                dependencyClass
+                    .allMethods()
+                    .firstOrNull { method ->
+                        method.name == "get" &&
+                            java.lang.reflect.Modifier.isStatic(method.modifiers) &&
+                            method.parameterTypes.contentEquals(
+                                arrayOf<Class<*>>(Class::class.java),
+                            )
+                    }?.apply { isAccessible = true }
+            } ?: return null
+
+        STATUS_BAR_ICON_CONTROLLER_CANDIDATES.forEach { className ->
+            val controllerType =
+                classOrNull(className, classLoader)
+                    ?: return@forEach
+            val controller = readOrNull { getMethod.invoke(null, controllerType) }
+            if (controller != null) {
+                return controller
             }
         }
-
-        return manager.readField("mController")
+        return null
     }
 
     private fun classOrNull(
