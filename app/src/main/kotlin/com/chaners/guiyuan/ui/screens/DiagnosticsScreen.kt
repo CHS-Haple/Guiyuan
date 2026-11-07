@@ -1427,24 +1427,34 @@ private fun logTitle(
         ?: context.getString(R.string.diagnostics_log_event_generic)
 }
 
-private fun logSummary(
-    context: Context,
-    entry: LogEntry,
-): String {
-    // The compact line adds meaning beyond the title; the raw event stays available in details.
+private fun logSummary(context: Context, entry: LogEntry): String {
     val fallback = if (entry.structured) "" else entry.message
-    val fields = entry.fields
     val separator = context.getString(R.string.diagnostics_log_summary_separator)
-    fun join(vararg parts: String?): String =
-        parts.filterNotNull().filter(String::isNotBlank).joinToString(separator)
+    val summary = when (entry.event) {
+        EVENT_CONNECTIVITY_DELIVERY_FAILED, EVENT_CONNECTIVITY ->
+            logConnectivitySummary(context, entry, separator).orEmpty()
+        EVENT_BATTERY_RECONCILE, EVENT_PIPELINE_LATENCY,
+        EVENT_TINT_COMMIT, EVENT_HOME_RENDER_TINT ->
+            logRuntimeTelemetrySummary(context, entry, separator).orEmpty()
+        else -> logLifecycleSummary(context, entry, separator)
+    }
+    return summary.ifBlank { fallback }
+}
 
+// The same nonblank part/join contract applies to every compact diagnostic event.
+private fun joinLogSummaryParts(separator: String, vararg parts: String?): String =
+    parts.filterNotNull().filter(String::isNotBlank).joinToString(separator)
+
+// Network observations encode transport and delivery, not session lifecycle.
+private fun logConnectivitySummary(context: Context, entry: LogEntry, separator: String): String? {
+    val fields = entry.fields
     if (entry.event == EVENT_CONNECTIVITY_DELIVERY_FAILED) {
-        return join(
+        return joinLogSummaryParts(separator, 
             fields[LOG_FIELD_SOURCE]?.let {
                 context.getString(R.string.diagnostics_log_summary_source, sourceLabel(context, it))
             },
             fields["type"],
-        ).ifBlank { fallback }
+        )
     }
 
     if (entry.event == EVENT_CONNECTIVITY) {
@@ -1463,9 +1473,14 @@ private fun logSummary(
                     else -> null
                 }
             mobileState?.let { add(context.getString(it)) }
-        }.joinToString(separator).ifBlank { fallback }
+        }.joinToString(separator)
     }
+    return null
+}
 
+// Battery reconciliation, pipeline latency and tint are direct runtime telemetry.
+private fun logRuntimeTelemetrySummary(context: Context, entry: LogEntry, separator: String): String? {
+    val fields = entry.fields
     if (entry.event == EVENT_BATTERY_RECONCILE) {
         val previous = chargingStateLabel(context, fields[LOG_FIELD_TRANSFERRED_CHARGING])
         val native = chargingStateLabel(context, fields[LOG_FIELD_NATIVE_CHARGING])
@@ -1477,32 +1492,52 @@ private fun logSummary(
                 else -> entry.state?.let { stateLabel(context, it) }
             }
         val percent = fields[LOG_FIELD_NATIVE_PERCENT]?.toIntOrNull()?.takeIf { it in 0..100 }
-        return join(
+        return joinLogSummaryParts(separator, 
             charging,
             percent?.let { context.getString(R.string.diagnostics_log_battery_percent, it) },
-        ).ifBlank { fallback }
+        )
     }
 
     if (entry.event == EVENT_PIPELINE_LATENCY) {
-        return join(
+        return joinLogSummaryParts(separator, 
             fields["sourceToDrawUs"]?.toLongOrNull()?.let { micros ->
                 context.getString(R.string.diagnostics_log_summary_total_time, formatMicros(micros))
             },
             fields[LOG_FIELD_SOURCE]?.let {
                 context.getString(R.string.diagnostics_log_summary_source, sourceLabel(context, it))
             },
-        ).ifBlank { fallback }
+        )
     }
 
     if (entry.event == EVENT_TINT_COMMIT || entry.event == EVENT_HOME_RENDER_TINT) {
-        return join(
+        return joinLogSummaryParts(separator, 
             fields["applied"] ?: fields["statusIcon"],
             fields[LOG_FIELD_SOURCE]?.let {
                 context.getString(R.string.diagnostics_log_summary_source, sourceLabel(context, it))
             },
-        ).ifBlank { fallback }
+        )
     }
+    return null
+}
 
+// Skip a repeated ready/released/preparing subtitle only for a normal unqualified event.
+internal fun shouldElideLogSummaryState(entry: LogEntry, reason: String?, problem: Boolean): Boolean =
+    !problem && reason == null &&
+                        when (entry.event) {
+                            EVENT_MODULE_LOADED, EVENT_MODULE_RELOADED, EVENT_RUNTIME_ATTACH,
+                            EVENT_RUNTIME_PREFERENCES_BIND, EVENT_DIAGNOSTICS_BIND,
+                            EVENT_HOST_RESTORE, EVENT_SESSION_ATTACH, EVENT_RENDERER_ATTACH,
+                            EVENT_HOT_RELOAD_RESTORE, EVENT_HOT_RELOAD_COMPLETE,
+                            EVENT_HOT_RELOAD_GENERATION_HANDOFF, EVENT_MOBILE_RECOVERY,
+                            -> entry.state.equals("ready", true)
+                            EVENT_RUNTIME_TEARDOWN -> entry.state.equals("released", true)
+                            EVENT_HOT_RELOAD_PREPARE -> entry.state.equals("preparing", true)
+                            else -> false
+                        }
+
+// All other events describe module/session state or a fail-native reason.
+private fun logLifecycleSummary(context: Context, entry: LogEntry, separator: String): String {
+    val fields = entry.fields
     val state = entry.state?.let { stateLabel(context, it) }
     val reason = fields[LOG_FIELD_REASON]?.takeIf(String::isNotBlank)?.let { reasonLabel(context, it) }
     val problem = entry.level == LogLevel.Warning ||
@@ -1511,16 +1546,16 @@ private fun logSummary(
 
     val summary =
         when (entry.event) {
-            EVENT_FEATURE_SETTINGS_CHANGED -> join(
+            EVENT_FEATURE_SETTINGS_CHANGED -> joinLogSummaryParts(separator, 
                 switchLabel(context, R.string.diagnostics_log_setting_combined, fields["combinedStatusEnabled"]),
                 switchLabel(context, R.string.diagnostics_log_setting_keyguard, fields["keyguardEnabled"]),
                 switchLabel(context, R.string.diagnostics_log_setting_aod, fields["aodEnabled"]),
                 reason,
-            ).ifBlank { join(state, reason) }
+            ).ifBlank { joinLogSummaryParts(separator, state, reason) }
 
-            EVENT_VISUAL_SETTINGS_CHANGED -> join(state, reason)
+            EVENT_VISUAL_SETTINGS_CHANGED -> joinLogSummaryParts(separator, state, reason)
 
-            EVENT_DIAGNOSTICS_LEVEL -> join(
+            EVENT_DIAGNOSTICS_LEVEL -> joinLogSummaryParts(separator, 
                 when (fields[LOG_FIELD_LEVEL]) {
                     "detailed" -> context.getString(R.string.diagnostics_mode_detailed)
                     "general" -> context.getString(R.string.diagnostics_mode_basic)
@@ -1537,31 +1572,19 @@ private fun logSummary(
                     } else {
                         state
                     }
-                join(change, reason)
+                joinLogSummaryParts(separator, change, reason)
             }
 
-            EVENT_PRESENTATION_FAIL_NATIVE -> join(reason)
+            EVENT_PRESENTATION_FAIL_NATIVE -> joinLogSummaryParts(separator, reason)
 
             EVENT_AOD_STATE, EVENT_AOD_TARGET, EVENT_PRESENTATION_CUTOVER,
             EVENT_COMPATIBILITY_PROBE, EVENT_COMPATIBILITY_REVALIDATED,
             EVENT_HOOK_INSTALL, EVENT_HOOK_REPLACE, EVENT_SOURCE_INSTALL, EVENT_SOURCE_ATTACH,
-            -> join(state, reason)
+            -> joinLogSummaryParts(separator, state, reason)
 
             else -> {
-                val alreadyTold =
-                    !problem && reason == null &&
-                        when (entry.event) {
-                            EVENT_MODULE_LOADED, EVENT_MODULE_RELOADED, EVENT_RUNTIME_ATTACH,
-                            EVENT_RUNTIME_PREFERENCES_BIND, EVENT_DIAGNOSTICS_BIND,
-                            EVENT_HOST_RESTORE, EVENT_SESSION_ATTACH, EVENT_RENDERER_ATTACH,
-                            EVENT_HOT_RELOAD_RESTORE, EVENT_HOT_RELOAD_COMPLETE,
-                            EVENT_HOT_RELOAD_GENERATION_HANDOFF, EVENT_MOBILE_RECOVERY,
-                            -> entry.state.equals("ready", true)
-                            EVENT_RUNTIME_TEARDOWN -> entry.state.equals("released", true)
-                            EVENT_HOT_RELOAD_PREPARE -> entry.state.equals("preparing", true)
-                            else -> false
-                        }
-                join(
+                val alreadyTold = shouldElideLogSummaryState(entry, reason, problem)
+                joinLogSummaryParts(separator, 
                     if (alreadyTold) null else state,
                     reason,
                     if (problem && reason == null) {
@@ -1570,8 +1593,7 @@ private fun logSummary(
                 )
             }
         }
-
-    return summary.ifBlank { fallback }
+    return summary
 }
 
 private fun switchLabel(

@@ -119,4 +119,20 @@ class DiagnosticsLogPresentationTest {
         assertTrue(entry.raw.contains("sessionId=build-session"))
         assertTrue(entry.raw.contains("gamma=3"))
     }
+
+    @Test
+    fun compactLogSummaryElidesOnlyUnqualifiedRepeatedLifecycleStates() {
+        fun entry(event: String, state: String) = DiagLogParser.parse(
+            "10-29 09:20:12.456 1200 1200 I CombinedStatus: " +
+                DiagProtocol.format(event = event, component = "runtime", state = state),
+        )
+        val ready = entry("module.loaded", "ready")
+        assertTrue(shouldElideLogSummaryState(ready, null, false))
+        assertFalse(shouldElideLogSummaryState(ready, "native-read", false))
+        assertFalse(shouldElideLogSummaryState(ready, null, true))
+        assertFalse(shouldElideLogSummaryState(entry("module.loaded", "pending"), null, false))
+        assertTrue(shouldElideLogSummaryState(entry("runtime.teardown", "released"), null, false))
+        assertTrue(shouldElideLogSummaryState(entry("hotReload.prepare", "preparing"), null, false))
+        assertFalse(shouldElideLogSummaryState(entry("connectivity", "ready"), null, false))
+    }
 }
