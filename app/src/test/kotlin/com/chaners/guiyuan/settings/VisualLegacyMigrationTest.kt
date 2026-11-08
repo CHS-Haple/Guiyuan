@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.settings
 
+import com.chaners.guiyuan.settings.VisualPersistenceTest.MemoryPreferences
 import android.content.SharedPreferences
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
