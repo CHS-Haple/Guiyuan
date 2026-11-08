@@ -573,28 +573,7 @@ internal object OuterGeometry {
         val unavailableMarkStroke = BASE_UNAVAILABLE_MARK_STROKE * normalized
         val unavailableMarkHalfExtent = BASE_UNAVAILABLE_MARK_HALF_EXTENT * normalized
 
-        var lowerStep = 1f
-        var upperStep = 39.5f
-        repeat(SOLVER_ITERATIONS) {
-            val candidate = (lowerStep + upperStep) / 2f
-            val difference =
-                ringToDotEdgeGap(
-                    stepDegrees = candidate,
-                    ringStroke = ringStroke,
-                    dotRadius = dotRadius,
-                ) -
-                    dotToDotEdgeGap(
-                        stepDegrees = candidate,
-                        dotRadius = dotRadius,
-                    )
-            if (difference > 0f) {
-                lowerStep = candidate
-            } else {
-                upperStep = candidate
-            }
-        }
-
-        val step = (lowerStep + upperStep) / 2f
+        val step = solveOuterDotStep(ringStroke = ringStroke, dotRadius = dotRadius)
         val firstCenter =
             LOWER_OPENING_CENTER_DEGREES.toFloat() -
                 1.5f * step
@@ -621,23 +600,12 @@ internal object OuterGeometry {
         ))
         val outermostAllowed = 180.0 - 3.0 * bothSidesStep - endMargin
         val withSlotFirst = minOf(112.0, outermostAllowed)
-        // When neither bottom feature is enabled, balance *visible edge-to-edge*
-        // clearance, not merely angular center spacing. The half-circle ends
-        // at 0°/180° and is never shortened to balance the split dot clusters.
-        fun visualChordGap(angle: Double, halfWidthSum: Double): Double =
-            2.0 * RING_RADIUS * sin(Math.toRadians(angle / 2.0)) - halfWidthSum
-        var balancedLower = 90.0
-        var balancedUpper = outermostAllowed
-        repeat(20) {
-            val first = (balancedLower + balancedUpper) / 2.0
-            val inner = visualChordGap(2.0 * first - 180.0, 2.0 * splitDotRadius)
-            val edge = visualChordGap(
-                180.0 - first - 3.0 * bothSidesStep,
-                splitDotRadius + ringStroke / 2.0,
-            )
-            if (inner > edge) balancedUpper = first else balancedLower = first
-        }
-        val balancedFirst = (balancedLower + balancedUpper) / 2.0
+        val balancedFirst = balanceBothSidesFirst(
+            outermostAllowed = outermostAllowed,
+            bothSidesStep = bothSidesStep,
+            splitDotRadius = splitDotRadius,
+            ringStroke = ringStroke,
+        )
         // Wider only at extreme weights, when neighboring dots would otherwise touch.
         val horizontalDotSpan = max(DUAL_DOT_SPAN, 6f * dualDotRadius + 2f)
         val naturalRowGap = DUAL_BASE_ROW_GAP * normalized
@@ -673,6 +641,57 @@ internal object OuterGeometry {
             bothSidesWithSlotFirstDegrees = withSlotFirst,
             bothSidesBalancedFirstDegrees = balancedFirst,
         )
+    }
+
+    // Match the opening ring-to-dot gap with the nearest dot-to-dot gap.
+    private fun solveOuterDotStep(ringStroke: Float, dotRadius: Float): Float {
+        var lowerStep = 1f
+        var upperStep = 39.5f
+        repeat(SOLVER_ITERATIONS) {
+            val candidate = (lowerStep + upperStep) / 2f
+            val difference =
+                ringToDotEdgeGap(
+                    stepDegrees = candidate,
+                    ringStroke = ringStroke,
+                    dotRadius = dotRadius,
+                ) -
+                    dotToDotEdgeGap(
+                        stepDegrees = candidate,
+                        dotRadius = dotRadius,
+                    )
+            if (difference > 0f) {
+                lowerStep = candidate
+            } else {
+                upperStep = candidate
+            }
+        }
+
+        return (lowerStep + upperStep) / 2f
+    }
+
+    private fun balanceBothSidesFirst(
+        outermostAllowed: Double,
+        bothSidesStep: Double,
+        splitDotRadius: Float,
+        ringStroke: Float,
+    ): Double {
+        // When neither bottom feature is enabled, balance *visible edge-to-edge*
+        // clearance, not merely angular center spacing. The half-circle ends
+        // at 0°/180° and is never shortened to balance the split dot clusters.
+        fun visualChordGap(angle: Double, halfWidthSum: Double): Double =
+            2.0 * RING_RADIUS * sin(Math.toRadians(angle / 2.0)) - halfWidthSum
+        var balancedLower = 90.0
+        var balancedUpper = outermostAllowed
+        repeat(20) {
+            val first = (balancedLower + balancedUpper) / 2.0
+            val inner = visualChordGap(2.0 * first - 180.0, 2.0 * splitDotRadius)
+            val edge = visualChordGap(
+                180.0 - first - 3.0 * bothSidesStep,
+                splitDotRadius + ringStroke / 2.0,
+            )
+            if (inner > edge) balancedUpper = first else balancedLower = first
+        }
+        return (balancedLower + balancedUpper) / 2.0
     }
 
     private fun ringToDotEdgeGap(
