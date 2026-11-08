@@ -200,7 +200,6 @@ internal data class RenderModel(
                 },
             )
         }
-        // Slot mapping belongs to the platform; data-SIM preference cannot set row order.
         private fun resolveDualLevels(
             snapshot: StatusStateStore.Snapshot,
             presentation: PresentationStore.Snapshot,
@@ -208,64 +207,63 @@ internal data class RenderModel(
             mobileRecoveryPending: Boolean,
             nativeNoSimVisible: Boolean,
         ): DualMobileLevels? {
-        // Use platform slot identity; subscription IDs and data-SIM preference
-        // are not the SIM1/SIM2 row order.
-        val dualLevels =
-            if (dualSignalEnabled && snapshot.airplaneMode == false &&
-                !mobileRecoveryPending && !nativeNoSimVisible
-            ) {
-                val native = presentation.mobilePresentation
-                val slots = native?.slotSubscriptionIds
-                val sim1Id = slots?.get(0)
-                val sim2Id = slots?.get(1)
-                if (native != null &&
-                    native.activeSubsAuthoritative &&
-                    (native.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED ||
-                        native.mode == NativePresentationResolver.Mode.DUAL_SEPARATE) &&
-                    native.activeSubscriptionIds.size == 2 &&
-                    native.platformActiveSubscriptionIds ==
-                        native.activeSubscriptionIds.toSet() &&
-                    slots?.size == 2 &&
-                    sim1Id != null && sim2Id != null && sim1Id != sim2Id &&
-                    sim1Id in native.activeSubscriptionIds &&
-                    sim2Id in native.activeSubscriptionIds
+            // Use platform slot identity; subscription IDs and data-SIM preference
+            // are not the SIM1/SIM2 row order.
+            val dualLevels =
+                if (dualSignalEnabled && snapshot.airplaneMode == false &&
+                    !mobileRecoveryPending && !nativeNoSimVisible
                 ) {
-                    val first = snapshot.mobile[sim1Id]?.signal
-                    val second = snapshot.mobile[sim2Id]?.signal
-                    if (
-                        first != null && second != null &&
-                        first !is SignalStrength.Unavailable &&
-                        second !is SignalStrength.Unavailable
+                    val native = presentation.mobilePresentation
+                    val slots = native?.slotSubscriptionIds
+                    val sim1Id = slots?.get(0)
+                    val sim2Id = slots?.get(1)
+                    if (native != null &&
+                        native.activeSubsAuthoritative &&
+                        (native.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED ||
+                            native.mode == NativePresentationResolver.Mode.DUAL_SEPARATE) &&
+                        native.activeSubscriptionIds.size == 2 &&
+                        native.platformActiveSubscriptionIds ==
+                            native.activeSubscriptionIds.toSet() &&
+                        slots?.size == 2 &&
+                        sim1Id != null && sim2Id != null && sim1Id != sim2Id &&
+                        sim1Id in native.activeSubscriptionIds &&
+                        sim2Id in native.activeSubscriptionIds
                     ) {
-                        // An unknown level is dim, not a confirmed zero-bar reading.
-                        DualMobileLevels(
-                            sim1 = (first as? SignalStrength.Level)?.value?.coerceIn(0, 4),
-                            sim2 = (second as? SignalStrength.Level)?.value?.coerceIn(0, 4),
-                        )
+                        val first = snapshot.mobile[sim1Id]?.signal
+                        val second = snapshot.mobile[sim2Id]?.signal
+                        if (
+                            first != null && second != null &&
+                            first !is SignalStrength.Unavailable &&
+                            second !is SignalStrength.Unavailable
+                        ) {
+                            // An unknown level is dim, not a confirmed zero-bar reading.
+                            DualMobileLevels(
+                                sim1 = (first as? SignalStrength.Level)?.value?.coerceIn(0, 4),
+                                sim2 = (second as? SignalStrength.Level)?.value?.coerceIn(0, 4),
+                            )
+                        } else null
                     } else null
                 } else null
-            } else null
             return dualLevels
         }
 
-        // One aggregated root is authoritative for its activity drawable, not data-SIM ID.
         private fun resolveActivitySubscriptionId(
             presentation: PresentationStore.Snapshot,
             selectedSubscriptionId: Int,
         ): Int {
-        // In the native aggregate there is exactly one displayed mobile root.
-        // Its activity drawable is the presentation truth, even when its
-        // subscription ID differs from the default-data SIM (e.g. a native
-        // upstream Flow proxy projects SIM2 activity onto SIM1's visible root).
-        // Leave signal/data-SIM identity and separate-row selection unchanged.
-        val activitySubscriptionId =
-            presentation.mobilePresentation?.takeIf { native ->
-                native.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED &&
-                    native.nativeMobileReplacementReady &&
-                    native.activeSubsAuthoritative &&
-                    selectedSubscriptionId in native.activeSubscriptionIds &&
-                    native.presentationRootSubscriptionId in native.activeSubscriptionIds
-            }?.presentationRootSubscriptionId ?: selectedSubscriptionId
+            // In the native aggregate there is exactly one displayed mobile root.
+            // Its activity drawable is the presentation truth, even when its
+            // subscription ID differs from the default-data SIM (e.g. a native
+            // upstream Flow proxy projects SIM2 activity onto SIM1's visible root).
+            // Leave signal/data-SIM identity and separate-row selection unchanged.
+            val activitySubscriptionId =
+                presentation.mobilePresentation?.takeIf { native ->
+                    native.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED &&
+                        native.nativeMobileReplacementReady &&
+                        native.activeSubsAuthoritative &&
+                        selectedSubscriptionId in native.activeSubscriptionIds &&
+                        native.presentationRootSubscriptionId in native.activeSubscriptionIds
+                }?.presentationRootSubscriptionId ?: selectedSubscriptionId
             return activitySubscriptionId
         }
 
