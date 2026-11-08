@@ -5,7 +5,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
-import top.yukonga.miuix.kmp.icon.extended.Share
 
 // The published MIUIX baseline has no Glass icon module. Preserve legacy fallbacks.
 internal val Os4GlassEdit: ImageVector get() = MiuixIcons.Edit
