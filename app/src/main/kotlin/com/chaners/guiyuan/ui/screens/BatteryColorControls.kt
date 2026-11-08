@@ -9,16 +9,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.system.SheetTrace
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.settings.UiStyle
@@ -146,6 +150,7 @@ internal fun BatteryColorBottomSheet(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
+    val uiStyle = LocalUiStyle.current
     var detailRequest by remember(show) { mutableStateOf<DetailRequest?>(null) }
     var showDetail by remember(show) { mutableStateOf(false) }
     var requestedSchemeKey by remember(show) { mutableStateOf<String?>(null) }
@@ -166,6 +171,8 @@ internal fun BatteryColorBottomSheet(
             detailCustom != null &&
             detailSlot != null
 
+    SideEffect { SheetTrace.observe(show, detailRequest != null, detailVisible) }
+
     // Capture only the first sheet, not the glass surfaces above it.
     val sheetColor = MiuixTheme.colorScheme.background
     val sheetBackdrop = if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
@@ -179,7 +186,11 @@ internal fun BatteryColorBottomSheet(
         show = show,
         modifier = Modifier
             .fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION)
-            .then(if (sheetBackdrop != null) Modifier.layerBackdrop(sheetBackdrop) else Modifier),
+            .then(if (sheetBackdrop != null) Modifier.layerBackdrop(sheetBackdrop) else Modifier)
+            .drawWithContent {
+                SheetTrace.draw(parent = true)
+                drawContent()
+            },
         title = stringResource(R.string.battery_colors),
         backgroundColor = MiuixTheme.colorScheme.background,
         insideMargin = DpSize(0.dp, 0.dp),
@@ -196,6 +207,7 @@ internal fun BatteryColorBottomSheet(
         allowDismiss = detailRequest == null,
         onDismissRequest = {
             if (detailRequest == null) {
+                SheetTrace.record("parent.dismiss.request")
                 onDismiss()
             }
         },
@@ -217,6 +229,7 @@ internal fun BatteryColorBottomSheet(
                         )
                 },
                 onOpenCustomSlot = { id, slot ->
+                    SheetTrace.open(uiStyle.toString())
                     detailRequest = DetailRequest(customId = id, slot = slot)
                     showDetail = true
                 },
@@ -263,7 +276,11 @@ internal fun BatteryColorBottomSheet(
         UiOverlayBottomSheet(
             show = detailVisible,
             modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION)
-                .then(if (detailBackdrop != null) Modifier.layerBackdrop(detailBackdrop) else Modifier),
+                .then(if (detailBackdrop != null) Modifier.layerBackdrop(detailBackdrop) else Modifier)
+                .drawWithContent {
+                    SheetTrace.draw(parent = false)
+                    drawContent()
+                },
             title =
                 detailSlot?.let { slot ->
                     stringResource(
@@ -278,7 +295,10 @@ internal fun BatteryColorBottomSheet(
                 TooltipBox(text = stringResource(R.string.back)) {
                     if (LocalUiStyle.current == UiStyle.OS4) {
                         GlassIconButton(
-                            onClick = { showDetail = false },
+                            onClick = {
+                                SheetTrace.record("child.close.header")
+                                showDetail = false
+                            },
                             backdrop = sheetBackdrop,
                         ) {
                             Icon(
@@ -288,7 +308,10 @@ internal fun BatteryColorBottomSheet(
                             )
                         }
                     } else {
-                        IconButton(onClick = { showDetail = false }) {
+                        IconButton(onClick = {
+                            SheetTrace.record("child.close.header")
+                            showDetail = false
+                        }) {
                             Icon(
                                 imageVector = MiuixIcons.Back,
                                 contentDescription = stringResource(R.string.back),
@@ -298,13 +321,23 @@ internal fun BatteryColorBottomSheet(
                     }
                 }
             },
-            onDismissRequest = { showDetail = false },
+            onDismissRequest = {
+                SheetTrace.record("child.close.native")
+                showDetail = false
+            },
             onDismissFinished = {
                 if (!showDetail) {
+                    SheetTrace.finish()
                     detailRequest = null
+                } else {
+                    SheetTrace.record("child.finish.ignored.reopened")
                 }
             },
         ) {
+            DisposableEffect(Unit) {
+                SheetTrace.record("child.content.enter")
+                onDispose { SheetTrace.record("child.content.dispose") }
+            }
             if (detailCustom != null && detailSlot != null) {
                 CompositionLocalProvider(LocalGlassBackdrop provides detailBackdrop) {
                     BatteryCustomModeEditor(
@@ -338,6 +371,7 @@ internal fun BatteryColorBottomSheet(
                     )?.let { id ->
                         requestedSchemeKey = customSchemeKey(id)
                         request.targetSlot?.let { slot ->
+                            SheetTrace.open(uiStyle.toString())
                             detailRequest = DetailRequest(customId = id, slot = slot)
                             showDetail = true
                         }

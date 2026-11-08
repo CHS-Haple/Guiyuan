@@ -44,6 +44,11 @@ internal object DiagReport {
                 appendLine()
             }
             appendRuntimeLog(log, logLines, omitted)
+            if (SheetTrace.hasEvents()) {
+                appendLine("[Battery sheet lifecycle probe]")
+                SheetTrace.reportLines().forEach(::appendLine)
+                appendLine()
+            }
             appendLine("[Report]")
             appendLine("generatedAt=" + snapshot.capturedAt)
         }
