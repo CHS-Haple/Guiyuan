@@ -70,7 +70,6 @@ import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.icons.Os4GlassFilter
 import com.chaners.guiyuan.ui.icons.Os4GlassMore
-import com.chaners.guiyuan.ui.icons.Os4GlassShare
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.DiagSettings
 import com.chaners.guiyuan.settings.DiagRepo
@@ -394,7 +393,7 @@ internal fun DiagnosticsScreen(
                 enabled = reportEnabled,
             ) {
                 Icon(
-                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassShare else MiuixIcons.Share,
+                    imageVector = MiuixIcons.Share,
                     contentDescription = exportTitle,
                     modifier = Modifier.size(24.dp),
                 )

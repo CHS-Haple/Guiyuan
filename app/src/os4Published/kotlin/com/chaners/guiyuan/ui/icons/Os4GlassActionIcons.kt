@@ -11,4 +11,3 @@ import top.yukonga.miuix.kmp.icon.extended.Share
 internal val Os4GlassEdit: ImageVector get() = MiuixIcons.Edit
 internal val Os4GlassCopy: ImageVector get() = MiuixIcons.Copy
 internal val Os4GlassDelete: ImageVector get() = MiuixIcons.Delete
-internal val Os4GlassShare: ImageVector get() = MiuixIcons.Share
