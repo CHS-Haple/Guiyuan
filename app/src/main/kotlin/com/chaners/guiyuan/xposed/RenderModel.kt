@@ -5,7 +5,6 @@ import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
 import com.chaners.guiyuan.xposed.network.ConnectivityPolicy
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.SignalStrength
-import com.chaners.guiyuan.xposed.network.SysUiConnectivitySource
 
 // Null is an observed unknown level; absent or unavailable signals do not form dual rows.
 internal data class DualMobileLevels(val sim1: Int?, val sim2: Int?)
@@ -23,6 +22,7 @@ internal data class RenderModel(
         BatterySemanticState.NORMAL,
     val batterySystemSemanticColor: Int? = null,
     val dualMobileLevels: DualMobileLevels? = null,
+    val networkActivityObserved: Boolean = false,
 ) {
     companion object {
         fun from(
@@ -173,6 +173,15 @@ internal data class RenderModel(
 
             val activitySubscriptionId =
                 resolveActivitySubscriptionId(presentation, selectedSubscriptionId)
+            val mobileActivityObserved =
+                activitySubscriptionId in snapshot.mobileActivityObservedIds ||
+                    activitySubscriptionId in snapshot.mobileActivityVisibilityObservedIds
+            val mobileActivityVisible =
+                activitySubscriptionId !in snapshot.mobileActivityVisibilityObservedIds ||
+                    activitySubscriptionId in snapshot.mobileActivityShownIds
+            val nativeMobileActivityId =
+                snapshot.mobileActivityResIds[activitySubscriptionId]
+                    ?.takeIf { mobileActivityVisible }
 
             return RenderModel(
                 batteryPercent = batteryPercent,
@@ -181,22 +190,26 @@ internal data class RenderModel(
                 chargingIconResId = battery.chargingIconResId,
                 networkActivityResId = when (centerIndicator) {
                     is CenterIndicator.Wifi -> snapshot.wifiActivityResId
-                    is CenterIndicator.MobileType ->
-                        snapshot.mobileActivityResIds[activitySubscriptionId]
+                    is CenterIndicator.MobileType -> nativeMobileActivityId
                     CenterIndicator.Empty ->
                         if (
-                            presentation.connectivity.known &&
-                            presentation.connectivity.transport ==
-                                SysUiConnectivitySource.Transport.NONE &&
-                            presentation.connectivity.mobileDataEnabled != false &&
                             snapshot.wifi is StatusStateStore.WifiState.Hidden &&
                             !airplaneMode && !mobileRecoveryPending &&
                             !nativeNoSimVisible && !mobileUnavailableMark
                         ) {
-                            // Native activity can remain visible during a default-network handoff.
-                            snapshot.mobileActivityResIds[activitySubscriptionId]
+                            // Native collector visibility remains the authority even
+                            // while the independently observed default network changes.
+                            nativeMobileActivityId
                         } else null
                     else -> null
+                },
+                networkActivityObserved = when (centerIndicator) {
+                    is CenterIndicator.Wifi -> snapshot.wifiActivityObserved
+                    is CenterIndicator.MobileType -> mobileActivityObserved
+                    CenterIndicator.Empty ->
+                        snapshot.wifi is StatusStateStore.WifiState.Hidden &&
+                            mobileActivityObserved
+                    else -> true
                 },
                 mobileLevel = mobileLevel,
                 mobileUnavailableMark = mobileUnavailableMark,
