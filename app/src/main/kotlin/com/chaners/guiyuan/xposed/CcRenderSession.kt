@@ -473,10 +473,8 @@ internal object CcRenderSession {
         }
 
         fun emit(message: String) {
-            try {
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
                 if (isDetailedDiagnosticsEnabled()) onEvent(message)
-            } catch (error: Throwable) {
-                SysUiPresentationRuntime.throwIfFatal(error)
             }
         }
 
@@ -687,11 +685,7 @@ internal object CcRenderSession {
                 { hostView?.overlay?.remove(renderView) },
                 { if (notify) onProjectionReadinessChanged(false) },
             )
-            try {
-                emitEvent { "controlCenterProjection cleanup source=" + source }
-            } catch (error: Throwable) {
-                SysUiPresentationRuntime.throwIfFatal(error)
-            }
+            emitEvent { "controlCenterProjection cleanup source=" + source }
         }
 
         fun visualState(): String =
