@@ -94,6 +94,30 @@ class StatusStateStoreActivityTest {
     }
 
     @Test
+    fun nativeVisibilityNoOpRetainsTheAppliedChildDrawable() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateMobileActivity(1, 220)
+        val shown = StatusStateStore.updateMobileActivityVisibility(1, 220, true)
+            ?: error("initial native visibility is required")
+        assertEquals(220, shown.mobileActivityResIds[1])
+
+        // Native visibility flow can temporarily hide the root without
+        // writing a new child visibility or drawable.
+        val rootHidden = StatusStateStore.updateMobileActivityVisibility(1, 220, false)
+            ?: error("root hidden must change effective visibility")
+        assertEquals(220, rootHidden.mobileActivityResIds[1])
+        assertTrue(1 !in rootHidden.mobileActivityShownIds)
+
+        // On root return the OEM child may remain VISIBLE; no resource emit
+        // is required to display the same native drawable again.
+        val visibleAgain = StatusStateStore.updateMobileActivityVisibility(1, 220, true)
+            ?: error("root reappearance must restore effective visibility")
+        assertEquals(220, visibleAgain.mobileActivityResIds[1])
+        assertTrue(1 in visibleAgain.mobileActivityShownIds)
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
     fun nativeHiddenStateSurvivesHotReloadUntilNewVisibilityObservation() {
         val saved = StatusStateStore.Snapshot(
             mobileActivityResIds = mapOf(1 to 220),
