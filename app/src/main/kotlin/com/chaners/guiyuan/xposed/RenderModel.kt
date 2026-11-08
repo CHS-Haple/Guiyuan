@@ -200,6 +200,7 @@ internal data class RenderModel(
                 },
             )
         }
+
         private fun resolveDualLevels(
             snapshot: StatusStateStore.Snapshot,
             presentation: PresentationStore.Snapshot,
@@ -266,6 +267,5 @@ internal data class RenderModel(
                 }?.presentationRootSubscriptionId ?: selectedSubscriptionId
             return activitySubscriptionId
         }
-
     }
 }
