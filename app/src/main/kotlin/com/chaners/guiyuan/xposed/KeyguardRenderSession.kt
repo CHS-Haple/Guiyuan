@@ -901,10 +901,8 @@ internal object KeyguardRenderSession {
         }
 
         private inline fun emitEvent(message: () -> String) {
-            try {
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
                 if (isDetailedDiagnosticsEnabled()) onEvent(message())
-            } catch (error: Throwable) {
-                SysUiPresentationRuntime.throwIfFatal(error)
             }
         }
     }

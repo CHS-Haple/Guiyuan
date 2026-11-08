@@ -106,11 +106,7 @@ internal object SysUiPresentationOwner {
 
     // Diagnostic sinks must not interrupt native layout or its readiness callbacks.
     internal inline fun emitDiagnostic(block: () -> Unit) {
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-        }
+        SysUiPresentationRuntime.emitPassiveDiagnostic(block)
     }
 
     internal fun rethrowFatal(error: Throwable) {
