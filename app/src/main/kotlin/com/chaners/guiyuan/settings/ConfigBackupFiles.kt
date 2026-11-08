@@ -61,7 +61,8 @@ internal class ConfigBackupFiles(private val context: Context) {
 }
 
 // SharedPreferences commits may partially mutate memory before returning false or throwing.
-// Compensate every store whose write was attempted, without claiming cross-store atomicity.
+// Catch store failures to compensate each attempted write, then preserve cancellation and causes.
+@Suppress("TooGenericExceptionCaught")
 internal fun restoreBackupStores(
     restoreVisual: () -> Boolean,
     restoreFeature: () -> Boolean,
