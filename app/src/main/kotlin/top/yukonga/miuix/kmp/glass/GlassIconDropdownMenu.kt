@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +27,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Density
+import kotlinx.coroutines.flow.first
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -40,6 +43,7 @@ import top.yukonga.miuix.kmp.layout.CascadingPopupDefaults
  * apply to an open submenu.
  * The secondary backdrop combines [secondaryBackdrop] with a recording of the primary popup,
  * excluding the secondary itself. Keep the supplied scene backdrop outside both popup layers.
+ * [onDismissFinished] fires after both the primary and the secondary have left the root host.
  */
 // The caller modifier belongs to the primary panel, not its full-page recording layer.
 @Suppress("ktlint:compose:modifier-not-used-at-root")
@@ -56,6 +60,7 @@ fun BoxScope.GlassIconDropdownMenu(
     sizing: GlassPopupSizing = GlassPopupSizing(),
     visuals: GlassPopupVisuals = GlassPopupDefaults.visuals(),
     collapseOnSelection: Boolean = entries.size <= 1,
+    onDismissFinished: (() -> Unit)? = null,
 ) {
     val density = LocalDensity.current
     var submenu by remember { mutableStateOf(false) }
@@ -77,8 +82,14 @@ fun BoxScope.GlassIconDropdownMenu(
         animationSpec = GlassMotion.transformBounds(show),
         label = "glassCascadeVisibility",
     )
+    val latestOnDismissFinished by rememberUpdatedState(onDismissFinished)
     LaunchedEffect(show) {
-        if (!show) submenu = false
+        if (!show) {
+            submenu = false
+            // Both popups own separate exit transitions; neither may unmount the other.
+            snapshotFlow { !anchor.contentHidden && !submenuPresent }.first { it }
+            latestOnDismissFinished?.invoke()
+        }
     }
 
     val primaryBackdrop = rememberLayerBackdrop()
