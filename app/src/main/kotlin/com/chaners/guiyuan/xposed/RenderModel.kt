@@ -189,12 +189,12 @@ internal data class RenderModel(
                     is CenterIndicator.MobileType -> nativeMobileActivityId
                     CenterIndicator.Empty ->
                         if (
-                            snapshot.wifi is StatusStateStore.WifiState.Hidden &&
                             !airplaneMode && !mobileRecoveryPending &&
                             !nativeNoSimVisible && !mobileUnavailableMark
                         ) {
-                            // Native collector visibility remains the authority even
-                            // while the independently observed default network changes.
+                            // Native visibility already accounts for Wi-Fi availability.
+                            // Do not gate a verified mobile activity on Guiyuan's
+                            // independently observed Wi-Fi state during a handoff.
                             nativeMobileActivityId
                         } else null
                     else -> null

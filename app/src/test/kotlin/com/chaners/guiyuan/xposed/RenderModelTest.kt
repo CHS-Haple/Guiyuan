@@ -118,6 +118,30 @@ class RenderModelTest {
     }
 
     @Test
+    fun nativeMobileActivityVisibilityOutranksTemporaryWifiStateWhenCenterIsEmpty() {
+        val observed = vpnHandoffActivity()
+        val lost = vpnHandoffPresentation()
+        for (wifi in listOf(
+            StatusStateStore.WifiState.Unknown,
+            StatusStateStore.WifiState.Visible(
+                iconResId = 12,
+                signal = SignalStrength.Level(3),
+            ),
+        )) {
+            val nativeVisible = RenderModel.from(observed.copy(wifi = wifi), lost, 1)
+            assertTrue(nativeVisible?.centerIndicator is CenterIndicator.Empty)
+            assertEquals(220, nativeVisible?.networkActivityResId)
+
+            val nativeHidden = RenderModel.from(
+                observed.copy(wifi = wifi, mobileActivityShownIds = emptySet()),
+                lost,
+                1,
+            )
+            assertNull(nativeHidden?.networkActivityResId)
+        }
+    }
+
+    @Test
     fun nativeDrawableWithoutVisibilityConfirmationRemainsHidden() {
         val observed = vpnHandoffActivity().copy(
             mobileActivityShownIds = emptySet(),
