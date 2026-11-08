@@ -2,6 +2,8 @@ package com.chaners.guiyuan.settings
 
 import android.content.SharedPreferences
 
+// Android's SharedPreferences contract requires the full method surface in this test double.
+@Suppress("TooManyFunctions")
 internal class VisualTestPreferences : SharedPreferences {
     private val values = mutableMapOf<String, Any>()
     var writeCount = 0
@@ -38,6 +40,7 @@ internal class VisualTestPreferences : SharedPreferences {
 
     override fun edit(): SharedPreferences.Editor = Editor()
 
+    @Suppress("TooManyFunctions")
     private inner class Editor : SharedPreferences.Editor {
         private val changes = linkedMapOf<String, Any?>()
         private var clearFirst = false
