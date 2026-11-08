@@ -826,34 +826,7 @@ private fun SandboxSegmentedField(
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val glass = LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()
-        val requiredWidth = if (glass) {
-            val measurer = rememberTextMeasurer()
-            val density = LocalDensity.current
-            val layoutDirection = LocalLayoutDirection.current
-            val selectedStyle = MiuixTheme.textStyles.subtitle
-            val idleStyle = MiuixTheme.textStyles.body2
-            remember(options, measurer, density, layoutDirection, selectedStyle, idleStyle) {
-                val widest = options.maxOfOrNull { option ->
-                    val text = AnnotatedString(option)
-                    maxOf(
-                        measurer.measure(text, style = selectedStyle, softWrap = false, maxLines = 1).size.width,
-                        measurer.measure(text, style = idleStyle, softWrap = false, maxLines = 1).size.width,
-                    )
-                } ?: 0
-                val spacing = with(density) {
-                    (
-                        GlassSegmentedTabRowDefaults.TrackPadding * 2 +
-                            GlassSegmentedTabRowDefaults.TabPaddingHorizontal * (options.size * 2) +
-                            GlassSegmentedTabRowDefaults.TabGap * (options.size - 1).coerceAtLeast(0) +
-                            SandboxPreferenceInsideMargin.calculateStartPadding(layoutDirection) +
-                            SandboxPreferenceInsideMargin.calculateEndPadding(layoutDirection)
-                        ).roundToPx()
-                }
-                widest * options.size + spacing
-            }
-        } else {
-            0
-        }
+        val requiredWidth = if (glass) sandboxSegmentedRequiredWidth(options) else 0
 
         if (glass && requiredWidth > constraints.maxWidth) {
             // Equal-width segments cannot fit these labels; show the full options in a popup.
@@ -887,6 +860,35 @@ private fun SandboxSegmentedField(
                 },
             )
         }
+    }
+}
+
+
+@Composable
+private fun sandboxSegmentedRequiredWidth(options: List<String>): Int {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
+    val selectedStyle = MiuixTheme.textStyles.subtitle
+    val idleStyle = MiuixTheme.textStyles.body2
+    return remember(options, measurer, density, layoutDirection, selectedStyle, idleStyle) {
+        val widest = options.maxOfOrNull { option ->
+            val text = AnnotatedString(option)
+            maxOf(
+                measurer.measure(text, style = selectedStyle, softWrap = false, maxLines = 1).size.width,
+                measurer.measure(text, style = idleStyle, softWrap = false, maxLines = 1).size.width,
+            )
+        } ?: 0
+        val spacing = with(density) {
+            (
+                GlassSegmentedTabRowDefaults.TrackPadding * 2 +
+                    GlassSegmentedTabRowDefaults.TabPaddingHorizontal * (options.size * 2) +
+                    GlassSegmentedTabRowDefaults.TabGap * (options.size - 1).coerceAtLeast(0) +
+                    SandboxPreferenceInsideMargin.calculateStartPadding(layoutDirection) +
+                    SandboxPreferenceInsideMargin.calculateEndPadding(layoutDirection)
+                ).roundToPx()
+        }
+        widest * options.size + spacing
     }
 }
 
