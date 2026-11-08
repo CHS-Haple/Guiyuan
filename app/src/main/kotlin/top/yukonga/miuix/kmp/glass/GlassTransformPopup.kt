@@ -516,7 +516,7 @@ internal fun transformPanelAlpha(
 }
 
 /** The panel's rectangle partway from the control's own to the menu's. */
-private fun transformFrame(
+private fun androidx.compose.ui.unit.Density.transformFrame(
     anchor: Rect,
     end: Size,
     page: Size,
@@ -540,7 +540,16 @@ private fun transformFrame(
             right = centerX + width / 2f,
             bottom = centerY + height / 2f,
         ),
-        cornerRadius = startRadius + (endRadius - startRadius) * sizeFraction,
+        cornerRadius = if (anchor.width > 0f && anchor.height > 0f && end.width > 0f && end.height > 0f) {
+            val anchorHalf = minOf(anchor.width, anchor.height) / 2f
+            val endHalf = minOf(end.width, end.height) / 2f
+            val currentHalf = minOf(width, height).coerceAtLeast(0f) / 2f
+            val startRoundness = (startRadius.toPx() / anchorHalf).coerceIn(0f, 1f)
+            val endRoundness = (endRadius.toPx() / endHalf).coerceIn(0f, 1f)
+            (currentHalf * lerp(startRoundness, endRoundness, sizeFraction).coerceIn(0f, 1f)).toDp()
+        } else {
+            startRadius + (endRadius - startRadius) * sizeFraction
+        },
     )
 }
 
