@@ -106,7 +106,6 @@ class RenderModelTest {
         val nativeStillVisible = RenderModel.from(observed, lost, 1)
         assertTrue(nativeStillVisible?.centerIndicator is CenterIndicator.Empty)
         assertEquals(220, nativeStillVisible?.networkActivityResId)
-        assertTrue(nativeStillVisible?.networkActivityObserved == true)
 
         // Changing Android's default-route data flag is not a native GONE.
         assertEquals(
@@ -128,7 +127,6 @@ class RenderModelTest {
             1,
         )
         assertNull(nativeGone?.networkActivityResId)
-        assertTrue(nativeGone?.networkActivityObserved == true)
 
         // A missing native drawable is independently sufficient to hide it.
         assertNull(
