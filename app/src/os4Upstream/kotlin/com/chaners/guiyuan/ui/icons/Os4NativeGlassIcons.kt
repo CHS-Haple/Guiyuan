@@ -23,7 +23,6 @@ internal val Os4GlassRefresh: ImageVector get() = MiuixIcons.Glass.Regular.Refre
 internal val Os4GlassFilter: ImageVector get() = MiuixIcons.Glass.Regular.Filter
 internal val Os4GlassMore: ImageVector get() = MiuixIcons.Glass.Regular.More
 
-
 internal val Os4GlassEdit: ImageVector get() = MiuixIcons.Glass.Regular.Edit
 internal val Os4GlassCopy: ImageVector get() = MiuixIcons.Glass.Regular.Copy
 internal val Os4GlassDelete: ImageVector get() = MiuixIcons.Glass.Regular.Delete

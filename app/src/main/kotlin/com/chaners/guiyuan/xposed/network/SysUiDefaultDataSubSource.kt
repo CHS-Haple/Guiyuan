@@ -147,7 +147,7 @@ internal object SysUiDefaultDataSubSource {
                 deliverSubscription(next, force, deliver)
             } catch (error: Throwable) {
                 rethrowFatal(error)
-                readOrNull {
+                SysUiPresentationRuntime.emitPassiveDiagnostic {
                     onEvent?.invoke(
                         "defaultDataSubscription delivery-failed type=" +
                             error.javaClass.simpleName + " source=" + source,
@@ -156,7 +156,7 @@ internal object SysUiDefaultDataSubSource {
                 return
             }
         if (!changed) return
-        readOrNull {
+        SysUiPresentationRuntime.emitPassiveDiagnostic {
             onEvent?.invoke(
                 "defaultDataSubscription id=" + next +
                     " source=" + source,

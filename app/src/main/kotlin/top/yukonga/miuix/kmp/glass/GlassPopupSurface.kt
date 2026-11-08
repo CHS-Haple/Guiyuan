@@ -179,7 +179,7 @@ internal fun GlassPopupSurface(
                     while (true) {
                         val event = awaitPointerEvent(PointerEventPass.Initial)
                         val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                        // A consumed up event is cancellation, not an intentional outside release.
+                        // System cancellation is a consumed up event, not an outside release.
                         val released = change.changedToUp()
                         change.consume()
                         if (!change.pressed) {
@@ -280,7 +280,7 @@ internal fun GlassPopupSurface(
             foreground.placeWithLayer(0, 0) {
                 transformOrigin = TransformOrigin(0f, 0f)
                 contentLayer(measured.end, measured.rect)
-                // Preserve the frame's subpixel origin without changing the measured viewport.
+                // Use this frame's bounds, including the scroll viewport, without rounding its motion.
                 translationX = measured.rect.left - measured.rect.left.roundToInt()
                 translationY = measured.rect.top - measured.rect.top.roundToInt()
             }

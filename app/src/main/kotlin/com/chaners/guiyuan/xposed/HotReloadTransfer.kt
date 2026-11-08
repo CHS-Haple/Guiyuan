@@ -87,9 +87,12 @@ internal object HotReloadTransfer {
             else -> null
         }
 
+    // All released transfer generations capture an Int version; do not coerce other Numbers.
+    internal fun readPayloadVersion(raw: Any?): Int? = raw as? Int
+
     fun restore(raw: Any?): Restored? {
         val payload = raw as? Array<*> ?: return null
-        val version = (payload.getOrNull(INDEX_VERSION) as? Number)?.toInt()
+        val version = readPayloadVersion(payload.getOrNull(INDEX_VERSION))
             ?: return null
         val expectedSize = payloadSizeFor(version) ?: return null
         if (payload.size != expectedSize) {
@@ -162,9 +165,8 @@ internal object HotReloadTransfer {
                 host.javaClass.name == CONTROL_CENTER_FAKE_ROOT_CLASS_NAME
         }
 
-    private fun readOpaqueTint(payload: Array<*>, index: Int): Int? =
-        (payload.getOrNull(index) as? Number)
-            ?.toInt()
+    internal fun readOpaqueTint(payload: Array<*>, index: Int): Int? =
+        (payload.getOrNull(index) as? Int)
             ?.takeIf(::isOpaqueEnoughForPresentation)
 
     private fun isOpaqueEnoughForPresentation(color: Int): Boolean =

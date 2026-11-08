@@ -208,7 +208,9 @@ internal object SysUiSceneSource {
             } catch (error: Throwable) {
                 SysUiPresentationRuntime.throwIfFatal(error)
                 if (warned.compareAndSet(false, true)) {
-                    readOrNull { Log.w("Guiyuan[Scene]", "Diagnostic failed", error) }
+                    SysUiPresentationRuntime.emitPassiveDiagnostic {
+                        Log.w("Guiyuan[Scene]", "Diagnostic failed", error)
+                    }
                 }
             }
         }

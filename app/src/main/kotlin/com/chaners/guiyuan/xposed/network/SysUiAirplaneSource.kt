@@ -121,7 +121,7 @@ internal object SysUiAirplaneSource {
                 deliverState(enabled, force, deliver)
             } catch (error: Throwable) {
                 rethrowFatal(error)
-                readOrNull {
+                SysUiPresentationRuntime.emitPassiveDiagnostic {
                     onEvent?.invoke(
                         "airplaneState delivery-failed type=" +
                             error.javaClass.simpleName + " source=" + source,
@@ -130,7 +130,7 @@ internal object SysUiAirplaneSource {
                 return
             }
         if (!changed) return
-        readOrNull {
+        SysUiPresentationRuntime.emitPassiveDiagnostic {
             onEvent?.invoke(
                 "airplaneState setting enabled=" + enabled +
                     " source=" + source,

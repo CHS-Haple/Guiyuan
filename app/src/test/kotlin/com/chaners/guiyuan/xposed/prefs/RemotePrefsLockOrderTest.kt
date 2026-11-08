@@ -306,6 +306,8 @@ class RemotePrefsLockOrderTest {
             }
         }
 
+    // Preserve the complete SharedPreferences API while simulating lock and callback races.
+    @Suppress("TooManyFunctions")
     private class LockedPrefs : SharedPreferences {
         private val lock = Any()
         private val listeners = linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()

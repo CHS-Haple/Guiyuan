@@ -67,7 +67,7 @@ internal object SysUiConnectivitySource {
                 onState(state)
             } catch (error: Throwable) {
                 rethrowFatal(error)
-                readOrNull {
+                SysUiPresentationRuntime.emitPassiveDiagnostic {
                     onEvent?.invoke(
                         "connectivity delivery-failed source=" + source +
                             " type=" + error.javaClass.simpleName,
@@ -78,7 +78,7 @@ internal object SysUiConnectivitySource {
             // Native observers still receive every callback; only log new effective states.
             if (onEvent != null && state != lastLoggedState) {
                 lastLoggedState = state
-                readOrNull {
+                SysUiPresentationRuntime.emitPassiveDiagnostic {
                     onEvent.invoke(
                         "connectivity source=" + source +
                             " transport=" + state.transport.name +
