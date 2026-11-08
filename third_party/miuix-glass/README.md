@@ -91,7 +91,7 @@ These long-form records are **historical**, not current build instructions. For 
 | Upstream change | Guiyuan assessment |
 | --- | --- |
 | `799d3d09` material-alpha preservation | Local `GlassTransformPopup.kt` is byte-identical to the updated official source. Still verify popup/button material and fade against actual UI behaviour before a broader module migration. |
-| `ba0fca0` navigation drag/indicator colours | Official drag retargeting, dynamic-theme primary accent and default inset handling differ from local `GlassNavigationBar.kt`. Retain existing noninteractive preview and bottom touch-safe extension while reviewing a narrow upstream logic migration. |
+| `ba0fca0` navigation drag/indicator colours | Candidate ported the **exact upstream gesture body**, drag-release selection retargeting and dynamic-theme primary tint into local `GlassNavigationBar.kt`; retained its caller-owned noninteractive preview, bottom touch-safe extension and nonnull backdrop. Android inset/Platform abstractions remain native to this Android-only app; device drag/RTL/dynamic-colour acceptance is pending. |
 | `b59ed570` animated display-cutout handling | MIUIX now supplements per-frame WindowInsetsAnimation cutout insets. Guiyuan intentionally disables upstream host-listener replacement via `LocalDisplayCutoutFixEnabled provides false` in `GyTheme`; do not enable another owner of the Activity's inset listeners without host/lifecycle evidence. |
 | `7d8ec89a` upstream ARM CI runners | Build infrastructure only; no Guiyuan runtime UI change. |
 | `ea1b935d` Glass 28dp canvas and popup sizing | Integrated in #1370 candidate via official native Glass icons and popup intrinsic sizing; device appearance/interaction not yet accepted. |
