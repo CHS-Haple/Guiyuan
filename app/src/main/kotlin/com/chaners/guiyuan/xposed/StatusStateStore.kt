@@ -101,7 +101,10 @@ internal object StatusStateStore {
     ): Snapshot? {
         if (subscriptionId < 0) return null
         val before = current
-        updateMobileActivity(subscriptionId, resourceId.takeIf { visible })
+        // Native visibility can change without a new drawable. Preserve the
+        // resource identity independently so a later native visibility-only
+        // event can reveal the original child image without manufacturing one.
+        updateMobileActivity(subscriptionId, resourceId)
         val nextShown = current.mobileActivityShownIds.toMutableSet().apply {
             if (visible) add(subscriptionId) else remove(subscriptionId)
         }
