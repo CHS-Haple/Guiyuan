@@ -205,6 +205,7 @@ internal object SysUiNetworkSource {
         onRuntimeFailure: (String, Throwable) -> Unit,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
         onMobileActivity: (subscriptionId: Int, resourceId: Int?) -> Unit,
+        onMobileActivityVisibility: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -252,6 +253,7 @@ internal object SysUiNetworkSource {
                 classLoader = classLoader,
                 onMobileSignal = onMobileSignal,
                 onMobileActivity = onMobileActivity,
+                onMobileActivityVisibility = onMobileActivityVisibility,
                 onPresentationChanged = onPresentationChanged,
                 onRuntimeFailure = onRuntimeFailure,
                 onEvent = diagnosticEvent,
@@ -449,6 +451,7 @@ internal object SysUiNetworkSource {
         classLoader: ClassLoader,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
         onMobileActivity: (subscriptionId: Int, resourceId: Int?) -> Unit,
+        onMobileActivityVisibility: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
@@ -626,7 +629,9 @@ internal object SysUiNetworkSource {
                                                 image.visibility == View.VISIBLE &&
                                                 image.drawable != null
                                         }
-                                    onMobileActivity(subId, taggedResId)
+                                    onMobileActivityVisibility(
+                                        subId, taggedResId, parentVisible && activityVisible,
+                                    )
                                     if (onEvent != null && isDetailedDiagnosticsEnabled()) {
                                         readOrNull {
                                             onEvent.invoke(
