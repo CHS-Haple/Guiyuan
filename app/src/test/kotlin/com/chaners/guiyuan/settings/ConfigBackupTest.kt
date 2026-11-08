@@ -535,6 +535,9 @@ class ConfigBackupTest {
                     curvedSignalDotOffsetY = -500f,
                     horizontalSignalDotOffsetY = 500f,
                     mobileTypeBottomOffsetY = -500f,
+                    bothSidesActivityScale = 500f,
+                    bothSidesActivityOffsetY = -500f,
+                    bothSidesChargingOffsetY = 500f,
                     topChargingIconScale = 500f,
                     combinedScale = 500f,
                     outerWeightScale = 500f,
@@ -559,6 +562,9 @@ class ConfigBackupTest {
         assertEquals(NETWORK_TOP_OFFSET_MIN, visual.curvedSignalDotOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MAX, visual.horizontalSignalDotOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MIN, visual.mobileTypeBottomOffsetY, 0f)
+        assertEquals(BOTH_SIDES_BOTTOM_INFO_SCALE_MAX, visual.bothSidesActivityScale, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, visual.bothSidesActivityOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, visual.bothSidesChargingOffsetY, 0f)
         assertEquals(BATTERY_TOP_CHARGING_ICON_SCALE_MAX, visual.topChargingIconScale, 0f)
         assertEquals(COMBINED_SCALE_MAX, visual.combinedScale, 0f)
         assertEquals(OUTER_WEIGHT_SCALE_MAX, visual.outerWeightScale, 0f)
