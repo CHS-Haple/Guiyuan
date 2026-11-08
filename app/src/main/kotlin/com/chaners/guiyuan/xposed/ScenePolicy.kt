@@ -534,7 +534,6 @@ internal object ScenePolicy {
         }
     }
 
-
     private fun resolveFullAodVisualBoundary(
         nativeToLockScreenTarget: Boolean,
         keyguardEnabled: Boolean,
@@ -542,26 +541,27 @@ internal object ScenePolicy {
         lastStableFamilyScene: StableKeyguardAodScene,
         keyguardStatusIconsAlpha: Float?,
     ): KeyguardAodProjection {
-    return when {
-        nativeToLockScreenTarget == true ->
-            if (keyguardEnabled) {
-                KeyguardAodProjection.KEYGUARD
-            } else {
-                KeyguardAodProjection.NATIVE
-            }
+        return when {
+            nativeToLockScreenTarget == true ->
+                if (keyguardEnabled) {
+                    KeyguardAodProjection.KEYGUARD
+                } else {
+                    KeyguardAodProjection.NATIVE
+                }
 
-        keyguardEnabled &&
-            !aodEnabled &&
-            lastStableFamilyScene == StableKeyguardAodScene.KEYGUARD ->
-            if ((keyguardStatusIconsAlpha ?: 1f) > 0f) {
-                KeyguardAodProjection.KEYGUARD
-            } else {
-                KeyguardAodProjection.NATIVE
-            }
+            keyguardEnabled &&
+                !aodEnabled &&
+                lastStableFamilyScene == StableKeyguardAodScene.KEYGUARD ->
+                if ((keyguardStatusIconsAlpha ?: 1f) > 0f) {
+                    KeyguardAodProjection.KEYGUARD
+                } else {
+                    KeyguardAodProjection.NATIVE
+                }
 
-        aodEnabled -> KeyguardAodProjection.AOD
-        else -> KeyguardAodProjection.NATIVE
-    }
+            aodEnabled -> KeyguardAodProjection.AOD
+            else -> KeyguardAodProjection.NATIVE
+        }
+
     }
 
     private fun resolvePendingFullAodTarget(
@@ -569,23 +569,24 @@ internal object ScenePolicy {
         keyguardEnabled: Boolean,
         aodEnabled: Boolean,
     ): KeyguardAodProjection {
-    return when (lastStableFamilyScene) {
-        StableKeyguardAodScene.KEYGUARD ->
-            if (keyguardEnabled) {
-                KeyguardAodProjection.KEYGUARD
-            } else {
-                KeyguardAodProjection.NATIVE
-            }
+        return when (lastStableFamilyScene) {
+            StableKeyguardAodScene.KEYGUARD ->
+                if (keyguardEnabled) {
+                    KeyguardAodProjection.KEYGUARD
+                } else {
+                    KeyguardAodProjection.NATIVE
+                }
 
-        StableKeyguardAodScene.AOD ->
-            if (aodEnabled) {
-                KeyguardAodProjection.AOD
-            } else {
-                KeyguardAodProjection.NATIVE
-            }
+            StableKeyguardAodScene.AOD ->
+                if (aodEnabled) {
+                    KeyguardAodProjection.AOD
+                } else {
+                    KeyguardAodProjection.NATIVE
+                }
 
-        StableKeyguardAodScene.UNKNOWN -> KeyguardAodProjection.NATIVE
-    }
+            StableKeyguardAodScene.UNKNOWN -> KeyguardAodProjection.NATIVE
+        }
+
     }
 
     fun resolveControlCenterSourceScene(
