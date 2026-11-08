@@ -431,45 +431,20 @@ internal object ScenePolicy {
             keyguardEnabled != aodEnabled
         ) {
             if (fullAodVisualBoundary) {
-                return when {
-                    nativeToLockScreenTarget == true ->
-                        if (keyguardEnabled) {
-                            KeyguardAodProjection.KEYGUARD
-                        } else {
-                            KeyguardAodProjection.NATIVE
-                        }
-
-                    keyguardEnabled &&
-                        !aodEnabled &&
-                        lastStableFamilyScene == StableKeyguardAodScene.KEYGUARD ->
-                        if ((keyguardStatusIconsAlpha ?: 1f) > 0f) {
-                            KeyguardAodProjection.KEYGUARD
-                        } else {
-                            KeyguardAodProjection.NATIVE
-                        }
-
-                    aodEnabled -> KeyguardAodProjection.AOD
-                    else -> KeyguardAodProjection.NATIVE
-                }
+                return resolveFullAodVisualBoundary(
+                    nativeToLockScreenTarget = nativeToLockScreenTarget,
+                    keyguardEnabled = keyguardEnabled,
+                    aodEnabled = aodEnabled,
+                    lastStableFamilyScene = lastStableFamilyScene,
+                    keyguardStatusIconsAlpha = keyguardStatusIconsAlpha,
+                )
             }
             if (fullAodTargetPending) {
-                return when (lastStableFamilyScene) {
-                    StableKeyguardAodScene.KEYGUARD ->
-                        if (keyguardEnabled) {
-                            KeyguardAodProjection.KEYGUARD
-                        } else {
-                            KeyguardAodProjection.NATIVE
-                        }
-
-                    StableKeyguardAodScene.AOD ->
-                        if (aodEnabled) {
-                            KeyguardAodProjection.AOD
-                        } else {
-                            KeyguardAodProjection.NATIVE
-                        }
-
-                    StableKeyguardAodScene.UNKNOWN -> KeyguardAodProjection.NATIVE
-                }
+                return resolvePendingFullAodTarget(
+                    lastStableFamilyScene = lastStableFamilyScene,
+                    keyguardEnabled = keyguardEnabled,
+                    aodEnabled = aodEnabled,
+                )
             }
         }
 
@@ -556,6 +531,59 @@ internal object ScenePolicy {
                 } else {
                     KeyguardAodProjection.NATIVE
                 }
+        }
+    }
+
+    private fun resolveFullAodVisualBoundary(
+        nativeToLockScreenTarget: Boolean,
+        keyguardEnabled: Boolean,
+        aodEnabled: Boolean,
+        lastStableFamilyScene: StableKeyguardAodScene,
+        keyguardStatusIconsAlpha: Float?,
+    ): KeyguardAodProjection {
+        return when {
+            nativeToLockScreenTarget == true ->
+                if (keyguardEnabled) {
+                    KeyguardAodProjection.KEYGUARD
+                } else {
+                    KeyguardAodProjection.NATIVE
+                }
+
+            keyguardEnabled &&
+                !aodEnabled &&
+                lastStableFamilyScene == StableKeyguardAodScene.KEYGUARD ->
+                if ((keyguardStatusIconsAlpha ?: 1f) > 0f) {
+                    KeyguardAodProjection.KEYGUARD
+                } else {
+                    KeyguardAodProjection.NATIVE
+                }
+
+            aodEnabled -> KeyguardAodProjection.AOD
+            else -> KeyguardAodProjection.NATIVE
+        }
+    }
+
+    private fun resolvePendingFullAodTarget(
+        lastStableFamilyScene: StableKeyguardAodScene,
+        keyguardEnabled: Boolean,
+        aodEnabled: Boolean,
+    ): KeyguardAodProjection {
+        return when (lastStableFamilyScene) {
+            StableKeyguardAodScene.KEYGUARD ->
+                if (keyguardEnabled) {
+                    KeyguardAodProjection.KEYGUARD
+                } else {
+                    KeyguardAodProjection.NATIVE
+                }
+
+            StableKeyguardAodScene.AOD ->
+                if (aodEnabled) {
+                    KeyguardAodProjection.AOD
+                } else {
+                    KeyguardAodProjection.NATIVE
+                }
+
+            StableKeyguardAodScene.UNKNOWN -> KeyguardAodProjection.NATIVE
         }
     }
 

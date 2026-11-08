@@ -14,6 +14,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -57,6 +58,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Constraints
@@ -417,77 +419,7 @@ private fun HomeRuntimeCardBody(
             .background(cardGradient)
             .then(if (onCardClick == null) Modifier else Modifier.clickable(onClick = onCardClick)),
     ) {
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 22.dp, vertical = 18.dp),
-        ) {
-            val density = LocalDensity.current
-            val textMeasurer = rememberTextMeasurer()
-            val configuration = LocalConfiguration.current
-            val context = LocalContext.current
-            val candidates = remember(context, configuration) {
-                RuntimeTextVariants.map { (title, summary) ->
-                    context.getString(title) to context.getString(summary)
-                }
-            }
-            val titleStyle = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.SemiBold)
-            val bodyStyle = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium)
-            val summaryStyle = MiuixTheme.textStyles.body2
-            val versionText = stringResource(R.string.home_version_line, BuildConfig.VERSION_NAME)
-            val buildText = stringResource(R.string.home_build_line, BuildConfig.BUILD_ID)
-            val textWidth = with(density) {
-                (maxWidth - RuntimeStatusMarkSize - 2.dp).roundToPx().coerceAtLeast(1)
-            }
-            val textConstraints = Constraints(maxWidth = textWidth)
-            val textHeight = remember(candidates, textConstraints, titleStyle, bodyStyle, summaryStyle, versionText, buildText, textMeasurer, density) {
-                val fixedHeight =
-                    textMeasurer.measure(versionText, style = bodyStyle, constraints = textConstraints).size.height +
-                        textMeasurer.measure(buildText, style = bodyStyle, constraints = textConstraints).size.height
-                val changingHeight = candidates.maxOf { (title, summary) ->
-                    textMeasurer.measure(title, style = titleStyle, constraints = textConstraints).size.height +
-                        textMeasurer.measure(summary, style = summaryStyle, constraints = textConstraints).size.height
-                }
-                val spacing = with(density) { 5.dp.roundToPx() + 1.dp.roundToPx() + 12.dp.roundToPx() }
-                with(density) { (fixedHeight + changingHeight + spacing).toDp() }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f).heightIn(min = textHeight)) {
-                    Text(
-                        text = stringResource(state.titleRes),
-                        style = titleStyle,
-                    )
-                    Text(
-                        text = versionText,
-                        modifier = Modifier.padding(top = 5.dp),
-                        style = bodyStyle,
-                        color = MiuixTheme.colorScheme.onSurfaceContainer,
-                    )
-                    Text(
-                        text = buildText,
-                        modifier = Modifier.padding(top = 1.dp),
-                        style = bodyStyle,
-                        color = MiuixTheme.colorScheme.onSurfaceContainer,
-                    )
-                    Text(
-                        text = stringResource(state.summaryRes),
-                        modifier = Modifier.padding(top = 12.dp),
-                        style = summaryStyle,
-                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    )
-                }
-                RuntimeStatusMark(
-                    kind = state.mark,
-                    color = accentColor,
-                    modifier = Modifier.size(RuntimeStatusMarkSize),
-                )
-            }
-        }
+        HomeRuntimeStatusDetails(state = state, accentColor = accentColor)
         val switchTitle = stringResource(R.string.home_runtime_enable_title)
         BasicComponent(
             modifier = Modifier.toggleable(
@@ -508,6 +440,101 @@ private fun HomeRuntimeCardBody(
             },
             insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
         )
+    }
+}
+
+@Composable
+private fun HomeRuntimeStatusDetails(
+    state: HomeRuntimeCardState,
+    accentColor: Color,
+) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 22.dp, vertical = 18.dp),
+    ) {
+        val titleStyle = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.SemiBold)
+        val bodyStyle = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium)
+        val summaryStyle = MiuixTheme.textStyles.body2
+        val versionText = stringResource(R.string.home_version_line, BuildConfig.VERSION_NAME)
+        val buildText = stringResource(R.string.home_build_line, BuildConfig.BUILD_ID)
+        val textHeight = rememberRuntimeTextHeight(
+            titleStyle = titleStyle,
+            bodyStyle = bodyStyle,
+            summaryStyle = summaryStyle,
+            versionText = versionText,
+            buildText = buildText,
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f).heightIn(min = textHeight)) {
+                Text(
+                    text = stringResource(state.titleRes),
+                    style = titleStyle,
+                )
+                Text(
+                    text = versionText,
+                    modifier = Modifier.padding(top = 5.dp),
+                    style = bodyStyle,
+                    color = MiuixTheme.colorScheme.onSurfaceContainer,
+                )
+                Text(
+                    text = buildText,
+                    modifier = Modifier.padding(top = 1.dp),
+                    style = bodyStyle,
+                    color = MiuixTheme.colorScheme.onSurfaceContainer,
+                )
+                Text(
+                    text = stringResource(state.summaryRes),
+                    modifier = Modifier.padding(top = 12.dp),
+                    style = summaryStyle,
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                )
+            }
+            RuntimeStatusMark(
+                kind = state.mark,
+                color = accentColor,
+                modifier = Modifier.size(RuntimeStatusMarkSize),
+            )
+        }
+    }
+}
+
+@Composable
+private fun BoxWithConstraintsScope.rememberRuntimeTextHeight(
+    titleStyle: TextStyle,
+    bodyStyle: TextStyle,
+    summaryStyle: TextStyle,
+    versionText: String,
+    buildText: String,
+): Dp {
+    val density = LocalDensity.current
+    val textMeasurer = rememberTextMeasurer()
+    val configuration = LocalConfiguration.current
+    val context = LocalContext.current
+    val candidates = remember(context, configuration) {
+        RuntimeTextVariants.map { (title, summary) ->
+            context.getString(title) to context.getString(summary)
+        }
+    }
+    val textWidth = with(density) {
+        (maxWidth - RuntimeStatusMarkSize - 2.dp).roundToPx().coerceAtLeast(1)
+    }
+    val textConstraints = Constraints(maxWidth = textWidth)
+    return remember(candidates, textConstraints, titleStyle, bodyStyle, summaryStyle, versionText, buildText, textMeasurer, density) {
+        val fixedHeight =
+            textMeasurer.measure(versionText, style = bodyStyle, constraints = textConstraints).size.height +
+                textMeasurer.measure(buildText, style = bodyStyle, constraints = textConstraints).size.height
+        val changingHeight = candidates.maxOf { (title, summary) ->
+            textMeasurer.measure(title, style = titleStyle, constraints = textConstraints).size.height +
+                textMeasurer.measure(summary, style = summaryStyle, constraints = textConstraints).size.height
+        }
+        val spacing = with(density) { 5.dp.roundToPx() + 1.dp.roundToPx() + 12.dp.roundToPx() }
+        with(density) { (fixedHeight + changingHeight + spacing).toDp() }
     }
 }
 

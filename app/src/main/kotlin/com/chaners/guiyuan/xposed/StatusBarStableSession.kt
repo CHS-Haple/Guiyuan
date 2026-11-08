@@ -184,35 +184,39 @@ internal object StatusBarStableSession {
             }
 
             SysUiPresentationRuntime.emitPassiveDiagnostic {
-                val statusIcons = container.directChild(STATUS_ICON_CONTAINER_CLASS_NAME)
-                val layoutParams = view.layoutParams
-                val margins = layoutParams as? ViewGroup.MarginLayoutParams
-                val slotMetrics =
-                    SlotMetrics(
-                        batteryPaddingStart = view.paddingStart,
-                        batteryPaddingEnd = view.paddingEnd,
-                        batteryPaddingTop = view.paddingTop,
-                        batteryPaddingBottom = view.paddingBottom,
-                        batteryMinimumWidth = view.minimumWidth,
-                        batteryLayoutWidth = layoutParams?.width ?: Int.MIN_VALUE,
-                        batteryLayoutHeight = layoutParams?.height ?: Int.MIN_VALUE,
-                        batteryMarginStart = margins?.marginStart ?: 0,
-                        batteryMarginEnd = margins?.marginEnd ?: 0,
-                        containerPaddingStart = container.paddingStart,
-                        containerPaddingEnd = container.paddingEnd,
-                        statusIconsWidth = statusIcons?.width ?: -1,
-                        statusIconsRight = statusIcons?.right ?: -1,
-                        batteryLeft = view.left,
-                        batteryRight = view.right,
-                        adjacentGap = statusIcons?.let { icons -> view.left - icons.right } ?: -1,
-                        batteryClipChildren = view.clipChildren,
-                        containerClipChildren = container.clipChildren,
-                        layoutRtl = view.layoutDirection == View.LAYOUT_DIRECTION_RTL,
-                        batteryTranslationX = view.translationX,
-                    )
-                onEvent(slotMetrics.logLine)
+                reportSlotMetrics(container, view)
             }
             return true
+        }
+
+        private fun reportSlotMetrics(container: ViewGroup, view: ViewGroup) {
+            val statusIcons = container.directChild(STATUS_ICON_CONTAINER_CLASS_NAME)
+            val layoutParams = view.layoutParams
+            val margins = layoutParams as? ViewGroup.MarginLayoutParams
+            val slotMetrics =
+                SlotMetrics(
+                    batteryPaddingStart = view.paddingStart,
+                    batteryPaddingEnd = view.paddingEnd,
+                    batteryPaddingTop = view.paddingTop,
+                    batteryPaddingBottom = view.paddingBottom,
+                    batteryMinimumWidth = view.minimumWidth,
+                    batteryLayoutWidth = layoutParams?.width ?: Int.MIN_VALUE,
+                    batteryLayoutHeight = layoutParams?.height ?: Int.MIN_VALUE,
+                    batteryMarginStart = margins?.marginStart ?: 0,
+                    batteryMarginEnd = margins?.marginEnd ?: 0,
+                    containerPaddingStart = container.paddingStart,
+                    containerPaddingEnd = container.paddingEnd,
+                    statusIconsWidth = statusIcons?.width ?: -1,
+                    statusIconsRight = statusIcons?.right ?: -1,
+                    batteryLeft = view.left,
+                    batteryRight = view.right,
+                    adjacentGap = statusIcons?.let { icons -> view.left - icons.right } ?: -1,
+                    batteryClipChildren = view.clipChildren,
+                    containerClipChildren = container.clipChildren,
+                    layoutRtl = view.layoutDirection == View.LAYOUT_DIRECTION_RTL,
+                    batteryTranslationX = view.translationX,
+                )
+            onEvent(slotMetrics.logLine)
         }
 
         private fun clearAnchorLayoutListener() {

@@ -154,6 +154,60 @@ internal data class RenderModel(
                     else -> false
                 }
 
+            val dualLevels =
+                resolveDualLevels(
+                    snapshot = snapshot,
+                    presentation = presentation,
+                    dualSignalEnabled = dualSignalEnabled,
+                    mobileRecoveryPending = mobileRecoveryPending,
+                    nativeNoSimVisible = nativeNoSimVisible,
+                )
+
+            val batteryPercent = battery.percent.coerceIn(0, 100)
+            val batterySemanticState = BatterySemanticState.atThreshold(
+                battery.semanticState,
+                batteryPercent,
+                lowBatteryThreshold,
+            )
+
+            val activitySubscriptionId =
+                resolveActivitySubscriptionId(presentation, selectedSubscriptionId)
+
+            return RenderModel(
+                batteryPercent = batteryPercent,
+                charging = battery.charging,
+                centerIndicator = centerIndicator,
+                chargingIconResId = battery.chargingIconResId,
+                networkActivityResId = when (centerIndicator) {
+                    is CenterIndicator.Wifi -> snapshot.wifiActivityResId
+                    is CenterIndicator.MobileType ->
+                        snapshot.mobileActivityResIds[activitySubscriptionId]
+                    else -> null
+                },
+                mobileLevel = mobileLevel,
+                mobileUnavailableMark = mobileUnavailableMark,
+                effectiveDataSubscriptionId = selectedSubscriptionId,
+                dualMobileLevels = dualLevels,
+                batterySemanticState = batterySemanticState,
+                batterySystemSemanticColor = when (batterySemanticState) {
+                    BatterySemanticState.NORMAL -> null
+                    BatterySemanticState.LOW ->
+                        battery.lowSystemColor
+                            ?: battery.systemSemanticColor.takeIf {
+                                battery.semanticState == BatterySemanticState.LOW
+                            }
+                    else -> battery.systemSemanticColor
+                },
+            )
+        }
+
+        private fun resolveDualLevels(
+            snapshot: StatusStateStore.Snapshot,
+            presentation: PresentationStore.Snapshot,
+            dualSignalEnabled: Boolean,
+            mobileRecoveryPending: Boolean,
+            nativeNoSimVisible: Boolean,
+        ): DualMobileLevels? {
             // Use platform slot identity; subscription IDs and data-SIM preference
             // are not the SIM1/SIM2 row order.
             val dualLevels =
@@ -191,14 +245,13 @@ internal data class RenderModel(
                         } else null
                     } else null
                 } else null
+            return dualLevels
+        }
 
-            val batteryPercent = battery.percent.coerceIn(0, 100)
-            val batterySemanticState = BatterySemanticState.atThreshold(
-                battery.semanticState,
-                batteryPercent,
-                lowBatteryThreshold,
-            )
-
+        private fun resolveActivitySubscriptionId(
+            presentation: PresentationStore.Snapshot,
+            selectedSubscriptionId: Int,
+        ): Int {
             // In the native aggregate there is exactly one displayed mobile root.
             // Its activity drawable is the presentation truth, even when its
             // subscription ID differs from the default-data SIM (e.g. a native
@@ -212,33 +265,7 @@ internal data class RenderModel(
                         selectedSubscriptionId in native.activeSubscriptionIds &&
                         native.presentationRootSubscriptionId in native.activeSubscriptionIds
                 }?.presentationRootSubscriptionId ?: selectedSubscriptionId
-
-            return RenderModel(
-                batteryPercent = batteryPercent,
-                charging = battery.charging,
-                centerIndicator = centerIndicator,
-                chargingIconResId = battery.chargingIconResId,
-                networkActivityResId = when (centerIndicator) {
-                    is CenterIndicator.Wifi -> snapshot.wifiActivityResId
-                    is CenterIndicator.MobileType ->
-                        snapshot.mobileActivityResIds[activitySubscriptionId]
-                    else -> null
-                },
-                mobileLevel = mobileLevel,
-                mobileUnavailableMark = mobileUnavailableMark,
-                effectiveDataSubscriptionId = selectedSubscriptionId,
-                dualMobileLevels = dualLevels,
-                batterySemanticState = batterySemanticState,
-                batterySystemSemanticColor = when (batterySemanticState) {
-                    BatterySemanticState.NORMAL -> null
-                    BatterySemanticState.LOW ->
-                        battery.lowSystemColor
-                            ?: battery.systemSemanticColor.takeIf {
-                                battery.semanticState == BatterySemanticState.LOW
-                            }
-                    else -> battery.systemSemanticColor
-                },
-            )
+            return activitySubscriptionId
         }
     }
 }

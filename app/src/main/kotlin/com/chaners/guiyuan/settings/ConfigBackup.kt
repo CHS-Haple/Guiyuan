@@ -51,6 +51,16 @@ internal data class ConfigBackup(
     val batterySchemes: BatteryColorSchemeLibrary,
 )
 
+// The import-normalization and final-validation gates must use the same finite-field set.
+private fun VisualCfg.hasFiniteScalars(): Boolean =
+    listOf(
+        topTextScale, topOffsetY, wifiOffsetY, mobileTypeOffsetY,
+        curvedSignalDotOffsetY, horizontalSignalDotOffsetY, mobileTypeBottomOffsetY,
+        bothSidesActivityScale, bothSidesActivityOffsetY, bothSidesChargingOffsetY,
+        topChargingIconScale, combinedScale, outerWeightScale,
+        wifiScale, airplaneScale, noSimScale, mobileTypeScale,
+    ).all(Float::isFinite)
+
 internal object ConfigBackupFormat {
     private const val FORMAT = "guiyuan-config"
     private const val SCHEMA = 1
@@ -236,13 +246,7 @@ internal object ConfigBackupFormat {
                 val color = cfg.batteryColorOverrides.colorFor(slot)
                 color == null || color ushr 24 == 0xFF
             }) { "Invalid visual battery color" }
-            require(listOf(
-                cfg.topTextScale, cfg.topOffsetY, cfg.wifiOffsetY, cfg.mobileTypeOffsetY,
-                cfg.curvedSignalDotOffsetY, cfg.horizontalSignalDotOffsetY, cfg.mobileTypeBottomOffsetY,
-                cfg.bothSidesActivityScale, cfg.bothSidesActivityOffsetY, cfg.bothSidesChargingOffsetY,
-                cfg.topChargingIconScale, cfg.combinedScale, cfg.outerWeightScale,
-                cfg.wifiScale, cfg.airplaneScale, cfg.noSimScale, cfg.mobileTypeScale,
-            ).all(Float::isFinite)) { "Nonfinite visual setting" }
+            require(cfg.hasFiniteScalars()) { "Nonfinite visual setting" }
         }
         val currentMode = backup.visual.dualEnabled && backup.visual.dualInitialized
         val chosenSingleStyles = backup.visual.profiles
@@ -310,15 +314,7 @@ internal object ConfigBackupFormat {
             require(cfg.singleRowDotArrangement != SignalDotArrangement.BOTH_SIDES) {
                 "Two-sided signal dots cannot be a single-row selection"
             }
-            val values = listOf(
-                cfg.topTextScale, cfg.topOffsetY, cfg.wifiOffsetY, cfg.mobileTypeOffsetY,
-                cfg.curvedSignalDotOffsetY, cfg.horizontalSignalDotOffsetY,
-                cfg.mobileTypeBottomOffsetY, cfg.bothSidesActivityScale,
-                cfg.bothSidesActivityOffsetY, cfg.bothSidesChargingOffsetY,
-                cfg.topChargingIconScale, cfg.combinedScale, cfg.outerWeightScale,
-                cfg.wifiScale, cfg.airplaneScale, cfg.noSimScale, cfg.mobileTypeScale,
-            )
-            require(values.all(Float::isFinite) && cfg == cfg.normalized()) {
+            require(cfg.hasFiniteScalars() && cfg == cfg.normalized()) {
                 "Visual values out of range: " + cfg.layout + " dual=" + cfg.dualSignal
             }
             require(BatteryColorSlot.entries.all { slot ->
