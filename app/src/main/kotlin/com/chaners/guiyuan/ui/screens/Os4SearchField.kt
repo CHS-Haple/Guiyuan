@@ -112,7 +112,7 @@ private fun SearchDecoration(
         Icon(
             Os4GlassSearch,
             contentDescription = null,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(28.dp),
             tint = colors.disabledOnSurface,
         )
         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {

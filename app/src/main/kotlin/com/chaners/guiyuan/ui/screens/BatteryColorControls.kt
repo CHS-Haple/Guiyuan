@@ -287,7 +287,7 @@ internal fun BatteryColorBottomSheet(
                             Icon(
                                 imageVector = Os4GlassBack,
                                 contentDescription = stringResource(R.string.back),
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(28.dp),
                             )
                         }
                     } else {
