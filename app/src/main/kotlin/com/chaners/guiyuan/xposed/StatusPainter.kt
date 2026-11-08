@@ -53,7 +53,7 @@ internal class StatusPainter(
         }
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
-    private val idleActivityResourceIds = HashMap<String, Int>()
+    private val activityResourceIds = HashMap<String, Int>()
     private val nativeCenterAssets =
         LinkedHashMap<PresentationStore.NativeIconResource, NativeCenterAsset>(
             NATIVE_CENTER_CACHE_SIZE,
@@ -138,7 +138,7 @@ internal class StatusPainter(
         mobileInkSamples.clear()
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
-        idleActivityResourceIds.clear()
+        activityResourceIds.clear()
     }
 
     private fun checkNativeResources() {
@@ -4206,7 +4206,6 @@ internal class StatusPainter(
     private data class BothSidesBottomInformation(
         val resource: PresentationStore.NativeIconResource,
         val charging: Boolean,
-        val idle: Boolean = false,
     )
 
     private fun bothSidesBottomScale(visual: VisualCfg, charging: Boolean): Float =
@@ -4217,18 +4216,9 @@ internal class StatusPainter(
         BOTH_SIDES_BOTTOM_INK_CENTER_Y -
             if (charging) visual.bothSidesChargingOffsetY else visual.bothSidesActivityOffsetY
 
-    private fun idleActivityResourceId(center: CenterIndicator): Int? {
-        val name = when (center) {
-            is CenterIndicator.Wifi -> "stat_sys_wifi_inout"
-            is CenterIndicator.MobileType -> "stat_sys_signal_inout_left"
-            else -> return null
-        }
-        return activityResourceId(name)
-    }
-
     private fun activityResourceId(name: String): Int? {
         checkNativeResources()
-        val id = idleActivityResourceIds.getOrPut(name) {
+        val id = activityResourceIds.getOrPut(name) {
             runCatching {
                 val resourceContext = if (context.packageName == SYSTEM_UI_PACKAGE) {
                     context
@@ -4276,13 +4266,6 @@ internal class StatusPainter(
                     id == activityResourceId("stat_sys_signal_data_left")
             }
             nativeActivityId?.let { drawableAvailable(it, false) }?.let { return it }
-            // Once SystemUI has reported its native activity state, a GONE
-            // result must not be replaced with a fabricated idle drawable.
-            if (!visual.bothSidesHideIdleActivity && !model.networkActivityObserved) {
-                idleActivityResourceId(model.centerIndicator)?.let { id ->
-                    drawableAvailable(id, false)?.copy(idle = true)
-                }?.let { return it }
-            }
         }
         return null
     }
@@ -4391,7 +4374,7 @@ internal class StatusPainter(
             canvas = canvas,
             resource = bottom.resource,
             tint = if (bottomCharging) colors.chargingIconTint else colors.centerTint,
-            opacity = opacity * outsideAmount * (if (bottom.idle) IDLE_ACTIVITY_OPACITY else 1f),
+            opacity = opacity * outsideAmount,
             centerX = BATTERY_COMPONENT_CENTER_X,
             centerY = bothSidesBottomCenterY(visual, bottomCharging),
             maxWidth = (if (bottomCharging) BOTH_SIDES_CHARGING_SLOT_WIDTH else BOTH_SIDES_BOTTOM_SLOT_WIDTH) *
@@ -4614,7 +4597,6 @@ internal class StatusPainter(
             BATTERY_COMPONENT_CENTER_Y + OuterGeometry.RING_RADIUS
         const val BATTERY_TOP_TEXT_SIZE = 24f
         const val BATTERY_TOP_CHARGING_ICON_SIZE = 18f
-        const val IDLE_ACTIVITY_OPACITY = 0.28f
         const val BOTH_SIDES_BOTTOM_SLOT_WIDTH = 19f
         const val BOTH_SIDES_BOTTOM_SLOT_HEIGHT = 22f
         // Native charging and traffic assets have different intrinsic optical frames.
