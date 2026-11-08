@@ -68,16 +68,12 @@ internal fun BatteryColorField(
                     }
                 },
     ) {
-        drawBatteryColorPalette(color, hue, saturation, outlineColor)
+        drawBatteryPaletteBackground(outlineColor)
+        if (color != null) drawBatteryPaletteCursor(color, hue, saturation)
     }
 }
 
-private fun DrawScope.drawBatteryColorPalette(
-    color: Color?,
-    hue: Float,
-    saturation: Float,
-    outlineColor: Color,
-) {
+private fun DrawScope.drawBatteryPaletteBackground(outlineColor: Color) {
     val round = CornerRadius(16.dp.toPx())
     drawRoundRect(
         brush = Brush.horizontalGradient(
@@ -103,32 +99,36 @@ private fun DrawScope.drawBatteryColorPalette(
         cornerRadius = round,
         style = Stroke(width = 1.dp.toPx()),
     )
+}
 
-    if (color != null) {
-        val radius = 11.dp.toPx()
-        val center =
-            Offset(
-                (hue / 360f * size.width).coerceIn(0f, size.width),
-                (saturation / 100f * size.height).coerceIn(0f, size.height),
-            )
-        // Opaque mask hides the palette outline beneath the translucent halo.
-        drawCircle(
-            color = color,
-            radius = radius + 3.dp.toPx(),
-            center = center,
+private fun DrawScope.drawBatteryPaletteCursor(
+    color: Color,
+    hue: Float,
+    saturation: Float,
+) {
+    val radius = 11.dp.toPx()
+    val center =
+        Offset(
+            (hue / 360f * size.width).coerceIn(0f, size.width),
+            (saturation / 100f * size.height).coerceIn(0f, size.height),
         )
-        drawCircle(
-            color = Color.Black.copy(alpha = 0.28f),
-            radius = radius + 1.dp.toPx(),
-            center = center,
-            style = Stroke(width = 4.dp.toPx()),
-        )
-        drawCircle(
-            color = Color.White,
-            radius = radius,
-            center = center,
-            style = Stroke(width = 3.dp.toPx()),
-        )
-    }
+    // Opaque mask hides the palette outline beneath the translucent halo.
+    drawCircle(
+        color = color,
+        radius = radius + 3.dp.toPx(),
+        center = center,
+    )
+    drawCircle(
+        color = Color.Black.copy(alpha = 0.28f),
+        radius = radius + 1.dp.toPx(),
+        center = center,
+        style = Stroke(width = 4.dp.toPx()),
+    )
+    drawCircle(
+        color = Color.White,
+        radius = radius,
+        center = center,
+        style = Stroke(width = 3.dp.toPx()),
+    )
 }
 
