@@ -178,7 +178,7 @@ internal class StatusPainter(
         canvas.translate(offsetX, offsetY)
         canvas.scale(scale, scale)
 
-        val outerGeometry = resolveOuterGeometry(outerWeightScale, hasDrawableBottomInformation(model, visual))
+        val outerGeometry = resolveOuterGeometry(outerWeightScale, reservesBothSidesBottomSlot(model, visual))
         val centerGeometry = resolveCenterGeometry(visual)
         drawBattery(
             canvas = canvas,
@@ -392,7 +392,7 @@ internal class StatusPainter(
                     geometry =
                         resolveOuterGeometry(
                             visual.outerWeightScale,
-                            hasDrawableBottomInformation(model, visual),
+                            reservesBothSidesBottomSlot(model, visual),
                         ),
                     centerGeometry =
                         resolveCenterGeometry(visual),
@@ -485,7 +485,7 @@ internal class StatusPainter(
                 val outerGeometry =
                     resolveOuterGeometry(
                         visual.outerWeightScale,
-                        hasDrawableBottomInformation(model, visual),
+                        reservesBothSidesBottomSlot(model, visual),
                     )
                 if (shapePolicy == TransitionShapePolicy.MOBILE_SIGNAL) {
                     drawMobileSignalTransition(
@@ -631,7 +631,7 @@ internal class StatusPainter(
         val offsetX = nativeTransform.offsetX
         val offsetY = nativeTransform.offsetY
         val outerGeometry =
-            resolveOuterGeometry(visual.outerWeightScale, hasDrawableBottomInformation(model, visual))
+            resolveOuterGeometry(visual.outerWeightScale, reservesBothSidesBottomSlot(model, visual))
         val centerGeometry =
             resolveCenterGeometry(visual)
 
@@ -904,7 +904,7 @@ internal class StatusPainter(
         visual: VisualCfg,
         model: RenderModel,
     ): List<TransitionComponentSpec> {
-        val geometry = resolveOuterGeometry(visual.outerWeightScale, hasDrawableBottomInformation(model, visual))
+        val geometry = resolveOuterGeometry(visual.outerWeightScale, reservesBothSidesBottomSlot(model, visual))
         val centered = visual.centeredMobileSignal &&
             model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
         val group = if (centered) centeredMobileBounds(geometry, true)
@@ -4277,8 +4277,14 @@ internal class StatusPainter(
         return null
     }
 
-    private fun hasDrawableBottomInformation(model: RenderModel, visual: VisualCfg): Boolean =
-        resolveBothSidesBottomInformation(model, visual) != null
+    // Reserve the configured information slot even while SystemUI hides its
+    // activity drawable. Activity visibility must not change dual-dot spacing.
+    private fun reservesBothSidesBottomSlot(model: RenderModel, visual: VisualCfg): Boolean =
+        bothSidesOutsideActive(model, visual) &&
+            (
+                visual.bothSidesShowActivity ||
+                    (visual.showChargingIcon && visual.bothSidesBottomCharging && model.charging)
+            )
 
     // Both opening avoidance and host overflow consume the same optical ink.
     private fun bothSidesBottomOpticalBounds(
