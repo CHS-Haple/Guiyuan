@@ -120,7 +120,9 @@ class DiagReportTest {
         assertTrue(report.contains("runtimeLevel=detailed"))
         assertTrue(report.contains("runtimeBinding=not-observed"))
     }
+}
 
+class DiagReportExportTest {
     @Test
     fun truncatedCaptureIsDisclosed() {
         assertTrue(report(truncated = true).contains("capture=latest-complete-lines-only"))
@@ -203,59 +205,58 @@ class DiagReportTest {
         assertTrue(report.contains("collection=exit:1"))
         assertTrue(report.contains("[Device]"))
     }
+}
 
-    private fun recordLines(count: Int): List<String> =
-        List(count) { "record-${it + 1}" }
+private fun recordLines(count: Int): List<String> =
+    List(count) { "record-${it + 1}" }
 
-    private fun report(
-        vararg lines: String,
-        truncated: Boolean = false,
-        collection: RootShell.Result? = null,
-        level: DiagLevel = DiagLevel.Detailed,
-        clearedAt: LocalDateTime? = null,
-    ): String =
-        report(
-            lines = lines.asList(),
-            truncated = truncated,
-            collection = collection,
-            level = level,
-            clearedAt = clearedAt,
-        )
+private fun report(
+    vararg lines: String,
+    truncated: Boolean = false,
+    collection: RootShell.Result? = null,
+    level: DiagLevel = DiagLevel.Detailed,
+    clearedAt: LocalDateTime? = null,
+): String =
+    report(
+        lines = lines.asList(),
+        truncated = truncated,
+        collection = collection,
+        level = level,
+        clearedAt = clearedAt,
+    )
 
-
-    private fun report(
-        lines: List<String>,
-        truncated: Boolean = false,
-        collection: RootShell.Result? = null,
-        level: DiagLevel = DiagLevel.Detailed,
-        clearedAt: LocalDateTime? = null,
-    ): String {
-        val recorded = lines
-        return DiagReport.build(
-            DiagSnapshot(
-                env = RuntimeEnv(
-                    manufacturer = "Xiaomi",
-                    device = "test",
-                    model = "test",
-                    codename = "test",
-                    androidVersion = "17",
-                    sdk = 37,
-                    osVersion = "test",
-                    sysUiVersion = "test",
-                    sysUiVersionCode = null,
-                ),
-                level = level,
-                log = DiagLogReader.Snapshot(
-                    source = DiagLogReader.Source.LspModules,
-                    result = collection ?: RootShell.Result(0, recorded.joinToString("\n"), false, null, truncated),
-                    lines = recorded,
-                    sessionLines = recorded,
-                    clearedAt = clearedAt,
-                ),
-                runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
-                entries = recorded.map(DiagLogParser::parse),
-                capturedAt = OffsetDateTime.parse("2026-10-08T22:00:00+08:00"),
+private fun report(
+    lines: List<String>,
+    truncated: Boolean = false,
+    collection: RootShell.Result? = null,
+    level: DiagLevel = DiagLevel.Detailed,
+    clearedAt: LocalDateTime? = null,
+): String {
+    val recorded = lines
+    return DiagReport.build(
+        DiagSnapshot(
+            env = RuntimeEnv(
+                manufacturer = "Xiaomi",
+                device = "test",
+                model = "test",
+                codename = "test",
+                androidVersion = "17",
+                sdk = 37,
+                osVersion = "test",
+                sysUiVersion = "test",
+                sysUiVersionCode = null,
             ),
-        )
-    }
+            level = level,
+            log = DiagLogReader.Snapshot(
+                source = DiagLogReader.Source.LspModules,
+                result = collection ?: RootShell.Result(0, recorded.joinToString("\n"), false, null, truncated),
+                lines = recorded,
+                sessionLines = recorded,
+                clearedAt = clearedAt,
+            ),
+            runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
+            entries = recorded.map(DiagLogParser::parse),
+            capturedAt = OffsetDateTime.parse("2026-10-08T22:00:00+08:00"),
+        ),
+    )
 }
