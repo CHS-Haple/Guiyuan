@@ -94,6 +94,50 @@ class StatusStateStoreActivityTest {
     }
 
     @Test
+    fun nativeHiddenStateSurvivesHotReloadUntilNewVisibilityObservation() {
+        val saved = StatusStateStore.Snapshot(
+            mobileActivityResIds = mapOf(1 to 220),
+            mobileActivityShownIds = emptySet(),
+            mobileActivityVisibilityObservedIds = setOf(1),
+        )
+        // A newly installed resource collector has emitted, but its separate
+        // visibility collector has not yet supplied the first native state.
+        val fresh = StatusStateStore.Snapshot(
+            mobileActivityResIds = mapOf(1 to 221),
+            mobileActivityObservedIds = setOf(1),
+        )
+        val merged = StatusStateStore.mergeHotReloadSnapshots(saved, fresh)
+        assertEquals(221, merged.mobileActivityResIds[1])
+        assertTrue(1 in merged.mobileActivityVisibilityObservedIds)
+        assertTrue(1 !in merged.mobileActivityShownIds)
+    }
+
+    @Test
+    fun freshNativeVisibilityOverridesSavedStateDuringHotReload() {
+        val saved = StatusStateStore.Snapshot(
+            mobileActivityResIds = mapOf(1 to 220),
+            mobileActivityVisibilityObservedIds = setOf(1),
+        )
+        val fresh = StatusStateStore.Snapshot(
+            mobileActivityResIds = mapOf(1 to 221),
+            mobileActivityObservedIds = setOf(1),
+            mobileActivityShownIds = setOf(1),
+            mobileActivityVisibilityObservedIds = setOf(1),
+        )
+        val merged = StatusStateStore.mergeHotReloadSnapshots(saved, fresh)
+        assertEquals(221, merged.mobileActivityResIds[1])
+        assertTrue(1 in merged.mobileActivityShownIds)
+        assertTrue(1 in merged.mobileActivityVisibilityObservedIds)
+
+        val airplane = StatusStateStore.mergeHotReloadSnapshots(
+            merged,
+            StatusStateStore.Snapshot(airplaneMode = true),
+        )
+        assertTrue(airplane.mobileActivityShownIds.isEmpty())
+        assertTrue(airplane.mobileActivityResIds.isEmpty())
+    }
+
+    @Test
     fun newerActivityClearWinsOverOldHotReloadTransfer() {
         StatusStateStore.restoreHotReloadState(null)
         val wifi = StatusStateStore.WifiState.Visible(
