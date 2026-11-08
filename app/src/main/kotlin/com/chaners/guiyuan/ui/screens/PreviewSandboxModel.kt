@@ -322,18 +322,13 @@ internal fun PreviewSandboxUiState.toRenderModel(
                 resources = resources,
                 state = chargingState,
             ),
-        networkActivityResId = if (networkActivity == PreviewNetworkActivity.IDLE) {
-            // Null is the native idle contract. The existing user setting
-            // decides whether the dim idle arrows should remain visible.
-            null
-        } else {
+        networkActivityResId =
             resources.drawableId(
                 previewNetworkActivityResourceNames(
                     centerSource = previewCenterSource(),
                     state = networkActivity,
                 ),
-            )
-        },
+            ),
         mobileLevel = mobileLevel,
         dualMobileLevels = dualPresentationLevels(dualSignalEnabled),
         mobileUnavailableMark = airplaneMode || !hasSim,
@@ -399,7 +394,8 @@ internal fun previewNetworkActivityResourceNames(
                 listOf("stat_sys_signal_in_left", "stat_sys_signal_in")
             PreviewNetworkActivity.BOTH ->
                 listOf("stat_sys_signal_inout_left", "stat_sys_signal_inout")
-            PreviewNetworkActivity.IDLE -> emptyList()
+            // HyperOS uses a native idle cellular asset; Wi-Fi idle is resource 0.
+            PreviewNetworkActivity.IDLE -> listOf("stat_sys_signal_data_left")
         }
         else -> emptyList()
     }
