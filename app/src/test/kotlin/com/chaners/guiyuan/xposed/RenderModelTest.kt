@@ -158,4 +158,56 @@ class RenderModelTest {
         )
         assertEquals(330, notAuthoritative?.networkActivityResId)
     }
+
+    @Test
+    fun dualRowsFollowPlatformSlotOrderIndependentlyOfDataSim() {
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
+            ),
+        )
+
+        val dataSim1 = RenderModel.from(state, native, 14, dualSignalEnabled = true)
+        val dataSim2 = RenderModel.from(state, native, 3, dualSignalEnabled = true)
+        val slotLevels = DualMobileLevels(sim1 = 4, sim2 = 2)
+
+        assertEquals(slotLevels, dataSim1?.dualMobileLevels)
+        assertEquals(slotLevels, dataSim2?.dualMobileLevels)
+        assertEquals(14, dataSim1?.effectiveDataSubscriptionId)
+        assertEquals(3, dataSim2?.effectiveDataSubscriptionId)
+    }
+
+    @Test
+    fun unverifiedPlatformSlotIdentityCannotEnableDualRows() {
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
+            ),
+        )
+        fun render(override: NativePresentationResolver.Snapshot) =
+            RenderModel.from(
+                state,
+                native.copy(mobilePresentation = override),
+                defaultDataSubscriptionId = 3,
+                dualSignalEnabled = true,
+            )
+
+        val verified = native.mobilePresentation ?: error("missing native dual presentation")
+        assertEquals(DualMobileLevels(4, 2), render(verified)?.dualMobileLevels)
+        assertNull(render(verified.copy(activeSubsAuthoritative = false))?.dualMobileLevels)
+        assertNull(
+            render(
+                verified.copy(platformActiveSubscriptionIds = setOf(3, 14, 27)),
+            )?.dualMobileLevels,
+        )
+        assertNull(
+            render(verified.copy(slotSubscriptionIds = mapOf(0 to 3, 1 to 3)))?.dualMobileLevels,
+        )
+    }
 }
