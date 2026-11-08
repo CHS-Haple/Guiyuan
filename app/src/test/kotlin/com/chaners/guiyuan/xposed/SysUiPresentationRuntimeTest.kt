@@ -8,6 +8,22 @@ import org.junit.Test
 
 class SysUiPresentationRuntimeTest {
     @Test
+    fun passiveDiagnosticSuppressesNonfatalButRetainsWrappedFatal() {
+        SysUiPresentationRuntime.emitPassiveDiagnostic {
+            throw IllegalStateException("diagnostic-logging-failed")
+        }
+        val fatal = OutOfMemoryError("diagnostic-fatal")
+        assertSame(
+            fatal,
+            runCatching {
+                SysUiPresentationRuntime.emitPassiveDiagnostic {
+                    throw InvocationTargetException(fatal)
+                }
+            }.exceptionOrNull(),
+        )
+    }
+
+    @Test
     fun optionalNativeReadDistinguishesAbsenceFromSuccessfulLookup() {
         assertEquals(
             "native-field",
