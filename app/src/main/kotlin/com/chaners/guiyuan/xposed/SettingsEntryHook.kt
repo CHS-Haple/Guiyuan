@@ -41,10 +41,8 @@ internal object SettingsEntryHook {
 
     internal fun reportFailure(message: String, error: Throwable) {
         rethrowFatal(error)
-        try {
+        SysUiPresentationRuntime.emitPassiveDiagnostic {
             Log.w(TAG, message, error)
-        } catch (failure: Throwable) {
-            rethrowFatal(failure)
         }
     }
 

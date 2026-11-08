@@ -103,10 +103,8 @@ internal object SysUiNetworkSource {
         onRuntimeFailure: (String, Throwable) -> Unit,
     ) {
         rethrowFatal(error)
-        try {
+        SysUiPresentationRuntime.emitPassiveDiagnostic {
             onRuntimeFailure(source, error)
-        } catch (failure: Throwable) {
-            rethrowFatal(failure)
         }
     }
 

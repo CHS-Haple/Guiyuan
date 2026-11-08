@@ -59,10 +59,8 @@ internal object SysUiIslandSource {
                         } catch (error: Throwable) {
                             SysUiPresentationRuntime.throwIfFatal(error)
                             if (warned.compareAndSet(false, true)) {
-                                try {
+                                SysUiPresentationRuntime.emitPassiveDiagnostic {
                                     Log.w("Guiyuan[Island]", "Observation failed", error)
-                                } catch (failure: Throwable) {
-                                    SysUiPresentationRuntime.throwIfFatal(failure)
                                 }
                             }
                         }

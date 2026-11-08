@@ -181,10 +181,8 @@ internal object SysUiBatterySource {
         val warned = AtomicBoolean(false)
         fun fallback(source: String, error: Throwable) {
             rethrowFatal(error)
-            try {
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
                 onRuntimeFailure(source, error)
-            } catch (failure: Throwable) {
-                rethrowFatal(failure)
             }
         }
 
