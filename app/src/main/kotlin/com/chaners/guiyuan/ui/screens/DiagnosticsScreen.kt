@@ -475,14 +475,36 @@ internal fun DiagnosticsScreen(
             }
         },
     ) {
-        if (!showRootGuide && integrityNotice.isNotEmpty()) {
-            item(key = "diagnostics-log-integrity") {
-                Text(
-                    text = integrityNotice,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceSecondary,
-                )
+        if (!showRootGuide) {
+            // A changing notice must not insert a new key before the summary and shift the title.
+            item(key = "diagnostics-header") {
+                Column {
+                    if (integrityNotice.isNotEmpty()) {
+                        Text(
+                            text = integrityNotice,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                        )
+                    }
+                    if (filteredEntries.isNotEmpty()) {
+                        Text(
+                            text = stringResource(R.string.diagnostics_events_summary, filteredEntries.size),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp)
+                                    .padding(top = 6.dp, bottom = 8.dp)
+                                    .graphicsLayer {
+                                        val shown = logProgress(rise.value, 0)
+                                        translationY = risePx * (1f - shown)
+                                        alpha = shown
+                                    },
+                            style = MiuixTheme.textStyles.subtitle,
+                            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                        )
+                    }
+                }
             }
         }
         when {
@@ -507,23 +529,6 @@ internal fun DiagnosticsScreen(
                 }
             }
             filteredEntries.isNotEmpty() -> {
-                item(key = "diagnostics-summary") {
-                    Text(
-                        text = stringResource(R.string.diagnostics_events_summary, filteredEntries.size),
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp)
-                                .padding(top = 6.dp, bottom = 8.dp)
-                                .graphicsLayer {
-                                    val shown = logProgress(rise.value, 0)
-                                    translationY = risePx * (1f - shown)
-                                    alpha = shown
-                                },
-                        style = MiuixTheme.textStyles.subtitle,
-                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    )
-                }
                 itemsIndexed(
                     items = filteredEntries,
                     key = { index, entry -> logRowKey(entry, index) },
