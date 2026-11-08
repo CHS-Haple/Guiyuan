@@ -401,7 +401,7 @@
     <string name="diagnostics_log_battery_transition">Charging: %1$s → %2$s</string>
     <string name="diagnostics_log_battery_native">Native: %1$s</string>
     <string name="diagnostics_log_battery_percent">Battery %1$d%%</string>
-    <string name="diagnostics_events_summary">Showing %1$d events</string>
+    <string name="diagnostics_events_summary">Showing %1$d log entries</string>
     <string name="diagnostics_collection_incomplete">Some logs could not be read. The displayed records may be incomplete.</string>
     <string name="diagnostics_capture_truncated">Log capture was truncated. Earlier records were not included.</string>
     <string name="diagnostics_report_lines_omitted">Export will omit %1$d earlier log lines.</string>
