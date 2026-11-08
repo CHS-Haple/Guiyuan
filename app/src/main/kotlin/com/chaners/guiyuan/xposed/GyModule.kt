@@ -4617,7 +4617,7 @@ class GyModule : XposedModule() {
         val previous = detailedDiagnosticsEnabled
         detailedDiagnosticsEnabled = enabled
         if (previous != detailedDiagnosticsEnabled) {
-            if (detailedDiagnosticsEnabled) {
+            if (deepDiagnosticsEnabled) {
                 SysUiTintSource.resetDiagnosticProbes()
             }
             logDiagnostic(
