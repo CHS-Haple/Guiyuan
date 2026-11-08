@@ -105,11 +105,16 @@ internal object StatusStateStore {
         val nextShown = current.mobileActivityShownIds.toMutableSet().apply {
             if (visible) add(subscriptionId) else remove(subscriptionId)
         }
-        current = current.copy(
-            mobileActivityShownIds = nextShown,
-            mobileActivityVisibilityObservedIds =
-                current.mobileActivityVisibilityObservedIds + subscriptionId,
-        )
+        if (
+            current.mobileActivityShownIds != nextShown ||
+            subscriptionId !in current.mobileActivityVisibilityObservedIds
+        ) {
+            current = current.copy(
+                mobileActivityShownIds = nextShown,
+                mobileActivityVisibilityObservedIds =
+                    current.mobileActivityVisibilityObservedIds + subscriptionId,
+            )
+        }
         return current.takeIf { it != before }
     }
 
