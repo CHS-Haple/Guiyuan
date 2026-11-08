@@ -233,7 +233,9 @@ class SceneBoundaryTest {
             ),
         )
     }
+}
 
+class SceneHomeAodFallbackTest {
     @Test
     fun disabledAodHomeFallbackRequiresHomeOriginAndOwnership() {
         assertTrue(
