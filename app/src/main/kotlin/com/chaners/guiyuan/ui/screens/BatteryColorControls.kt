@@ -10,13 +10,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
@@ -151,6 +156,7 @@ internal fun BatteryColorBottomSheet(
 ) {
     val context = LocalContext.current
     val uiStyle = LocalUiStyle.current
+    val detailCoordinates = remember { mutableStateOf<LayoutCoordinates?>(null) }
     var detailRequest by remember(show) { mutableStateOf<DetailRequest?>(null) }
     var showDetail by remember(show) { mutableStateOf(false) }
     var requestedSchemeKey by remember(show) { mutableStateOf<String?>(null) }
@@ -172,6 +178,25 @@ internal fun BatteryColorBottomSheet(
             detailSlot != null
 
     SideEffect { SheetTrace.observe(show, detailRequest != null, detailVisible) }
+
+    // Temporary B1804 probe: sample the child's measured root position at frame boundaries
+    // during native exit, without changing the MIUIX animation or upstream code.
+    // A constant/unavailable position is inconclusive because this observer is not the
+    // authoritative animationProgress/graphicsLayer writer.
+    LaunchedEffect(detailVisible, detailRequest) {
+        if (!detailVisible && detailRequest != null) {
+            SheetTrace.startGeometry()
+            repeat(80) {
+                withFrameNanos {
+                    val coordinates = detailCoordinates.value?.takeIf { it.isAttached }
+                    SheetTrace.geometryFrame(
+                        topYPx = coordinates?.positionInRoot()?.y,
+                        heightPx = coordinates?.size?.height,
+                    )
+                }
+            }
+        }
+    }
 
     // Capture only the first sheet, not the glass surfaces above it.
     val sheetColor = MiuixTheme.colorScheme.background
@@ -280,7 +305,8 @@ internal fun BatteryColorBottomSheet(
                 .drawWithContent {
                     SheetTrace.draw(parent = false)
                     drawContent()
-                },
+                }
+                .onGloballyPositioned { detailCoordinates.value = it },
             title =
                 detailSlot?.let { slot ->
                     stringResource(

@@ -12,9 +12,11 @@ internal object SheetTrace {
     private const val LIMIT = 96
 
     private data class Entry(val timeNs: Long, val event: String)
+    private data class Geometry(val timeNs: Long, val topYPx: Float?, val heightPx: Int?)
 
     private val lock = Any()
     private val events = ArrayDeque<Entry>(LIMIT)
+    private val geometry = ArrayDeque<Geometry>(LIMIT)
     private var lastState: String? = null
     private val afterFinish = AtomicBoolean(false)
     private val parentAfterFinish = AtomicBoolean(false)
@@ -36,6 +38,19 @@ internal object SheetTrace {
             }
         }
         if (changed) record("state $state")
+    }
+
+    // Geometry records are reset on each exit; export immediately after a visible blink.
+    fun startGeometry() {
+        synchronized(lock) { geometry.clear() }
+        record("child.geometry.begin")
+    }
+
+    fun geometryFrame(topYPx: Float?, heightPx: Int?) {
+        synchronized(lock) {
+            if (geometry.size == LIMIT) geometry.removeFirst()
+            geometry.addLast(Geometry(SystemClock.elapsedRealtimeNanos(), topYPx, heightPx))
+        }
     }
 
     fun finish() {
@@ -62,12 +77,18 @@ internal object SheetTrace {
     fun hasEvents(): Boolean = synchronized(lock) { events.isNotEmpty() }
 
     fun reportLines(): List<String> {
-        val saved = synchronized(lock) { events.toList() }
+        val (saved, sampled) = synchronized(lock) { events.toList() to geometry.toList() }
         val first = saved.firstOrNull()?.timeNs ?: return listOf("events=0")
         return listOf("events=${saved.size}", "clock=elapsedRealtime; relativeMs") +
             saved.map { item ->
                 val ms = (item.timeNs - first) / 1_000_000.0
                 "%.3f %s".format(java.util.Locale.ROOT, ms, item.event)
+            } +
+            listOf("geometrySamples=${sampled.size}", "geometry=child topYPx in popup root; missing values inconclusive") +
+            sampled.map { frame ->
+                val ms = (frame.timeNs - first) / 1_000_000.0
+                val y = frame.topYPx?.let { "%.1f".format(java.util.Locale.ROOT, it) } ?: "n/a"
+                "%.3f child.geometry.frame topYPx=%s heightPx=%s".format(java.util.Locale.ROOT, ms, y, frame.heightPx ?: "n/a")
             }
     }
 }
