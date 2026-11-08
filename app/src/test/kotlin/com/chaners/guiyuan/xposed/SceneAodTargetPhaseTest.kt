@@ -115,6 +115,7 @@ class SceneAodTargetPhaseTest {
             ),
         )
     }
+
     @Test
     fun nativeStatusIconAlphaMaintainsStableOriginFallbacks() {
         fun expectProjection(
@@ -156,5 +157,4 @@ class SceneAodTargetPhaseTest {
         expectProjection(false, keyguard, 1f, native)
         expectProjection(false, unknown, 0.5f, native)
     }
-
 }
