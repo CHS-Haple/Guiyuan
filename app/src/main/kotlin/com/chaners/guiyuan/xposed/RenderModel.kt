@@ -5,6 +5,7 @@ import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
 import com.chaners.guiyuan.xposed.network.ConnectivityPolicy
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.SignalStrength
+import com.chaners.guiyuan.xposed.network.SysUiConnectivitySource
 
 // Null is an observed unknown level; absent or unavailable signals do not form dual rows.
 internal data class DualMobileLevels(val sim1: Int?, val sim2: Int?)
@@ -182,6 +183,19 @@ internal data class RenderModel(
                     is CenterIndicator.Wifi -> snapshot.wifiActivityResId
                     is CenterIndicator.MobileType ->
                         snapshot.mobileActivityResIds[activitySubscriptionId]
+                    CenterIndicator.Empty ->
+                        if (
+                            presentation.connectivity.known &&
+                            presentation.connectivity.transport ==
+                                SysUiConnectivitySource.Transport.NONE &&
+                            presentation.connectivity.mobileDataEnabled != false &&
+                            snapshot.wifi is StatusStateStore.WifiState.Hidden &&
+                            !airplaneMode && !mobileRecoveryPending &&
+                            !nativeNoSimVisible && !mobileUnavailableMark
+                        ) {
+                            // Native activity can remain visible during a default-network handoff.
+                            snapshot.mobileActivityResIds[activitySubscriptionId]
+                        } else null
                     else -> null
                 },
                 mobileLevel = mobileLevel,

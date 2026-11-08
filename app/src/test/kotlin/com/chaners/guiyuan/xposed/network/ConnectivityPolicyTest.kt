@@ -271,46 +271,15 @@ class ConnectivityPolicyTest {
                 mobileType = gateMobileType,
             ),
         )
-    }
-
-    @Test
-    fun defaultNetworkLossRetainsNativeMobileWithoutInventingInternet() {
-        val lost =
-            gateConnected.copy(
-                transport = SysUiConnectivitySource.Transport.NONE,
-                validated = false,
-                hasInternetCapability = false,
-            )
-
-        assertEquals(
-            CenterIndicator.MobileType(
-                label = "LTE",
-                enhanced = false,
-                internet = InternetState.NO_INTERNET,
-            ),
-            ConnectivityPolicy.resolve(
-                wifi = StatusStateStore.WifiState.Hidden,
-                airplaneMode = false,
-                connectivity = lost,
-                mobileType = gateMobileType,
-            ),
-        )
         assertEquals(
             CenterIndicator.Empty,
             ConnectivityPolicy.resolve(
                 wifi = StatusStateStore.WifiState.Hidden,
                 airplaneMode = false,
-                connectivity = lost.copy(mobileDataEnabled = false),
+                connectivity = gateConnected.copy(
+                    transport = SysUiConnectivitySource.Transport.NONE,
+                ),
                 mobileType = gateMobileType,
-            ),
-        )
-        assertEquals(
-            CenterIndicator.Empty,
-            ConnectivityPolicy.resolve(
-                wifi = StatusStateStore.WifiState.Hidden,
-                airplaneMode = false,
-                connectivity = lost,
-                mobileType = null,
             ),
         )
     }

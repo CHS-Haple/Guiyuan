@@ -46,14 +46,7 @@ internal object ConnectivityPolicy {
                     CenterIndicator.Empty
                 }
 
-            SysUiConnectivitySource.Transport.NONE ->
-                if (connectivity.mobileDataEnabled == false) {
-                    CenterIndicator.Empty
-                } else {
-                    // Default-network loss does not invalidate the native mobile type.
-                    mobileType?.asCenterIndicator(InternetState.NO_INTERNET)
-                        ?: CenterIndicator.Empty
-                }
+            SysUiConnectivitySource.Transport.NONE -> CenterIndicator.Empty
             SysUiConnectivitySource.Transport.WIFI -> null
         }
     }

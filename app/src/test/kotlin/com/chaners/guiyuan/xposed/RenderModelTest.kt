@@ -99,6 +99,61 @@ class RenderModelTest {
     }
 
     @Test
+    fun defaultNetworkLossDoesNotOverrideNativeActivityVisibility() {
+        val observed =
+            StatusStateStore.Snapshot(
+                battery = StatusStateStore.BatteryState(percent = 81, charging = false),
+                wifi = StatusStateStore.WifiState.Hidden,
+                mobile = mapOf(
+                    1 to StatusStateStore.MobileState(signal = SignalStrength.Level(3)),
+                ),
+                mobileActivityResIds = mapOf(1 to 220),
+                airplaneMode = false,
+            )
+        val lost =
+            presentation(
+                connectivity = connectivity(
+                    transport = SysUiConnectivitySource.Transport.NONE,
+                    validated = false,
+                    mobileDataEnabled = true,
+                ),
+                networkType = mobileType("5G"),
+            )
+
+        val nativeStillVisible = RenderModel.from(observed, lost, 1)
+        assertTrue(nativeStillVisible?.centerIndicator is CenterIndicator.Empty)
+        assertEquals(220, nativeStillVisible?.networkActivityResId)
+
+        // The native activity collector, not the default route, owns disappearance.
+        assertNull(
+            RenderModel.from(
+                observed.copy(mobileActivityResIds = emptyMap()), lost, 1,
+            )?.networkActivityResId,
+        )
+        assertNull(
+            RenderModel.from(
+                observed,
+                lost.copy(connectivity = lost.connectivity.copy(mobileDataEnabled = false)),
+                1,
+            )?.networkActivityResId,
+        )
+        assertNull(
+            RenderModel.from(
+                observed.copy(airplaneMode = true), lost, 1,
+            )?.networkActivityResId,
+        )
+        assertNull(
+            RenderModel.from(
+                observed.copy(mobile = mapOf(
+                    1 to StatusStateStore.MobileState(signal = SignalStrength.Unavailable),
+                )),
+                lost,
+                1,
+            )?.networkActivityResId,
+        )
+    }
+
+    @Test
     fun aggregateActivityReadsSoleVisibleNativeRootEvenWhenDataSimIsSim2() {
         val native = dualPresentation(mapOf(0 to 14, 1 to 3))
         val state = snapshot(
