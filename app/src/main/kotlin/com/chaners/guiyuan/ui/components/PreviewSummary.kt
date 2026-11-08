@@ -76,13 +76,13 @@ private fun PreviewNetworkSummary(
             PreviewCenterSource.NO_SIM -> R.drawable.ic_material_symbol_sim_card
         }
     val networkDetails = previewNetworkDetails(state, center, mobileSignal)
-        SummaryField(
-            icon = networkIcon,
-            value = network,
-            alongside = networkSignal,
-            details = networkDetails,
-            modifier = modifier,
-        )
+    SummaryField(
+        icon = networkIcon,
+        value = network,
+        alongside = networkSignal,
+        details = networkDetails,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -98,26 +98,26 @@ private fun PreviewBatterySummary(
             PreviewBatteryMode.SUPER_POWER_SAVE -> R.string.home_preview_battery_mode_super_power_save_compact
         }
     val charging =
-        when (state.chargingState) {
-            PreviewChargingState.NOT_CHARGING -> R.string.home_preview_charging_none
-            PreviewChargingState.CHARGING -> R.string.home_preview_charging_normal
-            PreviewChargingState.SUPER_FAST_CHARGING -> R.string.home_preview_charging_super_fast_compact
-        }
+    when (state.chargingState) {
+        PreviewChargingState.NOT_CHARGING -> R.string.home_preview_charging_none
+        PreviewChargingState.CHARGING -> R.string.home_preview_charging_normal
+        PreviewChargingState.SUPER_FAST_CHARGING -> R.string.home_preview_charging_super_fast_compact
+    }
 
 
-        SummaryField(
-            icon = R.drawable.ic_material_symbol_battery_5_bar,
-            value = stringResource(R.string.home_preview_battery_percent, state.batteryPercent),
-            alongside = stringResource(batteryMode),
-            details =
-                listOf(
-                    SummaryDetail(
-                        icon = R.drawable.ic_material_symbol_bolt,
-                        value = stringResource(charging),
-                    ),
+    SummaryField(
+        icon = R.drawable.ic_material_symbol_battery_5_bar,
+        value = stringResource(R.string.home_preview_battery_percent, state.batteryPercent),
+        alongside = stringResource(batteryMode),
+        details =
+            listOf(
+                SummaryDetail(
+                    icon = R.drawable.ic_material_symbol_bolt,
+                    value = stringResource(charging),
                 ),
-            modifier = modifier,
-        )
+            ),
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -125,30 +125,30 @@ private fun previewCenterLabel(
     state: PreviewSandboxUiState,
     center: PreviewCenterSource,
 ): String =
-        when (center) {
-            PreviewCenterSource.WIFI ->
-                when (state.wifiState) {
-                    PreviewWifiState.CONNECTED -> stringResource(R.string.home_preview_network_mode_wifi)
-                    PreviewWifiState.NO_INTERNET -> stringResource(R.string.home_preview_wifi_no_internet)
-                    PreviewWifiState.HOTSPOT -> stringResource(R.string.home_preview_wifi_hotspot)
-                    PreviewWifiState.DUAL_WIFI -> stringResource(R.string.home_preview_wifi_dual_acceleration)
-                }
-            PreviewCenterSource.AIRPLANE -> stringResource(R.string.home_preview_airplane_title)
-            PreviewCenterSource.NO_SIM -> stringResource(R.string.home_preview_sim_absent)
-            PreviewCenterSource.EMPTY -> stringResource(R.string.home_preview_network_none)
-            PreviewCenterSource.MOBILE ->
-                when (state.dataMobileNetwork) {
-                    PreviewMobileNetwork.NONE -> stringResource(R.string.home_preview_network_none)
-                    PreviewMobileNetwork.TWO_G -> stringResource(R.string.home_preview_network_2g)
-                    PreviewMobileNetwork.EDGE -> stringResource(R.string.home_preview_network_edge)
-                    PreviewMobileNetwork.THREE_G -> stringResource(R.string.home_preview_network_3g)
-                    PreviewMobileNetwork.H_PLUS -> stringResource(R.string.home_preview_network_h_plus)
-                    PreviewMobileNetwork.FOUR_G -> stringResource(R.string.home_preview_network_4g)
-                    PreviewMobileNetwork.LTE -> stringResource(R.string.home_preview_network_lte)
-                    PreviewMobileNetwork.FIVE_G -> stringResource(R.string.home_preview_network_5g)
-                    PreviewMobileNetwork.FIVE_GA -> stringResource(R.string.home_preview_network_5ga)
-                }
-        }
+    when (center) {
+        PreviewCenterSource.WIFI ->
+            when (state.wifiState) {
+                PreviewWifiState.CONNECTED -> stringResource(R.string.home_preview_network_mode_wifi)
+                PreviewWifiState.NO_INTERNET -> stringResource(R.string.home_preview_wifi_no_internet)
+                PreviewWifiState.HOTSPOT -> stringResource(R.string.home_preview_wifi_hotspot)
+                PreviewWifiState.DUAL_WIFI -> stringResource(R.string.home_preview_wifi_dual_acceleration)
+            }
+        PreviewCenterSource.AIRPLANE -> stringResource(R.string.home_preview_airplane_title)
+        PreviewCenterSource.NO_SIM -> stringResource(R.string.home_preview_sim_absent)
+        PreviewCenterSource.EMPTY -> stringResource(R.string.home_preview_network_none)
+        PreviewCenterSource.MOBILE ->
+            when (state.dataMobileNetwork) {
+                PreviewMobileNetwork.NONE -> stringResource(R.string.home_preview_network_none)
+                PreviewMobileNetwork.TWO_G -> stringResource(R.string.home_preview_network_2g)
+                PreviewMobileNetwork.EDGE -> stringResource(R.string.home_preview_network_edge)
+                PreviewMobileNetwork.THREE_G -> stringResource(R.string.home_preview_network_3g)
+                PreviewMobileNetwork.H_PLUS -> stringResource(R.string.home_preview_network_h_plus)
+                PreviewMobileNetwork.FOUR_G -> stringResource(R.string.home_preview_network_4g)
+                PreviewMobileNetwork.LTE -> stringResource(R.string.home_preview_network_lte)
+                PreviewMobileNetwork.FIVE_G -> stringResource(R.string.home_preview_network_5g)
+                PreviewMobileNetwork.FIVE_GA -> stringResource(R.string.home_preview_network_5ga)
+            }
+    }
 
 @Composable
 private fun previewNetworkDetails(
@@ -156,33 +156,33 @@ private fun previewNetworkDetails(
     center: PreviewCenterSource,
     mobileSignal: String,
 ): List<SummaryDetail> =
-        listOfNotNull(
-            if (state.mobileControlsEnabled && center != PreviewCenterSource.MOBILE) {
-                SummaryDetail(
-                    icon = R.drawable.ic_material_symbol_signal_cellular_alt,
-                    value = stringResource(R.string.home_preview_summary_mobile_title),
-                    alongside = mobileSignal,
-                )
-            } else {
-                null
-            },
-            if (state.networkMode == PreviewNetworkMode.WIFI && state.airplaneMode) {
-                SummaryDetail(
-                    icon = R.drawable.ic_material_symbol_airplanemode_active,
-                    value = stringResource(R.string.home_preview_airplane_title),
-                )
-            } else {
-                null
-            },
-            if (!state.hasSim && center != PreviewCenterSource.NO_SIM) {
-                SummaryDetail(
-                    icon = R.drawable.ic_material_symbol_sim_card,
-                    value = stringResource(R.string.home_preview_sim_absent),
-                )
-            } else {
-                null
-            },
-        )
+    listOfNotNull(
+        if (state.mobileControlsEnabled && center != PreviewCenterSource.MOBILE) {
+            SummaryDetail(
+                icon = R.drawable.ic_material_symbol_signal_cellular_alt,
+                value = stringResource(R.string.home_preview_summary_mobile_title),
+                alongside = mobileSignal,
+            )
+        } else {
+            null
+        },
+        if (state.networkMode == PreviewNetworkMode.WIFI && state.airplaneMode) {
+            SummaryDetail(
+                icon = R.drawable.ic_material_symbol_airplanemode_active,
+                value = stringResource(R.string.home_preview_airplane_title),
+            )
+        } else {
+            null
+        },
+        if (!state.hasSim && center != PreviewCenterSource.NO_SIM) {
+            SummaryDetail(
+                icon = R.drawable.ic_material_symbol_sim_card,
+                value = stringResource(R.string.home_preview_sim_absent),
+            )
+        } else {
+            null
+        },
+    )
 
 
 private data class SummaryDetail(
