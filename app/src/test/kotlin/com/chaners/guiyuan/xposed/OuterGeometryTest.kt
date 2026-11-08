@@ -189,6 +189,18 @@ class OuterGeometryTest {
                 0.0002f,
             )
 
+        }
+    }
+
+    @Test
+    fun dualRowDotsStayInsideCanvasAndSeparatedAcrossWeights() {
+        for (step in 0..28) {
+            val scale = 0.6f + step * 0.05f
+            val geometry = OuterGeometry.resolve(scale)
+            val dotRadius = geometry.dualMobileDotRadius
+            val gap = geometry.dualRowGap
+            val width = geometry.horizontalDotSpan
+
             val dots = mutableListOf<Pair<Float, Float>>()
             for (index in 0..3) {
                 val x = (index - 1.5f) * (width / 3f)
@@ -222,7 +234,6 @@ class OuterGeometryTest {
                 }
             }
         }
-
     }
 
     @Test
