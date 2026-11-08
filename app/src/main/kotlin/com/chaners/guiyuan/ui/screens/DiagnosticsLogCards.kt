@@ -157,7 +157,7 @@ internal fun LogCard(
     }
 }
 @Composable
-private fun LogStateCard(
+internal fun LogStateCard(
     text: String,
     modifier: Modifier = Modifier,
 ) {
