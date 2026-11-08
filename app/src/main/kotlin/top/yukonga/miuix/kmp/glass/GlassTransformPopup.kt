@@ -40,6 +40,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
@@ -516,7 +517,7 @@ internal fun transformPanelAlpha(
 }
 
 /** The panel's rectangle partway from the control's own to the menu's. */
-private fun androidx.compose.ui.unit.Density.transformFrame(
+private fun Density.transformFrame(
     anchor: Rect,
     end: Size,
     page: Size,
