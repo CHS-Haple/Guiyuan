@@ -4266,7 +4266,9 @@ internal class StatusPainter(
         }
         if (visual.bothSidesShowActivity) {
             model.networkActivityResId?.let { drawableAvailable(it, false) }?.let { return it }
-            if (!visual.bothSidesHideIdleActivity) {
+            // Once SystemUI has reported its native activity state, a GONE
+            // result must not be replaced with a fabricated idle drawable.
+            if (!visual.bothSidesHideIdleActivity && !model.networkActivityObserved) {
                 idleActivityResourceId(model.centerIndicator)?.let { id ->
                     drawableAvailable(id, false)?.copy(idle = true)
                 }?.let { return it }
