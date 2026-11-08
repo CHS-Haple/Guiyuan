@@ -135,6 +135,18 @@ class RenderModelTest {
     }
 
     @Test
+    fun nativeVisibilityBeforeResourceWaitsForDrawableThenDisplays() {
+        val observed = vpnHandoffActivity().copy(mobileActivityResIds = emptyMap())
+        val lost = vpnHandoffPresentation()
+        // Native VISIBLE alone cannot manufacture a drawable.
+        assertNull(RenderModel.from(observed, lost, 1)?.networkActivityResId)
+        // The subsequent native drawable must be accepted without waiting for
+        // a second visibility emission from the independent collector.
+        val drawableArrived = observed.copy(mobileActivityResIds = mapOf(1 to 220))
+        assertEquals(220, RenderModel.from(drawableArrived, lost, 1)?.networkActivityResId)
+    }
+
+    @Test
     fun nativeVisibilityAndResourceAbsenceIndependentlyHideActivity() {
         val observed = vpnHandoffActivity()
         val lost = vpnHandoffPresentation()

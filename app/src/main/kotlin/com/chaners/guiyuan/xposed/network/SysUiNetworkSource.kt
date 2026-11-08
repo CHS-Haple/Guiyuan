@@ -627,10 +627,13 @@ internal object SysUiNetworkSource {
                                     // because its collector is a no-op; do not treat that
                                     // stale child state as an actually visible icon.
                                     val taggedResId = nativeMobileActivityResourceId(image)
+                                    // Visibility and resource are independent native
+                                    // collectors. The child may become visible before
+                                    // the first Drawable is delivered; keep that
+                                    // visibility rather than requiring a resource here.
                                     val effectiveVisible =
                                         rootVisible && activityVisible &&
-                                            image.visibility == View.VISIBLE &&
-                                            taggedResId != null
+                                            image.visibility == View.VISIBLE
                                     onMobileActivityVisibility(
                                         subId, taggedResId, effectiveVisible,
                                     )

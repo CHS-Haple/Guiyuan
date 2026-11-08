@@ -118,6 +118,25 @@ class StatusStateStoreActivityTest {
     }
 
     @Test
+    fun nativeVisibilityBeforeDrawableKeepsTheVisibleOwnerState() {
+        StatusStateStore.restoreHotReloadState(null)
+
+        // A native VISIBLE event can precede the independent drawable collector.
+        val visible = StatusStateStore.updateMobileActivityVisibility(1, null, true)
+            ?: error("first native visibility must be committed")
+        assertTrue(1 in visible.mobileActivityShownIds)
+        assertTrue(1 in visible.mobileActivityVisibilityObservedIds)
+        assertNull(visible.mobileActivityResIds[1])
+
+        val resource = StatusStateStore.updateMobileActivity(1, 220)
+            ?: error("late native resource must be committed")
+        assertTrue(1 in resource.mobileActivityShownIds)
+        assertEquals(220, resource.mobileActivityResIds[1])
+
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
     fun nativeHiddenStateSurvivesHotReloadUntilNewVisibilityObservation() {
         val saved = StatusStateStore.Snapshot(
             mobileActivityResIds = mapOf(1 to 220),
