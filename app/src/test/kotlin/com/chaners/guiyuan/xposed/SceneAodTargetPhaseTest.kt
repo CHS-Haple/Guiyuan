@@ -115,4 +115,46 @@ class SceneAodTargetPhaseTest {
             ),
         )
     }
+    @Test
+    fun nativeStatusIconAlphaMaintainsStableOriginFallbacks() {
+        fun expectProjection(
+            keyguard: Boolean,
+            origin: ScenePolicy.StableKeyguardAodScene,
+            alpha: Float?,
+            expected: ScenePolicy.KeyguardAodProjection,
+        ) {
+            assertEquals(
+                "keyguard=${keyguard} origin=${origin} alpha=${alpha}",
+                expected,
+                ScenePolicy.resolveAnimatingKeyguardAodProjection(
+                    keyguardEnabled = keyguard,
+                    aodEnabled = !keyguard,
+                    steadySourceScene = SourceScene.KEYGUARD,
+                    lastStableFamilyScene = origin,
+                    homePresentationOwned = false,
+                    keyguardStatusIconsAlpha = alpha,
+                ),
+            )
+        }
+
+        val keyguard = ScenePolicy.StableKeyguardAodScene.KEYGUARD
+        val aod = ScenePolicy.StableKeyguardAodScene.AOD
+        val unknown = ScenePolicy.StableKeyguardAodScene.UNKNOWN
+        val native = ScenePolicy.KeyguardAodProjection.NATIVE
+        val showKeyguard = ScenePolicy.KeyguardAodProjection.KEYGUARD
+        val showAod = ScenePolicy.KeyguardAodProjection.AOD
+
+        expectProjection(true, keyguard, 0f, native)
+        expectProjection(true, keyguard, 0.5f, showKeyguard)
+        expectProjection(true, aod, 0f, native)
+        expectProjection(true, aod, 0.5f, showKeyguard)
+        expectProjection(true, unknown, 0f, showKeyguard)
+        expectProjection(true, aod, null, showKeyguard)
+        expectProjection(false, aod, 0f, showAod)
+        expectProjection(false, aod, 0.5f, native)
+        expectProjection(false, keyguard, 0.5f, showAod)
+        expectProjection(false, keyguard, 1f, native)
+        expectProjection(false, unknown, 0.5f, native)
+    }
+
 }
