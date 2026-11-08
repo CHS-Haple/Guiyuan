@@ -417,7 +417,7 @@
     <string name="diagnostics_root_unavailable_title">Unable to read runtime logs</string>
     <string name="diagnostics_root_unavailable_message">Reading runtime logs requires Root access. Check Guiyuan permissions in your Root manager.</string>
     <string name="diagnostics_root_unavailable_export">You can still export a basic report without Root, but it will not include runtime logs.</string>
-    <string name="diagnostics_no_events_hint">Log reading finished, but there are no key events to display.</string>
+    <string name="diagnostics_no_events_hint">No key events are available in this capture. Pull down to refresh.</string>
     <string name="diagnostics_retry_logs">Read logs again</string>
     <string name="diagnostics_events_empty">No key diagnostic events in the current runtime session</string>
     <string name="section_diagnostic_report">Diagnostics &amp; reports</string>
