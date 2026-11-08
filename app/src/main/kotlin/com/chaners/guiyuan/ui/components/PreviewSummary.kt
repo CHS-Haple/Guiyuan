@@ -98,12 +98,11 @@ private fun PreviewBatterySummary(
             PreviewBatteryMode.SUPER_POWER_SAVE -> R.string.home_preview_battery_mode_super_power_save_compact
         }
     val charging =
-    when (state.chargingState) {
-        PreviewChargingState.NOT_CHARGING -> R.string.home_preview_charging_none
-        PreviewChargingState.CHARGING -> R.string.home_preview_charging_normal
-        PreviewChargingState.SUPER_FAST_CHARGING -> R.string.home_preview_charging_super_fast_compact
-    }
-
+        when (state.chargingState) {
+            PreviewChargingState.NOT_CHARGING -> R.string.home_preview_charging_none
+            PreviewChargingState.CHARGING -> R.string.home_preview_charging_normal
+            PreviewChargingState.SUPER_FAST_CHARGING -> R.string.home_preview_charging_super_fast_compact
+        }
 
     SummaryField(
         icon = R.drawable.ic_material_symbol_battery_5_bar,
@@ -183,7 +182,6 @@ private fun previewNetworkDetails(
             null
         },
     )
-
 
 private data class SummaryDetail(
     @DrawableRes val icon: Int,
