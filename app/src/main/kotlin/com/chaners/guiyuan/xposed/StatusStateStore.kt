@@ -241,6 +241,14 @@ internal object StatusStateStore {
                     listOf(id, resourceId)
                 }.toIntArray(),
             )
+            putIntArray(
+                KEY_MOBILE_ACTIVITY_SHOWN_IDS,
+                current.mobileActivityShownIds.toIntArray(),
+            )
+            putIntArray(
+                KEY_MOBILE_ACTIVITY_VISIBILITY_OBSERVED_IDS,
+                current.mobileActivityVisibilityObservedIds.toIntArray(),
+            )
             putBoolean(KEY_MOBILE_RECOVERY_PENDING, current.mobileRecoveryPending)
             putInt(
                 KEY_AIRPLANE,
@@ -345,6 +353,12 @@ internal object StatusStateStore {
                 }
             }
         }
+        val visibilityObserved =
+            (bundle.getIntArray(KEY_MOBILE_ACTIVITY_VISIBILITY_OBSERVED_IDS)
+                ?: IntArray(0)).filter { it >= 0 }.toSet()
+        val shown =
+            (bundle.getIntArray(KEY_MOBILE_ACTIVITY_SHOWN_IDS)
+                ?: IntArray(0)).filter { it in visibilityObserved }.toSet()
         current = mergeHotReloadSnapshots(
             saved = Snapshot(
                 battery = battery,
@@ -352,6 +366,8 @@ internal object StatusStateStore {
                 wifiActivityResId = bundle.getInt(KEY_WIFI_ACTIVITY_RES_ID).takeIf { it > 0 },
                 mobile = mobile,
                 mobileActivityResIds = transferredActivity,
+                mobileActivityShownIds = shown,
+                mobileActivityVisibilityObservedIds = visibilityObserved,
                 airplaneMode = airplane,
                 mobileRecoveryPending = bundle.getBoolean(KEY_MOBILE_RECOVERY_PENDING, false),
             ),
@@ -382,8 +398,13 @@ internal object StatusStateStore {
                 if (airplaneMode != true) putAll(fresh.mobileActivityResIds)
             },
             mobileActivityObservedIds = fresh.mobileActivityObservedIds,
-            mobileActivityShownIds = fresh.mobileActivityShownIds,
-            mobileActivityVisibilityObservedIds = fresh.mobileActivityVisibilityObservedIds,
+            mobileActivityShownIds = if (airplaneMode == true) emptySet() else {
+                (saved.mobileActivityShownIds - fresh.mobileActivityVisibilityObservedIds) +
+                    fresh.mobileActivityShownIds
+            },
+            mobileActivityVisibilityObservedIds =
+                saved.mobileActivityVisibilityObservedIds +
+                    fresh.mobileActivityVisibilityObservedIds,
             mobileRecoveryPending = mobileRecoveryPending,
             airplaneMode = airplaneMode,
         )
@@ -453,6 +474,9 @@ internal object StatusStateStore {
     private const val KEY_WIFI_RES_ID = "wifiResId"
     private const val KEY_WIFI_ACTIVITY_RES_ID = "wifiActivityResId"
     private const val KEY_MOBILE_ACTIVITY_RES_IDS = "mobileActivityResIds"
+    private const val KEY_MOBILE_ACTIVITY_SHOWN_IDS = "mobileActivityShownIds"
+    private const val KEY_MOBILE_ACTIVITY_VISIBILITY_OBSERVED_IDS =
+        "mobileActivityVisibilityObservedIds"
     private const val KEY_WIFI_SIGNAL = "wifiSignal"
     private const val KEY_WIFI_INTERNET = "wifiInternet"
     private const val KEY_AIRPLANE = "airplane"
