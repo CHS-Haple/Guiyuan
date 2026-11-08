@@ -23,10 +23,8 @@ internal object SysUiCoreRuntime {
         fun attachSource(name: String, block: () -> Boolean): Boolean =
             runCatching(block).getOrElse { error ->
                 SysUiPresentationRuntime.throwIfFatal(error)
-                try {
+                SysUiPresentationRuntime.emitPassiveDiagnostic {
                     onEvent?.invoke("core source=$name attach failed type=${error.javaClass.simpleName}")
-                } catch (failure: Throwable) {
-                    SysUiPresentationRuntime.throwIfFatal(failure)
                 }
                 false
             }

@@ -52,10 +52,8 @@ internal object KeyguardIconTransitionSource {
                             onTransition()
                         } catch (error: Throwable) {
                             SysUiPresentationRuntime.throwIfFatal(error)
-                            try {
+                            SysUiPresentationRuntime.emitPassiveDiagnostic {
                                 onRuntimeFailure(error)
-                            } catch (failure: Throwable) {
-                                SysUiPresentationRuntime.throwIfFatal(failure)
                             }
                         }
                         try {
@@ -69,10 +67,8 @@ internal object KeyguardIconTransitionSource {
                         } catch (error: Throwable) {
                             SysUiPresentationRuntime.throwIfFatal(error)
                             if (warned.compareAndSet(false, true)) {
-                                try {
+                                SysUiPresentationRuntime.emitPassiveDiagnostic {
                                     Log.w("Guiyuan[Keyguard]", "Diagnostic failed", error)
-                                } catch (failure: Throwable) {
-                                    SysUiPresentationRuntime.throwIfFatal(failure)
                                 }
                             }
                         }

@@ -45,10 +45,8 @@ internal object FullAodTransitionSource {
         val warned = AtomicBoolean(false)
         fun fallback(stage: String, error: Throwable) {
             SysUiPresentationRuntime.throwIfFatal(error)
-            try {
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
                 onRuntimeFailure(stage, error)
-            } catch (failure: Throwable) {
-                SysUiPresentationRuntime.throwIfFatal(failure)
             }
         }
         val handle =
