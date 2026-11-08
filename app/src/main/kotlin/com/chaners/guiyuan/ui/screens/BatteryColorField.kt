@@ -131,4 +131,3 @@ private fun DrawScope.drawBatteryPaletteCursor(
         style = Stroke(width = 3.dp.toPx()),
     )
 }
-
