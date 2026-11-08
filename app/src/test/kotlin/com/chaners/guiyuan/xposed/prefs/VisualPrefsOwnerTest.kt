@@ -207,6 +207,8 @@ class VisualPrefsOwnerTest {
         assertEquals(0, prefs.listenerCount)
     }
 
+    // Android SharedPreferences requires this full method surface in a test double.
+    @Suppress("TooManyFunctions")
     private class FakePreferences(private var dual: Boolean) : SharedPreferences {
         private val listeners =
             linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
