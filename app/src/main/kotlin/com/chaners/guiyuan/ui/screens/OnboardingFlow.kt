@@ -1156,6 +1156,15 @@ private fun GuidePermissionItem(
             }
         }
     }
+    GuidePermissionDetails(expanded = expanded, purpose = purpose, guidance = guidance)
+}
+
+@Composable
+private fun GuidePermissionDetails(
+    expanded: Boolean,
+    purpose: String,
+    guidance: String?,
+) {
     if (expanded) {
         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
     }
