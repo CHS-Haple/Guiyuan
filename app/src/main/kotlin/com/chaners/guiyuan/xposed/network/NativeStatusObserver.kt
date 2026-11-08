@@ -7,6 +7,7 @@ import android.widget.ImageView
 import android.graphics.drawable.Icon
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
 import com.chaners.guiyuan.xposed.PresentationStore
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -23,12 +24,7 @@ internal object NativeStatusObserver {
     }
 
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private inline fun reportEvent(message: () -> String) {
         readOrNull { eventSink?.takeIf { diagnosticsEnabled() }?.invoke(message()) }

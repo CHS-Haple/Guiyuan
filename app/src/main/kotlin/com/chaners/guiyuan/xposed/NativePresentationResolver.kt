@@ -10,7 +10,6 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import java.lang.reflect.Field
-import java.lang.reflect.InvocationTargetException
 import java.io.File
 import java.io.FileInputStream
 import java.nio.channels.FileChannel
@@ -28,13 +27,7 @@ internal object NativePresentationResolver {
     private val drawableFields = ConcurrentHashMap<Class<*>, DrawableFields>()
 
     internal inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            val cause = (error as? InvocationTargetException)?.targetException ?: error
-            if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     fun resolve(
         state: StatusStateStore.Snapshot,

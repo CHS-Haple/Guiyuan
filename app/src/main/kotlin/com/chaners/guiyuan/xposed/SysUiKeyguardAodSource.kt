@@ -33,12 +33,7 @@ internal object SysUiKeyguardAodSource {
     }
 
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     // Stored values must not keep their weak View keys alive.
     private val states = WeakHashMap<View, AodState>()

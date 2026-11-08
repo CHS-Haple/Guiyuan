@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.telephony.SubscriptionManager
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import java.lang.reflect.InvocationTargetException
 
 internal object SysUiDefaultDataSubSource {
@@ -17,12 +18,7 @@ internal object SysUiDefaultDataSubSource {
     }
 
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private var registeredContext: Context? = null
     private var receiver: BroadcastReceiver? = null
