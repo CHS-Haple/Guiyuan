@@ -35,6 +35,20 @@ class HotReloadTransferTest {
     }
 
     @Test
+    fun restoredTintsRequireIntWireValuesAndVisibleAlpha() {
+        val opaque = 0xff123456.toInt()
+        val translucent = 0x0f123456
+        val transparent = 0x00123456
+        assertEquals(opaque, HotReloadTransfer.readOpaqueTint(arrayOf(opaque), 0))
+        assertEquals(translucent, HotReloadTransfer.readOpaqueTint(arrayOf(translucent), 0))
+        assertNull(HotReloadTransfer.readOpaqueTint(arrayOf(transparent), 0))
+        assertNull(HotReloadTransfer.readOpaqueTint(arrayOf(0xff123456L), 0))
+        assertNull(HotReloadTransfer.readOpaqueTint(arrayOf(opaque.toDouble()), 0))
+        assertNull(HotReloadTransfer.readOpaqueTint(arrayOf("0xff123456"), 0))
+        assertNull(HotReloadTransfer.readOpaqueTint(arrayOf(opaque), 1))
+    }
+
+    @Test
     fun neutralTransferVersionsRetainTheirOriginalWireSizes() {
         assertEquals(10, HotReloadTransfer.payloadSizeFor(10))
         assertEquals(9, HotReloadTransfer.payloadSizeFor(8))

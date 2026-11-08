@@ -165,9 +165,8 @@ internal object HotReloadTransfer {
                 host.javaClass.name == CONTROL_CENTER_FAKE_ROOT_CLASS_NAME
         }
 
-    private fun readOpaqueTint(payload: Array<*>, index: Int): Int? =
-        (payload.getOrNull(index) as? Number)
-            ?.toInt()
+    internal fun readOpaqueTint(payload: Array<*>, index: Int): Int? =
+        (payload.getOrNull(index) as? Int)
             ?.takeIf(::isOpaqueEnoughForPresentation)
 
     private fun isOpaqueEnoughForPresentation(color: Int): Boolean =
