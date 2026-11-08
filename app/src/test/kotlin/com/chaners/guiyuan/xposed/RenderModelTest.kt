@@ -210,4 +210,39 @@ class RenderModelTest {
             render(verified.copy(slotSubscriptionIds = mapOf(0 to 3, 1 to 3)))?.dualMobileLevels,
         )
     }
+
+    @Test
+    fun unknownSignalDimsItsRowButUnavailableSignalInvalidatesDualPair() {
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Unknown),
+            ),
+        )
+
+        assertEquals(
+            DualMobileLevels(sim1 = 4, sim2 = null),
+            RenderModel.from(state, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
+        )
+        assertNull(
+            RenderModel.from(
+                state.copy(mobile = state.mobile + (
+                    3 to StatusStateStore.MobileState(signal = SignalStrength.Unavailable)
+                )),
+                native,
+                14,
+                dualSignalEnabled = true,
+            )?.dualMobileLevels,
+        )
+        assertNull(
+            RenderModel.from(
+                state.copy(airplaneMode = true),
+                native,
+                14,
+                dualSignalEnabled = true,
+            )?.dualMobileLevels,
+        )
+    }
 }
