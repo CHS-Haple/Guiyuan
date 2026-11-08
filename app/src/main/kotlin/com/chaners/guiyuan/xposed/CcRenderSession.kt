@@ -4,6 +4,7 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
+import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
@@ -557,7 +558,12 @@ internal object CcRenderSession {
         private val statusIcons = WeakReference(statusIcons)
         private val battery = WeakReference(battery)
         private val carrier = WeakReference(carrier)
-        private val renderView = RenderView(host.context)
+        private val renderView = RenderView(
+            host.context,
+            onChargingGlyphDiagnostic = if (BuildConfig.RUNTIME_DIAGNOSTICS) {
+                { message: String -> emitEvent { "surface=control-center " + message } }
+            } else null,
+        )
         private val renderController = RenderController(renderView)
         private val anchorRect = Rect()
         private val hostLocationScratch = IntArray(2)

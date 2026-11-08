@@ -21,13 +21,16 @@ internal class RenderView(
     private val onDrawn: ((View) -> Unit)? = null,
     private val onShownChanged: ((View) -> Unit)? = null,
     private val preview: Boolean = false,
+    private val onChargingGlyphDiagnostic: ((String) -> Unit)? = null,
     private val onStateRendered: ((
         latencyMs: Long,
         committedOnMainThread: Boolean,
         sample: RuntimeRenderLatencySample?,
     ) -> Unit)? = null,
 ) : View(context) {
-    private val painter = StatusPainter(context, preview = preview)
+    private val painter = StatusPainter(
+        context, preview = preview, onChargingGlyphDiagnostic = onChargingGlyphDiagnostic,
+    )
     private val centerEnterInterpolator: Interpolator =
         AnimationUtils.loadInterpolator(
             context,

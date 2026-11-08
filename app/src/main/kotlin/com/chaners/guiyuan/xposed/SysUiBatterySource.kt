@@ -5,6 +5,7 @@ import android.util.Log
 import android.graphics.Typeface
 import android.view.View
 import android.widget.TextView
+import android.widget.ImageView
 import com.chaners.guiyuan.settings.FontWeightAxis
 import android.view.ViewGroup
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
@@ -204,6 +205,56 @@ internal object SysUiBatterySource {
             }
         }
 
+        // Record each ordinary/quick resource once per charging state. Passive
+        // diagnostics only: never mutate the live native ImageView/Drawable.
+        val reportedChargingGlyphProbes = HashSet<String>()
+        fun diagnoseChargingGlyph(meterView: View, resourceId: Int) {
+            if (onEvent == null) return
+            val nativeCharging = readOrNull {
+                meterClass.getDeclaredField("mCharging")
+                    .apply { isAccessible = true }.getBoolean(meterView)
+            }
+            val key = resourceId.toString() + ":" + nativeCharging
+            if (key in reportedChargingGlyphProbes || reportedChargingGlyphProbes.size >= 8) return
+            reportedChargingGlyphProbes += key
+
+            val nativeChild = readOrNull {
+                meterClass.getDeclaredField("mBatteryChargingView")
+                    .apply { isAccessible = true }.get(meterView) as? ImageView
+            }
+            val nativeDrawable = nativeChild?.drawable
+            val resources = meterView.context.resources
+            val directDrawable = readOrNull { meterView.context.getDrawable(resourceId) }
+            val directProbe = directDrawable?.let {
+                readOrNull { ParticipantVisualSnapshot.resolveDrawable(it, resources) }
+            }
+            val nativeProbe = nativeDrawable?.let {
+                readOrNull { ParticipantVisualSnapshot.resolveDrawable(it, resources) }
+            }
+            val resourceName = readOrNull { resources.getResourceName(resourceId) } ?: "unresolved"
+            report {
+                "chargingGlyphProbe stage=native resourceId=" + resourceId +
+                    " resourceName=" + resourceName +
+                    " charging=" + (nativeCharging ?: "unavailable") +
+                    " nativeChild=" + (nativeChild != null) +
+                    " nativeVisibility=" + (nativeChild?.visibility ?: "unavailable") +
+                    " nativeShown=" + (nativeChild?.isShown ?: "unavailable") +
+                    " nativeSize=" + (nativeChild?.width ?: -1) + "x" + (nativeChild?.height ?: -1) +
+                    " nativeAlpha=" + (nativeChild?.alpha ?: "unavailable") +
+                    " nativeDrawable=" + (nativeDrawable?.javaClass?.simpleName ?: "none") +
+                    " nativeDrawableSize=" + (nativeDrawable?.intrinsicWidth ?: -1) +
+                    "x" + (nativeDrawable?.intrinsicHeight ?: -1) +
+                    " nativeDrawableState=" + (nativeDrawable?.state?.take(8)?.joinToString(",") ?: "none") +
+                    " nativeDrawableLevel=" + (nativeDrawable?.level ?: -1) +
+                    " nativeInk=" + (nativeProbe?.envelope ?: "unavailable") +
+                    " directDrawable=" + (directDrawable?.javaClass?.simpleName ?: "none") +
+                    " directSize=" + (directDrawable?.intrinsicWidth ?: -1) +
+                    "x" + (directDrawable?.intrinsicHeight ?: -1) +
+                    " directConstantState=" + (directDrawable?.constantState != null) +
+                    " directInk=" + (directProbe?.envelope ?: "unavailable")
+            }
+        }
+
         fun publish(
             iconView: View,
             sourceMethod: String,
@@ -264,6 +315,9 @@ internal object SysUiBatterySource {
             } catch (error: Throwable) {
                 fallback("charging-glyph", error)
                 return
+            }
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
+                diagnoseChargingGlyph(meterView, iconId)
             }
             if (changed) {
                 report {

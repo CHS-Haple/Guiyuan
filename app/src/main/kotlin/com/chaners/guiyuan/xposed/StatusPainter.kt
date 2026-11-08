@@ -38,6 +38,7 @@ import kotlin.math.sqrt
 internal class StatusPainter(
     private val context: Context,
     private val preview: Boolean = false,
+    private val onChargingGlyphDiagnostic: ((String) -> Unit)? = null,
 ) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     // Keep 5G font axes separate from other Canvas text.
@@ -54,6 +55,7 @@ internal class StatusPainter(
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
     private val idleActivityResourceIds = HashMap<String, Int>()
+    private val reportedChargingGlyphFrames = HashSet<String>()
     private val nativeCenterAssets =
         LinkedHashMap<PresentationStore.NativeIconResource, NativeCenterAsset>(
             NATIVE_CENTER_CACHE_SIZE,
@@ -139,6 +141,7 @@ internal class StatusPainter(
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
         idleActivityResourceIds.clear()
+        reportedChargingGlyphFrames.clear()
     }
 
     private fun checkNativeResources() {
@@ -249,6 +252,15 @@ internal class StatusPainter(
             progress = centerEnterAmount,
         )
         canvas.restoreToCount(save)
+        if (!preview && onChargingGlyphDiagnostic != null && model.charging) {
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
+                reportChargingGlyphFrame(
+                    model = model, visual = visual, colors = colors,
+                    opacity = opacity, transform = nativeTransform,
+                    viewportWidth = width, viewportHeight = height,
+                )
+            }
+        }
     }
 
     fun requiredTopOverflowPx(
@@ -4341,6 +4353,66 @@ internal class StatusPainter(
             90f - (gap.centerDegrees - half),
             (gap.centerDegrees + half) - 90f,
         ).coerceIn(0f, 110f)
+    }
+
+    // Read-only witness of the actual painter's selection and geometry.
+    // No extra Canvas drawing, hooks, timers, or resource-state mutation.
+    private fun reportChargingGlyphFrame(
+        model: RenderModel,
+        visual: VisualCfg,
+        colors: RenderColors,
+        opacity: Float,
+        transform: NativeRenderTransform,
+        viewportWidth: Int,
+        viewportHeight: Int,
+    ) {
+        val sink = onChargingGlyphDiagnostic ?: return
+        val resourceId = model.chargingIconResId ?: return
+        val key = listOf(
+            resourceId, visual.showChargingIcon, visual.bothSidesBottomCharging,
+            visual.bothSidesShowActivity, visual.dualRowDotArrangement,
+            visual.centeredMobileSignal, model.dualMobileLevels != null,
+            model.centerIndicator.javaClass.simpleName,
+        ).joinToString(":")
+        if (key in reportedChargingGlyphFrames || reportedChargingGlyphFrames.size >= 16) return
+        reportedChargingGlyphFrames += key
+
+        val resource = PresentationStore.NativeIconResource(SYSTEM_UI_PACKAGE, resourceId)
+        val drawResource = resolveNativeTintVariant(resource) ?: resource
+        val asset = nativeCenterAsset(drawResource)
+        val top = resolveBatteryTopReadoutLayout(model, visual, transform)
+        val topSize = nativeResourceOpticalSize(
+            resource = resource,
+            maxSize = BATTERY_TOP_CHARGING_ICON_SIZE * visual.topChargingIconScale,
+        )
+        val bottom = resolveBothSidesBottomInformation(model, visual)
+        val bottomBounds = bottom?.let { bothSidesBottomOpticalBounds(it, visual) }
+        sink(
+            "chargingGlyphProbe stage=render resourceId=" + resourceId +
+                " drawResourceId=" + drawResource.resourceId +
+                " charging=" + model.charging +
+                " totalEnabled=" + visual.showChargingIcon +
+                " bottomEnabled=" + visual.bothSidesBottomCharging +
+                " activityEnabled=" + visual.bothSidesShowActivity +
+                " bothSidesActive=" + bothSidesOutsideActive(model, visual) +
+                " centeredMobile=" + visual.centeredMobileSignal +
+                " layout=" + visual.layout.persistedValue +
+                " topSelected=" + (top?.chargingIconResourceId == resourceId) +
+                " topInk=" + (topSize?.width ?: "unavailable") +
+                "x" + (topSize?.height ?: "unavailable") +
+                " bottomChoice=" + (if (bottom?.charging == true) "charging" else if (bottom != null) "activity" else "none") +
+                " bottomResource=" + (bottom?.resource?.resourceId ?: "none") +
+                " bottomInk=" + (bottomBounds ?: "unavailable") +
+                " nativeAsset=" + (asset != null) +
+                " nativeSize=" + (asset?.intrinsicWidth ?: -1) +
+                "x" + (asset?.intrinsicHeight ?: -1) +
+                " nativeOptical=" + (asset?.opticalBounds ?: "unavailable") +
+                " viewSize=" + viewportWidth + "x" + viewportHeight +
+                " canvasScale=" + transform.scale +
+                " canvasOffset=" + transform.offsetX + "," + transform.offsetY +
+                " opacity=" + opacity +
+                " tint=" + colors.chargingIconTint.toUInt().toString(16)
+        )
     }
 
     private fun drawBothSidesBottomInformation(

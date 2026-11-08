@@ -4,6 +4,7 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
+import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
@@ -239,7 +240,12 @@ internal object HomeRenderSession {
         private val batteryView = WeakReference(batteryView)
         private val batteryCarrier = WeakReference(batteryCarrier)
         private val probeView =
-            RenderView(host.context) { latencyMs, committedOnMainThread, sample ->
+            RenderView(
+                host.context,
+                onChargingGlyphDiagnostic = if (BuildConfig.RUNTIME_DIAGNOSTICS) {
+                    { message: String -> emitEvent { "surface=home " + message } }
+                } else null,
+            ) { latencyMs, committedOnMainThread, sample ->
                 if (sample != null && onLatencySample != null) {
                     // Telemetry runs from RenderView.onDraw; it never owns drawing.
                     SysUiPresentationRuntime.emitPassiveDiagnostic {

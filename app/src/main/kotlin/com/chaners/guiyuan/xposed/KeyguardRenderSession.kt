@@ -5,6 +5,7 @@ import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
+import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
@@ -335,6 +336,9 @@ internal object KeyguardRenderSession {
             RenderView(
                 resolved.host.context,
                 onShownChanged = ::observeAodVisibility,
+                onChargingGlyphDiagnostic = if (BuildConfig.RUNTIME_DIAGNOSTICS) {
+                    { message: String -> emitEvent { "surface=" + scene.name + " " + message } }
+                } else null,
                 onDrawn = { view ->
                     observeAodVisibility(view)
                     if (aodDraw == AodDraw.WAITING && view.isShown) {

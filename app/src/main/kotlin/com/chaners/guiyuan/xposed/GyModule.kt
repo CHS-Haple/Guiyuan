@@ -4506,6 +4506,11 @@ class GyModule : XposedModule() {
                 "networkFollowsBattery" to settings.centerFollowsBatteryColor,
                 "batteryNumber" to settings.showTopReadout,
                 "chargingIcon" to settings.showChargingIcon,
+                "dualSignal" to settings.dualSignal,
+                "dualArrangement" to settings.dualRowDotArrangement,
+                "bottomCharging" to settings.bothSidesBottomCharging,
+                "bottomActivity" to settings.bothSidesShowActivity,
+                "bottomHideIdle" to settings.bothSidesHideIdleActivity,
                 "batteryNumberFollowsBattery" to settings.topTextFollowsBatteryColor,
                 "chargingIconFollowsBattery" to
                     settings.topChargingIconFollowsBatteryColor,
@@ -4584,6 +4589,11 @@ class GyModule : XposedModule() {
                 "networkFollowsBattery" to visual.centerFollowsBatteryColor,
                 "batteryNumber" to visual.showTopReadout,
                 "chargingIcon" to visual.showChargingIcon,
+                "dualSignal" to visual.dualSignal,
+                "dualArrangement" to visual.dualRowDotArrangement,
+                "bottomCharging" to visual.bothSidesBottomCharging,
+                "bottomActivity" to visual.bothSidesShowActivity,
+                "bottomHideIdle" to visual.bothSidesHideIdleActivity,
                 "batteryNumberFollowsBattery" to visual.topTextFollowsBatteryColor,
                 "chargingIconFollowsBattery" to
                     visual.topChargingIconFollowsBatteryColor,
