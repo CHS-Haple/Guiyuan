@@ -413,16 +413,14 @@ fun GlassPopupItem(
                 )
             }
         }
-        if (selected) {
-            Icon(
-                imageVector = MiuixIcons.Basic.Check,
-                contentDescription = null,
-                modifier = Modifier
-                    .padding(start = GlassPopupDefaults.ItemIconGap)
-                    .size(GlassPopupDefaults.ItemTickSize),
-                tint = selectedContentColor,
-            )
-        }
+        Icon(
+            imageVector = MiuixIcons.Basic.Check,
+            contentDescription = null,
+            modifier = Modifier
+                .padding(start = GlassPopupDefaults.ItemIconGap)
+                .size(GlassPopupDefaults.ItemTickSize),
+            tint = if (selected) selectedContentColor else Color.Transparent,
+        )
         if (showArrow) {
             Icon(
                 imageVector = MiuixIcons.Basic.ArrowRight,
