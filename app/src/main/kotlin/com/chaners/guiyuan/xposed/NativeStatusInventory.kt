@@ -53,7 +53,9 @@ internal object NativeStatusInventory {
                         schedule(hostView, onSnapshot = onSnapshot)
                     } catch (error: Throwable) {
                         SysUiPresentationRuntime.throwIfFatal(error)
-                        Log.w("Guiyuan[NativeProbe]", "Deferred native probe failed", error)
+                        SysUiPresentationRuntime.emitPassiveDiagnostic {
+                            Log.w("Guiyuan[NativeProbe]", "Deferred native probe failed", error)
+                        }
                     }
                 }
             }
