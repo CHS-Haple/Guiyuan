@@ -9,7 +9,9 @@ import com.chaners.guiyuan.BuildConfig
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.defaultMinSize
@@ -487,7 +489,13 @@ internal fun DiagnosticsScreen(
         if (!showRootGuide) {
             // A changing notice must not insert a new key before the summary and shift the title.
             item(key = "diagnostics-header") {
-                Column {
+                Column(
+                    modifier = Modifier.graphicsLayer {
+                        val shown = logProgress(rise.value, 0)
+                        translationY = risePx * (1f - shown)
+                        alpha = shown
+                    },
+                ) {
                     if (filteredEntries.isNotEmpty()) {
                         Text(
                             text = stringResource(R.string.diagnostics_events_summary, filteredEntries.size),
@@ -495,27 +503,28 @@ internal fun DiagnosticsScreen(
                                 Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 20.dp)
-                                    .padding(top = 6.dp, bottom = 4.dp)
-                                    .graphicsLayer {
-                                        val shown = logProgress(rise.value, 0)
-                                        translationY = risePx * (1f - shown)
-                                        alpha = shown
-                                    },
+                                    .padding(top = 6.dp, bottom = 4.dp),
                             style = MiuixTheme.textStyles.subtitle,
                             color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                         )
                     }
-                    detailStatus?.let { status ->
-                        Text(
-                            text = status,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
-                            style = if (detailActive) MiuixTheme.textStyles.footnote1 else MiuixTheme.textStyles.body2,
-                            color = if (detailActive) {
-                                MiuixTheme.colorScheme.onSurfaceVariantSummary
-                            } else {
-                                MiuixTheme.colorScheme.onSurfaceSecondary
-                            },
-                        )
+                    AnimatedContent(
+                        targetState = detailStatus to detailActive,
+                        transitionSpec = { fadeIn() togetherWith fadeOut() },
+                        label = "diagnostics-detail-status",
+                    ) { (status, active) ->
+                        if (status != null) {
+                            Text(
+                                text = status,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+                                style = if (active) MiuixTheme.textStyles.footnote1 else MiuixTheme.textStyles.body2,
+                                color = if (active) {
+                                    MiuixTheme.colorScheme.onSurfaceVariantSummary
+                                } else {
+                                    MiuixTheme.colorScheme.onSurfaceSecondary
+                                },
+                            )
+                        }
                     }
                     if (integrityNotice.isNotEmpty()) {
                         Text(
