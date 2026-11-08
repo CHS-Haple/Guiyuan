@@ -238,6 +238,7 @@
     <string name="diagnostics_mode_basic">一般</string>
     <string name="diagnostics_mode_detailed">详细</string>
     <string name="diagnostics_detail_confirmed">详细诊断已生效</string>
+    <string name="diagnostics_detail_pending">正在确认详细诊断…</string>
     <string name="diagnostics_detail_unconfirmed">详细诊断尚未确认生效，可下拉刷新。</string>
     <string name="diagnostics_detail_unavailable">当前构建不支持详细诊断。</string>
     <string name="section_diagnostic_logs">日志</string>

@@ -239,6 +239,7 @@
     <string name="diagnostics_mode_basic">General</string>
     <string name="diagnostics_mode_detailed">Detailed</string>
     <string name="diagnostics_detail_confirmed">Detailed diagnostics active</string>
+    <string name="diagnostics_detail_pending">Confirming detailed diagnostics…</string>
     <string name="diagnostics_detail_unconfirmed">Detailed diagnostics are not yet confirmed in SystemUI. Pull down to refresh.</string>
     <string name="diagnostics_detail_unavailable">Detailed diagnostics are not supported by this build.</string>
     <string name="section_diagnostic_logs">Logs</string>

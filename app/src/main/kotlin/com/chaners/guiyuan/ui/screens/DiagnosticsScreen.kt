@@ -278,6 +278,8 @@ internal fun DiagnosticsScreen(
     val filterActive =
         levelFilter != LEVEL_ALL ||
             categoryFilter != CAT_ALL
+    // The preference write is synchronous; do not wait for the observer flow while switching.
+    val selectedLevel = if (loading) diagRepo.current() else diagSettings.level
     val collectionFailed = snapshot?.log?.result?.isSuccess == false
     val hasCapturedSessionLines = snapshot?.log?.sessionLines?.isNotEmpty() == true
     val captureTruncated = snapshot?.log?.result?.truncated == true && hasCapturedSessionLines
@@ -285,18 +287,21 @@ internal fun DiagnosticsScreen(
     val detailedConfirmed = remember(snapshot) { snapshot?.isRuntimeDetailConfirmed() == true }
     val showRootGuide = !hasCapturedSessionLines && collectionFailed
     val detailStatus =
-        if (diagSettings.level == DiagLevel.Detailed) {
+        if (selectedLevel == DiagLevel.Detailed) {
             stringResource(
                 when {
                     !BuildConfig.RUNTIME_DIAGNOSTICS -> R.string.diagnostics_detail_unavailable
-                    detailedConfirmed -> R.string.diagnostics_detail_confirmed
+                    loading -> R.string.diagnostics_detail_pending
+                    snapshot?.level == DiagLevel.Detailed && detailedConfirmed ->
+                        R.string.diagnostics_detail_confirmed
                     else -> R.string.diagnostics_detail_unconfirmed
                 },
             )
         } else {
             null
         }
-    val detailActive = detailStatus != null && detailedConfirmed && BuildConfig.RUNTIME_DIAGNOSTICS
+    val detailActive = detailStatus != null && !loading &&
+        snapshot?.level == DiagLevel.Detailed && detailedConfirmed && BuildConfig.RUNTIME_DIAGNOSTICS
     val integrityNotice =
         listOfNotNull(
             if (collectionFailed && hasCapturedSessionLines) {
@@ -393,14 +398,14 @@ internal fun DiagnosticsScreen(
             }
             DiagMenu(
                 title = menuTitle,
-                diagnosticsLevel = diagSettings.level,
+                diagnosticsLevel = selectedLevel,
                 canChangeLevel = !loading && !clearingHistory,
                 canScrollTop = !loading && listState.canScrollBackward,
                 canScrollBottom = !loading && listState.canScrollForward,
                 canClear = !loading && !clearingHistory && !reportBusy && !exportOpen &&
                     snapshot?.log?.sessionLines?.isNotEmpty() == true,
                 onDiagLevelChange = { level ->
-                    if (!loading && level != diagSettings.level) {
+                    if (!loading && level != diagRepo.current()) {
                         diagRepo.setLevel(level)
                         reloadSnapshot()
                     }
