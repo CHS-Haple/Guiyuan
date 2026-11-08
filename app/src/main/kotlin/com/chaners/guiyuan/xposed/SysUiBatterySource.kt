@@ -193,7 +193,9 @@ internal object SysUiBatterySource {
             } catch (error: Throwable) {
                 rethrowFatal(error)
                 if (warned.compareAndSet(false, true)) {
-                    SysUiPresentationRuntime.emitPassiveDiagnostic { Log.w("Guiyuan[Battery]", "Diagnostic failed", error) }
+                    SysUiPresentationRuntime.emitPassiveDiagnostic {
+                        Log.w("Guiyuan[Battery]", "Diagnostic failed", error)
+                    }
                 }
             }
         }

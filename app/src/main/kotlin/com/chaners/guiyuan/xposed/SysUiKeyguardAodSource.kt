@@ -118,7 +118,9 @@ internal object SysUiKeyguardAodSource {
                     } catch (error: Throwable) {
                         rethrowFatal(error)
                         if (warned.compareAndSet(false, true)) {
-                            SysUiPresentationRuntime.emitPassiveDiagnostic { Log.w("Guiyuan[Aod]", "Diagnostic failed", error) }
+                            SysUiPresentationRuntime.emitPassiveDiagnostic {
+                                Log.w("Guiyuan[Aod]", "Diagnostic failed", error)
+                            }
                         }
                     }
                 }

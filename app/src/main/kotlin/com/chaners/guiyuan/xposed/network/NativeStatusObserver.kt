@@ -27,7 +27,9 @@ internal object NativeStatusObserver {
         SysUiPresentationRuntime.optionalNativeRead(block)
 
     private inline fun reportEvent(message: () -> String) {
-        SysUiPresentationRuntime.emitPassiveDiagnostic { eventSink?.takeIf { diagnosticsEnabled() }?.invoke(message()) }
+        SysUiPresentationRuntime.emitPassiveDiagnostic {
+            eventSink?.takeIf { diagnosticsEnabled() }?.invoke(message())
+        }
     }
 
     private fun tintText(color: Int?): String =

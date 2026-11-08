@@ -208,7 +208,9 @@ internal object SysUiNetworkSource {
         fun warn(error: Throwable) {
             rethrowFatal(error)
             if (warned.compareAndSet(false, true)) {
-                SysUiPresentationRuntime.emitPassiveDiagnostic { Log.w("Guiyuan[Network]", "Diagnostic failed", error) }
+                SysUiPresentationRuntime.emitPassiveDiagnostic {
+                    Log.w("Guiyuan[Network]", "Diagnostic failed", error)
+                }
             }
         }
         val diagnosticEvent: ((String) -> Unit)? =
