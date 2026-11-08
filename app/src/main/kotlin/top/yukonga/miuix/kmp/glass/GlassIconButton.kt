@@ -166,11 +166,12 @@ private fun GlassButtonSurface(
         GlassAnchorSurface(backdrop, style, material, underlayMaterial, stroke, fill)
     }
     SideEffect {
-        val anchor = popupAnchor ?: return@SideEffect
-        anchor.surface = anchorSurface
-        anchor.surfaceProgress = progress
-        anchor.surfaceMaterialAlpha = opacity
-        anchor.surfaceFloating = floating
+        if (popupAnchor != null) {
+            popupAnchor.surface = anchorSurface
+            popupAnchor.surfaceProgress = progress
+            popupAnchor.surfaceMaterialAlpha = opacity
+            popupAnchor.surfaceFloating = floating
+        }
     }
     val pressTransition = updateTransition(targetState = pressed, label = "glassTopBarButtonPress")
     val contentAlpha = pressTransition.animateFloat(
