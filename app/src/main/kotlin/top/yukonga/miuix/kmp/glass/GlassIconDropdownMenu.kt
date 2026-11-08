@@ -9,12 +9,12 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.GraphicsLayerScope
@@ -43,7 +43,7 @@ import top.yukonga.miuix.kmp.layout.CascadingPopupDefaults
  * apply to an open submenu.
  * The secondary backdrop combines [secondaryBackdrop] with a recording of the primary popup,
  * excluding the secondary itself. Keep the supplied scene backdrop outside both popup layers.
- * [onDismissFinished] fires after both the primary and the secondary have left the root host.
+ * [onDismissFinished] fires when both primary and secondary exit transitions have completed.
  */
 // The caller modifier belongs to the primary panel, not its full-page recording layer.
 @Suppress("ktlint:compose:modifier-not-used-at-root")
