@@ -47,6 +47,26 @@ class ConfigBackupTest {
         assertEquals(config, codec.decodeFromString(VisualCfg.serializer(), encoded))
     }
 
+    @Test
+    fun backupValidationRejectsNonfiniteBottomIndicatorFields() {
+        val invalidProfiles = listOf<(VisualCfg) -> VisualCfg>(
+            { it.copy(bothSidesActivityScale = Float.NaN) },
+            { it.copy(bothSidesActivityOffsetY = Float.POSITIVE_INFINITY) },
+            { it.copy(bothSidesChargingOffsetY = Float.NEGATIVE_INFINITY) },
+        )
+        for (makeInvalid in invalidProfiles) {
+            val original = sample()
+            val invalid = original.copy(
+                visual = original.visual.copy(
+                    profiles = original.visual.profiles.map(makeInvalid),
+                ),
+            )
+            assertThrows(IllegalArgumentException::class.java) {
+                ConfigBackupFormat.validate(invalid)
+            }
+        }
+    }
+
     private fun sample(): ConfigBackup = ConfigBackup(
         format = "guiyuan-config",
         schemaVersion = 1,
