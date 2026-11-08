@@ -81,6 +81,7 @@ internal object DiagLogReader {
         val lines: List<String>,
         val sessionLines: List<String>,
         val clearedAt: LocalDateTime? = null,
+        val liveSystemUiPids: Set<String> = emptySet(),
     )
 
     suspend fun read(context: Context): Snapshot = withContext(Dispatchers.Default) {
