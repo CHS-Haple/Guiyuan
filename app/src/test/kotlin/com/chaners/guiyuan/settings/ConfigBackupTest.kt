@@ -1,12 +1,12 @@
 package com.chaners.guiyuan.settings
 
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
 
 class ConfigBackupTest {
     @Test
