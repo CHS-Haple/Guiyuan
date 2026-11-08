@@ -266,4 +266,37 @@ class VisualCfgTest {
             assertEquals(mobileTypeScaleDefault(raw.layout), normalized.mobileTypeScale, 0f)
         }
     }
+
+    @Test
+    fun bottomActivityAndChargingSettingsRejectInvalidBackupValues() {
+        val defaults = VisualCfg()
+        for (invalid in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) {
+            val restored = defaults.copy(
+                bothSidesActivityScale = invalid,
+                bothSidesActivityOffsetY = invalid,
+                bothSidesChargingOffsetY = invalid,
+            ).normalized()
+            assertEquals(BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT, restored.bothSidesActivityScale, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, restored.bothSidesActivityOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, restored.bothSidesChargingOffsetY, 0f)
+        }
+        val above = defaults.copy(
+            bothSidesActivityScale = Float.MAX_VALUE,
+            bothSidesActivityOffsetY = Float.MAX_VALUE,
+            bothSidesChargingOffsetY = Float.MAX_VALUE,
+        ).normalized()
+        assertEquals(BOTH_SIDES_BOTTOM_INFO_SCALE_MAX, above.bothSidesActivityScale, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, above.bothSidesActivityOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, above.bothSidesChargingOffsetY, 0f)
+
+        val below = defaults.copy(
+            bothSidesActivityScale = -Float.MAX_VALUE,
+            bothSidesActivityOffsetY = -Float.MAX_VALUE,
+            bothSidesChargingOffsetY = -Float.MAX_VALUE,
+        ).normalized()
+        assertEquals(BOTH_SIDES_BOTTOM_INFO_SCALE_MIN, below.bothSidesActivityScale, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, below.bothSidesActivityOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, below.bothSidesChargingOffsetY, 0f)
+    }
+
 }
