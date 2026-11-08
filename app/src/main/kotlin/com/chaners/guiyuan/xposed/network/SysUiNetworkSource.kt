@@ -614,31 +614,31 @@ internal object SysUiNetworkSource {
                         ) {
                             val image = readOrNull { imageField.get(chain.thisObject) as? ImageView }
                             val subId = image?.let(::findMobileSubscription)
-                            val parentVisible = event?.first as? Boolean
-                            val activityVisible = event?.second as? Boolean
+                            val writeAllowed = event?.first as? Boolean
+                            val rootVisible = event?.second as? Boolean
                             if (
                                 image != null && subId != null &&
-                                parentVisible != null && activityVisible != null
+                                writeAllowed != null && rootVisible != null
                             ) {
                                 try {
-                                    // When the parent is hidden, the native collector
-                                    // deliberately leaves the child View's visibility stale.
-                                    val taggedResId =
-                                        (image.tag as? Number)?.toInt()?.takeIf { id ->
-                                            id > 0 && parentVisible && activityVisible &&
-                                                image.visibility == View.VISIBLE &&
-                                                image.drawable != null
-                                        }
+                                    // In the exact OEM binder, writeAllowed=false is a
+                                    // no-op for this child View. Respect its applied
+                                    // visibility rather than treating that flag as GONE.
+                                    val taggedResId = nativeMobileActivityResourceId(image)
+                                    val effectiveVisible =
+                                        rootVisible && image.visibility == View.VISIBLE &&
+                                            taggedResId != null
                                     onMobileActivityVisibility(
-                                        subId, taggedResId, parentVisible && activityVisible,
+                                        subId, taggedResId, effectiveVisible,
                                     )
                                     if (onEvent != null && isDetailedDiagnosticsEnabled()) {
                                         readOrNull {
                                             onEvent.invoke(
                                                 "networkPipeline mobile activityVisibility " +
                                                     "subId=" + subId +
-                                                    " parentVisible=" + parentVisible +
-                                                    " activityVisible=" + activityVisible +
+                                                    " writeAllowed=" + writeAllowed +
+                                                    " rootVisible=" + rootVisible +
+                                                    " childVisible=" + (image.visibility == View.VISIBLE) +
                                                     " appliedResId=" + (taggedResId ?: 0),
                                             )
                                         }
@@ -666,7 +666,7 @@ internal object SysUiNetworkSource {
 
     private fun nativeMobileActivityResourceId(image: ImageView): Int? =
         (image.tag as? Number)?.toInt()?.takeIf { id ->
-            id > 0 && image.visibility == View.VISIBLE && image.drawable != null
+            id > 0 && image.drawable != null
         }
 
     // Diagnostic-only witness: native activity may change visibility, image alpha
