@@ -29,6 +29,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
@@ -67,6 +69,7 @@ internal fun AboutScreen(
         context.applicationContext as GyApplication
     }
     val xposedStatus by app.xposedStatus.collectAsState()
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
     val uriHandler = LocalUriHandler.current
     val listState = rememberLazyListState()
     val os4 = LocalUiStyle.current == UiStyle.OS4
@@ -138,7 +141,8 @@ internal fun AboutScreen(
         titleAlpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
         background = {
             GyBgEffect(
-                playing = visible && scrollProgress < 1f,
+                playing = lifecycleState.isAtLeast(Lifecycle.State.RESUMED) &&
+                    visible && scrollProgress < 1f,
                 bgModifier = if (blur) Modifier.layerBackdrop(backdrop) else Modifier,
                 alpha = { 1f - scrollProgress },
             )
