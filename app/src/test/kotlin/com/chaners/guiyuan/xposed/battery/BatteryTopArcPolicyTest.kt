@@ -124,7 +124,9 @@ class BatteryTopArcPolicyTest {
             result.inactive,
         )
     }
+}
 
+class BatteryTopArcReadoutGapTest {
     @Test
     fun widerVisibleReadoutRequestsOnlyTheExtraWidthItNeeds() {
         val narrow =
@@ -267,7 +269,9 @@ class BatteryTopArcPolicyTest {
         assertTrue(badge.sweepDegrees > 0f)
         assertTrue(badge.centerDegrees < 270f)
     }
+}
 
+class BatteryTopArcEnvelopeClearanceTest {
     @Test
     fun wifiBadgeExtendsOnlyTheShoulderItActuallyOccupies() {
         val center =
@@ -412,24 +416,24 @@ class BatteryTopArcPolicyTest {
             assertEquals(4f, kotlin.math.sqrt(dx * dx + dy * dy), 0.02f)
         }
     }
-
-    private fun gapFor(
-        left: Float,
-        top: Float,
-        right: Float,
-        bottom: Float,
-    ): BatteryTopArcPolicy.Gap =
-        BatteryTopArcPolicy.resolveGap(
-            contentLeft = left,
-            contentTop = top,
-            contentRight = right,
-            contentBottom = bottom,
-            ringCenterX = 60f,
-            ringCenterY = 58f,
-            ringRadius = 50f,
-            ringStroke = 4f,
-            visualClearance = 2f,
-            startDegrees = 150f,
-            maxSweep = 240f,
-        )
 }
+
+private fun gapFor(
+    left: Float,
+    top: Float,
+    right: Float,
+    bottom: Float,
+): BatteryTopArcPolicy.Gap =
+    BatteryTopArcPolicy.resolveGap(
+        contentLeft = left,
+        contentTop = top,
+        contentRight = right,
+        contentBottom = bottom,
+        ringCenterX = 60f,
+        ringCenterY = 58f,
+        ringRadius = 50f,
+        ringStroke = 4f,
+        visualClearance = 2f,
+        startDegrees = 150f,
+        maxSweep = 240f,
+    )
