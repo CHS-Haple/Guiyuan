@@ -226,15 +226,13 @@ class RenderModelTest {
             DualMobileLevels(sim1 = 4, sim2 = null),
             RenderModel.from(state, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
         )
+        val unavailable = state.copy(
+            mobile = state.mobile + (
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Unavailable)
+            ),
+        )
         assertNull(
-            RenderModel.from(
-                state.copy(mobile = state.mobile + (
-                    3 to StatusStateStore.MobileState(signal = SignalStrength.Unavailable)
-                )),
-                native,
-                14,
-                dualSignalEnabled = true,
-            )?.dualMobileLevels,
+            RenderModel.from(unavailable, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
         )
         assertNull(
             RenderModel.from(
