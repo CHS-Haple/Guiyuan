@@ -10,6 +10,7 @@ internal fun topTextUiScaleDefault(
         ContentLayout.NETWORK_CENTER, ContentLayout.MOBILE_CENTER -> 1.2f
         ContentLayout.BATTERY_CENTER -> 1.3f
     }
+
 internal fun topChargingIconUiScaleDefault(
     layout: ContentLayout,
 ): Float =
@@ -53,7 +54,6 @@ internal fun topChargingIconUiScale(rawScale: Float): Float =
             BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN,
             BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX,
         )
-
 
 internal fun topOffsetYUi(rawOffset: Float): Float =
     (rawOffset - BATTERY_TOP_VERTICAL_OFFSET_UI_REFERENCE)
