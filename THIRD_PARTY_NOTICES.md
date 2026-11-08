@@ -45,6 +45,16 @@ These primitives are temporary until the official module is published; they must
 updated independently from the corresponding MIUIX UI/Blur contracts. See
 `third_party/miuix-glass/README.md` for source boundaries and removal instructions.
 
+## Experimental MIUIX background effect source
+
+The `effect.bg` source under `app/src/main/kotlin/top/yukonga/miuix/kmp/effect/bg/` is pinned to
+[MIUIX PR #321](https://github.com/compose-miuix-ui/miuix/pull/321)
+at `73bdd49b4ea965dc7822e276b0a6ce29a5564f54` (Apache-2.0). Original copyrights are retained.
+`GyBgEffect` is Guiyuan's thin About/Onboarding adapter; the single local
+upstream-node change handles theme/device/state-driven color-job refresh.
+See [source provenance](third_party/miuix-effect/README.md).
+This is a local source snapshot, not a published `miuix-effect` dependency.
+
 ## Embedded icon assets
 
 | Component | Variant | Purpose | Upstream license |

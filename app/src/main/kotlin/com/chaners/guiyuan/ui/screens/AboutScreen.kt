@@ -36,7 +36,7 @@ import com.chaners.guiyuan.system.RuntimeEnv
 import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
+import com.chaners.guiyuan.ui.screens.about.GyBgEffect
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.SmallTitle
@@ -137,13 +137,11 @@ internal fun AboutScreen(
         compactTopBar = os4,
         titleAlpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
         background = {
-            BgEffectBackground(
-                dynamicBackground = visible,
-                modifier = Modifier.fillMaxSize(),
+            GyBgEffect(
+                playing = visible && scrollProgress < 1f,
                 bgModifier = if (blur) Modifier.layerBackdrop(backdrop) else Modifier,
-                isFullSize = true,
                 alpha = { 1f - scrollProgress },
-            ) {}
+            )
         },
         foreground = { padding ->
             // Foreground keeps the interactive logo above the scroll hit layer,
