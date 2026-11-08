@@ -431,26 +431,25 @@ internal object ScenePolicy {
             keyguardEnabled != aodEnabled
         ) {
             if (fullAodVisualBoundary) {
-                return if (nativeToLockScreenTarget) {
-                    if (keyguardEnabled) {
-                        KeyguardAodProjection.KEYGUARD
-                    } else {
-                        KeyguardAodProjection.NATIVE
-                    }
-                } else {
-                    when {
-                        keyguardEnabled &&
-                            !aodEnabled &&
-                            lastStableFamilyScene == StableKeyguardAodScene.KEYGUARD ->
-                            if ((keyguardStatusIconsAlpha ?: 1f) > 0f) {
-                                KeyguardAodProjection.KEYGUARD
-                            } else {
-                                KeyguardAodProjection.NATIVE
-                            }
+                return when {
+                    nativeToLockScreenTarget == true ->
+                        if (keyguardEnabled) {
+                            KeyguardAodProjection.KEYGUARD
+                        } else {
+                            KeyguardAodProjection.NATIVE
+                        }
 
-                        aodEnabled -> KeyguardAodProjection.AOD
-                        else -> KeyguardAodProjection.NATIVE
-                    }
+                    keyguardEnabled &&
+                        !aodEnabled &&
+                        lastStableFamilyScene == StableKeyguardAodScene.KEYGUARD ->
+                        if ((keyguardStatusIconsAlpha ?: 1f) > 0f) {
+                            KeyguardAodProjection.KEYGUARD
+                        } else {
+                            KeyguardAodProjection.NATIVE
+                        }
+
+                    aodEnabled -> KeyguardAodProjection.AOD
+                    else -> KeyguardAodProjection.NATIVE
                 }
             }
             if (fullAodTargetPending) {
