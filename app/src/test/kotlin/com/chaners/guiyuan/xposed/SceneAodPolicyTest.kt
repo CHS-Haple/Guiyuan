@@ -235,7 +235,9 @@ class SceneAodPolicyTest {
             ),
         )
     }
+}
 
+class SceneAodBoundaryTest {
     @Test
     fun aodExpandedBatteryCanPrecommitIncomingKeyguardLayout() {
         fun allow(

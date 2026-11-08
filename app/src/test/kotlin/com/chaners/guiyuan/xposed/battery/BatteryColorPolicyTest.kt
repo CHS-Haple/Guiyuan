@@ -11,10 +11,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class BatteryColorPolicyTest {
-    private val statusTint = 0xff555555.toInt()
-    private val systemSemantic = 0xff123456.toInt()
+private val statusTint = 0xff555555.toInt()
+private val systemSemantic = 0xff123456.toInt()
 
+class BatteryColorPolicyTest {
     @Test
     fun systemDefaultKeepsNormalOnStatusIconTint() {
         assertEquals(
@@ -157,7 +157,9 @@ class BatteryColorPolicyTest {
             ),
         )
     }
+}
 
+class BatteryColorSourceSelectionTest {
     @Test
     fun followSystemModeOverridesSelectedPresetPerSlot() {
         val settings =
@@ -251,25 +253,6 @@ class BatteryColorPolicyTest {
         )
     }
 
-    private fun preferencesFor(
-        state: BatterySemanticState,
-        source: BatteryColorSource,
-    ): BatteryColorPrefs =
-        when (state) {
-            BatterySemanticState.NORMAL ->
-                BatteryColorPrefs(normal = source)
-            BatterySemanticState.CHARGING ->
-                BatteryColorPrefs(charging = source)
-            BatterySemanticState.POWER_SAVE ->
-                BatteryColorPrefs(powerSave = source)
-            BatterySemanticState.SUPER_POWER_SAVE ->
-                BatteryColorPrefs(superPowerSave = source)
-            BatterySemanticState.PERFORMANCE ->
-                BatteryColorPrefs(performance = source)
-            BatterySemanticState.LOW ->
-                BatteryColorPrefs(low = source)
-        }
-
     @Test
     fun tintedStateTracksActualCustomOrPresetColorSource() {
         val defaultSettings = VisualCfg()
@@ -302,3 +285,22 @@ class BatteryColorPolicyTest {
         )
     }
 }
+
+private fun preferencesFor(
+    state: BatterySemanticState,
+    source: BatteryColorSource,
+): BatteryColorPrefs =
+    when (state) {
+        BatterySemanticState.NORMAL ->
+            BatteryColorPrefs(normal = source)
+        BatterySemanticState.CHARGING ->
+            BatteryColorPrefs(charging = source)
+        BatterySemanticState.POWER_SAVE ->
+            BatteryColorPrefs(powerSave = source)
+        BatterySemanticState.SUPER_POWER_SAVE ->
+            BatteryColorPrefs(superPowerSave = source)
+        BatterySemanticState.PERFORMANCE ->
+            BatteryColorPrefs(performance = source)
+        BatterySemanticState.LOW ->
+            BatteryColorPrefs(low = source)
+    }
