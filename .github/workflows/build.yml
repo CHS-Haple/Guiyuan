@@ -446,6 +446,25 @@ jobs:
             exit 1
           fi
 
+      - name: Compile alternate OS4 fallback icons against matched source
+        if: github.event_name == 'pull_request' && steps.scope.outputs.run_android == 'true'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+          if ! git diff --name-only "$base" "$HEAD_SHA" -- app/src/os4Published/kotlin | grep -q .; then
+            echo "OS4 fallback icons unchanged; skip alternate source-set compilation."
+            exit 0
+          fi
+          test -n "$MIUIX_SOURCE_REVISION" && test -n "$MIUIX_SOURCE_DIR"
+          ./gradlew \
+            -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
+            -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
+            -Pgy.os4.dialogSurfaces=false \
+            :app:compileDebugKotlin --no-daemon --max-workers=3 --stacktrace
       - name: Record exact source Build identity
         id: identity
         if: steps.scope.outputs.run_canary == 'true'
