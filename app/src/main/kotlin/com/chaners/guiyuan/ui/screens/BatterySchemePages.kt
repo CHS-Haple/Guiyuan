@@ -115,7 +115,7 @@ import top.yukonga.miuix.kmp.glass.glassPopupAnchorContent
 import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
 import top.yukonga.miuix.kmp.glass.GlassPopupItem
-import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
+import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.DialogLayout
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PagerGestureNestedScrollConnection
@@ -812,7 +812,7 @@ private fun BatterySchemeManageMenu(
     onDelete: () -> Unit,
 ) {
     if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
-        // Capture at the sheet caller: the root PopupLayout may not inherit this local.
+        // Capture at the sheet caller: the root-hosted overlay may not inherit this local.
         val backdrop = LocalGlassBackdrop.current
         val haptic = LocalHapticFeedback.current
         var expanded by remember { mutableStateOf(false) }
@@ -865,11 +865,12 @@ private fun BatterySchemeManageMenu(
         }
 
         if (mounted.value) {
-            // The sheet's pager clips children. Its root Scaffold owns the popup host.
-            PopupLayout(
+            // A dialog host preserves the menu's native exit while allowing a newly
+            // requested Rename/Delete dialog to draw above it in the same host queue.
+            DialogLayout(
                 visible = mounted,
                 enableWindowDim = false,
-                enableBackHandler = false,
+                enableAutoLargeScreen = false,
                 enterTransition = EnterTransition.None,
                 exitTransition = ExitTransition.None,
                 renderInRootScaffold = true,
@@ -898,8 +899,9 @@ private fun BatterySchemeManageMenu(
                             icon = Os4GlassEdit,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                                pendingAction = onRename
+                                pendingAction = null
                                 expanded = false
+                                onRename()
                             },
                         )
                         GlassPopupItem(
@@ -924,8 +926,9 @@ private fun BatterySchemeManageMenu(
                             icon = Os4GlassDelete,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                                pendingAction = onDelete
+                                pendingAction = null
                                 expanded = false
+                                onDelete()
                             },
                         )
                     }
