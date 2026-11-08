@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -1337,41 +1338,48 @@ internal fun SettingsHubScreen(
                 entryState = entryState,
             )
         }
-        Section(R.string.section_diagnostics_maintenance) {
-            ArrowPreference(
-                title = stringResource(R.string.about_title),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_info,
-                    )
-                },
-                summary = stringResource(R.string.about_summary),
-                onClick = { onNavigate(AppRoute.About) },
-            )
-            ArrowPreference(
-                title = stringResource(R.string.diagnostics_title),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_troubleshoot_outlined,
-                    )
-                },
-                summary = stringResource(R.string.diagnostics_summary),
-                onClick = { onNavigate(AppRoute.Diagnostics) },
-            )
-            BasicComponent(
-                title = stringResource(R.string.restart_scope),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_restart_alt,
-                        enabled = !entryState.busy,
-                    )
-                },
-                summary = stringResource(R.string.restart_scope_summary),
-                enabled = !entryState.busy,
-                onClick = onRestart,
-            )
+        settingsHubMaintenanceSection(entryState, onRestart, onNavigate)
+    }
+}
 
-        }
+private fun LazyListScope.settingsHubMaintenanceSection(
+    entryState: AppSettingsEntryState,
+    onRestart: () -> Unit,
+    onNavigate: (AppRoute) -> Unit,
+) {
+    Section(R.string.section_diagnostics_maintenance) {
+        ArrowPreference(
+            title = stringResource(R.string.about_title),
+            startAction = {
+                SemanticLeadingIcon(
+                    iconRes = R.drawable.ic_material_symbol_info,
+                )
+            },
+            summary = stringResource(R.string.about_summary),
+            onClick = { onNavigate(AppRoute.About) },
+        )
+        ArrowPreference(
+            title = stringResource(R.string.diagnostics_title),
+            startAction = {
+                SemanticLeadingIcon(
+                    iconRes = R.drawable.ic_material_symbol_troubleshoot_outlined,
+                )
+            },
+            summary = stringResource(R.string.diagnostics_summary),
+            onClick = { onNavigate(AppRoute.Diagnostics) },
+        )
+        BasicComponent(
+            title = stringResource(R.string.restart_scope),
+            startAction = {
+                SemanticLeadingIcon(
+                    iconRes = R.drawable.ic_material_symbol_restart_alt,
+                    enabled = !entryState.busy,
+                )
+            },
+            summary = stringResource(R.string.restart_scope_summary),
+            enabled = !entryState.busy,
+            onClick = onRestart,
+        )
     }
 }
 
