@@ -106,6 +106,7 @@ import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassTransformPopup
 import kotlinx.coroutines.flow.first
@@ -847,7 +848,7 @@ private fun BatterySchemeManageMenu(
                         haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
                     }
                 },
-                modifier = modifier.glassPopupAnchor(anchor, cornerRadius = 20.dp, floating = true),
+                modifier = modifier.glassPopupAnchor(anchor, cornerRadius = GlassTopAppBarDefaults.ButtonSize / 2, floating = true),
                 // The sheet records the button itself in sheetBackdrop. Do not sample that same
                 // layer from the button: it creates a recursive HWUI RenderNode dependency.
                 // Retain the native fallback used before this migration; the popup is root-hosted.

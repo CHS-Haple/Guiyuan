@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.first
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassIconDropdownMenu
 import top.yukonga.miuix.kmp.glass.glassPopupAnchor
@@ -61,7 +62,7 @@ internal fun Os4CascadingMenu(
             }
         },
         backdrop = backdrop,
-        modifier = Modifier.glassPopupAnchor(anchor, cornerRadius = 20.dp, floating = true),
+        modifier = Modifier.glassPopupAnchor(anchor, cornerRadius = GlassTopAppBarDefaults.ButtonSize / 2, floating = true),
     ) {
         Box(Modifier.glassPopupAnchorContent(anchor)) { content() }
     }
