@@ -188,7 +188,6 @@ class OuterGeometryTest {
                 geometry.dualOpticalRise,
                 0.0002f,
             )
-
         }
     }
 
