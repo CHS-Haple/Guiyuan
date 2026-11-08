@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
 import com.chaners.guiyuan.xposed.SysUiHostRegistry
 import com.chaners.guiyuan.xposed.StatusStateStore
@@ -94,12 +95,7 @@ internal object SysUiNetworkSource {
     }
 
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private fun callbackFailed(
         source: String,

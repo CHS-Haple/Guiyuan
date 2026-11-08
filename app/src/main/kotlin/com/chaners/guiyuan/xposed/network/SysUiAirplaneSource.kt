@@ -6,6 +6,7 @@ import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import java.lang.reflect.InvocationTargetException
 
 internal object SysUiAirplaneSource {
@@ -15,12 +16,7 @@ internal object SysUiAirplaneSource {
     }
 
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private var resolver: ContentResolver? = null
     private var observer: ContentObserver? = null

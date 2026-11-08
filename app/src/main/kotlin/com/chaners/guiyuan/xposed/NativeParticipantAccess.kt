@@ -2,7 +2,6 @@ package com.chaners.guiyuan.xposed
 
 import android.view.View
 import android.view.ViewGroup
-import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
@@ -25,13 +24,7 @@ internal object NativeParticipantAccess {
     private val slotAccessorMissing = ConcurrentHashMap.newKeySet<Class<*>>()
 
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            val cause = (error as? InvocationTargetException)?.targetException ?: error
-            if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     fun managerFor(host: Any): Any? {
         val hostView = host as? View ?: return null

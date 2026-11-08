@@ -56,12 +56,7 @@ internal object SysUiBatterySource {
     }
 
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     internal data class VerifiedFont(
         val host: View,

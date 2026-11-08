@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import java.lang.reflect.InvocationTargetException
 
 internal object SysUiConnectivitySource {
@@ -17,12 +18,7 @@ internal object SysUiConnectivitySource {
     }
 
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
 
     private var manager: ConnectivityManager? = null
