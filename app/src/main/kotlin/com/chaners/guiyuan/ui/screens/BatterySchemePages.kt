@@ -898,8 +898,9 @@ private fun BatterySchemeManageMenu(
                             icon = Os4GlassEdit,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                                pendingAction = onRename
+                                pendingAction = null
                                 expanded = false
+                                onRename()
                             },
                         )
                         GlassPopupItem(
@@ -924,8 +925,9 @@ private fun BatterySchemeManageMenu(
                             icon = Os4GlassDelete,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                                pendingAction = onDelete
+                                pendingAction = null
                                 expanded = false
+                                onDelete()
                             },
                         )
                     }
