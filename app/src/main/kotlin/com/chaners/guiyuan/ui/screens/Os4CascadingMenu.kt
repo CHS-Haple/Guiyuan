@@ -41,9 +41,7 @@ internal fun Os4CascadingMenu(
     var hasExpanded by remember { mutableStateOf(false) }
     // Let the upstream transform finish before removing its root host.
     LaunchedEffect(mounted.value, expanded) {
-        if (expanded) {
-            hasExpanded = true
-        } else if (mounted.value && hasExpanded) {
+        if (mounted.value && hasExpanded && !expanded) {
             snapshotFlow { anchor.contentHidden }.first { !it }
             if (!expanded) {
                 mounted.value = false
@@ -57,7 +55,12 @@ internal fun Os4CascadingMenu(
             if (expanded) {
                 expanded = false
             } else {
-                if (mounted.value) expanded = true else mounted.value = true
+                if (mounted.value) {
+                    hasExpanded = true
+                    expanded = true
+                } else {
+                    mounted.value = true
+                }
                 haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
             }
         },
@@ -77,7 +80,11 @@ internal fun Os4CascadingMenu(
             renderInRootScaffold = true,
         ) {
             Box(Modifier.fillMaxSize()) {
-                LaunchedEffect(Unit) { expanded = true }
+                LaunchedEffect(Unit) {
+                    // Record the opening request before publishing its visible state.
+                    hasExpanded = true
+                    expanded = true
+                }
                 GlassIconDropdownMenu(
                     show = expanded,
                     onDismissRequest = { expanded = false },

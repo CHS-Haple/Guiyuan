@@ -822,9 +822,7 @@ private fun BatterySchemeManageMenu(
         var hasExpanded by remember { mutableStateOf(false) }
         // Keep the root host until the upstream transform releases its anchor.
         LaunchedEffect(mounted.value, expanded) {
-            if (expanded) {
-                hasExpanded = true
-            } else if (mounted.value && hasExpanded) {
+            if (mounted.value && hasExpanded && !expanded) {
                 // An immediate close need not ever hide the anchor.
                 snapshotFlow { anchor.contentHidden }.first { !it }
                 if (!expanded) {
@@ -844,7 +842,12 @@ private fun BatterySchemeManageMenu(
                         expanded = false
                     } else {
                         pendingAction = null
-                        if (mounted.value) expanded = true else mounted.value = true
+                        if (mounted.value) {
+                            hasExpanded = true
+                            expanded = true
+                        } else {
+                            mounted.value = true
+                        }
                         haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
                     }
                 },
@@ -873,7 +876,11 @@ private fun BatterySchemeManageMenu(
             ) {
                 Box(Modifier.fillMaxSize()) {
                     // Compose upstream popup closed first, then let its own transition open.
-                    LaunchedEffect(Unit) { expanded = true }
+                    LaunchedEffect(Unit) {
+                        // Record the opening request before publishing its visible state.
+                        hasExpanded = true
+                        expanded = true
+                    }
                     GlassTransformPopup(
                         show = expanded,
                         onDismissRequest = { expanded = false },
