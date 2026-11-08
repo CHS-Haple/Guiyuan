@@ -401,6 +401,43 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun partialLegacyDualBankDoesNotBorrowUnscopedDotStyles() {
+        val prefs = MemoryPreferences()
+        val layout = ContentLayout.NETWORK_CENTER
+        prefs.edit()
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+            .putFloat(
+                visualModeKey(true, visualProfileKey(layout, WIFI_SIZE_SCALE_KEY)),
+                0.87f,
+            )
+            .putString(DUAL_ROW_DOT_ARRANGEMENT_KEY, SignalDotArrangement.HORIZONTAL.persistedValue)
+            .putString(SINGLE_ROW_DOT_STYLE_KEY, SignalDotArrangement.HORIZONTAL.persistedValue)
+            .apply()
+
+        val before = prefs.readVisualCfg(dual = true, layoutOverride = layout)
+        assertEquals(SignalDotArrangement.BOTH_SIDES, before.dualRowDotArrangement)
+        assertEquals(SignalDotArrangement.CURVED, before.singleRowDotArrangement)
+        assertEquals(0.87f, before.wifiScale, 0f)
+
+        migrateVisualPrefsIfNeeded(prefs)
+        val after = prefs.readVisualCfg(dual = true, layoutOverride = layout)
+        assertEquals(before.dualRowDotArrangement, after.dualRowDotArrangement)
+        assertEquals(before.singleRowDotArrangement, after.singleRowDotArrangement)
+        assertEquals(before.wifiScale, after.wifiScale, 0f)
+
+        val unbanked = MemoryPreferences()
+        unbanked.edit().putString(
+            SINGLE_ROW_DOT_STYLE_KEY,
+            SignalDotArrangement.HORIZONTAL.persistedValue,
+        ).apply()
+        assertEquals(
+            SignalDotArrangement.HORIZONTAL,
+            unbanked.readVisualCfg(dual = false, layoutOverride = layout).singleRowDotArrangement,
+        )
+    }
+
+    @Test
     fun oldBatteryCenteredOffsetIsInheritedUntilEachNewSliderIsSaved() {
         val prefs = MemoryPreferences()
         val layout = ContentLayout.BATTERY_CENTER

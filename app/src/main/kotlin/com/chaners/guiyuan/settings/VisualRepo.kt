@@ -739,8 +739,11 @@ private fun SharedPreferences.profileString(
     legacyDualBank: Boolean,
 ): String? {
     val profileKey = storedProfileKey(layout, baseKey, legacyDualBank)
-    return if (contains(profileKey)) getString(profileKey, defaultValue)
-    else getString(baseKey, defaultValue)
+    return when {
+        contains(profileKey) -> getString(profileKey, defaultValue)
+        legacyDualBank -> defaultValue
+        else -> getString(baseKey, defaultValue)
+    }
 }
 
 internal fun SharedPreferences.readVisualCfg(
