@@ -31,6 +31,7 @@ val dataStorePreferencesVersion = "1.3.0"
 val kotlinxSerializationCoreVersion = "1.12.0"
 val junitVersion = "4.13.2"
 val gradleVersion = gradle.gradleVersion
+val deepDiagnosticsBuildField = "DEEP_DIAGNOSTICS"
 val os4DebugSuffix = providers.gradleProperty("gy.os4.debugSuffix").orNull
 val os4DialogSurfaces = providers.gradleProperty("gy.os4.dialogSurfaces").orNull == "true"
 // The marker exists only on the protected IT branch and is blocked from public PR targets.
@@ -118,6 +119,7 @@ android {
             buildConfigField("String", "BUILD_CHANNEL", "\"debug\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "true")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+            buildConfigField("boolean", deepDiagnosticsBuildField, "true")
             buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
             if (hapleSigningEnabled) {
                 signingConfig = signingConfigs.getByName("haple")
@@ -126,7 +128,8 @@ android {
         release {
             buildConfigField("String", "BUILD_CHANNEL", "\"release\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
-            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "false")
+            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+            buildConfigField("boolean", deepDiagnosticsBuildField, "false")
             buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
             isMinifyEnabled = true
             isShrinkResources = true
@@ -142,9 +145,8 @@ android {
             initWith(getByName("release"))
             matchingFallbacks += listOf("release")
             isDebuggable = false
+            // Keep routine diagnostics identical to Release; Canary validates candidate code, not extra probes.
             buildConfigField("String", "BUILD_CHANNEL", "\"canary\"")
-            buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
-            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
         }
     }
 

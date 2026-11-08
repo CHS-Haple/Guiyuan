@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import com.chaners.guiyuan.BuildConfig
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -281,9 +282,19 @@ internal fun DiagnosticsScreen(
     val hasCapturedSessionLines = snapshot?.log?.sessionLines?.isNotEmpty() == true
     val captureTruncated = snapshot?.log?.result?.truncated == true && hasCapturedSessionLines
     val omittedEarlierLines = snapshot?.let(DiagReport::omittedEarlierLines) ?: 0
+    val detailedConfirmed = remember(snapshot) { snapshot?.isRuntimeDetailConfirmed() == true }
     val showRootGuide = !hasCapturedSessionLines && collectionFailed
     val integrityNotice =
         listOfNotNull(
+            if (diagSettings.level == DiagLevel.Detailed) {
+                stringResource(
+                    when {
+                        !BuildConfig.RUNTIME_DIAGNOSTICS -> R.string.diagnostics_detail_unavailable
+                        detailedConfirmed -> R.string.diagnostics_detail_confirmed
+                        else -> R.string.diagnostics_detail_unconfirmed
+                    },
+                )
+            } else null,
             if (collectionFailed && hasCapturedSessionLines) {
                 stringResource(R.string.diagnostics_collection_incomplete)
             } else null,

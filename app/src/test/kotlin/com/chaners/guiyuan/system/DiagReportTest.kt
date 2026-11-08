@@ -27,6 +27,57 @@ class DiagReportTest {
     }
 
     @Test
+    fun detailedConfirmationRequiresCurrentSystemUiPidAndPreference() {
+        val bound = diagLine("diagnostics.bind", state = "ready", level = "general")
+        val detailed = diagLine("diagnostics.level", level = "detailed")
+
+        assertTrue(report(bound, detailed, liveSystemUiPids = setOf("18802"))
+            .contains("systemUiDetailedConfirmed=true"))
+        assertTrue(report(bound, detailed, liveSystemUiPids = setOf("9999"))
+            .contains("systemUiDetailedConfirmed=false"))
+        assertTrue(report(bound, detailed, level = DiagLevel.General, liveSystemUiPids = setOf("18802"))
+            .contains("systemUiDetailedConfirmed=false"))
+        assertTrue(
+            report(
+                diagLine("diagnostics.bind", state = "ready", level = "detailed", process = "com.android.settings:remote"),
+                liveSystemUiPids = setOf("18802"),
+            ).contains("systemUiDetailedConfirmed=false"),
+        )
+    }
+
+    @Test
+    fun newerBindingWithoutLevelSupersedesEarlierDetailedObservation() {
+        val bound = diagLine("diagnostics.bind", state = "ready", level = "general")
+        val detailed = diagLine("diagnostics.level", level = "detailed")
+        val rebinding = diagLine("diagnostics.snapshot", state = "ready")
+        val exported = report(bound, detailed, rebinding, liveSystemUiPids = setOf("18802"))
+
+        assertTrue(exported.contains("runtimeLevel=not-observed"))
+        assertTrue(exported.contains("runtimeBinding=ready"))
+        assertTrue(exported.contains("systemUiDetailedConfirmed=false"))
+    }
+
+    @Test
+    fun logcatDetailConfirmationRequiresMatchingCollectionSource() {
+        val logcat =
+            "11-08 09:00:00.000 18802 18802 I CombinedStatus: " +
+                DiagProtocol.format(
+                    event = "diagnostics.bind",
+                    component = "diagnostics",
+                    state = "ready",
+                    fields = mapOf("sessionId" to "current", "level" to "detailed"),
+                )
+        assertTrue(
+            report(logcat, liveSystemUiPids = setOf("18802"), source = DiagLogReader.Source.LogcatFallback)
+                .contains("systemUiDetailedConfirmed=true"),
+        )
+        assertTrue(
+            report(logcat, liveSystemUiPids = setOf("18802"), source = DiagLogReader.Source.LspModules)
+                .contains("systemUiDetailedConfirmed=false"),
+        )
+    }
+
+    @Test
     fun missingRuntimeLevelIsNotMistakenForBindingFailure() {
         val report = report(
             DiagProtocol.format(
@@ -204,6 +255,24 @@ class DiagReportTest {
         assertTrue(report.contains("[Device]"))
     }
 
+    private fun diagLine(
+        event: String,
+        state: String? = null,
+        level: String? = null,
+        process: String = "com.android.systemui",
+    ): String =
+        "[ 2026-11-08T09:00:00.000 1000: 18802: 18802 I/LSPosedFramework ] " +
+            "($process) [com.chaners.guiyuan,CombinedStatus,1,0,1] " +
+            DiagProtocol.format(
+                event = event,
+                component = "diagnostics",
+                state = state,
+                fields = buildMap {
+                    put("sessionId", "current")
+                    if (level != null) put("level", level)
+                },
+            )
+
     private fun recordLines(count: Int): List<String> =
         List(count) { "record-${it + 1}" }
 
@@ -213,6 +282,8 @@ class DiagReportTest {
         collection: RootShell.Result? = null,
         level: DiagLevel = DiagLevel.Detailed,
         clearedAt: LocalDateTime? = null,
+        liveSystemUiPids: Set<String> = emptySet(),
+        source: DiagLogReader.Source = DiagLogReader.Source.LspModules,
     ): String =
         report(
             lines = lines.asList(),
@@ -220,6 +291,8 @@ class DiagReportTest {
             collection = collection,
             level = level,
             clearedAt = clearedAt,
+            liveSystemUiPids = liveSystemUiPids,
+            source = source,
         )
 
 
@@ -229,6 +302,8 @@ class DiagReportTest {
         collection: RootShell.Result? = null,
         level: DiagLevel = DiagLevel.Detailed,
         clearedAt: LocalDateTime? = null,
+        liveSystemUiPids: Set<String> = emptySet(),
+        source: DiagLogReader.Source = DiagLogReader.Source.LspModules,
     ): String {
         val recorded = lines
         return DiagReport.build(
@@ -246,11 +321,12 @@ class DiagReportTest {
                 ),
                 level = level,
                 log = DiagLogReader.Snapshot(
-                    source = DiagLogReader.Source.LspModules,
+                    source = source,
                     result = collection ?: RootShell.Result(0, recorded.joinToString("\n"), false, null, truncated),
                     lines = recorded,
                     sessionLines = recorded,
                     clearedAt = clearedAt,
+                    liveSystemUiPids = liveSystemUiPids,
                 ),
                 runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
                 entries = recorded.map(DiagLogParser::parse),
