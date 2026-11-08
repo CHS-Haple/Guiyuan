@@ -63,6 +63,37 @@ class StatusStateStoreActivityTest {
     }
 
     @Test
+    fun nativeVisibilityWinsOverLaterResourceEventsWithoutExtraListeners() {
+        StatusStateStore.restoreHotReloadState(null)
+        StatusStateStore.updateMobileActivity(1, 220)
+        val shown = StatusStateStore.updateMobileActivityVisibility(1, 220, true)
+            ?: error("initial native visibility must be observed")
+        assertTrue(1 in shown.mobileActivityShownIds)
+        assertTrue(1 in shown.mobileActivityVisibilityObservedIds)
+        assertNull(StatusStateStore.updateMobileActivityVisibility(1, 220, true))
+        assertTrue(shown === StatusStateStore.snapshot())
+
+        val gone = StatusStateStore.updateMobileActivityVisibility(1, null, false)
+            ?: error("native GONE must clear the activity")
+        assertNull(gone.mobileActivityResIds[1])
+        assertTrue(1 !in gone.mobileActivityShownIds)
+        assertTrue(1 in gone.mobileActivityVisibilityObservedIds)
+
+        // A resource collector may emit after the visibility collector.
+        // The native hidden state remains authoritative in the model.
+        StatusStateStore.updateMobileActivity(1, 221)
+        val laterResource = StatusStateStore.snapshot()
+        assertEquals(221, laterResource.mobileActivityResIds[1])
+        assertTrue(1 !in laterResource.mobileActivityShownIds)
+
+        val restored = StatusStateStore.updateMobileActivityVisibility(1, 221, true)
+            ?: error("native VISIBLE must restore activity")
+        assertTrue(1 in restored.mobileActivityShownIds)
+        assertEquals(221, restored.mobileActivityResIds[1])
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
     fun newerActivityClearWinsOverOldHotReloadTransfer() {
         StatusStateStore.restoreHotReloadState(null)
         val wifi = StatusStateStore.WifiState.Visible(
