@@ -213,8 +213,8 @@ internal object SysUiBatterySource {
         fun diagnoseChargingGlyph(meterView: View, resourceId: Int) {
             if (!BuildConfig.RUNTIME_DIAGNOSTICS || onEvent == null || !isDiagnosticEnabled()) return
             val nativeCharging = readOrNull {
-                meterClass.getDeclaredField("mCharging")
-                    .apply { isAccessible = true }.getBoolean(meterView)
+                val icon = meterIconField.get(meterView) ?: return@readOrNull null
+                chargingField.getBoolean(icon)
             }
             val key = resourceId.toString() + ":" + nativeCharging
             if (key in reportedChargingGlyphProbes || reportedChargingGlyphProbes.size >= 8) return
