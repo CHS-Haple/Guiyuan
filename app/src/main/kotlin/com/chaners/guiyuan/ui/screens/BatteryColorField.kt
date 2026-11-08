@@ -13,6 +13,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
@@ -67,57 +68,67 @@ internal fun BatteryColorField(
                     }
                 },
     ) {
-        val round = CornerRadius(16.dp.toPx())
-        drawRoundRect(
-            brush = Brush.horizontalGradient(
-                listOf(
-                    Color.Red,
-                    Color.Yellow,
-                    Color.Green,
-                    Color.Cyan,
-                    Color.Blue,
-                    Color.Magenta,
-                    Color.Red,
-                ),
-            ),
-            cornerRadius = round,
-        )
-        drawRoundRect(
-            brush = Brush.verticalGradient(listOf(Color.White, Color.Transparent)),
-            cornerRadius = round,
-        )
-        // Draw the outline below the cursor so the cursor occludes it at the edge.
-        drawRoundRect(
-            color = outlineColor,
-            cornerRadius = round,
-            style = Stroke(width = 1.dp.toPx()),
-        )
-
-        if (color != null) {
-            val radius = 11.dp.toPx()
-            val center =
-                Offset(
-                    (hue / 360f * size.width).coerceIn(0f, size.width),
-                    (saturation / 100f * size.height).coerceIn(0f, size.height),
-                )
-            // Opaque mask hides the palette outline beneath the translucent halo.
-            drawCircle(
-                color = color,
-                radius = radius + 3.dp.toPx(),
-                center = center,
-            )
-            drawCircle(
-                color = Color.Black.copy(alpha = 0.28f),
-                radius = radius + 1.dp.toPx(),
-                center = center,
-                style = Stroke(width = 4.dp.toPx()),
-            )
-            drawCircle(
-                color = Color.White,
-                radius = radius,
-                center = center,
-                style = Stroke(width = 3.dp.toPx()),
-            )
-        }
+        drawBatteryColorPalette(color, hue, saturation, outlineColor)
     }
 }
+
+private fun DrawScope.drawBatteryColorPalette(
+    color: Color?,
+    hue: Float,
+    saturation: Float,
+    outlineColor: Color,
+) {
+    val round = CornerRadius(16.dp.toPx())
+    drawRoundRect(
+        brush = Brush.horizontalGradient(
+            listOf(
+                Color.Red,
+                Color.Yellow,
+                Color.Green,
+                Color.Cyan,
+                Color.Blue,
+                Color.Magenta,
+                Color.Red,
+            ),
+        ),
+        cornerRadius = round,
+    )
+    drawRoundRect(
+        brush = Brush.verticalGradient(listOf(Color.White, Color.Transparent)),
+        cornerRadius = round,
+    )
+    // Draw the outline below the cursor so the cursor occludes it at the edge.
+    drawRoundRect(
+        color = outlineColor,
+        cornerRadius = round,
+        style = Stroke(width = 1.dp.toPx()),
+    )
+
+    if (color != null) {
+        val radius = 11.dp.toPx()
+        val center =
+            Offset(
+                (hue / 360f * size.width).coerceIn(0f, size.width),
+                (saturation / 100f * size.height).coerceIn(0f, size.height),
+            )
+        // Opaque mask hides the palette outline beneath the translucent halo.
+        drawCircle(
+            color = color,
+            radius = radius + 3.dp.toPx(),
+            center = center,
+        )
+        drawCircle(
+            color = Color.Black.copy(alpha = 0.28f),
+            radius = radius + 1.dp.toPx(),
+            center = center,
+            style = Stroke(width = 4.dp.toPx()),
+        )
+        drawCircle(
+            color = Color.White,
+            radius = radius,
+            center = center,
+            style = Stroke(width = 3.dp.toPx()),
+        )
+    }
+}
+
