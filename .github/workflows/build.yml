@@ -446,7 +446,7 @@ jobs:
             exit 1
           fi
 
-      - name: Compile alternate OS4 fallback icons against matched source
+      - name: Test alternate OS4 fallback icons against matched source
         if: github.event_name == 'pull_request' && steps.scope.outputs.run_android == 'true'
         shell: bash
         env:
@@ -455,8 +455,10 @@ jobs:
         run: |
           set -euo pipefail
           base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
-          if ! git diff --name-only "$base" "$HEAD_SHA" -- app/src/os4Published/kotlin | grep -q .; then
-            echo "OS4 fallback icons unchanged; skip alternate source-set compilation."
+          if ! git diff --name-only "$base" "$HEAD_SHA" -- \
+            app/src/os4Published/kotlin app/src/os4Upstream/kotlin \
+            app/src/test/kotlin/com/chaners/guiyuan/ui/icons/GlassIconCanvasTest.kt | grep -q .; then
+            echo "OS4 Glass icon variants and canvas tests unchanged; skip alternate tests."
             exit 0
           fi
           test -n "$MIUIX_SOURCE_REVISION" && test -n "$MIUIX_SOURCE_DIR"
@@ -464,7 +466,7 @@ jobs:
             -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
             -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
             -Pgy.os4.dialogSurfaces=false \
-            :app:compileDebugKotlin --no-daemon --max-workers=3 --stacktrace
+            :app:testDebugUnitTest --no-daemon --max-workers=3 --stacktrace
       - name: Record exact source Build identity
         id: identity
         if: steps.scope.outputs.run_canary == 'true'
