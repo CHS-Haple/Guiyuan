@@ -5,10 +5,13 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import com.chaners.guiyuan.BuildConfig
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.defaultMinSize
@@ -278,11 +281,30 @@ internal fun DiagnosticsScreen(
     val filterActive =
         levelFilter != LEVEL_ALL ||
             categoryFilter != CAT_ALL
+    // The preference write is synchronous; do not wait for the observer flow while switching.
+    val selectedLevel = if (loading) diagRepo.current() else diagSettings.level
     val collectionFailed = snapshot?.log?.result?.isSuccess == false
     val hasCapturedSessionLines = snapshot?.log?.sessionLines?.isNotEmpty() == true
     val captureTruncated = snapshot?.log?.result?.truncated == true && hasCapturedSessionLines
     val omittedEarlierLines = snapshot?.let(DiagReport::omittedEarlierLines) ?: 0
+    val detailedConfirmed = remember(snapshot) { snapshot?.isRuntimeDetailConfirmed() == true }
     val showRootGuide = !hasCapturedSessionLines && collectionFailed
+    val detailStatus =
+        if (selectedLevel == DiagLevel.Detailed) {
+            stringResource(
+                when {
+                    !BuildConfig.RUNTIME_DIAGNOSTICS -> R.string.diagnostics_detail_unavailable
+                    loading -> R.string.diagnostics_detail_pending
+                    snapshot?.level == DiagLevel.Detailed && detailedConfirmed ->
+                        R.string.diagnostics_detail_confirmed
+                    else -> R.string.diagnostics_detail_unconfirmed
+                },
+            )
+        } else {
+            null
+        }
+    val detailActive = detailStatus != null && !loading &&
+        snapshot?.level == DiagLevel.Detailed && detailedConfirmed && BuildConfig.RUNTIME_DIAGNOSTICS
     val integrityNotice =
         listOfNotNull(
             if (collectionFailed && hasCapturedSessionLines) {
@@ -379,14 +401,14 @@ internal fun DiagnosticsScreen(
             }
             DiagMenu(
                 title = menuTitle,
-                diagnosticsLevel = diagSettings.level,
+                diagnosticsLevel = selectedLevel,
                 canChangeLevel = !loading && !clearingHistory,
                 canScrollTop = !loading && listState.canScrollBackward,
                 canScrollBottom = !loading && listState.canScrollForward,
                 canClear = !loading && !clearingHistory && !reportBusy && !exportOpen &&
                     snapshot?.log?.sessionLines?.isNotEmpty() == true,
                 onDiagLevelChange = { level ->
-                    if (!loading && level != diagSettings.level) {
+                    if (!loading && level != diagRepo.current()) {
                         diagRepo.setLevel(level)
                         reloadSnapshot()
                     }
@@ -465,14 +487,55 @@ internal fun DiagnosticsScreen(
             }
         },
     ) {
-        if (!showRootGuide && integrityNotice.isNotEmpty()) {
-            item(key = "diagnostics-log-integrity") {
-                Text(
-                    text = integrityNotice,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceSecondary,
-                )
+        if (!showRootGuide) {
+            // A changing notice must not insert a new key before the summary and shift the title.
+            item(key = "diagnostics-header") {
+                Column(
+                    modifier = Modifier.graphicsLayer {
+                        val shown = logProgress(rise.value, 0)
+                        translationY = risePx * (1f - shown)
+                        alpha = shown
+                    },
+                ) {
+                    if (filteredEntries.isNotEmpty()) {
+                        Text(
+                            text = stringResource(R.string.diagnostics_events_summary, filteredEntries.size),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp)
+                                    .padding(top = 6.dp, bottom = 4.dp),
+                            style = MiuixTheme.textStyles.subtitle,
+                            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                        )
+                    }
+                    AnimatedContent(
+                        targetState = detailStatus to detailActive,
+                        transitionSpec = { fadeIn() togetherWith fadeOut() },
+                        label = "diagnostics-detail-status",
+                    ) { (status, active) ->
+                        if (status != null) {
+                            Text(
+                                text = status,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+                                style = if (active) MiuixTheme.textStyles.footnote1 else MiuixTheme.textStyles.body2,
+                                color = if (active) {
+                                    MiuixTheme.colorScheme.onSurfaceVariantSummary
+                                } else {
+                                    MiuixTheme.colorScheme.onSurfaceSecondary
+                                },
+                            )
+                        }
+                    }
+                    if (integrityNotice.isNotEmpty()) {
+                        Text(
+                            text = integrityNotice,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                        )
+                    }
+                }
             }
         }
         when {
@@ -487,7 +550,7 @@ internal fun DiagnosticsScreen(
                             Spacer(Modifier.height(12.dp))
                             Text(
                                 text = stringResource(R.string.diagnostics_loading),
-                                style = MiuixTheme.textStyles.subtitle,
+                                style = MiuixTheme.textStyles.body2,
                                 color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                             )
                         }
@@ -497,23 +560,6 @@ internal fun DiagnosticsScreen(
                 }
             }
             filteredEntries.isNotEmpty() -> {
-                item(key = "diagnostics-summary") {
-                    Text(
-                        text = stringResource(R.string.diagnostics_events_summary, filteredEntries.size),
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp)
-                                .padding(top = 6.dp, bottom = 8.dp)
-                                .graphicsLayer {
-                                    val shown = logProgress(rise.value, 0)
-                                    translationY = risePx * (1f - shown)
-                                    alpha = shown
-                                },
-                        style = MiuixTheme.textStyles.subtitle,
-                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    )
-                }
                 itemsIndexed(
                     items = filteredEntries,
                     key = { index, entry -> logRowKey(entry, index) },
@@ -549,13 +595,14 @@ internal fun DiagnosticsScreen(
                     Text(
                         text = stringResource(
                             when {
+                                captureTruncated && filterActive -> R.string.diagnostics_events_end_truncated_filtered
                                 captureTruncated -> R.string.diagnostics_events_end_truncated
                                 filterActive -> R.string.diagnostics_events_end_filtered
                                 else -> R.string.diagnostics_events_end
                             },
                         ),
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
-                        style = MiuixTheme.textStyles.body2,
+                        style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         textAlign = TextAlign.Center,
                     )
@@ -568,6 +615,7 @@ internal fun DiagnosticsScreen(
                         description = stringResource(R.string.diagnostics_root_unavailable_message),
                         note = listOfNotNull(
                             stringResource(R.string.diagnostics_root_unavailable_export),
+                            detailStatus,
                             integrityNotice.takeIf(String::isNotEmpty),
                         ).joinToString("\n"),
                         icon = MiuixIcons.Medium.Report,
