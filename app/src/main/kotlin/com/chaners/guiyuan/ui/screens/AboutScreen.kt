@@ -29,6 +29,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
@@ -36,7 +38,7 @@ import com.chaners.guiyuan.system.RuntimeEnv
 import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
+import com.chaners.guiyuan.ui.screens.about.GyBgEffect
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.SmallTitle
@@ -67,6 +69,7 @@ internal fun AboutScreen(
         context.applicationContext as GyApplication
     }
     val xposedStatus by app.xposedStatus.collectAsState()
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
     val uriHandler = LocalUriHandler.current
     val listState = rememberLazyListState()
     val os4 = LocalUiStyle.current == UiStyle.OS4
@@ -137,13 +140,12 @@ internal fun AboutScreen(
         compactTopBar = os4,
         titleAlpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
         background = {
-            BgEffectBackground(
-                dynamicBackground = visible,
-                modifier = Modifier.fillMaxSize(),
+            GyBgEffect(
+                playing = lifecycleState.isAtLeast(Lifecycle.State.RESUMED) &&
+                    visible && scrollProgress < 1f,
                 bgModifier = if (blur) Modifier.layerBackdrop(backdrop) else Modifier,
-                isFullSize = true,
                 alpha = { 1f - scrollProgress },
-            ) {}
+            )
         },
         foreground = { padding ->
             // Foreground keeps the interactive logo above the scroll hit layer,
