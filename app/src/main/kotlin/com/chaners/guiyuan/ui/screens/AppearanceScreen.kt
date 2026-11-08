@@ -350,7 +350,7 @@ internal fun AppearanceScreen(
 private val MiniNavigationViewportHeight = 76.dp
 
 @Composable
-private fun MiniNavigationPreview(
+internal fun MiniNavigationPreview(
     uiStyle: UiStyle,
     floating: Boolean,
     style: NavStyle,
