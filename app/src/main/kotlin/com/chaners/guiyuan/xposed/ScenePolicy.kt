@@ -561,7 +561,6 @@ internal object ScenePolicy {
             aodEnabled -> KeyguardAodProjection.AOD
             else -> KeyguardAodProjection.NATIVE
         }
-
     }
 
     private fun resolvePendingFullAodTarget(
@@ -586,7 +585,6 @@ internal object ScenePolicy {
 
             StableKeyguardAodScene.UNKNOWN -> KeyguardAodProjection.NATIVE
         }
-
     }
 
     fun resolveControlCenterSourceScene(
