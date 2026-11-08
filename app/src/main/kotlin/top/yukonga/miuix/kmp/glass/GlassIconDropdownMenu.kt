@@ -1,6 +1,5 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
-// Modified from upstream (2026): root-host dismiss completion for Guiyuan.
 
 package top.yukonga.miuix.kmp.glass
 
@@ -13,7 +12,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -42,7 +40,6 @@ import top.yukonga.miuix.kmp.layout.CascadingPopupDefaults
  * apply to an open submenu.
  * The secondary backdrop combines [secondaryBackdrop] with a recording of the primary popup,
  * excluding the secondary itself. Keep the supplied scene backdrop outside both popup layers.
- * [onDismissFinished] allows a scaffold popup host to remain mounted until both menus exit.
  */
 // The caller modifier belongs to the primary panel, not its full-page recording layer.
 @Suppress("ktlint:compose:modifier-not-used-at-root")
@@ -59,12 +56,9 @@ fun BoxScope.GlassIconDropdownMenu(
     sizing: GlassPopupSizing = GlassPopupSizing(),
     visuals: GlassPopupVisuals = GlassPopupDefaults.visuals(),
     collapseOnSelection: Boolean = entries.size <= 1,
-    onDismissFinished: (() -> Unit)? = null,
 ) {
     val density = LocalDensity.current
     var submenu by remember { mutableStateOf(false) }
-    val exitGate = remember { GlassMenuExitGate() }
-    val latestDismissFinished by rememberUpdatedState(onDismissFinished)
     var submenuPresent by remember { mutableStateOf(false) }
     var submenuPath by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     var submenuAnchor by remember { mutableStateOf(Rect.Zero) }
@@ -84,7 +78,7 @@ fun BoxScope.GlassIconDropdownMenu(
         label = "glassCascadeVisibility",
     )
     LaunchedEffect(show) {
-        if (show) exitGate.reset() else submenu = false
+        if (!show) submenu = false
     }
 
     val primaryBackdrop = rememberLayerBackdrop()
@@ -123,9 +117,6 @@ fun BoxScope.GlassIconDropdownMenu(
             sizing = sizing,
             visuals = visuals,
             onMeasured = { primaryWidth = with(density) { it.width.toDp() } },
-            onDismissFinished = {
-                exitGate.primaryDismissed(submenuPresent, latestDismissFinished)
-            },
         ) {
             groups.forEachIndexed { groupIndex, entry ->
                 entry.items.forEachIndexed { itemIndex, item ->
@@ -202,7 +193,6 @@ fun BoxScope.GlassIconDropdownMenu(
             onDismissFinished = {
                 submenuPresent = false
                 submenuPath = null
-                exitGate.secondaryDismissed(latestDismissFinished)
             },
         ) {
             submenuItem?.let { parent ->
@@ -244,34 +234,4 @@ private fun GlassMenuDivider() {
         ),
         thickness = GlassPopupDefaults.DividerThickness,
     )
-}
-
-// Guiyuan root-host integration. Keep this small state machine apart from upstream menu rendering.
-// The host may unmount only after the primary AND (if opened) secondary panel have exited.
-internal class GlassMenuExitGate {
-    private var primaryClosed = false
-    private var completed = false
-
-    fun reset() {
-        primaryClosed = false
-        completed = false
-    }
-
-    fun primaryDismissed(
-        secondaryPresent: Boolean,
-        onDismissFinished: (() -> Unit)?,
-    ) {
-        primaryClosed = true
-        if (!secondaryPresent) complete(onDismissFinished)
-    }
-
-    fun secondaryDismissed(onDismissFinished: (() -> Unit)?) {
-        if (primaryClosed) complete(onDismissFinished)
-    }
-
-    private fun complete(onDismissFinished: (() -> Unit)?) {
-        if (completed) return
-        completed = true
-        onDismissFinished?.invoke()
-    }
 }

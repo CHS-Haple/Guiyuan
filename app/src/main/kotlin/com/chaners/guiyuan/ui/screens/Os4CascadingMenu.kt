@@ -5,6 +5,8 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -13,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.first
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.glass.GlassIconButton
@@ -34,14 +37,21 @@ internal fun Os4CascadingMenu(
     val anchor = rememberGlassPopupAnchor()
     var expanded by remember { mutableStateOf(false) }
     val mounted = remember { mutableStateOf(false) }
+    // Observe the upstream transform's anchor visibility rather than a custom exit gate.
+    LaunchedEffect(mounted.value) {
+        if (mounted.value) {
+            snapshotFlow { anchor.contentHidden }.first { it }
+            snapshotFlow { anchor.contentHidden }.first { !it }
+            mounted.value = false
+        }
+    }
 
     GlassIconButton(
         onClick = {
             if (expanded) {
                 expanded = false
             } else {
-                mounted.value = true
-                expanded = true
+                if (mounted.value) expanded = true else mounted.value = true
                 haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
             }
         },
@@ -61,6 +71,7 @@ internal fun Os4CascadingMenu(
             renderInRootScaffold = true,
         ) {
             Box(Modifier.fillMaxSize()) {
+                LaunchedEffect(Unit) { expanded = true }
                 GlassIconDropdownMenu(
                     show = expanded,
                     onDismissRequest = { expanded = false },
@@ -69,7 +80,6 @@ internal fun Os4CascadingMenu(
                     entries = entries,
                     backdrop = backdrop,
                     collapseOnSelection = collapseOnSelection,
-                    onDismissFinished = { mounted.value = false },
                 )
             }
         }

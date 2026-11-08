@@ -32,6 +32,7 @@ import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -107,6 +108,7 @@ import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassTransformPopup
+import kotlinx.coroutines.flow.first
 import top.yukonga.miuix.kmp.glass.glassPopupAnchor
 import top.yukonga.miuix.kmp.glass.glassPopupAnchorContent
 import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
@@ -816,13 +818,25 @@ private fun BatterySchemeManageMenu(
         val mounted = remember { mutableStateOf(false) }
         val anchor = rememberGlassPopupAnchor()
         var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+        // The upstream transform itself owns the close animation and restores the anchor.
+        LaunchedEffect(mounted.value) {
+            if (mounted.value) {
+                snapshotFlow { anchor.contentHidden }.first { it }
+                snapshotFlow { anchor.contentHidden }.first { !it }
+                mounted.value = false
+                val action = pendingAction
+                pendingAction = null
+                action?.invoke()
+            }
+        }
 
         TooltipBox(text = stringResource(R.string.battery_custom_scheme_manage)) {
             GlassIconButton(
                 onClick = {
-                    expanded = !expanded
                     if (expanded) {
-                        mounted.value = true
+                        expanded = false
+                    } else {
+                        if (mounted.value) expanded = true else mounted.value = true
                         haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
                     }
                 },
@@ -850,6 +864,8 @@ private fun BatterySchemeManageMenu(
                 renderInRootScaffold = true,
             ) {
                 Box(Modifier.fillMaxSize()) {
+                    // Compose upstream popup closed first, then let its own transition open.
+                    LaunchedEffect(Unit) { expanded = true }
                     GlassTransformPopup(
                         show = expanded,
                         onDismissRequest = { expanded = false },
@@ -861,12 +877,6 @@ private fun BatterySchemeManageMenu(
                                 imageVector = Os4GlassMore,
                                 contentDescription = null,
                             )
-                        },
-                        onDismissFinished = {
-                            mounted.value = false
-                            val action = pendingAction
-                            pendingAction = null
-                            action?.invoke()
                         },
                     ) {
                         GlassPopupItem(
