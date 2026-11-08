@@ -80,17 +80,16 @@ class ConfigBackupLegacyTest {
             }))
         }
         val encoded = ConfigBackupFormat.encode(original)
-        val old = encoded.replace("\"singleRowDotStyle\":\"DUO\"", "\"singleRowFlatDots\":true")
+        val releasedStyle = "\"singleRowDotStyle\":\"DUO\""
+        val oldStyle = "\"singleRowFlatDots\":true"
+        val old = encoded.replace(releasedStyle, oldStyle)
         assertEquals(original, ConfigBackupFormat.decode(old))
         assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.decode(old.replaceFirst(
-                "\"singleRowFlatDots\":true",
-                "\"singleRowFlatDots\":true,\"singleRowDotStyle\":\"DUO\"",
-            ))
+            ConfigBackupFormat.decode(old.replaceFirst(oldStyle, "$oldStyle,$releasedStyle"))
         }
-        val curved = old.replace("\"singleRowFlatDots\":true", "\"singleRowFlatDots\":false")
+        val curved = old.replace(oldStyle, "\"singleRowFlatDots\":false")
         assertEquals(SignalDotArrangement.CURVED, ConfigBackupFormat.decode(curved).visual.profiles.first().singleRowDotArrangement)
-        val invalid = old.replaceFirst("\"singleRowFlatDots\":true", "\"singleRowFlatDots\":\"true\"")
+        val invalid = old.replaceFirst(oldStyle, "\"singleRowFlatDots\":\"true\"")
         assertThrows(IllegalArgumentException::class.java) { ConfigBackupFormat.decode(invalid) }
     }
 
