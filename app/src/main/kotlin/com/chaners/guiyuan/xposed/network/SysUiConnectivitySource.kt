@@ -165,46 +165,49 @@ internal object SysUiConnectivitySource {
     @Synchronized
     fun refreshDataSubscription() {
         val subId = SysUiDefaultDataSubSource.currentSubscriptionId()
-        if (subId != dataSubscriptionId || dataCallback == null) {
-            dataTelephony?.let { telephony ->
-                dataCallback?.let { old ->
-                    // Do not register another callback if the previous owner cannot leave.
-                    try {
-                        telephony.unregisterTelephonyCallback(old)
-                    } catch (error: Throwable) {
-                        rethrowFatal(error)
-                        return
-                    }
+        if (subId == dataSubscriptionId && dataCallback != null) {
+            onDataChanged?.invoke()
+            return
+        }
+
+        dataTelephony?.let { telephony ->
+            dataCallback?.let { old ->
+                // Do not register another callback if the previous owner cannot leave.
+                try {
+                    telephony.unregisterTelephonyCallback(old)
+                } catch (error: Throwable) {
+                    rethrowFatal(error)
+                    return
                 }
             }
-            dataCallback = null
-            dataTelephony = null
-            dataSubscriptionId = subId
+        }
+        dataCallback = null
+        dataTelephony = null
+        dataSubscriptionId = subId
 
-            val context = dataContext
-            if (subId >= 0 && context != null) {
-                val telephony =
-                    context.getSystemService(TelephonyManager::class.java)
-                        ?.createForSubscriptionId(subId)
-                if (telephony != null) {
-                    val observer =
-                        object : TelephonyCallback(), TelephonyCallback.UserMobileDataStateListener {
-                            override fun onUserMobileDataStateChanged(enabled: Boolean) {
-                                if (dataCallback === this) onDataChanged?.invoke()
-                            }
+        val context = dataContext
+        if (subId >= 0 && context != null) {
+            val telephony =
+                context.getSystemService(TelephonyManager::class.java)
+                    ?.createForSubscriptionId(subId)
+            if (telephony != null) {
+                val observer =
+                    object : TelephonyCallback(), TelephonyCallback.UserMobileDataStateListener {
+                        override fun onUserMobileDataStateChanged(enabled: Boolean) {
+                            if (dataCallback === this) onDataChanged?.invoke()
                         }
-                    val registered =
-                        try {
-                            telephony.registerTelephonyCallback(context.mainExecutor, observer)
-                            true
-                        } catch (error: Throwable) {
-                            rethrowFatal(error)
-                            false
-                        }
-                    if (registered) {
-                        dataTelephony = telephony
-                        dataCallback = observer
                     }
+                val registered =
+                    try {
+                        telephony.registerTelephonyCallback(context.mainExecutor, observer)
+                        true
+                    } catch (error: Throwable) {
+                        rethrowFatal(error)
+                        false
+                    }
+                if (registered) {
+                    dataTelephony = telephony
+                    dataCallback = observer
                 }
             }
         }
