@@ -818,13 +818,17 @@ private fun BatterySchemeManageMenu(
         val mounted = remember { mutableStateOf(false) }
         val anchor = rememberGlassPopupAnchor()
         var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
-        // The upstream transform itself owns the close animation and restores the anchor.
+        var hasExpanded by remember { mutableStateOf(false) }
+        // Keep the root host until the upstream transform releases its anchor.
         LaunchedEffect(mounted.value, expanded) {
-            if (mounted.value && !expanded) {
-                snapshotFlow { anchor.contentHidden }.first { it }
+            if (expanded) {
+                hasExpanded = true
+            } else if (mounted.value && hasExpanded) {
+                // An immediate close need not ever hide the anchor.
                 snapshotFlow { anchor.contentHidden }.first { !it }
                 if (!expanded) {
                     mounted.value = false
+                    hasExpanded = false
                     val action = pendingAction
                     pendingAction = null
                     action?.invoke()

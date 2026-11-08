@@ -37,12 +37,17 @@ internal fun Os4CascadingMenu(
     val anchor = rememberGlassPopupAnchor()
     var expanded by remember { mutableStateOf(false) }
     val mounted = remember { mutableStateOf(false) }
-    // Observe the upstream transform's anchor visibility rather than a custom exit gate.
+    var hasExpanded by remember { mutableStateOf(false) }
+    // Let the upstream transform finish before removing its root host.
     LaunchedEffect(mounted.value, expanded) {
-        if (mounted.value && !expanded) {
-            snapshotFlow { anchor.contentHidden }.first { it }
+        if (expanded) {
+            hasExpanded = true
+        } else if (mounted.value && hasExpanded) {
             snapshotFlow { anchor.contentHidden }.first { !it }
-            if (!expanded) mounted.value = false
+            if (!expanded) {
+                mounted.value = false
+                hasExpanded = false
+            }
         }
     }
 
