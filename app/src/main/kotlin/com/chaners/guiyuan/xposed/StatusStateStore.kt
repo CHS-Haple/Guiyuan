@@ -90,6 +90,29 @@ internal object StatusStateStore {
         return current.takeIf { changed }
     }
 
+    // The native activity drawable and the native visibility Flow have separate collectors.
+    // Preserve their independent observations so a later drawable update cannot
+    // resurrect activity while the native mobile root remains hidden.
+    @Synchronized
+    fun updateMobileActivityVisibility(
+        subscriptionId: Int,
+        resourceId: Int?,
+        visible: Boolean,
+    ): Snapshot? {
+        if (subscriptionId < 0) return null
+        val before = current
+        updateMobileActivity(subscriptionId, resourceId.takeIf { visible })
+        val nextShown = current.mobileActivityShownIds.toMutableSet().apply {
+            if (visible) add(subscriptionId) else remove(subscriptionId)
+        }
+        current = current.copy(
+            mobileActivityShownIds = nextShown,
+            mobileActivityVisibilityObservedIds =
+                current.mobileActivityVisibilityObservedIds + subscriptionId,
+        )
+        return current.takeIf { it != before }
+    }
+
     @Synchronized
     fun updateAirplaneMode(enabled: Boolean): Snapshot? {
         if (current.airplaneMode == enabled) {
@@ -114,6 +137,7 @@ internal object StatusStateStore {
             current.copy(
                 mobile = mobile,
                 mobileActivityResIds = if (enabled) emptyMap() else current.mobileActivityResIds,
+                mobileActivityShownIds = if (enabled) emptySet() else current.mobileActivityShownIds,
                 mobileActivityObservedIds = if (enabled) {
                     current.mobileActivityObservedIds + current.mobileActivityResIds.keys
                 } else current.mobileActivityObservedIds,
@@ -353,6 +377,8 @@ internal object StatusStateStore {
                 if (airplaneMode != true) putAll(fresh.mobileActivityResIds)
             },
             mobileActivityObservedIds = fresh.mobileActivityObservedIds,
+            mobileActivityShownIds = fresh.mobileActivityShownIds,
+            mobileActivityVisibilityObservedIds = fresh.mobileActivityVisibilityObservedIds,
             mobileRecoveryPending = mobileRecoveryPending,
             airplaneMode = airplaneMode,
         )
@@ -380,6 +406,8 @@ internal object StatusStateStore {
         val mobile: Map<Int, MobileState> = emptyMap(),
         val mobileActivityResIds: Map<Int, Int> = emptyMap(),
         val mobileActivityObservedIds: Set<Int> = emptySet(),
+        val mobileActivityShownIds: Set<Int> = emptySet(),
+        val mobileActivityVisibilityObservedIds: Set<Int> = emptySet(),
         val airplaneMode: Boolean? = null,
         val mobileRecoveryPending: Boolean = false,
     )
