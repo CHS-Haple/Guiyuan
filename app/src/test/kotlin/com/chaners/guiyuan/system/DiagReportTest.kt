@@ -120,7 +120,6 @@ class DiagReportTest {
         assertTrue(report.contains("runtimeLevel=detailed"))
         assertTrue(report.contains("runtimeBinding=not-observed"))
     }
-
 }
 
 class DiagReportExportTest {
@@ -206,7 +205,6 @@ class DiagReportExportTest {
         assertTrue(report.contains("collection=exit:1"))
         assertTrue(report.contains("[Device]"))
     }
-
 }
 
 private fun recordLines(count: Int): List<String> =
@@ -226,7 +224,6 @@ private fun report(
         level = level,
         clearedAt = clearedAt,
     )
-
 
 private fun report(
     lines: List<String>,
