@@ -108,6 +108,9 @@ class RenderModelTest {
                     1 to StatusStateStore.MobileState(signal = SignalStrength.Level(3)),
                 ),
                 mobileActivityResIds = mapOf(1 to 220),
+                mobileActivityObservedIds = setOf(1),
+                mobileActivityShownIds = setOf(1),
+                mobileActivityVisibilityObservedIds = setOf(1),
                 airplaneMode = false,
             )
         val lost =
@@ -123,6 +126,16 @@ class RenderModelTest {
         val nativeStillVisible = RenderModel.from(observed, lost, 1)
         assertTrue(nativeStillVisible?.centerIndicator is CenterIndicator.Empty)
         assertEquals(220, nativeStillVisible?.networkActivityResId)
+        assertTrue(nativeStillVisible?.networkActivityObserved == true)
+
+        // A visibility-only event must suppress even a later stale resource update.
+        val nativeGone = RenderModel.from(
+            observed.copy(mobileActivityShownIds = emptySet()),
+            lost,
+            1,
+        )
+        assertNull(nativeGone?.networkActivityResId)
+        assertTrue(nativeGone?.networkActivityObserved == true)
 
         // The native activity collector, not the default route, owns disappearance.
         assertNull(
@@ -130,7 +143,10 @@ class RenderModelTest {
                 observed.copy(mobileActivityResIds = emptyMap()), lost, 1,
             )?.networkActivityResId,
         )
-        assertNull(
+        // Android's default-route data flag must not override the native
+        // activity visibility source. A genuine native GONE was checked above.
+        assertEquals(
+            220,
             RenderModel.from(
                 observed,
                 lost.copy(connectivity = lost.connectivity.copy(mobileDataEnabled = false)),
