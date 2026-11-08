@@ -243,7 +243,7 @@ internal object HomeRenderSession {
             RenderView(
                 host.context,
                 onChargingGlyphDiagnostic = if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                    { message: String -> emitEvent { "surface=home " + message } }
+                    { message: String -> emitEvent { "chargingGlyphProbe surface=home " + message.removePrefix("chargingGlyphProbe ") } }
                 } else null,
             ) { latencyMs, committedOnMainThread, sample ->
                 if (sample != null && onLatencySample != null) {

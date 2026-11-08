@@ -337,7 +337,7 @@ internal object KeyguardRenderSession {
                 resolved.host.context,
                 onShownChanged = ::observeAodVisibility,
                 onChargingGlyphDiagnostic = if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                    { message: String -> emitEvent { "surface=" + scene.name + " " + message } }
+                    { message: String -> emitEvent { "chargingGlyphProbe surface=" + scene.name + " " + message.removePrefix("chargingGlyphProbe ") } }
                 } else null,
                 onDrawn = { view ->
                     observeAodVisibility(view)

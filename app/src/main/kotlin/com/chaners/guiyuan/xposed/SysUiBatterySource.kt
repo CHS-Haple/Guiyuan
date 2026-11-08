@@ -6,6 +6,7 @@ import android.graphics.Typeface
 import android.view.View
 import android.widget.TextView
 import android.widget.ImageView
+import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FontWeightAxis
 import android.view.ViewGroup
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
@@ -88,6 +89,7 @@ internal object SysUiBatterySource {
         onChargingIconResource: (Int) -> Unit,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDiagnosticEnabled: () -> Boolean = { true },
     ): List<HookHandle> {
         check(!hooksReady && failedInstallHandles.isEmpty()) { "battery-hooks-already-installed" }
 
@@ -209,7 +211,7 @@ internal object SysUiBatterySource {
         // diagnostics only: never mutate the live native ImageView/Drawable.
         val reportedChargingGlyphProbes = HashSet<String>()
         fun diagnoseChargingGlyph(meterView: View, resourceId: Int) {
-            if (onEvent == null) return
+            if (!BuildConfig.RUNTIME_DIAGNOSTICS || onEvent == null || !isDiagnosticEnabled()) return
             val nativeCharging = readOrNull {
                 meterClass.getDeclaredField("mCharging")
                     .apply { isAccessible = true }.getBoolean(meterView)

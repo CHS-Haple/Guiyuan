@@ -561,7 +561,7 @@ internal object CcRenderSession {
         private val renderView = RenderView(
             host.context,
             onChargingGlyphDiagnostic = if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                { message: String -> emitEvent { "surface=control-center " + message } }
+                { message: String -> emitEvent { "chargingGlyphProbe surface=control-center " + message.removePrefix("chargingGlyphProbe ") } }
             } else null,
         )
         private val renderController = RenderController(renderView)
