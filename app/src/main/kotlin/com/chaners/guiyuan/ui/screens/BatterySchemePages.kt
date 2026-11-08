@@ -874,7 +874,6 @@ private fun BatterySchemeManageMenu(
                         onDismissRequest = { expanded = false },
                         anchor = anchor,
                         backdrop = backdrop,
-                        simplified = true,
                         anchorContent = {
                             Icon(
                                 imageVector = Os4GlassMore,
