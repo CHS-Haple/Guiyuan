@@ -64,8 +64,11 @@ internal object SysUiNetworkSource {
     const val MOBILE_SIGNAL_EMIT_METHOD_NAME = "emit"
     private const val MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$1\$1\$8\$1"
+    private const val MOBILE_ACTIVITY_VISIBILITY_COLLECTOR_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$1\$1\$13\$1"
+    private const val MOBILE_ACTIVITY_VISIBILITY_CLASS_ID = 4
 
-    const val HOOK_COUNT = 6
+    const val HOOK_COUNT = 7
 
     private const val WIFI_BIND_HOOK_ID = "combinedstatus.network.wifi.bind"
     private const val WIFI_ICON_HOOK_ID = "combinedstatus.network.wifi.icon"
@@ -79,6 +82,7 @@ internal object SysUiNetworkSource {
     private const val MOBILE_BIND_HOOK_ID = "combinedstatus.network.mobile.bind"
     private const val MOBILE_SIGNAL_HOOK_ID = "combinedstatus.network.mobile.signal"
     private const val MOBILE_ACTIVITY_HOOK_ID = "combinedstatus.network.mobile.activity"
+    private const val MOBILE_ACTIVITY_VISIBILITY_HOOK_ID = "combinedstatus.network.mobile.activityVisibility"
 
     private val hookIds = setOf(
         WIFI_BIND_HOOK_ID,
@@ -87,6 +91,7 @@ internal object SysUiNetworkSource {
         MOBILE_BIND_HOOK_ID,
         MOBILE_SIGNAL_HOOK_ID,
         MOBILE_ACTIVITY_HOOK_ID,
+        MOBILE_ACTIVITY_VISIBILITY_HOOK_ID,
     )
 
     internal fun rethrowFatal(error: Throwable) {
@@ -559,10 +564,7 @@ internal object SysUiNetworkSource {
                             val subId = image?.let(::findMobileSubscription)
                             if (image != null && subId != null) {
                                 try {
-                                    val visible = image.visibility == View.VISIBLE &&
-                                        image.drawable != null
-                                    val taggedResId = (image.tag as? Number)?.toInt()
-                                        ?.takeIf { it > 0 && visible }
+                                    val taggedResId = nativeMobileActivityResourceId(image)
                                     val nativeWitness =
                                         if (onEvent != null && isDetailedDiagnosticsEnabled()) {
                                             readOrNull { nativeActivityObservation(image, result) }
@@ -588,6 +590,63 @@ internal object SysUiNetworkSource {
                     })
             }.onSuccess { created += it }.onFailure(::rethrowFatal)
 
+            // The native visibility collector is independent of getInOutResId().
+            // Observe its already-applied View state; do not collect a second Flow.
+            runCatching {
+                val collector = Class.forName(
+                    MOBILE_ACTIVITY_VISIBILITY_COLLECTOR_CLASS_NAME, false, classLoader,
+                )
+                val imageField = collector.getDeclaredField("\$satellite").apply { isAccessible = true }
+                val classIdField = collector.getDeclaredField("\$r8\$classId").apply { isAccessible = true }
+                val method = resolveEmitterMethod(collector, MOBILE_SIGNAL_EMIT_METHOD_NAME)
+                module.hook(method)
+                    .setId(MOBILE_ACTIVITY_VISIBILITY_HOOK_ID)
+                    .intercept(Hooker { chain ->
+                        val event = readOrNull { chain.getArg(0) as? Pair<*, *> }
+                        val result = chain.proceed()
+                        if (
+                            active.get() &&
+                            readOrNull { classIdField.getInt(chain.thisObject) } ==
+                            MOBILE_ACTIVITY_VISIBILITY_CLASS_ID
+                        ) {
+                            val image = readOrNull { imageField.get(chain.thisObject) as? ImageView }
+                            val subId = image?.let(::findMobileSubscription)
+                            val parentVisible = event?.first as? Boolean
+                            val activityVisible = event?.second as? Boolean
+                            if (
+                                image != null && subId != null &&
+                                parentVisible != null && activityVisible != null
+                            ) {
+                                try {
+                                    // When the parent is hidden, the native collector
+                                    // deliberately leaves the child View's visibility stale.
+                                    val taggedResId =
+                                        (image.tag as? Number)?.toInt()?.takeIf { id ->
+                                            id > 0 && parentVisible && activityVisible &&
+                                                image.visibility == View.VISIBLE &&
+                                                image.drawable != null
+                                        }
+                                    onMobileActivity(subId, taggedResId)
+                                    if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                        readOrNull {
+                                            onEvent.invoke(
+                                                "networkPipeline mobile activityVisibility " +
+                                                    "subId=" + subId +
+                                                    " parentVisible=" + parentVisible +
+                                                    " activityVisible=" + activityVisible +
+                                                    " appliedResId=" + (taggedResId ?: 0),
+                                            )
+                                        }
+                                    }
+                                } catch (error: Throwable) {
+                                    callbackFailed("mobile-activity-visibility", error, onRuntimeFailure)
+                                }
+                            }
+                        }
+                        result
+                    })
+            }.onSuccess { created += it }.onFailure(::rethrowFatal)
+
             active.set(true)
             BranchInstallResult(
                 handles = created.toList(),
@@ -599,6 +658,11 @@ internal object SysUiNetworkSource {
             failedBranch("mobile", error, created)
         }
     }
+
+    private fun nativeMobileActivityResourceId(image: ImageView): Int? =
+        (image.tag as? Number)?.toInt()?.takeIf { id ->
+            id > 0 && image.visibility == View.VISIBLE && image.drawable != null
+        }
 
     // Diagnostic-only witness: native activity may change visibility, image alpha
     // or drawable state without changing the resource ID we currently transfer.
