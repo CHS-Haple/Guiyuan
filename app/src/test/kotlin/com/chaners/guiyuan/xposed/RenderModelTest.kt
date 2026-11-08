@@ -100,35 +100,28 @@ class RenderModelTest {
 
     @Test
     fun defaultNetworkLossDoesNotOverrideNativeActivityVisibility() {
-        val observed =
-            StatusStateStore.Snapshot(
-                battery = StatusStateStore.BatteryState(percent = 81, charging = false),
-                wifi = StatusStateStore.WifiState.Hidden,
-                mobile = mapOf(
-                    1 to StatusStateStore.MobileState(signal = SignalStrength.Level(3)),
-                ),
-                mobileActivityResIds = mapOf(1 to 220),
-                mobileActivityObservedIds = setOf(1),
-                mobileActivityShownIds = setOf(1),
-                mobileActivityVisibilityObservedIds = setOf(1),
-                airplaneMode = false,
-            )
-        val lost =
-            presentation(
-                connectivity = connectivity(
-                    transport = SysUiConnectivitySource.Transport.NONE,
-                    validated = false,
-                    mobileDataEnabled = true,
-                ),
-                networkType = mobileType("5G"),
-            )
+        val observed = vpnHandoffActivity()
+        val lost = vpnHandoffPresentation()
 
         val nativeStillVisible = RenderModel.from(observed, lost, 1)
         assertTrue(nativeStillVisible?.centerIndicator is CenterIndicator.Empty)
         assertEquals(220, nativeStillVisible?.networkActivityResId)
         assertTrue(nativeStillVisible?.networkActivityObserved == true)
 
-        // A visibility-only event must suppress even a later stale resource update.
+        // Changing Android's default-route data flag is not a native GONE.
+        assertEquals(
+            220,
+            RenderModel.from(observed, vpnHandoffPresentation(mobileDataEnabled = false), 1)
+                ?.networkActivityResId,
+        )
+    }
+
+    @Test
+    fun nativeVisibilityAndResourceAbsenceIndependentlyHideActivity() {
+        val observed = vpnHandoffActivity()
+        val lost = vpnHandoffPresentation()
+
+        // The visibility collector can hide the View before a resource event.
         val nativeGone = RenderModel.from(
             observed.copy(mobileActivityShownIds = emptySet()),
             lost,
@@ -137,26 +130,22 @@ class RenderModelTest {
         assertNull(nativeGone?.networkActivityResId)
         assertTrue(nativeGone?.networkActivityObserved == true)
 
-        // The native activity collector, not the default route, owns disappearance.
+        // A missing native drawable is independently sufficient to hide it.
         assertNull(
             RenderModel.from(
                 observed.copy(mobileActivityResIds = emptyMap()), lost, 1,
             )?.networkActivityResId,
         )
-        // Android's default-route data flag must not override the native
-        // activity visibility source. A genuine native GONE was checked above.
-        assertEquals(
-            220,
-            RenderModel.from(
-                observed,
-                lost.copy(connectivity = lost.connectivity.copy(mobileDataEnabled = false)),
-                1,
-            )?.networkActivityResId,
-        )
+    }
+
+    @Test
+    fun airplaneAndUnavailableSignalSuppressMobileActivity() {
+        val observed = vpnHandoffActivity()
+        val lost = vpnHandoffPresentation()
+
         assertNull(
-            RenderModel.from(
-                observed.copy(airplaneMode = true), lost, 1,
-            )?.networkActivityResId,
+            RenderModel.from(observed.copy(airplaneMode = true), lost, 1)
+                ?.networkActivityResId,
         )
         assertNull(
             RenderModel.from(
@@ -168,6 +157,30 @@ class RenderModelTest {
             )?.networkActivityResId,
         )
     }
+
+    private fun vpnHandoffActivity(): StatusStateStore.Snapshot =
+        StatusStateStore.Snapshot(
+            battery = StatusStateStore.BatteryState(percent = 81, charging = false),
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                1 to StatusStateStore.MobileState(signal = SignalStrength.Level(3)),
+            ),
+            mobileActivityResIds = mapOf(1 to 220),
+            mobileActivityObservedIds = setOf(1),
+            mobileActivityShownIds = setOf(1),
+            mobileActivityVisibilityObservedIds = setOf(1),
+            airplaneMode = false,
+        )
+
+    private fun vpnHandoffPresentation(mobileDataEnabled: Boolean = true): PresentationStore.Snapshot =
+        presentation(
+            connectivity = connectivity(
+                transport = SysUiConnectivitySource.Transport.NONE,
+                validated = false,
+                mobileDataEnabled = mobileDataEnabled,
+            ),
+            networkType = mobileType("5G"),
+        )
 
     @Test
     fun aggregateActivityReadsSoleVisibleNativeRootEvenWhenDataSimIsSim2() {
