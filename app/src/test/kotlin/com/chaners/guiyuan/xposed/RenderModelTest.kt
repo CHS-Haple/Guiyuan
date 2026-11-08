@@ -162,13 +162,7 @@ class RenderModelTest {
     @Test
     fun dualRowsFollowPlatformSlotOrderIndependentlyOfDataSim() {
         val native = dualPresentation(mapOf(0 to 14, 1 to 3))
-        val state = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
-            ),
-        )
+        val state = dualState()
 
         val dataSim1 = RenderModel.from(state, native, 14, dualSignalEnabled = true)
         val dataSim2 = RenderModel.from(state, native, 3, dualSignalEnabled = true)
@@ -183,13 +177,7 @@ class RenderModelTest {
     @Test
     fun unverifiedPlatformSlotIdentityCannotEnableDualRows() {
         val native = dualPresentation(mapOf(0 to 14, 1 to 3))
-        val state = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
-            ),
-        )
+        val state = dualState()
         fun render(override: NativePresentationResolver.Snapshot) =
             RenderModel.from(
                 state,
@@ -214,13 +202,7 @@ class RenderModelTest {
     @Test
     fun unknownSignalDimsItsRowButUnavailableSignalInvalidatesDualPair() {
         val native = dualPresentation(mapOf(0 to 14, 1 to 3))
-        val state = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Unknown),
-            ),
-        )
+        val state = dualState(SignalStrength.Unknown)
 
         assertEquals(
             DualMobileLevels(sim1 = 4, sim2 = null),
@@ -243,4 +225,15 @@ class RenderModelTest {
             )?.dualMobileLevels,
         )
     }
+
+    private fun dualState(
+        sim2Signal: SignalStrength = SignalStrength.Level(2),
+    ): StatusStateStore.Snapshot =
+        snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = sim2Signal),
+            ),
+        )
 }
