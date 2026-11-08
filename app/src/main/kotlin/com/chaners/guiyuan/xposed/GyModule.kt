@@ -860,6 +860,16 @@ class GyModule : XposedModule() {
                         )
                     }
                 },
+                onMobileActivityVisibility = { subscriptionId, resourceId, visible ->
+                    StatusStateStore.updateMobileActivityVisibility(
+                        subscriptionId, resourceId, visible,
+                    )?.let { snapshot ->
+                        onCombinedStateChanged(
+                            snapshot = snapshot,
+                            trace = markStateCommitted(beginRenderTrace("mobileActivityVisibility")),
+                        )
+                    }
+                },
                 onPresentationChanged = {
                     CcTransitionOwner.onNativeMobileRefresh()
                     refreshMobilePresentation(beginRenderTrace("networkPresentation"))
