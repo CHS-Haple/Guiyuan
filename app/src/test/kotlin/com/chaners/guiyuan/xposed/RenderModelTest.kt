@@ -66,6 +66,8 @@ class RenderModelTest {
                 1 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
             ),
             mobileActivityResIds = mapOf(1 to 220),
+            mobileActivityShownIds = setOf(1),
+            mobileActivityVisibilityObservedIds = setOf(1),
             airplaneMode = false,
         )
         val wifiPresentation = presentation(
@@ -113,6 +115,23 @@ class RenderModelTest {
             RenderModel.from(observed, vpnHandoffPresentation(mobileDataEnabled = false), 1)
                 ?.networkActivityResId,
         )
+    }
+
+    @Test
+    fun nativeDrawableWithoutVisibilityConfirmationRemainsHidden() {
+        val observed = vpnHandoffActivity().copy(
+            mobileActivityShownIds = emptySet(),
+            mobileActivityVisibilityObservedIds = emptySet(),
+        )
+        val lost = vpnHandoffPresentation()
+        // Resource can arrive before the independent native visibility collector.
+        // Never treat its presence as an implicit native VISIBLE.
+        assertNull(RenderModel.from(observed, lost, 1)?.networkActivityResId)
+        val confirmed = observed.copy(
+            mobileActivityShownIds = setOf(1),
+            mobileActivityVisibilityObservedIds = setOf(1),
+        )
+        assertEquals(220, RenderModel.from(confirmed, lost, 1)?.networkActivityResId)
     }
 
     @Test
@@ -189,7 +208,11 @@ class RenderModelTest {
                 14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
                 3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
             ),
-        ).copy(mobileActivityResIds = mapOf(14 to 220))
+        ).copy(
+            mobileActivityResIds = mapOf(14 to 220),
+            mobileActivityShownIds = setOf(14),
+            mobileActivityVisibilityObservedIds = setOf(14),
+        )
 
         val aggregated = RenderModel.from(state, native, 3, dualSignalEnabled = true)
         assertTrue(aggregated?.centerIndicator is CenterIndicator.MobileType)
@@ -216,7 +239,11 @@ class RenderModelTest {
                 14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
                 3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
             ),
-        ).copy(mobileActivityResIds = mapOf(14 to 220, 3 to 330))
+        ).copy(
+            mobileActivityResIds = mapOf(14 to 220, 3 to 330),
+            mobileActivityShownIds = setOf(14, 3),
+            mobileActivityVisibilityObservedIds = setOf(14, 3),
+        )
 
         val aggregate = RenderModel.from(state, aggregated, 3, dualSignalEnabled = true)
         assertEquals(220, aggregate?.networkActivityResId)

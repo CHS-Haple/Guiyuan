@@ -172,12 +172,12 @@ internal data class RenderModel(
 
             val activitySubscriptionId =
                 resolveActivitySubscriptionId(presentation, selectedSubscriptionId)
-            val mobileActivityVisible =
-                activitySubscriptionId !in snapshot.mobileActivityVisibilityObservedIds ||
-                    activitySubscriptionId in snapshot.mobileActivityShownIds
+            // A drawable event does not establish that the native activity View
+            // is visible. Only the native visibility collector can authorize it.
+            // Unknown remains hidden until the first verified Home SIM event.
             val nativeMobileActivityId =
                 snapshot.mobileActivityResIds[activitySubscriptionId]
-                    ?.takeIf { mobileActivityVisible }
+                    ?.takeIf { activitySubscriptionId in snapshot.mobileActivityShownIds }
 
             return RenderModel(
                 batteryPercent = batteryPercent,
