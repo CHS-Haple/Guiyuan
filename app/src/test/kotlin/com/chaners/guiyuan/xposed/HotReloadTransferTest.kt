@@ -20,6 +20,21 @@ class HotReloadTransferTest {
     }
 
     @Test
+    fun wireVersionRejectsNumericCoercionAndKeepsLegacyIntVersions() {
+        for (version in 1..10) {
+            assertEquals(version, HotReloadTransfer.readPayloadVersion(version))
+        }
+        assertNull(HotReloadTransfer.readPayloadVersion(10.5))
+        assertNull(HotReloadTransfer.readPayloadVersion(10.0f))
+        assertNull(HotReloadTransfer.readPayloadVersion(10L))
+        assertNull(HotReloadTransfer.readPayloadVersion("10"))
+        assertNull(HotReloadTransfer.readPayloadVersion(null))
+        // Version 9 remains a well-formed integer but is unsafe to transfer.
+        assertEquals(9, HotReloadTransfer.readPayloadVersion(9))
+        assertNull(HotReloadTransfer.payloadSizeFor(9))
+    }
+
+    @Test
     fun neutralTransferVersionsRetainTheirOriginalWireSizes() {
         assertEquals(10, HotReloadTransfer.payloadSizeFor(10))
         assertEquals(9, HotReloadTransfer.payloadSizeFor(8))
