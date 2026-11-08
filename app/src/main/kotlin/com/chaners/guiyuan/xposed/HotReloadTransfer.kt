@@ -54,12 +54,7 @@ internal object HotReloadTransfer {
             return null
         }
 
-        val fakeHost =
-            controlCenterFakeHost
-                ?.takeIf { candidate ->
-                    candidate.isAttachedToWindow &&
-                        candidate.javaClass.name == CONTROL_CENTER_FAKE_ROOT_CLASS_NAME
-                }
+        val fakeHost = verifiedFakeHost(controlCenterFakeHost)
 
         return arrayOf(
             VERSION,
@@ -123,28 +118,20 @@ internal object HotReloadTransfer {
             }
         val appliedTint =
             if (version >= TINT_TRANSFER_VERSION) {
-                (payload.getOrNull(INDEX_APPLIED_TINT) as? Number)
-                    ?.toInt()
-                    ?.takeIf(::isOpaqueEnoughForPresentation)
+                readOpaqueTint(payload, INDEX_APPLIED_TINT)
             } else {
                 null
             }
         val statusIconTint =
             if (version >= TINT_TRANSFER_VERSION && appliedTint != null) {
-                (payload.getOrNull(INDEX_STATUS_ICON_TINT) as? Number)
-                    ?.toInt()
-                    ?.takeIf(::isOpaqueEnoughForPresentation)
+                readOpaqueTint(payload, INDEX_STATUS_ICON_TINT)
             } else {
                 null
             }
 
         val controlCenterFakeHost =
             if (version >= PRESENTATION_TRANSFER_VERSION) {
-                (payload.getOrNull(INDEX_CONTROL_CENTER_FAKE_HOST) as? ViewGroup)
-                    ?.takeIf { candidate ->
-                        candidate.isAttachedToWindow &&
-                            candidate.javaClass.name == CONTROL_CENTER_FAKE_ROOT_CLASS_NAME
-                    }
+                verifiedFakeHost(payload.getOrNull(INDEX_CONTROL_CENTER_FAKE_HOST) as? ViewGroup)
             } else {
                 null
             }
@@ -167,6 +154,18 @@ internal object HotReloadTransfer {
             controlCenterCompactReady = controlCenterCompactReady,
         )
     }
+
+    // Both capture and restore must validate the same native host identity.
+    private fun verifiedFakeHost(candidate: ViewGroup?): ViewGroup? =
+        candidate?.takeIf { host ->
+            host.isAttachedToWindow &&
+                host.javaClass.name == CONTROL_CENTER_FAKE_ROOT_CLASS_NAME
+        }
+
+    private fun readOpaqueTint(payload: Array<*>, index: Int): Int? =
+        (payload.getOrNull(index) as? Number)
+            ?.toInt()
+            ?.takeIf(::isOpaqueEnoughForPresentation)
 
     private fun isOpaqueEnoughForPresentation(color: Int): Boolean =
         color ushr 24 != 0
