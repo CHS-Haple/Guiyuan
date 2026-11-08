@@ -22,7 +22,6 @@ internal data class RenderModel(
         BatterySemanticState.NORMAL,
     val batterySystemSemanticColor: Int? = null,
     val dualMobileLevels: DualMobileLevels? = null,
-    val networkActivityObserved: Boolean = false,
 ) {
     companion object {
         fun from(
@@ -173,9 +172,6 @@ internal data class RenderModel(
 
             val activitySubscriptionId =
                 resolveActivitySubscriptionId(presentation, selectedSubscriptionId)
-            val mobileActivityObserved =
-                activitySubscriptionId in snapshot.mobileActivityObservedIds ||
-                    activitySubscriptionId in snapshot.mobileActivityVisibilityObservedIds
             val mobileActivityVisible =
                 activitySubscriptionId !in snapshot.mobileActivityVisibilityObservedIds ||
                     activitySubscriptionId in snapshot.mobileActivityShownIds
@@ -202,14 +198,6 @@ internal data class RenderModel(
                             nativeMobileActivityId
                         } else null
                     else -> null
-                },
-                networkActivityObserved = when (centerIndicator) {
-                    is CenterIndicator.Wifi -> snapshot.wifiActivityObserved
-                    is CenterIndicator.MobileType -> mobileActivityObserved
-                    CenterIndicator.Empty ->
-                        snapshot.wifi is StatusStateStore.WifiState.Hidden &&
-                            mobileActivityObserved
-                    else -> true
                 },
                 mobileLevel = mobileLevel,
                 mobileUnavailableMark = mobileUnavailableMark,
