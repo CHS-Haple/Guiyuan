@@ -284,17 +284,21 @@ internal fun DiagnosticsScreen(
     val omittedEarlierLines = snapshot?.let(DiagReport::omittedEarlierLines) ?: 0
     val detailedConfirmed = remember(snapshot) { snapshot?.isRuntimeDetailConfirmed() == true }
     val showRootGuide = !hasCapturedSessionLines && collectionFailed
+    val detailStatus =
+        if (diagSettings.level == DiagLevel.Detailed) {
+            stringResource(
+                when {
+                    !BuildConfig.RUNTIME_DIAGNOSTICS -> R.string.diagnostics_detail_unavailable
+                    detailedConfirmed -> R.string.diagnostics_detail_confirmed
+                    else -> R.string.diagnostics_detail_unconfirmed
+                },
+            )
+        } else {
+            null
+        }
+    val detailActive = detailStatus != null && detailedConfirmed && BuildConfig.RUNTIME_DIAGNOSTICS
     val integrityNotice =
         listOfNotNull(
-            if (diagSettings.level == DiagLevel.Detailed) {
-                stringResource(
-                    when {
-                        !BuildConfig.RUNTIME_DIAGNOSTICS -> R.string.diagnostics_detail_unavailable
-                        detailedConfirmed -> R.string.diagnostics_detail_confirmed
-                        else -> R.string.diagnostics_detail_unconfirmed
-                    },
-                )
-            } else null,
             if (collectionFailed && hasCapturedSessionLines) {
                 stringResource(R.string.diagnostics_collection_incomplete)
             } else null,
@@ -479,14 +483,6 @@ internal fun DiagnosticsScreen(
             // A changing notice must not insert a new key before the summary and shift the title.
             item(key = "diagnostics-header") {
                 Column {
-                    if (integrityNotice.isNotEmpty()) {
-                        Text(
-                            text = integrityNotice,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceSecondary,
-                        )
-                    }
                     if (filteredEntries.isNotEmpty()) {
                         Text(
                             text = stringResource(R.string.diagnostics_events_summary, filteredEntries.size),
@@ -494,7 +490,7 @@ internal fun DiagnosticsScreen(
                                 Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 20.dp)
-                                    .padding(top = 6.dp, bottom = 8.dp)
+                                    .padding(top = 6.dp, bottom = 4.dp)
                                     .graphicsLayer {
                                         val shown = logProgress(rise.value, 0)
                                         translationY = risePx * (1f - shown)
@@ -502,6 +498,26 @@ internal fun DiagnosticsScreen(
                                     },
                             style = MiuixTheme.textStyles.subtitle,
                             color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                        )
+                    }
+                    detailStatus?.let { status ->
+                        Text(
+                            text = status,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+                            style = if (detailActive) MiuixTheme.textStyles.footnote1 else MiuixTheme.textStyles.body2,
+                            color = if (detailActive) {
+                                MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            } else {
+                                MiuixTheme.colorScheme.onSurfaceSecondary
+                            },
+                        )
+                    }
+                    if (integrityNotice.isNotEmpty()) {
+                        Text(
+                            text = integrityNotice,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurfaceSecondary,
                         )
                     }
                 }
@@ -519,7 +535,7 @@ internal fun DiagnosticsScreen(
                             Spacer(Modifier.height(12.dp))
                             Text(
                                 text = stringResource(R.string.diagnostics_loading),
-                                style = MiuixTheme.textStyles.subtitle,
+                                style = MiuixTheme.textStyles.body2,
                                 color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                             )
                         }
@@ -564,13 +580,14 @@ internal fun DiagnosticsScreen(
                     Text(
                         text = stringResource(
                             when {
+                                captureTruncated && filterActive -> R.string.diagnostics_events_end_truncated_filtered
                                 captureTruncated -> R.string.diagnostics_events_end_truncated
                                 filterActive -> R.string.diagnostics_events_end_filtered
                                 else -> R.string.diagnostics_events_end
                             },
                         ),
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
-                        style = MiuixTheme.textStyles.body2,
+                        style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         textAlign = TextAlign.Center,
                     )
@@ -583,6 +600,7 @@ internal fun DiagnosticsScreen(
                         description = stringResource(R.string.diagnostics_root_unavailable_message),
                         note = listOfNotNull(
                             stringResource(R.string.diagnostics_root_unavailable_export),
+                            detailStatus,
                             integrityNotice.takeIf(String::isNotEmpty),
                         ).joinToString("\n"),
                         icon = MiuixIcons.Medium.Report,
