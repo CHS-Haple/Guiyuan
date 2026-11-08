@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -15,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.first
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
@@ -39,17 +37,6 @@ internal fun Os4CascadingMenu(
     var expanded by remember { mutableStateOf(false) }
     val mounted = remember { mutableStateOf(false) }
     var hasExpanded by remember { mutableStateOf(false) }
-    // Let the upstream transform finish before removing its root host.
-    LaunchedEffect(mounted.value, expanded) {
-        if (mounted.value && hasExpanded && !expanded) {
-            snapshotFlow { anchor.contentHidden }.first { !it }
-            if (!expanded) {
-                mounted.value = false
-                hasExpanded = false
-            }
-        }
-    }
-
     GlassIconButton(
         onClick = {
             if (expanded) {
@@ -93,6 +80,12 @@ internal fun Os4CascadingMenu(
                     entries = entries,
                     backdrop = backdrop,
                     collapseOnSelection = collapseOnSelection,
+                    onDismissFinished = {
+                        if (!expanded && hasExpanded) {
+                            mounted.value = false
+                            hasExpanded = false
+                        }
+                    },
                 )
             }
         }
