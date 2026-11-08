@@ -22,6 +22,7 @@ internal class RenderView(
     private val onShownChanged: ((View) -> Unit)? = null,
     private val preview: Boolean = false,
     private val onChargingGlyphDiagnostic: ((String) -> Unit)? = null,
+    private val isChargingGlyphDiagnosticEnabled: () -> Boolean = { false },
     private val onStateRendered: ((
         latencyMs: Long,
         committedOnMainThread: Boolean,
@@ -30,6 +31,7 @@ internal class RenderView(
 ) : View(context) {
     private val painter = StatusPainter(
         context, preview = preview, onChargingGlyphDiagnostic = onChargingGlyphDiagnostic,
+        isChargingGlyphDiagnosticEnabled = isChargingGlyphDiagnosticEnabled,
     )
     private val centerEnterInterpolator: Interpolator =
         AnimationUtils.loadInterpolator(

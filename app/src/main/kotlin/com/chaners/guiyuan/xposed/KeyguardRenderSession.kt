@@ -336,6 +336,7 @@ internal object KeyguardRenderSession {
             RenderView(
                 resolved.host.context,
                 onShownChanged = ::observeAodVisibility,
+                isChargingGlyphDiagnosticEnabled = isDetailedDiagnosticsEnabled,
                 onChargingGlyphDiagnostic = if (BuildConfig.RUNTIME_DIAGNOSTICS) {
                     { message: String -> emitEvent { "chargingGlyphProbe surface=" + scene.name + " " + message.removePrefix("chargingGlyphProbe ") } }
                 } else null,

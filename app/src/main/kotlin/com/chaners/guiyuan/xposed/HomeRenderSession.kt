@@ -242,6 +242,7 @@ internal object HomeRenderSession {
         private val probeView =
             RenderView(
                 host.context,
+                isChargingGlyphDiagnosticEnabled = isDetailedDiagnosticsEnabled,
                 onChargingGlyphDiagnostic = if (BuildConfig.RUNTIME_DIAGNOSTICS) {
                     { message: String -> emitEvent { "chargingGlyphProbe surface=home " + message.removePrefix("chargingGlyphProbe ") } }
                 } else null,

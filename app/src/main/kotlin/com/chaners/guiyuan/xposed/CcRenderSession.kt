@@ -560,6 +560,7 @@ internal object CcRenderSession {
         private val carrier = WeakReference(carrier)
         private val renderView = RenderView(
             host.context,
+            isChargingGlyphDiagnosticEnabled = isDetailedDiagnosticsEnabled,
             onChargingGlyphDiagnostic = if (BuildConfig.RUNTIME_DIAGNOSTICS) {
                 { message: String -> emitEvent { "chargingGlyphProbe surface=control-center " + message.removePrefix("chargingGlyphProbe ") } }
             } else null,

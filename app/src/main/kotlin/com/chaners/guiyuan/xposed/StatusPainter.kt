@@ -39,6 +39,7 @@ internal class StatusPainter(
     private val context: Context,
     private val preview: Boolean = false,
     private val onChargingGlyphDiagnostic: ((String) -> Unit)? = null,
+    private val isChargingGlyphDiagnosticEnabled: () -> Boolean = { false },
 ) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     // Keep 5G font axes separate from other Canvas text.
@@ -254,11 +255,13 @@ internal class StatusPainter(
         canvas.restoreToCount(save)
         if (!preview && onChargingGlyphDiagnostic != null && model.charging) {
             SysUiPresentationRuntime.emitPassiveDiagnostic {
-                reportChargingGlyphFrame(
-                    model = model, visual = visual, colors = colors,
-                    opacity = opacity, transform = nativeTransform,
-                    viewportWidth = width, viewportHeight = height,
-                )
+                if (isChargingGlyphDiagnosticEnabled()) {
+                    reportChargingGlyphFrame(
+                        model = model, visual = visual, colors = colors,
+                        opacity = opacity, transform = nativeTransform,
+                        viewportWidth = width, viewportHeight = height,
+                    )
+                }
             }
         }
     }
