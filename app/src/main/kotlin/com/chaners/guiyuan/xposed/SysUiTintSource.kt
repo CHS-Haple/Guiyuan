@@ -93,7 +93,9 @@ internal object SysUiTintSource {
             } catch (error: Throwable) {
                 rethrowFatal(error)
                 if (warned.compareAndSet(false, true)) {
-                    readOrNull { Log.w("Guiyuan[Tint]", "Diagnostic failed", error) }
+                    SysUiPresentationRuntime.emitPassiveDiagnostic {
+                        Log.w("Guiyuan[Tint]", "Diagnostic failed", error)
+                    }
                 }
             }
         }
