@@ -111,7 +111,7 @@ import com.chaners.guiyuan.ui.components.UiOverlayBottomSheet
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
-import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
+import com.chaners.guiyuan.ui.screens.about.GyBgEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
@@ -903,12 +903,10 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
     var titleDistance by remember { mutableFloatStateOf(0f) }
     var completionDistance by remember { mutableFloatStateOf(0f) }
     Box(modifier = Modifier.fillMaxSize().background(fallback)) {
-        BgEffectBackground(
-            dynamicBackground = resumed,
-            modifier = Modifier.fillMaxSize(),
+        GyBgEffect(
+            playing = resumed,
             bgModifier = if (blurSupported) Modifier.layerBackdrop(backdrop) else Modifier,
-            isFullSize = true,
-        ) {}
+        )
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
