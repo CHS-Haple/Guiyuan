@@ -1070,10 +1070,9 @@ internal object CcRenderSession {
             val parent = queue.removeFirst()
             for (index in 0 until parent.childCount) {
                 val child = parent.getChildAt(index) as? ViewGroup ?: continue
-                if (child.javaClass.name == className) {
-                    if (found != null && found !== child) return null
-                    found = child
-                }
+                val matches = child.javaClass.name == className
+                if (matches && found != null && found !== child) return null
+                if (matches) found = child
                 queue.add(child)
             }
         }
