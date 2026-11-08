@@ -432,19 +432,22 @@ internal object ScenePolicy {
         ) {
             if (fullAodVisualBoundary) {
                 return when {
-                    nativeToLockScreenTarget == true && keyguardEnabled ->
-                        KeyguardAodProjection.KEYGUARD
                     nativeToLockScreenTarget == true ->
-                        KeyguardAodProjection.NATIVE
-                    keyguardEnabled &&
-                        !aodEnabled &&
-                        lastStableFamilyScene == StableKeyguardAodScene.KEYGUARD &&
-                        (keyguardStatusIconsAlpha ?: 1f) > 0f ->
-                        KeyguardAodProjection.KEYGUARD
+                        if (keyguardEnabled) {
+                            KeyguardAodProjection.KEYGUARD
+                        } else {
+                            KeyguardAodProjection.NATIVE
+                        }
+
                     keyguardEnabled &&
                         !aodEnabled &&
                         lastStableFamilyScene == StableKeyguardAodScene.KEYGUARD ->
-                        KeyguardAodProjection.NATIVE
+                        if ((keyguardStatusIconsAlpha ?: 1f) > 0f) {
+                            KeyguardAodProjection.KEYGUARD
+                        } else {
+                            KeyguardAodProjection.NATIVE
+                        }
+
                     aodEnabled -> KeyguardAodProjection.AOD
                     else -> KeyguardAodProjection.NATIVE
                 }
