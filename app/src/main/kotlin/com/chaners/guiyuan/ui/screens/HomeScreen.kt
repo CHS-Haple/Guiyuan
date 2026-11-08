@@ -14,6 +14,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -458,7 +459,6 @@ private fun HomeRuntimeStatusDetails(
         val versionText = stringResource(R.string.home_version_line, BuildConfig.VERSION_NAME)
         val buildText = stringResource(R.string.home_build_line, BuildConfig.BUILD_ID)
         val textHeight = rememberRuntimeTextHeight(
-            maxWidth = maxWidth,
             titleStyle = titleStyle,
             bodyStyle = bodyStyle,
             summaryStyle = summaryStyle,
@@ -505,8 +505,7 @@ private fun HomeRuntimeStatusDetails(
 }
 
 @Composable
-private fun rememberRuntimeTextHeight(
-    maxWidth: Dp,
+private fun BoxWithConstraintsScope.rememberRuntimeTextHeight(
     titleStyle: TextStyle,
     bodyStyle: TextStyle,
     summaryStyle: TextStyle,
