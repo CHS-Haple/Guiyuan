@@ -4223,6 +4223,10 @@ internal class StatusPainter(
             is CenterIndicator.MobileType -> "stat_sys_signal_inout_left"
             else -> return null
         }
+        return activityResourceId(name)
+    }
+
+    private fun activityResourceId(name: String): Int? {
         checkNativeResources()
         val id = idleActivityResourceIds.getOrPut(name) {
             runCatching {
@@ -4265,7 +4269,13 @@ internal class StatusPainter(
             model.chargingIconResId?.let { drawableAvailable(it, true) }?.let { return it }
         }
         if (visual.bothSidesShowActivity) {
-            model.networkActivityResId?.let { drawableAvailable(it, false) }?.let { return it }
+            // HyperOS maps no cellular in/out traffic to this native idle drawable.
+            // Honor the user's idle-hide option without inventing network visibility.
+            val nativeActivityId = model.networkActivityResId?.takeUnless { id ->
+                visual.bothSidesHideIdleActivity &&
+                    id == activityResourceId("stat_sys_signal_data_left")
+            }
+            nativeActivityId?.let { drawableAvailable(it, false) }?.let { return it }
             // Once SystemUI has reported its native activity state, a GONE
             // result must not be replaced with a fabricated idle drawable.
             if (!visual.bothSidesHideIdleActivity && !model.networkActivityObserved) {
