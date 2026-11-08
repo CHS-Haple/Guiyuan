@@ -4131,6 +4131,13 @@ class GyModule : XposedModule() {
             SysUiPresentationOwner.deactivate("readiness-lost:" + source)
             return
         }
+        if (!SysUiNetworkRuntime.mobileReady) {
+            // Without the verified native mobile resource/visibility collectors,
+            // a composite Home icon could mask a still-correct SystemUI icon.
+            HomeRenderSession.setNativeHandoffActive(true)
+            SysUiPresentationOwner.deactivate("mobile-source-unavailable:" + source)
+            return
+        }
 
         when (val result = SysUiPresentationOwner.activate(host)) {
             is SysUiPresentationOwner.Result.Active -> {

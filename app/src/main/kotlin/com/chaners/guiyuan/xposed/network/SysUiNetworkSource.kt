@@ -553,8 +553,10 @@ internal object SysUiNetworkSource {
                         )
                 }
 
-            // Keep native mobile activity ownership on the source's bound SIM View.
-            runCatching {
+            // Both native activity collectors are required for the verified OS4
+            // replacement. If either cannot be hooked, roll back the mobile
+            // branch rather than announcing an incomplete native state owner.
+            created += atStage("mobile.hook.activityResource") {
                 val collector = Class.forName(MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME, false, classLoader)
                 val activityField = collector.getDeclaredField("\$leftInOut").apply { isAccessible = true }
                 val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
@@ -591,11 +593,11 @@ internal object SysUiNetworkSource {
                         }
                         result
                     })
-            }.onSuccess { created += it }.onFailure(::rethrowFatal)
+            }
 
             // The native visibility collector is independent of getInOutResId().
             // Observe its already-applied View state; do not collect a second Flow.
-            runCatching {
+            created += atStage("mobile.hook.activityVisibility") {
                 val collector = Class.forName(
                     MOBILE_ACTIVITY_VISIBILITY_COLLECTOR_CLASS_NAME, false, classLoader,
                 )
@@ -656,7 +658,7 @@ internal object SysUiNetworkSource {
                         }
                         result
                     })
-            }.onSuccess { created += it }.onFailure(::rethrowFatal)
+            }
 
             active.set(true)
             BranchInstallResult(

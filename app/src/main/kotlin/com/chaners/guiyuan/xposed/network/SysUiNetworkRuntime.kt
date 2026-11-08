@@ -12,6 +12,9 @@ internal object SysUiNetworkRuntime {
     val wifiReady: Boolean
         @Synchronized get() = current?.wifiReady == true
 
+    val mobileReady: Boolean
+        @Synchronized get() = current?.mobileReady == true
+
     @Synchronized
     fun attach(
         module: XposedModule,
