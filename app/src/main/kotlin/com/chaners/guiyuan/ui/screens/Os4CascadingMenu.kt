@@ -5,6 +5,7 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -15,6 +16,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassIconDropdownMenu
 import top.yukonga.miuix.kmp.glass.glassPopupAnchor
@@ -34,19 +36,23 @@ internal fun Os4CascadingMenu(
     val anchor = rememberGlassPopupAnchor()
     var expanded by remember { mutableStateOf(false) }
     val mounted = remember { mutableStateOf(false) }
-
+    var hasExpanded by remember { mutableStateOf(false) }
     GlassIconButton(
         onClick = {
             if (expanded) {
                 expanded = false
             } else {
-                mounted.value = true
-                expanded = true
+                if (mounted.value) {
+                    hasExpanded = true
+                    expanded = true
+                } else {
+                    mounted.value = true
+                }
                 haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
             }
         },
         backdrop = backdrop,
-        modifier = Modifier.glassPopupAnchor(anchor, cornerRadius = 20.dp, floating = true),
+        modifier = Modifier.glassPopupAnchor(anchor, cornerRadius = GlassTopAppBarDefaults.ButtonSize / 2, floating = true),
     ) {
         Box(Modifier.glassPopupAnchorContent(anchor)) { content() }
     }
@@ -61,6 +67,11 @@ internal fun Os4CascadingMenu(
             renderInRootScaffold = true,
         ) {
             Box(Modifier.fillMaxSize()) {
+                LaunchedEffect(Unit) {
+                    // Record the opening request before publishing its visible state.
+                    hasExpanded = true
+                    expanded = true
+                }
                 GlassIconDropdownMenu(
                     show = expanded,
                     onDismissRequest = { expanded = false },
@@ -69,7 +80,12 @@ internal fun Os4CascadingMenu(
                     entries = entries,
                     backdrop = backdrop,
                     collapseOnSelection = collapseOnSelection,
-                    onDismissFinished = { mounted.value = false },
+                    onDismissFinished = {
+                        if (!expanded && hasExpanded) {
+                            mounted.value = false
+                            hasExpanded = false
+                        }
+                    },
                 )
             }
         }

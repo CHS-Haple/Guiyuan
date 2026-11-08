@@ -32,6 +32,7 @@ import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -105,14 +106,16 @@ import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassTransformPopup
+import kotlinx.coroutines.flow.first
 import top.yukonga.miuix.kmp.glass.glassPopupAnchor
 import top.yukonga.miuix.kmp.glass.glassPopupAnchorContent
 import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
 import top.yukonga.miuix.kmp.glass.GlassPopupItem
-import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
+import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.DialogLayout
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PagerGestureNestedScrollConnection
@@ -809,24 +812,46 @@ private fun BatterySchemeManageMenu(
     onDelete: () -> Unit,
 ) {
     if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
-        // Capture at the sheet caller: the root PopupLayout may not inherit this local.
+        // Capture at the sheet caller: the root-hosted overlay may not inherit this local.
         val backdrop = LocalGlassBackdrop.current
         val haptic = LocalHapticFeedback.current
         var expanded by remember { mutableStateOf(false) }
         val mounted = remember { mutableStateOf(false) }
         val anchor = rememberGlassPopupAnchor()
         var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+        var hasExpanded by remember { mutableStateOf(false) }
+        // Keep the root host until the upstream transform releases its anchor.
+        LaunchedEffect(mounted.value, expanded) {
+            if (mounted.value && hasExpanded && !expanded) {
+                // An immediate close need not ever hide the anchor.
+                snapshotFlow { anchor.contentHidden }.first { !it }
+                if (!expanded) {
+                    mounted.value = false
+                    hasExpanded = false
+                    val action = pendingAction
+                    pendingAction = null
+                    action?.invoke()
+                }
+            }
+        }
 
         TooltipBox(text = stringResource(R.string.battery_custom_scheme_manage)) {
             GlassIconButton(
                 onClick = {
-                    expanded = !expanded
                     if (expanded) {
-                        mounted.value = true
+                        expanded = false
+                    } else {
+                        pendingAction = null
+                        if (mounted.value) {
+                            hasExpanded = true
+                            expanded = true
+                        } else {
+                            mounted.value = true
+                        }
                         haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
                     }
                 },
-                modifier = modifier.glassPopupAnchor(anchor, cornerRadius = 20.dp, floating = true),
+                modifier = modifier.glassPopupAnchor(anchor, cornerRadius = GlassTopAppBarDefaults.ButtonSize / 2, floating = true),
                 // The sheet records the button itself in sheetBackdrop. Do not sample that same
                 // layer from the button: it creates a recursive HWUI RenderNode dependency.
                 // Retain the native fallback used before this migration; the popup is root-hosted.
@@ -840,33 +865,33 @@ private fun BatterySchemeManageMenu(
         }
 
         if (mounted.value) {
-            // The sheet's pager clips children. Its root Scaffold owns the popup host.
-            PopupLayout(
+            // A dialog host preserves the menu's native exit while allowing a newly
+            // requested Rename/Delete dialog to draw above it in the same host queue.
+            DialogLayout(
                 visible = mounted,
                 enableWindowDim = false,
-                enableBackHandler = false,
+                enableAutoLargeScreen = false,
                 enterTransition = EnterTransition.None,
                 exitTransition = ExitTransition.None,
                 renderInRootScaffold = true,
             ) {
                 Box(Modifier.fillMaxSize()) {
+                    // Compose upstream popup closed first, then let its own transition open.
+                    LaunchedEffect(Unit) {
+                        // Record the opening request before publishing its visible state.
+                        hasExpanded = true
+                        expanded = true
+                    }
                     GlassTransformPopup(
                         show = expanded,
                         onDismissRequest = { expanded = false },
                         anchor = anchor,
                         backdrop = backdrop,
-                        simplified = true,
                         anchorContent = {
                             Icon(
                                 imageVector = Os4GlassMore,
                                 contentDescription = null,
                             )
-                        },
-                        onDismissFinished = {
-                            mounted.value = false
-                            val action = pendingAction
-                            pendingAction = null
-                            action?.invoke()
                         },
                     ) {
                         GlassPopupItem(
@@ -874,8 +899,9 @@ private fun BatterySchemeManageMenu(
                             icon = Os4GlassEdit,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                                pendingAction = onRename
+                                pendingAction = null
                                 expanded = false
+                                onRename()
                             },
                         )
                         GlassPopupItem(
@@ -900,8 +926,9 @@ private fun BatterySchemeManageMenu(
                             icon = Os4GlassDelete,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                                pendingAction = onDelete
+                                pendingAction = null
                                 expanded = false
+                                onDelete()
                             },
                         )
                     }
