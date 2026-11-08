@@ -198,6 +198,8 @@ class DiagPrefsOwnerTest {
         assertEquals(listOf(false, true), delivered)
     }
 
+    // Android SharedPreferences requires this full method surface in a test double.
+    @Suppress("TooManyFunctions")
     private class FakePreferences : SharedPreferences {
         private var level: String = DiagLevel.General.name
         private val listeners =
