@@ -452,55 +452,40 @@ internal object ScenePolicy {
         // layer in both directions. Alpha 1 belongs to the Keyguard endpoint;
         // alpha 0 belongs to the AOD endpoint. Battery AOD alpha is a separate
         // native animation and is not a whole-combined-scene lifetime signal.
+        val alpha = keyguardStatusIconsAlpha
         if (
             keyguardEnabled &&
             !aodEnabled &&
-            steadySourceScene == SourceScene.KEYGUARD
+            steadySourceScene == SourceScene.KEYGUARD &&
+            alpha != null &&
+            lastStableFamilyScene != StableKeyguardAodScene.UNKNOWN
         ) {
-            val alpha = keyguardStatusIconsAlpha
-            if (alpha != null) {
-                when (lastStableFamilyScene) {
-                    StableKeyguardAodScene.KEYGUARD ->
-                        return if (alpha > 0f) {
-                            KeyguardAodProjection.KEYGUARD
-                        } else {
-                            KeyguardAodProjection.NATIVE
-                        }
-
-                    StableKeyguardAodScene.AOD ->
-                        return if (alpha > 0f) {
-                            KeyguardAodProjection.KEYGUARD
-                        } else {
-                            KeyguardAodProjection.NATIVE
-                        }
-
-                    StableKeyguardAodScene.UNKNOWN -> Unit
-                }
+            return if (alpha > 0f) {
+                KeyguardAodProjection.KEYGUARD
+            } else {
+                KeyguardAodProjection.NATIVE
             }
         }
         if (
             !keyguardEnabled &&
             aodEnabled &&
-            steadySourceScene == SourceScene.KEYGUARD
+            steadySourceScene == SourceScene.KEYGUARD &&
+            alpha != null
         ) {
-            val alpha = keyguardStatusIconsAlpha
-            if (alpha != null) {
-                when (lastStableFamilyScene) {
-                    StableKeyguardAodScene.AOD ->
-                        if (alpha > 0f) return KeyguardAodProjection.NATIVE
+            when (lastStableFamilyScene) {
+                StableKeyguardAodScene.AOD ->
+                    if (alpha > 0f) return KeyguardAodProjection.NATIVE
 
-                    StableKeyguardAodScene.KEYGUARD ->
-                        return if (alpha < 1f) {
-                            KeyguardAodProjection.AOD
-                        } else {
-                            KeyguardAodProjection.NATIVE
-                        }
+                StableKeyguardAodScene.KEYGUARD ->
+                    return if (alpha < 1f) {
+                        KeyguardAodProjection.AOD
+                    } else {
+                        KeyguardAodProjection.NATIVE
+                    }
 
-                    StableKeyguardAodScene.UNKNOWN -> Unit
-                }
+                StableKeyguardAodScene.UNKNOWN -> Unit
             }
         }
-
         // Don't infer AOD direction from presentation ownership; attach/cleanup changes
         // that ownership and can bounce KEYGUARD -> NATIVE -> KEYGUARD. Freeze the
         // direction from the last stable family scene for the whole animation.
