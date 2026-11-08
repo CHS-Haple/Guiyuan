@@ -819,14 +819,16 @@ private fun BatterySchemeManageMenu(
         val anchor = rememberGlassPopupAnchor()
         var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
         // The upstream transform itself owns the close animation and restores the anchor.
-        LaunchedEffect(mounted.value) {
-            if (mounted.value) {
+        LaunchedEffect(mounted.value, expanded) {
+            if (mounted.value && !expanded) {
                 snapshotFlow { anchor.contentHidden }.first { it }
                 snapshotFlow { anchor.contentHidden }.first { !it }
-                mounted.value = false
-                val action = pendingAction
-                pendingAction = null
-                action?.invoke()
+                if (!expanded) {
+                    mounted.value = false
+                    val action = pendingAction
+                    pendingAction = null
+                    action?.invoke()
+                }
             }
         }
 
@@ -836,6 +838,7 @@ private fun BatterySchemeManageMenu(
                     if (expanded) {
                         expanded = false
                     } else {
+                        pendingAction = null
                         if (mounted.value) expanded = true else mounted.value = true
                         haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
                     }

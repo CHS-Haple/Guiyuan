@@ -38,11 +38,11 @@ internal fun Os4CascadingMenu(
     var expanded by remember { mutableStateOf(false) }
     val mounted = remember { mutableStateOf(false) }
     // Observe the upstream transform's anchor visibility rather than a custom exit gate.
-    LaunchedEffect(mounted.value) {
-        if (mounted.value) {
+    LaunchedEffect(mounted.value, expanded) {
+        if (mounted.value && !expanded) {
             snapshotFlow { anchor.contentHidden }.first { it }
             snapshotFlow { anchor.contentHidden }.first { !it }
-            mounted.value = false
+            if (!expanded) mounted.value = false
         }
     }
 
