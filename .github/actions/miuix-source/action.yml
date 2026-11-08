@@ -7,7 +7,7 @@ runs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: compose-miuix-ui/miuix
-        ref: b7a5f08f5a8c20350406e1665a97fbf99b5d9c8c
+        ref: ea1b935ddba7bb25de816342b2e7a4ad2113bb46
         path: miuix-upstream
         persist-credentials: false
     - name: Verify exact source revision and dialog dependencies
