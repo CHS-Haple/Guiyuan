@@ -516,7 +516,6 @@ private fun HomeRuntimeStatusDetails(
                 modifier = Modifier.size(RuntimeStatusMarkSize),
             )
         }
-
     }
 }
 
