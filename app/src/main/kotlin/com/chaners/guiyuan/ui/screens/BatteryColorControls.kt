@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -148,6 +150,7 @@ internal fun BatteryColorBottomSheet(
     val context = LocalContext.current
     var detailRequest by remember(show) { mutableStateOf<DetailRequest?>(null) }
     var showDetail by remember(show) { mutableStateOf(false) }
+    val latestShowDetail = rememberUpdatedState(showDetail)
     var requestedSchemeKey by remember(show) { mutableStateOf<String?>(null) }
     var createRequest by remember(show) { mutableStateOf<CreateRequest?>(null) }
     var renameRequest by remember(show) { mutableStateOf<RenameRequest?>(null) }
@@ -299,12 +302,16 @@ internal fun BatteryColorBottomSheet(
                 }
             },
             onDismissRequest = { showDetail = false },
-            onDismissFinished = {
-                if (!showDetail) {
-                    detailRequest = null
-                }
-            },
         ) {
+            // Release the request only when the native child content is disposed.
+            val hostedRequest = detailRequest
+            DisposableEffect(hostedRequest) {
+                onDispose {
+                    if (!latestShowDetail.value && detailRequest == hostedRequest) {
+                        detailRequest = null
+                    }
+                }
+            }
             if (detailCustom != null && detailSlot != null) {
                 CompositionLocalProvider(LocalGlassBackdrop provides detailBackdrop) {
                     BatteryCustomModeEditor(
