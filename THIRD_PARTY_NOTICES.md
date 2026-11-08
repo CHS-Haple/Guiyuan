@@ -13,7 +13,7 @@ The exact resolved dependency graph is defined by Gradle and may include additio
 | AndroidX Activity Compose | 1.13.0 | Android/Compose activity integration | Apache-2.0 |
 | AndroidX Navigation Event Compose | 1.2.0 | Predictive/navigation event integration | Apache-2.0 |
 | AndroidX DataStore Preferences | 1.3.0 | Local application preferences | Apache-2.0 |
-| MIUIX UI / Preference / Icons / Nav / Blur | Published baseline `0.9.4-8972f941-SNAPSHOT` (`8972f941`); matched OS4 source graph: stable v1.0.0 `b9f70838`, current development `f4cfe9b0` | Xiaomi HyperOS-style UI; matched-source builds select the revision pinned by that branch, not an interchangeable published-module or Glass ABI | Apache-2.0 |
+| MIUIX UI / Preference / Icons / Nav / Blur | Published baseline `0.9.4-8972f941-SNAPSHOT` (`8972f941`); matched OS4 source graph: stable v1.0.0 `b9f70838`, current development `b7a5f08f` | Xiaomi HyperOS-style UI; matched-source builds select the revision pinned by that branch, not an interchangeable published-module or Glass ABI | Apache-2.0 |
 | kotlinx.serialization core / JSON | 1.12.0 | Versioned configuration file serialization | Apache-2.0 |
 
 ## Compile-only API
@@ -34,13 +34,13 @@ runtime dependency in this experimental implementation.
 
 `app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` contains a pinned, adapted subset of the
 [MIUIX miuix-glass PR #423](https://github.com/compose-miuix-ui/miuix/pull/423),
-at the current development revision `f4cfe9b0adaa5151b68ec169ed18d470b957a6f6`. The published v1.0.0 stable branch remains pinned to `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (Apache-2.0; [license text](third_party/miuix-glass/LICENSE)).
+at the current development checkout revision `b7a5f08f5a8c20350406e1665a97fbf99b5d9c8c`. The published v1.0.0 stable branch remains pinned to `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (Apache-2.0; [license text](third_party/miuix-glass/LICENSE)).
 `GlassPopupSurface.kt` and `GlassPopupColumn.kt` were initially based on PR #423
 commit `8d52b45f223d4bec9a719d3d6ca52972cc7ea5fb` to use upstream popup
 measurement, scroll and outside-gesture ownership. This is provenance, not a claim
 that those files remain byte-identical to the current upstream revision. The remaining compatibility
 bridge is not claimed to be the latest complete `miuix-glass` module.
-The adapted source includes documented compatibility bridges (including title rendering), so it is not a byte-for-byte copy of the entire upstream module. Matched-source OS4 candidates use their branch-pinned PR423 UI/Blur source modules; plain Gradle builds retain published-module compatibility paths.
+The adapted source includes documented compatibility bridges (including title rendering), so it is not a byte-for-byte copy of the entire upstream module. The menu migration in Guiyuan PR #1316 also selectively ports the material-opacity behavior of upstream commit `799d3d09f996d66cb2b1c2318deed8242c4f440e` into app-local `GlassIconButton` and `GlassTransformPopup`; this does not advance the complete matched-source dependency graph. Matched-source OS4 candidates use their branch-pinned PR423 UI/Blur source modules; plain Gradle builds retain published-module compatibility paths.
 These primitives are temporary until the official module is published; they must not be silently
 updated independently from the corresponding MIUIX UI/Blur contracts. See
 `third_party/miuix-glass/README.md` for source boundaries and removal instructions.
@@ -60,7 +60,7 @@ This is a local source snapshot, not a published `miuix-effect` dependency.
 | Component | Variant | Purpose | Upstream license |
 | --- | --- | --- | --- |
 | Google Material Symbols | Local embedded vectors; no library version | Semantic leading glyphs for companion-app information surfaces | Apache-2.0 |
-| MIUIX OS4 Glass action icons | Back, Search, Close, Refresh, Filter, More, Edit, Copy and Delete from [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) (`f4cfe9b0`, experimental source only) | Same-revision `miuix-glass-icons` source module in experimental OS4 builds; pinned local vectors for six existing actions and published MIUIX Edit/Copy/Delete in fallback. Diagnostics export keeps published `MiuixIcons.Share`. No Glass artifact publication is claimed | Apache-2.0 |
+| MIUIX OS4 Glass action icons | Back, Search, Close, Refresh, Filter, More, Edit, Copy and Delete from [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) (`b7a5f08f`, pinned source revision) | Same-revision `miuix-glass-icons` source module in experimental OS4 builds; pinned local vectors for six existing actions and published MIUIX Edit/Copy/Delete in fallback. Diagnostics export keeps published `MiuixIcons.Share`. No Glass artifact publication is claimed | Apache-2.0 |
 
 The selected Material Symbols are stored as local Android vector drawables sourced from Google's `google/material-design-icons` repository. They are app resources, not a runtime library dependency.
 
