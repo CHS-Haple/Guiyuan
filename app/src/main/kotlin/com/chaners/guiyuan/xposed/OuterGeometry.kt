@@ -358,4 +358,3 @@ internal object OuterGeometry {
         return centerDistance - 2f * dotRadius
     }
 }
-
