@@ -32,8 +32,8 @@ of the installed framework.
 
 The archive contains the same 82 entry names as 7930, but changed payloads
 include `framework.dex`, `daemon.apk`, `manager.apk`, all four architectures'
-`libframework.so` / `libpreload.so` and `dex2oat`, plus associated hashes.
-**7936 is not a version-only rebuild.**
+`libframework.so` / `libpreload.so` and `dex2oat`, plus
+associated hashes. **7936 is not a version-only rebuild.**
 
 ## Java framework bytecode (original baksmali 3.0.10 + JADX 1.5.6)
 
