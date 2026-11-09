@@ -309,6 +309,7 @@ private fun testListenerLock(key: String, bind: (SharedPreferences) -> Unit) {
     assertEquals(1, next.listenerCount)
 }
 
+@Suppress("TooGenericExceptionCaught")
 private fun worker(error: AtomicReference<Throwable?>, work: () -> Unit) =
     thread(isDaemon = true) {
         try {
