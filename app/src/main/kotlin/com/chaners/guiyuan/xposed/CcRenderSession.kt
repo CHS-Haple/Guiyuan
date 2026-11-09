@@ -79,6 +79,7 @@ internal object CcRenderSession {
     }
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun attach(
         host: ViewGroup,
         onEvent: (String) -> Unit,
