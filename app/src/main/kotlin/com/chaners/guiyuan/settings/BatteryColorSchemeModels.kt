@@ -182,4 +182,3 @@ internal fun batterySchemeEntryColor(
         BatteryColorSchemeSource.FOLLOW_SYSTEM -> null
         BatteryColorSchemeSource.CUSTOM -> entry.customColor
     }
-
