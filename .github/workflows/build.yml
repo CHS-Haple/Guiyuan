@@ -107,6 +107,18 @@ jobs:
                   echo "::error::Invalid $channel Build identity."
                   exit 1
                 }
+                # Stable promotion reuses the already-tested dev Build; it is not a new
+                # development checkpoint. Accept equality only for an exact-tree,
+                # ancestry-preserving main promotion from the protected dev head.
+                if [[ "$channel" == "dev" && "$new_code" == "$channel_code" &&
+                      "$new_build" == "$channel_build" ]] &&
+                   { [[ "$EVENT_NAME" == "pull_request" && "$PR_BASE_REF" == "main" ]] ||
+                     [[ "$EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]]; } &&
+                   git merge-base --is-ancestor refs/remotes/origin/dev "$head_sha" &&
+                   [[ "$(git rev-parse "$head_sha^{tree}")" == "$(git rev-parse "refs/remotes/origin/dev^{tree}")" ]]; then
+                  echo "Promoting exact verified dev Build $new_build to main."
+                  continue
+                fi
                 if (( new_code <= channel_code )) || [[ "$new_build" == "$channel_build" ]]; then
                   echo "::error::Device checkpoint $new_build ($new_code) cannot upgrade or uniquely identify the $channel Build $channel_build ($channel_code)."
                   exit 1
