@@ -117,6 +117,7 @@ Report ordinary bugs or requests through [Issues](https://github.com/CHS-Haple/G
 
 [更新日志](CHANGELOG.md) · [使用条款](TERMS.md) · [隐私政策](PRIVACY.md) ·
 [安全政策](SECURITY.md) · [支持项目](docs/SUPPORT.md)
+
 ---
 
 <sub>Guiyuan is an independent community project and is not affiliated with or endorsed by Xiaomi, LSPosed or MIUIX. 归元是独立开源项目，不隶属于 Xiaomi、LSPosed 或 MIUIX，也不代表这些项目的官方立场。</sub>
