@@ -1,133 +1,222 @@
 # Engineering Decisions
 
-This file keeps only durable decisions that are likely to matter to future design or regression work. It is not a build log.
+This file keeps only durable decisions that are likely to matter to future
+design or regression work. It is not a build log.
 
-Detailed implementation history, rejected experiments, CI runs, and device investigation notes remain available in Git history.
+Detailed implementation history, rejected experiments, CI runs, and device
+investigation notes remain available in Git history.
 
 ## Native host over duplicate participant
 
-**Decision:** reuse a verified native SystemUI host whenever it already owns the required layout and motion.
+**Decision:** reuse a verified native SystemUI host whenever it already owns the
+required layout and motion.
 
-**Why:** a second permanent status participant creates a second layout identity and forces width/position/animation handoff between two writers.
+**Why:** a second permanent status participant creates a second layout identity
+and forces width/position/animation handoff between two writers.
 
-**Consequence:** Home renders through the verified native end-side carrier. A new permanent participant requires new evidence that the native-host model cannot satisfy the requirement safely.
+**Consequence:** Home renders through the verified native end-side carrier. A
+new permanent participant requires new evidence that the native-host model
+cannot satisfy the requirement safely.
 
 ## Native facts stay authoritative
 
-**Decision:** consume native scene, hide, appearance, connectivity and lifecycle facts instead of rewriting them to preserve Guiyuan state.
+**Decision:** consume native scene, hide, appearance, connectivity and lifecycle
+facts instead of rewriting them to preserve Guiyuan state.
 
-**Why:** overriding a native fact usually creates a second state machine and then requires geometry/timing compensation downstream.
+**Why:** overriding a native fact usually creates a second state machine and
+then requires geometry/timing compensation downstream.
 
-**Consequence:** native facts feed Guiyuan policy. Unsupported or ambiguous state falls back to native presentation rather than being repaired with guessed thresholds or delays.
+**Consequence:** native facts feed Guiyuan policy. Unsupported or ambiguous
+state falls back to native presentation rather than being repaired with guessed
+thresholds or delays.
 
 ## One writer per mutable surface
 
-**Decision:** a live layout, translation, alpha, visibility, tint, animation or attachment property has one runtime writer.
+**Decision:** a live layout, translation, alpha, visibility, tint, animation or
+attachment property has one runtime writer.
 
-**Why:** parallel writers produce ordering-dependent behavior that is difficult to restore and debug.
+**Why:** parallel writers produce ordering-dependent behavior that is difficult
+to restore and debug.
 
-**Consequence:** observation does not grant ownership. A new native write requires an explicit owner, lifecycle, conflict check and exact restoration path.
+**Consequence:** observation does not grant ownership. A new native write
+requires an explicit owner, lifecycle, conflict check and exact restoration
+path.
 
 ## Geometry responsibilities stay separate
 
-**Decision:** native occupancy, Guiyuan visual geometry, transition geometry and optical adjustment are distinct contracts.
+**Decision:** native occupancy, Guiyuan visual geometry, transition geometry and
+optical adjustment are distinct contracts.
 
-**Why:** using one width/offset for several responsibilities caused scene-specific compensation chains and unstable transition behavior.
+**Why:** using one width/offset for several responsibilities caused
+scene-specific compensation chains and unstable transition behavior.
 
-**Consequence:** visual scale does not automatically become native slot width; optical adjustment is not native translation; transparent drawing overflow does not change native slot geometry.
+**Consequence:** visual scale does not automatically become native slot width;
+optical adjustment is not native translation; transparent drawing overflow does
+not change native slot geometry.
 
 ## Represented native views stay reversible
 
-**Decision:** suppress only the minimum represented native presentation and preserve the native View lifecycle whenever possible.
+**Decision:** suppress only the minimum represented native presentation and
+preserve the native View lifecycle whenever possible.
 
-**Why:** native Views still carry useful state, tint and lifecycle behavior even when Guiyuan replaces their pixels.
+**Why:** native Views still carry useful state, tint and lifecycle behavior even
+when Guiyuan replaces their pixels.
 
-**Consequence:** ignored-slot changes and clip masks are scoped to the verified consuming lifetime, preserve pre-existing platform state, restore only module-owned deltas and fall back to native presentation on writer ambiguity.
+**Consequence:** ignored-slot changes and clip masks are scoped to the verified
+consuming lifetime, preserve pre-existing platform state, restore only
+module-owned deltas and fall back to native presentation on writer ambiguity.
 
 ## Keyguard and AOD share one family owner
 
-**Decision:** verified same-host Keyguard/AOD presentation uses one host-scoped owner and one renderer that retarget scene semantics.
+**Decision:** verified same-host Keyguard/AOD presentation uses one host-scoped
+owner and one renderer that retarget scene semantics.
 
-**Why:** restoring native state between two semantics on the same host creates an artificial native interval and duplicate ownership.
+**Why:** restoring native state between two semantics on the same host creates
+an artificial native interval and duplicate ownership.
 
-**Consequence:** same-host retarget may keep valid owned suppression/reservation state. Home remains a separate owner; cross-host handoff cannot borrow source-host layout readiness.
+**Consequence:** same-host retarget may keep valid owned suppression/reservation
+state. Home remains a separate owner; cross-host handoff cannot borrow
+source-host layout readiness.
 
 ## AOD never becomes a Control Center source
 
-**Decision:** AOD is a projected family scene but not a source for Control Center transition projection.
+**Decision:** AOD is a projected family scene but not a source for Control
+Center transition projection.
 
-**Why:** the verified transition contract is based on eligible Home or Keyguard presentation and native Control Center routing.
+**Why:** the verified transition contract is based on eligible Home or Keyguard
+presentation and native Control Center routing.
 
-**Consequence:** unknown/AOD source conditions fall back to native presentation for the bridge instead of inventing a source.
+**Consequence:** unknown/AOD source conditions fall back to native presentation
+for the bridge instead of inventing a source.
 
 ## Dual-SIM row shape and SIM identity are separate facts
 
-**Decision:** show two Guiyuan signal rows only after an explicit user choice and two authoritative active SIM subscriptions. When only one SIM is recognized, use the existing single-row presentation without clearing the user's optional preference. For Control Center targets, read native View structure and classify each visible row's actual geometry independently; bind a row to a SIM only when a trusted per-subscription View/semantic link proves it.
+**Decision:** show two Guiyuan signal rows only after an explicit user choice
+and two authoritative active SIM subscriptions. When only one SIM is recognized,
+use the existing single-row presentation without clearing the user's optional
+preference. For Control Center targets, read native View structure and classify
+each visible row's actual geometry independently; bind a row to a SIM only when
+a trusted per-subscription View/semantic link proves it.
 
-**Why:** a composite icon's upper/lower row order is not an authoritative SIM1/SIM2 mapping. Native View hierarchy, renderer shape, row index, and dynamically generated child IDs do not independently prove a row's subscription identity. SystemUI variants and modified View trees can present the data SIM first, reorder rows, or collapse them into one drawable without per-SIM provenance. Only an independently verified per-subscription semantic link can establish SIM ownership.
+**Why:** a composite icon's upper/lower row order is not an authoritative
+SIM1/SIM2 mapping. Native View hierarchy, renderer shape, row index, and
+dynamically generated child IDs do not independently prove a row's subscription
+identity. SystemUI variants and modified View trees can present the data SIM
+first, reorder rows, or collapse them into one drawable without per-SIM
+provenance. Only an independently verified per-subscription semantic link can
+establish SIM ownership.
 
-**Consequence:** never infer a SIM identity from row index, bar/dot shape, third-party package name or generated ID. Two separately verified subscription roots may use independent per-row exact morph. A single composite root with two verified four-glyph optical rows may use **grouped geometry-only** morph with shared X and row-specific native Y; it must not assign SIM identity to either native row. If geometry or source provenance is uncertain, retain the bounded no-target/native fallback. Do not add a second SystemUI signal observer or mutate final Control Center.
+**Consequence:** never infer a SIM identity from row index, bar/dot shape,
+third-party package name or generated ID. Two separately verified subscription
+roots may use independent per-row exact morph. A single composite root with two
+verified four-glyph optical rows may use **grouped geometry-only** morph with
+shared X and row-specific native Y; it must not assign SIM identity to either
+native row. If geometry or source provenance is uncertain, retain the bounded
+no-target/native fallback. Do not add a second SystemUI signal observer or
+mutate final Control Center.
 
 ## Battery colors do not depend on SIM layout
 
-**Decision:** keep one shared battery color scheme catalog, one applied scheme and one set of saved colors for single- and dual-SIM presentation.
+**Decision:** keep one shared battery color scheme catalog, one applied scheme
+and one set of saved colors for single- and dual-SIM presentation.
 
-**Why:** SIM count changes the signal layout, not the meaning of charging, low battery or power-saving colors. Separate color banks caused scheme-selection and actual-color disagreement.
+**Why:** SIM count changes the signal layout, not the meaning of charging, low
+battery or power-saving colors. Separate color banks caused scheme-selection and
+actual-color disagreement.
 
-**Consequence:** retain independent signal/layout geometry but read and write battery colors through one global preference bank. On upgrade or legacy V1 restore, the currently selected mode's colors win; remove obsolete dual-color keys without modifying other profile settings.
+**Consequence:** retain independent signal/layout geometry but read and write
+battery colors through one global preference bank. On upgrade or legacy V1
+restore, the currently selected mode's colors win; remove obsolete dual-color
+keys without modifying other profile settings.
 
 ## Control Center final surface remains native
 
-**Decision:** Guiyuan may project its compact semantics only through the bounded QS_FAKE transition bridge; the fully expanded Control Center remains native.
+**Decision:** Guiyuan may project its compact semantics only through the bounded
+QS_FAKE transition bridge; the fully expanded Control Center remains native.
 
-**Why:** SystemUI already owns fake/final surface membership, appearance, motion and final-only participants.
+**Why:** SystemUI already owns fake/final surface membership, appearance, motion
+and final-only participants.
 
-**Consequence:** expansion progress is motion context, not a project visibility threshold. Guiyuan does not suppress the final native surface or take over final alpha/translation.
+**Consequence:** expansion progress is motion context, not a project visibility
+threshold. Guiyuan does not suppress the final native surface or take over final
+alpha/translation.
 
 ## Capacity and motion are different
 
-**Decision:** QS_FAKE carrier capacity, peer reservation and visual motion are separate responsibilities.
+**Decision:** QS_FAKE carrier capacity, peer reservation and visual motion are
+separate responsibilities.
 
-**Why:** using leased measurement width as motion geometry moves the visual carrier and creates scene-wide jumps.
+**Why:** using leased measurement width as motion geometry moves the visual
+carrier and creates scene-wide jumps.
 
-**Consequence:** capacity may be leased only inside the verified parent and released at the native lifecycle boundary; the one reservation writer may change occupancy, but leased leading capacity never becomes motion displacement.
+**Consequence:** capacity may be leased only inside the verified parent and
+released at the native lifecycle boundary; the one reservation writer may change
+occupancy, but leased leading capacity never becomes motion displacement.
 
 ## Native resource identity is preferred
 
-**Decision:** when a verified native drawable/resource expresses the needed semantic, preserve its resource/presentation path instead of recreating it through project-owned raster processing.
+**Decision:** when a verified native drawable/resource expresses the needed
+semantic, preserve its resource/presentation path instead of recreating it
+through project-owned raster processing.
 
-**Why:** custom rasterization, grayscale/alpha remaps and screenshot-fitted constants diverge from native rendering and are hard to maintain across variants.
+**Why:** custom rasterization, grayscale/alpha remaps and screenshot-fitted
+constants diverge from native rendering and are hard to maintain across
+variants.
 
-**Consequence:** keep semantic identity, native Light/Dark/Tint selection, optical measurement, Guiyuan placement and final Drawable rendering as separate concerns.
+**Consequence:** keep semantic identity, native Light/Dark/Tint selection,
+optical measurement, Guiyuan placement and final Drawable rendering as separate
+concerns.
 
 ## Diagnostics are observation only
 
-**Decision:** diagnostic flags, probes and log levels never decide functional hook installation, state authority, ownership or fallback.
+**Decision:** diagnostic flags, probes and log levels never decide functional
+hook installation, state authority, ownership or fallback.
 
-**Why:** Canary/Release must not have different runtime semantics merely because one build logs more.
+**Why:** Canary/Release must not have different runtime semantics merely because
+one build logs more.
 
-**Consequence:** diagnostics are event-driven and bounded. Fields must come from real observations/calculations; do not manufacture proof values, pass rates, or synthetic success events.
+**Consequence:** diagnostics are event-driven and bounded. Fields must come from
+real observations/calculations; do not manufacture proof values, pass rates, or
+synthetic success events.
 
 ## Diagnostics loads on entry
 
-**Decision:** diagnostics waits for the incoming navigation transition to settle before collecting logs, retains the last in-process snapshot, and uses MIUIX pull-to-refresh for manual refresh feedback.
+**Decision:** diagnostics waits for the incoming navigation transition to settle
+before collecting logs, retains the last in-process snapshot, and uses MIUIX
+pull-to-refresh for manual refresh feedback.
 
-**Why:** collecting logs during navigation can compete with page motion. The previous completed snapshot remains visible until the next capture is ready.
+**Why:** collecting logs during navigation can compete with page motion. The
+previous completed snapshot remains visible until the next capture is ready.
 
 **Consequence:** keep the last completed snapshot in `GyApp`'s remembered state. On the first capture, display a MIUIX progress indicator and loading label until a snapshot exists. The summary and visible log rows then enter with the same Folme spring, a 28 dp upward reveal and progressive alpha, staggered by row without a separate delay. Existing entries remain visible during manual refresh, and the pull-to-refresh control supplies refresh feedback.
 
 ## Hot Reload retires the old generation first
 
-**Decision:** Follow Modern Xposed API 102: save neutral V10 state and release old View, callback and native presentation owners on the SystemUI main thread before accepting generation retirement. Reuse the verified host Hook only after the old owner has left; never transfer an old module callback to fake continuous rendering.
+**Decision:** Follow Modern Xposed API 102: save neutral V10 state and release
+old View, callback and native presentation owners on the SystemUI main thread
+before accepting generation retirement. Reuse the verified host Hook only after
+the old owner has left; never transfer an old module callback to fake continuous
+rendering.
 
 **Why:** LSPosed 7927 loads the replacement ClassLoader *after* old `onHotReloading`, and provides no frame-atomic UI transaction. Keeping old listeners inside a V9 Array breaks lifetime ownership even if the UI appears seamless.
 
-**Consequence:** new owners revalidate live host identity before acquiring runtime resources; native battery/network may briefly display between generations. A refused/failed transfer must report restart rather than claim rollback of partial native teardown. Queued cleanup may be canceled; cleanup already running must finish. V9's payload embeds an old-generation Runnable and is rejected before restoring Views; upgrading from V9 requires a SystemUI restart rather than running that callback in the new ClassLoader. Older neutral payload formats retain their existing validation rules.
+**Consequence:** new owners revalidate live host identity before acquiring
+runtime resources; native battery/network may briefly display between
+generations. A refused/failed transfer must report restart rather than claim
+rollback of partial native teardown. Queued cleanup may be canceled; cleanup
+already running must finish. V9's payload embeds an old-generation Runnable and
+is rejected before restoring Views; upgrading from V9 requires a SystemUI
+restart rather than running that callback in the new ClassLoader. Older neutral
+payload formats retain their existing validation rules.
 
 ## Maintainability favors useful boundaries over uniform structure
 
-**Decision:** names, helpers and types exist for maintenance value, not architectural symmetry.
+**Decision:** names, helpers and types exist for maintenance value, not
+architectural symmetry.
 
-**Why:** modifier-heavy names, suffix-stacked types, wrapper layers, boolean walls and proof-only tests increase edit cost without improving correctness.
+**Why:** modifier-heavy names, suffix-stacked types, wrapper layers, boolean
+walls and proof-only tests increase edit cost without improving correctness.
 
-**Consequence:** prefer concise scope-aware names, natural comments, explicit lifecycle state when necessary, and deletion/inlining when an abstraction carries no real ownership, compatibility, reuse or policy boundary.
+**Consequence:** prefer concise scope-aware names, natural comments, explicit
+lifecycle state when necessary, and deletion/inlining when an abstraction
+carries no real ownership, compatibility, reuse or policy boundary.

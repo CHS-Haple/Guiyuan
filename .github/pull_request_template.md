@@ -16,11 +16,17 @@ Describe the problem, change and scope. / 简述问题、改动内容及边界�
 
 ## MIUIX UI impact / MIUIX 界面影响（涉及界面时填写）
 
-- Affected style: OS3 / OS4 / both / neither; include shared controls and style switching, with rationale.
-- Corresponding upstream references/revisions **for each affected style** and relevant layout, material, motion, state, interaction and lifecycle contracts:
-- Current implementation versus upstream; post-change verification and unverified gaps:
-- If OS4 is involved: accepted pinned implementation or new/materially changed PR/component?
-- If new/changed: expected benefit, maturity, dependency/ABI and compatibility/performance risks, rollback cost, and adopt / isolated experiment / defer decision:
+- Affected style: OS3 / OS4 / both / neither; include shared controls and style
+  switching, with rationale.
+- Corresponding upstream references/revisions **for each affected style** and
+  relevant layout, material, motion, state, interaction and lifecycle contracts:
+- Current implementation versus upstream; post-change verification and
+  unverified gaps:
+- If OS4 is involved: accepted pinned implementation or new/materially changed
+  PR/component?
+- If new/changed: expected benefit, maturity, dependency/ABI and
+  compatibility/performance risks, rollback cost, and adopt / isolated
+  experiment / defer decision:
 
 ## Runtime impact / 运行时影响
 
@@ -43,12 +49,14 @@ Complete only when runtime-sensitive:
 Complete only for promotion or hotfix pull requests.
 
 For promotion:
+
 - Candidate dev SHA:
 - [ ] Candidate matches the validated dev state.
 - [ ] No affected item remains awaiting device validation.
 - [ ] No new feature/fix/cleanup is included.
 
 For hotfix:
+
 - Source main SHA:
 - Dev sync-back plan:
 

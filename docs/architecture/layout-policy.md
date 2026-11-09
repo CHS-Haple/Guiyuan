@@ -9,7 +9,8 @@ Guiyuan keeps four responsibilities separate:
 3. transition and motion geometry;
 4. optical adjustment.
 
-A value from one responsibility must not silently become the control value for another.
+A value from one responsibility must not silently become the control value for
+another.
 
 ## Home ownership
 
@@ -36,39 +37,56 @@ Guiyuan owns:
 - reversible presentation masks;
 - one conflict-checked end reservation.
 
-Guiyuan must not write native Battery measurement/layout width, native peer translation, native peer alpha, or native peer visibility.
+Guiyuan must not write native Battery measurement/layout width, native peer
+translation, native peer alpha, or native peer visibility.
 
 ## Render modes
 
 ### PROJECTED
 
-Guiyuan renders against verified native host geometry while SystemUI remains authoritative for surrounding layout and motion.
+Guiyuan renders against verified native host geometry while SystemUI remains
+authoritative for surrounding layout and motion.
 
-Home uses this model. Keyguard/AOD use the same principle through their own verified family host. The bounded Control Center bridge uses projection only during an eligible transition.
+Home uses this model. Keyguard/AOD use the same principle through their own
+verified family host. The bounded Control Center bridge uses projection only
+during an eligible transition.
 
 ### NATIVE_ONLY
 
-Guiyuan does not replace the surface. SystemUI retains presentation and motion ownership.
+Guiyuan does not replace the surface. SystemUI retains presentation and motion
+ownership.
 
 Notification Shade and the fully expanded Control Center are native-only.
 
 ## Steady slot geometry
 
-`SteadyLayoutResolver` reads the live host width, host height, carrier width and layout direction. It rejects non-positive dimensions, clamps the carrier to the host width, and returns the carrier bounds: at the host end in LTR or at the host start in RTL. Its visual-width hint is the smaller of carrier width and host height.
+`SteadyLayoutResolver` reads the live host width, host height, carrier width and
+layout direction. It rejects non-positive dimensions, clamps the carrier to the
+host width, and returns the carrier bounds: at the host end in LTR or at the
+host start in RTL. Its visual-width hint is the smaller of carrier width and
+host height.
 
-The resolver does not decide scene eligibility, scale glyphs or write native layout. Callers establish presentation eligibility and fail native if the geometry is unavailable. User scaling and optical adjustments stay in presentation/rendering logic; `CompactReservationPolicy` computes the centered visual-shrink reservation separately.
+The resolver does not decide scene eligibility, scale glyphs or write native
+layout. Callers establish presentation eligibility and fail native if the
+geometry is unavailable. User scaling and optical adjustments stay in
+presentation/rendering logic; `CompactReservationPolicy` computes the centered
+visual-shrink reservation separately.
 
-Transition endpoints and motion timing remain under their existing native and transition owners.
+Transition endpoints and motion timing remain under their existing native and
+transition owners.
 
 ### Home carrier width
 
-Home resolves the live `battery_icon_container` under the bound `MiuiBatteryMeterView` and uses its stable body width as carrier authority.
+Home resolves the live `battery_icon_container` under the bound
+`MiuiBatteryMeterView` and uses its stable body width as carrier authority.
 
-The full Battery root width is not a safe replacement-width authority because charging presentation can make the root wider than the stable body.
+The full Battery root width is not a safe replacement-width authority because
+charging presentation can make the root wider than the stable body.
 
 ## Represented-slot exclusion
 
-Represented Wi-Fi/mobile/airplane/no-SIM slots may be excluded only through the verified native status-icon contract.
+Represented Wi-Fi/mobile/airplane/no-SIM slots may be excluded only through the
+verified native status-icon contract.
 
 For a temporary native call scope:
 
@@ -77,13 +95,17 @@ For a temporary native call scope:
 3. let native measure/layout run;
 4. remove exactly those entries in `finally`.
 
-For a verified presentation whose native motion consumes the ignored-slot state beyond one measure/layout call, the owned delta may remain for the presentation session and must be restored when that owner ends.
+For a verified presentation whose native motion consumes the ignored-slot state
+beyond one measure/layout call, the owned delta may remain for the presentation
+session and must be restored when that owner ends.
 
-Never clear or replace the platform collection wholesale. Never extend one scene's owned exclusion into an unrelated scene.
+Never clear or replace the platform collection wholesale. Never extend one
+scene's owned exclusion into an unrelated scene.
 
 ## Reversible visual masking
 
-Represented native Views remain attached so they can continue receiving lifecycle, state and tint updates.
+Represented native Views remain attached so they can continue receiving
+lifecycle, state and tint updates.
 
 For each masked View:
 
@@ -97,14 +119,18 @@ Visual suppression is not layout ownership.
 
 ## End reservation
 
-The Guiyuan render child does not participate in native measurement. A narrow, reversible `MiuiStatusIconContainer.paddingEnd` reservation exposes the compact replacement occupancy to native peer layout.
+The Guiyuan render child does not participate in native measurement. A narrow,
+reversible `MiuiStatusIconContainer.paddingEnd` reservation exposes the compact
+replacement occupancy to native peer layout.
 
 For steady Home:
 
 - native Battery present: `requestedSlotWidth - actualBatteryWidth`;
 - native Battery released: `requestedSlotWidth`.
 
-A negative delta is valid when native charging presentation is wider than the stable replacement carrier. The value must come from live geometry, never a fixed charging offset.
+A negative delta is valid when native charging presentation is wider than the
+stable replacement carrier. The value must come from live geometry, never a
+fixed charging offset.
 
 The reservation must:
 
@@ -113,20 +139,24 @@ The reservation must:
 - react only to bounded state/layout events;
 - reject a competing writer;
 - restore only the exact module-applied state;
-- fall back to native presentation if carrier, width, hide state, or writer ownership is ambiguous.
+- fall back to native presentation if carrier, width, hide state, or writer
+  ownership is ambiguous.
 
 ## QS_FAKE capacity lease
 
-The bounded Control Center bridge may temporarily use otherwise-unused width already available inside the verified QS_FAKE parent.
+The bounded Control Center bridge may temporarily use otherwise-unused width
+already available inside the verified QS_FAKE parent.
 
 This is a capacity lease, not motion:
 
-- acquire it only from a verified end-anchored carrier with compatible parent geometry;
+- acquire it only from a verified end-anchored carrier with compatible parent
+  geometry;
 - apply it before compact cutover;
 - never animate carrier width as gesture motion;
 - keep `paddingEnd` as the sole per-progress layout reservation writer;
 - release the width lease at the native visible-to-hidden boundary;
-- treat an unexpected live width change as a competing writer and fall back to native presentation.
+- treat an unexpected live width change as a competing writer and fall back to
+  native presentation.
 
 Transition geometry must not interpret leased capacity as carrier displacement.
 
@@ -134,17 +164,25 @@ Transition geometry must not interpret leased capacity as carrier displacement.
 
 Motion ownership is independent from layout size.
 
-Current production paths either need no independent Guiyuan motion or keep positioning/transition motion under SystemUI. No current scene grants Guiyuan ownership of native motion.
+Current production paths either need no independent Guiyuan motion or keep
+positioning/transition motion under SystemUI. No current scene grants Guiyuan
+ownership of native motion.
 
-Home inherits native end-side motion from its carrier and must not add a second Battery-translation follower, animator or timing curve.
+Home inherits native end-side motion from its carrier and must not add a second
+Battery-translation follower, animator or timing curve.
 
-For Control Center, Guiyuan may read verified native source/target transforms for its own transition-only visual, but it must not write native peer geometry, appearance or motion.
+For Control Center, Guiyuan may read verified native source/target transforms
+for its own transition-only visual, but it must not write native peer geometry,
+appearance or motion.
 
 ## Logical viewport and transparent overflow
 
-The logical viewport is the replacement slot and remains the basis for steady and transition geometry.
+The logical viewport is the replacement slot and remains the basis for steady
+and transition geometry.
 
-If current top content crosses the logical top edge, Guiyuan may enlarge only its own child by the exact transparent overflow required. The child must be positioned so the logical viewport itself does not move.
+If current top content crosses the logical top edge, Guiyuan may enlarge only
+its own child by the exact transparent overflow required. The child must be
+positioned so the logical viewport itself does not move.
 
 Transparent overflow must never become:
 
@@ -162,9 +200,11 @@ The Battery-ring opening is driven by the currently visible optical envelope.
 
 - Battery information uses current measured text/charging-glyph bounds.
 - Network content uses the current rendered asset or text bounds.
-- During semantic cross-fade, previous/current envelopes are scaled by their visible appearance and unioned.
+- During semantic cross-fade, previous/current envelopes are scaled by their
+  visible appearance and unioned.
 - Once an old semantic reaches zero appearance, it contributes no gap.
-- Transparent overflow may reserve draw capacity but must not change the animated ring gap or native occupancy.
+- Transparent overflow may reserve draw capacity but must not change the
+  animated ring gap or native occupancy.
 
 ## Size and spacing controls
 
@@ -177,11 +217,14 @@ They must not introduce:
 - translation compensation;
 - duplicate native slot writers.
 
-If a requested size cannot fit a verified host safely, the affected capability should fall back to native presentation rather than conceal the mismatch with a correction chain.
+If a requested size cannot fit a verified host safely, the affected capability
+should fall back to native presentation rather than conceal the mismatch with a
+correction chain.
 
 ## Prohibited ownership patterns
 
-Do not reintroduce these as current architecture without new target evidence and a fresh writer/lifecycle review:
+Do not reintroduce these as current architecture without new target evidence and
+a fresh writer/lifecycle review:
 
 - a permanent second status participant as the default carrier;
 - zero/full-width occupancy handoff between duplicate participants;
@@ -192,9 +235,11 @@ Do not reintroduce these as current architecture without new target evidence and
 - per-frame/pre-draw native translation or pivot races;
 - peer alpha/visibility/translation compensation;
 - project-owned fake/final appearance thresholds;
-- overlay-local screen coordinates as a substitute for the actual native transform chain.
+- overlay-local screen coordinates as a substitute for the actual native
+  transform chain.
 
-Historical experiments belong in Git history or the project decision record, not in this policy.
+Historical experiments belong in Git history or the project decision record, not
+in this policy.
 
 ## New native geometry writes
 
@@ -210,4 +255,5 @@ Before taking ownership of another native geometry property, verify:
 8. compatibility scope;
 9. that taking ownership is safer than leaving the property native-owned.
 
-Reusable evidence under `docs/reference/` may justify an investigation direction, but it does not grant write ownership.
+Reusable evidence under `docs/reference/` may justify an investigation
+direction, but it does not grant write ownership.

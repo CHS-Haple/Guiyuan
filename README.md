@@ -12,7 +12,9 @@
 ![Modern Xposed API](https://img.shields.io/badge/Modern%20Xposed%20API-102-5965BB)
 [![GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-238636)](LICENSE)
 
-[English](#english) · [简体中文](#简体中文) · [Releases](https://github.com/CHS-Haple/Guiyuan/releases) · [Issues](https://github.com/CHS-Haple/Guiyuan/issues)
+[English](#english) · [简体中文](#简体中文) ·
+[Releases](https://github.com/CHS-Haple/Guiyuan/releases) ·
+[Issues](https://github.com/CHS-Haple/Guiyuan/issues)
 
 </div>
 
@@ -20,14 +22,20 @@
 
 ## English
 
-Guiyuan is an open-source LSPosed module for **Xiaomi HyperOS 4**, combining battery, cellular and Wi-Fi status into one compact indicator with a configurable companion app.
+Guiyuan is an open-source LSPosed module for **Xiaomi HyperOS 4**, combining
+battery, cellular and Wi-Fi status into one compact indicator with a
+configurable companion app.
 
 ### Features
 
-- **Unified status indicator:** battery, cellular and Wi-Fi presentation, with configurable layout, colors, weight and positioning.
-- **Native-aware scenes:** verified Home, optional Keyguard and AOD integration, with SystemUI-owned Control Center handoffs and safe native fallback.
-- **Connectivity and dual SIM:** optional dual-row presentation and network-state handling when trustworthy native information is available.
-- **Configuration and diagnostics:** MIUIX settings, preview sandbox, backup/restore, on-demand diagnostics and Hot Reload.
+- **Unified status indicator:** battery, cellular and Wi-Fi presentation, with
+  configurable layout, colors, weight and positioning.
+- **Native-aware scenes:** verified Home, optional Keyguard and AOD integration,
+  with SystemUI-owned Control Center handoffs and safe native fallback.
+- **Connectivity and dual SIM:** optional dual-row presentation and
+  network-state handling when trustworthy native information is available.
+- **Configuration and diagnostics:** MIUIX settings, preview sandbox,
+  backup/restore, on-demand diagnostics and Hot Reload.
 
 ### Compatibility
 
@@ -39,28 +47,38 @@ Guiyuan is an open-source LSPosed module for **Xiaomi HyperOS 4**, combining bat
 | Module scope | SystemUI; Settings is optional for its integration shortcut |
 | Root | Not mandatory for ordinary companion-app settings; some diagnostics and process-maintenance actions require Root |
 
-**HyperOS 4 support does not mean every HyperOS 4 device or SystemUI build has been tested.** Unsupported or ambiguous hosts should retain native presentation. The in-app “OS3” option is a **visual style**, not an assertion of HyperOS 3 runtime compatibility.
+**HyperOS 4 support does not mean every HyperOS 4 device or SystemUI build has
+been tested.** Unsupported or ambiguous hosts should retain native presentation.
+The in-app “OS3” option is a **visual style**, not an assertion of HyperOS 3
+runtime compatibility.
 
 ### Installation
 
 1. Download the signed APK from [Releases](https://github.com/CHS-Haple/Guiyuan/releases).
-2. Enable Guiyuan in a compatible LSPosed manager and authorize the **SystemUI** scope.
-3. Restart the relevant system process as required by your framework, then complete the first-run guide.
-4. Configure the indicator in the companion app; grant Root only for optional maintenance operations.
+2. Enable Guiyuan in a compatible LSPosed manager and authorize the **SystemUI**
+   scope.
+3. Restart the relevant system process as required by your framework, then
+   complete the first-run guide.
+4. Configure the indicator in the companion app; grant Root only for optional
+   maintenance operations.
 
-Back up your settings before major upgrades. If SystemUI becomes unstable, disable the module in the framework manager to restore native behavior.
+Back up your settings before major upgrades. If SystemUI becomes unstable,
+disable the module in the framework manager to restore native behavior.
 
 ### Community and documentation
 
 Report ordinary bugs or requests through [Issues](https://github.com/CHS-Haple/Guiyuan/issues). Keep private logs and security details out of public discussions; use [private vulnerability reporting](https://github.com/CHS-Haple/Guiyuan/security/advisories/new) for security concerns.
 
-[Changelog](CHANGELOG.md) · [Terms](TERMS.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [Developer docs](docs/README.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
+[Changelog](CHANGELOG.md) · [Terms](TERMS.md) · [Privacy](PRIVACY.md) ·
+[Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) ·
+[Developer docs](docs/README.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
 ---
 
 ## 简体中文
 
-归元是面向 **Xiaomi HyperOS 4** 的开源 LSPosed 模块，将电池电量、移动网络和 Wi-Fi 信息整合为紧凑的状态栏显示，提供统一的设置与预览体验。
+归元是面向 **Xiaomi HyperOS 4** 的开源 LSPosed 模块，将电池电量、移动网络和 Wi-Fi
+信息整合为紧凑的状态栏显示，提供统一的设置与预览体验。
 
 ### 功能
 
@@ -79,11 +97,14 @@ Report ordinary bugs or requests through [Issues](https://github.com/CHS-Haple/G
 | 作用域 | SystemUI；如需在系统设置中启用快捷入口，按需授权设置作用域 |
 | Root | 配套应用的常规设置不强制 Root；部分诊断与系统进程维护需要 Root |
 
-**系统支持范围不等于全机型兼容承诺。** HyperOS 4 不同机型、ROM 与 SystemUI 内部结构可能存在差异；未经验证的宿主或场景会尽量保持系统原生行为。应用中的“OS3”选项仅代表可选的**界面视觉风格**，不表示支持运行在 HyperOS 3 上。
+**系统支持范围不等于全机型兼容承诺。** HyperOS 4 不同机型、ROM 与 SystemUI
+内部结构可能存在差异；未经验证的宿主或场景会尽量保持系统原生行为。应用中的“OS3”选项仅代表可选的**界面视觉风格**，不表示支持运行在 HyperOS 3
+上。
 
 ### 安装与使用
 
-1. 从 [Releases](https://github.com/CHS-Haple/Guiyuan/releases) 获取正式签名 APK，正常安装或覆盖安装。
+1. 从 [Releases](https://github.com/CHS-Haple/Guiyuan/releases) 获取正式签名
+   APK，正常安装或覆盖安装。
 2. 在兼容的 LSPosed 管理器中启用归元，并为模块配置 **SystemUI** 作用域。
 3. 按框架要求重新启动相关系统进程，打开归元完成首次引导、协议确认与必要设置。
 4. 调整布局和外观。需要诊断、日志导出或重启 SystemUI 时，再按需授予 Root。
@@ -94,7 +115,9 @@ Report ordinary bugs or requests through [Issues](https://github.com/CHS-Haple/G
 
 普通故障、兼容性问题和功能建议请使用 [Issues](https://github.com/CHS-Haple/Guiyuan/issues)。反馈前请核对设备、HyperOS 与 SystemUI 版本，并移除日志中的敏感信息。安全漏洞请使用 GitHub 的[私密漏洞报告入口](https://github.com/CHS-Haple/Guiyuan/security/advisories/new)，不要在公开 Issue 中披露。
 
-[更新日志](CHANGELOG.md) · [使用条款](TERMS.md) · [隐私政策](PRIVACY.md) · [安全政策](SECURITY.md) · [支持项目](docs/SUPPORT.md)
+[更新日志](CHANGELOG.md) · [使用条款](TERMS.md) · [隐私政策](PRIVACY.md) ·
+[安全政策](SECURITY.md) · [支持项目](docs/SUPPORT.md)
+
 ---
 
 <sub>Guiyuan is an independent community project and is not affiliated with or endorsed by Xiaomi, LSPosed or MIUIX. 归元是独立开源项目，不隶属于 Xiaomi、LSPosed 或 MIUIX，也不代表这些项目的官方立场。</sub>
