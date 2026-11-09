@@ -231,6 +231,4 @@ class RenderModelTest {
                 mobileDataEnabled = mobileDataEnabled,
             ),
             networkType = mobileType("5G"),
-        )
-
-}
+        )}
