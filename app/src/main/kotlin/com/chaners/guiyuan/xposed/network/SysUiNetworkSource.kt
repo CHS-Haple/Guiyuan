@@ -75,7 +75,7 @@ internal object SysUiNetworkSource {
     private const val WIFI_BIND_HOOK_ID = "combinedstatus.network.wifi.bind"
     private const val WIFI_ICON_HOOK_ID = "combinedstatus.network.wifi.icon"
     private const val WIFI_ACTIVITY_HOOK_ID = "combinedstatus.network.wifi.activity"
-    private const val COLLECTOR_CLASS_ID_FIELD_NAME = "\\$r8\\$classId"
+    private const val COLLECTOR_CLASS_ID_FIELD_NAME = "\$r8\$classId"
     private const val WIFI_ICON_COLLECTOR_CLASS_ID = 1
     private const val MAX_PARENT_CHAIN_DEPTH = 8
     private const val WIFI_SEED_LOG_PREFIX = "networkPipeline wifi seed source="
