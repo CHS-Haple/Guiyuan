@@ -30,7 +30,7 @@ private const val ProgressiveTopBarBlendAlpha = 0.3f
 
 @Composable
 internal fun rememberTopBarBackdrop(): LayerBackdrop? {
-    // OS3 has no other Glass consumer of this page recording when its top-bar blur is disabled.
+    // OS4 still needs the sampled backdrop for Glass controls when progressive blur is off.
     if (LocalUiStyle.current == UiStyle.OS3 && !LocalTopBarProgressiveBlur.current) return null
     if (!isRuntimeShaderSupported()) return null
 
