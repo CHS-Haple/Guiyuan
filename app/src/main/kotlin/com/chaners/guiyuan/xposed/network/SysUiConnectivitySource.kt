@@ -32,6 +32,7 @@ internal object SysUiConnectivitySource {
     private var onDataChanged: (() -> Unit)? = null
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun attach(
         context: Context,
         onState: (State) -> Unit,
@@ -44,6 +45,7 @@ internal object SysUiConnectivitySource {
         val handler = Handler(Looper.getMainLooper())
         var lastLoggedState: State? = null
 
+        @Suppress("TooGenericExceptionCaught")
         fun publish(
             source: String,
             capabilities: NetworkCapabilities?,

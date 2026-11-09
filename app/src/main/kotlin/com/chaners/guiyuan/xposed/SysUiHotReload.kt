@@ -123,6 +123,7 @@ internal object SysUiHotReload {
         return MainThreadRetire(handler::post, handler::removeCallbacks).run(cleanup)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun releaseOldHooks(param: HotReloadedParam): Int =
         param.oldHookHandles.count { handle ->
             try {

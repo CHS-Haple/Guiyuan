@@ -16,6 +16,7 @@ internal object SysUiPresentationRuntime {
     }
 
     // Passive evidence must never become a SystemUI callback failure.
+    @Suppress("TooGenericExceptionCaught")
     internal inline fun emitPassiveDiagnostic(block: () -> Unit) {
         try {
             block()

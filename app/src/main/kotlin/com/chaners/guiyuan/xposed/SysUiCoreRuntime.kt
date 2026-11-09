@@ -61,6 +61,7 @@ internal object SysUiCoreRuntime {
     }
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun detach() {
         // Each system callback must be released even if a sibling release fails.
         val failures = ArrayList<Throwable>(1)

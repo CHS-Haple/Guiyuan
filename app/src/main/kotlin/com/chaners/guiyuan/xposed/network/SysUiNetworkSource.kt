@@ -200,6 +200,7 @@ internal object SysUiNetworkSource {
         cause: Throwable,
     ) : RuntimeException(cause)
 
+    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,

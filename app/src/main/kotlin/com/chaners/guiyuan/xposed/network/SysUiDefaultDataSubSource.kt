@@ -39,6 +39,7 @@ internal object SysUiDefaultDataSubSource {
     fun currentSubscriptionId(): Int = currentSubscriptionId
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun attach(
         context: Context,
         onChanged: (Int) -> Unit,

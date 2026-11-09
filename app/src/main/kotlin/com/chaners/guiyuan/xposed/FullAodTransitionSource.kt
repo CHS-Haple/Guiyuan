@@ -16,6 +16,7 @@ internal object FullAodTransitionSource {
     private const val HOOK_ID =
         "combinedstatus.keyguardAod.animateFullAod"
 
+    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,

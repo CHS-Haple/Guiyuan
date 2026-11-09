@@ -18,6 +18,7 @@ internal class MainThreadRetire(
         return cause.takeIf { it is VirtualMachineError || it is ThreadDeath }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun run(cleanup: () -> Unit): Boolean {
         val phase = AtomicReference(Phase.Queued)
         val done = CountDownLatch(1)

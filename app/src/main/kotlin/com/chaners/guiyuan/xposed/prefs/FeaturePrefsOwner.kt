@@ -31,6 +31,7 @@ internal object FeaturePrefsOwner {
     fun current(): FeatureCfg = state.get().cfg
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun bind(
         source: SharedPreferences,
         onChanged: (FeatureCfg, Long?) -> Unit,
@@ -94,6 +95,7 @@ internal object FeaturePrefsOwner {
     }
 
     // Do not retire a new binding when its replaced generation fails late.
+    @Suppress("TooGenericExceptionCaught")
     private fun retireFailedBinding(token: Any, error: Throwable) {
         if (state.get().token !== token) return
         try {

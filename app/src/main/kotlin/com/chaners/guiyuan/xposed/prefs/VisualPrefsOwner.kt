@@ -35,6 +35,7 @@ internal object VisualPrefsOwner {
         val lastRequest = AtomicLong(0L)
 
         // A remote request may already exist before this SystemUI binding is installed.
+        @Suppress("TooGenericExceptionCaught")
         fun deliverAxisRequest(request: Long) {
             if (request <= 0L || state.get().token !== token) return
             val previous = lastRequest.getAndSet(request)
@@ -103,6 +104,7 @@ internal object VisualPrefsOwner {
     }
 
     // Do not retire a new binding when its replaced generation fails late.
+    @Suppress("TooGenericExceptionCaught")
     private fun retireFailedBinding(token: Any, error: Throwable) {
         if (state.get().token !== token) return
         try {

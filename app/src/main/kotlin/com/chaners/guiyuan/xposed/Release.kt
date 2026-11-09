@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 // Run sibling cleanup independently; rethrow the first nonfatal failure afterward.
+@Suppress("TooGenericExceptionCaught")
 internal fun releaseAll(vararg actions: () -> Unit) {
     val failures = ArrayList<Throwable>(1)
     actions.forEach { action ->

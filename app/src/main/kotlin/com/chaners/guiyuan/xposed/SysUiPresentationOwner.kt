@@ -114,6 +114,7 @@ internal object SysUiPresentationOwner {
         if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private inline fun <T> readOrNull(block: () -> T): T? =
         try {
             block()
@@ -1230,6 +1231,7 @@ internal object SysUiPresentationOwner {
     }
 
     // A post-native owner failure must not replace the framework method's result.
+    @Suppress("TooGenericExceptionCaught")
     private inline fun afterNativeCallback(
         session: Session?,
         source: String,
@@ -2106,6 +2108,7 @@ internal object SysUiPresentationOwner {
             return restored
         }
 
+        @Suppress("TooGenericExceptionCaught")
         fun <T> withRepresentedSlotsIgnored(block: () -> T): T {
             if (!active || ignoreScope == IgnoreScope.SESSION) {
                 return block()

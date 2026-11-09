@@ -28,6 +28,7 @@ internal object ScopeRestart {
     val state = current.asStateFlow()
     val isRunning: Boolean get() = current.value is State.Running
 
+    @Suppress("TooGenericExceptionCaught")
     fun start(
         context: Context,
         targets: Set<RestartTarget>,
