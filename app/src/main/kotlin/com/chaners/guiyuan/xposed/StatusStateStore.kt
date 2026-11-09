@@ -57,7 +57,11 @@ internal object StatusStateStore {
     fun updateWifiActivity(resourceId: Int?): Snapshot? {
         // Explicit absence is an observation too: an older Hot Reload snapshot
         // must not restore a resource after a newer collector has cleared it.
-        val next = resourceId?.takeIf { it > 0 && current.wifi !is WifiState.Hidden }
+        // The OEM activity drawable can arrive before WifiIcon.Visible during a
+        // network handoff. Keep that fresh resource independently of the Wi-Fi
+        // icon's visibility; the RenderModel gates actual drawing on Wifi.
+        // Entering WifiState.Hidden already clears an older stale resource.
+        val next = resourceId?.takeIf { it > 0 }
         val changed = current.wifiActivityResId != next
         if (!changed && current.wifiActivityObserved) return null
         current = current.copy(
@@ -389,9 +393,13 @@ internal object StatusStateStore {
             airplaneMode != true && (saved.mobileRecoveryPending || fresh.mobileRecoveryPending)
         return saved.copy(
             wifi = wifi,
-            wifiActivityResId = if (wifi is WifiState.Visible) {
-                if (fresh.wifiActivityObserved) fresh.wifiActivityResId
-                else saved.wifiActivityResId
+            // A fresh native resource can predate WifiIcon.Visible. Honor
+            // that observation even if the semantic icon is still Hidden;
+            // never resurrect an older saved drawable without a new receipt.
+            wifiActivityResId = if (fresh.wifiActivityObserved) {
+                fresh.wifiActivityResId
+            } else if (wifi is WifiState.Visible) {
+                saved.wifiActivityResId
             } else null,
             wifiActivityObserved = fresh.wifiActivityObserved,
             mobile = saved.mobile.toSortedMap().apply { putAll(fresh.mobile) },
