@@ -487,7 +487,7 @@ jobs:
           test -z "${GY_OS4_MIUIXDIR:-}"
           ./gradlew \
             -Pgy.os4.dialogSurfaces=false \
-            :app:compileDebugKotlin --refresh-dependencies \
+            :app:compileDebugKotlin :app:testDebugUnitTest --refresh-dependencies \
             --no-daemon --max-workers=3 --stacktrace
 
       - name: Record exact source Build identity
