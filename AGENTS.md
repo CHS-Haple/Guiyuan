@@ -20,7 +20,7 @@ For AI coding assistants working on Guiyuan. This file supplements [CONTRIBUTING
 - Treat upstream and third-party repositories as **read-only research by default**. General permission to continue developing, investigate or follow upstream does not authorize comments, issues, reviews, reactions, PRs, commits or any other external repository write under the maintainer's account. Obtain prior explicit approval naming the external repository and operation; otherwise keep findings in Guiyuan.
 - Refer to private SystemUI-Reference only when authorized and accessible. Do not infer exact Xiaomi contracts from generic Android code or publish ROM binaries, raw traces, local reverse-engineering tools/configuration or signing secrets.
 - Apply CONTRIBUTING branch and CI boundaries. Do not infer permission for stable release or privileged signing from an ordinary development request. Historical IT was retired after v1.0.0; never start IT synchronization, new IT work or IT signing.
-- Request human help when a specific required artifact, device test or permission cannot be acquired independently, stating what is needed and why. Do not conceal blockers, claim background progress or promise a later result without a running authorized workflow.
+- First check supplied attachments and authorized sources. If a proposed operation requires a specific artifact, device observation, or permission that remains unavailable, stop only that dependent operation; state the missing item, what it blocks, and the exact help needed. Continue independent reviews and fixes. Do not conceal blockers, claim background progress or promise a later result without a running authorized workflow.
 
 ## Preserve useful project context
 
