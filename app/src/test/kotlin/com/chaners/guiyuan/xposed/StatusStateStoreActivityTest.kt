@@ -225,7 +225,7 @@ class StatusStateStoreActivityTest {
     }
 
     @Test
-    fun hiddenWifiCannotRetainAnActivityTagAcrossReappearance() {
+    fun hiddenWifiClearsOldActivityWithoutAFreshNativeEvent() {
         StatusStateStore.restoreHotReloadState(null)
         val wifi = StatusStateStore.WifiState.Visible(
             iconResId = 100, signal = SignalStrength.Level(3),
@@ -233,9 +233,64 @@ class StatusStateStoreActivityTest {
         StatusStateStore.updateWifi(wifi)
         StatusStateStore.updateWifiActivity(120)
         StatusStateStore.updateWifi(StatusStateStore.WifiState.Hidden)
-        assertNull(StatusStateStore.updateWifiActivity(120))
+        assertNull(StatusStateStore.snapshot().wifiActivityResId)
         StatusStateStore.updateWifi(wifi)
         assertNull(StatusStateStore.snapshot().wifiActivityResId)
         StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
+    fun freshNativeWifiActivityBeforeVisibleIsNotLostDuringHandoff() {
+        StatusStateStore.restoreHotReloadState(null)
+        val wifi = StatusStateStore.WifiState.Visible(
+            iconResId = 100, signal = SignalStrength.Level(3),
+        )
+        StatusStateStore.updateWifi(wifi)
+        StatusStateStore.updateWifiActivity(120)
+        StatusStateStore.updateWifi(StatusStateStore.WifiState.Hidden)
+        assertNull(StatusStateStore.snapshot().wifiActivityResId)
+
+        // Observed B1816 sequence: native in/out resource was applied at
+        // 12:57:37.978, 256 ms before WifiIcon.Visible at 12:57:38.234.
+        val preseed = StatusStateStore.updateWifiActivity(220)
+            ?: error("fresh native Wi-Fi activity must be retained")
+        assertEquals(StatusStateStore.WifiState.Hidden, preseed.wifi)
+        assertEquals(220, preseed.wifiActivityResId)
+
+        // Semantic Wi-Fi visibility still gates painting in RenderModel;
+        // no extra resource emission is required when the icon reappears.
+        val shown = StatusStateStore.updateWifi(wifi)
+            ?: error("native WifiIcon.Visible must publish")
+        assertEquals(220, shown.wifiActivityResId)
+        assertNull(StatusStateStore.updateWifiActivity(220))
+        val cleared = StatusStateStore.updateWifiActivity(null)
+            ?: error("native idle/absent resource must still clear")
+        assertNull(cleared.wifiActivityResId)
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
+    fun hotReloadPreservesOnlyFreshNativeWifiActivityPreseed() {
+        val wifi = StatusStateStore.WifiState.Visible(
+            iconResId = 100, signal = SignalStrength.Level(3),
+        )
+        val saved = StatusStateStore.Snapshot(
+            wifi = wifi,
+            wifiActivityResId = 120,
+            wifiActivityObserved = true,
+        )
+        val fresh = StatusStateStore.Snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            wifiActivityResId = 220,
+            wifiActivityObserved = true,
+        )
+        val merged = StatusStateStore.mergeHotReloadSnapshots(saved, fresh)
+        assertEquals(StatusStateStore.WifiState.Hidden, merged.wifi)
+        assertEquals(220, merged.wifiActivityResId)
+        // A fresh native absence is equally authoritative: it must not
+        // resurrect the outgoing generation's activity drawable.
+        assertNull(StatusStateStore.mergeHotReloadSnapshots(
+            saved, fresh.copy(wifiActivityResId = null),
+        ).wifiActivityResId)
     }
 }
