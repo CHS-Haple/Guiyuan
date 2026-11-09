@@ -269,7 +269,16 @@ class RenderModelTest {
     fun aggregatedNativeResourceEventShowsOnlyItsVisibleRootWithoutAnotherFlowEmission() {
         StatusStateStore.restoreHotReloadState(null)
         try {
-            val native = dualPresentation(mapOf(0 to 1, 1 to 4))
+            val base = dualPresentation(mapOf(0 to 1, 1 to 4))
+            val native = base.copy(
+                mobilePresentation = requireNotNull(base.mobilePresentation).copy(
+                    activeSubscriptionIds = listOf(1, 4),
+                    platformActiveSubscriptionIds = setOf(1, 4),
+                    presentationRootSubscriptionId = 1,
+                    effectiveDataSubscriptionId = 4,
+                    networkTypeSubscriptionId = 4,
+                ),
+            )
             // The OEM aggregate displays activity on SIM1's root even when SIM2
             // owns mobile data; the resource collector may arrive first.
             StatusStateStore.updateMobileActivityVisibility(1, 2131237576, true)
