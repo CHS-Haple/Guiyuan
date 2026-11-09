@@ -206,6 +206,7 @@ internal object SysUiNetworkSource {
         onWifiActivity: (Int?) -> Unit,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
+        onMobileActivityResource: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
         onMobileActivityVisibility: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
@@ -253,6 +254,7 @@ internal object SysUiNetworkSource {
                 module = module,
                 classLoader = classLoader,
                 onMobileSignal = onMobileSignal,
+                onMobileActivityResource = onMobileActivityResource,
                 onMobileActivityVisibility = onMobileActivityVisibility,
                 onPresentationChanged = onPresentationChanged,
                 onRuntimeFailure = onRuntimeFailure,
@@ -450,6 +452,7 @@ internal object SysUiNetworkSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
+        onMobileActivityResource: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
         onMobileActivityVisibility: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onRuntimeFailure: (String, Throwable) -> Unit,
@@ -603,7 +606,7 @@ internal object SysUiNetworkSource {
                                         childVisible = image.visibility == View.VISIBLE,
                                     )
                                     if (effectiveVisible != null) {
-                                        onMobileActivityVisibility(
+                                        onMobileActivityResource(
                                             binding.subscriptionId, taggedResId, effectiveVisible,
                                         )
                                     } else {

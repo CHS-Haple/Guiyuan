@@ -74,8 +74,8 @@ class StatusStateStoreActivityTest {
         assertTrue(shown === StatusStateStore.snapshot())
 
         val gone = StatusStateStore.updateMobileActivityVisibility(1, null, false)
-            ?: error("native GONE must clear the activity")
-        assertNull(gone.mobileActivityResIds[1])
+            ?: error("native GONE must hide the activity")
+        assertEquals(220, gone.mobileActivityResIds[1])
         assertTrue(1 !in gone.mobileActivityShownIds)
         assertTrue(1 in gone.mobileActivityVisibilityObservedIds)
 
@@ -90,6 +90,26 @@ class StatusStateStoreActivityTest {
             ?: error("native VISIBLE must restore activity")
         assertTrue(1 in restored.mobileActivityShownIds)
         assertEquals(221, restored.mobileActivityResIds[1])
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
+    fun nativeResourceAbsenceClearsCacheWithoutForgingVisibility() {
+        StatusStateStore.restoreHotReloadState(null)
+        val shown = StatusStateStore.updateMobileActivityResource(1, 220, true)
+            ?: error("resource collector must publish its native receipt")
+        assertEquals(220, shown.mobileActivityResIds[1])
+        assertTrue(1 in shown.mobileActivityShownIds)
+
+        // A visibility-only callback with no tag must retain the last drawable.
+        assertNull(StatusStateStore.updateMobileActivityVisibility(1, null, true))
+        assertEquals(220, StatusStateStore.snapshot().mobileActivityResIds[1])
+
+        // Only the original resource collector's explicit absence clears it.
+        val cleared = StatusStateStore.updateMobileActivityResource(1, null, true)
+            ?: error("resource absence must be committed")
+        assertNull(cleared.mobileActivityResIds[1])
+        assertTrue(1 in cleared.mobileActivityShownIds)
         StatusStateStore.restoreHotReloadState(null)
     }
 
