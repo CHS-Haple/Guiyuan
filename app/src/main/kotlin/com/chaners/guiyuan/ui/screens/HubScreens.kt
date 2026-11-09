@@ -1543,6 +1543,7 @@ private fun HubPage(
             if (os4) {
                 Box(Modifier.fillMaxWidth()) {
                     GlassTopAppBar(
+                        progressiveBlur = true,
                         title = if (searchMotion.mounted && searchExpanded) "" else title,
                         titleAlpha = { titleReveal.value },
                         largeTitle = title,

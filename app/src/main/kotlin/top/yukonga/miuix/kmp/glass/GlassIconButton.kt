@@ -42,6 +42,8 @@ import top.yukonga.miuix.kmp.glass.internal.drawGlassStroke
  * [GlassTransformPopup]'s collapsed endpoint. The panel blends into its own material as it grows.
  *
  * @param onClick Called when the button is tapped.
+ * @param inheritTopBarMaterial Whether to use the parent top bar's resolved progressive backdrop.
+ * @param material Optional button material over the resolved parent underlay.
  * @param backdrop Optional [Backdrop] behind the glass. Inside [GlassTopAppBar] the button inherits
  *   the bar's backdrop and effective blur; elsewhere `null` gives the traditional [fill].
  * @param modifier The modifier applied to the button.
@@ -61,11 +63,13 @@ fun GlassIconButton(
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
     onLongClickLabel: String? = null,
+    inheritTopBarMaterial: Boolean = true,
     backdrop: Backdrop? = null,
     surfaceAlpha: Float = 1f,
     enabled: Boolean = true,
     holdDownState: Boolean = false,
     style: GlassStyle = LocalGlassTopAppBarContext.current?.style ?: GlassDefaults.Style,
+    material: GlassMaterial? = null,
     size: Dp = LocalGlassTopAppBarContext.current?.size ?: GlassTopAppBarDefaults.ButtonSize,
     shape: GlassShape = LocalGlassTopAppBarContext.current?.shape ?: GlassShape(size / 2),
     fill: Color = LocalGlassTopAppBarContext.current?.fill ?: GlassTopAppBarDefaults.buttonFill(),
@@ -76,16 +80,18 @@ fun GlassIconButton(
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val topBarContext = LocalGlassTopAppBarContext.current
+    val materialContext = topBarContext.takeIf { inheritTopBarMaterial }
     val resolvedSurfaceAlpha = surfaceAlpha * (if (enabled) 1f else 0.38f) * (topBarContext?.alpha ?: 1f)
     val topBarRamp = topBarContext?.ramp
     GlassButtonSurface(
-        backdrop = topBarContext?.backdrop ?: backdrop,
+        backdrop = materialContext?.buttonBackdrop ?: backdrop ?: topBarContext?.buttonBackdrop,
         floating = topBarContext?.floating ?: true,
         surfaceAlpha = resolvedSurfaceAlpha,
         shadowAlpha = { resolvedSurfaceAlpha * (topBarRamp?.value ?: 1f) },
         style = style,
-        material = topBarContext?.material ?: GlassTopAppBarDefaults.buttonMaterial(),
-        underlayMaterial = topBarContext?.underlayMaterial,
+        material = material?.withUnderlayBlur(materialContext?.buttonUnderlayMaterial)
+            ?: materialContext?.material ?: GlassTopAppBarDefaults.buttonMaterial(),
+        underlayMaterial = materialContext?.buttonUnderlayMaterial,
         shape = shape,
         size = size,
         fill = fill,

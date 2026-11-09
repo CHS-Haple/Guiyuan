@@ -108,7 +108,7 @@ object GlassNavigationBarDefaults {
     val ActionSpacing: Dp = 12.dp
 
     /** Size of an icon. */
-    val IconSize: Dp = 28.dp
+    val IconSize: Dp = 25.dp
 
     /** Caption size in dp. */
     val LabelSize: Dp = 11.dp
@@ -198,7 +198,8 @@ object GlassNavigationBarDefaults {
  * @param interactive Whether destination gestures, keyboard actions and accessibility actions are enabled.
  *   Noninteractive is for a visual preview, not for the real bottom navigation.
  * @param trailingAction Optional independent action outside the glass capsule. It owns its size
- *   and material, and shares the bar's show/hide transition. Use [GlassIconButton] for a round action.
+ *   and material, and shares the bar's show/hide transition. Adding or removing it animates its
+ *   size, opacity and reserved space. Use [GlassIconButton] for a round action.
  */
 @Composable
 fun GlassNavigationBar(
