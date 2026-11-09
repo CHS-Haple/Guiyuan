@@ -52,8 +52,6 @@ internal fun GyTheme(
             paletteStyle = if (colorSpec == null) ThemePaletteStyle.TonalSpot else paletteStyle,
         )
     }
-    // Follow MIUIX's default display-cutout contract for other HyperOS 4 device shapes.
-    // The upstream registration is reference-counted per parent View.
     MiuixTheme(controller = controller, content = content)
 }
 
