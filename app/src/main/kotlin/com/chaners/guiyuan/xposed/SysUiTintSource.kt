@@ -52,6 +52,7 @@ internal object SysUiTintSource {
     @Volatile
     private var lastSourceView: WeakReference<View>? = null
 
+    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
