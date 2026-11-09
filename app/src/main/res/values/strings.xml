@@ -550,7 +550,7 @@
     <string name="ui_style_title">MIUIX interface standard</string>
     <string name="ui_style_summary">Switch the app interface and interaction style</string>
     <string name="top_bar_progressive_blur">Progressive top bar blur</string>
-    <string name="top_bar_progressive_blur_summary">Blur the top bar background gradually on scroll in both OS4 and OS3 styles</string>
+    <string name="top_bar_progressive_blur_summary">Gradually blur the top bar background while scrolling</string>
     <string name="ui_style_os3">OS3</string>
     <string name="ui_style_os4">OS4 (Experimental)</string>
 
