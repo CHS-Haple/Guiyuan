@@ -14,6 +14,7 @@ import top.yukonga.miuix.kmp.icon.glass.Filter
 import top.yukonga.miuix.kmp.icon.glass.More
 import top.yukonga.miuix.kmp.icon.glass.Refresh
 import top.yukonga.miuix.kmp.icon.glass.Search
+import top.yukonga.miuix.kmp.icon.glass.Share
 
 // Keep app call sites stable across native source and published fallback variants.
 internal val Os4GlassBack: ImageVector get() = MiuixIcons.Glass.Regular.Back
@@ -26,3 +27,4 @@ internal val Os4GlassMore: ImageVector get() = MiuixIcons.Glass.Regular.More
 internal val Os4GlassEdit: ImageVector get() = MiuixIcons.Glass.Regular.Edit
 internal val Os4GlassCopy: ImageVector get() = MiuixIcons.Glass.Regular.Copy
 internal val Os4GlassDelete: ImageVector get() = MiuixIcons.Glass.Regular.Delete
+internal val Os4GlassShare: ImageVector get() = MiuixIcons.Glass.Regular.Share

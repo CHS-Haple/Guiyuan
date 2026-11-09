@@ -1,10 +1,8 @@
 package com.chaners.guiyuan.ui.screens
 
 import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.widget.Toast
 import com.chaners.guiyuan.BuildConfig
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,11 +15,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -70,6 +65,7 @@ import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.icons.Os4GlassFilter
 import com.chaners.guiyuan.ui.icons.Os4GlassMore
+import com.chaners.guiyuan.ui.icons.Os4GlassShare
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.DiagSettings
 import com.chaners.guiyuan.settings.DiagRepo
@@ -83,7 +79,6 @@ import com.chaners.guiyuan.system.DiagFiles
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
-import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -393,9 +388,9 @@ internal fun DiagnosticsScreen(
                 enabled = reportEnabled,
             ) {
                 Icon(
-                    imageVector = MiuixIcons.Share,
+                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassShare else MiuixIcons.Share,
                     contentDescription = exportTitle,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(if (LocalUiStyle.current == UiStyle.OS4) 28.dp else 24.dp),
                 )
             }
             DiagMenu(
@@ -933,7 +928,7 @@ private fun LogFilterMenu(
             Icon(
                 imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassFilter else MiuixIcons.Filter,
                 contentDescription = title,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(if (LocalUiStyle.current == UiStyle.OS4) 28.dp else 24.dp),
             )
         }
     }
@@ -1041,7 +1036,7 @@ private fun DiagMenu(
         Icon(
             imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassMore else MiuixIcons.More,
             contentDescription = title,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(if (LocalUiStyle.current == UiStyle.OS4) 28.dp else 24.dp),
         )
     }
     TooltipBox(text = title) {
@@ -1050,126 +1045,6 @@ private fun DiagMenu(
         } else {
             WindowIconCascadingDropdownMenu(entries = entries, content = icon)
         }
-    }
-}
-
-@Composable
-private fun LogCardMeta(entry: LogEntry, category: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        LogLevelTag(entry.level)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = category,
-            modifier = Modifier.weight(1f),
-            style = MiuixTheme.textStyles.footnote2,
-            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        entry.time?.let { time ->
-            Text(
-                text = time,
-                style = MiuixTheme.textStyles.footnote2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun LogCardExpanded(entry: LogEntry, expanded: Boolean) {
-    AnimatedVisibility(
-        visible = expanded,
-        enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
-    ) {
-        Column {
-            Spacer(modifier = Modifier.height(10.dp))
-            LogDetail(
-                label = "event",
-                value = entry.event ?: "—",
-            )
-            entry.component?.let { component ->
-                LogDetail(
-                    label = "component",
-                    value = component,
-                )
-            }
-            entry.state?.let { state ->
-                LogDetail(
-                    label = "state",
-                    value = state,
-                )
-            }
-
-            logDetailFields(entry).forEach { (key, value) ->
-                LogDetail(
-                    label = key,
-                    value = value,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LogCard(
-    context: Context,
-    entry: LogEntry,
-    expanded: Boolean,
-    onToggle: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val title = logTitle(context, entry)
-    val summary = logSummary(context, entry)
-    val category = categoryLabel(context, entry.category)
-    val warning = entry.level == LogLevel.Warning ||
-        entry.level == LogLevel.Error || entry.level == LogLevel.Fatal
-
-    Card(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 6.dp),
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 9.dp),
-        showIndication = true,
-        onClick = onToggle,
-        onLongPress = {
-            copyLog(
-                context = context,
-                entry = entry,
-            )
-        },
-    ) {
-        LogCardMeta(entry, category)
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = title,
-            style =
-                MiuixTheme.textStyles.headline1.copy(
-                    fontWeight = FontWeight.Medium,
-                ),
-            color = MiuixTheme.colorScheme.onSurfaceContainer,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (summary.isNotBlank()) {
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = summary,
-                modifier = Modifier.animateContentSize(),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                maxLines = if (expanded) 3 else if (warning) 2 else 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-
-        LogCardExpanded(entry, expanded)
     }
 }
 
@@ -1247,129 +1122,6 @@ private fun LogEmptyGuide(
     }
 }
 
-@Composable
-private fun LogStateCard(
-    text: String,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
-        insideMargin = PaddingValues(18.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = text,
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun LogLevelTag(level: LogLevel) {
-    val colors = MiuixTheme.colorScheme
-    val warningColor = RuntimeWarningAccent
-    val containerColor =
-        when (level) {
-            LogLevel.Error,
-            LogLevel.Fatal,
-            -> colors.errorContainer
-            LogLevel.Warning -> warningColor.copy(alpha = 0.14f)
-            LogLevel.Info -> colors.tertiaryContainer
-            else -> colors.secondaryContainerVariant
-        }
-    val contentColor =
-        when (level) {
-            LogLevel.Error,
-            LogLevel.Fatal,
-            -> colors.error
-            LogLevel.Warning -> warningColor
-            LogLevel.Info -> colors.onTertiaryContainer
-            else -> colors.onSurfaceContainerVariant
-        }
-
-    Surface(
-        modifier = Modifier.heightIn(min = 20.dp),
-        shape = RoundedCornerShape(5.dp),
-        color = containerColor,
-        contentColor = contentColor,
-    ) {
-        Box(
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = levelLabel(level),
-                style =
-                    MiuixTheme.textStyles.footnote2.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                    ),
-                color = contentColor,
-                maxLines = 1,
-            )
-        }
-    }
-}
-
-@Composable
-private fun LogDetail(
-    label: String,
-    value: String,
-) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-    ) {
-        Text(
-            text = label,
-            style =
-                MiuixTheme.textStyles.footnote2.copy(
-                    fontWeight = FontWeight.Medium,
-                ),
-            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-        )
-        Spacer(modifier = Modifier.height(1.dp))
-        Text(
-            text = value,
-            style = MiuixTheme.textStyles.footnote1,
-            color = MiuixTheme.colorScheme.onSurfaceContainer,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-private fun copyLog(
-    context: Context,
-    entry: LogEntry,
-) {
-    val clipboard =
-        context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-            ?: return
-    clipboard.setPrimaryClip(
-        ClipData.newPlainText(
-            context.getString(R.string.diagnostics_log_clipboard_label),
-            entry.raw,
-        ),
-    )
-    Toast.makeText(
-        context,
-        R.string.diagnostics_log_copied,
-        Toast.LENGTH_SHORT,
-    ).show()
-}
-
 internal fun isRuntimeLog(entry: LogEntry, focusedCategory: LogCategory? = null): Boolean {
     if (
         entry.level == LogLevel.Warning ||
@@ -1403,7 +1155,7 @@ internal fun logDetailFields(entry: LogEntry): List<Pair<String, String>> {
         .toList()
 }
 
-private fun levelLabel(level: LogLevel): String =
+internal fun levelLabel(level: LogLevel): String =
     when (level) {
         LogLevel.Verbose -> "VERBOSE"
         LogLevel.Debug -> "DEBUG"
@@ -1414,7 +1166,7 @@ private fun levelLabel(level: LogLevel): String =
         LogLevel.Unknown -> "LOG"
     }
 
-private fun categoryLabel(
+internal fun categoryLabel(
     context: Context,
     category: LogCategory,
 ): String =
@@ -1431,7 +1183,7 @@ private fun categoryLabel(
         },
     )
 
-private fun logTitle(
+internal fun logTitle(
     context: Context,
     entry: LogEntry,
 ): String {
@@ -1488,7 +1240,7 @@ private fun logTitle(
         ?: context.getString(R.string.diagnostics_log_event_generic)
 }
 
-private fun logSummary(context: Context, entry: LogEntry): String {
+internal fun logSummary(context: Context, entry: LogEntry): String {
     val fallback = if (entry.structured) "" else entry.message
     val separator = context.getString(R.string.diagnostics_log_summary_separator)
     val summary = when (entry.event) {

@@ -221,10 +221,8 @@ fun GlassTabRow(
     val ramp = surfaceAlpha.coerceIn(0f, 1f)
     val topBarContext = LocalGlassTopAppBarContext.current
     val resolvedBackdrop = topBarContext?.backdrop ?: backdrop
-    val resolvedMaterial = material?.let {
-        topBarContext?.material?.blurRadius?.let { blurRadius -> it.copy(blurRadius = blurRadius) } ?: it
-    }
     val underlayMaterial = topBarContext?.underlayMaterial
+    val resolvedMaterial = material?.withUnderlayBlur(underlayMaterial)
 
     Row(
         modifier = modifier.height(height).selectableGroup(),
@@ -439,10 +437,8 @@ fun GlassSegmentedTabRow(
     val ramp = surfaceAlpha.coerceIn(0f, 1f)
     val topBarContext = LocalGlassTopAppBarContext.current
     val resolvedBackdrop = topBarContext?.backdrop ?: backdrop
-    val resolvedMaterial = material?.let {
-        topBarContext?.material?.blurRadius?.let { blurRadius -> it.copy(blurRadius = blurRadius) } ?: it
-    }
     val underlayMaterial = topBarContext?.underlayMaterial
+    val resolvedMaterial = material?.withUnderlayBlur(underlayMaterial)
     val trackShape = GlassSegmentedTabRowDefaults.shape(height)
     val innerHeight = height - GlassSegmentedTabRowDefaults.TrackPadding * 2
     val indicatorShape = GlassSegmentedTabRowDefaults.shape(innerHeight)

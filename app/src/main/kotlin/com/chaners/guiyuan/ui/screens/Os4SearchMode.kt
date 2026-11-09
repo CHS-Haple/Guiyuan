@@ -239,7 +239,7 @@ internal fun Os4SearchMode(
                         Icon(
                             Os4GlassClose,
                             contentDescription = label,
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(28.dp),
                             tint = MiuixTheme.colorScheme.onSurface,
                         )
                     }
