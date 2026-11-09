@@ -331,6 +331,7 @@ internal object CcRenderSession {
 
     // Keep the old listener receipt if cancellation cannot complete.
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     private fun abortPrearm(pending: PendingPrearm, error: Throwable) {
         SysUiPresentationRuntime.throwIfFatal(error)
         try {
@@ -344,6 +345,7 @@ internal object CcRenderSession {
     }
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     private fun onPendingPrearmLayout(pending: PendingPrearm) {
         if (pendingPrearm !== pending) return
         val host = pending.host()

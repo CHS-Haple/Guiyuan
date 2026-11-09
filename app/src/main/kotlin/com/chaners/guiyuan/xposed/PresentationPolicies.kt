@@ -194,6 +194,7 @@ internal object OwnedEntries {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun <T> restore(
         target: MutableList<T>,
         ownedEntries: List<T>,

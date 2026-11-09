@@ -129,6 +129,7 @@ internal object SysUiDefaultDataSubSource {
     }
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     private fun publish(
         source: String,
         force: Boolean,

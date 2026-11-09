@@ -26,6 +26,7 @@ internal object SysUiPresentationRuntime {
     }
 
     // Optional platform reads may be missing, but VM-fatal errors are not absence.
+    @Suppress("TooGenericExceptionCaught")
     internal inline fun <T> optionalNativeRead(block: () -> T): T? =
         try {
             block()

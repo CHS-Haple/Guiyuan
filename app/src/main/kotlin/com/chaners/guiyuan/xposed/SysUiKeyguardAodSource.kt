@@ -162,6 +162,7 @@ internal object SysUiKeyguardAodSource {
     val failedInstallHookCount: Int
         get() = failedInstallHandles.size
 
+    @Suppress("TooGenericExceptionCaught")
     private fun aodHooker(
         source: String,
         onAodState: (AodUpdate) -> Unit,

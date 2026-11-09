@@ -23,6 +23,7 @@ internal object VisualPrefsOwner {
     fun current(): VisualCfg = state.get().cfg
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun bind(
         source: SharedPreferences,
         onAxisRequest: () -> Unit = {},

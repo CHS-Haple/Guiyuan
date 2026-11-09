@@ -272,6 +272,7 @@ internal object SysUiNetworkSource {
         )
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun installWifi(
         module: XposedModule,
         classLoader: ClassLoader,

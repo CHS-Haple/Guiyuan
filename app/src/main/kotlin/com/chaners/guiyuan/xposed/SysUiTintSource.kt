@@ -218,6 +218,7 @@ internal object SysUiTintSource {
     val failedInstallHookCount: Int
         get() = failedInstallHandles.size
 
+    @Suppress("TooGenericExceptionCaught")
     private fun dispatchAppliedState(
         sourceView: View,
         percentField: Field,

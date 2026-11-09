@@ -1085,6 +1085,7 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun releaseGenerationForHotReload(
         requestLayout: Boolean = true,
     ): Int {
