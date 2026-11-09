@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.ui.components
 
 import androidx.compose.foundation.layout.Box
-import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
@@ -10,6 +9,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurDefaults
