@@ -102,7 +102,19 @@ platforms, you may need to contact the relevant recipient.
 
 ### Article 7 — Updates and contact
 
-Guiyuan is an open-source project maintained by the maintainers listed in its GitHub repository. For privacy inquiries, data-handling questions, or relevant rights requests, first use the repository [Issues](https://github.com/CHS-Haple/Guiyuan/issues). Issues are public: do not submit personal information, private logs, or other sensitive material. For requests requiring private verification, first open an Issue without personal information so maintainers can establish whether a suitable non-public contact method is available. Do not send sensitive material until a secure route has been confirmed. Report security vulnerabilities privately as described in SECURITY.md; that channel is not a general private inbox for privacy inquiries. Changes to processing purposes, methods, categories of information, or other material disclosures will be reflected in this policy and notified in the app; where the law requires fresh consent, a separate confirmation will be requested.
+Guiyuan is an open-source project maintained by the maintainers listed in its
+GitHub repository. For privacy inquiries, data-handling questions, or relevant
+rights requests, first use the repository
+[Issues](https://github.com/CHS-Haple/Guiyuan/issues). Issues are public: do not
+submit personal information, private logs, or other sensitive material. For
+requests requiring private verification, first open an Issue without personal
+information so maintainers can establish whether a suitable non-public contact
+method is available. Do not send sensitive material until a secure route has
+been confirmed. Report security vulnerabilities privately as described in
+SECURITY.md; that channel is not a general private inbox for privacy inquiries.
+Changes to processing purposes, methods, categories of information, or other
+material disclosures will be reflected in this policy and notified in the app;
+where the law requires fresh consent, a separate confirmation will be requested.
 
 ---
 
