@@ -236,9 +236,8 @@ internal fun PreviewSandboxScreen(
         scope.launch {
             listState.animateScrollToItem(0)
             if (!listState.canScrollBackward) {
-                // Programmatic list scrolling does not update MIUIX's nested-scroll state.
+                // Clear stale Glass shadow while keeping MIUIX's current title collapse state.
                 scrollBehavior.state.contentOffset = 0f
-                scrollBehavior.state.heightOffset = 0f
             }
         }
     }
