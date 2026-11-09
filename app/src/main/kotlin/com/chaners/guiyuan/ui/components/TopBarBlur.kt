@@ -48,7 +48,7 @@ internal fun MiuixBlurredTopBar(
     fadeExtension: Dp = 0.dp,
     content: @Composable (Color) -> Unit,
 ) {
-    val blurActive = backdrop != null && LocalTopBarProgressiveBlur.current
+    val blurActive = backdrop != null
     val surface = MiuixTheme.colorScheme.surface
 
     Box {
