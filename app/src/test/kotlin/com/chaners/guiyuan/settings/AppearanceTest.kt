@@ -88,12 +88,21 @@ class AppearanceCompatibilityTest {
         assertTrue(settings.navEnabled)
         assertTrue(settings.navTouchExtension)
         assertEquals(UiStyle.OS4, settings.uiStyle)
+        assertTrue(settings.topBarProgressiveBlur)
         assertEquals(listOf(UiStyle.OS4, UiStyle.OS3), uiStyleMenuOrder)
         assertEquals(NavStyle.Glass, settings.navStyle)
         assertEquals(NavContent.IconAndText, settings.navContent)
         assertEquals(NavContent.IconAndText, settings.liquidContent)
         assertEquals(NavContent.IconAndText, settings.activeNavContent)
         assertEquals(LiquidMode.Balanced, settings.liquidMode)
+    }
+
+    @Test
+    fun progressiveTopBarBlurSettingIsSharedAcrossUiStyles() {
+        val disabled = Appearance(topBarProgressiveBlur = false)
+        assertFalse(disabled.copy(uiStyle = UiStyle.OS3).topBarProgressiveBlur)
+        assertFalse(disabled.copy(uiStyle = UiStyle.OS4).topBarProgressiveBlur)
+        assertTrue(disabled.copy(topBarProgressiveBlur = true).topBarProgressiveBlur)
     }
 
     @Test
