@@ -15,6 +15,7 @@ internal object KeyguardIconTransitionSource {
     private const val HOOK_ID =
         "combinedstatus.keyguardAod.animateIconContainer"
 
+    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
