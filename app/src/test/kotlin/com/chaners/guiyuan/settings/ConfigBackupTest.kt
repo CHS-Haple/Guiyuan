@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.settings
 
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
@@ -7,491 +9,155 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ConfigBackupTest {
-    private fun sample(): ConfigBackup = ConfigBackup(
-        format = "guiyuan-config",
-        schemaVersion = 1,
-        appVersion = "0.7.0",
-        createdAt = "2026-10-16T20:43:00+08:00",
-        feature = FeatureCfg(),
-        visual = VisualBackup(
-            singleLayout = ContentLayout.NETWORK_CENTER,
-            dualLayout = ContentLayout.BATTERY_CENTER,
-            dualEnabled = true,
-            dualInitialized = true,
-            profiles = listOf(false, true).flatMap { dual ->
-                ContentLayout.entries.map { layout -> VisualCfg(layout = layout, dualSignal = dual) }
-            },
-        ),
-        batterySchemes = BatteryColorSchemeLibrary(),
-    )
-
-    @Test fun b1601V1BackupsImportTheActiveModeSelection() {
-        val original = ConfigBackupFormat.encode(sample())
-        val dualArchive = original.replace(
-            "\"activeSchemeKey\":\"builtin:hyperos\",",
-            "\"activeSchemeKey\":\"builtin:hyperos\",\"dualActiveSchemeKey\":\"builtin:ios\",",
+    @Test
+    fun rejectsTwoSidedArrangementInSingleRowBackup() {
+        val valid = ConfigBackupFormat.encode(sampleBackup())
+        val invalid = valid.replaceFirst(
+            "\"singleRowDotStyle\":\"DEFAULT\"",
+            "\"singleRowDotStyle\":\"LEFT_RIGHT\"",
         )
-        assertTrue(dualArchive.contains("\"dualActiveSchemeKey\""))
-        val restored = ConfigBackupFormat.decode(dualArchive)
-        assertEquals(BATTERY_COLOR_SCHEME_IOS_KEY, restored.batterySchemes.activeSchemeKey)
-        assertEquals(1, restored.schemaVersion)
-        assertFalse(ConfigBackupFormat.encode(restored).contains("\"dualActiveSchemeKey\""))
-
-        val singleArchive = dualArchive.replace("\"dualEnabled\":true", "\"dualEnabled\":false")
-        val single = ConfigBackupFormat.decode(singleArchive)
-        assertEquals(BATTERY_COLOR_SCHEME_HYPEROS_KEY, single.batterySchemes.activeSchemeKey)
-    }
-
-    @Test fun invalidB1601SelectionAndUnknownBackupFieldsStayRejected() {
-        val original = ConfigBackupFormat.encode(sample())
-        val prefix = "\"activeSchemeKey\":\"builtin:hyperos\","
+        assertTrue(invalid != valid)
         assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.decode(original.replace(
-                prefix,
-                prefix + "\"dualActiveSchemeKey\":\"custom:999\",",
-            ))
-        }
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.decode(original.replace(
-                prefix,
-                prefix + "\"dualActiveSchemeKey\":7,",
-            ))
-        }
-        assertThrows(Exception::class.java) {
-            ConfigBackupFormat.decode(original.replace(
-                prefix,
-                prefix + "\"unrecognizedSelection\":\"builtin:ios\",",
-            ))
+            ConfigBackupFormat.decode(invalid)
         }
     }
 
-    @Test fun rejectsConflictingModeWideValues() {
-        val source = sample()
-        val first = source.visual.profiles.first()
-        val altered = listOf(
-            first.copy(fillFollowsRetract = false),
-            first.copy(ccTintTransition = false),
-            first.copy(batteryColorPreset = BatteryColorPreset.IOS_STYLE),
-            first.copy(batteryColorModes = first.batteryColorModes.copy(charging = BatteryColorMode.CUSTOM)),
-            first.copy(batteryColorOverrides = first.batteryColorOverrides.copy(charging = 0xFF123456.toInt())),
+    @Test fun bothSidesNamesKeepReleasedBackupSchema() {
+        val config = VisualCfg(
+            dualRowDotArrangement = SignalDotArrangement.BOTH_SIDES,
+            bothSidesShowActivity = false,
+            bothSidesHideIdleActivity = true,
+            bothSidesBottomCharging = true,
+            bothSidesActivityScale = 1.1f,
+            bothSidesActivityOffsetY = 2f,
+            bothSidesChargingOffsetY = -2f,
+            bothSidesSignalDotOffsetY = 3f,
         )
-        altered.forEach { cfg ->
-            val invalid = source.copy(
-                visual = source.visual.copy(profiles = listOf(cfg) + source.visual.profiles.drop(1)),
+        val codec = Json { encodeDefaults = true }
+        val encoded = codec.encodeToString(config)
+        for (name in listOf(
+            "dualDotStyle", "leftRightShowActivity", "leftRightHideIdleActivity",
+            "leftRightBottomCharging", "leftRightBottomInfoScale",
+            "leftRightActivityOffsetY", "leftRightChargingOffsetY", "leftRightSignalDotOffsetY",
+        )) {
+            assertTrue("Missing previous backup field: $name", encoded.contains("\"$name\""))
+        }
+        assertTrue(encoded.contains("\"LEFT_RIGHT\""))
+        assertFalse(encoded.contains("\"bothSidesShowActivity\""))
+        assertEquals(config, codec.decodeFromString(VisualCfg.serializer(), encoded))
+    }
+
+    @Test
+    fun backupValidationRejectsNonfiniteBottomIndicatorFields() {
+        val invalidProfiles = listOf<(VisualCfg) -> VisualCfg>(
+            { it.copy(bothSidesActivityScale = Float.NaN) },
+            { it.copy(bothSidesActivityOffsetY = Float.POSITIVE_INFINITY) },
+            { it.copy(bothSidesChargingOffsetY = Float.NEGATIVE_INFINITY) },
+        )
+        for (makeInvalid in invalidProfiles) {
+            val original = sampleBackup()
+            val invalid = original.copy(
+                visual = original.visual.copy(
+                    profiles = original.visual.profiles.map(makeInvalid),
+                ),
             )
             assertThrows(IllegalArgumentException::class.java) {
                 ConfigBackupFormat.validate(invalid)
             }
         }
-        val json = ConfigBackupFormat.encode(source)
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.decode(
-                json.replaceFirst("\"fillFollowsRetract\":true", "\"fillFollowsRetract\":false"),
-            )
-        }
     }
 
-    @Test fun keepsSingleAndDualModeValuesIndependent() {
-        val source = sample()
-        val independent = source.copy(
-            visual = source.visual.copy(profiles = source.visual.profiles.map { cfg ->
-                if (cfg.dualSignal) cfg.copy(
-                    fillFollowsRetract = false,
-                    batteryColorPreset = BatteryColorPreset.IOS_STYLE,
-                ) else cfg
-            }),
+
+
+    @Test fun chargingMasterKeepsExistingBackupFieldName() {
+        val original = sampleBackup().let { backup ->
+            backup.copy(visual = backup.visual.copy(profiles =
+                backup.visual.profiles.map { it.copy(showChargingIcon = false) }))
+        }
+        val encoded = ConfigBackupFormat.encode(original)
+        assertTrue(encoded.contains("\"showTopChargingIcon\":false"))
+        assertFalse(encoded.contains("\"showChargingIcon\""))
+        assertEquals(original, ConfigBackupFormat.decode(encoded))
+    }
+
+    @Test fun idleActivityHidingIsOptInAndSurvivesBackups() {
+        val selected = VisualCfg(
+            layout = ContentLayout.NETWORK_CENTER,
+            dualSignal = true,
+            dualRowDotArrangement = SignalDotArrangement.BOTH_SIDES,
+            bothSidesShowActivity = true,
+            bothSidesHideIdleActivity = true,
         )
-        assertEquals(independent, ConfigBackupFormat.decode(ConfigBackupFormat.encode(independent)))
-    }
-
-    @Test fun mainB1110SchemaOneArchiveKeepsProfilesAndDefaultsNewFields() {
-        val source = sample().let { backup ->
-            backup.copy(
-                feature = backup.feature.copy(enabled = false, aod = false),
-                visual = backup.visual.copy(
-                    profiles = backup.visual.profiles.mapIndexed { index, cfg ->
-                        cfg.copy(
-                            combinedScale = if (index % 2 == 0) 0.9f else 0.7f,
-                            mobileTypeWeight = if (cfg.dualSignal) 700 else 800,
-                            showTopReadout = false,
-                        )
-                    },
-                ),
-            )
+        assertFalse(VisualCfg().bothSidesHideIdleActivity)
+        val original = sampleBackup().let { source ->
+            source.copy(visual = source.visual.copy(profiles = source.visual.profiles.map { cfg ->
+                if (cfg.dualSignal && cfg.layout == ContentLayout.NETWORK_CENTER) selected else cfg
+            }))
         }
-        // Stable B1110 V1 archives predate these fields but explicitly stored readout choices.
-        val legacy = ConfigBackupFormat.encode(source)
-            .replace(",\"lowBatteryThreshold\":${source.feature.lowBatteryThreshold}", "")
-            .replace(",\"dualDotStyle\":\"DEFAULT\"", "")
-            .replace(",\"dualDefaultOffsetY\":0.0", "")
-            .replace(",\"dualDuoOffsetY\":0.0", "")
-        for (key in listOf(
-            "lowBatteryThreshold", "dualDotStyle", "dualDefaultOffsetY", "dualDuoOffsetY",
-        )) {
-            assertFalse(legacy.contains("\"${key}\""))
-        }
-
-        val restored = ConfigBackupFormat.decode(legacy)
-        assertEquals(source, restored)
-        assertTrue(restored.visual.profiles.all { !it.showTopReadout })
-        assertEquals(LOW_BATTERY_THRESHOLD_DEFAULT, restored.feature.lowBatteryThreshold)
+        assertEquals(original, ConfigBackupFormat.decode(ConfigBackupFormat.encode(original)))
     }
 
-    @Test fun legacyArchivesDefaultToOriginalDotStyle() {
-        val json = ConfigBackupFormat.encode(sample())
-            .replace("\"dualDotStyle\":\"DEFAULT\",", "")
-        assertTrue(ConfigBackupFormat.decode(json).visual.profiles.all {
-            it.dualDotStyle == DualDotStyle.DEFAULT
-        })
-    }
-
-    @Test fun modeWideDuoStyleMustAgreeAcrossLayouts() {
-        val source = sample()
-        val valid = source.copy(visual = source.visual.copy(profiles =
-            source.visual.profiles.map { cfg ->
-                if (cfg.dualSignal) cfg.copy(dualDotStyle = DualDotStyle.DUO) else cfg
-            },
-        ))
-        assertEquals(valid, ConfigBackupFormat.decode(ConfigBackupFormat.encode(valid)))
-        val invalid = valid.copy(visual = valid.visual.copy(
-            profiles = valid.visual.profiles.mapIndexed { index, cfg ->
-                if (index == 2) cfg.copy(dualDotStyle = DualDotStyle.DEFAULT) else cfg
-            },
-        ))
+    @Test fun retiredIdleShowBackupDoesNotBecomeHide() {
+        val old = ConfigBackupFormat.encode(sampleBackup())
+            .replace("\"leftRightHideIdleActivity\":false", "\"leftRightShowIdleActivity\":true")
+        val restored = ConfigBackupFormat.decode(old)
+        assertTrue(restored.visual.profiles.none { it.bothSidesHideIdleActivity })
+        val conflict = old.replaceFirst(
+            "\"leftRightShowIdleActivity\":true",
+            "\"leftRightShowIdleActivity\":true,\"leftRightHideIdleActivity\":false",
+        )
         assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.validate(invalid)
+            ConfigBackupFormat.decode(conflict)
         }
     }
 
-    @Test fun offsetValuesSurviveBackupsAndRejectInvalidRanges() {
-        val original = sample()
-        val changed = original.copy(visual = original.visual.copy(
-            profiles = original.visual.profiles.map { cfg ->
-                if (cfg.dualSignal) {
-                    cfg.copy(
-                        dualDefaultOffsetY = if (cfg.layout == ContentLayout.NETWORK_CENTER) 4f else -3f,
-                        dualDuoOffsetY = if (cfg.layout == ContentLayout.NETWORK_CENTER) -8f else 6f,
-                    )
-                } else cfg
-            },
-        ))
-        assertEquals(changed, ConfigBackupFormat.decode(ConfigBackupFormat.encode(changed)))
-        val corrupt = changed.copy(visual = changed.visual.copy(
-            profiles = changed.visual.profiles.mapIndexed { index, cfg ->
-                if (index == 2) cfg.copy(dualDuoOffsetY = 11f) else cfg
-            },
-        ))
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.validate(corrupt)
+    @Test fun bothSidesOffsetIsIndependentOfCurvedAndSurvivesBackups() {
+        val value = VisualCfg(
+            dualSignal = true,
+            dualRowDotArrangement = SignalDotArrangement.BOTH_SIDES,
+            curvedSignalDotOffsetY = -3f,
+            horizontalSignalDotOffsetY = 2f,
+            bothSidesSignalDotOffsetY = 6f,
+        )
+        assertEquals(0f, value.dualRowDotOffsetY, 0f)
+        assertEquals(-3f,
+            value.copy(dualRowDotArrangement = SignalDotArrangement.CURVED).dualRowDotOffsetY, 0f)
+        assertEquals(2f,
+            value.copy(dualRowDotArrangement = SignalDotArrangement.HORIZONTAL).dualRowDotOffsetY, 0f)
+        assertEquals(10f, value.copy(bothSidesSignalDotOffsetY = 100f)
+            .normalized().bothSidesSignalDotOffsetY, 0f)
+        val original = sampleBackup().let { source ->
+            source.copy(visual = source.visual.copy(profiles = source.visual.profiles.map { cfg ->
+                if (cfg.dualSignal) value.copy(layout = cfg.layout) else cfg
+            }))
         }
+        assertEquals(original, ConfigBackupFormat.decode(ConfigBackupFormat.encode(original)))
     }
 
-    @Test fun roundTripKeepsEveryProfileAndActiveMode() {
-        val source = sample()
+    @Test fun bothSidesBottomSizeNormalizesAndPersistsInLayoutProfile() {
+        val selected = VisualCfg(
+            layout = ContentLayout.NETWORK_CENTER,
+            dualSignal = true,
+            dualRowDotArrangement = SignalDotArrangement.BOTH_SIDES,
+            bothSidesActivityScale = 1.15f,
+            bothSidesActivityOffsetY = 3f,
+            bothSidesChargingOffsetY = -4f,
+        )
+        assertEquals(0.7f, selected.copy(bothSidesActivityScale = 0.2f)
+            .normalized().bothSidesActivityScale, 0.0001f)
+        assertEquals(1.2f, selected.copy(bothSidesActivityScale = 4f)
+            .normalized().bothSidesActivityScale, 0.0001f)
+        assertEquals(BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT, selected.copy(bothSidesActivityScale = Float.NaN)
+            .normalized().bothSidesActivityScale, 0.0001f)
+        assertEquals(-10f, selected.copy(bothSidesActivityOffsetY = -100f)
+            .normalized().bothSidesActivityOffsetY, 0f)
+        assertEquals(10f, selected.copy(bothSidesChargingOffsetY = 100f)
+            .normalized().bothSidesChargingOffsetY, 0f)
+        val source = sampleBackup().let { backup ->
+            backup.copy(visual = backup.visual.copy(profiles = backup.visual.profiles.map { cfg ->
+                if (cfg.dualSignal && cfg.layout == ContentLayout.NETWORK_CENTER) selected else cfg
+            }))
+        }
         assertEquals(source, ConfigBackupFormat.decode(ConfigBackupFormat.encode(source)))
-        assertEquals(4, source.visual.profiles.size)
-    }
-
-    @Test fun legacyMobileWeightsClampWithoutChangingOtherProfiles() {
-        val json = ConfigBackupFormat.encode(sample())
-        val archived = json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":1400")
-        val decoded = ConfigBackupFormat.decode(archived)
-        assertEquals(1000, decoded.visual.profiles.first().mobileTypeWeight)
-        assertTrue(decoded.visual.profiles.drop(1).all { it.mobileTypeWeight == 600 })
-        assertTrue(ConfigBackupFormat.encode(decoded).contains("\"mobileTypeWeight\":1000"))
-    }
-
-    @Test fun mobileWeight150RoundTripsInEveryProfile() {
-        val archive = sample().let { source ->
-            source.copy(visual = source.visual.copy(
-                profiles = source.visual.profiles.map { it.copy(mobileTypeWeight = 150) },
-            ))
-        }
-        assertEquals(archive, ConfigBackupFormat.decode(ConfigBackupFormat.encode(archive)))
-    }
-
-    @Test fun mobileWeightImportRejectsValuesOutsideValidRange() {
-        val json = ConfigBackupFormat.encode(sample())
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":1401"))
-        }
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":0"))
-        }
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.decode(json.replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":\"1400\""))
-        }
-        val invalid = sample()
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.validate(invalid.copy(
-                visual = invalid.visual.copy(
-                    profiles = invalid.visual.profiles.mapIndexed { index, cfg ->
-                        if (index == 0) cfg.copy(mobileTypeWeight = 1001) else cfg
-                    },
-                ),
-            ))
-        }
-    }
-
-    @Test fun legacyBatteryWeightsClampWithoutChangingOtherProfiles() {
-        val json = ConfigBackupFormat.encode(sample())
-        val previous = json.replaceFirst("\"topTextWeight\":600", "\"topTextWeight\":1400")
-        val decoded = ConfigBackupFormat.decode(previous)
-        assertEquals(1000, decoded.visual.profiles.first().topTextWeight)
-        assertTrue(decoded.visual.profiles.drop(1).all { it.topTextWeight == 600 })
-        assertTrue(decoded.visual.profiles.all { it.mobileTypeWeight == 600 })
-        assertTrue(ConfigBackupFormat.encode(decoded).contains("\"topTextWeight\":1000"))
-        val boundary = ConfigBackupFormat.decode(
-            json.replaceFirst("\"topTextWeight\":600", "\"topTextWeight\":1001"),
-        )
-        assertEquals(1000, boundary.visual.profiles.first().topTextWeight)
-    }
-
-    @Test fun batteryWeight150RoundTripsInEveryProfile() {
-        val archive = sample().let { source ->
-            source.copy(visual = source.visual.copy(
-                profiles = source.visual.profiles.map { it.copy(topTextWeight = 150) },
-            ))
-        }
-        assertEquals(archive, ConfigBackupFormat.decode(ConfigBackupFormat.encode(archive)))
-    }
-
-    @Test fun batteryThicknessImportRejectsMalformedAndOutOfRangeValues() {
-        val json = ConfigBackupFormat.encode(sample())
-        for (value in listOf("0", "1401", "-1", "2147483647", "600.5", "\"1400\"", "null")) {
-            assertThrows(Exception::class.java) {
-                ConfigBackupFormat.decode(json.replaceFirst("\"topTextWeight\":600", "\"topTextWeight\":$value"))
-            }
-        }
-        val invalid = sample()
-        for (weight in listOf(0, 1001, 1401, 5000)) {
-            assertThrows(IllegalArgumentException::class.java) {
-                ConfigBackupFormat.validate(invalid.copy(
-                    visual = invalid.visual.copy(
-                        profiles = invalid.visual.profiles.mapIndexed { index, cfg ->
-                            if (index == 0) cfg.copy(topTextWeight = weight) else cfg
-                        },
-                    ),
-                ))
-            }
-        }
-    }
-
-    @Test fun batteryAndMobileWeightsRetainIndependentValues() {
-        val json = ConfigBackupFormat.encode(sample())
-        val old = json.replaceFirst("\"topTextWeight\":600", "\"topTextWeight\":1200")
-            .replaceFirst("\"mobileTypeWeight\":600", "\"mobileTypeWeight\":1300")
-        val decoded = ConfigBackupFormat.decode(old)
-        assertEquals(1000, decoded.visual.profiles.first().topTextWeight)
-        assertEquals(1000, decoded.visual.profiles.first().mobileTypeWeight)
-        assertEquals(sample().visual.profiles.drop(1), decoded.visual.profiles.drop(1))
-    }
-
-    @Test fun legacySchemaOneWithoutWifiWeightRetainsNativeDefault() {
-        val source = ConfigBackupFormat.encode(sample())
-        val withoutWeight = source.replace("\"wifiWeight\":100,", "")
-        assertEquals(4, ConfigBackupFormat.decode(withoutWeight).visual.profiles.size)
-        assertTrue(ConfigBackupFormat.decode(withoutWeight).visual.profiles.all {
-            it.wifiWeight == WIFI_WEIGHT_DEFAULT
-        })
-    }
-
-    @Test fun extendedWifiWeightsSurviveArchiveRoundTrip() {
-        val source = sample()
-        val archive = source.copy(
-            visual = source.visual.copy(
-                profiles = source.visual.profiles.mapIndexed { i, cfg ->
-                    cfg.copy(wifiWeight = if (i % 2 == 0) WIFI_WEIGHT_MIN else WIFI_WEIGHT_MAX)
-                },
-            ),
-        )
-        assertEquals(archive, ConfigBackupFormat.decode(ConfigBackupFormat.encode(archive)))
-    }
-
-    @Test fun airplaneWeightRoundTripsInIndependentProfiles() {
-        val source = sample()
-        val archive = source.copy(
-            visual = source.visual.copy(
-                profiles = source.visual.profiles.mapIndexed { index, cfg ->
-                    cfg.copy(airplaneWeight = if (index % 2 == 0) AIRPLANE_WEIGHT_MIN else AIRPLANE_WEIGHT_MAX)
-                },
-            ),
-        )
-        assertEquals(archive, ConfigBackupFormat.decode(ConfigBackupFormat.encode(archive)))
-    }
-
-    @Test fun legacySchemaOneWithoutAirplaneWeightDefaultsToNative() {
-        val json = ConfigBackupFormat.encode(sample())
-        val previous = json.replace("\"airplaneWeight\":100,", "")
-        assertTrue(ConfigBackupFormat.decode(previous).visual.profiles.all {
-            it.airplaneWeight == AIRPLANE_WEIGHT_DEFAULT
-        })
-    }
-
-    @Test fun outOfRangeAirplaneWeightIsRejected() {
-        val source = sample()
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.validate(source.copy(
-                visual = source.visual.copy(
-                    profiles = source.visual.profiles.mapIndexed { i, cfg ->
-                        if (i == 0) cfg.copy(airplaneWeight = 500) else cfg
-                    },
-                ),
-            ))
-        }
-    }
-
-    @Test fun tamperedWifiWeightIsRejected() {
-        val value = sample()
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.validate(value.copy(
-                visual = value.visual.copy(
-                    profiles = value.visual.profiles.mapIndexed { i, cfg ->
-                        if (i == 0) cfg.copy(wifiWeight = 999) else cfg
-                    },
-                ),
-            ))
-        }
-    }
-
-    @Test fun alteredScaleIsRejectedWithoutClamping() {
-        val source = sample()
-        val invalid = source.copy(
-            visual = source.visual.copy(
-                profiles = source.visual.profiles.mapIndexed { index, value ->
-                    if (index == 0) value.copy(combinedScale = 5f) else value
-                },
-            ),
-        )
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.validate(invalid)
-        }
-    }
-
-    @Test fun missingProfileAndDuplicateSchemeIdAreRejected() {
-        val source = sample()
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.validate(source.copy(
-                visual = source.visual.copy(profiles = source.visual.profiles.dropLast(1)),
-            ))
-        }
-        val custom = BatteryCustomColorScheme(
-            1, "A", BatteryBuiltInColorScheme.HYPEROS, BatteryColorSchemeEntries(),
-        )
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.validate(source.copy(
-                batterySchemes = BatteryColorSchemeLibrary(customSchemes = listOf(custom, custom)),
-            ))
-        }
-    }
-
-    @Test fun unknownFutureSchemaIsNotGuessed() {
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.validate(sample().copy(schemaVersion = 2))
-        }
-    }
-
-    @Test fun unknownEnumAndOversizedFileAreRejected() {
-        val json = ConfigBackupFormat.encode(sample())
-        assertThrows(Exception::class.java) {
-            ConfigBackupFormat.decode(json.replace("NETWORK_CENTER", "UNKNOWN_LAYOUT"))
-        }
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.decode(" ".repeat(ConfigBackupFormat.MAX_BYTES + 1))
-        }
-    }
-
-
-    @Test fun duplicateAndEscapedJsonKeysAreRejected() {
-        val json = ConfigBackupFormat.encode(sample())
-        val duplicated = json.replaceFirst(
-            "\"format\":",
-            "\"format\":\"spoofed\",\"format\":",
-        )
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.decode(duplicated)
-        }
-        val escaped = json.replaceFirst(
-            "\"format\":",
-            "\"format\":\"spoofed\",\"\\u0066ormat\":",
-        )
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.decode(escaped)
-        }
-    }
-
-    @Test fun deepOrUnknownJsonStructuresAreRejected() {
-        val json = ConfigBackupFormat.encode(sample())
-        val nested = "[".repeat(17) + "0" + "]".repeat(17)
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.decode(json.replaceFirst("{", "{\"unexpected\":" + nested + ","))
-        }
-        assertThrows(Exception::class.java) {
-            ConfigBackupFormat.decode(json.replaceFirst("{", "{\"command\":\"reboot\","))
-        }
-    }
-
-    @Test fun invalidUtf8AndNoncanonicalSchemeKeysAreRejected() {
-        assertThrows(Exception::class.java) {
-            ConfigBackupFormat.decode(byteArrayOf(0xC3.toByte(), 0x28))
-        }
-        val custom = BatteryCustomColorScheme(
-            id = 1,
-            name = "A",
-            baseTemplate = BatteryBuiltInColorScheme.HYPEROS,
-            entries = BatteryColorSchemeEntries(),
-        )
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.validate(sample().copy(
-                batterySchemes = BatteryColorSchemeLibrary(
-                    activeSchemeKey = "custom:01",
-                    customSchemes = listOf(custom),
-                ),
-            ))
-        }
-    }
-
-    @Test fun unsafeSchemeNamesAndMetadataAreRejected() {
-        val custom = BatteryCustomColorScheme(
-            id = 1,
-            name = "Name\nInjected",
-            baseTemplate = BatteryBuiltInColorScheme.HYPEROS,
-            entries = BatteryColorSchemeEntries(),
-        )
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.validate(sample().copy(
-                batterySchemes = BatteryColorSchemeLibrary(customSchemes = listOf(custom)),
-            ))
-        }
-        assertThrows(IllegalArgumentException::class.java) {
-            ConfigBackupFormat.validate(sample().copy(appVersion = "0.7\u202Eexe"))
-        }
-        for (unsafeName in listOf("Alpha\u2028Beta", "Alpha\u2029Beta", "Alpha\u202EBeta", "Alpha\u200FBeta", "Alpha\u061CBeta")) {
-            assertThrows(IllegalArgumentException::class.java) {
-                ConfigBackupFormat.validate(sample().copy(
-                    batterySchemes = BatteryColorSchemeLibrary(
-                        customSchemes = listOf(custom.copy(name = unsafeName)),
-                    ),
-                ))
-            }
-        }
-    }
-
-    @Test fun importOwnsOnlyFeatureVisualAndSchemeKeys() {
-        assertTrue(isBackupVisualKey(
-            visualProfileKey(ContentLayout.NETWORK_CENTER, WIFI_WEIGHT_KEY, dual = true),
-        ))
-        assertTrue(isBackupVisualKey(BATTERY_TOP_CHARGING_SCALE_SCHEMA_KEY))
-        assertTrue(isBackupVisualKey("battery_color_scheme_library.custom.1.name"))
-        assertFalse(isBackupVisualKey("application_ui_scale"))
-        assertFalse(isBackupVisualKey("scope_authorization"))
-        assertFalse(isBackupVisualKey("root_command"))
-    }
-
-    @Test fun appSettingsNeverEnterArchive() {
-        val json = ConfigBackupFormat.encode(sample())
-        assertTrue(!json.contains("uiScalePercent"))
-        assertTrue(!json.contains("navStyle"))
-        assertTrue(!json.contains("preview"))
     }
 }

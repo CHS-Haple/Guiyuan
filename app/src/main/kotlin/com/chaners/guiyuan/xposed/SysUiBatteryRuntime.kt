@@ -16,6 +16,7 @@ internal object SysUiBatteryRuntime {
         onChargingIconResource: (Int) -> Unit,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): Int {
         hooks =
             SysUiBatterySource.install(
@@ -25,6 +26,7 @@ internal object SysUiBatteryRuntime {
                 onChargingIconResource = onChargingIconResource,
                 onRuntimeFailure = onRuntimeFailure,
                 onEvent = onEvent,
+                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
             ).size
         return hooks
     }

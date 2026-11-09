@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
 import com.chaners.guiyuan.settings.DUAL_SIGNAL_ENABLED_KEY
 import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
+import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -82,6 +83,27 @@ class RemotePrefsLockOrderTest {
         assertTrue(bound.dualSignal)
         assertTrue(VisualPrefsOwner.current().dualSignal)
         assertEquals(true, delivered.last())
+    }
+
+    @Test
+    fun reflectedFatalFeatureUnregisterEscapesFailedInitialDelivery() {
+        val prefs = LockedPrefs()
+        val ordinary = IllegalStateException("initial-delivery")
+        val fatal = OutOfMemoryError("feature-unregister-fatal")
+        prefs.beforeUnregister = { throw InvocationTargetException(fatal) }
+        try {
+            val error =
+                runCatching {
+                    FeaturePrefsOwner.bind(prefs) { _, _ -> throw ordinary }
+                }.exceptionOrNull()
+            assertSame(fatal, error)
+            assertFalse(FeaturePrefsOwner.current().enabled)
+            assertEquals(1, prefs.listenerCount)
+        } finally {
+            prefs.beforeUnregister = null
+            FeaturePrefsOwner.unbind()
+        }
+        assertEquals(0, prefs.listenerCount)
     }
 
     @Test
@@ -284,6 +306,8 @@ class RemotePrefsLockOrderTest {
             }
         }
 
+    // Preserve the complete SharedPreferences API while simulating lock and callback races.
+    @Suppress("TooManyFunctions")
     private class LockedPrefs : SharedPreferences {
         private val lock = Any()
         private val listeners = linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()

@@ -22,11 +22,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
@@ -34,7 +38,7 @@ import com.chaners.guiyuan.system.RuntimeEnv
 import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
+import com.chaners.guiyuan.ui.screens.about.GyBgEffect
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.SmallTitle
@@ -52,15 +56,6 @@ private const val ABOUT_PROJECT_URL = "https://github.com/CHS-Haple/Guiyuan"
 private const val ABOUT_LICENSE_URL = "https://github.com/CHS-Haple/Guiyuan/blob/main/LICENSE"
 private const val GPL_LICENSE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
 private const val ABOUT_VALUE_SEPARATOR = "｜"
-
-private data class AboutDependency(
-    val name: String,
-    val version: String?,
-    val license: String,
-    val maintainer: String,
-    val upstreamUrl: String,
-)
-
 @Composable
 internal fun AboutScreen(
     onBack: () -> Unit,
@@ -74,6 +69,7 @@ internal fun AboutScreen(
         context.applicationContext as GyApplication
     }
     val xposedStatus by app.xposedStatus.collectAsState()
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
     val uriHandler = LocalUriHandler.current
     val listState = rememberLazyListState()
     val os4 = LocalUiStyle.current == UiStyle.OS4
@@ -113,7 +109,9 @@ internal fun AboutScreen(
             } else if (spacerBottom <= versionBottom ||
                 versionBottom <= nameBottom || nameBottom <= iconBottom
             ) {
-                Triple(0f, 0f, 0f)
+                // The first layout may not have measured yet. A nonzero scroll
+                // must not leave an opaque identity mark over a preference row.
+                if (offset > 0f) Triple(1f, 1f, 1f) else Triple(0f, 0f, 0f)
             } else {
                 val first = spacerBottom - versionBottom
                 val second = versionBottom - nameBottom
@@ -142,40 +140,60 @@ internal fun AboutScreen(
         compactTopBar = os4,
         titleAlpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
         background = {
-            BgEffectBackground(
-                dynamicBackground = visible,
-                modifier = Modifier.fillMaxSize(),
+            GyBgEffect(
+                playing = lifecycleState.isAtLeast(Lifecycle.State.RESUMED) &&
+                    visible && scrollProgress < 1f,
                 bgModifier = if (blur) Modifier.layerBackdrop(backdrop) else Modifier,
-                isFullSize = true,
                 alpha = { 1f - scrollProgress },
-            ) {}
+            )
         },
         foreground = { padding ->
-            AboutHero(
-                topPadding = padding.calculateTopPadding(),
-                active = visible,
-                backdrop = if (blur) backdrop else null,
-                logoBlend = logoBlend,
-                versionProgress = collapse.first,
-                nameProgress = collapse.second,
-                iconProgress = collapse.third,
-                onHeight = { if (heroHeight != it) heroHeight = it },
-                onIconBottom = {
-                    if (listState.firstVisibleItemIndex == 0 &&
-                        listState.firstVisibleItemScrollOffset == 0 && iconBottom != it
-                    ) iconBottom = it
-                },
-                onNameBottom = {
-                    if (listState.firstVisibleItemIndex == 0 &&
-                        listState.firstVisibleItemScrollOffset == 0 && nameBottom != it
-                    ) nameBottom = it
-                },
-                onVersionBottom = {
-                    if (listState.firstVisibleItemIndex == 0 &&
-                        listState.firstVisibleItemScrollOffset == 0 && versionBottom != it
-                    ) versionBottom = it
-                },
-            )
+            // Foreground keeps the interactive logo above the scroll hit layer,
+            // but it must never draw over the first preference card.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawWithContent {
+                        // Read list position in the draw phase so a fling cannot
+                        // paint a stale foreground boundary between recompositions.
+                        val firstCardTopPx =
+                            if (listState.firstVisibleItemIndex == 0) {
+                                (padding.calculateTopPadding() + spacerHeight).toPx() -
+                                    listState.firstVisibleItemScrollOffset
+                            } else {
+                                0f
+                            }
+                        clipRect(bottom = firstCardTopPx.coerceIn(0f, size.height)) {
+                            this@drawWithContent.drawContent()
+                        }
+                    },
+            ) {
+                AboutHero(
+                    topPadding = padding.calculateTopPadding(),
+                    active = visible,
+                    backdrop = if (blur) backdrop else null,
+                    logoBlend = logoBlend,
+                    versionProgress = collapse.first,
+                    nameProgress = collapse.second,
+                    iconProgress = collapse.third,
+                    onHeight = { if (heroHeight != it) heroHeight = it },
+                    onIconBottom = {
+                        if (listState.firstVisibleItemIndex == 0 &&
+                            listState.firstVisibleItemScrollOffset == 0 && iconBottom != it
+                        ) iconBottom = it
+                    },
+                    onNameBottom = {
+                        if (listState.firstVisibleItemIndex == 0 &&
+                            listState.firstVisibleItemScrollOffset == 0 && nameBottom != it
+                        ) nameBottom = it
+                    },
+                    onVersionBottom = {
+                        if (listState.firstVisibleItemIndex == 0 &&
+                            listState.firstVisibleItemScrollOffset == 0 && versionBottom != it
+                        ) versionBottom = it
+                    },
+                )
+            }
         },
         overlay = {
             UiOverlayDialog(
@@ -370,94 +388,10 @@ internal fun AboutScreen(
 @Composable
 internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
     val uriHandler = LocalUriHandler.current
-    val miuixVersion = "${BuildConfig.MIUIX_VERSION}｜PR #423"
-    val runtimeDependencies =
-        remember(miuixVersion) {
-            listOf(
-                AboutDependency(
-                    name = "MIUIX",
-                    version = miuixVersion,
-                    license = "Apache-2.0",
-                    maintainer = "compose-miuix-ui",
-                    upstreamUrl = "https://github.com/compose-miuix-ui/miuix",
-                ),
-                AboutDependency(
-                    name = "libxposed API",
-                    version = BuildConfig.LIBXPOSED_VERSION,
-                    license = "Apache-2.0",
-                    maintainer = "libxposed",
-                    upstreamUrl = "https://github.com/libxposed/api",
-                ),
-                AboutDependency(
-                    name = "libxposed service",
-                    version = BuildConfig.LIBXPOSED_VERSION,
-                    license = "Apache-2.0",
-                    maintainer = "libxposed",
-                    upstreamUrl = "https://github.com/libxposed/service",
-                ),
-                AboutDependency(
-                    name = "AndroidX Core",
-                    version = BuildConfig.ANDROIDX_CORE_VERSION,
-                    license = "Apache-2.0",
-                    maintainer = "AndroidX",
-                    upstreamUrl = "https://github.com/androidx/androidx",
-                ),
-                AboutDependency(
-                    name = "AndroidX Activity Compose",
-                    version = BuildConfig.ACTIVITY_COMPOSE_VERSION,
-                    license = "Apache-2.0",
-                    maintainer = "AndroidX",
-                    upstreamUrl = "https://github.com/androidx/androidx",
-                ),
-                AboutDependency(
-                    name = "AndroidX Navigation Event Compose",
-                    version = BuildConfig.NAVIGATION_EVENT_COMPOSE_VERSION,
-                    license = "Apache-2.0",
-                    maintainer = "AndroidX",
-                    upstreamUrl = "https://github.com/androidx/androidx",
-                ),
-                AboutDependency(
-                    name = "AndroidX DataStore Preferences",
-                    version = BuildConfig.DATASTORE_PREFERENCES_VERSION,
-                    license = "Apache-2.0",
-                    maintainer = "AndroidX",
-                    upstreamUrl = "https://github.com/androidx/androidx",
-                ),
-                AboutDependency(
-                    name = "kotlinx.serialization core",
-                    version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
-                    license = "Apache-2.0",
-                    maintainer = "Kotlin",
-                    upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
-                ),
-                AboutDependency(
-                    name = "kotlinx.serialization JSON",
-                    version = BuildConfig.KOTLINX_SERIALIZATION_CORE_VERSION,
-                    license = "Apache-2.0",
-                    maintainer = "Kotlin",
-                    upstreamUrl = "https://github.com/Kotlin/kotlinx.serialization",
-                ),
-            )
-        }
-    val developmentDependencies =
-        remember {
-            listOf(
-                AboutDependency(
-                    name = "Gradle Wrapper",
-                    version = BuildConfig.GRADLE_VERSION,
-                    license = "Apache-2.0",
-                    maintainer = "Gradle",
-                    upstreamUrl = "https://github.com/gradle/gradle",
-                ),
-                AboutDependency(
-                    name = "JUnit 4",
-                    version = BuildConfig.JUNIT_VERSION,
-                    license = "EPL-1.0",
-                    maintainer = "junit-team",
-                    upstreamUrl = "https://github.com/junit-team/junit4",
-                ),
-            )
-        }
+    val miuixVersion = BuildConfig.MIUIX_VERSION
+    val runtimeDependencies = remember(miuixVersion) { aboutRuntimeDependencies(miuixVersion) }
+    val compileTimeDependencies = remember { aboutCompileTimeDependencies() }
+    val developmentDependencies = remember { aboutDevelopmentDependencies() }
 
     SettingsPage(
         title = stringResource(R.string.about_third_party_title),
@@ -465,6 +399,14 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
     ) {
         Section(R.string.section_runtime_dependencies) {
             runtimeDependencies.forEach { dependency ->
+                AboutDependencyPreference(
+                    dependency = dependency,
+                    onClick = { uriHandler.openUri(dependency.upstreamUrl) },
+                )
+            }
+        }
+        Section(R.string.section_compile_time_dependencies) {
+            compileTimeDependencies.forEach { dependency ->
                 AboutDependencyPreference(
                     dependency = dependency,
                     onClick = { uriHandler.openUri(dependency.upstreamUrl) },

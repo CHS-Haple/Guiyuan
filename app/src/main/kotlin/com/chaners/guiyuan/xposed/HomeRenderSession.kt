@@ -258,6 +258,7 @@ internal object HomeRenderSession {
         private var layoutLogged = false
         private var deferredStateLogged = false
         private var rejectedTintLogged = false
+        private var nativeTintObserved = false
         // Control Center handoff is coordinator-owned. Source visibility is
         // diagnostic context only until a projected carrier is ready.
         private var controlCenterAllowsHome = true
@@ -281,6 +282,14 @@ internal object HomeRenderSession {
                     _,
                     _,
                 ->
+                layoutProbe()
+            }
+
+        // Native privacy-state transitions may change this child while the
+        // battery container itself retains its exact bounds. Follow its
+        // layout callback, not a timer or an estimated privacy width.
+        private val statusIconsLayoutListener =
+            View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                 layoutProbe()
             }
 
@@ -321,6 +330,7 @@ internal object HomeRenderSession {
             overlayHost.addOnAttachStateChangeListener(this)
             overlayHost.addOnLayoutChangeListener(overlayHostLayoutListener)
             carrier.addOnLayoutChangeListener(carrierLayoutListener)
+            statusIcons.get()?.addOnLayoutChangeListener(statusIconsLayoutListener)
             probeView.visibility = View.GONE
             (probeView.parent as? ViewGroup)?.removeView(probeView)
             overlayHost.addView(
@@ -334,7 +344,9 @@ internal object HomeRenderSession {
                 transferred = initialTintState,
                 allowLiveSeed = allowLiveTintSeed,
                 liveState = {
-                    SysUiTintSource.currentState(battery)
+                    SysUiTintSource.currentState(battery)?.also { state ->
+                        if (state.isVisible) nativeTintObserved = true
+                    }
                 },
             )?.let { seed ->
                 applyTintState(seed.state, seed.source)
@@ -385,6 +397,7 @@ internal object HomeRenderSession {
                 { batteryContainer.get()?.removeOnAttachStateChangeListener(this) },
                 { batteryContainer.get()?.removeOnLayoutChangeListener(overlayHostLayoutListener) },
                 { batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) },
+                { statusIcons.get()?.removeOnLayoutChangeListener(statusIconsLayoutListener) },
                 { if (removeVisual) (probeView.parent as? ViewGroup)?.removeView(probeView) },
             )
         }
@@ -450,6 +463,10 @@ internal object HomeRenderSession {
             }
             nativeHandoffActive = active
             if (SandboxHost.active()) update(StatusStateStore.snapshot())
+            // Privacy may already be occupying Home's right end when the module
+            // first takes ownership. No subsequent native layout change is
+            // guaranteed, so reread its laid-out edge before revealing Guiyuan.
+            if (!active) layoutProbe()
             val visible = applyResolvedVisibility()
             emitEvent {
                 "homeRenderHandoff nativeActive=" + nativeHandoffActive +
@@ -467,13 +484,14 @@ internal object HomeRenderSession {
             if (update.sourceView !== battery) {
                 return
             }
+            if (update.state.isVisible) nativeTintObserved = true
             applyTintState(update.state, "darkReceiver")
         }
 
         fun updateStatusIconTint(statusIconTint: Int?) {
             val resolved =
                 TintAuthority.resolveStatusIconEvent(
-                    previous = renderController.currentTintState(),
+                    nativeTintObserved = nativeTintObserved,
                     liveStatusIconTint = statusIconTint,
                 ) ?: return
             applyTintState(resolved, "statusIcons")
@@ -578,9 +596,15 @@ internal object HomeRenderSession {
                     logicalWidthPx = anchorRect.width(),
                     logicalHeightPx = anchorRect.height(),
                 )
+            val bottomOverflowPx =
+                probeView.requiredBottomOverflowPx(
+                    logicalWidthPx = anchorRect.width(),
+                    logicalHeightPx = anchorRect.height(),
+                )
             applyAnchorBounds(
                 bounds = anchorRect,
                 topOverflowPx = topOverflowPx,
+                bottomOverflowPx = bottomOverflowPx,
             )
             layoutReady = true
 
@@ -647,10 +671,8 @@ internal object HomeRenderSession {
         }
 
         private inline fun emitEvent(message: () -> String) {
-            try {
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
                 if (isDetailedDiagnosticsEnabled()) onEvent(message())
-            } catch (error: Throwable) {
-                SysUiPresentationRuntime.throwIfFatal(error)
             }
         }
 
@@ -673,13 +695,34 @@ internal object HomeRenderSession {
                 return false
             }
 
+            val isRtl = overlayHost.layoutDirection == View.LAYOUT_DIRECTION_RTL
+            val privacyOccupiesEnd =
+                SysUiPresentationOwner.homePrivacyOccupiesEnd(overlayHost)
             val resolved =
-                SteadyLayoutResolver.resolve(
-                    hostWidthPx = hostWidth,
-                    hostHeightPx = hostHeight,
-                    baseCarrierWidthPx = baseCarrierWidth,
-                    isRtl = overlayHost.layoutDirection == View.LAYOUT_DIRECTION_RTL,
-                ) ?: return false
+                if (privacyOccupiesEnd == true) {
+                    val nativeIcons = statusIcons.get() ?: return false
+                    if (nativeIcons.parent !== overlayHost ||
+                        !nativeIcons.isLaidOut || nativeIcons.width <= 0
+                    ) return false
+                    // Exact target onLayout ends the icon group at the privacy
+                    // child's measured boundary. The module's end reservation
+                    // sits inside this group's native edge.
+                    HomePrivacyAnchorPolicy.resolve(
+                        hostWidthPx = hostWidth,
+                        hostHeightPx = hostHeight,
+                        baseCarrierWidthPx = baseCarrierWidth,
+                        statusIconsEndPx =
+                            if (isRtl) nativeIcons.left else nativeIcons.right,
+                        isRtl = isRtl,
+                    )
+                } else {
+                    SteadyLayoutResolver.resolve(
+                        hostWidthPx = hostWidth,
+                        hostHeightPx = hostHeight,
+                        baseCarrierWidthPx = baseCarrierWidth,
+                        isRtl = isRtl,
+                    )
+                } ?: return false
             out.set(resolved.left, 0, resolved.right, hostHeight)
             return out.width() > 0 && out.height() > 0
         }
@@ -687,12 +730,14 @@ internal object HomeRenderSession {
         private fun applyAnchorBounds(
             bounds: Rect,
             topOverflowPx: Int,
+            bottomOverflowPx: Int,
         ) {
             val physical =
                 VerticalOverflowPolicy.resolve(
                     logicalTopPx = bounds.top,
                     logicalHeightPx = bounds.height(),
                     requestedTopOverflowPx = topOverflowPx,
+                    requestedBottomOverflowPx = bottomOverflowPx,
                 )
             probeView.setLogicalViewport(
                 widthPx = bounds.width(),
@@ -717,7 +762,7 @@ internal object HomeRenderSession {
                 bounds.left,
                 physical.physicalTopPx,
                 bounds.right,
-                bounds.bottom,
+                bounds.bottom + bottomOverflowPx,
             )
         }
     }
@@ -737,13 +782,15 @@ internal object VerticalOverflowPolicy {
         logicalTopPx: Int,
         logicalHeightPx: Int,
         requestedTopOverflowPx: Int,
+        requestedBottomOverflowPx: Int = 0,
     ): Resolved {
         val logicalHeight = logicalHeightPx.coerceAtLeast(0)
-        val overflow = requestedTopOverflowPx.coerceAtLeast(0)
+        val top = requestedTopOverflowPx.coerceAtLeast(0)
+        val bottom = requestedBottomOverflowPx.coerceAtLeast(0)
         return Resolved(
-            physicalTopPx = logicalTopPx - overflow,
-            physicalHeightPx = logicalHeight + overflow,
-            logicalTopInsetPx = overflow,
+            physicalTopPx = logicalTopPx - top,
+            physicalHeightPx = logicalHeight + top + bottom,
+            logicalTopInsetPx = top,
         )
     }
 }

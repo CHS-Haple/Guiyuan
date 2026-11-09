@@ -52,23 +52,23 @@ internal object RootShell {
                         running.destroyForcibly()
                     }
                     val captured = readOutput(output)
-                    return@coroutineScope Result(
+                    Result(
                         exitCode = null,
                         output = captured.text,
                         timedOut = true,
                         error = null,
                         truncated = captured.truncated,
                     )
+                } else {
+                    val captured = readOutput(output)
+                    Result(
+                        exitCode = running.exitValue(),
+                        output = captured.text,
+                        timedOut = false,
+                        error = null,
+                        truncated = captured.truncated,
+                    )
                 }
-
-                val captured = readOutput(output)
-                Result(
-                    exitCode = running.exitValue(),
-                    output = captured.text,
-                    timedOut = false,
-                    error = null,
-                    truncated = captured.truncated,
-                )
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {

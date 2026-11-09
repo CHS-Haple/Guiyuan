@@ -7,6 +7,41 @@ import org.junit.Test
 
 class NativeOpticalGeometryTest {
     @Test
+    fun lowerGroupOffsetMovesOpticalIconAnchorWithoutSizeDependentDrift() {
+        for (offset in listOf(-5f, 0f, 5f)) {
+            for (scale in listOf(0.7f, 1f, 1.2f)) {
+                val w = 18f * scale
+                val h = 26f * scale
+                val anchor = 108f - offset
+                val origin = NativeOpticalGeometry.viewportCenterForInkAnchor(
+                    anchorX = 60f, anchorY = anchor,
+                    drawWidth = w, drawHeight = h,
+                    opticalCenterX = 0.65f, inkCenterY = 0.34f,
+                )
+                assertEquals(anchor, origin.second + (0.34f - 0.5f) * h, 0.0001f)
+                assertEquals(60f, origin.first + (0.65f - 0.5f) * w, 0.0001f)
+            }
+        }
+    }
+
+    @Test
+    fun opticalInkCenterStaysOnOneBottomAnchorAcrossIconSizes() {
+        val anchorX = 60f
+        val anchorY = 108f
+        for (size in listOf(0.7f, 1f, 1.2f)) {
+            val width = 23f * size
+            val height = 28f * size
+            val viewport = NativeOpticalGeometry.viewportCenterForInkAnchor(
+                anchorX = anchorX, anchorY = anchorY,
+                drawWidth = width, drawHeight = height,
+                opticalCenterX = 0.65f, inkCenterY = 0.34f,
+            )
+            assertEquals(anchorX, viewport.first + (0.65f - 0.5f) * width, 0.0001f)
+            assertEquals(anchorY, viewport.second + (0.34f - 0.5f) * height, 0.0001f)
+        }
+    }
+
+    @Test
     fun currentOpticalWidthStaysResourceSpecificUnderSharedReferenceFit() {
         val narrow =
             NativeOpticalGeometry.resolve(

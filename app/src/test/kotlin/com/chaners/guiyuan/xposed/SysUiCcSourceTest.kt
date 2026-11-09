@@ -133,6 +133,9 @@ class SysUiCcSourceTest {
         )
     }
 
+}
+
+class SysUiCcTransitionTest {
     @Test
     fun transitionMatrixUsesRawNativeExpansionProgress() {
         assertEquals(0f, CcTransitionPolicy.geometryProgress(0f))
@@ -338,6 +341,9 @@ class SysUiCcSourceTest {
         assertTrue(highest < 24f * 3f)
     }
 
+}
+
+class SysUiCcGeometryTest {
     @Test
     fun transitionSimilarityGeometryPreservesSourceAspectRatio() {
         val source = floatArrayOf(10f, 20f, 60f, 0f, 0f, 30f)

@@ -6,6 +6,7 @@ internal object DiagEvidenceSummary {
     private const val MAX_NOTABLE = 40
     private const val MAX_FIELDS = 8
     private const val MAX_FIELD_CHARS = 80
+    private const val UNKNOWN_LABEL = "unknown"
     private val geometryFields = setOf(
         "parent", "parentIndex", "viewPath", "bounds", "clipBounds", "width", "height",
         "translationX", "translationY", "alpha", "visibility", "left", "top", "right", "bottom",
@@ -22,9 +23,9 @@ internal object DiagEvidenceSummary {
         var geometryFieldEntries = 0
         val notable = ArrayDeque<LogEntry>()
 
-        snapshot.entries.forEach { entry ->
+        for (entry in snapshot.entries) {
             if (!entry.structured || (session != null && entry.fields["sessionId"] != session)) {
-                return@forEach
+                continue
             }
             structured++
             val warning = entry.level == LogLevel.Warning
@@ -62,20 +63,22 @@ internal object DiagEvidenceSummary {
             add("nativeViewTree=not-collected")
             add("notableEntries=" + notable.size)
             notable.forEachIndexed { index, entry ->
-                val fields = entry.fields.toSortedMap().entries
-                    .take(MAX_FIELDS)
-                    .joinToString(",") { (key, value) ->
-                        key + "=" + DiagProtocol.encode(value.take(MAX_FIELD_CHARS))
-                    }
-                add(
-                    "notable[" + index + "]=" +
-                        "level=" + entry.level.name +
-                        " event=" + (entry.event ?: "unknown") +
-                        " component=" + (entry.component ?: "unknown") +
-                        " state=" + (entry.state ?: "unknown") +
-                        " fields=" + fields,
-                )
+                add(notableLine(index, entry))
             }
         }
+    }
+
+    private fun notableLine(index: Int, entry: LogEntry): String {
+        val fields = entry.fields.toSortedMap().entries
+            .take(MAX_FIELDS)
+            .joinToString(",") { (key, value) ->
+                key + "=" + DiagProtocol.encode(value.take(MAX_FIELD_CHARS))
+            }
+        return "notable[" + index + "]=" +
+            "level=" + entry.level.name +
+            " event=" + (entry.event ?: UNKNOWN_LABEL) +
+            " component=" + (entry.component ?: UNKNOWN_LABEL) +
+            " state=" + (entry.state ?: UNKNOWN_LABEL) +
+            " fields=" + fields
     }
 }

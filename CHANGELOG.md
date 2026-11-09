@@ -8,6 +8,46 @@ Formal releases appear newest first, with **equivalent Simplified Chinese and En
 
 每个正式版本按日期倒序记录，**简体中文与 English 均须完整对应**。后续版本按实际内容选用 **新功能 / Features**、**体验优化 / Improvements**、**问题修复 / Fixes**；仅在需要时增加安全或兼容性说明，省略无内容的分类。不按 Build 逐条记录，不收录失败实验，也不将未发布候选写作已发布版本。
 
+## [1.1.0] - 2026-11-09
+
+### English
+
+#### Features
+
+- **More flexible indicator layouts:** adds centered and two-sided signal-dot arrangements with independently retained single- and dual-SIM layout preferences; extends charging and network-activity placement choices while keeping native-state priority.
+- **Configurable top-bar blur:** introduces an enabled-by-default progressive blur option shared by OS3/OS4 **visual styles** and extends the corresponding Preview Sandbox top-bar presentation.
+
+#### Improvements
+
+- **MIUIX/HyperOS 4 appearance:** refreshes source-matched Glass materials, navigation behavior, popup/menu presentation, display-cutout handling and iconography against the verified upstream snapshot.
+- **Settings and diagnostics:** improves the battery color editor's nested dismissal, Preview Sandbox scroll-to-top behavior, and diagnostic log presentation.
+
+#### Fixes
+
+- **Network presentation:** reconciles activity-indicator visibility with observed native changes, including VPN handoffs, rather than treating an icon refresh as a loss of network state.
+- **Runtime handoffs:** tightens Hot Reload transfer typing and owner cleanup while retaining native fallback when a host contract cannot be established.
+
+Compatibility remains scoped to Xiaomi HyperOS 4 with a compatible Modern Xposed API 102 environment. The OS3 option is a visual style, **not** HyperOS 3 runtime support.
+
+### 简体中文
+
+#### 新功能
+
+- **更灵活的图标布局：** 新增信号点居中与双侧分布，并分别记忆单卡、双卡布局设置；扩展充电闪电与网络活动指示器的放置方式，同时遵循原生状态优先级。
+- **可配置的顶栏渐进模糊：** 新增默认开启的顶栏渐进模糊选项，适用于 OS3/OS4 **界面样式**，并同步完善预览沙盒的顶栏显示。
+
+#### 体验优化
+
+- **MIUIX/HyperOS 4 外观：** 依据已核验的上游版本，调整 Glass 材质、导航交互、菜单与弹窗表现、屏幕挖孔适配及图标资源。
+- **设置与诊断：** 改进电量颜色编辑器的多层退出处理、预览沙盒回到顶部表现，以及诊断日志展示。
+
+#### 问题修复
+
+- **网络状态显示：** 优化网络活动指示器对原生可见性变化的跟随，包括 VPN 切换过程，避免把图标刷新误判为网络状态丢失。
+- **运行状态切换：** 收紧热重载数据交接类型与资源释放处理；无法验证宿主契约时仍保留原生回退。
+
+兼容范围仍为配备兼容 Modern Xposed API 102 环境的小米 HyperOS 4。OS3 选项仅代表界面样式，**不表示支持 HyperOS 3 系统运行**。
+
 ## [1.0.0] - 2026-11-02
 
 ### English

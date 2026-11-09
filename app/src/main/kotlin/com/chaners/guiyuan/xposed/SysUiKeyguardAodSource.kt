@@ -33,12 +33,7 @@ internal object SysUiKeyguardAodSource {
     }
 
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     // Stored values must not keep their weak View keys alive.
     private val states = WeakHashMap<View, AodState>()
@@ -123,7 +118,9 @@ internal object SysUiKeyguardAodSource {
                     } catch (error: Throwable) {
                         rethrowFatal(error)
                         if (warned.compareAndSet(false, true)) {
-                            readOrNull { Log.w("Guiyuan[Aod]", "Diagnostic failed", error) }
+                            SysUiPresentationRuntime.emitPassiveDiagnostic {
+                                Log.w("Guiyuan[Aod]", "Diagnostic failed", error)
+                            }
                         }
                     }
                 }

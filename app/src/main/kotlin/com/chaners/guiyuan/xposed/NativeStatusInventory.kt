@@ -52,8 +52,10 @@ internal object NativeStatusInventory {
                     try {
                         schedule(hostView, onSnapshot = onSnapshot)
                     } catch (error: Throwable) {
-                        if (error is VirtualMachineError || error is ThreadDeath) throw error
-                        Log.w("Guiyuan[NativeProbe]", "Deferred native probe failed", error)
+                        SysUiPresentationRuntime.throwIfFatal(error)
+                        SysUiPresentationRuntime.emitPassiveDiagnostic {
+                            Log.w("Guiyuan[NativeProbe]", "Deferred native probe failed", error)
+                        }
                     }
                 }
             }
@@ -266,22 +268,22 @@ internal object NativeStatusInventory {
             )
             state.nodes += 1
 
-            if (childGroup != null) {
-                collectStatusIconChildren(
-                    parent = childGroup,
-                    parentPath = path,
-                    parentDepth = depth,
-                    destination = destination,
-                    state = state,
-                )
-                if (state.nodes >= STATUS_ICON_SUBTREE_MAX_NODES) {
-                    // A full nested branch can leave later siblings unvisited.
-                    if (index < parent.childCount - 1) {
-                        state.truncated = true
-                    }
-                    return
-                }
+            if (childGroup == null) continue
+
+            collectStatusIconChildren(
+                parent = childGroup,
+                parentPath = path,
+                parentDepth = depth,
+                destination = destination,
+                state = state,
+            )
+            if (state.nodes < STATUS_ICON_SUBTREE_MAX_NODES) continue
+
+            // A full nested branch can leave later siblings unvisited.
+            if (index < parent.childCount - 1) {
+                state.truncated = true
             }
+            return
         }
     }
 

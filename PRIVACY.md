@@ -2,7 +2,7 @@
 
 [Terms of Use / 使用条款](TERMS.md)
 
-**Last updated / 最后更新: 2026-11-01**
+**Last updated / 最后更新: 2026-11-04**
 
 ## English
 
@@ -12,11 +12,11 @@ This Privacy Policy applies to the Guiyuan app and module. It explains informati
 
 Guiyuan processes SystemUI information, including battery and connectivity states, locally to render its interface. It does not automatically upload this runtime information to maintainers. Appearance, language, launcher icon, and diagnostic preferences are also stored locally.
 
-The app has no user-account system, does not request Android's INTERNET permission, and disables Android automatic app backup.
+The Guiyuan app does not provide user accounts, does not declare the Android INTERNET permission, and has disabled Android automatic app backup.
 
 ### Article 2 — Permissions and system access
 
-Guiyuan uses the SystemUI scope granted by a compatible module framework to adjust status information. Authorization and effective scope depend on the current framework service. You can enable, change, or disable the scope in the corresponding module manager. Root is not mandatory during initial setup and is used for certain diagnostics and process maintenance operations.
+Guiyuan uses the SystemUI scope granted by a compatible module framework to read local battery and connectivity states and adjust their display. Module scope, Android app permissions, and Root authorization are distinct. Scope authorization and its effective state depend on the framework service; you can enable, change, or disable the scope in the corresponding module manager. Root is not required for initial setup and is used only for certain diagnostics and process maintenance operations.
 
 Opening the first-run Permissions page checks Root status and may trigger an authorization prompt from the Root manager. Reading diagnostic logs, generating reports, and maintaining processes still require your action or confirmation; reading this policy or completing setup does not automatically perform those actions.
 
@@ -60,11 +60,11 @@ Guiyuan is an open-source project maintained by the maintainers listed in its Gi
 
 归元在设备本地处理 SystemUI 的电量、网络等状态以呈现界面，不会自动向项目维护者上传这些运行信息。外观、语言、桌面图标与诊断偏好等设置也保存在本机。
 
-应用不提供用户账户，不申请 Android 的 INTERNET 权限，并且关闭了 Android 自动应用备份。
+归元应用不提供用户账户，未声明 Android 的 INTERNET（网络访问）权限，并已关闭 Android 应用自动备份。
 
 ### 第二条 权限与系统访问
 
-归元通过兼容的模块框架获取 SystemUI 作用域，用于调整状态信息显示。授权和实际生效情况由当前框架服务决定，您可以在对应的模块管理器中启用、调整或停用作用域。Root 不是首次启动的强制要求，仅用于部分诊断与进程维护操作。
+归元通过兼容模块框架授予的 SystemUI 作用域读取本机电量、网络连接等状态并调整其显示。模块作用域、Android 应用权限及 Root 授权彼此不同。作用域授权及实际生效情况由当前框架服务决定，您可在对应的模块管理器中启用、调整或停用。Root 不是首次启动的必要条件，仅用于部分诊断及进程维护操作。
 
 进入首次引导的权限页面时，归元会检测 Root 状态，并可能触发 Root 管理器的授权提示。读取诊断日志、生成报告及执行进程维护仍需您主动发起或确认；阅读本政策或完成首次引导，不会自动执行上述操作。
 

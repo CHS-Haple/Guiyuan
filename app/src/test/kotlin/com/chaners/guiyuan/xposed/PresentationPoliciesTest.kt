@@ -1,11 +1,13 @@
 package com.chaners.guiyuan.xposed
 
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PresentationPoliciesTest {
+
     @Test
     fun ownedEntriesPreserveExistingAndRestoreOnlyAddedSlots() {
         val slots = mutableListOf("alarm_clock", "wifi")
@@ -39,6 +41,53 @@ class PresentationPoliciesTest {
             }.exceptionOrNull()
         assertTrue(error === addError)
         assertEquals(listOf(rollbackError), error?.suppressed?.toList())
+    }
+
+    @Test
+    fun reflectedFatalRestoreFailureStopsIndependentSlotRemovals() {
+        val fatal = OutOfMemoryError("native-slot-restore")
+        val slots =
+            object : ArrayList<String>() {
+                override fun remove(element: String): Boolean {
+                    if (element == "mobile") throw InvocationTargetException(fatal)
+                    return super.remove(element)
+                }
+            }
+        slots.addAll(listOf("native", "mobile", "wifi"))
+
+        val error = runCatching {
+            OwnedEntries.restore(slots, listOf("wifi", "mobile"))
+        }.exceptionOrNull()
+
+        assertSame(fatal, error)
+        // No later sibling writes after a VM-fatal restoration error.
+        assertEquals(listOf("native", "mobile", "wifi"), slots)
+    }
+
+    @Test
+    fun reflectedFatalRollbackFailureOutranksOrdinarySlotAdditionFailure() {
+        val addError = IllegalStateException("add-failed")
+        val fatal = OutOfMemoryError("slot-rollback-fatal")
+        val slots =
+            object : ArrayList<String>() {
+                override fun add(element: String): Boolean {
+                    if (element == "airplane") throw addError
+                    return super.add(element)
+                }
+
+                override fun remove(element: String): Boolean {
+                    if (element == "mobile") throw InvocationTargetException(fatal)
+                    return super.remove(element)
+                }
+            }
+        slots.add("native")
+
+        val error = runCatching {
+            OwnedEntries.add(slots, listOf("mobile", "airplane"))
+        }.exceptionOrNull()
+
+        assertSame(fatal, error)
+        assertEquals(listOf("native", "mobile"), slots)
     }
 
     @Test
@@ -80,360 +129,4 @@ class PresentationPoliciesTest {
             ),
         )
     }
-
-    @Test
-    fun transitionReservationCannotShrinkBelowCompactWidth() {
-        assertEquals(
-            105,
-            EndReservationPolicy.resolveRequestedSlotWidth(
-                compactSlotWidthPx = 105,
-                transitionRequestedSlotWidthPx = 80,
-            ),
-        )
-        assertEquals(
-            168,
-            EndReservationPolicy.resolveRequestedSlotWidth(
-                compactSlotWidthPx = 105,
-                transitionRequestedSlotWidthPx = 168,
-            ),
-        )
-        assertEquals(
-            105,
-            EndReservationPolicy.resolveRequestedSlotWidth(
-                compactSlotWidthPx = 105,
-                transitionRequestedSlotWidthPx = null,
-            ),
-        )
-    }
-
-    @Test
-    fun endReservationKeepsOneResolvedEndBoundaryAcrossBatteryStates() {
-        assertEquals(
-            0,
-            EndReservationPolicy.resolvePaddingEndDelta(
-                nativeHide = false,
-                actualBatteryWidthPx = 105,
-                requestedSlotWidthPx = 105,
-            ),
-        )
-        assertEquals(
-            -30,
-            EndReservationPolicy.resolvePaddingEndDelta(
-                nativeHide = false,
-                actualBatteryWidthPx = 135,
-                requestedSlotWidthPx = 105,
-            ),
-        )
-        assertEquals(
-            105,
-            EndReservationPolicy.resolvePaddingEndDelta(
-                nativeHide = true,
-                actualBatteryWidthPx = 135,
-                requestedSlotWidthPx = 105,
-            ),
-        )
-    }
-
-    @Test
-    fun hiddenPrearmNativeWidthResetIsAdoptedInsteadOfFailNative() {
-        assertEquals(
-            FakeCarrierCapacityLeasePolicy
-                .ExistingLeaseAction.ADOPT_HIDDEN_NATIVE,
-            FakeCarrierCapacityLeasePolicy
-                .resolveExistingLeaseAction(
-                    visibleCycleActive = false,
-                    liveWidthPx = 587,
-                    appliedWidthPx = 836,
-                    currentParentContentWidthPx = 836,
-                    leasedParentContentWidthPx = 836,
-                ),
-        )
-    }
-
-    @Test
-    fun visibleLeaseWidthMismatchStillFailsNative() {
-        assertEquals(
-            FakeCarrierCapacityLeasePolicy
-                .ExistingLeaseAction.FAIL_WRITER_CONFLICT,
-            FakeCarrierCapacityLeasePolicy
-                .resolveExistingLeaseAction(
-                    visibleCycleActive = true,
-                    liveWidthPx = 587,
-                    appliedWidthPx = 836,
-                    currentParentContentWidthPx = 836,
-                    leasedParentContentWidthPx = 836,
-                ),
-        )
-    }
-
-    @Test
-    fun unchangedHiddenLeaseIsReused() {
-        assertEquals(
-            FakeCarrierCapacityLeasePolicy
-                .ExistingLeaseAction.REUSE,
-            FakeCarrierCapacityLeasePolicy
-                .resolveExistingLeaseAction(
-                    visibleCycleActive = false,
-                    liveWidthPx = 836,
-                    appliedWidthPx = 836,
-                    currentParentContentWidthPx = 836,
-                    leasedParentContentWidthPx = 836,
-                ),
-        )
-    }
-
-    @Test
-    fun hiddenLeaseDoesNotAdoptAcrossParentContractChange() {
-        assertEquals(
-            FakeCarrierCapacityLeasePolicy
-                .ExistingLeaseAction.FAIL_WRITER_CONFLICT,
-            FakeCarrierCapacityLeasePolicy
-                .resolveExistingLeaseAction(
-                    visibleCycleActive = false,
-                    liveWidthPx = 587,
-                    appliedWidthPx = 836,
-                    currentParentContentWidthPx = 900,
-                    leasedParentContentWidthPx = 836,
-                ),
-        )
-    }
-
-    @Test
-    fun fakeCarrierCapacityLeaseUsesOnlyVerifiedParentContentWidth() {
-        assertEquals(
-            250,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityDelta(
-                    nativeCarrierWidthPx = 587,
-                    parentContentWidthPx = 837,
-                ),
-        )
-        assertEquals(
-            0,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityDelta(
-                    nativeCarrierWidthPx = 587,
-                    parentContentWidthPx = 587,
-                ),
-        )
-        assertEquals(
-            null,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityDelta(
-                    nativeCarrierWidthPx = 588,
-                    parentContentWidthPx = 587,
-                ),
-        )
-    }
-
-    @Test
-    fun lateEligibleControlCenterCanAdoptAlreadyCompletedNativeLayout() {
-        assertTrue(
-            VisualMaskPolicy.shouldAdoptExistingNativeLayout(
-                deferVisualMaskUntilLayout = true,
-                laidOut = true,
-                layoutRequested = false,
-                width = 478,
-                height = 108,
-            ),
-        )
-        assertFalse(
-            VisualMaskPolicy.shouldAdoptExistingNativeLayout(
-                deferVisualMaskUntilLayout = true,
-                laidOut = false,
-                layoutRequested = false,
-                width = 478,
-                height = 108,
-            ),
-        )
-        assertFalse(
-            VisualMaskPolicy.shouldAdoptExistingNativeLayout(
-                deferVisualMaskUntilLayout = true,
-                laidOut = true,
-                layoutRequested = true,
-                width = 478,
-                height = 108,
-            ),
-        )
-        assertFalse(
-            VisualMaskPolicy.shouldAdoptExistingNativeLayout(
-                deferVisualMaskUntilLayout = true,
-                laidOut = true,
-                layoutRequested = false,
-                capacityLeaseAwaitingLayout = true,
-                width = 478,
-                height = 108,
-            ),
-        )
-        assertFalse(
-            VisualMaskPolicy.shouldAdoptExistingNativeLayout(
-                deferVisualMaskUntilLayout = true,
-                laidOut = true,
-                layoutRequested = false,
-                width = 0,
-                height = 108,
-            ),
-        )
-    }
-
-    @Test
-    fun chargingIslandCapacityCountsOnlyExpansionBeyondCompactSlot() {
-        assertEquals(
-            0,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    reservationDeltaPx = 105,
-                ),
-        )
-        assertEquals(
-            144,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    reservationDeltaPx = 249,
-                ),
-        )
-        assertEquals(
-            249,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    reservationDeltaPx = 354,
-                ),
-        )
-        assertEquals(
-            249,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
-                    nativeHide = false,
-                    compactSlotWidthPx = 105,
-                    reservationDeltaPx = 249,
-                ),
-        )
-    }
-
-    @Test
-    fun controlCenterNativeReservationStopsAtPhysicalCarrierCapacity() {
-        assertEquals(
-            354,
-            EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    requestedReservationDeltaPx = 354,
-                    capacityDeltaPx = 249,
-                ),
-        )
-        assertEquals(
-            354,
-            EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    requestedReservationDeltaPx = 382,
-                    capacityDeltaPx = 249,
-                ),
-        )
-        assertEquals(
-            200,
-            EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
-                    nativeHide = false,
-                    compactSlotWidthPx = 105,
-                    requestedReservationDeltaPx = 200,
-                    capacityDeltaPx = 249,
-                ),
-        )
-        assertEquals(
-            249,
-            EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
-                    nativeHide = false,
-                    compactSlotWidthPx = 105,
-                    requestedReservationDeltaPx = 382,
-                    capacityDeltaPx = 249,
-                ),
-        )
-    }
-
-    @Test
-    fun nativeFakePeerRowUsesMeasuredSlackBeyondCarrierLease() {
-        // Synthetic native measure boundaries, not a claim about device pixels.
-        assertTrue(
-            EndReservationPolicy.fitsFakeNativePeerRow(
-                rowWidthPx = 200, contentWidthPx = 120, targetPaddingEndPx = 80,
-            ),
-        )
-        assertFalse(
-            EndReservationPolicy.fitsFakeNativePeerRow(
-                rowWidthPx = 200, contentWidthPx = 121, targetPaddingEndPx = 80,
-            ),
-        )
-        assertFalse(
-            EndReservationPolicy.fitsFakeNativePeerRow(
-                rowWidthPx = 0, contentWidthPx = 0, targetPaddingEndPx = 0,
-            ),
-        )
-        assertFalse(
-            EndReservationPolicy.fitsFakeNativePeerRow(
-                rowWidthPx = 200, contentWidthPx = 120, targetPaddingEndPx = -1,
-            ),
-        )
-    }
-
-    @Test
-    fun steadyPeerMirrorUsesOnlyHomeNativeIslandHiddenState() {
-        assertTrue(
-            SteadyPeerMirrorPolicy
-                .isIslandHidden(
-                    visibleState = 2,
-                    inIslandState = 10,
-                ),
-        )
-        assertFalse(
-            SteadyPeerMirrorPolicy
-                .isIslandHidden(
-                    visibleState = 2,
-                    inIslandState = 20,
-                ),
-        )
-        assertFalse(
-            SteadyPeerMirrorPolicy
-                .isIslandHidden(
-                    visibleState = 0,
-                    inIslandState = 10,
-                ),
-        )
-    }
-
-    @Test
-    fun steadyPeerMirrorSuppressesOnlyFakeSecondIslandDecision() {
-        assertFalse(
-            SteadyPeerMirrorPolicy
-                .exposeFakeIslandShowing(
-                    nativeIslandShowing = true,
-                    steadyMirrorActive = true,
-                ),
-        )
-        assertTrue(
-            SteadyPeerMirrorPolicy
-                .exposeFakeIslandShowing(
-                    nativeIslandShowing = true,
-                    steadyMirrorActive = false,
-                ),
-        )
-        assertFalse(
-            SteadyPeerMirrorPolicy
-                .exposeFakeIslandShowing(
-                    nativeIslandShowing = false,
-                    steadyMirrorActive = true,
-                ),
-        )
-    }
-
-
 }

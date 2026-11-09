@@ -69,6 +69,9 @@ class AppearanceTest {
         )
     }
 
+}
+
+class AppearanceCompatibilityTest {
     @Test
     fun appScaleDefaultsTo100PercentAndClampsStoredValues() {
         assertEquals(100, Appearance().uiScalePercent)
@@ -85,12 +88,21 @@ class AppearanceTest {
         assertTrue(settings.navEnabled)
         assertTrue(settings.navTouchExtension)
         assertEquals(UiStyle.OS4, settings.uiStyle)
+        assertTrue(settings.topBarProgressiveBlur)
         assertEquals(listOf(UiStyle.OS4, UiStyle.OS3), uiStyleMenuOrder)
         assertEquals(NavStyle.Glass, settings.navStyle)
         assertEquals(NavContent.IconAndText, settings.navContent)
         assertEquals(NavContent.IconAndText, settings.liquidContent)
         assertEquals(NavContent.IconAndText, settings.activeNavContent)
         assertEquals(LiquidMode.Balanced, settings.liquidMode)
+    }
+
+    @Test
+    fun progressiveTopBarBlurSettingIsSharedAcrossUiStyles() {
+        val disabled = Appearance(topBarProgressiveBlur = false)
+        assertFalse(disabled.copy(uiStyle = UiStyle.OS3).topBarProgressiveBlur)
+        assertFalse(disabled.copy(uiStyle = UiStyle.OS4).topBarProgressiveBlur)
+        assertTrue(disabled.copy(topBarProgressiveBlur = true).topBarProgressiveBlur)
     }
 
     @Test
@@ -161,6 +173,20 @@ class AppearanceTest {
     }
 
     @Test
+    fun uiStyleMigrationDoesNotResetProgressiveBlurPreference() {
+        val blurKey = booleanPreferencesKey("top_bar_progressive_blur")
+        val prefs = mutablePreferencesOf(
+            stringPreferencesKey("ui_style") to UiStyle.OS3.name,
+            blurKey to false,
+        )
+
+        migrateOs4Appearance(prefs)
+
+        assertEquals(false, prefs[blurKey])
+        assertEquals(UiStyle.OS4.name, prefs[stringPreferencesKey("ui_style")])
+    }
+
+    @Test
     fun os4SelectionDoesNotRewriteOs3NavigationPreferences() {
         val old = Appearance(uiStyle = UiStyle.OS3, navStyle = NavStyle.Liquid, liquidMode = LiquidMode.Clear)
         val experimental = old.copy(uiStyle = UiStyle.OS4)
@@ -170,6 +196,9 @@ class AppearanceTest {
         assertEquals(old, experimental.copy(uiStyle = UiStyle.OS3))
     }
 
+}
+
+class AppearanceNavigationTest {
     @Test
     fun storedFloatingStyleWinsOverLegacyFlags() {
         val result =
@@ -311,6 +340,9 @@ class AppearanceTest {
         }
     }
 
+}
+
+class AppearanceThemeModeTest {
     @Test
     fun legacyDynamicModeMigratesToSystemWithDynamicColor() {
         val result =

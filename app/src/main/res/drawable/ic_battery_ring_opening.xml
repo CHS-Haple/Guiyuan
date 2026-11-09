@@ -1,0 +1,16 @@
+<!-- Guiyuan opening; arrows adapted from Google Material Symbols height (Apache-2.0). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="120"
+        android:strokeLineCap="round"
+        android:pathData="M203,640 A320,320 0,1 1,757 640" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M256.8,744 L356,644.8 L390.7,679.5 L351.7,719.2 L608.3,719.2 L569.3,679.5 L604,644.8 L703.2,744 L604,843.2 L568.7,808.5 L608.3,768.8 L351.7,768.8 L390.7,808.5 L356,843.2 Z" />
+</vector>

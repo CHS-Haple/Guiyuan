@@ -160,8 +160,12 @@ internal object DiagLogParser {
     }
 
     private fun parseLegacy(message: String): LegacyMessage {
-        val matches = legacyFieldRe.findAll(message).toList()
-        val firstFieldStart = matches.firstOrNull()?.range?.first ?: message.length
+        val fields = linkedMapOf<String, String>()
+        var firstFieldStart = message.length
+        legacyFieldRe.findAll(message).forEach { match ->
+            firstFieldStart = minOf(firstFieldStart, match.range.first)
+            fields[match.groupValues[1]] = match.groupValues[2]
+        }
         val prefix =
             message
                 .substring(0, firstFieldStart)
@@ -170,12 +174,6 @@ internal object DiagLogParser {
                 .filter(String::isNotBlank)
                 .joinToString(".")
                 .ifBlank { "legacy" }
-        val fields =
-            linkedMapOf<String, String>().apply {
-                matches.forEach { match ->
-                    put(match.groupValues[1], match.groupValues[2])
-                }
-            }
         return LegacyMessage(event = prefix, fields = fields)
     }
 

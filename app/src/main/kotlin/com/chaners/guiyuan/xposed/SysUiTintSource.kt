@@ -22,12 +22,7 @@ internal object SysUiTintSource {
     }
 
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
@@ -98,7 +93,9 @@ internal object SysUiTintSource {
             } catch (error: Throwable) {
                 rethrowFatal(error)
                 if (warned.compareAndSet(false, true)) {
-                    readOrNull { Log.w("Guiyuan[Tint]", "Diagnostic failed", error) }
+                    SysUiPresentationRuntime.emitPassiveDiagnostic {
+                        Log.w("Guiyuan[Tint]", "Diagnostic failed", error)
+                    }
                 }
             }
         }
@@ -244,26 +241,25 @@ internal object SysUiTintSource {
                     Delivery(state).also { deliveredStates[sourceView] = it }
                 }
             }
-        if (delivery != null) {
+        if (delivery == null) return state
+        try {
+            onTintState(TintUpdate(sourceView, state))
+        } catch (error: Throwable) {
+            rethrowFatal(error)
             try {
-                onTintState(TintUpdate(sourceView, state))
-            } catch (error: Throwable) {
-                rethrowFatal(error)
-                try {
-                    onRuntimeFailure(error)
-                } catch (failure: Throwable) {
-                    rethrowFatal(failure)
-                    if (failure !== error) error.addSuppressed(failure)
-                } finally {
-                    // Keep the failed delivery marked during native ownership cleanup.
-                    synchronized(this) {
-                        if (deliveredStates[sourceView] === delivery) {
-                            deliveredStates.remove(sourceView)
-                        }
+                onRuntimeFailure(error)
+            } catch (failure: Throwable) {
+                rethrowFatal(failure)
+                if (failure !== error) error.addSuppressed(failure)
+            } finally {
+                // Keep the failed delivery marked during native ownership cleanup.
+                synchronized(this) {
+                    if (deliveredStates[sourceView] === delivery) {
+                        deliveredStates.remove(sourceView)
                     }
                 }
-                return null
             }
+            return null
         }
         return state
     }

@@ -36,10 +36,8 @@ internal object SysUiMobileTypeSource {
                         } catch (error: Throwable) {
                             SysUiPresentationRuntime.throwIfFatal(error)
                             if (warned.compareAndSet(false, true)) {
-                                try {
+                                SysUiPresentationRuntime.emitPassiveDiagnostic {
                                     Log.w("Guiyuan[MobileType]", "Observation failed", error)
-                                } catch (failure: Throwable) {
-                                    SysUiPresentationRuntime.throwIfFatal(failure)
                                 }
                             }
                         }

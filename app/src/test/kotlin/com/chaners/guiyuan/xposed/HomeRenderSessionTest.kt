@@ -168,6 +168,20 @@ class HomeRenderSessionTest {
     }
 
     @Test
+    fun bottomOverflowExtendsPhysicalSurfaceWithoutMovingLogicalOrigin() {
+        val resolved = VerticalOverflowPolicy.resolve(
+            logicalTopPx = 0,
+            logicalHeightPx = 108,
+            requestedTopOverflowPx = 18,
+            requestedBottomOverflowPx = 7,
+        )
+        assertEquals(-18, resolved.physicalTopPx)
+        assertEquals(133, resolved.physicalHeightPx)
+        assertEquals(18, resolved.logicalTopInsetPx)
+        assertEquals(115, resolved.physicalTopPx + resolved.physicalHeightPx)
+    }
+
+    @Test
     fun noOverflowPreservesOriginalPhysicalBounds() {
         val resolved =
             VerticalOverflowPolicy.resolve(

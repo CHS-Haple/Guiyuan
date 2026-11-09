@@ -1,6 +1,6 @@
 # Security Policy / 安全政策
 
-Guiyuan 1.0.0 is the first stable release line. The officially supported OS family is Xiaomi HyperOS 4 with a compatible LSPosed / Modern Xposed API 102 environment. The specifically device-tested baseline is Xiaomi 15 Pro on HyperOS `4.0.0.19.XOBCNXM` / SystemUI `17.03.260226.r`; other HyperOS 4 builds have not all been independently tested. Reports may concern the latest published `main` release or the active `dev` line. Unsupported platforms can be reported, but are not automatically within the supported security-maintenance scope.
+Guiyuan's stable release line began at 1.0.0; the currently supported stable version is the latest signed stable release published on GitHub Releases. The officially supported OS family is Xiaomi HyperOS 4 with a compatible LSPosed / Modern Xposed API 102 environment. The specifically device-tested baseline is Xiaomi 15 Pro on HyperOS `4.0.0.19.XOBCNXM` / SystemUI `17.03.260226.r`; other HyperOS 4 builds have not all been independently tested. Reports may concern the latest published `main` release or the active `dev` line. Unsupported platforms can be reported, but are not automatically within the supported security-maintenance scope.
 
 ## Reporting a vulnerability
 
@@ -36,13 +36,13 @@ Ordinary visual defects, compatibility problems, and SystemUI crashes without a 
 
 Please allow maintainers time to reproduce and address a confirmed vulnerability before public disclosure.
 
-The current supported stable version is 1.0.0. New fixes are evaluated against the supported HyperOS 4 / API 102 target and released when validated. Older development checkpoints and unrelated HyperOS or framework implementations do not carry a guaranteed security-fix SLA. This policy may be revised in a later stable release.
+The currently supported stable version is the latest signed stable release listed on [GitHub Releases](https://github.com/CHS-Haple/Guiyuan/releases). New fixes are evaluated against the supported HyperOS 4 / API 102 target and released when validated. Older development checkpoints and unrelated HyperOS or framework implementations do not carry a guaranteed security-fix SLA. This policy may be revised in a later stable release.
 
 ---
 
 ## 简体中文
 
-归元目前支持 **Xiaomi HyperOS 4** 和兼容 Modern Xposed API 102 的 LSPosed 环境。已实机验证的基线为 Xiaomi 15 Pro、HyperOS `4.0.0.19.XOBCNXM`、SystemUI `17.03.260226.r`。其他设备和版本尚未全部验证。可以报告最新正式版或开发版中的安全问题。
+归元（Guiyuan）目前支持 **Xiaomi HyperOS 4** 和兼容 Modern Xposed API 102 的 LSPosed 环境。已实机验证的基线为 Xiaomi 15 Pro、HyperOS `4.0.0.19.XOBCNXM`、SystemUI `17.03.260226.r`。其他设备和版本尚未全部验证。可以报告最新正式版或开发版中的安全问题。
 
 ### 如何报告安全漏洞
 
@@ -58,4 +58,4 @@ The current supported stable version is 1.0.0. New fixes are evaluated against t
 
 ### 披露与维护
 
-请给予维护者合理时间复现并修复已确认的安全漏洞，再公开细节。当前正式版为 1.0.0，修复将按所支持的 HyperOS 4 / API 102 环境评估。旧开发构建、其他系统及框架不承诺固定修复时限，本政策可能随正式版更新。
+请给予维护者合理时间复现并修复已确认的安全漏洞，再公开细节。当前正式版以 [GitHub Releases](https://github.com/CHS-Haple/Guiyuan/releases) 最新已发布的签名稳定版为准；1.0.0 为首个正式版本。修复将按所支持的 HyperOS 4 / API 102 环境评估。旧开发构建、其他系统及框架不承诺固定修复时限，本政策可能随正式版更新。

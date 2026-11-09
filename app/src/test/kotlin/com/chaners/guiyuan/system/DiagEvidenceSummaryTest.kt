@@ -24,6 +24,7 @@ class DiagEvidenceSummaryTest {
         assertTrue(report.contains("nativeViewTree=not-collected"))
         assertFalse(report.contains("fields=bounds=old"))
         assertTrue(report.contains("source=existing-session-events-only"))
+        assertTrue(report.contains("state=unknown fields="))
     }
 
     @Test

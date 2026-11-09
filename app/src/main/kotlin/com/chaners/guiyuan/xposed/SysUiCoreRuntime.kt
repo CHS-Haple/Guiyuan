@@ -22,11 +22,9 @@ internal object SysUiCoreRuntime {
     ): AttachResult {
         fun attachSource(name: String, block: () -> Boolean): Boolean =
             runCatching(block).getOrElse { error ->
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
-                try {
+                SysUiPresentationRuntime.throwIfFatal(error)
+                SysUiPresentationRuntime.emitPassiveDiagnostic {
                     onEvent?.invoke("core source=$name attach failed type=${error.javaClass.simpleName}")
-                } catch (failure: Throwable) {
-                    if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
                 }
                 false
             }
@@ -70,7 +68,7 @@ internal object SysUiCoreRuntime {
             try {
                 action()
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                SysUiPresentationRuntime.throwIfFatal(error)
                 failures.add(error)
             }
         }

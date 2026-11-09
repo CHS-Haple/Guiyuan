@@ -2,7 +2,6 @@ package com.chaners.guiyuan.xposed
 
 import android.view.View
 import android.view.ViewGroup
-import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
@@ -11,6 +10,7 @@ internal object NativeParticipantAccess {
         "com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView"
     private const val DEPENDENCY =
         "com.android.systemui.Dependency"
+    private const val REFLECTED_STRING_TYPE = "java.lang.String"
     private val STATUS_BAR_ICON_CONTROLLER_CANDIDATES =
         listOf(
             "com.android.systemui.statusbar.phone.ui.StatusBarIconController",
@@ -24,13 +24,7 @@ internal object NativeParticipantAccess {
     private val slotAccessorMissing = ConcurrentHashMap.newKeySet<Class<*>>()
 
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            val cause = (error as? InvocationTargetException)?.targetException ?: error
-            if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     fun managerFor(host: Any): Any? {
         val hostView = host as? View ?: return null
@@ -89,7 +83,7 @@ internal object NativeParticipantAccess {
                     .firstOrNull { method ->
                         method.name == "getIconHolder" &&
                             method.parameterTypes.map { type -> type.name } ==
-                                listOf("int", "java.lang.String")
+                                listOf("int", REFLECTED_STRING_TYPE)
                     }?.apply { isAccessible = true }
             } ?: return null
         return readOrNull { getter.invoke(iconList, tag, slot) }
@@ -105,11 +99,11 @@ internal object NativeParticipantAccess {
             handles.controller.readField("mIconGroups") as? Iterable<*>
                 ?: return 0
         var removed = 0
-        managers.forEach { manager ->
-            manager ?: return@forEach
+        for (manager in managers) {
+            if (manager == null) continue
             val map =
                 manager.readField("mBindableIcons") as? MutableMap<Any?, Any?>
-                    ?: return@forEach
+                    ?: continue
             val current = map[slot]
             if (current != null && (expectedHolder == null || current === expectedHolder)) {
                 map.remove(slot)
@@ -145,19 +139,19 @@ internal object NativeParticipantAccess {
         val params = method.parameterTypes.map { type -> type.name }
         return when {
             method.name == "removeAllIconsForSlot" &&
-                params == listOf("java.lang.String", "boolean") ->
+                params == listOf(REFLECTED_STRING_TYPE, "boolean") ->
                 RemovalMode.REMOVE_ALL_SLOT_PIPELINE_FLAG
 
             method.name == "removeAllIconsForSlot" &&
-                params == listOf("java.lang.String") ->
+                params == listOf(REFLECTED_STRING_TYPE) ->
                 RemovalMode.REMOVE_ALL_SLOT
 
             method.name == "removeIcon" &&
-                params == listOf("java.lang.String", "int") ->
+                params == listOf(REFLECTED_STRING_TYPE, "int") ->
                 RemovalMode.REMOVE_TAGGED
 
             method.name == "removeIcon" &&
-                params == listOf("java.lang.String") ->
+                params == listOf(REFLECTED_STRING_TYPE) ->
                 RemovalMode.REMOVE_SLOT
 
             else -> null
@@ -258,47 +252,41 @@ internal object NativeParticipantAccess {
 
     private fun Any.readField(name: String): Any? =
         readOrNull {
-            val field =
-                generateSequence(javaClass) { clazz -> clazz.superclass }
-                    .mapNotNull { clazz -> clazz.declaredFields.firstOrNull { it.name == name } }
-                    .firstOrNull() ?: return@readOrNull null
-            field.isAccessible = true
-            field.get(this)
+            generateSequence(javaClass) { clazz -> clazz.superclass }
+                .mapNotNull { clazz -> clazz.declaredFields.firstOrNull { it.name == name } }
+                .firstOrNull()
+                ?.apply { isAccessible = true }
+                ?.get(this)
         }
 
     private fun resolveStatusBarIconController(
         classLoader: ClassLoader,
         manager: Any,
-    ): Any? {
-        val dependencyClass = classOrNull(DEPENDENCY, classLoader)
-        if (dependencyClass != null) {
-            val getMethod =
-                readOrNull {
-                    dependencyClass
-                        .allMethods()
-                        .firstOrNull { method ->
-                            method.name == "get" &&
-                                java.lang.reflect.Modifier.isStatic(method.modifiers) &&
-                                method.parameterTypes.contentEquals(
-                                    arrayOf<Class<*>>(Class::class.java),
-                                )
-                        }?.apply { isAccessible = true }
-                }
+    ): Any? =
+        dependencyStatusBarIconController(classLoader)
+            ?: manager.readField("mController")
 
-            if (getMethod != null) {
-                STATUS_BAR_ICON_CONTROLLER_CANDIDATES.forEach { className ->
-                    val controllerType =
-                        classOrNull(className, classLoader)
-                            ?: return@forEach
-                    val controller = readOrNull { getMethod.invoke(null, controllerType) }
-                    if (controller != null) {
-                        return controller
-                    }
-                }
-            }
+    private fun dependencyStatusBarIconController(classLoader: ClassLoader): Any? {
+        val dependencyClass = classOrNull(DEPENDENCY, classLoader) ?: return null
+        val getMethod =
+            readOrNull {
+                dependencyClass
+                    .allMethods()
+                    .firstOrNull { method ->
+                        method.name == "get" &&
+                            java.lang.reflect.Modifier.isStatic(method.modifiers) &&
+                            method.parameterTypes.contentEquals(
+                                arrayOf<Class<*>>(Class::class.java),
+                            )
+                    }?.apply { isAccessible = true }
+            } ?: return null
+
+        for (className in STATUS_BAR_ICON_CONTROLLER_CANDIDATES) {
+            val controllerType = classOrNull(className, classLoader) ?: continue
+            val controller = readOrNull { getMethod.invoke(null, controllerType) }
+            if (controller != null) return controller
         }
-
-        return manager.readField("mController")
+        return null
     }
 
     private fun classOrNull(

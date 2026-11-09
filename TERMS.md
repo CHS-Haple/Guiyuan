@@ -2,11 +2,11 @@
 
 [Privacy Policy / 隐私政策](PRIVACY.md)
 
-**Last updated / 最后更新: 2026-11-01**
+**Last updated / 最后更新: 2026-11-04**
 
 ## English
 
-These Terms of Use apply to installing, configuring, and using the Guiyuan app and module. They explain operating requirements, privileges, compatibility risks, and open-source licensing. For device information and diagnostics, see the separate Privacy Policy.
+These Terms of Use apply to installing, configuring, and using the Guiyuan app and module. They set out operating requirements, authorization boundaries, compatibility risks, and open-source licensing. Please pay particular attention to the risks in Article 3 and the liability limitations in Article 4. For information handling and diagnostics, see the separate Privacy Policy.
 
 ### Article 1 — Nature and scope of the software
 
@@ -14,19 +14,19 @@ Guiyuan is a free and open-source LSPosed module for customizing Android/HyperOS
 
 ### Article 2 — Environment and authorization
 
-Compatibility depends on Android, HyperOS, SystemUI, the module framework's version, and the actual scope state. A connected framework service does not mean that all features or alternative frameworks have been validated. Enable the module and system privileges only on devices you own or are authorized to administer.
+Compatibility depends on Android, HyperOS, SystemUI, the module framework version, and the effective scope. A connected framework service does not establish compatibility for every feature or alternative framework. The Guiyuan app does not declare the Android INTERNET permission; SystemUI scope authorization and Root access are distinct mechanisms. Enable the module and related privileges only on devices you own or are authorized to administer.
 
 Root is not required for all features. Opening the first-run Permissions page checks Root status and may display a Root-manager authorization prompt; log reading and process maintenance still require your action or confirmation. Setup may be completed without Root, although some diagnostic or maintenance features may be limited.
 
 ### Article 3 — Compatibility and risk
 
-System updates, conflicting modules, or device differences may cause display defects, unavailable features, or SystemUI restarts. Before enabling or updating the module, keep any needed settings backup and know how to disable the module in your framework manager to restore native presentation.
+Guiyuan operates on system interface components through a module framework. System updates, compatibility differences, conflicting modules, or improper operation may lead to display defects, unavailable features, SystemUI restarts, or system instability. Risks of data loss or corruption and hardware damage cannot be entirely excluded. Before enabling, updating, or reconfiguring the module, assess the risks, back up important data and settings, and understand how to disable the module in the framework manager to restore native presentation.
 
 ### Article 4 — Disclaimer of warranty and limitation of liability
 
 Guiyuan is free and open-source software provided “as is” under GPL-3.0-only. To the extent permitted by applicable law and unless otherwise agreed in a valid written agreement, the maintainers and contributors provide no express or implied warranties, including merchantability, fitness for a particular purpose, continued availability, system compatibility, or particular results.
 
-To the extent permitted by applicable law and unless otherwise agreed in a valid written agreement, the maintainers and contributors are not liable for damages arising from the use of or inability to use Guiyuan. This disclaimer does not exclude any right or liability that cannot lawfully be excluded or impose additional restrictions on rights granted by GPL-3.0-only.
+Except for liabilities that cannot lawfully be excluded or circumstances otherwise governed by a valid written agreement, and to the extent permitted by applicable law, the maintainers and contributors are not liable for system failures, loss of or damage to data, hardware damage, or other losses arising from installing, configuring, enabling, using, or being unable to use Guiyuan. This limitation does not impose additional restrictions on rights granted by GPL-3.0-only.
 
 ### Article 5 — Open-source license and third-party components
 
@@ -40,13 +40,13 @@ Comply with applicable laws, device authorization, and third-party licenses. Do 
 
 ### Article 7 — Changes and contact
 
-These Terms may be updated when features, compatibility, or relevant requirements change; material changes affecting users will be disclosed through project documentation or release notes and, when necessary, presented in the app for renewed acknowledgment. General questions may be raised through the repository [Issues](https://github.com/CHS-Haple/Guiyuan/issues); report security vulnerabilities through the private reporting channel described in SECURITY.md. For personal-data matters, see the Privacy Policy.
+The maintainers may revise these Terms when functions, compatibility, or applicable requirements change. Material changes affecting users will be disclosed in project documentation, release notes, or the app, with renewed acknowledgment where required by law. The maintainers may explain Guiyuan's functions and these Terms, but such explanations do not override applicable law or restrict users' statutory rights. General questions may be raised through the repository [Issues](https://github.com/CHS-Haple/Guiyuan/issues); report security vulnerabilities through the private reporting channel described in SECURITY.md. For personal-data matters, see the Privacy Policy.
 
 ---
 
 ## 简体中文
 
-本条款适用于归元应用及模块的安装、配置和使用，说明使用条件、权限边界、兼容性风险和开源许可。有关设备信息和诊断数据的处理方式，请另阅《隐私政策》。
+本使用条款适用于归元（Guiyuan）应用及模块的安装、配置和使用，明确使用条件、权限边界、兼容性风险及开源许可。请特别注意第三条关于使用风险及第四条关于责任限制的约定；有关设备信息及诊断数据的处理方式，请参阅《隐私政策》。
 
 ### 第一条 软件性质与适用范围
 
@@ -54,19 +54,19 @@ These Terms may be updated when features, compatibility, or relevant requirement
 
 ### 第二条 运行条件与授权
 
-兼容性取决于 Android、HyperOS、SystemUI、模块框架版本及实际作用域状态。当前框架服务显示已连接，不代表所有功能或其他框架已经验证兼容。仅在您拥有或获准管理的设备上启用模块与系统权限。
+兼容性取决于 Android、HyperOS、SystemUI、模块框架版本及实际作用域状态。框架服务显示已连接，不代表所有功能或其他框架均已验证兼容。归元应用未声明 Android 的 INTERNET（网络访问）权限；模块框架的 SystemUI 作用域授权与 Root 授权属于不同的权限机制。仅应在您拥有或获准管理的设备上启用模块及相关权限。
 
 Root 并非全部功能的必要条件。进入首次引导的权限页面时，归元会检测 Root 状态，并可能出现 Root 管理器授权提示；日志读取与进程维护仍须由您主动发起或确认。您可以不授予 Root 权限而完成引导，但有关诊断或维护功能可能受到限制。
 
 ### 第三条 兼容性与风险
 
-系统更新、第三方模块冲突或设备差异可能造成显示异常、功能失效、SystemUI 重启等问题。启用或更新模块前，建议保留必要的配置备份，并确保您知道如何在框架管理器中停用模块以恢复原生显示。
+归元通过模块框架作用于系统界面组件。系统更新、兼容性差异、第三方模块冲突或操作不当，可能引起显示异常、功能失效、SystemUI 重启、系统运行不稳定，亦不排除数据丢失或损坏、设备硬件损坏等风险。启用、更新或调整模块前，请自行评估风险，备份重要数据及配置，并了解通过框架管理器停用模块、恢复系统原生显示的方法。
 
 ### 第四条 免责声明与责任限制
 
 归元是依据 GPL-3.0-only 许可证提供的免费开源软件，按“现状”提供。在适用法律允许的范围内，除另有有效书面约定外，项目维护者及贡献者不对软件作出任何明示或默示担保，包括对适销性、特定用途适用性、持续可用性、系统兼容性或特定效果的担保。
 
-在适用法律允许的范围内，除另有有效书面约定外，项目维护者及贡献者不承担因使用或无法使用归元而产生的损害赔偿责任。本声明不排除依法不得排除的权利或责任，也不对 GPL-3.0-only 许可证授予的权利施加额外限制。
+除法律规定不得免除的责任及另有有效书面约定的情形外，在适用法律允许的范围内，项目维护者及贡献者对因安装、配置、启用、使用或无法使用归元而产生的系统故障、数据丢失或损坏、设备硬件损坏及其他损失，不承担赔偿责任。本条不对 GPL-3.0-only 许可证授予的权利施加额外限制。
 
 ### 第五条 开源许可与第三方组件
 
@@ -80,6 +80,6 @@ Root 并非全部功能的必要条件。进入首次引导的权限页面时，
 
 ### 第七条 条款更新与联系
 
-因功能、兼容性或相关规则发生变化，本使用条款可能适时更新；对用户权利义务有重要影响的变更将通过项目文档或版本说明告知，并在需要时通过应用内页面请求重新确认。普通问题可通过项目仓库 [Issues](https://github.com/CHS-Haple/Guiyuan/issues) 反馈；涉及安全漏洞时，请按 SECURITY.md 的说明使用私密漏洞报告渠道。有关个人信息处理的问题，请参阅《隐私政策》。
+项目维护者可根据软件功能、兼容性或适用规则的变化修订本条款。涉及用户重要权利义务的变更，将通过项目文档、版本说明或应用内提示告知，并在依法需要时重新征得确认。维护者可对归元功能及本条款作出说明，但相关说明不得违反法律规定或限制用户依法享有的权利。普通问题可通过项目仓库 [Issues](https://github.com/CHS-Haple/Guiyuan/issues) 反馈；涉及安全漏洞时，请按 SECURITY.md 的说明使用私密漏洞报告渠道。有关个人信息处理的问题，请参阅《隐私政策》。
 
 ---

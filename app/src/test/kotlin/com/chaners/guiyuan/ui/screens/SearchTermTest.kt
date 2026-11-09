@@ -21,6 +21,33 @@ class SearchTermTest {
     }
 
     @Test
+    fun preFoldedQueriesPreserveRegularAndInitialsMatches() {
+        val terms = listOf(
+            SearchTerm("网络制式", "wang luo zhi shi"),
+            SearchTerm("Wi-Fi size", "Wi-Fi size", foreign = true),
+            SearchTerm("电量颜色", "dian liang yan se", foreign = true),
+        )
+        val queries = listOf("", "-  ", "5G", "Wi-FI", "wlzs", "wfs", "电量", "DLYS", "颜色")
+        for (term in terms) {
+            for (query in queries) {
+                val folded = query.lowercase(java.util.Locale.ROOT).filter(Char::isLetterOrDigit)
+                assertTrue("Regular match differed for '$query'",
+                    term.matches(query) == term.matchesFolded(folded))
+                assertTrue("Exact-only match differed for '$query'",
+                    term.matches(query, includeInitials = false) ==
+                        term.matchesFolded(folded, includeInitials = false))
+                assertTrue("Initials match differed for '$query'",
+                    term.matchesInitials(query) == term.matchesInitialsFolded(folded))
+            }
+        }
+        assertTrue(terms[0].matchesFolded("wlzs"))
+        assertTrue(terms[1].matchesFolded("wifi", includeInitials = false))
+        assertFalse(terms[1].matchesInitialsFolded("wfs"))
+        assertTrue(terms[2].matchesInitialsFolded("dlys"))
+        assertFalse(terms[2].matchesFolded("wifi"))
+    }
+
+    @Test
     fun chineseAndPinyinPrefixes() {
         val term = SearchTerm("电量数字", "dian liang shu zi")
         assertTrue(term.matches("电量"))
@@ -76,6 +103,9 @@ class SearchTermTest {
         assertFalse(color.matches("字重"))
     }
 
+}
+
+class SearchAliasesTest {
     @Test
     fun cellularSynonymsCoverOnlyRelatedFunctions() {
         val cellularEntries = listOf(
@@ -123,10 +153,26 @@ class SearchTermTest {
     }
 
     @Test
+    fun simSignalArrangementSearchRetainsOldAndNewWords() {
+        val single = searchAliases(R.string.single_row_signal_dot_arrangement_title)
+        val dual = searchAliases(R.string.dual_row_signal_dot_arrangement_title)
+        for (word in listOf("单排", "单卡", "单排信号点", "单卡信号点")) {
+            assertTrue("Single-SIM alias missing: $word", single.any { it.contains(word) })
+        }
+        for (word in listOf("双排", "双卡", "双排信号点", "双卡信号点")) {
+            assertTrue("Dual-SIM alias missing: $word", dual.any { it.contains(word) })
+        }
+        assertFalse(single.any { it == "双排" || it == "双卡" })
+        assertFalse(dual.any { it == "单排" || it == "单卡" })
+    }
+
+    @Test
     fun highConfidenceAliasesStayTargeted() {
         val pairs = listOf(
             R.string.aod_combined_status_title to "AOD",
-            R.string.dual_signal_title to "单排信号",
+            R.string.dual_signal_title to "双排信号点",
+            R.string.single_row_signal_dot_arrangement_title to "单排信号",
+            R.string.dual_row_signal_dot_arrangement_title to "双排样式",
             R.string.combined_size to "三合一缩放",
             R.string.outer_weight to "电量环粗细",
             R.string.wifi_size to "无线图标尺寸",
@@ -180,6 +226,9 @@ class SearchTermTest {
         assertFalse(defaults.any { SearchTerm(it, it).matches("Import") })
     }
 
+}
+
+class SearchBilingualTest {
     @Test
     fun nativeInitialsAreNotConfusedWithForeignLatinInitials() {
         val native = SearchTerm("Wi-Fi 上下偏移", "Wi-Fi shang xia pian yi")

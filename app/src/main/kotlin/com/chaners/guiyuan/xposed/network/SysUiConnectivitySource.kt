@@ -8,21 +8,17 @@ import android.os.Handler
 import android.os.Looper
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import java.lang.reflect.InvocationTargetException
 
 internal object SysUiConnectivitySource {
-    private fun rethrowFatal(error: Throwable) {
+    internal fun rethrowFatal(error: Throwable) {
         val cause = (error as? InvocationTargetException)?.targetException ?: error
         if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
     }
 
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
 
     private var manager: ConnectivityManager? = null
@@ -71,7 +67,7 @@ internal object SysUiConnectivitySource {
                 onState(state)
             } catch (error: Throwable) {
                 rethrowFatal(error)
-                readOrNull {
+                SysUiPresentationRuntime.emitPassiveDiagnostic {
                     onEvent?.invoke(
                         "connectivity delivery-failed source=" + source +
                             " type=" + error.javaClass.simpleName,
@@ -82,7 +78,7 @@ internal object SysUiConnectivitySource {
             // Native observers still receive every callback; only log new effective states.
             if (onEvent != null && state != lastLoggedState) {
                 lastLoggedState = state
-                readOrNull {
+                SysUiPresentationRuntime.emitPassiveDiagnostic {
                     onEvent.invoke(
                         "connectivity source=" + source +
                             " transport=" + state.transport.name +
@@ -152,11 +148,11 @@ internal object SysUiConnectivitySource {
             try {
                 detach()
             } catch (failure: Throwable) {
-                if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(failure)
+                rethrowFatal(error)
                 throw failure
             }
-            if (error is VirtualMachineError || error is ThreadDeath) throw error
+            rethrowFatal(error)
             false
         }
     }
@@ -165,46 +161,49 @@ internal object SysUiConnectivitySource {
     @Synchronized
     fun refreshDataSubscription() {
         val subId = SysUiDefaultDataSubSource.currentSubscriptionId()
-        if (subId != dataSubscriptionId || dataCallback == null) {
-            dataTelephony?.let { telephony ->
-                dataCallback?.let { old ->
-                    // Do not register another callback if the previous owner cannot leave.
-                    try {
-                        telephony.unregisterTelephonyCallback(old)
-                    } catch (error: Throwable) {
-                        if (error is VirtualMachineError || error is ThreadDeath) throw error
-                        return
-                    }
+        if (subId == dataSubscriptionId && dataCallback != null) {
+            onDataChanged?.invoke()
+            return
+        }
+
+        dataTelephony?.let { telephony ->
+            dataCallback?.let { old ->
+                // Do not register another callback if the previous owner cannot leave.
+                try {
+                    telephony.unregisterTelephonyCallback(old)
+                } catch (error: Throwable) {
+                    rethrowFatal(error)
+                    return
                 }
             }
-            dataCallback = null
-            dataTelephony = null
-            dataSubscriptionId = subId
+        }
+        dataCallback = null
+        dataTelephony = null
+        dataSubscriptionId = subId
 
-            val context = dataContext
-            if (subId >= 0 && context != null) {
-                val telephony =
-                    context.getSystemService(TelephonyManager::class.java)
-                        ?.createForSubscriptionId(subId)
-                if (telephony != null) {
-                    val observer =
-                        object : TelephonyCallback(), TelephonyCallback.UserMobileDataStateListener {
-                            override fun onUserMobileDataStateChanged(enabled: Boolean) {
-                                if (dataCallback === this) onDataChanged?.invoke()
-                            }
+        val context = dataContext
+        if (subId >= 0 && context != null) {
+            val telephony =
+                context.getSystemService(TelephonyManager::class.java)
+                    ?.createForSubscriptionId(subId)
+            if (telephony != null) {
+                val observer =
+                    object : TelephonyCallback(), TelephonyCallback.UserMobileDataStateListener {
+                        override fun onUserMobileDataStateChanged(enabled: Boolean) {
+                            if (dataCallback === this) onDataChanged?.invoke()
                         }
-                    val registered =
-                        try {
-                            telephony.registerTelephonyCallback(context.mainExecutor, observer)
-                            true
-                        } catch (error: Throwable) {
-                            if (error is VirtualMachineError || error is ThreadDeath) throw error
-                            false
-                        }
-                    if (registered) {
-                        dataTelephony = telephony
-                        dataCallback = observer
                     }
+                val registered =
+                    try {
+                        telephony.registerTelephonyCallback(context.mainExecutor, observer)
+                        true
+                    } catch (error: Throwable) {
+                        rethrowFatal(error)
+                        false
+                    }
+                if (registered) {
+                    dataTelephony = telephony
+                    dataCallback = observer
                 }
             }
         }
@@ -227,7 +226,7 @@ internal object SysUiConnectivitySource {
                 dataTelephony = null
                 dataCallback = null
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 failures.add(error)
             }
         } else {
@@ -243,7 +242,7 @@ internal object SysUiConnectivitySource {
                 manager = null
                 callback = null
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                rethrowFatal(error)
                 if (error is IllegalArgumentException) {
                     // Android rejects an unregistered callback; no owner remains.
                     manager = null

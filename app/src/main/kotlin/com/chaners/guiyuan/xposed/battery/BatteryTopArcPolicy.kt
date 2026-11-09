@@ -250,6 +250,67 @@ internal object BatteryTopArcPolicy {
         )
     }
 
+    // Fixed reserves the original 120°; follow uses the dot-derived optical gap.
+    // Other lower content retains its measured clearance.
+    internal fun autoBottomHalfGap(
+        measuredHalf: Float,
+        outsideHalfDegrees: Float,
+        centeredBefore: Boolean,
+        centeredNow: Boolean,
+        motion: Float,
+    ): Float {
+        val outerAmount = when {
+            centeredBefore == centeredNow -> if (centeredNow) 0f else 1f
+            centeredBefore -> motion.coerceIn(0f, 1f)
+            else -> 1f - motion.coerceIn(0f, 1f)
+        }
+        return maxOf(measuredHalf, outsideHalfDegrees * outerAmount)
+    }
+
+    // Angles follow Android Canvas (90 = bottom, 270 = top).
+    // A missing gap joins both shoulders into one arc without overlapping round caps.
+    fun drawableRingArcs(
+        topHalfDegrees: Float,
+        bottomHalfDegrees: Float,
+        allowExtendedBottomGap: Boolean = false,
+    ): List<Arc> {
+        val top = topHalfDegrees.coerceIn(0f, 90f)
+        // The split left/right follow mode may retract an arc's lower shoulder
+        // above the equator when dots move upward. Existing layouts keep the
+        // historical 90° cap; fixed mode always remains a half-ring.
+        val bottom = bottomHalfDegrees.coerceIn(
+            0f,
+            if (allowExtendedBottomGap) minOf(110f, 180f - top) else 90f,
+        )
+        if (top <= 0f && bottom <= 0f) return listOf(Arc(90f, 360f))
+        if (top <= 0f) return listOf(Arc(90f + bottom, 360f - 2f * bottom))
+        if (bottom <= 0f) return listOf(Arc(270f + top, 360f - 2f * top))
+        val shoulder = 180f - top - bottom
+        if (shoulder <= 0f) return emptyList()
+        return listOf(
+            Arc(90f + bottom, shoulder),
+            Arc(270f + top, shoulder),
+        )
+    }
+
+    fun resolve(drawableArcs: List<Arc>, batteryPercent: Int): Segments {
+        if (drawableArcs.isEmpty()) return Segments(emptyList(), emptyList())
+        val totalVisibleSweep = drawableArcs.sumOf { it.sweepDegrees.toDouble() }.toFloat()
+        var activeRemaining = totalVisibleSweep * batteryPercent.coerceIn(0, 100) / 100f
+        val active = ArrayList<Arc>(drawableArcs.size)
+        val inactive = ArrayList<Arc>(drawableArcs.size)
+        drawableArcs.forEach { arc ->
+            val activeSweep = min(arc.sweepDegrees, activeRemaining.coerceAtLeast(0f))
+            if (activeSweep > 0f) active += Arc(arc.startDegrees, activeSweep)
+            val inactiveSweep = arc.sweepDegrees - activeSweep
+            if (inactiveSweep > 0f) {
+                inactive += Arc(arc.startDegrees + activeSweep, inactiveSweep)
+            }
+            activeRemaining -= activeSweep
+        }
+        return Segments(active = active, inactive = inactive)
+    }
+
     fun drawableArcs(
         startDegrees: Float,
         maxSweep: Float,
@@ -275,33 +336,15 @@ internal object BatteryTopArcPolicy {
         maxSweep: Float,
         gapCenterDegrees: Float,
         gapSweepDegrees: Float,
-    ): Segments {
-        val drawable =
-            drawableArcs(
-                startDegrees = startDegrees,
-                maxSweep = maxSweep,
-                gapCenterDegrees = gapCenterDegrees,
-                gapSweepDegrees = gapSweepDegrees,
-            )
-        if (drawable.isEmpty()) return Segments(emptyList(), emptyList())
-
-        val totalVisibleSweep = drawable.sumOf { it.sweepDegrees.toDouble() }.toFloat()
-        var activeRemaining = totalVisibleSweep * batteryPercent.coerceIn(0, 100) / 100f
-        val active = ArrayList<Arc>(2)
-        val inactive = ArrayList<Arc>(2)
-
-        drawable.forEach { arc ->
-            val activeSweep = min(arc.sweepDegrees, activeRemaining.coerceAtLeast(0f))
-            if (activeSweep > 0f) active += Arc(arc.startDegrees, activeSweep)
-            val inactiveSweep = arc.sweepDegrees - activeSweep
-            if (inactiveSweep > 0f) {
-                inactive += Arc(arc.startDegrees + activeSweep, inactiveSweep)
-            }
-            activeRemaining -= activeSweep
-        }
-
-        return Segments(active = active, inactive = inactive)
-    }
+    ): Segments = resolve(
+        drawableArcs(
+            startDegrees = startDegrees,
+            maxSweep = maxSweep,
+            gapCenterDegrees = gapCenterDegrees,
+            gapSweepDegrees = gapSweepDegrees,
+        ),
+        batteryPercent,
+    )
 
     private const val TOP_DEGREES = 270f
     private const val HALF_TURN_DEGREES = 180f

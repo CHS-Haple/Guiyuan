@@ -1,15 +1,18 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.xposed.network.InternetState
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.network.SysUiConnectivitySource
 import com.chaners.guiyuan.xposed.network.SignalStrength
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.chaners.guiyuan.xposed.RenderModelTestFixtures.dualPresentation
+import com.chaners.guiyuan.xposed.RenderModelTestFixtures.snapshot
+import com.chaners.guiyuan.xposed.RenderModelTestFixtures.connectivity
+import com.chaners.guiyuan.xposed.RenderModelTestFixtures.presentation
+import com.chaners.guiyuan.xposed.RenderModelTestFixtures.mobileType
 
 class RenderModelTest {
     @Test
@@ -51,1296 +54,380 @@ class RenderModelTest {
     }
 
     @Test
-    fun unboundNativeMobileTypeRendersWithoutClaimingSubscriptionOrSignal() {
-        val native = NativePresentationResolver.Snapshot(
-            mode = NativePresentationResolver.Mode.UNKNOWN,
-            boundRoots = 0,
-            visibleRoots = 0,
-            activeSubscriptionIds = emptyList(),
-            presentationRootSubscriptionId = null,
-            effectiveDataSubscriptionId = 4,
-            networkTypeSubscriptionId = null,
+    fun nativeActivityDrawableFollowsOnlyTheSelectedTransport() {
+        val observed = StatusStateStore.Snapshot(
+            battery = StatusStateStore.BatteryState(percent = 81, charging = true),
+            wifi = StatusStateStore.WifiState.Visible(
+                iconResId = 11,
+                signal = SignalStrength.Level(3),
+            ),
+            wifiActivityResId = 120,
+            mobile = mapOf(
+                1 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+            ),
+            mobileActivityResIds = mapOf(1 to 220),
+            mobileActivityShownIds = setOf(1),
+            mobileActivityVisibilityObservedIds = setOf(1),
+            airplaneMode = false,
+        )
+        val wifiPresentation = presentation(
+            connectivity = connectivity(SysUiConnectivitySource.Transport.WIFI, true),
             networkType = mobileType("5G"),
         )
-        val model = RenderModel.from(
-            snapshot = snapshot(StatusStateStore.WifiState.Hidden, emptyMap()),
-            presentation = PresentationStore.Snapshot(
+        val wifiModel = RenderModel.from(observed, wifiPresentation, 1)
+        assertTrue(wifiModel?.centerIndicator is CenterIndicator.Wifi)
+        assertEquals(120, wifiModel?.networkActivityResId)
+
+        val noWifiActivity = RenderModel.from(
+            observed.copy(wifiActivityResId = null),
+            wifiPresentation,
+            1,
+        )
+        assertNull(noWifiActivity?.networkActivityResId)
+
+        val mobileModel = RenderModel.from(
+            observed.copy(
+                wifi = StatusStateStore.WifiState.Hidden,
+                wifiActivityResId = 120,
+            ),
+            presentation(
                 connectivity = connectivity(SysUiConnectivitySource.Transport.CELLULAR, true),
-                mobilePresentation = native,
+                networkType = mobileType("5G"),
             ),
-            defaultDataSubscriptionId = 4,
+            1,
         )
-
-        assertEquals("5G", (model?.centerIndicator as? CenterIndicator.MobileType)?.label)
-        assertNull(model?.mobileLevel)
-        assertFalse(native.nativeMobileReplacementReady)
-        assertNull(native.networkTypeSubscriptionId)
+        assertTrue(mobileModel?.centerIndicator is CenterIndicator.MobileType)
+        assertEquals(220, mobileModel?.networkActivityResId)
     }
 
     @Test
-    fun wifiValidatedWinsTheCenterIndicator() {
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi =
-                            StatusStateStore.WifiState.Visible(
-                                iconResId = 1,
-                                signal = SignalStrength.Level(3),
-                            ),
-                        mobile =
-                            mapOf(
-                                1 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(4),
-                                ),
-                            ),
-                    ),
-                presentation =
-                    presentation(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.WIFI,
-                                validated = true,
-                            ),
-                        networkType = mobileType("5G"),
-                    ),
-                defaultDataSubscriptionId = 1,
-            )
+    fun defaultNetworkLossDoesNotOverrideNativeActivityVisibility() {
+        val observed = vpnHandoffActivity()
+        val lost = vpnHandoffPresentation()
 
-        val center = model?.centerIndicator as? CenterIndicator.Wifi
-        assertEquals(3, center?.segments)
-        assertEquals(InternetState.VALIDATED, center?.internet)
-    }
+        val nativeStillVisible = RenderModel.from(observed, lost, 1)
+        assertTrue(nativeStillVisible?.centerIndicator is CenterIndicator.Empty)
+        assertEquals(220, nativeStillVisible?.networkActivityResId)
 
-    @Test
-    fun unknownNativeWifiInternetWithCellularDefaultUsesMobilePresentation() {
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi =
-                            StatusStateStore.WifiState.Visible(
-                                iconResId = 1,
-                                signal = SignalStrength.Level(3),
-                                internetValidated = null,
-                            ),
-                        mobile =
-                            mapOf(
-                                1 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(4),
-                                ),
-                            ),
-                    ),
-                presentation =
-                    presentation(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.CELLULAR,
-                                validated = true,
-                            ),
-                        networkType = mobileType("5G"),
-                    ),
-                defaultDataSubscriptionId = 1,
-            )
-
-        val center = model?.centerIndicator as? CenterIndicator.MobileType
-        assertEquals("5G", center?.label)
-        assertEquals(InternetState.VALIDATED, center?.internet)
-    }
-
-    @Test
-    fun defaultDataFallbackSelectsMatchingMobileSignal() {
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi =
-                            StatusStateStore.WifiState.Visible(
-                                iconResId = 1,
-                                signal = SignalStrength.Level(3),
-                            ),
-                        mobile =
-                            linkedMapOf(
-                                1 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(1),
-                                ),
-                                4 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(4),
-                                ),
-                            ),
-                    ),
-                presentation =
-                    PresentationStore.Snapshot(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.WIFI,
-                                validated = true,
-                            ),
-                    ),
-                defaultDataSubscriptionId = 4,
-            )
-
-        assertEquals(4, model?.effectiveDataSubscriptionId)
-        assertEquals(4, model?.mobileLevel)
-    }
-
-    @Test
-    fun cellularValidatedUsesSystemMobileType() {
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi = StatusStateStore.WifiState.Hidden,
-                        mobile =
-                            mapOf(
-                                4 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(4),
-                                ),
-                            ),
-                    ),
-                presentation =
-                    presentation(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.CELLULAR,
-                                validated = true,
-                            ),
-                        networkType = mobileType("5G-A"),
-                    ),
-                defaultDataSubscriptionId = 4,
-            )
-
-        val center = model?.centerIndicator as? CenterIndicator.MobileType
-        assertEquals("5G-A", center?.label)
-        assertEquals(InternetState.VALIDATED, center?.internet)
-        assertEquals(4, model?.effectiveDataSubscriptionId)
-    }
-
-    @Test
-    fun wifiConnectedWithoutInternetKeepsWifiWithNoInternetState() {
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi =
-                            StatusStateStore.WifiState.Visible(
-                                iconResId = 1,
-                                signal = SignalStrength.Level(3),
-                            ),
-                        mobile =
-                            mapOf(
-                                1 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(4),
-                                ),
-                            ),
-                    ),
-                presentation =
-                    presentation(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.WIFI,
-                                validated = false,
-                            ),
-                        networkType = mobileType("5G"),
-                    ),
-                defaultDataSubscriptionId = 1,
-            )
-
-        val center = model?.centerIndicator as? CenterIndicator.Wifi
-        assertEquals(InternetState.NO_INTERNET, center?.internet)
-    }
-
-    @Test
-    fun wifiDisconnectedFallsBackToValidatedCellularType() {
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi = StatusStateStore.WifiState.Hidden,
-                        mobile =
-                            mapOf(
-                                1 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(4),
-                                ),
-                            ),
-                    ),
-                presentation =
-                    presentation(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.CELLULAR,
-                                validated = true,
-                            ),
-                        networkType = mobileType("4G"),
-                    ),
-                defaultDataSubscriptionId = 1,
-            )
-
-        val center = model?.centerIndicator as? CenterIndicator.MobileType
-        assertEquals("4G", center?.label)
-    }
-
-    @Test
-    fun otherTransportWithUnknownWifiInternetFallsBackToMobileType() {
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi =
-                            StatusStateStore.WifiState.Visible(
-                                iconResId = 1,
-                                signal = SignalStrength.Level(3),
-                            ),
-                        mobile =
-                            mapOf(
-                                1 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(4),
-                                ),
-                            ),
-                    ),
-                presentation =
-                    presentation(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.OTHER,
-                                validated = true,
-                                mobileDataEnabled = true,
-                            ),
-                        networkType = mobileType("5G"),
-                    ),
-                defaultDataSubscriptionId = 1,
-            )
-
-        val center = model?.centerIndicator as? CenterIndicator.MobileType
-        assertEquals("5G", center?.label)
-        assertEquals(InternetState.VALIDATED, center?.internet)
-    }
-
-    @Test
-    fun otherTransportFallsBackToMobileTypeWhenWifiIsHidden() {
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi = StatusStateStore.WifiState.Hidden,
-                        mobile =
-                            mapOf(
-                                1 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(4),
-                                ),
-                            ),
-                    ),
-                presentation =
-                    presentation(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.OTHER,
-                                validated = true,
-                                mobileDataEnabled = true,
-                            ),
-                        networkType = mobileType("5G"),
-                    ),
-                defaultDataSubscriptionId = 1,
-            )
-
-        val center = model?.centerIndicator as? CenterIndicator.MobileType
-        assertEquals("5G", center?.label)
-        assertEquals(InternetState.VALIDATED, center?.internet)
-    }
-
-    @Test
-    fun mobileDataEnabledWithoutActiveTransportLeavesCenterEmpty() {
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi = StatusStateStore.WifiState.Hidden,
-                        mobile =
-                            mapOf(
-                                1 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(3),
-                                ),
-                            ),
-                    ),
-                presentation =
-                    presentation(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.NONE,
-                                validated = false,
-                                mobileDataEnabled = true,
-                            ),
-                        networkType = mobileType("4G"),
-                    ),
-                defaultDataSubscriptionId = 1,
-            )
-
-        assertTrue(model?.centerIndicator is CenterIndicator.Empty)
-    }
-
-    @Test
-    fun mobileDataDisabledWithSignalLeavesCenterEmptyAndKeepsSignalLevel() {
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi = StatusStateStore.WifiState.Hidden,
-                        mobile =
-                            mapOf(
-                                1 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(3),
-                                ),
-                            ),
-                    ),
-                presentation =
-                    presentation(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.NONE,
-                                validated = false,
-                                mobileDataEnabled = false,
-                            ),
-                        networkType = mobileType("5G"),
-                    ),
-                defaultDataSubscriptionId = 1,
-            )
-
-        assertTrue(model?.centerIndicator is CenterIndicator.Empty)
-        assertEquals(3, model?.mobileLevel)
-        assertEquals(1, model?.effectiveDataSubscriptionId)
-    }
-
-    @Test
-    fun completeNoNetworkLeavesCenterEmptyAndUsesSignalAreaForStatus() {
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi = StatusStateStore.WifiState.Hidden,
-                        mobile =
-                            mapOf(
-                                1 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Unavailable,
-                                ),
-                            ),
-                    ),
-                presentation =
-                    presentation(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.NONE,
-                                validated = false,
-                                mobileDataEnabled = false,
-                            ),
-                        networkType = null,
-                    ),
-                defaultDataSubscriptionId = 1,
-            )
-
-        assertTrue(model?.centerIndicator is CenterIndicator.Empty)
-        assertNull(model?.mobileLevel)
-    }
-
-    @Test
-    fun unknownConnectivityDoesNotInventNoNetwork() {
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi = StatusStateStore.WifiState.Hidden,
-                        mobile =
-                            mapOf(
-                                1 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(4),
-                                ),
-                            ),
-                    ),
-                presentation =
-                    PresentationStore.Snapshot(),
-                defaultDataSubscriptionId = 1,
-            )
-
-        assertNull(model)
-    }
-
-    @Test
-    fun nativeNoSimPresentationOverridesStaleMobileSignalAndType() {
-        val noSimIcon =
-            PresentationStore.NativeIconResource(
-                packageName = "com.android.systemui",
-                resourceId = 42,
-            )
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi = StatusStateStore.WifiState.Hidden,
-                        mobile =
-                            mapOf(
-                                4 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(4),
-                                ),
-                            ),
-                    ),
-                presentation =
-                    PresentationStore.Snapshot(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.CELLULAR,
-                                validated = true,
-                            ),
-                        mobilePresentation =
-                            NativePresentationResolver.Snapshot(
-                                mode = NativePresentationResolver.Mode.UNKNOWN,
-                                boundRoots = 0,
-                                visibleRoots = 0,
-                                activeSubscriptionIds = emptyList(),
-                                presentationRootSubscriptionId = null,
-                                effectiveDataSubscriptionId = 4,
-                                networkTypeSubscriptionId = 4,
-                                networkType = mobileType("5G"),
-                            ),
-                        statusIcons =
-                            PresentationStore.StatusIconPresentation(
-                                noSimVisible = true,
-                                noSimIcon = noSimIcon,
-                            ),
-                    ),
-                defaultDataSubscriptionId = 4,
-            )
-
-        assertTrue(model?.centerIndicator is CenterIndicator.NoSim)
-        assertNull(model?.mobileLevel)
-        assertEquals(-1, model?.effectiveDataSubscriptionId)
-        assertTrue(model?.mobileUnavailableMark == true)
-    }
-
-    @Test
-    fun nativeNoSimWithWifiSuppressesStaleMobileButKeepsWifiCenter() {
-        val noSimIcon =
-            PresentationStore.NativeIconResource(
-                packageName = "com.android.systemui",
-                resourceId = 42,
-            )
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi =
-                            StatusStateStore.WifiState.Visible(
-                                iconResId = 10,
-                                signal = SignalStrength.Level(3),
-                                internetValidated = true,
-                            ),
-                        mobile =
-                            mapOf(
-                                4 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(4),
-                                ),
-                            ),
-                    ),
-                presentation =
-                    PresentationStore.Snapshot(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.WIFI,
-                                validated = true,
-                            ),
-                        mobilePresentation =
-                            NativePresentationResolver.Snapshot(
-                                mode = NativePresentationResolver.Mode.UNKNOWN,
-                                boundRoots = 0,
-                                visibleRoots = 0,
-                                activeSubscriptionIds = emptyList(),
-                                presentationRootSubscriptionId = null,
-                                effectiveDataSubscriptionId = 4,
-                                networkTypeSubscriptionId = 4,
-                                networkType = mobileType("5G"),
-                            ),
-                        statusIcons =
-                            PresentationStore.StatusIconPresentation(
-                                noSimVisible = true,
-                                noSimIcon = noSimIcon,
-                            ),
-                    ),
-                defaultDataSubscriptionId = 4,
-            )
-
-        assertTrue(model?.centerIndicator is CenterIndicator.Wifi)
-        assertNull(model?.mobileLevel)
-        assertEquals(-1, model?.effectiveDataSubscriptionId)
-        assertTrue(model?.mobileUnavailableMark == true)
-    }
-
-    @Test
-    fun noSimWithoutWifiKeepsUnavailableMarkAlongsideNativeNoSimCenter() {
-        val noSimIcon =
-            PresentationStore.NativeIconResource(
-                packageName = "com.android.systemui",
-                resourceId = 42,
-            )
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi = StatusStateStore.WifiState.Hidden,
-                        mobile = emptyMap(),
-                    ),
-                presentation =
-                    PresentationStore.Snapshot(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.NONE,
-                                validated = false,
-                                mobileDataEnabled = false,
-                            ),
-                        statusIcons =
-                            PresentationStore.StatusIconPresentation(
-                                noSimVisible = true,
-                                noSimIcon = noSimIcon,
-                            ),
-                    ),
-                defaultDataSubscriptionId = -1,
-            )
-
-        assertTrue(model?.centerIndicator is CenterIndicator.NoSim)
-        assertNull(model?.mobileLevel)
-        assertTrue(model?.mobileUnavailableMark == true)
-    }
-
-    @Test
-    fun noSimWithWifiKeepsUnavailableMarkWhileWifiOwnsCenter() {
-        val noSimIcon =
-            PresentationStore.NativeIconResource(
-                packageName = "com.android.systemui",
-                resourceId = 42,
-            )
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi =
-                            StatusStateStore.WifiState.Visible(
-                                iconResId = 10,
-                                signal = SignalStrength.Level(3),
-                                internetValidated = true,
-                            ),
-                        mobile = emptyMap(),
-                    ),
-                presentation =
-                    PresentationStore.Snapshot(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.WIFI,
-                                validated = true,
-                                mobileDataEnabled = false,
-                            ),
-                        statusIcons =
-                            PresentationStore.StatusIconPresentation(
-                                noSimVisible = true,
-                                noSimIcon = noSimIcon,
-                            ),
-                    ),
-                defaultDataSubscriptionId = -1,
-            )
-
-        assertTrue(model?.centerIndicator is CenterIndicator.Wifi)
-        assertNull(model?.mobileLevel)
-        assertTrue(model?.mobileUnavailableMark == true)
-    }
-
-    @Test
-    fun airplaneModeUsesAirplaneCenterAndUnavailableMobileSignal() {
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi = StatusStateStore.WifiState.Hidden,
-                        mobile =
-                            mapOf(
-                                1 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(4),
-                                ),
-                            ),
-                        airplaneMode = true,
-                    ),
-                presentation =
-                    presentation(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.NONE,
-                                validated = false,
-                                mobileDataEnabled = false,
-                            ),
-                        networkType = mobileType("5G"),
-                    ),
-                defaultDataSubscriptionId = 1,
-            )
-
-        assertTrue(model?.centerIndicator is CenterIndicator.Airplane)
-        assertNull(model?.mobileLevel)
-        assertTrue(model?.mobileUnavailableMark == true)
-    }
-
-    @Test
-    fun airplaneExitRecoveryShowsEmptyCenterAndDimDotsWithoutCross() {
-        val model =
-            RenderModel.from(
-                snapshot =
-                    snapshot(
-                        wifi = StatusStateStore.WifiState.Hidden,
-                        mobile =
-                            mapOf(
-                                4 to StatusStateStore.MobileState(
-                                    signal = SignalStrength.Level(4),
-                                ),
-                            ),
-                        airplaneMode = false,
-                    ).copy(
-                        mobileRecoveryPending = true,
-                    ),
-                presentation =
-                    presentation(
-                        connectivity =
-                            connectivity(
-                                transport = SysUiConnectivitySource.Transport.VPN,
-                                validated = true,
-                            ),
-                        networkType = mobileType("5G"),
-                    ),
-                defaultDataSubscriptionId = 4,
-            )
-
-        assertTrue(model?.centerIndicator is CenterIndicator.Empty)
-        assertNull(model?.mobileLevel)
-        assertTrue(model?.mobileUnavailableMark == false)
-    }
-
-
-    @Test
-    fun dataSimSwitchKeepsRowsAndUpdatesCenterType() {
-        val state = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-            ),
-        )
-        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
-        val dataSim2 = RenderModel.from(state, native, 3, dualSignalEnabled = true)
-        val sim1Type = native.copy(
-            mobilePresentation = native.mobilePresentation?.copy(
-                effectiveDataSubscriptionId = 14,
-                networkTypeSubscriptionId = 14,
-                networkType = mobileType("4G"),
-            ),
-        )
-        val dataSim1 = RenderModel.from(state, sim1Type, 14, dualSignalEnabled = true)
-
-        val fixedRows = DualMobileLevels(sim1 = 2, sim2 = 4)
-        assertEquals(fixedRows, dataSim2?.dualMobileLevels)
-        assertEquals(fixedRows, dataSim1?.dualMobileLevels)
-        assertEquals(3, dataSim2?.effectiveDataSubscriptionId)
-        assertEquals(14, dataSim1?.effectiveDataSubscriptionId)
-        assertEquals(4, dataSim2?.mobileLevel)
-        assertEquals(2, dataSim1?.mobileLevel)
-        assertEquals("5G", (dataSim2?.centerIndicator as? CenterIndicator.MobileType)?.label)
-        assertEquals("4G", (dataSim1?.centerIndicator as? CenterIndicator.MobileType)?.label)
-
-        // Switching data SIM without a matching native type does not borrow a label.
-        val switchedWithoutType = RenderModel.from(state, native, 14, dualSignalEnabled = true)
-        assertEquals(fixedRows, switchedWithoutType?.dualMobileLevels)
-        assertTrue(switchedWithoutType?.centerIndicator is CenterIndicator.Empty)
-    }
-
-    @Test
-    fun optInDualSignalsFollowPhysicalSlotsNotSubscriptionIdOrDataSim() {
-        val state = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(1)),
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-            ),
-        )
-        val presentation = dualPresentation(
-            slotSubscriptionIds = mapOf(0 to 14, 1 to 3),
-        )
-
-        val single = RenderModel.from(state, presentation, 3)
-        assertNull(single?.dualMobileLevels)
-        assertEquals(1, single?.mobileLevel)
-
-        val dual = RenderModel.from(state, presentation, 3, dualSignalEnabled = true)
-        assertEquals(DualMobileLevels(sim1 = 4, sim2 = 1), dual?.dualMobileLevels)
-        assertEquals(3, dual?.effectiveDataSubscriptionId)
-        assertEquals(1, dual?.mobileLevel)
-    }
-
-    @Test
-    fun unknownDualSignalKeepsOtherRowButUnavailableOrMissingFallsBack() {
-        val source = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(1)),
-            ),
-        )
-        val native = dualPresentation(slotSubscriptionIds = mapOf(0 to 14, 1 to 3))
-        val unknownSim2 =
-            source.copy(
-                mobile =
-                    source.mobile +
-                        (3 to StatusStateStore.MobileState(signal = SignalStrength.Unknown)),
-            )
-        val unknownSim1 =
-            source.copy(
-                mobile =
-                    source.mobile +
-                        (14 to StatusStateStore.MobileState(signal = SignalStrength.Unknown)),
-            )
-        val bothUnknown =
-            source.copy(
-                mobile = mapOf(
-                    14 to StatusStateStore.MobileState(signal = SignalStrength.Unknown),
-                    3 to StatusStateStore.MobileState(signal = SignalStrength.Unknown),
-                ),
-            )
+        // Changing Android's default-route data flag is not a native GONE.
         assertEquals(
-            DualMobileLevels(4, null),
-            RenderModel.from(unknownSim2, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
-        )
-        assertEquals(
-            DualMobileLevels(null, 1),
-            RenderModel.from(unknownSim1, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
-        )
-        assertEquals(
-            DualMobileLevels(null, null),
-            RenderModel.from(bothUnknown, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
-        )
-        assertNull(RenderModel.from(bothUnknown, native, 14, dualSignalEnabled = true)?.mobileLevel)
-
-        val zeroSim2 =
-            source.copy(
-                mobile =
-                    source.mobile +
-                        (3 to StatusStateStore.MobileState(signal = SignalStrength.Level(0))),
-            )
-        assertEquals(
-            DualMobileLevels(4, 0),
-            RenderModel.from(zeroSim2, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
-        )
-        assertNull(
-            RenderModel.from(
-                source.copy(
-                    mobile =
-                        source.mobile +
-                            (3 to StatusStateStore.MobileState(signal = SignalStrength.Unavailable)),
-                ),
-                native,
-                14,
-                dualSignalEnabled = true,
-            )?.dualMobileLevels,
-        )
-        assertNull(
-            RenderModel.from(
-                source.copy(mobile = source.mobile - 3),
-                native,
-                14,
-                dualSignalEnabled = true,
-            )?.dualMobileLevels,
+            220,
+            RenderModel.from(observed, vpnHandoffPresentation(mobileDataEnabled = false), 1)
+                ?.networkActivityResId,
         )
     }
 
     @Test
-    fun dualSignalOptInRequiresAuthoritativeUnambiguousSlotsAndTwoNativeSubscriptions() {
-        val source = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
+    fun nativeMobileActivityVisibilityOutranksTemporaryWifiStateWhenCenterIsEmpty() {
+        val observed = vpnHandoffActivity()
+        val lost = vpnHandoffPresentation()
+        for (wifi in listOf(
+            StatusStateStore.WifiState.Unknown,
+            StatusStateStore.WifiState.Visible(
+                iconResId = 12,
+                signal = SignalStrength.Level(3),
             ),
-        )
-        val valid = dualPresentation(slotSubscriptionIds = mapOf(0 to 14, 1 to 3))
-        val unresolved = listOf(
-            valid.copy(mobilePresentation =
-                valid.mobilePresentation?.copy(slotSubscriptionIds = emptyMap())),
-            valid.copy(mobilePresentation =
-                valid.mobilePresentation?.copy(slotSubscriptionIds = mapOf(0 to 3, 1 to 3))),
-            valid.copy(mobilePresentation =
-                valid.mobilePresentation?.copy(mode = NativePresentationResolver.Mode.SINGLE)),
-            valid.copy(mobilePresentation =
-                valid.mobilePresentation?.copy(activeSubsAuthoritative = false)),
-            valid.copy(mobilePresentation =
-                valid.mobilePresentation?.copy(activeSubscriptionIds = listOf(3, 14, 27))),
-            valid.copy(mobilePresentation = null),
-        )
-        for (presentation in unresolved) {
-            assertNull(
-                RenderModel.from(source, presentation, 14, dualSignalEnabled = true)
-                    ?.dualMobileLevels,
+        )) {
+            val nativeVisible = RenderModel.from(observed.copy(wifi = wifi), lost, 1)
+            assertTrue(nativeVisible?.centerIndicator is CenterIndicator.Empty)
+            assertEquals(220, nativeVisible?.networkActivityResId)
+
+            val nativeHidden = RenderModel.from(
+                observed.copy(wifi = wifi, mobileActivityShownIds = emptySet()),
+                lost,
+                1,
             )
+            assertNull(nativeHidden?.networkActivityResId)
         }
-        assertEquals(
-            DualMobileLevels(4, 2),
+    }
+
+    @Test
+    fun nativeDrawableWithoutVisibilityConfirmationRemainsHidden() {
+        val observed = vpnHandoffActivity().copy(
+            mobileActivityShownIds = emptySet(),
+            mobileActivityVisibilityObservedIds = emptySet(),
+        )
+        val lost = vpnHandoffPresentation()
+        // Resource can arrive before the independent native visibility collector.
+        // Never treat its presence as an implicit native VISIBLE.
+        assertNull(RenderModel.from(observed, lost, 1)?.networkActivityResId)
+        val confirmed = observed.copy(
+            mobileActivityShownIds = setOf(1),
+            mobileActivityVisibilityObservedIds = setOf(1),
+        )
+        assertEquals(220, RenderModel.from(confirmed, lost, 1)?.networkActivityResId)
+    }
+
+    @Test
+    fun nativeVisibilityBeforeResourceWaitsForDrawableThenDisplays() {
+        val observed = vpnHandoffActivity().copy(mobileActivityResIds = emptyMap())
+        val lost = vpnHandoffPresentation()
+        // Native VISIBLE alone cannot manufacture a drawable.
+        assertNull(RenderModel.from(observed, lost, 1)?.networkActivityResId)
+        // The subsequent native drawable must be accepted without waiting for
+        // a second visibility emission from the independent collector.
+        val drawableArrived = observed.copy(mobileActivityResIds = mapOf(1 to 220))
+        assertEquals(220, RenderModel.from(drawableArrived, lost, 1)?.networkActivityResId)
+    }
+
+    @Test
+    fun nativeVisibilityAndResourceAbsenceIndependentlyHideActivity() {
+        val observed = vpnHandoffActivity()
+        val lost = vpnHandoffPresentation()
+
+        // The visibility collector can hide the View before a resource event.
+        val nativeGone = RenderModel.from(
+            observed.copy(mobileActivityShownIds = emptySet()),
+            lost,
+            1,
+        )
+        assertNull(nativeGone?.networkActivityResId)
+
+        // A missing native drawable is independently sufficient to hide it.
+        assertNull(
             RenderModel.from(
-                source,
-                valid.copy(mobilePresentation =
-                    valid.mobilePresentation?.copy(
-                        mode = NativePresentationResolver.Mode.DUAL_SEPARATE,
-                        visibleRoots = 2,
-                    )),
-                14,
-                dualSignalEnabled = true,
-            )?.dualMobileLevels,
+                observed.copy(mobileActivityResIds = emptyMap()), lost, 1,
+            )?.networkActivityResId,
         )
     }
 
     @Test
-    fun dualSwitchNeedsFullPlatformIdentityAndKeepsSingleDefault() {
-        val source = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
-            ),
-        )
-        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
-        assertNull(RenderModel.from(source, native, 3)?.dualMobileLevels)
-        assertEquals(
-            DualMobileLevels(4, 2),
-            RenderModel.from(source, native, 3, dualSignalEnabled = true)?.dualMobileLevels,
-        )
-        val extraPlatform = native.copy(
-            mobilePresentation = native.mobilePresentation?.copy(
-                platformActiveSubscriptionIds = setOf(14, 3, 27),
-            ),
-        )
-        assertNull(
-            RenderModel.from(source, extraPlatform, 3, dualSignalEnabled = true)
-                ?.dualMobileLevels,
-        )
-    }
+    fun airplaneAndUnavailableSignalSuppressMobileActivity() {
+        val observed = vpnHandoffActivity()
+        val lost = vpnHandoffPresentation()
 
-    @Test
-    fun airplaneRecoveryAndNoSimSuppressDualRowsWithoutChangingSingleFallback() {
-        val source = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
-            ),
-        )
-        val native = dualPresentation(slotSubscriptionIds = mapOf(0 to 14, 1 to 3))
         assertNull(
-            RenderModel.from(
-                source.copy(airplaneMode = true),
-                native,
-                14,
-                dualSignalEnabled = true,
-            )?.dualMobileLevels,
+            RenderModel.from(observed.copy(airplaneMode = true), lost, 1)
+                ?.networkActivityResId,
         )
         assertNull(
             RenderModel.from(
-                source.copy(mobileRecoveryPending = true),
-                native,
-                14,
-                dualSignalEnabled = true,
-            )?.dualMobileLevels,
-        )
-        assertNull(
-            RenderModel.from(
-                source,
-                native.copy(statusIcons = PresentationStore.StatusIconPresentation(
-                    noSimVisible = true,
+                observed.copy(mobile = mapOf(
+                    1 to StatusStateStore.MobileState(signal = SignalStrength.Unavailable),
                 )),
-                14,
-                dualSignalEnabled = true,
-            )?.dualMobileLevels,
-        )
-        assertEquals(
-            DualMobileLevels(4, 2),
-            RenderModel.from(source, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
+                lost,
+                1,
+            )?.networkActivityResId,
         )
     }
 
-
-    @Test
-    fun optInDualFallsBackToCurrentSingleSimAfterOtherSimIsRemoved() {
-        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
-        val single = native.copy(
-            mobilePresentation = native.mobilePresentation?.copy(
-                mode = NativePresentationResolver.Mode.SINGLE,
-                activeSubscriptionIds = listOf(3),
-                platformActiveSubscriptionIds = setOf(3),
-                slotSubscriptionIds = emptyMap(),
-                visibleRoots = 1,
-                activeBoundRoots = 1,
-                effectiveDataSubscriptionId = 14,
-            ),
-        )
-        val state = snapshot(
+    private fun vpnHandoffActivity(): StatusStateStore.Snapshot =
+        StatusStateStore.Snapshot(
+            battery = StatusStateStore.BatteryState(percent = 81, charging = false),
             wifi = StatusStateStore.WifiState.Hidden,
             mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(1)),
+                1 to StatusStateStore.MobileState(signal = SignalStrength.Level(3)),
             ),
+            mobileActivityResIds = mapOf(1 to 220),
+            mobileActivityObservedIds = setOf(1),
+            mobileActivityShownIds = setOf(1),
+            mobileActivityVisibilityObservedIds = setOf(1),
+            airplaneMode = false,
         )
-        val optedIn = RenderModel.from(state, single, 14, dualSignalEnabled = true)
-        assertNull(optedIn?.dualMobileLevels)
-        assertEquals(1, optedIn?.mobileLevel)
-        assertEquals(3, optedIn?.effectiveDataSubscriptionId)
 
-        // The original single-card selection stays unchanged without opt-in.
-        val legacy = RenderModel.from(state, single, 14)
-        assertNull(legacy?.dualMobileLevels)
-        assertEquals(4, legacy?.mobileLevel)
-    }
-
-    @Test
-    fun optInSingleNeverShowsStaleRemovedSubscriptionWhenOnlyActiveIsUnknown() {
-        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
-        val single = native.copy(
-            mobilePresentation = native.mobilePresentation?.copy(
-                mode = NativePresentationResolver.Mode.SINGLE,
-                activeSubscriptionIds = listOf(3),
-                platformActiveSubscriptionIds = setOf(3),
-                slotSubscriptionIds = emptyMap(),
-                visibleRoots = 1,
-                activeBoundRoots = 1,
+    private fun vpnHandoffPresentation(mobileDataEnabled: Boolean = true): PresentationStore.Snapshot =
+        presentation(
+            connectivity = connectivity(
+                transport = SysUiConnectivitySource.Transport.NONE,
+                validated = false,
+                mobileDataEnabled = mobileDataEnabled,
             ),
+            networkType = mobileType("5G"),
         )
-        val state = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Unknown),
-            ),
-        )
-        val model = RenderModel.from(state, single, 14, dualSignalEnabled = true)
-        assertNull(model?.dualMobileLevels)
-        assertNull(model?.mobileLevel)
-        assertEquals(3, model?.effectiveDataSubscriptionId)
-
-        val recovered = RenderModel.from(
-            state.copy(mobile = state.mobile + (
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2))
-            )),
-            single,
-            14,
-            dualSignalEnabled = true,
-        )
-        assertEquals(2, recovered?.mobileLevel)
-        assertNull(recovered?.dualMobileLevels)
-    }
 
     @Test
-    fun optInSingleRespectsPhysicalSecondSlotWhenItIsOnlyRemainingSim() {
+    fun aggregateActivityReadsSoleVisibleNativeRootEvenWhenDataSimIsSim2() {
         val native = dualPresentation(mapOf(0 to 14, 1 to 3))
-        val single = native.copy(
-            mobilePresentation = native.mobilePresentation?.copy(
-                mode = NativePresentationResolver.Mode.SINGLE,
-                activeSubscriptionIds = listOf(3),
-                platformActiveSubscriptionIds = setOf(3),
-                slotSubscriptionIds = emptyMap(),
-                visibleRoots = 1,
-                activeBoundRoots = 1,
-            ),
-        )
         val state = snapshot(
             wifi = StatusStateStore.WifiState.Hidden,
             mobile = mapOf(
                 14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
                 3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
             ),
-        )
-        val model = RenderModel.from(state, single, 14, dualSignalEnabled = true)
-        assertNull(model?.dualMobileLevels)
-        assertEquals(2, model?.mobileLevel)
-        assertEquals(3, model?.effectiveDataSubscriptionId)
-    }
-
-    @Test
-    fun optInPartialNativeBindingDoesNotClaimOnlyPhysicalSim() {
-        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
-        // Native SystemUI exposes one root while SubscriptionManager still reports two cards.
-        val partial = native.copy(
-            mobilePresentation = native.mobilePresentation?.copy(
-                mode = NativePresentationResolver.Mode.SINGLE,
-                activeSubscriptionIds = listOf(3),
-                slotSubscriptionIds = emptyMap(),
-                visibleRoots = 1,
-                activeBoundRoots = 1,
-                networkTypeSubscriptionId = 3,
-            ),
-        )
-        val state = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(1)),
-            ),
+        ).copy(
+            mobileActivityResIds = mapOf(14 to 220),
+            mobileActivityShownIds = setOf(14),
+            mobileActivityVisibilityObservedIds = setOf(14),
         )
 
-        val optIn = RenderModel.from(state, partial, 14, dualSignalEnabled = true)
-        assertNull(optIn?.dualMobileLevels)
-        assertNull(optIn?.mobileLevel)
-        assertEquals(-1, optIn?.effectiveDataSubscriptionId)
-        assertTrue(optIn?.centerIndicator is CenterIndicator.Empty)
+        val aggregated = RenderModel.from(state, native, 3, dualSignalEnabled = true)
+        assertTrue(aggregated?.centerIndicator is CenterIndicator.MobileType)
+        assertEquals(3, aggregated?.effectiveDataSubscriptionId)
+        assertEquals(220, aggregated?.networkActivityResId)
 
-        // The shipped single-SIM path retains native's selected data sub (3).
-        val legacy = RenderModel.from(state, partial, 14)
-        assertEquals(1, legacy?.mobileLevel)
-        assertEquals(3, legacy?.effectiveDataSubscriptionId)
-
-        // Only after the platform reports a truly removed SIM may opt-in use
-        // the one surviving bound subscription as single-card fallback.
-        val removed = partial.copy(
-            mobilePresentation = partial.mobilePresentation?.copy(
-                platformActiveSubscriptionIds = setOf(3),
-            ),
-        )
-        val restored = RenderModel.from(state, removed, 14, dualSignalEnabled = true)
-        assertNull(restored?.dualMobileLevels)
-        assertEquals(1, restored?.mobileLevel)
-        assertEquals(3, restored?.effectiveDataSubscriptionId)
-    }
-
-    @Test
-    fun optInDualRejectsStaleDataSimOutsideAuthoritativeActiveSet() {
-        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
-        val state = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                99 to StatusStateStore.MobileState(signal = SignalStrength.Level(3)),
-            ),
-        )
-
-        val stale = RenderModel.from(state, native, 99, dualSignalEnabled = true)
-        assertEquals(DualMobileLevels(sim1 = 2, sim2 = 4), stale?.dualMobileLevels)
-        assertEquals(-1, stale?.effectiveDataSubscriptionId)
-        assertNull(stale?.mobileLevel)
-        assertTrue(stale?.centerIndicator is CenterIndicator.Empty)
-
-        val switched = RenderModel.from(state, native, 3, dualSignalEnabled = true)
-        assertEquals(DualMobileLevels(sim1 = 2, sim2 = 4), switched?.dualMobileLevels)
-        assertEquals(3, switched?.effectiveDataSubscriptionId)
-        assertEquals(4, switched?.mobileLevel)
-        assertEquals("5G", (switched?.centerIndicator as? CenterIndicator.MobileType)?.label)
-
-        // The shipped single-row path still follows the native presentation policy.
-        val legacy = RenderModel.from(state, native, 99)
-        assertEquals(3, legacy?.effectiveDataSubscriptionId)
-        assertEquals(4, legacy?.mobileLevel)
-    }
-
-    @Test
-    fun optInDualNeverBorrowsOtherCardWhenDataSignalIsUnknown() {
-        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
-        val state = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Unknown),
-            ),
-        )
-
-        val dual = RenderModel.from(state, native, 3, dualSignalEnabled = true)
-        assertEquals(DualMobileLevels(4, null), dual?.dualMobileLevels)
-        assertNull(dual?.mobileLevel)
-        assertEquals(3, dual?.effectiveDataSubscriptionId)
-
-        val missing = RenderModel.from(
-            state.copy(mobile = state.mobile - 3),
+        // A native hide event must clear rather than retain the previous icon.
+        val idle = RenderModel.from(
+            state.copy(mobileActivityResIds = emptyMap()),
             native,
             3,
             dualSignalEnabled = true,
         )
-        assertNull(missing?.dualMobileLevels)
-        assertNull(missing?.mobileLevel)
-        assertEquals(3, missing?.effectiveDataSubscriptionId)
-
-        // The shipped single-row path retains its existing fallback.
-        val legacy = RenderModel.from(state, native, 3)
-        assertEquals(4, legacy?.mobileLevel)
-        assertEquals(14, legacy?.effectiveDataSubscriptionId)
+        assertNull(idle?.networkActivityResId)
     }
 
     @Test
-    fun optInDualDoesNotTreatNativeFallbackAsDefaultDataSim() {
-        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
-        val state = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
-            ),
-        )
-
-        val dual = RenderModel.from(state, native, -1, dualSignalEnabled = true)
-        assertEquals(DualMobileLevels(sim1 = 4, sim2 = 2), dual?.dualMobileLevels)
-        assertNull(dual?.mobileLevel)
-        assertEquals(-1, dual?.effectiveDataSubscriptionId)
-
-        val legacy = RenderModel.from(state, native, -1)
-        assertEquals(2, legacy?.mobileLevel)
-        assertEquals(3, legacy?.effectiveDataSubscriptionId)
-    }
-
-    @Test
-    fun optInDualNetworkTypeNeverBorrowsAggregateRootsOtherSim() {
-        val state = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
-            ),
-        )
-        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
-        val wrong = native.copy(
-            mobilePresentation = native.mobilePresentation?.copy(
-                networkTypeSubscriptionId = 14,
-            ),
-        )
-        val dual = RenderModel.from(state, wrong, 3, dualSignalEnabled = true)
-
-        assertTrue(dual?.centerIndicator is CenterIndicator.Empty)
-        assertEquals(DualMobileLevels(4, 2), dual?.dualMobileLevels)
-        assertEquals(3, dual?.effectiveDataSubscriptionId)
-
-        val unknownTransport = RenderModel.from(
-            state,
-            wrong.copy(connectivity = SysUiConnectivitySource.State.Unknown),
-            3,
-            dualSignalEnabled = true,
-        )
-        assertTrue(unknownTransport?.centerIndicator is CenterIndicator.Empty)
-
-        // Wi-Fi handoff remains unresolved rather than being cleared by a SIM mismatch.
-        val wifiHandoff = RenderModel.from(
-            state,
-            wrong.copy(
-                connectivity = connectivity(
-                    transport = SysUiConnectivitySource.Transport.WIFI,
-                    validated = true,
-                ),
-            ),
-            3,
-            dualSignalEnabled = true,
-        )
-        assertNull(wifiHandoff)
-
-        val correct = RenderModel.from(state, native, 3, dualSignalEnabled = true)
-        assertEquals("5G", (correct?.centerIndicator as? CenterIndicator.MobileType)?.label)
-
-        // The shipped single-row path continues to show the observed native label.
-        val legacy = RenderModel.from(state, wrong, 3)
-        assertEquals("5G", (legacy?.centerIndicator as? CenterIndicator.MobileType)?.label)
-    }
-
-    @Test
-    fun optInUnknownDataIdentityCannotShowArbitraryMobileType() {
-        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
-        val state = snapshot(
-            wifi = StatusStateStore.WifiState.Hidden,
-            mobile = mapOf(
-                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
-                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
-            ),
-        )
-        val model = RenderModel.from(state, native, -1, dualSignalEnabled = true)
-        assertTrue(model?.centerIndicator is CenterIndicator.Empty)
-        assertEquals(DualMobileLevels(4, 2), model?.dualMobileLevels)
-        assertEquals(-1, model?.effectiveDataSubscriptionId)
-
-        // Unknown data-SIM identity must not suppress an unrelated Wi-Fi indicator.
-        val wifi = state.copy(
-            wifi = StatusStateStore.WifiState.Visible(
-                iconResId = 12,
-                signal = SignalStrength.Level(3),
-                internetValidated = true,
-            ),
-        )
-        val withWifi = RenderModel.from(wifi, native, -1, dualSignalEnabled = true)
-        assertTrue(withWifi?.centerIndicator is CenterIndicator.Wifi)
-    }
-
-    private fun dualPresentation(
-        slotSubscriptionIds: Map<Int, Int>,
-    ) = PresentationStore.Snapshot(
-        connectivity = connectivity(
-            transport = SysUiConnectivitySource.Transport.CELLULAR,
-            validated = true,
-        ),
-        mobilePresentation = NativePresentationResolver.Snapshot(
-            mode = NativePresentationResolver.Mode.DUAL_AGGREGATED,
-            boundRoots = 2,
-            activeBoundRoots = 2,
-            visibleRoots = 1,
-            activeSubscriptionIds = listOf(3, 14),
-            slotSubscriptionIds = slotSubscriptionIds,
-            activeSubsAuthoritative = true,
-            platformActiveSubscriptionIds = setOf(3, 14),
-            presentationRootSubscriptionId = 14,
-            effectiveDataSubscriptionId = 3,
-            networkTypeSubscriptionId = 3,
-            networkType = mobileType("5G"),
-        ),
-    )
-
-    private fun snapshot(
-        wifi: StatusStateStore.WifiState,
-        mobile: Map<Int, StatusStateStore.MobileState>,
-        airplaneMode: Boolean? = false,
-    ) =
-        StatusStateStore.Snapshot(
-            battery =
-                StatusStateStore.BatteryState(
-                    percent = 80,
-                    charging = false,
-                ),
-            wifi = wifi,
-            mobile = mobile,
-            airplaneMode = airplaneMode,
-        )
-
-    private fun connectivity(
-        transport: SysUiConnectivitySource.Transport,
-        validated: Boolean,
-        mobileDataEnabled: Boolean? = true,
-    ) =
-        SysUiConnectivitySource.State(
-            known = true,
-            transport = transport,
-            validated = validated,
-            hasInternetCapability = validated,
-            mobileDataEnabled = mobileDataEnabled,
-        )
-
-    private fun presentation(
-        connectivity: SysUiConnectivitySource.State,
-        networkType: NativePresentationResolver.NetworkType?,
-    ) =
-        PresentationStore.Snapshot(
-            connectivity = connectivity,
-            mobilePresentation =
-                NativePresentationResolver.Snapshot(
-                    mode = NativePresentationResolver.Mode.SINGLE,
-                    boundRoots = 1,
-                    visibleRoots = 1,
-                    activeSubscriptionIds = listOf(1),
+    fun aggregatedNativeResourceEventShowsOnlyItsVisibleRootWithoutAnotherFlowEmission() {
+        StatusStateStore.restoreHotReloadState(null)
+        try {
+            val base = dualPresentation(mapOf(0 to 1, 1 to 4))
+            val native = base.copy(
+                mobilePresentation = requireNotNull(base.mobilePresentation).copy(
+                    activeSubscriptionIds = listOf(1, 4),
+                    platformActiveSubscriptionIds = setOf(1, 4),
                     presentationRootSubscriptionId = 1,
-                    effectiveDataSubscriptionId = 1,
-                    networkTypeSubscriptionId = 1,
-                    networkType = networkType,
+                    effectiveDataSubscriptionId = 4,
+                    networkTypeSubscriptionId = 4,
                 ),
+            )
+            // The OEM aggregate displays activity on SIM1's root even when SIM2
+            // owns mobile data; the resource collector may arrive first.
+            StatusStateStore.updateMobileActivityResource(1, 2131237576, true)
+            StatusStateStore.updateMobileActivityResource(4, 2131237576, false)
+            val observed = StatusStateStore.snapshot().copy(
+                battery = StatusStateStore.BatteryState(percent = 100, charging = false),
+                wifi = StatusStateStore.WifiState.Hidden,
+                mobile = mapOf(
+                    1 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                    4 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                ),
+                airplaneMode = false,
+            )
+            val shown = RenderModel.from(observed, native, 4, dualSignalEnabled = true)
+            assertEquals(4, shown?.effectiveDataSubscriptionId)
+            assertEquals(2131237576, shown?.networkActivityResId)
+
+            val hidden = StatusStateStore.updateMobileActivityVisibility(1, false)
+                ?: error("native GONE must update the aggregate activity")
+            assertNull(
+                RenderModel.from(
+                    hidden.copy(
+                        battery = observed.battery,
+                        wifi = observed.wifi,
+                        mobile = observed.mobile,
+                        airplaneMode = observed.airplaneMode,
+                    ),
+                    native, 4, dualSignalEnabled = true,
+                )?.networkActivityResId,
+            )
+        } finally {
+            StatusStateStore.restoreHotReloadState(null)
+        }
+    }
+
+    @Test
+    fun separateAndUnverifiedMobileLayoutsDoNotBorrowAnotherSimsActivity() {
+        val aggregated = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val native = aggregated.mobilePresentation!!
+        val state = snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
+            ),
+        ).copy(
+            mobileActivityResIds = mapOf(14 to 220, 3 to 330),
+            mobileActivityShownIds = setOf(14, 3),
+            mobileActivityVisibilityObservedIds = setOf(14, 3),
         )
 
-    private fun mobileType(label: String) =
-        NativePresentationResolver.NetworkType(
-            label = label,
-            enhanced = false,
-            source = NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
+        val aggregate = RenderModel.from(state, aggregated, 3, dualSignalEnabled = true)
+        assertEquals(220, aggregate?.networkActivityResId)
+
+        val separate = RenderModel.from(
+            state,
+            aggregated.copy(mobilePresentation = native.copy(
+                mode = NativePresentationResolver.Mode.DUAL_SEPARATE,
+                visibleRoots = 2,
+            )),
+            3,
+            dualSignalEnabled = true,
+        )
+        assertEquals(330, separate?.networkActivityResId)
+
+        val notAuthoritative = RenderModel.from(
+            state,
+            aggregated.copy(mobilePresentation = native.copy(activeSubsAuthoritative = false)),
+            3,
+            dualSignalEnabled = true,
+        )
+        assertEquals(330, notAuthoritative?.networkActivityResId)
+    }
+
+    @Test
+    fun dualRowsFollowPlatformSlotOrderIndependentlyOfDataSim() {
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val state = dualState()
+
+        val dataSim1 = RenderModel.from(state, native, 14, dualSignalEnabled = true)
+        val dataSim2 = RenderModel.from(state, native, 3, dualSignalEnabled = true)
+        val slotLevels = DualMobileLevels(sim1 = 4, sim2 = 2)
+
+        assertEquals(slotLevels, dataSim1?.dualMobileLevels)
+        assertEquals(slotLevels, dataSim2?.dualMobileLevels)
+        assertEquals(14, dataSim1?.effectiveDataSubscriptionId)
+        assertEquals(3, dataSim2?.effectiveDataSubscriptionId)
+    }
+
+    @Test
+    fun unverifiedPlatformSlotIdentityCannotEnableDualRows() {
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val state = dualState()
+        fun render(override: NativePresentationResolver.Snapshot) =
+            RenderModel.from(
+                state,
+                native.copy(mobilePresentation = override),
+                defaultDataSubscriptionId = 3,
+                dualSignalEnabled = true,
+            )
+
+        val verified = native.mobilePresentation ?: error("missing native dual presentation")
+        assertEquals(DualMobileLevels(4, 2), render(verified)?.dualMobileLevels)
+        assertNull(render(verified.copy(activeSubsAuthoritative = false))?.dualMobileLevels)
+        assertNull(
+            render(
+                verified.copy(platformActiveSubscriptionIds = setOf(3, 14, 27)),
+            )?.dualMobileLevels,
+        )
+        assertNull(
+            render(verified.copy(slotSubscriptionIds = mapOf(0 to 3, 1 to 3)))?.dualMobileLevels,
+        )
+    }
+
+    @Test
+    fun unknownSignalDimsItsRowButUnavailableSignalInvalidatesDualPair() {
+        val native = dualPresentation(mapOf(0 to 14, 1 to 3))
+        val state = dualState(SignalStrength.Unknown)
+
+        assertEquals(
+            DualMobileLevels(sim1 = 4, sim2 = null),
+            RenderModel.from(state, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
+        )
+        val unavailable = state.copy(
+            mobile = state.mobile + (
+                3 to StatusStateStore.MobileState(signal = SignalStrength.Unavailable)
+            ),
+        )
+        assertNull(
+            RenderModel.from(unavailable, native, 14, dualSignalEnabled = true)?.dualMobileLevels,
+        )
+        assertNull(
+            RenderModel.from(
+                state.copy(airplaneMode = true),
+                native,
+                14,
+                dualSignalEnabled = true,
+            )?.dualMobileLevels,
+        )
+    }
+
+    private fun dualState(
+        sim2Signal: SignalStrength = SignalStrength.Level(2),
+    ): StatusStateStore.Snapshot =
+        snapshot(
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                3 to StatusStateStore.MobileState(signal = sim2Signal),
+            ),
         )
 }

@@ -21,82 +21,20 @@ internal object DiagReport {
         (snapshot.log.sessionLines.size - exportLineLimit(snapshot.level)).coerceAtLeast(0)
 
     internal fun build(snapshot: DiagSnapshot): String {
-        val env = snapshot.env
         val level = snapshot.level
         val log = snapshot.log
         val limit = exportLineLimit(level)
         val omitted = omittedEarlierLines(snapshot)
-        val lines = log.sessionLines
-        val runtimeEvents = snapshot.runtimeEvents
-        val logLines = lines.takeLast(limit)
-        val requested = level.name.lowercase()
-        // Level changes do not carry binding state; keep their observations separate.
-        val diagnostics =
-            snapshot.entries
-                .asReversed()
-                .filter { entry ->
-                    entry.structured &&
-                        entry.component == "diagnostics" &&
-                        (runtimeEvents.sessionId == null ||
-                            entry.fields["sessionId"] == runtimeEvents.sessionId)
-                }
-        val runtimeLevel =
-            diagnostics.firstNotNullOfOrNull { it.fields["level"] } ?: "not-observed"
-        val runtimeBinding =
-            diagnostics.firstNotNullOfOrNull { entry ->
-                if (entry.event == "diagnostics.bind" || entry.event == "diagnostics.snapshot") {
-                    entry.state
-                } else {
-                    null
-                }
-            } ?: "not-observed"
+        val logLines = log.sessionLines.takeLast(limit)
         return buildString {
             appendLine("Guiyuan Diagnostic Report")
             appendLine()
-            appendLine("[App]")
-            appendLine("version=" + BuildConfig.VERSION_NAME)
-            appendLine("build=" + BuildConfig.BUILD_ID)
-            appendLine("package=" + BuildConfig.APPLICATION_ID)
-            appendLine("buildType=" + BuildConfig.BUILD_TYPE)
-            appendLine("channel=" + BuildConfig.BUILD_CHANNEL)
-            appendLine("diagnosticsPreference=" + level.name.lowercase())
-            appendLine(
-                "diagnosticsCapability=" +
-                    when {
-                        BuildConfig.DEVELOPMENT_PROBES -> "development"
-                        BuildConfig.RUNTIME_DIAGNOSTICS -> "runtime"
-                        else -> "release"
-                    },
-            )
-            appendLine()
-            appendLine("[Diagnostics state]")
-            appendLine("requestedLevel=" + requested)
-            appendLine("runtimeLevel=" + runtimeLevel)
-            appendLine("runtimeBinding=" + runtimeBinding)
-            if (log.clearedAt != null) {
-                appendLine("visibleHistorySince=" + log.clearedAt)
-                appendLine("historyClearScope=guiyuan-view-and-report-only")
-            }
-            appendLine("schemaVersion=" + runtimeEvents.schemaVersion)
-            appendLine("sessionId=" + (runtimeEvents.sessionId ?: "unavailable"))
-            appendLine()
-            appendLine("[Device]")
-            appendLine("manufacturer=" + env.manufacturer)
-            appendLine("name=" + env.device)
-            appendLine("model=" + env.model)
-            appendLine("device=" + env.codename)
-            appendLine("android=" + env.androidVersion)
-            appendLine("sdk=" + env.sdk)
-            appendLine("os=" + env.osVersion)
-            appendLine("systemUiVersion=" + env.sysUiVersion)
-            appendLine(
-                "systemUiVersionCode=" +
-                    (env.sysUiVersionCode?.toString() ?: "unknown"),
-            )
-            appendLine()
+            appendAppInfo(level)
+            appendDiagnosticsState(snapshot)
+            appendDeviceInfo(snapshot.env)
             appendLine("[Runtime snapshot]")
             appendLine("source=structured-runtime-events")
-            runtimeEvents.reportLines().forEach(::appendLine)
+            snapshot.runtimeEvents.reportLines().forEach(::appendLine)
             appendLine()
             if (level == DiagLevel.Detailed &&
                 (BuildConfig.RUNTIME_DIAGNOSTICS || BuildConfig.DEVELOPMENT_PROBES)
@@ -105,30 +43,112 @@ internal object DiagReport {
                 DiagEvidenceSummary.reportLines(snapshot).forEach(::appendLine)
                 appendLine()
             }
-            appendLine("[Runtime log]")
-            appendLine("source=" + log.source.reportName)
-            appendLine("collection=" + collectionState(log.result))
-            if (log.result.truncated) appendLine("capture=latest-complete-lines-only")
-            appendLine("lines=" + logLines.size)
-            if (omitted > 0) {
-                appendLine("report=latest-session-lines-only")
-                appendLine("omittedEarlierSessionLines=" + omitted)
-            }
-            if (logLines.isEmpty()) {
-                appendLine(
-                    if (log.result.isSuccess) {
-                        "No Guiyuan runtime log entries were available."
-                    } else {
-                        "Runtime logs were not collected. Check Root access or log collection."
-                    },
-                )
-            } else {
-                logLines.forEach(::appendLine)
-            }
-            appendLine()
+            appendRuntimeLog(log, logLines, omitted)
             appendLine("[Report]")
             appendLine("generatedAt=" + snapshot.capturedAt)
         }
+    }
+
+    private fun StringBuilder.appendAppInfo(level: DiagLevel) {
+        appendLine("[App]")
+        appendLine("version=" + BuildConfig.VERSION_NAME)
+        appendLine("build=" + BuildConfig.BUILD_ID)
+        appendLine("package=" + BuildConfig.APPLICATION_ID)
+        appendLine("buildType=" + BuildConfig.BUILD_TYPE)
+        appendLine("channel=" + BuildConfig.BUILD_CHANNEL)
+        appendLine("diagnosticsPreference=" + level.name.lowercase())
+        appendLine(
+            "diagnosticsCapability=" +
+                when {
+                    BuildConfig.DEVELOPMENT_PROBES -> "development"
+                    BuildConfig.RUNTIME_DIAGNOSTICS -> "runtime"
+                    else -> "release"
+                },
+        )
+        appendLine()
+    }
+
+    private fun StringBuilder.appendDiagnosticsState(snapshot: DiagSnapshot) {
+        val runtimeEvents = snapshot.runtimeEvents
+        val log = snapshot.log
+        val level = snapshot.level
+        val requested = level.name.lowercase()
+        // The newest bind/snapshot supersedes older level evidence even when its level is absent.
+        // A level-only event does not supersede the last observed binding.
+        val diagnostics =
+            snapshot.entries.asReversed().filter { entry ->
+                entry.structured &&
+                    entry.component == "diagnostics" &&
+                    (runtimeEvents.sessionId == null ||
+                        entry.fields["sessionId"] == runtimeEvents.sessionId)
+            }
+        val runtimeLevel =
+            diagnostics.firstOrNull { entry ->
+                entry.event == "diagnostics.bind" ||
+                    entry.event == "diagnostics.snapshot" ||
+                    entry.event == "diagnostics.level"
+            }?.fields?.get("level") ?: "not-observed"
+        val runtimeBinding =
+            diagnostics.firstOrNull { entry ->
+                entry.event == "diagnostics.bind" || entry.event == "diagnostics.snapshot"
+            }?.state ?: "not-observed"
+        appendLine("[Diagnostics state]")
+        appendLine("requestedLevel=" + requested)
+        appendLine("runtimeLevel=" + runtimeLevel)
+        appendLine("runtimeBinding=" + runtimeBinding)
+        appendLine("systemUiDetailedConfirmed=" + snapshot.isRuntimeDetailConfirmed())
+        if (log.clearedAt != null) {
+            appendLine("visibleHistorySince=" + log.clearedAt)
+            appendLine("historyClearScope=guiyuan-view-and-report-only")
+        }
+        appendLine("schemaVersion=" + runtimeEvents.schemaVersion)
+        appendLine("sessionId=" + (runtimeEvents.sessionId ?: "unavailable"))
+        appendLine()
+    }
+
+    private fun StringBuilder.appendDeviceInfo(env: RuntimeEnv) {
+        appendLine("[Device]")
+        appendLine("manufacturer=" + env.manufacturer)
+        appendLine("name=" + env.device)
+        appendLine("model=" + env.model)
+        appendLine("device=" + env.codename)
+        appendLine("android=" + env.androidVersion)
+        appendLine("sdk=" + env.sdk)
+        appendLine("os=" + env.osVersion)
+        appendLine("systemUiVersion=" + env.sysUiVersion)
+        appendLine(
+            "systemUiVersionCode=" +
+                (env.sysUiVersionCode?.toString() ?: "unknown"),
+        )
+        appendLine()
+    }
+
+    private fun StringBuilder.appendRuntimeLog(
+        log: DiagLogReader.Snapshot,
+        logLines: List<String>,
+        omitted: Int,
+    ) {
+        appendLine("[Runtime log]")
+        appendLine("source=" + log.source.reportName)
+        appendLine("collection=" + collectionState(log.result))
+        if (log.result.truncated) appendLine("capture=latest-complete-lines-only")
+        appendLine("lines=" + logLines.size)
+        if (omitted > 0) {
+            appendLine("report=latest-session-lines-only")
+            appendLine("omittedEarlierSessionLines=" + omitted)
+        }
+        if (logLines.isEmpty()) {
+            appendLine(
+                if (log.result.isSuccess) {
+                    "No Guiyuan runtime log entries were available."
+                } else {
+                    "Runtime logs were not collected. Check Root access or log collection."
+                },
+            )
+        } else {
+            logLines.forEach(::appendLine)
+        }
+        appendLine()
     }
 
     private fun collectionState(result: RootShell.Result): String =

@@ -40,25 +40,27 @@ internal class SandboxClient(
                         val remote = service()?.takeIf {
                             it.apiVersion >= 102 && "com.android.systemui" in it.scope
                         }?.getRemotePreferences(SANDBOX_PREFS)
-                        val editor = remote?.edit() ?: return@runCatching false
-                        when (update) {
-                            is Update.Show -> {
-                                if (synchronized(this@SandboxClient) { update.id != id }) {
-                                    return@runCatching false
-                                }
-                                editor.putString(
-                                    SANDBOX_DATA_KEY,
-                                    SandboxLease(
-                                        id = update.id,
-                                        elapsedAt = SystemClock.elapsedRealtime(),
-                                        wallAt = System.currentTimeMillis(),
-                                        state = update.state,
-                                    ).encode(),
-                                )
+                        val editor = remote?.edit()
+                        if (editor == null) {
+                            false
+                        } else if (update is Update.Show && synchronized(this@SandboxClient) { update.id != id }) {
+                            false
+                        } else {
+                            when (update) {
+                                is Update.Show ->
+                                    editor.putString(
+                                        SANDBOX_DATA_KEY,
+                                        SandboxLease(
+                                            id = update.id,
+                                            elapsedAt = SystemClock.elapsedRealtime(),
+                                            wallAt = System.currentTimeMillis(),
+                                            state = update.state,
+                                        ).encode(),
+                                    )
+                                Update.Clear -> editor.remove(SANDBOX_DATA_KEY)
                             }
-                            Update.Clear -> editor.remove(SANDBOX_DATA_KEY)
+                            editor.commit()
                         }
-                        editor.commit()
                     }.getOrElse { error ->
                         rethrowSandboxFatal(error)
                         false

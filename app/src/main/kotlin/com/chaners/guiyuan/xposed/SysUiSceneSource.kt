@@ -11,12 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiSceneSource {
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            SysUiPresentationRuntime.throwIfFatal(error)
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
@@ -213,7 +208,9 @@ internal object SysUiSceneSource {
             } catch (error: Throwable) {
                 SysUiPresentationRuntime.throwIfFatal(error)
                 if (warned.compareAndSet(false, true)) {
-                    readOrNull { Log.w("Guiyuan[Scene]", "Diagnostic failed", error) }
+                    SysUiPresentationRuntime.emitPassiveDiagnostic {
+                        Log.w("Guiyuan[Scene]", "Diagnostic failed", error)
+                    }
                 }
             }
         }

@@ -431,46 +431,20 @@ internal object ScenePolicy {
             keyguardEnabled != aodEnabled
         ) {
             if (fullAodVisualBoundary) {
-                return if (nativeToLockScreenTarget) {
-                    if (keyguardEnabled) {
-                        KeyguardAodProjection.KEYGUARD
-                    } else {
-                        KeyguardAodProjection.NATIVE
-                    }
-                } else {
-                    when {
-                        keyguardEnabled &&
-                            !aodEnabled &&
-                            lastStableFamilyScene == StableKeyguardAodScene.KEYGUARD ->
-                            if ((keyguardStatusIconsAlpha ?: 1f) > 0f) {
-                                KeyguardAodProjection.KEYGUARD
-                            } else {
-                                KeyguardAodProjection.NATIVE
-                            }
-
-                        aodEnabled -> KeyguardAodProjection.AOD
-                        else -> KeyguardAodProjection.NATIVE
-                    }
-                }
+                return resolveFullAodVisualBoundary(
+                    nativeToLockScreenTarget = nativeToLockScreenTarget,
+                    keyguardEnabled = keyguardEnabled,
+                    aodEnabled = aodEnabled,
+                    lastStableFamilyScene = lastStableFamilyScene,
+                    keyguardStatusIconsAlpha = keyguardStatusIconsAlpha,
+                )
             }
             if (fullAodTargetPending) {
-                return when (lastStableFamilyScene) {
-                    StableKeyguardAodScene.KEYGUARD ->
-                        if (keyguardEnabled) {
-                            KeyguardAodProjection.KEYGUARD
-                        } else {
-                            KeyguardAodProjection.NATIVE
-                        }
-
-                    StableKeyguardAodScene.AOD ->
-                        if (aodEnabled) {
-                            KeyguardAodProjection.AOD
-                        } else {
-                            KeyguardAodProjection.NATIVE
-                        }
-
-                    StableKeyguardAodScene.UNKNOWN -> KeyguardAodProjection.NATIVE
-                }
+                return resolvePendingFullAodTarget(
+                    lastStableFamilyScene = lastStableFamilyScene,
+                    keyguardEnabled = keyguardEnabled,
+                    aodEnabled = aodEnabled,
+                )
             }
         }
 
@@ -478,55 +452,40 @@ internal object ScenePolicy {
         // layer in both directions. Alpha 1 belongs to the Keyguard endpoint;
         // alpha 0 belongs to the AOD endpoint. Battery AOD alpha is a separate
         // native animation and is not a whole-combined-scene lifetime signal.
+        val alpha = keyguardStatusIconsAlpha
         if (
             keyguardEnabled &&
             !aodEnabled &&
-            steadySourceScene == SourceScene.KEYGUARD
+            steadySourceScene == SourceScene.KEYGUARD &&
+            alpha != null &&
+            lastStableFamilyScene != StableKeyguardAodScene.UNKNOWN
         ) {
-            val alpha = keyguardStatusIconsAlpha
-            if (alpha != null) {
-                when (lastStableFamilyScene) {
-                    StableKeyguardAodScene.KEYGUARD ->
-                        return if (alpha > 0f) {
-                            KeyguardAodProjection.KEYGUARD
-                        } else {
-                            KeyguardAodProjection.NATIVE
-                        }
-
-                    StableKeyguardAodScene.AOD ->
-                        return if (alpha > 0f) {
-                            KeyguardAodProjection.KEYGUARD
-                        } else {
-                            KeyguardAodProjection.NATIVE
-                        }
-
-                    StableKeyguardAodScene.UNKNOWN -> Unit
-                }
+            return if (alpha > 0f) {
+                KeyguardAodProjection.KEYGUARD
+            } else {
+                KeyguardAodProjection.NATIVE
             }
         }
         if (
             !keyguardEnabled &&
             aodEnabled &&
-            steadySourceScene == SourceScene.KEYGUARD
+            steadySourceScene == SourceScene.KEYGUARD &&
+            alpha != null
         ) {
-            val alpha = keyguardStatusIconsAlpha
-            if (alpha != null) {
-                when (lastStableFamilyScene) {
-                    StableKeyguardAodScene.AOD ->
-                        if (alpha > 0f) return KeyguardAodProjection.NATIVE
+            when (lastStableFamilyScene) {
+                StableKeyguardAodScene.AOD ->
+                    if (alpha > 0f) return KeyguardAodProjection.NATIVE
 
-                    StableKeyguardAodScene.KEYGUARD ->
-                        return if (alpha < 1f) {
-                            KeyguardAodProjection.AOD
-                        } else {
-                            KeyguardAodProjection.NATIVE
-                        }
+                StableKeyguardAodScene.KEYGUARD ->
+                    return if (alpha < 1f) {
+                        KeyguardAodProjection.AOD
+                    } else {
+                        KeyguardAodProjection.NATIVE
+                    }
 
-                    StableKeyguardAodScene.UNKNOWN -> Unit
-                }
+                StableKeyguardAodScene.UNKNOWN -> Unit
             }
         }
-
         // Don't infer AOD direction from presentation ownership; attach/cleanup changes
         // that ownership and can bounce KEYGUARD -> NATIVE -> KEYGUARD. Freeze the
         // direction from the last stable family scene for the whole animation.
@@ -557,6 +516,59 @@ internal object ScenePolicy {
                 } else {
                     KeyguardAodProjection.NATIVE
                 }
+        }
+    }
+
+    private fun resolveFullAodVisualBoundary(
+        nativeToLockScreenTarget: Boolean,
+        keyguardEnabled: Boolean,
+        aodEnabled: Boolean,
+        lastStableFamilyScene: StableKeyguardAodScene,
+        keyguardStatusIconsAlpha: Float?,
+    ): KeyguardAodProjection {
+        return when {
+            nativeToLockScreenTarget == true ->
+                if (keyguardEnabled) {
+                    KeyguardAodProjection.KEYGUARD
+                } else {
+                    KeyguardAodProjection.NATIVE
+                }
+
+            keyguardEnabled &&
+                !aodEnabled &&
+                lastStableFamilyScene == StableKeyguardAodScene.KEYGUARD ->
+                if ((keyguardStatusIconsAlpha ?: 1f) > 0f) {
+                    KeyguardAodProjection.KEYGUARD
+                } else {
+                    KeyguardAodProjection.NATIVE
+                }
+
+            aodEnabled -> KeyguardAodProjection.AOD
+            else -> KeyguardAodProjection.NATIVE
+        }
+    }
+
+    private fun resolvePendingFullAodTarget(
+        lastStableFamilyScene: StableKeyguardAodScene,
+        keyguardEnabled: Boolean,
+        aodEnabled: Boolean,
+    ): KeyguardAodProjection {
+        return when (lastStableFamilyScene) {
+            StableKeyguardAodScene.KEYGUARD ->
+                if (keyguardEnabled) {
+                    KeyguardAodProjection.KEYGUARD
+                } else {
+                    KeyguardAodProjection.NATIVE
+                }
+
+            StableKeyguardAodScene.AOD ->
+                if (aodEnabled) {
+                    KeyguardAodProjection.AOD
+                } else {
+                    KeyguardAodProjection.NATIVE
+                }
+
+            StableKeyguardAodScene.UNKNOWN -> KeyguardAodProjection.NATIVE
         }
     }
 

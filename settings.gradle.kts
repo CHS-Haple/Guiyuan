@@ -59,9 +59,26 @@ include(":app")
 // Opt-in source-matched OS4 graph. The default app still uses published MIUIX packages.
 providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.let { source ->
     val miuix = file(source)
-    require(miuix.resolve("miuix-blur/build.gradle.kts").isFile &&
-        miuix.resolve("miuix-ui/build.gradle.kts").isFile
-    ) { "gy.os4.miuixDir must point to a complete MIUIX source checkout" }
+    // Native Glass Icons are source-substituted, while Glass UI remains app-local.
+    // This checks checkout completeness, not UI/API parity or published availability.
+    val requiredSourceModules = listOf(
+        "miuix-core",
+        "miuix-ui",
+        "miuix-blur",
+        "miuix-preference",
+        "miuix-icons",
+        "miuix-nav",
+        "miuix-shader",
+        "miuix-squircle",
+        "miuix-glass",
+        "miuix-glass-icons",
+    )
+    val missingSourceModules = requiredSourceModules.filterNot { module ->
+        miuix.resolve("$module/build.gradle.kts").isFile
+    }
+    require(missingSourceModules.isEmpty()) {
+        "gy.os4.miuixDir is missing MIUIX source modules: ${missingSourceModules.joinToString()}"
+    }
 
     includeBuild(miuix) {
         dependencySubstitution {
@@ -72,6 +89,7 @@ providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.
             substitute(module("top.yukonga.miuix.kmp:miuix-blur-android")).using(project(":miuix-blur"))
             substitute(module("top.yukonga.miuix.kmp:miuix-preference-android")).using(project(":miuix-preference"))
             substitute(module("top.yukonga.miuix.kmp:miuix-icons-android")).using(project(":miuix-icons"))
+            substitute(module("top.yukonga.miuix.kmp:miuix-glass-icons-android")).using(project(":miuix-glass-icons"))
             substitute(module("top.yukonga.miuix.kmp:miuix-nav-android")).using(project(":miuix-nav"))
         }
     }

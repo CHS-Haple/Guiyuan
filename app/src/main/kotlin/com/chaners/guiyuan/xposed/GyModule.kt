@@ -22,6 +22,7 @@ import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.sandbox.SANDBOX_PREFS
+import com.chaners.guiyuan.ui.screens.PreviewSimCards
 import com.chaners.guiyuan.settings.RUNTIME_REMOTE_PREFS_NAME
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_ICON_KEY
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_KEY
@@ -110,6 +111,9 @@ class GyModule : XposedModule() {
 
     @Volatile
     private var detailedDiagnosticsEnabled = BuildConfig.DEVELOPMENT_PROBES
+
+    private val deepDiagnosticsEnabled: Boolean
+        get() = BuildConfig.DEEP_DIAGNOSTICS && detailedDiagnosticsEnabled
 
     private var inSettings = false
     private var settingsHookInstalled = false
@@ -819,6 +823,14 @@ class GyModule : XposedModule() {
                         )
                     }
                 },
+                onWifiActivity = { resourceId ->
+                    StatusStateStore.updateWifiActivity(resourceId)?.let { snapshot ->
+                        onCombinedStateChanged(
+                            snapshot = snapshot,
+                            trace = markStateCommitted(beginRenderTrace("wifiActivity")),
+                        )
+                    }
+                },
                 onMobileSignal = { subscriptionId, signal ->
                     val trace = beginRenderTrace("mobile")
                     val changed =
@@ -837,6 +849,26 @@ class GyModule : XposedModule() {
                         onCombinedStateChanged(
                             snapshot = StatusStateStore.snapshot(),
                             trace = stateTrace,
+                        )
+                    }
+                },
+                onMobileActivityResource = { subscriptionId, resourceId, visible ->
+                    StatusStateStore.updateMobileActivityResource(
+                        subscriptionId, resourceId, visible,
+                    )?.let { snapshot ->
+                        onCombinedStateChanged(
+                            snapshot = snapshot,
+                            trace = markStateCommitted(beginRenderTrace("mobileActivityResource")),
+                        )
+                    }
+                },
+                onMobileActivityVisibility = { subscriptionId, visible ->
+                    StatusStateStore.updateMobileActivityVisibility(
+                        subscriptionId, visible,
+                    )?.let { snapshot ->
+                        onCombinedStateChanged(
+                            snapshot = snapshot,
+                            trace = markStateCommitted(beginRenderTrace("mobileActivityVisibility")),
                         )
                     }
                 },
@@ -914,7 +946,7 @@ class GyModule : XposedModule() {
                         null
                     },
                 isProbeEnabled = {
-                    BuildConfig.DEVELOPMENT_PROBES || detailedDiagnosticsEnabled
+                    deepDiagnosticsEnabled
                 },
             )
         }.onSuccess { handles ->
@@ -956,7 +988,7 @@ class GyModule : XposedModule() {
                     if (ccSourceInstalled) onCcUpdate(update)
                 },
                 onAfterNativeExpansion = { progress ->
-                    if (ccSourceInstalled && detailedDiagnosticsEnabled) {
+                    if (ccSourceInstalled && deepDiagnosticsEnabled) {
                         onCcNativeGeometry(progress)
                     }
                 },
@@ -968,7 +1000,7 @@ class GyModule : XposedModule() {
                     if (ccSourceInstalled) logRuntimeEvent(event)
                 },
                 isProbeEnabled = {
-                    BuildConfig.DEVELOPMENT_PROBES || detailedDiagnosticsEnabled
+                    deepDiagnosticsEnabled
                 },
             )
         }.onSuccess { handles ->
@@ -1050,7 +1082,7 @@ class GyModule : XposedModule() {
             ccWifiGeometrySamples = 0
         }
         if (
-            detailedDiagnosticsEnabled &&
+            deepDiagnosticsEnabled &&
             update.fraction != null &&
             lastMobileTargetProbeSummary == null
         ) {
@@ -1066,7 +1098,7 @@ class GyModule : XposedModule() {
                 )
             }
         }
-        if (detailedDiagnosticsEnabled && update.appearance != null) {
+        if (deepDiagnosticsEnabled && update.appearance != null) {
             val keyguard =
                 (SysUiKeyguardHostResolver.current()
                     as? SysUiKeyguardHostResolver.ResolveResult.Ready)?.host
@@ -1092,7 +1124,7 @@ class GyModule : XposedModule() {
             )
         }
         if (
-            detailedDiagnosticsEnabled &&
+            deepDiagnosticsEnabled &&
             update.visible == false
         ) {
             logDiagnostic(
@@ -1106,7 +1138,7 @@ class GyModule : XposedModule() {
         }
 
         if (
-            detailedDiagnosticsEnabled &&
+            deepDiagnosticsEnabled &&
             update.fraction != null &&
             lastBatteryNumberProbeSummary == null
         ) {
@@ -1139,7 +1171,7 @@ class GyModule : XposedModule() {
             // overlay visibility changes with Control Center visibility.
             HomeRenderSession.onControlCenterAuthorityChanged(true)
             CcRenderSession.setRequestedVisible(false)
-            if (detailedDiagnosticsEnabled) {
+            if (deepDiagnosticsEnabled) {
                 val keyguard =
                     (SysUiKeyguardHostResolver.current()
                         as? SysUiKeyguardHostResolver.ResolveResult.Ready)?.host
@@ -1466,7 +1498,7 @@ class GyModule : XposedModule() {
             CcRenderSession.restoreAfterHotReload(
                 host = host,
                 onEvent = ::logRuntimeEvent,
-                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
                 onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
                 transferredCompactReady = transferredCompactReady,
             )
@@ -1515,7 +1547,7 @@ class GyModule : XposedModule() {
                 CcRenderSession.prearmAfterNextNativeLayout(
                     host = host,
                     onEvent = ::logRuntimeEvent,
-                    isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                    isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
                     onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
                 )
         ) {
@@ -1554,7 +1586,7 @@ class GyModule : XposedModule() {
             CcRenderSession.attach(
                 host = host,
                 onEvent = ::logRuntimeEvent,
-                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
                 onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
             )
         if (failure != null) {
@@ -1587,12 +1619,7 @@ class GyModule : XposedModule() {
             try {
                 block()
             } catch (cleanupError: Throwable) {
-                if (
-                    cleanupError is VirtualMachineError ||
-                    cleanupError is ThreadDeath
-                ) {
-                    throw cleanupError
-                }
+                SysUiPresentationRuntime.throwIfFatal(cleanupError)
                 cleanupFailures += step + ":" + cleanupError.javaClass.simpleName
             }
         }
@@ -1670,6 +1697,7 @@ class GyModule : XposedModule() {
                         }
                 },
                 onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
+                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
             )
         }.onSuccess { hooks ->
             val ready = hooks == SysUiBatterySource.HOOK_COUNT
@@ -1733,7 +1761,7 @@ class GyModule : XposedModule() {
                     )
                 },
                 onTintEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
-                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
                 onSceneEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
                 onKeyguardAodEvent =
                     if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
@@ -2011,17 +2039,8 @@ class GyModule : XposedModule() {
 
     private fun onTintStateUpdate(update: SysUiTintSource.TintUpdate) {
         KeyguardRenderSession.onTintUpdate(update)
-        val liveStatusIconTint =
-            NativeStatusObserver.currentAppliedStatusIconTint()
-        val resolvedState =
-            TintAuthority.resolveBatteryEvent(
-                batteryState = update.state,
-                liveStatusIconTint = liveStatusIconTint,
-            )
-        val resolvedUpdate = update.copy(state = resolvedState)
-        HomeRenderSession.onTintUpdate(resolvedUpdate)
-        CcRenderSession.onTintUpdate(resolvedUpdate)
-
+        HomeRenderSession.onTintUpdate(update)
+        CcRenderSession.onTintUpdate(update)
     }
 
     private fun onFullAodStarted() {
@@ -2083,7 +2102,7 @@ class GyModule : XposedModule() {
             "homePresentationOwnedAtStart" to homeOwnedAtStart,
             "homeCarrierVisibleAtStart" to homeCarrierVisibleAtStart,
         )
-        if (detailedDiagnosticsEnabled) {
+        if (deepDiagnosticsEnabled) {
             val host =
                 (SysUiKeyguardHostResolver.current()
                     as? SysUiKeyguardHostResolver.ResolveResult.Ready)?.host
@@ -2253,7 +2272,7 @@ class GyModule : XposedModule() {
         }
 
         val nativeState =
-            if (detailedDiagnosticsEnabled) {
+            if (deepDiagnosticsEnabled) {
                 SysUiKeyguardAodSource.nativeState(resolution.host.battery)
             } else {
                 null
@@ -2287,7 +2306,7 @@ class GyModule : XposedModule() {
                 ),
             "authority" to "native-status-icon-animation",
         )
-        if (detailedDiagnosticsEnabled) {
+        if (deepDiagnosticsEnabled) {
             logDiagnostic(
                 level = Log.INFO,
                 event = "aod.visibleLayers",
@@ -2431,7 +2450,7 @@ class GyModule : XposedModule() {
                 nativeAodLayout = nativeAodLayout,
                 homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),
             )
-        if (!precommit && detailedDiagnosticsEnabled) {
+        if (!precommit && deepDiagnosticsEnabled) {
             logDiagnostic(
                 level = Log.INFO,
                 event = "aod.geometry",
@@ -2601,7 +2620,7 @@ class GyModule : XposedModule() {
             )
             return true
         }
-        if (detailedDiagnosticsEnabled) {
+        if (deepDiagnosticsEnabled) {
             val ready = SysUiKeyguardHostResolver.current()
                 as? SysUiKeyguardHostResolver.ResolveResult.Ready
             if (ready != null) {
@@ -2878,7 +2897,7 @@ class GyModule : XposedModule() {
             try {
                 action()
             } catch (failure: Throwable) {
-                if (failure is VirtualMachineError || failure is ThreadDeath) throw failure
+                SysUiPresentationRuntime.throwIfFatal(failure)
                 cleanupFailures += step + ":" + failure.javaClass.simpleName
             }
         }
@@ -2989,7 +3008,7 @@ class GyModule : XposedModule() {
             )
         }
 
-        if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
+        if (deepDiagnosticsEnabled) {
             SysUiPresentationRuntime.emitPassiveDiagnostic {
                 SysUiKeyguardHostProbe.capture(update)?.let(::onKeyguardHostProbe)
             }
@@ -3298,7 +3317,7 @@ class GyModule : XposedModule() {
                 resolved = resolved,
                 sceneEligible = true,
                 onEvent = ::logRuntimeEvent,
-                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
                 onPresentationReadinessChanged = { ready ->
                     onKeyguardReadyChanged(
                         ready = ready,
@@ -3342,7 +3361,7 @@ class GyModule : XposedModule() {
                 resolved = resolved,
                 sceneEligible = true,
                 onEvent = ::logRuntimeEvent,
-                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
                 onPresentationReadinessChanged = { ready ->
                     onAodReadyChanged(
                         ready = ready,
@@ -3826,7 +3845,7 @@ class GyModule : XposedModule() {
             try {
                 action()
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                SysUiPresentationRuntime.throwIfFatal(error)
                 errors.add(error)
             }
         }
@@ -4049,7 +4068,7 @@ class GyModule : XposedModule() {
                 host = host,
                 onEvent = ::logRuntimeEvent,
                 onLatencySample = ::onRenderLatencySample,
-                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
                 initialNativeHandoffActive = true,
                 initialTintState = rendererInitialTintState,
                 allowLiveTintSeed = allowLiveTintSeed,
@@ -4114,6 +4133,13 @@ class GyModule : XposedModule() {
             SysUiPresentationOwner.deactivate("readiness-lost:" + source)
             return
         }
+        if (!SysUiNetworkRuntime.mobileReady) {
+            // Without the verified native mobile resource/visibility collectors,
+            // a composite Home icon could mask a still-correct SystemUI icon.
+            HomeRenderSession.setNativeHandoffActive(true)
+            SysUiPresentationOwner.deactivate("mobile-source-unavailable:" + source)
+            return
+        }
 
         when (val result = SysUiPresentationOwner.activate(host)) {
             is SysUiPresentationOwner.Result.Active -> {
@@ -4176,10 +4202,7 @@ class GyModule : XposedModule() {
         source: String,
         deferProbe: Boolean,
     ) {
-        if (
-            !BuildConfig.DEVELOPMENT_PROBES &&
-            !(BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled)
-        ) {
+        if (!deepDiagnosticsEnabled) {
             return
         }
 
@@ -4432,7 +4455,7 @@ class GyModule : XposedModule() {
             try {
                 action()
             } catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
+                SysUiPresentationRuntime.throwIfFatal(error)
                 failures.add(error)
             }
         }
@@ -4470,7 +4493,7 @@ class GyModule : XposedModule() {
                         "airplane" to received?.airplaneMode,
                         "wifiState" to received?.wifiState,
                         "wifiBars" to received?.wifiSignalLevel,
-                        "dualEnabled" to received?.dualMobile,
+                        "dualEnabled" to received?.simCards?.let { it == PreviewSimCards.BOTH },
                         "dualEffective" to (received?.dualLevels != null),
                         "sim1Bars" to received?.mobileSignalLevel,
                         "sim2Bars" to received?.sim2SignalLevel,
@@ -4502,7 +4525,7 @@ class GyModule : XposedModule() {
                 "mobileFollowsBattery" to settings.mobileFollowsBatteryColor,
                 "networkFollowsBattery" to settings.centerFollowsBatteryColor,
                 "batteryNumber" to settings.showTopReadout,
-                "chargingIcon" to settings.showTopChargingIcon,
+                "chargingIcon" to settings.showChargingIcon,
                 "batteryNumberFollowsBattery" to settings.topTextFollowsBatteryColor,
                 "chargingIconFollowsBattery" to
                     settings.topChargingIconFollowsBatteryColor,
@@ -4580,7 +4603,7 @@ class GyModule : XposedModule() {
                 "mobileFollowsBattery" to visual.mobileFollowsBatteryColor,
                 "networkFollowsBattery" to visual.centerFollowsBatteryColor,
                 "batteryNumber" to visual.showTopReadout,
-                "chargingIcon" to visual.showTopChargingIcon,
+                "chargingIcon" to visual.showChargingIcon,
                 "batteryNumberFollowsBattery" to visual.topTextFollowsBatteryColor,
                 "chargingIconFollowsBattery" to
                     visual.topChargingIconFollowsBatteryColor,
@@ -4613,7 +4636,7 @@ class GyModule : XposedModule() {
         val previous = detailedDiagnosticsEnabled
         detailedDiagnosticsEnabled = enabled
         if (previous != detailedDiagnosticsEnabled) {
-            if (detailedDiagnosticsEnabled) {
+            if (deepDiagnosticsEnabled) {
                 SysUiTintSource.resetDiagnosticProbes()
             }
             logDiagnostic(
@@ -4636,7 +4659,7 @@ class GyModule : XposedModule() {
     }
 
     private fun beginRenderTrace(source: String): RuntimeRenderTrace? {
-        if (!detailedDiagnosticsEnabled) {
+        if (!deepDiagnosticsEnabled) {
             return null
         }
 
@@ -4654,7 +4677,7 @@ class GyModule : XposedModule() {
         trace?.withPresentationCommitted(SystemClock.elapsedRealtimeNanos())
 
     private fun onRenderLatencySample(sample: RuntimeRenderLatencySample) {
-        if (!detailedDiagnosticsEnabled) {
+        if (!deepDiagnosticsEnabled) {
             return
         }
 

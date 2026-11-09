@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -166,6 +167,9 @@ class CcTransitionGeometryTest {
         assertEquals(478f, logicalCarrier[2], 0.0001f)
     }
 
+}
+
+class CcTransitionCarrierMotionTest {
     @Test
     fun carriedSourceUsesNativeCarrierMotionBeforeRootTargetInterpolation() {
         val source =
@@ -412,6 +416,9 @@ class CcTransitionGeometryTest {
         assertEquals(0.52f, rtlSignal.right, 0.0001f)
     }
 
+}
+
+class CcTransitionTopologyTest {
     @Test
     fun tinySecondaryComponentsRemainVisibleToTopologyClassifier() {
         val fourBars =

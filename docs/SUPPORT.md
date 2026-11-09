@@ -2,7 +2,7 @@
 
 Guiyuan is free and open-source software. If the project is useful to you and you would like to support its continued development and maintenance, you can do so voluntarily through the payment methods below.
 
-归元是一款免费、开源的软件。如果这个项目对你有所帮助，并且你愿意支持后续开发与维护，可以通过以下方式自愿支持。
+归元（Guiyuan）是一款免费、开源的软件。如果这个项目对你有所帮助，并且你愿意支持后续开发与维护，可以通过以下方式自愿支持。
 
 ## Payment methods / 支持方式
 

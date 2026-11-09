@@ -7,6 +7,7 @@ import android.widget.ImageView
 import android.graphics.drawable.Icon
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
 import com.chaners.guiyuan.xposed.PresentationStore
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -23,16 +24,16 @@ internal object NativeStatusObserver {
     }
 
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private inline fun reportEvent(message: () -> String) {
-        readOrNull { eventSink?.takeIf { diagnosticsEnabled() }?.invoke(message()) }
+        SysUiPresentationRuntime.emitPassiveDiagnostic {
+            eventSink?.takeIf { diagnosticsEnabled() }?.invoke(message())
+        }
     }
+
+    private fun tintText(color: Int?): String =
+        color?.toUInt()?.toString(16)?.padStart(8, '0') ?: "none"
 
     private const val HOME_MANAGER_CLASS =
         "com.android.systemui.statusbar.phone.ui.DarkIconManager"
@@ -42,6 +43,11 @@ internal object NativeStatusObserver {
         "com.android.systemui.statusbar.StatusBarIconView"
     private const val DARK_ICON_DISPATCHER_CLASS =
         "com.android.systemui.plugins.DarkIconDispatcher"
+    private const val DARK_ICON_DISPATCHER_FIELD = "mDarkIconDispatcher"
+    private const val TINT_AREAS_FIELD = "mTintAreas"
+    private const val ICON_TINT_FIELD = "mIconTint"
+    private const val MANAGER_COLOR_FIELD = "mColor"
+    private const val HOME_MANAGER_REGISTERED_SOURCE = "homeManagerRegistered"
 
     private const val HOME_ICON_ADDED_HOOK_ID =
         "combinedstatus.nativeNetworkSuppression.homeIconAdded"
@@ -86,7 +92,7 @@ internal object NativeStatusObserver {
 
     // Cache reflective lookups, not the live SystemUI tint values.
     private val tintFieldNames =
-        setOf("mDarkIconDispatcher", "mTintAreas", "mIconTint", "mColor")
+        setOf(DARK_ICON_DISPATCHER_FIELD, TINT_AREAS_FIELD, ICON_TINT_FIELD, MANAGER_COLOR_FIELD)
     private val tintFieldsByClass =
         ConcurrentHashMap<Class<*>, List<Field>>()
     private val tintMethodByManagerClass =
@@ -405,23 +411,23 @@ internal object NativeStatusObserver {
                                 val state =
                                     attachObserver(
                                         host = pendingHost,
-                                        source = pendingSource ?: "homeManagerRegistered",
+                                        source = pendingSource ?: HOME_MANAGER_REGISTERED_SOURCE,
                                     )
                             ) {
                                 is Result.Active -> {
                                     observationAttachedSink?.invoke(
-                                        pendingSource ?: "homeManagerRegistered",
+                                        pendingSource ?: HOME_MANAGER_REGISTERED_SOURCE,
                                     )
                                     reportEvent {
                                         "statusIconObservation ready source=" +
-                                            (pendingSource ?: "homeManagerRegistered") +
+                                            (pendingSource ?: HOME_MANAGER_REGISTERED_SOURCE) +
                                             " trigger=homeManagerRegistered"
                                     }
                                 }
                                 is Result.Failure ->
                                     reportEvent {
                                         "statusIconObservation unavailable " +
-                                            "source=" + (pendingSource ?: "homeManagerRegistered") +
+                                            "source=" + (pendingSource ?: HOME_MANAGER_REGISTERED_SOURCE) +
                                             " reason=" + state.reason
                                     }
                                 is Result.Pending,
@@ -617,11 +623,7 @@ internal object NativeStatusObserver {
             reportEvent {
                 "statusIconPresentation source=" + source +
                     " tint=" +
-                    (presentation.appliedTint
-                        ?.toUInt()
-                        ?.toString(16)
-                        ?.padStart(8, '0')
-                        ?: "none") +
+                    tintText(presentation.appliedTint) +
                     " tintAuthority=" +
                     when {
                         locationAwareTint != null -> "dispatcher-location-aware"
@@ -630,23 +632,11 @@ internal object NativeStatusObserver {
                         else -> "cached-fallback"
                     } +
                     " locationAwareTint=" +
-                    (locationAwareTint
-                        ?.toUInt()
-                        ?.toString(16)
-                        ?.padStart(8, '0')
-                        ?: "none") +
+                    tintText(locationAwareTint) +
                     " peerTint=" +
-                    (peerTint
-                        ?.toUInt()
-                        ?.toString(16)
-                        ?.padStart(8, '0')
-                        ?: "none") +
+                    tintText(peerTint) +
                     " managerFallbackTint=" +
-                    (managerFallbackTint
-                        ?.toUInt()
-                        ?.toString(16)
-                        ?.padStart(8, '0')
-                        ?: "none") +
+                    tintText(managerFallbackTint) +
                     " tintAnchorSlot=" +
                     (tintAnchor?.let(NativeParticipantAccess::slotOf) ?: "none") +
                     " tintAnchorClass=" +
@@ -725,14 +715,14 @@ internal object NativeStatusObserver {
         anchorView ?: return null
 
         val dispatcher =
-            readObjectField(manager, "mDarkIconDispatcher")
+            readObjectField(manager, DARK_ICON_DISPATCHER_FIELD)
                 ?: return null
         val iconTint =
-            readIntField(dispatcher, "mIconTint")
+            readIntField(dispatcher, ICON_TINT_FIELD)
                 ?.takeIf(StatusIconTintPolicy::isVisibleTint)
                 ?: return null
         val tintAreas =
-            readObjectField(dispatcher, "mTintAreas")
+            readObjectField(dispatcher, TINT_AREAS_FIELD)
                 as? Collection<*>
                 ?: return null
 
@@ -753,24 +743,25 @@ internal object NativeStatusObserver {
                             method.parameterTypes[2] ==
                                 Int::class.javaPrimitiveType
                     }?.also { tintMethodByManagerClass[managerClass] = it }
-                    ?: return@readOrNull null
-            (getTint.invoke(null, tintAreas, anchorView, iconTint) as? Number)
-                ?.toInt()
-                ?.takeIf(StatusIconTintPolicy::isVisibleTint)
+            getTint?.let { method ->
+                (method.invoke(null, tintAreas, anchorView, iconTint) as? Number)
+                    ?.toInt()
+                    ?.takeIf(StatusIconTintPolicy::isVisibleTint)
+            }
         }
     }
 
     private fun resolveManagerFallbackTint(manager: Any?): Int? {
         manager ?: return null
 
-        readIntField(manager, "mColor")
+        readIntField(manager, MANAGER_COLOR_FIELD)
             ?.takeIf(StatusIconTintPolicy::isVisibleTint)
             ?.let { return it }
 
         val dispatcher =
-            readObjectField(manager, "mDarkIconDispatcher")
+            readObjectField(manager, DARK_ICON_DISPATCHER_FIELD)
                 ?: return null
-        return readIntField(dispatcher, "mIconTint")
+        return readIntField(dispatcher, ICON_TINT_FIELD)
             ?.takeIf(StatusIconTintPolicy::isVisibleTint)
     }
 
