@@ -10,7 +10,9 @@ an app/build dependency.
 
 ## Evidence and compatibility
 
-- The accepted target evidence concerns Xiaomi HyperOS SystemUI `17.03.260226.r`. These conclusions are **not universal** across SystemUI versions, devices, other LSPosed modules or ROM updates.
+- The accepted target evidence concerns Xiaomi HyperOS SystemUI
+  `17.03.260226.r`. These conclusions are **not universal** across SystemUI
+  versions, devices, other LSPosed modules or ROM updates.
 - Separate **observed binary contracts**, **device-observed runtime behavior**,
   **derived inferences**, **Guiyuan implementation rules** and **unknowns**.
   Static call sites do not prove runtime order, callback reentry, competing
@@ -52,7 +54,11 @@ an app/build dependency.
 - Native Padding is consumed by parent/peer measurement and layout. Treat it as
   layout ownership, separate from Guiyuan drawing width, optical offset,
   capacity leasing and transition motion.
-- The inspected target Framework `View.setPaddingRelative` updates internal user/resolved Padding state before returning. `ViewGroup` delegates internal Padding updates to `View`, which may request layout synchronously. This is a **write-before-return opportunity**, **not** a verified exception, nested Guiyuan callback or competing same-View mutation.
+- The inspected target Framework `View.setPaddingRelative` updates internal
+  user/resolved Padding state before returning. `ViewGroup` delegates internal
+  Padding updates to `View`, which may request layout synchronously. This is a
+  **write-before-return opportunity**, **not** a verified exception, nested
+  Guiyuan callback or competing same-View mutation.
 - Record an owned Padding application only after the setter returns and the live
   values match; restore only when the live value still matches the session-owned
   receipt. A foreign or ambiguous write must never be overwritten by an
