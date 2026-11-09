@@ -35,6 +35,7 @@ internal object NativeStatusInventory {
         pending = null
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun schedule(
         host: Any,
         defer: Boolean = false,
