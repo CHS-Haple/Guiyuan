@@ -54,6 +54,7 @@ internal object SysUiCcSource {
     private var headerRef = WeakReference<Any>(null)
     private var fakeIslandContractRootRef = WeakReference<ViewGroup>(null)
 
+    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
