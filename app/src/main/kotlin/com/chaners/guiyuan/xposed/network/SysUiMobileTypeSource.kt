@@ -14,6 +14,7 @@ internal object SysUiMobileTypeSource {
     const val HOOK_COUNT = 1
     private const val HOOK_ID = "combinedstatus.mobileType.measure"
 
+    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
