@@ -83,7 +83,15 @@ vulnerability details.
 
 ### Article 7 — Changes and contact
 
-The maintainers may revise these Terms when functions, compatibility, or applicable requirements change. Material changes affecting users will be disclosed in project documentation, release notes, or the app, with renewed acknowledgment where required by law. The maintainers may explain Guiyuan's functions and these Terms, but such explanations do not override applicable law or restrict users' statutory rights. General questions may be raised through the repository [Issues](https://github.com/CHS-Haple/Guiyuan/issues); report security vulnerabilities through the private reporting channel described in SECURITY.md. For personal-data matters, see the Privacy Policy.
+The maintainers may revise these Terms when functions, compatibility, or
+applicable requirements change. Material changes affecting users will be
+disclosed in project documentation, release notes, or the app, with renewed
+acknowledgment where required by law. The maintainers may explain Guiyuan's
+functions and these Terms, but such explanations do not override applicable law
+or restrict users' statutory rights. General questions may be raised through the
+repository [Issues](https://github.com/CHS-Haple/Guiyuan/issues); report
+security vulnerabilities through the private reporting channel described in
+SECURITY.md. For personal-data matters, see the Privacy Policy.
 
 ---
 

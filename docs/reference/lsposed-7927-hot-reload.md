@@ -7,7 +7,9 @@ handoff API.
 
 ## Evidence and scope
 
-The released `LSPosed-v2.2.1-7927-release.zip` reports `versionCode=7927` in `module.prop`. All **41** accompanying SHA-256 sidecars matched after extraction.
+The released `LSPosed-v2.2.1-7927-release.zip` reports `versionCode=7927` in
+`module.prop`. All **41** accompanying SHA-256 sidecars matched after
+extraction.
 
 | Binary | SHA-256 |
 | --- | --- |
@@ -19,7 +21,10 @@ The released `LSPosed-v2.2.1-7927-release.zip` reports `versionCode=7927` in `mo
 **Observed in the published Java binaries** (JADX 1.5.6; R8-obfuscated class
 names):
 
-- `framework.dex` `y0.loadModule(w1, long, Bundle)` invokes the reload path `y0.b(w1, w0)`. The old module's `onHotReloading(w0)` is called **before** allocating the new `o1` ClassLoader and invoking the new module's `onHotReloaded(w0)`.
+- `framework.dex` `y0.loadModule(w1, long, Bundle)` invokes the reload path
+  `y0.b(w1, w0)`. The old module's `onHotReloading(w0)` is called **before**
+  allocating the new `o1` ClassLoader and invoking the new module's
+  `onHotReloaded(w0)`.
 - After successful old retirement, `y0.h=true` freezes old hook mutation; the
   framework enumerates existing callback stores and exposes transferable hook
   handles. New-generation `z.replaceHook()` is tied to the new module owner. Old
@@ -64,20 +69,53 @@ disassembled.
   visual gap, but must preserve authoritative tint, scene, connectivity,
   subscription, Hook and renderer readiness. Internal old-generation cleanup
   ordering cannot create a frame overlap across completed main-thread tasks.
-- [Issue #519](https://github.com/CHS-Haple/Guiyuan/issues/519) holds measurements and experimental history. The accepted runtime baseline and unmerged experiments are tracked in [CURRENT](../development/CURRENT.md), not in this reference.
+- [Issue #519](https://github.com/CHS-Haple/Guiyuan/issues/519) holds
+  measurements and experimental history. The accepted runtime baseline and
+  unmerged experiments are tracked in [CURRENT](../development/CURRENT.md), not
+  in this reference.
 
 ## Native frame drawing: exact SystemUI profile
 
-The target `SystemUI 17.03.260226.r` APK (SHA-256 `a0e738e41fe599b97950cbf52a9e2ddc6ae2ceff986efbacb1c9840bea78768d`) was decompiled with JADX 1.5.6 to assess whether a native-owned drawing Hook can replace the old generation's custom Home View:
+The target `SystemUI 17.03.260226.r` APK (SHA-256
+`a0e738e41fe599b97950cbf52a9e2ddc6ae2ceff986efbacb1c9840bea78768d`) was
+decompiled with JADX 1.5.6 to assess whether a native-owned drawing Hook can
+replace the old generation's custom Home View:
 
 - `MiuiStatusIconContainer` explicitly calls **`setWillNotDraw(true)`** in its
   constructor. Its declared `onDraw(Canvas)` only calls the superclass, and the
   normal Android skip-draw path can bypass that method. It is **not** a usable
   native drawing Hook as-is.
-- `MiuiNotificationStatusContainer`, `MiuiStatusBatteryContainer`, `MiuiPhoneStatusBarView` and `StatusBarWindowView` have **no class-declared `onDraw(Canvas)` or `dispatchDraw(Canvas)` implementation** suitable for a narrowly hooked after-children drawing step. Hooking inherited framework `View.draw` or `ViewGroup.dispatchDraw` would intercept unrelated app/SystemUI View trees and is not acceptable without a separate, proven scope/performance argument.
-- `MiuiBatteryMeterIconView.onDraw(Canvas)` exists, but its `onMeasure` fixes icon width to `battery_meter_width`; the Home battery carrier and Wi-Fi/mobile siblings have separate geometry and drawing lifecycles. It is not a complete Home renderer.
-- The accepted `SysUiPresentationOwner` hides the native battery and represented Wi-Fi/mobile children with *persistent* `clipBounds=Rect(0,0,0,0)`, native `ignoredSlots` and end-reservation updates. Its `stop()` must restore them. Moving only custom painting into a transferable Hook **does not make these native mutations frame-scoped**. If the new generation never runs, they still need deterministic rollback.
+- `MiuiNotificationStatusContainer`, `MiuiStatusBatteryContainer`,
+  `MiuiPhoneStatusBarView` and `StatusBarWindowView` have **no class-declared
+  `onDraw(Canvas)` or `dispatchDraw(Canvas)` implementation** suitable for a
+  narrowly hooked after-children drawing step. Hooking inherited framework
+  `View.draw` or `ViewGroup.dispatchDraw` would intercept unrelated app/SystemUI
+  View trees and is not acceptable without a separate, proven scope/performance
+  argument.
+- `MiuiBatteryMeterIconView.onDraw(Canvas)` exists, but its `onMeasure` fixes
+  icon width to `battery_meter_width`; the Home battery carrier and Wi-Fi/mobile
+  siblings have separate geometry and drawing lifecycles. It is not a complete
+  Home renderer.
+- The accepted `SysUiPresentationOwner` hides the native battery and represented
+  Wi-Fi/mobile children with *persistent* `clipBounds=Rect(0,0,0,0)`, native
+  `ignoredSlots` and end-reservation updates. Its `stop()` must restore them.
+  Moving only custom painting into a transferable Hook **does not make these
+  native mutations frame-scoped**. If the new generation never runs, they still
+  need deterministic rollback.
 
-The [Android `View.draw` source](https://android.googlesource.com/platform/frameworks/base/+/8360153/core/java/android/view/View.java) confirms the normal `onDraw`-then-`dispatchDraw` ordering and its skip-draw branch. This Android source establishes drawing semantics, while the Xiaomi constructors and methods above are verified from the exact target APK. No successful device implementation or atomic frame presentation is claimed.
+The
+[Android `View.draw` source](https://android.googlesource.com/platform/frameworks/base/+/8360153/core/java/android/view/View.java)
+confirms the normal `onDraw`-then-`dispatchDraw` ordering and its skip-draw
+branch. This Android source establishes drawing semantics, while the Xiaomi
+constructors and methods above are verified from the exact target APK. No
+successful device implementation or atomic frame presentation is claimed.
 
-**Design gate:** before a new runtime branch, identify a *normally invoked, narrowly scoped* native drawing callback that covers the actual combined surface; demonstrate native battery, Wi-Fi and dual-mobile **per-frame** suppression without persistent layout/clip/alpha residue; verify ordinary handoff and rejection/constructor/Hook failure, host replacement, CC and AOD all fall back natively. If such a callback is unavailable, a framework-owned two-phase visual transaction with guaranteed rollback is the remaining coherent direction, not another timer or retained old-ClassLoader callback. See [#519](https://github.com/CHS-Haple/Guiyuan/issues/519#issuecomment-6237650381).
+**Design gate:** before a new runtime branch, identify a *normally invoked,
+narrowly scoped* native drawing callback that covers the actual combined
+surface; demonstrate native battery, Wi-Fi and dual-mobile **per-frame**
+suppression without persistent layout/clip/alpha residue; verify ordinary
+handoff and rejection/constructor/Hook failure, host replacement, CC and AOD all
+fall back natively. If such a callback is unavailable, a framework-owned
+two-phase visual transaction with guaranteed rollback is the remaining coherent
+direction, not another timer or retained old-ClassLoader callback. See
+[#519](https://github.com/CHS-Haple/Guiyuan/issues/519#issuecomment-6237650381).

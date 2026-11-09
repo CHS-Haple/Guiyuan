@@ -1,6 +1,12 @@
 # 1.0.0 Release Qualification — historical evidence and acceptance
 
-> Historical checkpoint only. Stable [v1.0.0](https://github.com/CHS-Haple/Guiyuan/releases/tag/v1.0.0) was published on 2026-11-02 with the B1716 Release APK. The gates and decisions below describe the dated pre-release review, **not** the current publication status, a new release instruction, or proof that every planned smoke test was completed. For current engineering status use [CURRENT](CURRENT.md), the live source and GitHub CI.
+> Historical checkpoint only. Stable
+> [v1.0.0](https://github.com/CHS-Haple/Guiyuan/releases/tag/v1.0.0) was
+> published on 2026-11-02 with the B1716 Release APK. The gates and decisions
+> below describe the dated pre-release review, **not** the current publication
+> status, a new release instruction, or proof that every planned smoke test was
+> completed. For current engineering status use [CURRENT](CURRENT.md), the live
+> source and GitHub CI.
 
 **Status:** Historical source preflight recorded on 2026-10-31; B1714 CI, Canary
 signing and bounded device feedback recorded on 2026-11-02. The maintainer
@@ -18,7 +24,14 @@ against the final candidate SHA rather than copying today's results forward.
 
 ## B1714 device checkpoint — 2026-11-02
 
-- **Candidate runtime:** `feat/1.0.0-release-qualification` at `956779f67e0212df49b7b4d3ecfd2d07ec1c5b20`, versionName `1.0.0`, versionCode `261102714`, Build `20261102-1714`. Its [exact-source CI](https://github.com/CHS-Haple/Guiyuan/actions/runs/41353388437) succeeded and the isolated [Canary signer](https://github.com/CHS-Haple/Guiyuan/actions/runs/41354068914) produced a verified signed artifact. A later documentation-only commit is not a new installable Build or a distinct runtime-acceptance result.
+- **Candidate runtime:** `feat/1.0.0-release-qualification` at
+  `956779f67e0212df49b7b4d3ecfd2d07ec1c5b20`, versionName `1.0.0`, versionCode
+  `261102714`, Build `20261102-1714`. Its
+  [exact-source CI](https://github.com/CHS-Haple/Guiyuan/actions/runs/41353388437)
+  succeeded and the isolated
+  [Canary signer](https://github.com/CHS-Haple/Guiyuan/actions/runs/41354068914)
+  produced a verified signed artifact. A later documentation-only commit is not
+  a new installable Build or a distinct runtime-acceptance result.
 - **Onboarding defect:** B1713 one-off device trace established that successive
   warm Back-to-Home resumes preserved the live Welcome navigation stack but
   stale retained callbacks advanced to later stages. B1714 binds continuation to
@@ -33,7 +46,17 @@ against the final candidate SHA rather than copying today's results forward.
   **no observed issue in the exercised paths**, not proof of every offset, SIM
   topology, Root failure, accessibility variant or abnormal native ownership
   interleaving.
-- **Open evidence/scope:** [#1151](https://github.com/CHS-Haple/Guiyuan/issues/1151) documents a measured Wi-Fi-to-ring clearance variation under vertical offsets; the existing rounded-corner analytic source and tests are integrated, but its full glyph/offset acceptance matrix remains open. [#758](https://github.com/CHS-Haple/Guiyuan/issues/758) exceptional native setter ownership is not a reproduced failure. Third-party variable fonts [#769](https://github.com/CHS-Haple/Guiyuan/issues/769), elective MIUIX effects [#954](https://github.com/CHS-Haple/Guiyuan/issues/954), and source refresh [#1047](https://github.com/CHS-Haple/Guiyuan/issues/1047) must not be claimed as verified compatibility or silently adopted.
+- **Open evidence/scope:**
+  [#1151](https://github.com/CHS-Haple/Guiyuan/issues/1151) documents a measured
+  Wi-Fi-to-ring clearance variation under vertical offsets; the existing
+  rounded-corner analytic source and tests are integrated, but its full
+  glyph/offset acceptance matrix remains open.
+  [#758](https://github.com/CHS-Haple/Guiyuan/issues/758) exceptional native
+  setter ownership is not a reproduced failure. Third-party variable fonts
+  [#769](https://github.com/CHS-Haple/Guiyuan/issues/769), elective MIUIX
+  effects [#954](https://github.com/CHS-Haple/Guiyuan/issues/954), and source
+  refresh [#1047](https://github.com/CHS-Haple/Guiyuan/issues/1047) must not be
+  claimed as verified compatibility or silently adopted.
 - **Release decision:** The maintainer selected **HyperOS 4 only** for
   advertised OS support and authorized first-stable promotion following
   repository cleanup. The 1.0.0 changelog is dated on the chosen 2026-11-02
@@ -48,10 +71,30 @@ evidence, not statements that current `dev/main/it` still have those SHA values.
 
 ## Historical source and branch checkpoint — 2026-10-31
 
-- Reviewed `dev` source: `ff72623b65448eda959feb0b8f4d17c9831cd1a4`, 0.9.2/B1674; `main` `c90130e68367009c6a633b6698993a3c6e7d9037`, 0.9.2/B1673; independent `it` `61c9948080f2e211db2d41b7de6c122d99be0b44`, 0.9.2-IT/B1672. Main/dev intentionally diverge; no blanket merge of protected branches.
-- The current exact `dev` commit passed [CI 41135233166](https://github.com/CHS-Haple/Guiyuan/actions/runs/41135233166), but this was **documentation-only/light** validation. It is **not** full Runtime/Release CI for a 1.0.0 candidate. Earlier runtime PR and main release CI evidence must not be mislabeled as testing the future 1.0.0 APK.
-- Reviewed the open-issue set [#758](https://github.com/CHS-Haple/Guiyuan/issues/758), [#769](https://github.com/CHS-Haple/Guiyuan/issues/769), [#954](https://github.com/CHS-Haple/Guiyuan/issues/954), [#1047](https://github.com/CHS-Haple/Guiyuan/issues/1047); no open PRs at checkpoint. The old B1676 test-only PR #1121 was **closed unmerged** because the latest `dev` text is newer than that signed APK. Do not use B1676 to certify current source.
-- Checked source boundaries for `SysUiPresentationOwner`, `SysUiPresentationRuntime`, `RetirementGate`, `GyModule`, Home/Keyguard/CC render sessions, native network/battery/tint/AOD sources, API 102 `HotReloadTransfer`, callback/observer owners, diagnostics, configuration backup, Manifest, build variants, signing workflows and associated existing tests. This is a scoped static audit, **not** a claim of exhaustive full-project formal verification or native exception injection.
+- Reviewed `dev` source: `ff72623b65448eda959feb0b8f4d17c9831cd1a4`,
+  0.9.2/B1674; `main` `c90130e68367009c6a633b6698993a3c6e7d9037`, 0.9.2/B1673;
+  independent `it` `61c9948080f2e211db2d41b7de6c122d99be0b44`, 0.9.2-IT/B1672.
+  Main/dev intentionally diverge; no blanket merge of protected branches.
+- The current exact `dev` commit passed
+  [CI 41135233166](https://github.com/CHS-Haple/Guiyuan/actions/runs/41135233166),
+  but this was **documentation-only/light** validation. It is **not** full
+  Runtime/Release CI for a 1.0.0 candidate. Earlier runtime PR and main release
+  CI evidence must not be mislabeled as testing the future 1.0.0 APK.
+- Reviewed the open-issue set
+  [#758](https://github.com/CHS-Haple/Guiyuan/issues/758),
+  [#769](https://github.com/CHS-Haple/Guiyuan/issues/769),
+  [#954](https://github.com/CHS-Haple/Guiyuan/issues/954),
+  [#1047](https://github.com/CHS-Haple/Guiyuan/issues/1047); no open PRs at
+  checkpoint. The old B1676 test-only PR #1121 was **closed unmerged** because
+  the latest `dev` text is newer than that signed APK. Do not use B1676 to
+  certify current source.
+- Checked source boundaries for `SysUiPresentationOwner`,
+  `SysUiPresentationRuntime`, `RetirementGate`, `GyModule`, Home/Keyguard/CC
+  render sessions, native network/battery/tint/AOD sources, API 102
+  `HotReloadTransfer`, callback/observer owners, diagnostics, configuration
+  backup, Manifest, build variants, signing workflows and associated existing
+  tests. This is a scoped static audit, **not** a claim of exhaustive
+  full-project formal verification or native exception injection.
 
 ## Historical source-only qualification matrix — 2026-10-31
 
@@ -69,7 +112,17 @@ evidence, not statements that current `dev/main/it` still have those SHA values.
 
 ## Full-repository source preflight — 2026-10-31
 
-This is a reproducible **source inventory and bounded static review**, not a claim that every runtime branch was manually simulated. The exact reviewed Git tree was `dev@4e265b14aec545417fb4556180c4684cf9d9c0e2` (431 tracked blobs). All 188 application Kotlin source files (77 `xposed`, 111 app/settings/system/MIUIX UI) were entered in an initial exception/lifetime/unsafe-call site inspection. The audit explicitly examined native Hook installers and release owners, network callback/prefs listeners, `SandboxClient`/lease and Activity stop, Root/restart and reports, configuration import/rollback, UI Compose owners, shader/UI bridges and supporting platform/build scripts. `!!` sites were checked in their containing null-guard/typed method context rather than automatically treated as defects. This is an **inspection**, not branch-by-branch proof of no bugs.
+This is a reproducible **source inventory and bounded static review**, not a
+claim that every runtime branch was manually simulated. The exact reviewed Git
+tree was `dev@4e265b14aec545417fb4556180c4684cf9d9c0e2` (431 tracked blobs). All
+188 application Kotlin source files (77 `xposed`, 111 app/settings/system/MIUIX
+UI) were entered in an initial exception/lifetime/unsafe-call site inspection.
+The audit explicitly examined native Hook installers and release owners, network
+callback/prefs listeners, `SandboxClient`/lease and Activity stop, Root/restart
+and reports, configuration import/rollback, UI Compose owners, shader/UI bridges
+and supporting platform/build scripts. `!!` sites were checked in their
+containing null-guard/typed method context rather than automatically treated as
+defects. This is an **inspection**, not branch-by-branch proof of no bugs.
 
 - Repository composition: 102 Kotlin unit-test files, 77 Android resource files
   and 431 tracked blobs total; no tracked APK/DEX/signing-key source or large
@@ -78,10 +131,34 @@ This is a reproducible **source inventory and bounded static review**, not a cla
 - Localization: `values` and `values-zh-rCN` define exactly the same 505 main
   and 100 Home resource keys (605 each), with no missing sibling names or
   mismatched Android string-format placeholders in the scan.
-- The latest verified **code-affecting** dev CI was [#41115183239](https://github.com/CHS-Haple/Guiyuan/actions/runs/41115183239) on `a162347`: `:app:testDebugUnitTest`, `assembleDebug`, exact target-profile and Xposed metadata steps succeeded. Subsequent `dev` commits changed text/automation/docs; their later green **light** checks did **not** rerun the full Gradle tasks. Before declaring a new 1.0.0 candidate releasable, require its own source-matched **Full** test/build/signing job.
-- Build shapes: `app/build.gradle.kts` conditionally selects *exactly one* of `src/os4Published/kotlin` and `src/os4Upstream/kotlin`; ordinary local builds are not equivalent to signed matched-OS4 source CI. Review both separately; do not claim upstream ABI or feature coverage from the fallback.
-- Upstream [miuix #321](https://github.com/compose-miuix-ui/miuix/pull/321), [#423](https://github.com/compose-miuix-ui/miuix/pull/423), [#461](https://github.com/compose-miuix-ui/miuix/pull/461) remained open when checked; retain the accepted pinned source and no speculative AGP/MIUIX upgrade.
-- **Scope and prose cleanup:** old `CURRENT.md` was 48,656 characters dominated by historical B1193–B1670 checkpoints, duplicating changelog/PR records despite the file's current-state contract. Historical revisions remain discoverable via Git, while current owner, verified limitations and issue gates are retained in `CURRENT.md`. Large `third_party/miuix-glass/{UI_AUDIT,CONFORMANCE,README}.md` need a **separate** unique-evidence and current-reference review before deletion/condensation; these may hold platform source contract facts not safely discarded by size alone. User-facing copy must distinguish a tested exact SystemUI from generic HyperOS support, and an OS4 **UI style** from proof of cross-ROM compatibility. Preserve truthful provisional-release wording until actual promotion.
+- The latest verified **code-affecting** dev CI was
+  [#41115183239](https://github.com/CHS-Haple/Guiyuan/actions/runs/41115183239)
+  on `a162347`: `:app:testDebugUnitTest`, `assembleDebug`, exact target-profile
+  and Xposed metadata steps succeeded. Subsequent `dev` commits changed
+  text/automation/docs; their later green **light** checks did **not** rerun the
+  full Gradle tasks. Before declaring a new 1.0.0 candidate releasable, require
+  its own source-matched **Full** test/build/signing job.
+- Build shapes: `app/build.gradle.kts` conditionally selects *exactly one* of
+  `src/os4Published/kotlin` and `src/os4Upstream/kotlin`; ordinary local builds
+  are not equivalent to signed matched-OS4 source CI. Review both separately; do
+  not claim upstream ABI or feature coverage from the fallback.
+- Upstream [miuix #321](https://github.com/compose-miuix-ui/miuix/pull/321),
+  [#423](https://github.com/compose-miuix-ui/miuix/pull/423),
+  [#461](https://github.com/compose-miuix-ui/miuix/pull/461) remained open when
+  checked; retain the accepted pinned source and no speculative AGP/MIUIX
+  upgrade.
+- **Scope and prose cleanup:** old `CURRENT.md` was 48,656 characters dominated
+  by historical B1193–B1670 checkpoints, duplicating changelog/PR records
+  despite the file's current-state contract. Historical revisions remain
+  discoverable via Git, while current owner, verified limitations and issue
+  gates are retained in `CURRENT.md`. Large
+  `third_party/miuix-glass/{UI_AUDIT,CONFORMANCE,README}.md` need a **separate**
+  unique-evidence and current-reference review before deletion/condensation;
+  these may hold platform source contract facts not safely discarded by size
+  alone. User-facing copy must distinguish a tested exact SystemUI from generic
+  HyperOS support, and an OS4 **UI style** from proof of cross-ROM
+  compatibility. Preserve truthful provisional-release wording until actual
+  promotion.
 - **Decision:** no source evidence established a new deterministic shipping
   blocker that justifies a speculative native Hook/animation/security rewrite.
   This does **not** clear unobserved exception paths, future 1.0.0 compiled

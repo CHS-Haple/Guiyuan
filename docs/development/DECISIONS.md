@@ -188,7 +188,12 @@ pull-to-refresh for manual refresh feedback.
 **Why:** collecting logs during navigation can compete with page motion. The
 previous completed snapshot remains visible until the next capture is ready.
 
-**Consequence:** keep the last completed snapshot in `GyApp`'s remembered state. On the first capture, display a MIUIX progress indicator and loading label until a snapshot exists. The summary and visible log rows then enter with the same Folme spring, a 28 dp upward reveal and progressive alpha, staggered by row without a separate delay. Existing entries remain visible during manual refresh, and the pull-to-refresh control supplies refresh feedback.
+**Consequence:** keep the last completed snapshot in `GyApp`'s remembered state.
+On the first capture, display a MIUIX progress indicator and loading label until
+a snapshot exists. The summary and visible log rows then enter with the same
+Folme spring, a 28 dp upward reveal and progressive alpha, staggered by row
+without a separate delay. Existing entries remain visible during manual refresh,
+and the pull-to-refresh control supplies refresh feedback.
 
 ## Hot Reload retires the old generation first
 
@@ -198,7 +203,10 @@ before accepting generation retirement. Reuse the verified host Hook only after
 the old owner has left; never transfer an old module callback to fake continuous
 rendering.
 
-**Why:** LSPosed 7927 loads the replacement ClassLoader *after* old `onHotReloading`, and provides no frame-atomic UI transaction. Keeping old listeners inside a V9 Array breaks lifetime ownership even if the UI appears seamless.
+**Why:** LSPosed 7927 loads the replacement ClassLoader *after* old
+`onHotReloading`, and provides no frame-atomic UI transaction. Keeping old
+listeners inside a V9 Array breaks lifetime ownership even if the UI appears
+seamless.
 
 **Consequence:** new owners revalidate live host identity before acquiring
 runtime resources; native battery/network may briefly display between

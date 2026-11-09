@@ -15,7 +15,8 @@ English is canonical for source code, engineering documentation, contribution
 governance, pull requests and repository templates. User-facing documentation
 may also provide Simplified Chinese.
 
-Contributions intentionally submitted for inclusion are licensed under `GPL-3.0-only`.
+Contributions intentionally submitted for inclusion are licensed under
+`GPL-3.0-only`.
 
 Local baseline:
 
@@ -189,10 +190,13 @@ areas incrementally instead of churning unrelated code.
 - Public identity remains Guiyuan / 归元 with package `com.chaners.guiyuan`.
 - Local/private names may be short when context already carries the meaning;
   cross-file/architecture names must remain searchable and unambiguous.
-- Familiar forms such as `SysUi`, `Diag`, `Repo`, `Prefs`, `Cfg`, `AOD`, `QS` and `CC` are preferred when they reduce typing without reducing clarity.
+- Familiar forms such as `SysUi`, `Diag`, `Repo`, `Prefs`, `Cfg`, `AOD`, `QS`
+  and `CC` are preferred when they reduce typing without reducing clarity.
 - Remove repeated product/domain wording when the package/file/receiver already
   establishes it.
-- Keep `Owner`, `Source`, `Policy`, `Session`, `Contract`, `Probe` or similar suffixes only when they carry real lifecycle, authority, compatibility, reuse or policy meaning.
+- Keep `Owner`, `Source`, `Policy`, `Session`, `Contract`, `Probe` or similar
+  suffixes only when they carry real lifecycle, authority, compatibility, reuse
+  or policy meaning.
 - Persisted keys, protocol/log fields, reflection targets, resource identities,
   Xposed-facing IDs and other externally consumed names are compatibility
   surfaces; do not rename them as cosmetic cleanup.
@@ -337,7 +341,14 @@ deliberate signal for automatic unsigned Canary/Release artifact production and
 trusted signing; no new pair means the distribution steps are skipped while
 required source/build checks continue.
 
-Before delivery, check previously distributed APKs, including historical IT versions, so the intended upgrade has a strictly higher `versionCode`; channel-specific functional differences cannot silently share a Build identity. Use the exact Git SHA and branch/channel to trace every CI result and signed artifact. Keep trusted signing isolated from candidate code. Work-branch device tests still require an explicitly reviewed same-repository PR and a separately authorized signing request; never allow unreviewed PRs to trigger privileged signing automatically.
+Before delivery, check previously distributed APKs, including historical IT
+versions, so the intended upgrade has a strictly higher `versionCode`;
+channel-specific functional differences cannot silently share a Build identity.
+Use the exact Git SHA and branch/channel to trace every CI result and signed
+artifact. Keep trusted signing isolated from candidate code. Work-branch device
+tests still require an explicitly reviewed same-repository PR and a separately
+authorized signing request; never allow unreviewed PRs to trigger privileged
+signing automatically.
 
 ## Git workflow
 
@@ -356,7 +367,11 @@ Normal runtime path:
 feat/*, fix/*, or refactor/* -> dev -> dev-to-main PR -> main
 ~~~
 
-Create work branches from current `dev`. One branch represents one coherent objective, not every tweak or device response. The trusted work-branch APK workflow accepts only same-repository `feat/*`, `fix/*`, `refactor/*` and `hotfix/*` sources; use an eligible prefix for dependency proposals requiring a signed Canary, not `build/*`.
+Create work branches from current `dev`. One branch represents one coherent
+objective, not every tweak or device response. The trusted work-branch APK
+workflow accepts only same-repository `feat/*`, `fix/*`, `refactor/*` and
+`hotfix/*` sources; use an eligible prefix for dependency proposals requiring a
+signed Canary, not `build/*`.
 
 A PR may remain Draft while implementation is moving. Mark it ready at the final
 automated-review checkpoint. Merge to `dev` only when deterministic blockers are
@@ -366,11 +381,27 @@ Use squash merge for ordinary work branches.
 
 ### Retired IT channel
 
-The historical `it` channel was retired from routine development and distribution after the v1.0.0 stable release. Do not start IT feature work, synchronize `dev` to `it`, or issue new IT APKs. Preserve historical Git, CI and release evidence.
+The historical `it` channel was retired from routine development and
+distribution after the v1.0.0 stable release. Do not start IT feature work,
+synchronize `dev` to `it`, or issue new IT APKs. Preserve historical Git, CI and
+release evidence.
 
-The historical `it` branch remains for traceability, but current `dev` and `main` Build/signing workflows no longer admit IT APK sources (see [#1189](https://github.com/CHS-Haple/Guiyuan/pull/1189) and [#1190](https://github.com/CHS-Haple/Guiyuan/pull/1190)). Keep historical `app/src/internal/` and `it-only/` content out of public branches, and maintain a public `versionCode` above previously distributed IT versions.
+The historical `it` branch remains for traceability, but current `dev` and
+`main` Build/signing workflows no longer admit IT APK sources (see
+[#1189](https://github.com/CHS-Haple/Guiyuan/pull/1189) and
+[#1190](https://github.com/CHS-Haple/Guiyuan/pull/1190)). Keep historical
+`app/src/internal/` and `it-only/` content out of public branches, and maintain
+a public `versionCode` above previously distributed IT versions.
 
-All distributable APKs use the accepted pinned MIUIX source graph. Active channels: `dev` Debug validation and demand-driven signed Canary; `main` Release only. New issue-specific diagnostics require explicitly authorized, time-limited builds and removal plans. Canary remains non-debuggable, release-optimized, and defaults to General diagnostics. No ordinary Release assembly on `dev` or routine Debug/Canary on `main`. Trusted work-branch signing accepts only reviewed exact-SHA source-built artifacts; candidate code never runs with signing credentials. Never substitute the published MIUIX fallback for the accepted source-built OS4 graph.
+All distributable APKs use the accepted pinned MIUIX source graph. Active
+channels: `dev` Debug validation and demand-driven signed Canary; `main` Release
+only. New issue-specific diagnostics require explicitly authorized, time-limited
+builds and removal plans. Canary remains non-debuggable, release-optimized, and
+defaults to General diagnostics. No ordinary Release assembly on `dev` or
+routine Debug/Canary on `main`. Trusted work-branch signing accepts only
+reviewed exact-SHA source-built artifacts; candidate code never runs with
+signing credentials. Never substitute the published MIUIX fallback for the
+accepted source-built OS4 graph.
 
 ### Stable promotion
 
@@ -407,20 +438,25 @@ also changes.
 
 ### Hotfix
 
-Hotfix from `main`, keep it narrow, validate it, merge to `main`, then reconcile it into `dev`.
+Hotfix from `main`, keep it narrow, validate it, merge to `main`, then reconcile
+it into `dev`.
 
 ## CI and device validation
 
 Developer-facing scopes:
 
 - **Light** — Draft and proven repository-only/mechanical changes.
-- **Runtime** — ordinary app/SystemUI PRs and trusted runtime integration on `dev`; validates target profile, tests, Debug build and Xposed metadata as configured.
+- **Runtime** — ordinary app/SystemUI PRs and trusted runtime integration on
+  `dev`; validates target profile, tests, Debug build and Xposed metadata as
+  configured.
 - **Full** — stable admission plus dependency/build/CI/tooling/signing/release
   changes; compiles and validates only the required target-branch APK variants.
   Signing remains a separate trust step.
 
 CI proves configured source/build checks, not SystemUI runtime correctness.
-Preserve each pushed `dev`/`main` commit's required integration check: a later documentation-only push must not cancel an unfinished Runtime/Full validation. Superseded PR revisions may cancel their older checks.
+Preserve each pushed `dev`/`main` commit's required integration check: a later
+documentation-only push must not cancel an unfinished Runtime/Full validation.
+Superseded PR revisions may cancel their older checks.
 
 Use concise PR titles, typically `type(scope): description`. GitHub Actions appends `| CI #PR` for PR checks. For a Build-labeled APK run, an owner comment such as `B850 Canary` produces `type(scope): description | B850 Canary #PR`; the workflow verifies the requested Build against the checked-out Gradle source. The older `/canary` comment remains compatible but cannot show a Build in the run title.
 
@@ -429,7 +465,14 @@ workflows.
 
 ### Canary
 
-The **same pre-build device-test decision** applies to `dev` and eligible work branches. For `dev`, a deliberately changed Build identity compiles Canary and uses the trusted inline signer; for eligible `feat/*`, `fix/*`, `refactor/*` and `hotfix/*` PRs, a paired Build identity plus the owner's prior exact-SHA authorization chains successful Build to Work Branch APK signing. The workflow run title identifies the source branch and signing is named `Sign Canary`; `main` keeps an independent stable Release signing boundary. Changes not needing device evidence validate source without signing or allocating a new Build.
+The **same pre-build device-test decision** applies to `dev` and eligible work
+branches. For `dev`, a deliberately changed Build identity compiles Canary and
+uses the trusted inline signer; for eligible `feat/*`, `fix/*`, `refactor/*` and
+`hotfix/*` PRs, a paired Build identity plus the owner's prior exact-SHA
+authorization chains successful Build to Work Branch APK signing. The workflow
+run title identifies the source branch and signing is named `Sign Canary`;
+`main` keeps an independent stable Release signing boundary. Changes not needing
+device evidence validate source without signing or allocating a new Build.
 
 Signed work-branch Canary is demand-driven. Decide whether device evidence is
 needed before the CI checkpoint; an ordinary source-validation run does not
@@ -489,7 +532,10 @@ release workflow, signing, metadata, version, tag and changelog checks.
 
 ## Documentation and source of truth
 
-For the contributor reading order and document responsibilities, use the [documentation index](docs/README.md). Current repository code, CI and verified device evidence take precedence over stale documentation or remembered history. Do not duplicate build-by-build records across long-lived reference documents.
+For the contributor reading order and document responsibilities, use the
+[documentation index](docs/README.md). Current repository code, CI and verified
+device evidence take precedence over stale documentation or remembered history.
+Do not duplicate build-by-build records across long-lived reference documents.
 
 ## Definition of done
 
@@ -502,7 +548,13 @@ focused device evidence.
 UI work: review hierarchy, MIUIX behavior, themes, localization, accessibility
 and interaction.
 
-Privacy and terms documents require formal, precise language rather than routine UI copyediting. Preserve necessary legal qualifications and exact meanings. For substantive changes, verify disclosures against actual source/runtime behavior, keep Chinese/English meaning equivalent, and synchronize in-app articles with public `PRIVACY.md` and `TERMS.md`. Do not introduce unsupported maintainer identities, private contact methods, consent mechanisms, retention guarantees or legal assurances.
+Privacy and terms documents require formal, precise language rather than routine
+UI copyediting. Preserve necessary legal qualifications and exact meanings. For
+substantive changes, verify disclosures against actual source/runtime behavior,
+keep Chinese/English meaning equivalent, and synchronize in-app articles with
+public `PRIVACY.md` and `TERMS.md`. Do not introduce unsupported maintainer
+identities, private contact methods, consent mechanisms, retention guarantees or
+legal assurances.
 
 Repository/CI work: review triggers, secret boundaries, artifact semantics and
 branch protection.

@@ -1,6 +1,12 @@
 # LSPosed 7930 Compatibility Check
 
-This reference separates a **static examination** of the supplied `LSPosed-v2.2.1-7930-release.zip` from **bounded 7930 runtime evidence** in earlier maintainer-provided Guiyuan diagnostic logs. The archive checks do not prove publisher authenticity or exact installed-framework byte identity. The supplied 7930 Java framework has now been independently compared with the byte-verified 7927 Java framework; for the underlying API 102 callback path, see [LSPosed 7927 Hot Reload Contract](lsposed-7927-hot-reload.md).
+This reference separates a **static examination** of the supplied
+`LSPosed-v2.2.1-7930-release.zip` from **bounded 7930 runtime evidence** in
+earlier maintainer-provided Guiyuan diagnostic logs. The archive checks do not
+prove publisher authenticity or exact installed-framework byte identity. The
+supplied 7930 Java framework has now been independently compared with the
+byte-verified 7927 Java framework; for the underlying API 102 callback path, see
+[LSPosed 7927 Hot Reload Contract](lsposed-7927-hot-reload.md).
 
 ## Supplied archive
 
@@ -21,9 +27,27 @@ package merely because its internal sidecars match.
 
 ### Direct 7927–7930 Java framework parity check (2026-10-30)
 
-The original supplied 7927 and 7930 release ZIPs were re-extracted (ZIP method 95, XZ) and the actual `framework.dex` SHA-256 hashes matched the table above and the 7927 reference: `455155d12173462d51bea31465fe1278fcf91da4ef1d5427dc9beec0c07ccdb4` versus `e84ca1e7e35f7f268c50ff49b1beaff162b0475b9c12f50fa3654bf85b625269`. Both DEX inputs were independently disassembled with the original `baksmali-3.0.10-fat-release.jar`, producing **181 class definitions each**. All class paths, instruction sequences and method bodies match after excluding the changed R8 `.source` map ID and the single expected version constant in `y0.smali` (`0x1ef7` = 7927 to `0x1efa` = 7930). No other instruction-level changes were found in the extracted Java framework.
+The original supplied 7927 and 7930 release ZIPs were re-extracted (ZIP method
+95, XZ) and the actual `framework.dex` SHA-256 hashes matched the table above
+and the 7927 reference:
+`455155d12173462d51bea31465fe1278fcf91da4ef1d5427dc9beec0c07ccdb4` versus
+`e84ca1e7e35f7f268c50ff49b1beaff162b0475b9c12f50fa3654bf85b625269`. Both DEX
+inputs were independently disassembled with the original
+`baksmali-3.0.10-fat-release.jar`, producing **181 class definitions each**. All
+class paths, instruction sequences and method bodies match after excluding the
+changed R8 `.source` map ID and the single expected version constant in
+`y0.smali` (`0x1ef7` = 7927 to `0x1efa` = 7930). No other instruction-level
+changes were found in the extracted Java framework.
 
-In particular, `y0` retains the same `onHotReloading` and `onHotReloaded` calls and their surrounding class-loader handoff logic as the independently examined 7927 binary. Thus, the 7927 normal-path API 102 **Java callback ordering also applies to the supplied 7930 Java DEX**, with stronger evidence than string presence or user logs alone. This comparison does **not** show equivalence of `libframework.so`, Zygisk injection/wrapper/daemon behavior, the exact files actually installed on the user's device, or native exceptional scheduling/cleanup. No Guiyuan runtime change or new device acceptance follows from this source check.
+In particular, `y0` retains the same `onHotReloading` and `onHotReloaded` calls
+and their surrounding class-loader handoff logic as the independently examined
+7927 binary. Thus, the 7927 normal-path API 102 **Java callback ordering also
+applies to the supplied 7930 Java DEX**, with stronger evidence than string
+presence or user logs alone. This comparison does **not** show equivalence of
+`libframework.so`, Zygisk injection/wrapper/daemon behavior, the exact files
+actually installed on the user's device, or native exceptional
+scheduling/cleanup. No Guiyuan runtime change or new device acceptance follows
+from this source check.
 
 ## Reported framework changes
 
@@ -43,11 +67,30 @@ injection, hidden bypasses or detection-evasion code to emulate it.
 
 ## Observed target-device runtime (2026-10-20–23)
 
-These observations are from maintainer-provided diagnostics for Xiaomi 15 Pro / Android 17 / SystemUI `17.03.260226.r`, **not** conclusions drawn only from the supplied archive:
+These observations are from maintainer-provided diagnostics for Xiaomi 15 Pro /
+Android 17 / SystemUI `17.03.260226.r`, **not** conclusions drawn only from the
+supplied archive:
 
-- **Settings load:** B1136 (2026-10-20 22:54 +08) records `module.loaded` in `com.android.settings:remote` with API 102, `framework=LSPosed`, `frameworkVersion=2.2.1` and `frameworkVersionCode=7930`.
-- **SystemUI V10 normal handoff:** B1181 (2026-10-21 15:53 +08), B1186 (17:54) and B1187 (18:56) independently record `module.reloaded` reporting 7930, `compatibility.revalidated statusHost=available`, `statusHostHook hook.replace`, `hotReload.generationHandoff mode=retired-before-reload` and `hotReload.complete state=ready restartScope=false staleHooks=32 statusHostHook=replaced`. The reported SystemUI PID and restored host identity are consistent across those three captures.
-- **Consecutive same-Build reloads:** Two B1232 Canary diagnostic reports on 2026-10-23 show completed Hot Reload at 15:35:14.086 and 15:35:25.656 (+08:00) within the same SystemUI PID `16822`, retaining host identity `146151917` across distinct module diagnostic sessions. Each records `hotReload.generationHandoff mode=retired-before-reload`, `hotReload.complete state=ready restartScope=false staleHooks=32 statusHostHook=replaced`, and Home combined presentation restored. This is two consecutive successful normal-path reloads of the same reported Build, not a byte-for-byte installed APK verification, memory-leak proof or failure-path stress test.
+- **Settings load:** B1136 (2026-10-20 22:54 +08) records `module.loaded` in
+  `com.android.settings:remote` with API 102, `framework=LSPosed`,
+  `frameworkVersion=2.2.1` and `frameworkVersionCode=7930`.
+- **SystemUI V10 normal handoff:** B1181 (2026-10-21 15:53 +08), B1186 (17:54)
+  and B1187 (18:56) independently record `module.reloaded` reporting 7930,
+  `compatibility.revalidated statusHost=available`,
+  `statusHostHook hook.replace`,
+  `hotReload.generationHandoff mode=retired-before-reload` and
+  `hotReload.complete state=ready restartScope=false staleHooks=32 statusHostHook=replaced`.
+  The reported SystemUI PID and restored host identity are consistent across
+  those three captures.
+- **Consecutive same-Build reloads:** Two B1232 Canary diagnostic reports on
+  2026-10-23 show completed Hot Reload at 15:35:14.086 and 15:35:25.656 (+08:00)
+  within the same SystemUI PID `16822`, retaining host identity `146151917`
+  across distinct module diagnostic sessions. Each records
+  `hotReload.generationHandoff mode=retired-before-reload`,
+  `hotReload.complete state=ready restartScope=false staleHooks=32 statusHostHook=replaced`,
+  and Home combined presentation restored. This is two consecutive successful
+  normal-path reloads of the same reported Build, not a byte-for-byte installed
+  APK verification, memory-leak proof or failure-path stress test.
 - **Presentation boundary:** B1181 records the Home presentation restored as
   combined. The B1186/B1187 reports also include native-systemui fallback with
   the feature disabled.
