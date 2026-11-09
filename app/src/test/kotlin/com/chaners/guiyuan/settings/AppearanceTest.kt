@@ -88,12 +88,21 @@ class AppearanceCompatibilityTest {
         assertTrue(settings.navEnabled)
         assertTrue(settings.navTouchExtension)
         assertEquals(UiStyle.OS4, settings.uiStyle)
+        assertTrue(settings.topBarProgressiveBlur)
         assertEquals(listOf(UiStyle.OS4, UiStyle.OS3), uiStyleMenuOrder)
         assertEquals(NavStyle.Glass, settings.navStyle)
         assertEquals(NavContent.IconAndText, settings.navContent)
         assertEquals(NavContent.IconAndText, settings.liquidContent)
         assertEquals(NavContent.IconAndText, settings.activeNavContent)
         assertEquals(LiquidMode.Balanced, settings.liquidMode)
+    }
+
+    @Test
+    fun progressiveTopBarBlurSettingIsSharedAcrossUiStyles() {
+        val disabled = Appearance(topBarProgressiveBlur = false)
+        assertFalse(disabled.copy(uiStyle = UiStyle.OS3).topBarProgressiveBlur)
+        assertFalse(disabled.copy(uiStyle = UiStyle.OS4).topBarProgressiveBlur)
+        assertTrue(disabled.copy(topBarProgressiveBlur = true).topBarProgressiveBlur)
     }
 
     @Test
@@ -161,6 +170,20 @@ class AppearanceCompatibilityTest {
     fun missingLegacyNavigationContentStillDefaultsToIconOnly() {
         assertEquals(NavContent.IconOnly, decodeNavContent(null))
         assertEquals(NavContent.IconAndText, decodeNavContent(NavContent.IconAndText.name))
+    }
+
+    @Test
+    fun uiStyleMigrationDoesNotResetProgressiveBlurPreference() {
+        val blurKey = booleanPreferencesKey("top_bar_progressive_blur")
+        val prefs = mutablePreferencesOf(
+            stringPreferencesKey("ui_style") to UiStyle.OS3.name,
+            blurKey to false,
+        )
+
+        migrateOs4Appearance(prefs)
+
+        assertEquals(false, prefs[blurKey])
+        assertEquals(UiStyle.OS4.name, prefs[stringPreferencesKey("ui_style")])
     }
 
     @Test

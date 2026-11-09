@@ -49,6 +49,7 @@ internal enum class LiquidMode(val stored: String) {
 internal data class Appearance(
     val theme: ThemeMode = ThemeMode.System,
     val uiStyle: UiStyle = UiStyle.OS4,
+    val topBarProgressiveBlur: Boolean = true,
     val dynamicColor: Boolean = false,
     val colorSpec: ThemeColorSpec? = null,
     val paletteStyle: ThemePaletteStyle = ThemePaletteStyle.TonalSpot,
@@ -127,6 +128,7 @@ private val Context.appearanceStore: DataStore<Preferences> by preferencesDataSt
 )
 
 private val uiStyleKey = stringPreferencesKey("ui_style")
+private val topBarProgressiveBlurKey = booleanPreferencesKey("top_bar_progressive_blur")
 private val navContentKey = stringPreferencesKey("floating_navigation_content")
 private val os4UpgradeKey = booleanPreferencesKey("ui_style_os4_upgrade_done")
 
@@ -168,6 +170,7 @@ internal class AppearanceRepo(context: Context) {
             Appearance(
                 theme = theme.mode,
                 uiStyle = UiStyle.entries.firstOrNull { it.name == prefs[uiStyleKey] } ?: UiStyle.OS3,
+                topBarProgressiveBlur = prefs[topBarProgressiveBlurKey] ?: true,
                 dynamicColor = theme.dynamicColor,
                 colorSpec = colorSpec,
                 paletteStyle = compatiblePalette(colorSpec, decodePalette(prefs[paletteStyleKey])),
@@ -192,6 +195,10 @@ internal class AppearanceRepo(context: Context) {
             prefs[uiStyleKey] = style.name
             prefs[os4UpgradeKey] = true
         }
+    }
+
+    suspend fun setTopBarProgressiveBlur(enabled: Boolean) {
+        store.edit { prefs -> prefs[topBarProgressiveBlurKey] = enabled }
     }
 
     suspend fun setTheme(mode: ThemeMode) {

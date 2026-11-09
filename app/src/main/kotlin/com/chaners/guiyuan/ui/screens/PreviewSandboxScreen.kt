@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.icons.Os4GlassBack
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
@@ -391,6 +392,7 @@ internal fun PreviewSandboxScreen(
               Box(Modifier.onSizeChanged { nativeBarHeightPx = it.height }) {
                 if (os4) {
                     GlassTopAppBar(
+                        progressiveBlur = LocalTopBarProgressiveBlur.current,
                         isContentScrolled = listState.canScrollBackward,
                         title = stringResource(R.string.home_preview_sandbox_title),
                         backdrop = topBarBackdrop,

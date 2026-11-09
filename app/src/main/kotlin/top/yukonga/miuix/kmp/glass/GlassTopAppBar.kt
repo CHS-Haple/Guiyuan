@@ -387,7 +387,10 @@ fun GlassTopAppBar(
                     .matchParentSize()
                     .layout { measurable, constraints ->
                         val barHeight = topInsets.getTop(this) + TopAppBarDefaults.CollapsedHeight.toPx()
-                        val height = ((barHeight + 20.dp.toPx()) * 1.2f).roundToInt()
+                        // External overlay rows extend the sampled band without changing the bar's layout height.
+                        val extraOverhang = (bandOverhang - GlassTopAppBarDefaults.BandOverhang)
+                            .coerceAtLeast(0.dp).toPx()
+                        val height = ((barHeight + 20.dp.toPx()) * 1.2f + extraOverhang).roundToInt()
                         val placeable = measurable.measure(constraints.copy(minHeight = height, maxHeight = height))
                         layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(0, 0) }
                     }

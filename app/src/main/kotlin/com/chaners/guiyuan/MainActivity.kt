@@ -31,6 +31,7 @@ import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.GyApp
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
@@ -122,6 +123,7 @@ class MainActivity : ComponentActivity() {
                 LocalDensity provides uiDensity,
                 LocalWindowInfo provides uiWindow,
                 LocalUiStyle provides appearance.uiStyle,
+                LocalTopBarProgressiveBlur provides appearance.topBarProgressiveBlur,
             ) {
                 GyApp(
                     appearance = appearance,
@@ -141,6 +143,9 @@ class MainActivity : ComponentActivity() {
                     },
                     onUiStyleChange = { style: UiStyle ->
                         scope.launch { repo.setUiStyle(style) }
+                    },
+                    onTopBarProgressiveBlurChange = { enabled ->
+                        scope.launch { repo.setTopBarProgressiveBlur(enabled) }
                     },
                     onThemeChange = { mode ->
                         scope.launch { repo.setTheme(mode) }
