@@ -1,12 +1,24 @@
 # Changelog · 更新日志
 
-This file documents **formal Guiyuan releases starting with 1.0.0**. As the first stable release, the 1.0.0 entry introduces the product rather than comparing it with an earlier stable release. Earlier development, internal-test and build history remains in Git commits, pull requests and CI records, not in this public changelog.
+This file documents **formal Guiyuan releases starting with 1.0.0**. As the
+first stable release, the 1.0.0 entry introduces the product rather than
+comparing it with an earlier stable release. Earlier development, internal-test
+and build history remains in Git commits, pull requests and CI records, not in
+this public changelog.
 
-Formal releases appear newest first, with **equivalent Simplified Chinese and English notes**. Subsequent releases group user-facing changes under **Added, Improved, Fixed, Removed, and Upstream dependency updates** when applicable; omit empty categories and add concise compatibility notes where needed. Build-by-Build history, abandoned experiments and unpublished candidates are not release notes.
+Formal releases appear newest first, with **equivalent Simplified Chinese and
+English notes**. Subsequent releases group user-facing changes under **Added,
+Improved, Fixed, Removed, and Upstream dependency updates** when applicable;
+omit empty categories and add concise compatibility notes where needed.
+Build-by-Build history, abandoned experiments and unpublished candidates are not
+release notes.
 
-本文件仅记录归元自 **1.0.0** 起正式发布的版本。1.0.0 为首次正式版，以下内容介绍应用能力，并非相对旧正式版的变更。此前的开发、内测与构建记录保留在 Git 提交、PR 和 CI 历史中，不列入公开版本日志。
+本文件仅记录归元自 **1.0.0** 起正式发布的版本。1.0.0
+为首次正式版，以下内容介绍应用能力，并非相对旧正式版的变更。此前的开发、内测与构建记录保留在 Git 提交、PR 和 CI 历史中，不列入公开版本日志。
 
-每个正式版本按日期倒序记录，**简体中文与 English 均须完整对应**。后续版本以用户感知为主，按实际内容选用 **新增 / Added**、**优化 / Improved**、**修复 / Fixed**、**移除 / Removed**、**上游依赖更新 / Upstream dependency updates**；省略空分类，必要时补充简明兼容性说明。不按 Build 逐条记录，不收录失败实验，也不将未发布候选写作已发布版本。
+每个正式版本按日期倒序记录，**简体中文与 English 均须完整对应**。后续版本以用户感知为主，按实际内容选用 **新增 / Added**、**优化 /
+Improved**、**修复 / Fixed**、**移除 / Removed**、**上游依赖更新 / Upstream dependency
+updates**；省略空分类，必要时补充简明兼容性说明。不按 Build 逐条记录，不收录失败实验，也不将未发布候选写作已发布版本。
 
 ## [1.1.0] - 2026-11-09
 
@@ -66,40 +78,64 @@ This release summarizes the user-facing changes from **1.0.0 to 1.1.0**.
 
 #### Added
 
-- **Centered cellular signal layout:** place cellular signal dots in the center with the network type below, supporting single- and dual-SIM presentations.
-- **Two-sided dual-SIM layout:** adds a two-sided signal-dot arrangement alongside curved and horizontal styles, and uses it by default when first enabling a dual-SIM layout.
-- **Bottom status icons:** place native network upload/download indicators or the charging bolt below the signal dots, with size and position controls; charging takes priority when both apply.
-- **Network activity option:** optionally hide the activity indicator when idle (off by default), with Preview Sandbox support.
-- **Progressive top-bar blur:** an on-by-default switch for the supported OS3/OS4 visual styles and Preview Sandbox top bar.
-- **Adaptive battery-ring opening:** an opening that follows signal-dot placement and size, while retaining the fixed-opening alternative.
-- **Detailed diagnostics in Release:** opt in to detailed logs in Release or Canary; regular diagnostics remain the default.
+- **Centered cellular signal layout:** place cellular signal dots in the center
+  with the network type below, supporting single- and dual-SIM presentations.
+- **Two-sided dual-SIM layout:** adds a two-sided signal-dot arrangement
+  alongside curved and horizontal styles, and uses it by default when first
+  enabling a dual-SIM layout.
+- **Bottom status icons:** place native network upload/download indicators or
+  the charging bolt below the signal dots, with size and position controls;
+  charging takes priority when both apply.
+- **Network activity option:** optionally hide the activity indicator when idle
+  (off by default), with Preview Sandbox support.
+- **Progressive top-bar blur:** an on-by-default switch for the supported
+  OS3/OS4 visual styles and Preview Sandbox top bar.
+- **Adaptive battery-ring opening:** an opening that follows signal-dot
+  placement and size, while retaining the fixed-opening alternative.
+- **Detailed diagnostics in Release:** opt in to detailed logs in Release or
+  Canary; regular diagnostics remain the default.
 
 #### Improved
 
-- **Layout preferences:** keep signal-dot style, size and offsets separately for layouts and single-/dual-row modes.
-- **Visual layout and transitions:** refine dual-SIM spacing, ring clearance and signal-dot transitions when entering or leaving Control Center.
-- **HyperOS 4 interface:** align Glass materials, menus, sheets, navigation capsules, icons and display cutouts with upstream MIUIX conventions.
-- **Preview Sandbox:** improve top-bar, dock, progressive blur and scrolling behavior, including scroll-to-top shadow handling.
-- **About screen:** refine the animated background and scrolling, respecting visibility and theme changes.
-- **Settings and diagnostics:** improve bilingual search, battery color controls, log lists and details, backup and restore.
-- **User information:** update bilingual privacy and terms documents, third-party notices and issue-report templates.
+- **Layout preferences:** keep signal-dot style, size and offsets separately for
+  layouts and single-/dual-row modes.
+- **Visual layout and transitions:** refine dual-SIM spacing, ring clearance and
+  signal-dot transitions when entering or leaving Control Center.
+- **HyperOS 4 interface:** align Glass materials, menus, sheets, navigation
+  capsules, icons and display cutouts with upstream MIUIX conventions.
+- **Preview Sandbox:** improve top-bar, dock, progressive blur and scrolling
+  behavior, including scroll-to-top shadow handling.
+- **About screen:** refine the animated background and scrolling, respecting
+  visibility and theme changes.
+- **Settings and diagnostics:** improve bilingual search, battery color
+  controls, log lists and details, backup and restore.
+- **User information:** update bilingual privacy and terms documents,
+  third-party notices and issue-report templates.
 
 #### Fixed
 
 - Battery percentage or charging state not refreshing promptly on some devices.
-- Missing signal dots on some dual-SIM hosts, and incorrect network activity when SIM2 is the default data SIM.
-- Abnormal activity-indicator visibility and empty space during VPN and Wi-Fi/cellular transitions.
-- Stale network state briefly appearing after airplane-mode transitions or Hot Reload.
+- Missing signal dots on some dual-SIM hosts, and incorrect network activity
+  when SIM2 is the default data SIM.
+- Abnormal activity-indicator visibility and empty space during VPN and
+  Wi-Fi/cellular transitions.
+- Stale network state briefly appearing after airplane-mode transitions or Hot
+  Reload.
 - Delayed or inconsistent light/dark icon tint on some screens.
-- Occasional flashing when dismissing nested battery-color sheets, plus menu Back/exit interaction issues.
-- About-screen header covering content after scrolling and lingering shadow after scroll-to-top.
-- Legacy dual-SIM settings sometimes overriding newer per-layout preferences after restore.
+- Occasional flashing when dismissing nested battery-color sheets, plus menu
+  Back/exit interaction issues.
+- About-screen header covering content after scrolling and lingering shadow
+  after scroll-to-top.
+- Legacy dual-SIM settings sometimes overriding newer per-layout preferences
+  after restore.
 - Premature warning icons for permissions not yet resolved in first-run setup.
 
 #### Removed
 
-- Unused local Glass icon substitutes, in favor of official icons matching the pinned MIUIX revision.
-- Retired historical IT internal-test build channel; Release and Canary use the established distribution paths.
+- Unused local Glass icon substitutes, in favor of official icons matching the
+  pinned MIUIX revision.
+- Retired historical IT internal-test build channel; Release and Canary use the
+  established distribution paths.
 
 #### Upstream dependency updates
 
@@ -116,21 +152,40 @@ This release summarizes the user-facing changes from **1.0.0 to 1.1.0**.
 
 #### Features
 
-- **Unified status indicator:** combines battery, cellular and Wi-Fi information in one compact icon, with battery-centered and network-centered layouts and configurable colors, size, position and font weight.
-- **SIM and network states:** supports single SIM, conditional dual-SIM and optional dual-row signals when native subscription identities are verified, including Wi-Fi, hotspot, airplane mode and no-SIM conditions.
-- **Native-aware scenes:** presents the combined indicator on verified Home, Keyguard and AOD surfaces. Control Center handoffs follow native SystemUI presentation and transitions; fully expanded Control Center remains SystemUI-owned.
-- **Settings and live preview:** offers MIUIX-style settings, feature search, a preview sandbox, battery color schemes and customizable floating navigation.
-- **Configuration and maintenance:** supports settings backup/restore, on-demand diagnostics and log export, plus API 102 Hot Reload in compatible framework environments.
-- **First-run guide:** covers language selection, scope and permission guidance, Terms of Use and Privacy Policy acknowledgment. Root is optional for ordinary settings and requested only for relevant diagnostic or system-maintenance actions.
+- **Unified status indicator:** combines battery, cellular and Wi-Fi information
+  in one compact icon, with battery-centered and network-centered layouts and
+  configurable colors, size, position and font weight.
+- **SIM and network states:** supports single SIM, conditional dual-SIM and
+  optional dual-row signals when native subscription identities are verified,
+  including Wi-Fi, hotspot, airplane mode and no-SIM conditions.
+- **Native-aware scenes:** presents the combined indicator on verified Home,
+  Keyguard and AOD surfaces. Control Center handoffs follow native SystemUI
+  presentation and transitions; fully expanded Control Center remains
+  SystemUI-owned.
+- **Settings and live preview:** offers MIUIX-style settings, feature search, a
+  preview sandbox, battery color schemes and customizable floating navigation.
+- **Configuration and maintenance:** supports settings backup/restore, on-demand
+  diagnostics and log export, plus API 102 Hot Reload in compatible framework
+  environments.
+- **First-run guide:** covers language selection, scope and permission guidance,
+  Terms of Use and Privacy Policy acknowledgment. Root is optional for ordinary
+  settings and requested only for relevant diagnostic or system-maintenance
+  actions.
 
 #### Improvements
 
-- Supports light and dark themes, theme-based colors and selectable OS3/OS4 **visual styles**, with source-qualified MIUIX glass integration for HyperOS 4.
-- Preserves native SystemUI presentation where host icons, SIM identities or layout contracts cannot be established reliably, rather than forcing an unsafe replacement.
+- Supports light and dark themes, theme-based colors and selectable OS3/OS4
+  **visual styles**, with source-qualified MIUIX glass integration for HyperOS
+  4.
+- Preserves native SystemUI presentation where host icons, SIM identities or
+  layout contracts cannot be established reliably, rather than forcing an unsafe
+  replacement.
 
 #### Compatibility
 
-- **Officially supports Xiaomi HyperOS 4**, with an LSPosed environment compatible with Modern Xposed API 102. The OS3 visual style does **not** imply HyperOS 3 runtime support.
+- **Officially supports Xiaomi HyperOS 4**, with an LSPosed environment
+  compatible with Modern Xposed API 102. The OS3 visual style does **not** imply
+  HyperOS 3 runtime support.
 - The device-tested baseline is **Xiaomi 15 Pro**, HyperOS `4.0.0.19.XOBCNXM`, SystemUI `17.03.260226.r`. Other HyperOS 4 devices, system builds, third-party fonts and framework combinations are not all individually certified.
 
 ### 简体中文
@@ -139,7 +194,8 @@ This release summarizes the user-facing changes from **1.0.0 to 1.1.0**.
 
 - **一体化状态栏显示**：将电量、移动网络和 Wi-Fi 信息组合为紧凑的图标，提供电量居中和网络居中等布局，以及颜色、尺寸、位置、字重等外观设置。
 - **多卡与网络状态**：在能够确认系统数据和卡槽身份时支持单卡、双卡及可选双排信号样式，并处理 Wi-Fi、热点、飞行模式、无 SIM 卡等状态。
-- **多场景适配**：在已验证的桌面状态栏、锁屏与息屏场景显示归元图标；控制中心展开时遵循系统原生图标及过渡逻辑，完整展开的控制中心由 SystemUI 管理。
+- **多场景适配**：在已验证的桌面状态栏、锁屏与息屏场景显示归元图标；控制中心展开时遵循系统原生图标及过渡逻辑，完整展开的控制中心由 SystemUI
+  管理。
 - **设置与实时预览**：提供 MIUIX 风格的设置、功能搜索、预览沙盒、电池配色方案，以及可自定义的浮动导航。
 - **配置与维护**：支持配置备份与恢复、按需诊断和日志导出，并在兼容的框架环境中提供 API 102 热重载。
 - **首次使用引导**：提供语言选择、作用域及权限说明、使用条款和隐私政策确认；日常设置不强制要求 Root，特定诊断与系统维护操作按需授权。
@@ -151,5 +207,6 @@ This release summarizes the user-facing changes from **1.0.0 to 1.1.0**.
 
 #### 兼容性说明
 
-- **正式支持 Xiaomi HyperOS 4**，需要兼容 Modern Xposed API 102 的 LSPosed 环境；应用内的 OS3 视觉风格不代表支持 HyperOS 3。
+- **正式支持 Xiaomi HyperOS 4**，需要兼容 Modern Xposed API 102 的 LSPosed 环境；应用内的 OS3
+  视觉风格不代表支持 HyperOS 3。
 - 已实机验证的基线为 **Xiaomi 15 Pro**、HyperOS `4.0.0.19.XOBCNXM`、SystemUI `17.03.260226.r`。其他 HyperOS 4 机型、系统版本、第三方字体和框架组合未全部独立验证。

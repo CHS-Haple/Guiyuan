@@ -18,6 +18,7 @@ may also provide Simplified Chinese.
 Contributions intentionally submitted for inclusion are licensed under `GPL-3.0-only`.
 
 Local baseline:
+
 - JDK 21;
 - Android SDK 37 / Build Tools 37.0.0;
 - Modern Xposed API 102;
@@ -53,6 +54,7 @@ preserve or restore native behavior for the smallest affected feature.
 ## Change method
 
 Before editing:
+
 1. confirm the requirement or defect;
 2. identify the responsible owner/state source/lifecycle/API/layout rule and
    verify the root cause when fixing a defect;
@@ -150,6 +152,7 @@ for the current session.
 ### Geometry and motion
 
 Keep separate:
+
 1. native layout/slot ownership;
 2. Guiyuan drawing geometry;
 3. transition/motion geometry;
@@ -213,6 +216,7 @@ preserve Build-by-Build debugging history in source comments.
 Maintainability refactors are behavior-neutral by default.
 
 Do not:
+
 - add a type/helper merely to name an obvious expression, pass through a value
   or wrap one caller;
 - invent a success/failure model without a real failure source;
@@ -233,6 +237,7 @@ Every non-trivial code batch gets a separate maintainability review before the
 final commit/CI checkpoint.
 
 Check touched code and relevant adjacent call sites for:
+
 - unnecessarily long or suffix-stacked names;
 - boolean/nullable fields that actually encode one lifecycle;
 - string/reason-code control flow where a direct model is clearer;

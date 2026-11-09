@@ -11,6 +11,7 @@ Use Material Symbols for explanatory row semantics and MIUIX icons for
 MIUIX-owned controls/navigation/actions.
 
 For Material Symbols:
+
 - select the glyph by semantic meaning after inspecting the actual shape;
 - default to Outlined/Regular W400 to match the pinned MIUIX visual language;
 - use W500 only when the real glyph is perceptually too light;

@@ -1,8 +1,13 @@
 # Third-Party Notices / 第三方声明
 
-Guiyuan uses third-party libraries and build tooling. This file provides a human-readable summary of the project's direct dependencies and does not replace the license text or notices distributed by each upstream project.
+Guiyuan uses third-party libraries and build tooling. This file provides a
+human-readable summary of the project's direct dependencies and does not replace
+the license text or notices distributed by each upstream project.
 
-The exact resolved dependency graph is defined by Gradle and may include additional transitive dependencies. The in-app third-party screen groups modules by upstream project to avoid duplicate entries; individual module identities and versions remain listed here.
+The exact resolved dependency graph is defined by Gradle and may include
+additional transitive dependencies. The in-app third-party screen groups modules
+by upstream project to avoid duplicate entries; individual module identities and
+versions remain listed here.
 
 ## Runtime / application dependencies
 
@@ -32,24 +37,31 @@ runtime dependency in this experimental implementation.
 
 ## Experimental OS4 glass source
 
-`app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` contains a pinned, adapted subset of the
+`app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` contains a pinned, adapted
+subset of the
 [MIUIX miuix-glass PR #423](https://github.com/compose-miuix-ui/miuix/pull/423),
 at the current development checkout revision `45645854cd46c32275c5666e3aafa9980d8f104e`. The published v1.0.0 stable branch retains its earlier source checkout `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (Apache-2.0; [license text](third_party/miuix-glass/LICENSE)).
 `GlassPopupSurface.kt` and `GlassPopupColumn.kt` were initially based on PR #423
 commit `8d52b45f223d4bec9a719d3d6ca52972cc7ea5fb` to use upstream popup
-measurement, scroll and outside-gesture ownership. This is provenance, not a claim
-that those files remain byte-identical to the current upstream revision. The remaining compatibility
+measurement, scroll and outside-gesture ownership. This is provenance, not a
+claim
+that those files remain byte-identical to the current upstream revision. The
+remaining compatibility
 bridge is not claimed to be the latest complete `miuix-glass` module.
 The adapted source includes documented compatibility bridges (including title rendering), so it is not a byte-for-byte copy of the entire upstream module. The menu migration in Guiyuan PR #1316 also selectively ports the material-opacity behavior of upstream commit `799d3d09f996d66cb2b1c2318deed8242c4f440e` into app-local `GlassIconButton` and `GlassTransformPopup`; this does not advance the complete matched-source dependency graph. Accepted OS4 source-mode CI checks out the branch-pinned MIUIX source graph; ordinary Gradle builds retain published-module compatibility paths.
-These app-local primitives remain until a qualified upstream public API can preserve their host contracts; they must not be silently
+These app-local primitives remain until a qualified upstream public API can
+preserve their host contracts; they must not be silently
 updated independently from the corresponding MIUIX UI/Blur contracts. See
-`third_party/miuix-glass/README.md` for source boundaries and removal instructions.
+`third_party/miuix-glass/README.md` for source boundaries and removal
+instructions.
 
 ## Experimental MIUIX background effect source
 
-The `effect.bg` source under `app/src/main/kotlin/top/yukonga/miuix/kmp/effect/bg/` is pinned to
+The `effect.bg` source under
+`app/src/main/kotlin/top/yukonga/miuix/kmp/effect/bg/` is pinned to
 [MIUIX PR #321](https://github.com/compose-miuix-ui/miuix/pull/321)
-at `73bdd49b4ea965dc7822e276b0a6ce29a5564f54` (Apache-2.0). Original copyrights are retained.
+at `73bdd49b4ea965dc7822e276b0a6ce29a5564f54` (Apache-2.0). Original copyrights
+are retained.
 `GyBgEffect` is Guiyuan's thin About/Onboarding adapter; the single local
 upstream-node change handles theme/device/state-driven color-job refresh.
 See [source provenance](third_party/miuix-effect/README.md).
@@ -62,7 +74,9 @@ This is a local source snapshot, not a published `miuix-effect` dependency.
 | Google Material Symbols | Local embedded vectors; no library version | Semantic leading glyphs for companion-app information surfaces | Apache-2.0 |
 | MIUIX OS4 Glass icons | Official `MiuixIcons.Glass.Regular` from the current same-revision `miuix-glass-icons-android` artifact (`45645854`) | Native icon aliases for OS4 navigation, menus and diagnostics; the OS3 UI style uses standard MIUIX icons where applicable | Apache-2.0 |
 
-The selected Material Symbols are stored as local Android vector drawables sourced from Google's `google/material-design-icons` repository. They are app resources, not a runtime library dependency.
+The selected Material Symbols are stored as local Android vector drawables
+sourced from Google's `google/material-design-icons` repository. They are app
+resources, not a runtime library dependency.
 
 Both OS4 source variants now share `app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4GlassIcons.kt`, which aliases the published MIUIX Glass Regular vectors for Back, Search, Close, Refresh, Filter, More, Edit, Copy, Delete and Share. The previous six local `os4Published` vector copies and the separate upstream alias were removed by #1370. Diagnostics export uses `Glass.Regular.Share` in the OS4 UI style and ordinary `MiuixIcons.Share` in OS3; the input clear control continues to use MIUIX `Basic.SearchCleanup`, while Glass.Close is used for outside Cancel. This module does not import or publish the entire upstream `miuix-glass` runtime implementation.
 
@@ -74,31 +88,45 @@ Both OS4 source variants now share `app/src/main/kotlin/com/chaners/guiyuan/ui/i
 
 ## Build tooling
 
-The repository includes the official Gradle Wrapper with the verified Gradle 9.9.0 binary distribution. Gradle 9.9.0 is distributed under Apache-2.0.
+The repository includes the official Gradle Wrapper with the verified Gradle
+9.9.0 binary distribution. Gradle 9.9.0 is distributed under Apache-2.0.
 
-Android Gradle Plugin and Kotlin Gradle plugins are resolved through their standard upstream repositories and retain their respective upstream licenses.
+Android Gradle Plugin and Kotlin Gradle plugins are resolved through their
+standard upstream repositories and retain their respective upstream licenses.
 
 ## Upstream projects
 
-- libxposed API (published upstream): [libxposed/api](https://github.com/libxposed/api)
-- libxposed service (published upstream): [libxposed/service](https://github.com/libxposed/service)
+- libxposed API (published upstream):
+  [libxposed/api](https://github.com/libxposed/api)
+- libxposed service (published upstream):
+  [libxposed/service](https://github.com/libxposed/service)
 - AndroidX: [androidx/androidx](https://github.com/androidx/androidx)
 - MIUIX: [compose-miuix-ui/miuix](https://github.com/compose-miuix-ui/miuix)
-- AndroidLiquidGlass: [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) (Apache-2.0; source of adapted optics, not a direct runtime dependency)
-- Material Symbols: [google/material-design-icons](https://github.com/google/material-design-icons)
-- kotlinx.serialization: [Kotlin/kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization)
+- AndroidLiquidGlass:
+  [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass)
+  (Apache-2.0; source of adapted optics, not a direct runtime dependency)
+- Material Symbols:
+  [google/material-design-icons](https://github.com/google/material-design-icons)
+- kotlinx.serialization:
+  [Kotlin/kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization)
 - JUnit 4: [junit-team/junit4](https://github.com/junit-team/junit4)
 - Gradle: [gradle/gradle](https://github.com/gradle/gradle)
 
 ## Packaging note
 
-The Android build may remove duplicate dependency license resources from packaged `META-INF` entries to avoid resource conflicts. That packaging behavior does not remove or alter the upstream license obligations.
+The Android build may remove duplicate dependency license resources from
+packaged `META-INF` entries to avoid resource conflicts. That packaging behavior
+does not remove or alter the upstream license obligations.
 
-Before each release, maintainers should verify the resolved dependency set and applicable license/notice requirements of the distributed APK.
+Before each release, maintainers should verify the resolved dependency set and
+applicable license/notice requirements of the distributed APK.
 
 ## Project license
 
-Guiyuan itself is licensed under the [GNU General Public License v3.0 only](LICENSE) (`GPL-3.0-only`). Third-party components remain governed by their respective upstream licenses and notice requirements.
+Guiyuan itself is licensed under the
+[GNU General Public License v3.0 only](LICENSE) (`GPL-3.0-only`). Third-party
+components remain governed by their respective upstream licenses and notice
+requirements.
 
 ---
 
@@ -106,7 +134,8 @@ Guiyuan itself is licensed under the [GNU General Public License v3.0 only](LICE
 
 本文件列出归元使用的主要第三方依赖、适配的源代码及图标素材，并说明其来源和许可证。具体组件、版本与上游许可证以本页上方的英文清单为准；实际解析的依赖还可能包括间接依赖。
 
-- **应用与编译依赖**：包括 Modern Xposed、AndroidX、MIUIX、Kotlin 序列化及 JUnit。各自的版本和许可证见上方对应表格。
+- **应用与编译依赖**：包括 Modern Xposed、AndroidX、MIUIX、Kotlin 序列化及
+  JUnit。各自的版本和许可证见上方对应表格。
 - **MIUIX 适配**：部分界面和液态玻璃相关代码基于注明版本的上游项目进行适配，保留相关版权和许可证声明；这些代码不等于完整上游模块。
 - **图标素材**：使用注明来源的 Material Symbols 及 MIUIX 图标素材，原始许可仍然适用。
 - **构建工具**：Gradle、Android Gradle Plugin 与 Kotlin 构建工具遵循各自上游许可。

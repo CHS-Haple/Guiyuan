@@ -49,12 +49,14 @@ Complete only when runtime-sensitive:
 Complete only for promotion or hotfix pull requests.
 
 For promotion:
+
 - Candidate dev SHA:
 - [ ] Candidate matches the validated dev state.
 - [ ] No affected item remains awaiting device validation.
 - [ ] No new feature/fix/cleanup is included.
 
 For hotfix:
+
 - Source main SHA:
 - Dev sync-back plan:
 

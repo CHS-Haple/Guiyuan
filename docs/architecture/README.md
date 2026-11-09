@@ -11,6 +11,7 @@ Guiyuan reuses verified native SystemUI hosts instead of creating a second
 permanent status-bar layout identity.
 
 Current boundaries:
+
 - Home is an independent projected presentation hosted by the verified native
   Home end-side carrier.
 - Keyguard and AOD share one host-scoped family presentation owner and retarget
