@@ -173,6 +173,20 @@ class AppearanceCompatibilityTest {
     }
 
     @Test
+    fun uiStyleMigrationDoesNotResetProgressiveBlurPreference() {
+        val blurKey = booleanPreferencesKey("top_bar_progressive_blur")
+        val prefs = mutablePreferencesOf(
+            stringPreferencesKey("ui_style") to UiStyle.OS3.name,
+            blurKey to false,
+        )
+
+        migrateOs4Appearance(prefs)
+
+        assertEquals(false, prefs[blurKey])
+        assertEquals(UiStyle.OS4.name, prefs[stringPreferencesKey("ui_style")])
+    }
+
+    @Test
     fun os4SelectionDoesNotRewriteOs3NavigationPreferences() {
         val old = Appearance(uiStyle = UiStyle.OS3, navStyle = NavStyle.Liquid, liquidMode = LiquidMode.Clear)
         val experimental = old.copy(uiStyle = UiStyle.OS4)
