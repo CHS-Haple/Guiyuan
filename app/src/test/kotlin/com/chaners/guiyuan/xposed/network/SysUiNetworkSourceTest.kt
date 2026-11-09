@@ -17,6 +17,18 @@ class SysUiNetworkSourceTest {
     }
 
     @Test
+    fun nativeActivityPresenceFollowsOriginalRootAndChildNotSceneIsShown() {
+        // The original binder uses isVisible().value.first to gate the
+        // mobile Home root and getInOutVisible() for the activity child.
+        assertEquals(true, SysUiNetworkSource.nativeMobileActivityShown(true, true))
+        assertEquals(false, SysUiNetworkSource.nativeMobileActivityShown(true, false))
+        assertEquals(false, SysUiNetworkSource.nativeMobileActivityShown(false, true))
+        assertEquals(false, SysUiNetworkSource.nativeMobileActivityShown(false, false))
+        // No native binding authority means no invented visible state.
+        assertNull(SysUiNetworkSource.nativeMobileActivityShown(null, true))
+    }
+
+    @Test
     fun nativeMobileFallbackRequiresVerifiedCurrentHomeRoot() {
         val eligible = { className: String, slot: String?, resourceEntry: String?,
                          attached: Boolean, directHomeChild: Boolean ->
