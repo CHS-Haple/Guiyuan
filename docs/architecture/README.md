@@ -3,7 +3,9 @@
 This directory defines Guiyuan's current runtime ownership, scene, and layout
 contracts.
 
-Historical experiments and build-by-build evidence do not belong here. Current execution state lives in [CURRENT.md](../development/CURRENT.md); durable rationale lives in [DECISIONS.md](../development/DECISIONS.md).
+Historical experiments and build-by-build evidence do not belong here. Current
+execution state lives in [CURRENT.md](../development/CURRENT.md); durable
+rationale lives in [DECISIONS.md](../development/DECISIONS.md).
 
 ## Current model
 
@@ -44,7 +46,9 @@ Guiyuan's drawing surface must not change native slot geometry or peer motion.
 The Sandbox is a temporary **Home-only display lease**, not a source of real
 radio or battery state.
 
-- `GyApp` owns the editable `PreviewSandboxUiState`. The switch starts the lease with the currently displayed state; only later control changes trigger `update`. Enabling the lease must not replay another snapshot.
+- `GyApp` owns the editable `PreviewSandboxUiState`. The switch starts the lease
+  with the currently displayed state; only later control changes trigger
+  `update`. Enabling the lease must not replay another snapshot.
 - `SandboxClient` is the sole remote writer. It serializes writes, renews the
   three-second lease and stops on page exit or Xposed service loss. Simulation
   values are not saved as module settings.
