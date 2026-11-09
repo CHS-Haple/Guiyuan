@@ -247,7 +247,7 @@ internal fun AppearanceScreen(
             SwitchPreference(
                 title = stringResource(R.string.top_bar_progressive_blur),
                 summary = stringResource(R.string.top_bar_progressive_blur_summary),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_blur_circular) },
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_gradient) },
                 checked = appearance.topBarProgressiveBlur,
                 onCheckedChange = onTopBarProgressiveBlurChange,
             )
