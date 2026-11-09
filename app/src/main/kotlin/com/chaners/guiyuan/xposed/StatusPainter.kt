@@ -53,7 +53,7 @@ internal class StatusPainter(
         }
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
-    private val idleActivityResourceIds = HashMap<String, Int>()
+    private val activityResourceIds = HashMap<String, Int>()
     private val nativeCenterAssets =
         LinkedHashMap<PresentationStore.NativeIconResource, NativeCenterAsset>(
             NATIVE_CENTER_CACHE_SIZE,
@@ -138,7 +138,7 @@ internal class StatusPainter(
         mobileInkSamples.clear()
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
-        idleActivityResourceIds.clear()
+        activityResourceIds.clear()
     }
 
     private fun checkNativeResources() {
@@ -178,7 +178,7 @@ internal class StatusPainter(
         canvas.translate(offsetX, offsetY)
         canvas.scale(scale, scale)
 
-        val outerGeometry = resolveOuterGeometry(outerWeightScale, hasDrawableBottomInformation(model, visual))
+        val outerGeometry = resolveOuterGeometry(outerWeightScale, reservesBothSidesBottomSlot(model, visual))
         val centerGeometry = resolveCenterGeometry(visual)
         drawBattery(
             canvas = canvas,
@@ -392,7 +392,7 @@ internal class StatusPainter(
                     geometry =
                         resolveOuterGeometry(
                             visual.outerWeightScale,
-                            hasDrawableBottomInformation(model, visual),
+                            reservesBothSidesBottomSlot(model, visual),
                         ),
                     centerGeometry =
                         resolveCenterGeometry(visual),
@@ -485,7 +485,7 @@ internal class StatusPainter(
                 val outerGeometry =
                     resolveOuterGeometry(
                         visual.outerWeightScale,
-                        hasDrawableBottomInformation(model, visual),
+                        reservesBothSidesBottomSlot(model, visual),
                     )
                 if (shapePolicy == TransitionShapePolicy.MOBILE_SIGNAL) {
                     drawMobileSignalTransition(
@@ -631,7 +631,7 @@ internal class StatusPainter(
         val offsetX = nativeTransform.offsetX
         val offsetY = nativeTransform.offsetY
         val outerGeometry =
-            resolveOuterGeometry(visual.outerWeightScale, hasDrawableBottomInformation(model, visual))
+            resolveOuterGeometry(visual.outerWeightScale, reservesBothSidesBottomSlot(model, visual))
         val centerGeometry =
             resolveCenterGeometry(visual)
 
@@ -904,7 +904,7 @@ internal class StatusPainter(
         visual: VisualCfg,
         model: RenderModel,
     ): List<TransitionComponentSpec> {
-        val geometry = resolveOuterGeometry(visual.outerWeightScale, hasDrawableBottomInformation(model, visual))
+        val geometry = resolveOuterGeometry(visual.outerWeightScale, reservesBothSidesBottomSlot(model, visual))
         val centered = visual.centeredMobileSignal &&
             model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
         val group = if (centered) centeredMobileBounds(geometry, true)
@@ -4206,7 +4206,6 @@ internal class StatusPainter(
     private data class BothSidesBottomInformation(
         val resource: PresentationStore.NativeIconResource,
         val charging: Boolean,
-        val idle: Boolean = false,
     )
 
     private fun bothSidesBottomScale(visual: VisualCfg, charging: Boolean): Float =
@@ -4217,14 +4216,9 @@ internal class StatusPainter(
         BOTH_SIDES_BOTTOM_INK_CENTER_Y -
             if (charging) visual.bothSidesChargingOffsetY else visual.bothSidesActivityOffsetY
 
-    private fun idleActivityResourceId(center: CenterIndicator): Int? {
-        val name = when (center) {
-            is CenterIndicator.Wifi -> "stat_sys_wifi_inout"
-            is CenterIndicator.MobileType -> "stat_sys_signal_inout_left"
-            else -> return null
-        }
+    private fun activityResourceId(name: String): Int? {
         checkNativeResources()
-        val id = idleActivityResourceIds.getOrPut(name) {
+        val id = activityResourceIds.getOrPut(name) {
             runCatching {
                 val resourceContext = if (context.packageName == SYSTEM_UI_PACKAGE) {
                     context
@@ -4265,17 +4259,21 @@ internal class StatusPainter(
             model.chargingIconResId?.let { drawableAvailable(it, true) }?.let { return it }
         }
         if (visual.bothSidesShowActivity) {
-            model.networkActivityResId?.let { drawableAvailable(it, false) }?.let { return it }
-            if (!visual.bothSidesHideIdleActivity) {
-                idleActivityResourceId(model.centerIndicator)?.let { id ->
-                    drawableAvailable(id, false)?.copy(idle = true)
-                }?.let { return it }
+            // HyperOS maps no cellular in/out traffic to this native idle drawable.
+            // Honor the user's idle-hide option without inventing network visibility.
+            val nativeActivityId = model.networkActivityResId?.takeUnless { id ->
+                visual.bothSidesHideIdleActivity &&
+                    id == activityResourceId("stat_sys_signal_data_left")
             }
+            nativeActivityId?.let { drawableAvailable(it, false) }?.let { return it }
         }
         return null
     }
 
-    private fun hasDrawableBottomInformation(model: RenderModel, visual: VisualCfg): Boolean =
+    // Bottom-dot spacing follows the same native-backed drawable that is
+    // actually drawn. A configured but hidden/missing/idle-suppressed glyph
+    // must not leave an empty gap; the charging glyph keeps its priority.
+    private fun reservesBothSidesBottomSlot(model: RenderModel, visual: VisualCfg): Boolean =
         resolveBothSidesBottomInformation(model, visual) != null
 
     // Both opening avoidance and host overflow consume the same optical ink.
@@ -4373,7 +4371,7 @@ internal class StatusPainter(
             canvas = canvas,
             resource = bottom.resource,
             tint = if (bottomCharging) colors.chargingIconTint else colors.centerTint,
-            opacity = opacity * outsideAmount * (if (bottom.idle) IDLE_ACTIVITY_OPACITY else 1f),
+            opacity = opacity * outsideAmount,
             centerX = BATTERY_COMPONENT_CENTER_X,
             centerY = bothSidesBottomCenterY(visual, bottomCharging),
             maxWidth = (if (bottomCharging) BOTH_SIDES_CHARGING_SLOT_WIDTH else BOTH_SIDES_BOTTOM_SLOT_WIDTH) *
@@ -4596,7 +4594,6 @@ internal class StatusPainter(
             BATTERY_COMPONENT_CENTER_Y + OuterGeometry.RING_RADIUS
         const val BATTERY_TOP_TEXT_SIZE = 24f
         const val BATTERY_TOP_CHARGING_ICON_SIZE = 18f
-        const val IDLE_ACTIVITY_OPACITY = 0.28f
         const val BOTH_SIDES_BOTTOM_SLOT_WIDTH = 19f
         const val BOTH_SIDES_BOTTOM_SLOT_HEIGHT = 22f
         // Native charging and traffic assets have different intrinsic optical frames.

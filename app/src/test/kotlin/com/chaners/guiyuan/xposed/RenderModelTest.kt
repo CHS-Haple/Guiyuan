@@ -66,6 +66,8 @@ class RenderModelTest {
                 1 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
             ),
             mobileActivityResIds = mapOf(1 to 220),
+            mobileActivityShownIds = setOf(1),
+            mobileActivityVisibilityObservedIds = setOf(1),
             airplaneMode = false,
         )
         val wifiPresentation = presentation(
@@ -99,6 +101,141 @@ class RenderModelTest {
     }
 
     @Test
+    fun defaultNetworkLossDoesNotOverrideNativeActivityVisibility() {
+        val observed = vpnHandoffActivity()
+        val lost = vpnHandoffPresentation()
+
+        val nativeStillVisible = RenderModel.from(observed, lost, 1)
+        assertTrue(nativeStillVisible?.centerIndicator is CenterIndicator.Empty)
+        assertEquals(220, nativeStillVisible?.networkActivityResId)
+
+        // Changing Android's default-route data flag is not a native GONE.
+        assertEquals(
+            220,
+            RenderModel.from(observed, vpnHandoffPresentation(mobileDataEnabled = false), 1)
+                ?.networkActivityResId,
+        )
+    }
+
+    @Test
+    fun nativeMobileActivityVisibilityOutranksTemporaryWifiStateWhenCenterIsEmpty() {
+        val observed = vpnHandoffActivity()
+        val lost = vpnHandoffPresentation()
+        for (wifi in listOf(
+            StatusStateStore.WifiState.Unknown,
+            StatusStateStore.WifiState.Visible(
+                iconResId = 12,
+                signal = SignalStrength.Level(3),
+            ),
+        )) {
+            val nativeVisible = RenderModel.from(observed.copy(wifi = wifi), lost, 1)
+            assertTrue(nativeVisible?.centerIndicator is CenterIndicator.Empty)
+            assertEquals(220, nativeVisible?.networkActivityResId)
+
+            val nativeHidden = RenderModel.from(
+                observed.copy(wifi = wifi, mobileActivityShownIds = emptySet()),
+                lost,
+                1,
+            )
+            assertNull(nativeHidden?.networkActivityResId)
+        }
+    }
+
+    @Test
+    fun nativeDrawableWithoutVisibilityConfirmationRemainsHidden() {
+        val observed = vpnHandoffActivity().copy(
+            mobileActivityShownIds = emptySet(),
+            mobileActivityVisibilityObservedIds = emptySet(),
+        )
+        val lost = vpnHandoffPresentation()
+        // Resource can arrive before the independent native visibility collector.
+        // Never treat its presence as an implicit native VISIBLE.
+        assertNull(RenderModel.from(observed, lost, 1)?.networkActivityResId)
+        val confirmed = observed.copy(
+            mobileActivityShownIds = setOf(1),
+            mobileActivityVisibilityObservedIds = setOf(1),
+        )
+        assertEquals(220, RenderModel.from(confirmed, lost, 1)?.networkActivityResId)
+    }
+
+    @Test
+    fun nativeVisibilityBeforeResourceWaitsForDrawableThenDisplays() {
+        val observed = vpnHandoffActivity().copy(mobileActivityResIds = emptyMap())
+        val lost = vpnHandoffPresentation()
+        // Native VISIBLE alone cannot manufacture a drawable.
+        assertNull(RenderModel.from(observed, lost, 1)?.networkActivityResId)
+        // The subsequent native drawable must be accepted without waiting for
+        // a second visibility emission from the independent collector.
+        val drawableArrived = observed.copy(mobileActivityResIds = mapOf(1 to 220))
+        assertEquals(220, RenderModel.from(drawableArrived, lost, 1)?.networkActivityResId)
+    }
+
+    @Test
+    fun nativeVisibilityAndResourceAbsenceIndependentlyHideActivity() {
+        val observed = vpnHandoffActivity()
+        val lost = vpnHandoffPresentation()
+
+        // The visibility collector can hide the View before a resource event.
+        val nativeGone = RenderModel.from(
+            observed.copy(mobileActivityShownIds = emptySet()),
+            lost,
+            1,
+        )
+        assertNull(nativeGone?.networkActivityResId)
+
+        // A missing native drawable is independently sufficient to hide it.
+        assertNull(
+            RenderModel.from(
+                observed.copy(mobileActivityResIds = emptyMap()), lost, 1,
+            )?.networkActivityResId,
+        )
+    }
+
+    @Test
+    fun airplaneAndUnavailableSignalSuppressMobileActivity() {
+        val observed = vpnHandoffActivity()
+        val lost = vpnHandoffPresentation()
+
+        assertNull(
+            RenderModel.from(observed.copy(airplaneMode = true), lost, 1)
+                ?.networkActivityResId,
+        )
+        assertNull(
+            RenderModel.from(
+                observed.copy(mobile = mapOf(
+                    1 to StatusStateStore.MobileState(signal = SignalStrength.Unavailable),
+                )),
+                lost,
+                1,
+            )?.networkActivityResId,
+        )
+    }
+
+    private fun vpnHandoffActivity(): StatusStateStore.Snapshot =
+        StatusStateStore.Snapshot(
+            battery = StatusStateStore.BatteryState(percent = 81, charging = false),
+            wifi = StatusStateStore.WifiState.Hidden,
+            mobile = mapOf(
+                1 to StatusStateStore.MobileState(signal = SignalStrength.Level(3)),
+            ),
+            mobileActivityResIds = mapOf(1 to 220),
+            mobileActivityObservedIds = setOf(1),
+            mobileActivityShownIds = setOf(1),
+            mobileActivityVisibilityObservedIds = setOf(1),
+            airplaneMode = false,
+        )
+
+    private fun vpnHandoffPresentation(mobileDataEnabled: Boolean = true): PresentationStore.Snapshot =
+        presentation(
+            connectivity = connectivity(
+                transport = SysUiConnectivitySource.Transport.NONE,
+                validated = false,
+                mobileDataEnabled = mobileDataEnabled,
+            ),
+            networkType = mobileType("5G"),
+        )
+
+    @Test
     fun aggregateActivityReadsSoleVisibleNativeRootEvenWhenDataSimIsSim2() {
         val native = dualPresentation(mapOf(0 to 14, 1 to 3))
         val state = snapshot(
@@ -107,7 +244,11 @@ class RenderModelTest {
                 14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
                 3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
             ),
-        ).copy(mobileActivityResIds = mapOf(14 to 220))
+        ).copy(
+            mobileActivityResIds = mapOf(14 to 220),
+            mobileActivityShownIds = setOf(14),
+            mobileActivityVisibilityObservedIds = setOf(14),
+        )
 
         val aggregated = RenderModel.from(state, native, 3, dualSignalEnabled = true)
         assertTrue(aggregated?.centerIndicator is CenterIndicator.MobileType)
@@ -125,6 +266,55 @@ class RenderModelTest {
     }
 
     @Test
+    fun aggregatedNativeResourceEventShowsOnlyItsVisibleRootWithoutAnotherFlowEmission() {
+        StatusStateStore.restoreHotReloadState(null)
+        try {
+            val base = dualPresentation(mapOf(0 to 1, 1 to 4))
+            val native = base.copy(
+                mobilePresentation = requireNotNull(base.mobilePresentation).copy(
+                    activeSubscriptionIds = listOf(1, 4),
+                    platformActiveSubscriptionIds = setOf(1, 4),
+                    presentationRootSubscriptionId = 1,
+                    effectiveDataSubscriptionId = 4,
+                    networkTypeSubscriptionId = 4,
+                ),
+            )
+            // The OEM aggregate displays activity on SIM1's root even when SIM2
+            // owns mobile data; the resource collector may arrive first.
+            StatusStateStore.updateMobileActivityResource(1, 2131237576, true)
+            StatusStateStore.updateMobileActivityResource(4, 2131237576, false)
+            val observed = StatusStateStore.snapshot().copy(
+                battery = StatusStateStore.BatteryState(percent = 100, charging = false),
+                wifi = StatusStateStore.WifiState.Hidden,
+                mobile = mapOf(
+                    1 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                    4 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                ),
+                airplaneMode = false,
+            )
+            val shown = RenderModel.from(observed, native, 4, dualSignalEnabled = true)
+            assertEquals(4, shown?.effectiveDataSubscriptionId)
+            assertEquals(2131237576, shown?.networkActivityResId)
+
+            val hidden = StatusStateStore.updateMobileActivityVisibility(1, false)
+                ?: error("native GONE must update the aggregate activity")
+            assertNull(
+                RenderModel.from(
+                    hidden.copy(
+                        battery = observed.battery,
+                        wifi = observed.wifi,
+                        mobile = observed.mobile,
+                        airplaneMode = observed.airplaneMode,
+                    ),
+                    native, 4, dualSignalEnabled = true,
+                )?.networkActivityResId,
+            )
+        } finally {
+            StatusStateStore.restoreHotReloadState(null)
+        }
+    }
+
+    @Test
     fun separateAndUnverifiedMobileLayoutsDoNotBorrowAnotherSimsActivity() {
         val aggregated = dualPresentation(mapOf(0 to 14, 1 to 3))
         val native = aggregated.mobilePresentation!!
@@ -134,7 +324,11 @@ class RenderModelTest {
                 14 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
                 3 to StatusStateStore.MobileState(signal = SignalStrength.Level(2)),
             ),
-        ).copy(mobileActivityResIds = mapOf(14 to 220, 3 to 330))
+        ).copy(
+            mobileActivityResIds = mapOf(14 to 220, 3 to 330),
+            mobileActivityShownIds = setOf(14, 3),
+            mobileActivityVisibilityObservedIds = setOf(14, 3),
+        )
 
         val aggregate = RenderModel.from(state, aggregated, 3, dualSignalEnabled = true)
         assertEquals(220, aggregate?.networkActivityResId)

@@ -172,6 +172,12 @@ internal data class RenderModel(
 
             val activitySubscriptionId =
                 resolveActivitySubscriptionId(presentation, selectedSubscriptionId)
+            // A drawable event does not establish that the native activity View
+            // is visible. Only the native visibility collector can authorize it.
+            // Unknown remains hidden until the first verified Home SIM event.
+            val nativeMobileActivityId =
+                snapshot.mobileActivityResIds[activitySubscriptionId]
+                    ?.takeIf { activitySubscriptionId in snapshot.mobileActivityShownIds }
 
             return RenderModel(
                 batteryPercent = batteryPercent,
@@ -180,8 +186,17 @@ internal data class RenderModel(
                 chargingIconResId = battery.chargingIconResId,
                 networkActivityResId = when (centerIndicator) {
                     is CenterIndicator.Wifi -> snapshot.wifiActivityResId
-                    is CenterIndicator.MobileType ->
-                        snapshot.mobileActivityResIds[activitySubscriptionId]
+                    is CenterIndicator.MobileType -> nativeMobileActivityId
+                    CenterIndicator.Empty ->
+                        if (
+                            !airplaneMode && !mobileRecoveryPending &&
+                            !nativeNoSimVisible && !mobileUnavailableMark
+                        ) {
+                            // Native visibility already accounts for Wi-Fi availability.
+                            // Do not gate a verified mobile activity on Guiyuan's
+                            // independently observed Wi-Fi state during a handoff.
+                            nativeMobileActivityId
+                        } else null
                     else -> null
                 },
                 mobileLevel = mobileLevel,

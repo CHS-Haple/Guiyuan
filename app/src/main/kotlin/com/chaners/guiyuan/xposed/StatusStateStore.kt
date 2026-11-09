@@ -57,7 +57,11 @@ internal object StatusStateStore {
     fun updateWifiActivity(resourceId: Int?): Snapshot? {
         // Explicit absence is an observation too: an older Hot Reload snapshot
         // must not restore a resource after a newer collector has cleared it.
-        val next = resourceId?.takeIf { it > 0 && current.wifi !is WifiState.Hidden }
+        // The OEM activity drawable can arrive before WifiIcon.Visible during a
+        // network handoff. Keep that fresh resource independently of the Wi-Fi
+        // icon's visibility; the RenderModel gates actual drawing on Wifi.
+        // Entering WifiState.Hidden already clears an older stale resource.
+        val next = resourceId?.takeIf { it > 0 }
         val changed = current.wifiActivityResId != next
         if (!changed && current.wifiActivityObserved) return null
         current = current.copy(
@@ -90,6 +94,48 @@ internal object StatusStateStore {
         return current.takeIf { changed }
     }
 
+    // Only the resource collector can explicitly clear the drawable; coalesce
+    // its paired visibility receipt before notifying the renderer.
+    @Synchronized
+    fun updateMobileActivityResource(
+        subscriptionId: Int,
+        resourceId: Int?,
+        visible: Boolean,
+    ): Snapshot? {
+        if (subscriptionId < 0) return null
+        val before = current
+        updateMobileActivity(subscriptionId, resourceId)
+        updateMobileActivityVisibility(subscriptionId, visible)
+        return current.takeIf { it != before }
+    }
+
+    // The native activity drawable and the native visibility Flow have separate collectors.
+    // Preserve their independent observations so a later drawable update cannot
+    // resurrect activity while the native mobile root remains hidden.
+    @Synchronized
+    fun updateMobileActivityVisibility(
+        subscriptionId: Int,
+        visible: Boolean,
+    ): Snapshot? {
+        if (subscriptionId < 0) return null
+        val before = current
+        // Only the native resource collector may change drawable identity.
+        val nextShown = current.mobileActivityShownIds.toMutableSet().apply {
+            if (visible) add(subscriptionId) else remove(subscriptionId)
+        }
+        if (
+            current.mobileActivityShownIds != nextShown ||
+            subscriptionId !in current.mobileActivityVisibilityObservedIds
+        ) {
+            current = current.copy(
+                mobileActivityShownIds = nextShown,
+                mobileActivityVisibilityObservedIds =
+                    current.mobileActivityVisibilityObservedIds + subscriptionId,
+            )
+        }
+        return current.takeIf { it != before }
+    }
+
     @Synchronized
     fun updateAirplaneMode(enabled: Boolean): Snapshot? {
         if (current.airplaneMode == enabled) {
@@ -114,6 +160,7 @@ internal object StatusStateStore {
             current.copy(
                 mobile = mobile,
                 mobileActivityResIds = if (enabled) emptyMap() else current.mobileActivityResIds,
+                mobileActivityShownIds = if (enabled) emptySet() else current.mobileActivityShownIds,
                 mobileActivityObservedIds = if (enabled) {
                     current.mobileActivityObservedIds + current.mobileActivityResIds.keys
                 } else current.mobileActivityObservedIds,
@@ -211,6 +258,14 @@ internal object StatusStateStore {
                 current.mobileActivityResIds.entries.flatMap { (id, resourceId) ->
                     listOf(id, resourceId)
                 }.toIntArray(),
+            )
+            putIntArray(
+                KEY_MOBILE_ACTIVITY_SHOWN_IDS,
+                current.mobileActivityShownIds.toIntArray(),
+            )
+            putIntArray(
+                KEY_MOBILE_ACTIVITY_VISIBILITY_OBSERVED_IDS,
+                current.mobileActivityVisibilityObservedIds.toIntArray(),
             )
             putBoolean(KEY_MOBILE_RECOVERY_PENDING, current.mobileRecoveryPending)
             putInt(
@@ -316,6 +371,12 @@ internal object StatusStateStore {
                 }
             }
         }
+        val visibilityObserved =
+            (bundle.getIntArray(KEY_MOBILE_ACTIVITY_VISIBILITY_OBSERVED_IDS)
+                ?: IntArray(0)).filter { it >= 0 }.toSet()
+        val shown =
+            (bundle.getIntArray(KEY_MOBILE_ACTIVITY_SHOWN_IDS)
+                ?: IntArray(0)).filter { it in visibilityObserved }.toSet()
         current = mergeHotReloadSnapshots(
             saved = Snapshot(
                 battery = battery,
@@ -323,6 +384,8 @@ internal object StatusStateStore {
                 wifiActivityResId = bundle.getInt(KEY_WIFI_ACTIVITY_RES_ID).takeIf { it > 0 },
                 mobile = mobile,
                 mobileActivityResIds = transferredActivity,
+                mobileActivityShownIds = shown,
+                mobileActivityVisibilityObservedIds = visibilityObserved,
                 airplaneMode = airplane,
                 mobileRecoveryPending = bundle.getBoolean(KEY_MOBILE_RECOVERY_PENDING, false),
             ),
@@ -341,9 +404,13 @@ internal object StatusStateStore {
             airplaneMode != true && (saved.mobileRecoveryPending || fresh.mobileRecoveryPending)
         return saved.copy(
             wifi = wifi,
-            wifiActivityResId = if (wifi is WifiState.Visible) {
-                if (fresh.wifiActivityObserved) fresh.wifiActivityResId
-                else saved.wifiActivityResId
+            // A fresh native resource can predate WifiIcon.Visible. Honor
+            // that observation even if the semantic icon is still Hidden;
+            // never resurrect an older saved drawable without a new receipt.
+            wifiActivityResId = if (fresh.wifiActivityObserved) {
+                fresh.wifiActivityResId
+            } else if (wifi is WifiState.Visible) {
+                saved.wifiActivityResId
             } else null,
             wifiActivityObserved = fresh.wifiActivityObserved,
             mobile = saved.mobile.toSortedMap().apply { putAll(fresh.mobile) },
@@ -353,6 +420,13 @@ internal object StatusStateStore {
                 if (airplaneMode != true) putAll(fresh.mobileActivityResIds)
             },
             mobileActivityObservedIds = fresh.mobileActivityObservedIds,
+            mobileActivityShownIds = if (airplaneMode == true) emptySet() else {
+                (saved.mobileActivityShownIds - fresh.mobileActivityVisibilityObservedIds) +
+                    fresh.mobileActivityShownIds
+            },
+            mobileActivityVisibilityObservedIds =
+                saved.mobileActivityVisibilityObservedIds +
+                    fresh.mobileActivityVisibilityObservedIds,
             mobileRecoveryPending = mobileRecoveryPending,
             airplaneMode = airplaneMode,
         )
@@ -380,6 +454,8 @@ internal object StatusStateStore {
         val mobile: Map<Int, MobileState> = emptyMap(),
         val mobileActivityResIds: Map<Int, Int> = emptyMap(),
         val mobileActivityObservedIds: Set<Int> = emptySet(),
+        val mobileActivityShownIds: Set<Int> = emptySet(),
+        val mobileActivityVisibilityObservedIds: Set<Int> = emptySet(),
         val airplaneMode: Boolean? = null,
         val mobileRecoveryPending: Boolean = false,
     )
@@ -420,6 +496,9 @@ internal object StatusStateStore {
     private const val KEY_WIFI_RES_ID = "wifiResId"
     private const val KEY_WIFI_ACTIVITY_RES_ID = "wifiActivityResId"
     private const val KEY_MOBILE_ACTIVITY_RES_IDS = "mobileActivityResIds"
+    private const val KEY_MOBILE_ACTIVITY_SHOWN_IDS = "mobileActivityShownIds"
+    private const val KEY_MOBILE_ACTIVITY_VISIBILITY_OBSERVED_IDS =
+        "mobileActivityVisibilityObservedIds"
     private const val KEY_WIFI_SIGNAL = "wifiSignal"
     private const val KEY_WIFI_INTERNET = "wifiInternet"
     private const val KEY_AIRPLANE = "airplane"

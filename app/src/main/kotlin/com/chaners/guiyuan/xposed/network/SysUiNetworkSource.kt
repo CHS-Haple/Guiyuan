@@ -43,6 +43,8 @@ internal object SysUiNetworkSource {
         "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder\$bind\$2"
     private const val MODERN_STATUS_BAR_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.shared.ui.view.ModernStatusBarView"
+    private const val MODERN_STATUS_BAR_VIEW_BINDING_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.shared.ui.binder.ModernStatusBarViewBinding"
 
     const val MOBILE_BINDER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder"
@@ -64,8 +66,11 @@ internal object SysUiNetworkSource {
     const val MOBILE_SIGNAL_EMIT_METHOD_NAME = "emit"
     private const val MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$1\$1\$8\$1"
+    private const val MOBILE_ACTIVITY_VISIBILITY_COLLECTOR_CLASS_NAME =
+        "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder\$bind\$1\$1\$13\$1"
+    private const val MOBILE_ACTIVITY_VISIBILITY_CLASS_ID = 4
 
-    const val HOOK_COUNT = 6
+    const val HOOK_COUNT = 7
 
     private const val WIFI_BIND_HOOK_ID = "combinedstatus.network.wifi.bind"
     private const val WIFI_ICON_HOOK_ID = "combinedstatus.network.wifi.icon"
@@ -79,6 +84,7 @@ internal object SysUiNetworkSource {
     private const val MOBILE_BIND_HOOK_ID = "combinedstatus.network.mobile.bind"
     private const val MOBILE_SIGNAL_HOOK_ID = "combinedstatus.network.mobile.signal"
     private const val MOBILE_ACTIVITY_HOOK_ID = "combinedstatus.network.mobile.activity"
+    private const val MOBILE_ACTIVITY_VISIBILITY_HOOK_ID = "combinedstatus.network.mobile.activityVisibility"
 
     private val hookIds = setOf(
         WIFI_BIND_HOOK_ID,
@@ -87,6 +93,7 @@ internal object SysUiNetworkSource {
         MOBILE_BIND_HOOK_ID,
         MOBILE_SIGNAL_HOOK_ID,
         MOBILE_ACTIVITY_HOOK_ID,
+        MOBILE_ACTIVITY_VISIBILITY_HOOK_ID,
     )
 
     internal fun rethrowFatal(error: Throwable) {
@@ -199,7 +206,8 @@ internal object SysUiNetworkSource {
         onWifiActivity: (Int?) -> Unit,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
-        onMobileActivity: (subscriptionId: Int, resourceId: Int?) -> Unit,
+        onMobileActivityResource: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
+        onMobileActivityVisibility: (subscriptionId: Int, visible: Boolean) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -246,7 +254,8 @@ internal object SysUiNetworkSource {
                 module = module,
                 classLoader = classLoader,
                 onMobileSignal = onMobileSignal,
-                onMobileActivity = onMobileActivity,
+                onMobileActivityResource = onMobileActivityResource,
+                onMobileActivityVisibility = onMobileActivityVisibility,
                 onPresentationChanged = onPresentationChanged,
                 onRuntimeFailure = onRuntimeFailure,
                 onEvent = diagnosticEvent,
@@ -443,7 +452,8 @@ internal object SysUiNetworkSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
-        onMobileActivity: (subscriptionId: Int, resourceId: Int?) -> Unit,
+        onMobileActivityResource: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
+        onMobileActivityVisibility: (subscriptionId: Int, visible: Boolean) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
@@ -517,7 +527,6 @@ internal object SysUiNetworkSource {
                             mobileBindHooker(
                                 active = active,
                                 subscriptionIdMethod = subscriptionIdMethod,
-                                onMobileActivity = onMobileActivity,
                                 classLoader = classLoader,
                                 onPresentationChanged = onPresentationChanged,
                                 onRuntimeFailure = onRuntimeFailure,
@@ -545,8 +554,26 @@ internal object SysUiNetworkSource {
                         )
                 }
 
-            // Keep native mobile activity ownership on the source's bound SIM View.
-            runCatching {
+            // The exact OEM binder reads isVisible().value.first via this
+            // binding. The child visibility is written by getInOutVisible()
+            // independently of getInOutResId(); neither uses View.isShown.
+            val nativeBindingField = atStage("mobile.resolve.visibilityBinding") {
+                Class.forName(MODERN_STATUS_BAR_VIEW_CLASS_NAME, false, classLoader)
+                    .getField("binding").apply { isAccessible = true }
+            }
+            val nativeShouldVisibleMethod = atStage("mobile.resolve.shouldIconBeVisible") {
+                Class.forName(MODERN_STATUS_BAR_VIEW_BINDING_CLASS_NAME, false, classLoader)
+                    .getMethod("getShouldIconBeVisible").apply {
+                        check(returnType == Boolean::class.javaPrimitiveType) {
+                            "mobile-native-visibility-return-type-mismatch"
+                        }
+                        isAccessible = true
+                    }
+            }
+            // Both native activity collectors are required for the verified OS4
+            // replacement. If either cannot be hooked, roll back the mobile
+            // branch rather than announcing an incomplete native state owner.
+            created += atStage("mobile.hook.activityResource") {
                 val collector = Class.forName(MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME, false, classLoader)
                 val activityField = collector.getDeclaredField("\$leftInOut").apply { isAccessible = true }
                 val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
@@ -556,25 +583,47 @@ internal object SysUiNetworkSource {
                         val result = chain.proceed()
                         if (active.get()) {
                             val image = readOrNull { activityField.get(chain.thisObject) as? ImageView }
-                            val subId = image?.let(::findMobileSubscription)
-                            if (image != null && subId != null) {
+                            val binding = image?.let(::findNativeHomeMobileBinding)
+                            if (image != null && binding != null) {
                                 try {
-                                    val visible = image.visibility == View.VISIBLE &&
-                                        image.drawable != null
-                                    val taggedResId = (image.tag as? Number)?.toInt()
-                                        ?.takeIf { it > 0 && visible }
+                                    val taggedResId = nativeMobileActivityResourceId(image)
                                     val nativeWitness =
                                         if (onEvent != null && isDetailedDiagnosticsEnabled()) {
                                             readOrNull { nativeActivityObservation(image, result) }
                                         } else null
-                                    onMobileActivity(subId, taggedResId)
+                                    val rootVisible = readOrNull {
+                                        nativeBindingField.get(binding.root)?.let { nativeBinding ->
+                                            nativeShouldVisibleMethod.invoke(nativeBinding) as? Boolean
+                                        }
+                                    }
+                                    // A hidden Home scene or CombinedStatus's native
+                                    // visual mask can make isShown=false even when
+                                    // the OEM binding and child both allow the icon.
+                                    // Read the same native root semantic and child
+                                    // visibility that the binder itself consumes.
+                                    val effectiveVisible = nativeMobileActivityShown(
+                                        rootVisible = rootVisible,
+                                        childVisible = image.visibility == View.VISIBLE,
+                                    )
+                                    if (effectiveVisible != null) {
+                                        onMobileActivityResource(
+                                            binding.subscriptionId, taggedResId, effectiveVisible,
+                                        )
+                                    } else {
+                                        callbackFailed(
+                                            "mobile-activity-native-binding",
+                                            IllegalStateException("native-home-mobile-binding-unavailable"),
+                                            onRuntimeFailure,
+                                        )
+                                    }
                                     nativeWitness?.let { witness ->
                                         readOrNull {
                                             onEvent?.invoke(
                                                 "networkPipeline mobile activityEvent " +
                                                     "phase=afterNativeProceed/beforeModuleCommit " +
-                                                    "subId=" + subId +
+                                                    "subId=" + binding.subscriptionId +
                                                     " appliedResId=" + (taggedResId ?: 0) +
+                                                    " nativeRootVisible=" + (rootVisible ?: "unknown") +
                                                     " " + witness,
                                             )
                                         }
@@ -586,7 +635,74 @@ internal object SysUiNetworkSource {
                         }
                         result
                     })
-            }.onSuccess { created += it }.onFailure(::rethrowFatal)
+            }
+
+            // The native visibility collector is independent of getInOutResId().
+            // Observe its already-applied View state; do not collect a second Flow.
+            created += atStage("mobile.hook.activityVisibility") {
+                val collector = Class.forName(
+                    MOBILE_ACTIVITY_VISIBILITY_COLLECTOR_CLASS_NAME, false, classLoader,
+                )
+                val imageField = collector.getDeclaredField("\$satellite").apply { isAccessible = true }
+                val classIdField = collector.getDeclaredField("\$r8\$classId").apply { isAccessible = true }
+                val method = resolveEmitterMethod(collector, MOBILE_SIGNAL_EMIT_METHOD_NAME)
+                module.hook(method)
+                    .setId(MOBILE_ACTIVITY_VISIBILITY_HOOK_ID)
+                    .intercept(Hooker { chain ->
+                        val result = chain.proceed()
+                        if (
+                            active.get() &&
+                            readOrNull { classIdField.getInt(chain.thisObject) } ==
+                            MOBILE_ACTIVITY_VISIBILITY_CLASS_ID
+                        ) {
+                            // The OEM has already applied the Flow's Pair to its
+                            // View. Read its authoritative Home binding and child
+                            // visibility instead of casting a host Kotlin Pair
+                            // through the module's ClassLoader.
+                            val image = readOrNull { imageField.get(chain.thisObject) as? ImageView }
+                            val binding = image?.let(::findNativeHomeMobileBinding)
+                            val rootVisible = binding?.let { owner ->
+                                readOrNull {
+                                    nativeBindingField.get(owner.root)?.let { nativeBinding ->
+                                        nativeShouldVisibleMethod.invoke(nativeBinding) as? Boolean
+                                    }
+                                }
+                            }
+                            val childVisible = image?.visibility == View.VISIBLE
+                            val effectiveVisible = nativeMobileActivityShown(
+                                rootVisible = rootVisible,
+                                childVisible = childVisible,
+                            )
+                            if (binding != null && effectiveVisible != null) {
+                                try {
+                                    // The native visibility collector can fire without
+                                    // another resource emission. A drawable is required
+                                    // to draw, but not to remember native visibility.
+                                    onMobileActivityVisibility(
+                                        binding.subscriptionId, effectiveVisible,
+                                    )
+                                } catch (error: Throwable) {
+                                    callbackFailed("mobile-activity-visibility", error, onRuntimeFailure)
+                                }
+                            }
+                            if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                val taggedResId = image?.let(::nativeMobileActivityResourceId)
+                                readOrNull {
+                                    onEvent.invoke(
+                                        "networkPipeline mobile activityVisibility " +
+                                            "subId=" + (binding?.subscriptionId ?: "unknown") +
+                                            " rootVisible=" + (rootVisible ?: "unknown") +
+                                            " childVisible=" + childVisible +
+                                            " effectiveVisible=" + (effectiveVisible ?: "unknown") +
+                                            " appliedResId=" + (taggedResId ?: 0) +
+                                            " accepted=" + (binding != null && effectiveVisible != null),
+                                    )
+                                }
+                            }
+                        }
+                        result
+                    })
+            }
 
             active.set(true)
             BranchInstallResult(
@@ -599,6 +715,11 @@ internal object SysUiNetworkSource {
             failedBranch("mobile", error, created)
         }
     }
+
+    private fun nativeMobileActivityResourceId(image: ImageView): Int? =
+        (image.tag as? Number)?.toInt()?.takeIf { id ->
+            id > 0 && image.drawable != null
+        }
 
     // Diagnostic-only witness: native activity may change visibility, image alpha
     // or drawable state without changing the resource ID we currently transfer.
@@ -1340,7 +1461,6 @@ internal object SysUiNetworkSource {
     private fun mobileBindHooker(
         active: AtomicBoolean,
         subscriptionIdMethod: Method,
-        onMobileActivity: (Int, Int?) -> Unit,
         classLoader: ClassLoader,
         onPresentationChanged: (() -> Unit)?,
         onRuntimeFailure: (String, Throwable) -> Unit,
@@ -1595,14 +1715,26 @@ internal object SysUiNetworkSource {
         return nativeHome
     }
 
+    internal fun nativeMobileActivityShown(
+        rootVisible: Boolean?,
+        childVisible: Boolean,
+    ): Boolean? = rootVisible?.let { it && childVisible }
+
     @Synchronized
-    private fun findMobileSubscription(view: View): Int? {
+    private fun findMobileSubscription(view: View): Int? =
+        findNativeHomeMobileBinding(view)?.subscriptionId
+
+    // Resolve the current native Home owner once for both resource and SIM
+    // attribution; never borrow a keyguard, CC or stale Hot Reload root.
+    @Synchronized
+    private fun findNativeHomeMobileBinding(view: View): MobilePresentationBinding? {
         var current: View? = view
         while (current != null) {
             val root = current as? ViewGroup
             if (root?.javaClass?.name == NATIVE_MOBILE_VIEW_CLASS_NAME) {
                 val homeGroup = currentNativeHomeMobileGroup() ?: return null
-                return resolvedHomeMobileSubscription(root, homeGroup)
+                val id = resolvedHomeMobileSubscription(root, homeGroup) ?: return null
+                return MobilePresentationBinding(root, id)
             }
             // Do not resurrect a stale or non-Home Binder receipt.
             if (root != null && mobileRoots.containsKey(root)) return null

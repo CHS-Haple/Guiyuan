@@ -51,6 +51,10 @@ class PreviewSandboxNativeResourceTest {
         assertEquals(listOf("stat_sys_signal_inout_left", "stat_sys_signal_inout"),
             previewNetworkActivityResourceNames(mobile, PreviewNetworkActivity.BOTH))
         assertTrue(previewNetworkActivityResourceNames(wifi, PreviewNetworkActivity.IDLE).isEmpty())
+        assertEquals(
+            listOf("stat_sys_signal_data_left"),
+            previewNetworkActivityResourceNames(mobile, PreviewNetworkActivity.IDLE),
+        )
         assertTrue(previewNetworkActivityResourceNames(PreviewCenterSource.AIRPLANE,
             PreviewNetworkActivity.BOTH).isEmpty())
         assertEquals(PreviewNetworkActivity.BOTH, PreviewSandboxUiState().networkActivity)

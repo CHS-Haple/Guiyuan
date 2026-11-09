@@ -852,11 +852,23 @@ class GyModule : XposedModule() {
                         )
                     }
                 },
-                onMobileActivity = { subscriptionId, resourceId ->
-                    StatusStateStore.updateMobileActivity(subscriptionId, resourceId)?.let { snapshot ->
+                onMobileActivityResource = { subscriptionId, resourceId, visible ->
+                    StatusStateStore.updateMobileActivityResource(
+                        subscriptionId, resourceId, visible,
+                    )?.let { snapshot ->
                         onCombinedStateChanged(
                             snapshot = snapshot,
-                            trace = markStateCommitted(beginRenderTrace("mobileActivity")),
+                            trace = markStateCommitted(beginRenderTrace("mobileActivityResource")),
+                        )
+                    }
+                },
+                onMobileActivityVisibility = { subscriptionId, visible ->
+                    StatusStateStore.updateMobileActivityVisibility(
+                        subscriptionId, visible,
+                    )?.let { snapshot ->
+                        onCombinedStateChanged(
+                            snapshot = snapshot,
+                            trace = markStateCommitted(beginRenderTrace("mobileActivityVisibility")),
                         )
                     }
                 },
@@ -4119,6 +4131,13 @@ class GyModule : XposedModule() {
         if (!ready) {
             HomeRenderSession.setNativeHandoffActive(true)
             SysUiPresentationOwner.deactivate("readiness-lost:" + source)
+            return
+        }
+        if (!SysUiNetworkRuntime.mobileReady) {
+            // Without the verified native mobile resource/visibility collectors,
+            // a composite Home icon could mask a still-correct SystemUI icon.
+            HomeRenderSession.setNativeHandoffActive(true)
+            SysUiPresentationOwner.deactivate("mobile-source-unavailable:" + source)
             return
         }
 

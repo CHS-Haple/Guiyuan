@@ -12,6 +12,9 @@ internal object SysUiNetworkRuntime {
     val wifiReady: Boolean
         @Synchronized get() = current?.wifiReady == true
 
+    val mobileReady: Boolean
+        @Synchronized get() = current?.mobileReady == true
+
     @Synchronized
     fun attach(
         module: XposedModule,
@@ -20,7 +23,8 @@ internal object SysUiNetworkRuntime {
         onWifiActivity: (Int?) -> Unit,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
-        onMobileActivity: (subscriptionId: Int, resourceId: Int?) -> Unit,
+        onMobileActivityResource: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
+        onMobileActivityVisibility: (subscriptionId: Int, visible: Boolean) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -32,7 +36,8 @@ internal object SysUiNetworkRuntime {
             onWifiActivity = onWifiActivity,
             onRuntimeFailure = onRuntimeFailure,
             onMobileSignal = onMobileSignal,
-            onMobileActivity = onMobileActivity,
+            onMobileActivityResource = onMobileActivityResource,
+            onMobileActivityVisibility = onMobileActivityVisibility,
             onPresentationChanged = onPresentationChanged,
             onEvent = onEvent,
             isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
