@@ -646,52 +646,54 @@ internal object SysUiNetworkSource {
                 module.hook(method)
                     .setId(MOBILE_ACTIVITY_VISIBILITY_HOOK_ID)
                     .intercept(Hooker { chain ->
-                        val event = readOrNull { chain.getArg(0) as? Pair<*, *> }
                         val result = chain.proceed()
                         if (
                             active.get() &&
                             readOrNull { classIdField.getInt(chain.thisObject) } ==
                             MOBILE_ACTIVITY_VISIBILITY_CLASS_ID
                         ) {
+                            // The OEM has already applied the Flow's Pair to its
+                            // View. Read its authoritative Home binding and child
+                            // visibility instead of casting a host Kotlin Pair
+                            // through the module's ClassLoader.
                             val image = readOrNull { imageField.get(chain.thisObject) as? ImageView }
-                            val subId = image?.let(::findMobileSubscription)
-                            val rootVisible = event?.first as? Boolean
-                            val activityVisible = event?.second as? Boolean
-                            if (
-                                image != null && subId != null &&
-                                rootVisible != null && activityVisible != null
-                            ) {
-                                try {
-                                    // isVisible().first also controls the native root View
-                                    // in the binder's separate mobile-root collector.
-                                    // With a hidden root the child may retain VISIBLE
-                                    // because its collector is a no-op; do not treat that
-                                    // stale child state as an actually visible icon.
-                                    val taggedResId = nativeMobileActivityResourceId(image)
-                                    // Visibility and resource are independent native
-                                    // collectors. The child may become visible before
-                                    // the first Drawable is delivered; keep that
-                                    // visibility rather than requiring a resource here.
-                                    val effectiveVisible =
-                                        rootVisible && activityVisible &&
-                                            image.visibility == View.VISIBLE
-                                    onMobileActivityVisibility(
-                                        subId, taggedResId, effectiveVisible,
-                                    )
-                                    if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                                        readOrNull {
-                                            onEvent.invoke(
-                                                "networkPipeline mobile activityVisibility " +
-                                                    "subId=" + subId +
-                                                    " rootVisible=" + rootVisible +
-                                                    " activityVisible=" + activityVisible +
-                                                    " childVisible=" + (image.visibility == View.VISIBLE) +
-                                                    " appliedResId=" + (taggedResId ?: 0),
-                                            )
-                                        }
+                            val binding = image?.let(::findNativeHomeMobileBinding)
+                            val rootVisible = binding?.let { owner ->
+                                readOrNull {
+                                    nativeBindingField.get(owner.root)?.let { nativeBinding ->
+                                        nativeShouldVisibleMethod.invoke(nativeBinding) as? Boolean
                                     }
+                                }
+                            }
+                            val childVisible = image?.visibility == View.VISIBLE
+                            val effectiveVisible = nativeMobileActivityShown(
+                                rootVisible = rootVisible,
+                                childVisible = childVisible,
+                            )
+                            val taggedResId = image?.let(::nativeMobileActivityResourceId)
+                            if (binding != null && effectiveVisible != null) {
+                                try {
+                                    // The native visibility collector can fire without
+                                    // another resource emission. A drawable is required
+                                    // to draw, but not to remember native visibility.
+                                    onMobileActivityVisibility(
+                                        binding.subscriptionId, taggedResId, effectiveVisible,
+                                    )
                                 } catch (error: Throwable) {
                                     callbackFailed("mobile-activity-visibility", error, onRuntimeFailure)
+                                }
+                            }
+                            if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                readOrNull {
+                                    onEvent.invoke(
+                                        "networkPipeline mobile activityVisibility " +
+                                            "subId=" + (binding?.subscriptionId ?: "unknown") +
+                                            " rootVisible=" + (rootVisible ?: "unknown") +
+                                            " childVisible=" + childVisible +
+                                            " effectiveVisible=" + (effectiveVisible ?: "unknown") +
+                                            " appliedResId=" + (taggedResId ?: 0) +
+                                            " accepted=" + (binding != null && effectiveVisible != null),
+                                    )
                                 }
                             }
                         }
