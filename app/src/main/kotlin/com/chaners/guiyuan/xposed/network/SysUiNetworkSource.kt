@@ -75,6 +75,7 @@ internal object SysUiNetworkSource {
     private const val WIFI_BIND_HOOK_ID = "combinedstatus.network.wifi.bind"
     private const val WIFI_ICON_HOOK_ID = "combinedstatus.network.wifi.icon"
     private const val WIFI_ACTIVITY_HOOK_ID = "combinedstatus.network.wifi.activity"
+    private const val COLLECTOR_CLASS_ID_FIELD_NAME = "\$r8\$classId"
     private const val WIFI_ICON_COLLECTOR_CLASS_ID = 1
     private const val MAX_PARENT_CHAIN_DEPTH = 8
     private const val WIFI_SEED_LOG_PREFIX = "networkPipeline wifi seed source="
@@ -337,7 +338,7 @@ internal object SysUiNetworkSource {
             val wifiIconClassIdField =
                 atStage("wifi.resolve.classIdField") {
                     wifiIconEmitterClass
-                        .getDeclaredField("\$r8\$classId")
+                        .getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME)
                         .apply { isAccessible = true }
                 }
             val wifiIconGetter =
@@ -509,7 +510,7 @@ internal object SysUiNetworkSource {
             val mobileClassIdField =
                 atStage("mobile.resolve.classIdField") {
                     mobileSignalEmitterClass
-                        .getDeclaredField("\$r8\$classId")
+                        .getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME)
                         .apply { isAccessible = true }
                 }
             val subscriptionIdMethod =
@@ -644,7 +645,7 @@ internal object SysUiNetworkSource {
                     MOBILE_ACTIVITY_VISIBILITY_COLLECTOR_CLASS_NAME, false, classLoader,
                 )
                 val imageField = collector.getDeclaredField("\$satellite").apply { isAccessible = true }
-                val classIdField = collector.getDeclaredField("\$r8\$classId").apply { isAccessible = true }
+                val classIdField = collector.getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME).apply { isAccessible = true }
                 val method = resolveEmitterMethod(collector, MOBILE_SIGNAL_EMIT_METHOD_NAME)
                 module.hook(method)
                     .setId(MOBILE_ACTIVITY_VISIBILITY_HOOK_ID)
