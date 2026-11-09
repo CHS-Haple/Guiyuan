@@ -41,6 +41,7 @@ internal object StatusBarHostCapture {
             executable.parameterCount == 0
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun hooker(
         onCaptured: (SysUiHostRegistry.Capture) -> Unit,
     ): Hooker = Hooker { chain ->
