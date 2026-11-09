@@ -446,6 +446,27 @@ jobs:
             exit 1
           fi
 
+      - name: Test alternate OS4 fallback icons against matched source
+        if: github.event_name == 'pull_request' && steps.scope.outputs.run_android == 'true'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+          if ! git diff --name-only "$base" "$HEAD_SHA" -- \
+            app/src/os4Published/kotlin app/src/os4Upstream/kotlin \
+            app/src/test/kotlin/com/chaners/guiyuan/ui/icons/GlassIconCanvasTest.kt | grep -q .; then
+            echo "OS4 Glass icon variants and canvas tests unchanged; skip alternate tests."
+            exit 0
+          fi
+          test -n "$MIUIX_SOURCE_REVISION" && test -n "$MIUIX_SOURCE_DIR"
+          ./gradlew \
+            -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
+            -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
+            -Pgy.os4.dialogSurfaces=false \
+            :app:testDebugUnitTest --no-daemon --max-workers=3 --stacktrace
       # Only trusted same-repo PRs may use the job's packages:read token.
       # This build deliberately omits the source-composite flags to verify Maven ABI and artifacts.
       - name: Verify new MIUIX Maven dependencies without source substitution
@@ -466,7 +487,7 @@ jobs:
           test -z "${GY_OS4_MIUIXDIR:-}"
           ./gradlew \
             -Pgy.os4.dialogSurfaces=false \
-            :app:compileDebugKotlin --refresh-dependencies \
+            :app:compileDebugKotlin :app:testDebugUnitTest --refresh-dependencies \
             --no-daemon --max-workers=3 --stacktrace
 
       - name: Record exact source Build identity

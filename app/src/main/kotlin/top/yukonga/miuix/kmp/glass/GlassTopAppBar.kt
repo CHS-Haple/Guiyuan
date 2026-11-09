@@ -72,9 +72,6 @@ object GlassTopAppBarDefaults {
     /** Icon opacity while an action-bar button is held. */
     val PressedContentAlpha: Float = 0.6f
 
-    private val NESTED_BLUR_LIGHT: Dp = 44.72.dp
-    private val NESTED_BLUR_DARK: Dp = 63.25.dp
-
     /**
      * How far a bar has collapsed, in `[0, 1]`.
      *
@@ -104,10 +101,6 @@ object GlassTopAppBarDefaults {
     /** The `internal-pured-thin-glass` action-button material. */
     @Composable
     fun buttonMaterial(): GlassMaterial = GlassMaterials.puredThinGlass(isDarkTheme())
-
-    /** Effective blur of the action bar's parent mask and a child's own 20dp mask blur. */
-    @Composable
-    internal fun nestedMaterialBlurRadius(): Dp = if (isDarkTheme()) NESTED_BLUR_DARK else NESTED_BLUR_LIGHT
 
     /** The parent material applied before child button and tab materials. */
     @Composable
@@ -320,13 +313,8 @@ fun GlassTopAppBar(
     val keepMaterial by remember(floating, materialProgress) {
         derivedStateOf { floating || materialProgress.value > 0f }
     }
-    val baseMaterial = GlassTopAppBarDefaults.buttonMaterial()
-    val material = if (keepMaterial && backdrop != null) {
-        baseMaterial.copy(blurRadius = GlassTopAppBarDefaults.nestedMaterialBlurRadius())
-    } else {
-        baseMaterial
-    }
     val underlayMaterial = GlassTopAppBarDefaults.actionBarUnderlayMaterial().takeIf { keepMaterial && backdrop != null }
+    val material = GlassTopAppBarDefaults.buttonMaterial().withUnderlayBlur(underlayMaterial)
     val buttonBackdrop = backdrop?.takeIf { isRuntimeShaderSupported() }
 
     var barOrigin by remember { mutableStateOf(Offset.Zero) }
