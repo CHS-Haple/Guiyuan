@@ -85,6 +85,16 @@ class RemotePrefsLockOrderTest {
         assertEquals(true, delivered.last())
     }
 
+}
+
+class RemotePrefsDeliveryFailureTest {
+    @After
+    fun cleanUp() {
+        FeaturePrefsOwner.unbind()
+        VisualPrefsOwner.unbind()
+        DiagPrefsOwner.unbind()
+    }
+
     @Test
     fun reflectedFatalFeatureUnregisterEscapesFailedInitialDelivery() {
         val prefs = LockedPrefs()
@@ -247,144 +257,145 @@ class RemotePrefsLockOrderTest {
         assertEquals(true, delivered.last())
     }
 
-    private fun testStaleRead(
-        old: LockedPrefs,
-        key: String,
-        setOld: () -> Unit,
-        rebind: () -> Unit,
-    ) {
-        val entered = CountDownLatch(1)
-        val resume = CountDownLatch(1)
-        old.pauseRead(key, entered, resume)
-        setOld()
-        val error = AtomicReference<Throwable?>(null)
-        val callback = worker(error) { old.notifyListeners(key) }
+}
+
+private fun testStaleRead(
+    old: LockedPrefs,
+    key: String,
+    setOld: () -> Unit,
+    rebind: () -> Unit,
+) {
+    val entered = CountDownLatch(1)
+    val resume = CountDownLatch(1)
+    old.pauseRead(key, entered, resume)
+    setOld()
+    val error = AtomicReference<Throwable?>(null)
+    val callback = worker(error) { old.notifyListeners(key) }
+    try {
+        assertTrue("old read started", entered.await(3, TimeUnit.SECONDS))
+        rebind()
+    } finally {
+        resume.countDown()
+    }
+    callback.join(3_000)
+    assertFalse("callback finished", callback.isAlive)
+    assertNull(error.get())
+}
+
+private fun testListenerLock(key: String, bind: (SharedPreferences) -> Unit) {
+    val old = LockedPrefs()
+    val next = LockedPrefs()
+    bind(old)
+    val held = CountDownLatch(1)
+    val proceed = CountDownLatch(1)
+    val unregister = CountDownLatch(1)
+    old.beforeUnregister = { unregister.countDown() }
+    val error = AtomicReference<Throwable?>(null)
+    val callback = worker(error) { old.notifyHoldingLock(key, held, proceed) }
+    val rebind = try {
+        assertTrue("listener lock held", held.await(3, TimeUnit.SECONDS))
+        worker(error) { bind(next) }.also {
+            assertTrue("unregister entered", unregister.await(3, TimeUnit.SECONDS))
+        }
+    } finally {
+        proceed.countDown()
+    }
+    callback.join(3_000)
+    rebind.join(3_000)
+    assertFalse("callback finished", callback.isAlive)
+    assertFalse("rebind finished", rebind.isAlive)
+    assertNull(error.get())
+    assertEquals(0, old.listenerCount)
+    assertEquals(1, next.listenerCount)
+}
+
+private fun worker(error: AtomicReference<Throwable?>, work: () -> Unit) =
+    thread(isDaemon = true) {
         try {
-            assertTrue("old read started", entered.await(3, TimeUnit.SECONDS))
-            rebind()
-        } finally {
-            resume.countDown()
+            work()
+        } catch (e: Throwable) {
+            error.compareAndSet(null, e)
         }
-        callback.join(3_000)
-        assertFalse("callback finished", callback.isAlive)
-        assertNull(error.get())
     }
 
-    private fun testListenerLock(key: String, bind: (SharedPreferences) -> Unit) {
-        val old = LockedPrefs()
-        val next = LockedPrefs()
-        bind(old)
-        val held = CountDownLatch(1)
-        val proceed = CountDownLatch(1)
-        val unregister = CountDownLatch(1)
-        old.beforeUnregister = { unregister.countDown() }
-        val error = AtomicReference<Throwable?>(null)
-        val callback = worker(error) { old.notifyHoldingLock(key, held, proceed) }
-        val rebind = try {
-            assertTrue("listener lock held", held.await(3, TimeUnit.SECONDS))
-            worker(error) { bind(next) }.also {
-                assertTrue("unregister entered", unregister.await(3, TimeUnit.SECONDS))
-            }
-        } finally {
-            proceed.countDown()
-        }
-        callback.join(3_000)
-        rebind.join(3_000)
-        assertFalse("callback finished", callback.isAlive)
-        assertFalse("rebind finished", rebind.isAlive)
-        assertNull(error.get())
-        assertEquals(0, old.listenerCount)
-        assertEquals(1, next.listenerCount)
+// Preserve the complete SharedPreferences API while simulating lock and callback races.
+@Suppress("TooManyFunctions")
+private class LockedPrefs : SharedPreferences {
+    private val lock = Any()
+    private val listeners = linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
+    @Volatile var dual = false
+    @Volatile var featureEnabled = true
+    @Volatile var detailed = false
+    @Volatile var onRegister: (() -> Unit)? = null
+    @Volatile var beforeUnregister: (() -> Unit)? = null
+    @Volatile private var pause: Pause? = null
+
+    private data class Pause(val key: String, val entered: CountDownLatch, val resume: CountDownLatch)
+
+    val listenerCount: Int
+        get() = synchronized(lock) { listeners.size }
+
+    fun pauseRead(key: String, entered: CountDownLatch, resume: CountDownLatch) {
+        pause = Pause(key, entered, resume)
     }
 
-    private fun worker(error: AtomicReference<Throwable?>, work: () -> Unit) =
-        thread(isDaemon = true) {
-            try {
-                work()
-            } catch (e: Throwable) {
-                error.compareAndSet(null, e)
-            }
-        }
-
-    // Preserve the complete SharedPreferences API while simulating lock and callback races.
-    @Suppress("TooManyFunctions")
-    private class LockedPrefs : SharedPreferences {
-        private val lock = Any()
-        private val listeners = linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
-        @Volatile var dual = false
-        @Volatile var featureEnabled = true
-        @Volatile var detailed = false
-        @Volatile var onRegister: (() -> Unit)? = null
-        @Volatile var beforeUnregister: (() -> Unit)? = null
-        @Volatile private var pause: Pause? = null
-
-        private data class Pause(val key: String, val entered: CountDownLatch, val resume: CountDownLatch)
-
-        val listenerCount: Int
-            get() = synchronized(lock) { listeners.size }
-
-        fun pauseRead(key: String, entered: CountDownLatch, resume: CountDownLatch) {
-            pause = Pause(key, entered, resume)
-        }
-
-        fun notifyListeners(key: String) {
-            val copy = synchronized(lock) { listeners.toList() }
-            copy.forEach { it.onSharedPreferenceChanged(this, key) }
-        }
-
-        fun notifyHoldingLock(key: String, held: CountDownLatch, proceed: CountDownLatch) {
-            synchronized(lock) {
-                held.countDown()
-                check(proceed.await(3, TimeUnit.SECONDS)) { "callback not released" }
-                listeners.forEach { it.onSharedPreferenceChanged(this, key) }
-            }
-        }
-
-        private fun awaitRead(key: String?) {
-            val pending = pause ?: return
-            if (pending.key != key) return
-            pause = null
-            pending.entered.countDown()
-            check(pending.resume.await(3, TimeUnit.SECONDS)) { "read not resumed" }
-        }
-
-        override fun registerOnSharedPreferenceChangeListener(
-            listener: SharedPreferences.OnSharedPreferenceChangeListener?,
-        ) {
-            onRegister?.invoke()
-            if (listener != null) synchronized(lock) { listeners.add(listener) }
-        }
-
-        override fun unregisterOnSharedPreferenceChangeListener(
-            listener: SharedPreferences.OnSharedPreferenceChangeListener?,
-        ) {
-            beforeUnregister?.invoke()
-            if (listener != null) synchronized(lock) { listeners.remove(listener) }
-        }
-
-        override fun getBoolean(key: String?, defValue: Boolean): Boolean {
-            awaitRead(key)
-            return when (key) {
-                DUAL_SIGNAL_ENABLED_KEY -> dual
-                FEATURE_ENABLED_KEY -> featureEnabled
-                else -> defValue
-            }
-        }
-
-        override fun getAll(): MutableMap<String, *> = mutableMapOf<String, Any>()
-        override fun getString(key: String?, defValue: String?): String? =
-            if (key == DIAG_LEVEL_KEY) {
-                if (detailed) "Detailed" else "General"
-            } else {
-                defValue
-            }
-        override fun getStringSet(key: String?, defValues: MutableSet<String>?): MutableSet<String>? =
-            defValues
-        override fun getInt(key: String?, defValue: Int): Int = defValue
-        override fun getLong(key: String?, defValue: Long): Long = defValue
-        override fun getFloat(key: String?, defValue: Float): Float = defValue
-        override fun contains(key: String?): Boolean = false
-        override fun edit(): SharedPreferences.Editor =
-            throw UnsupportedOperationException("Read only")
+    fun notifyListeners(key: String) {
+        val copy = synchronized(lock) { listeners.toList() }
+        copy.forEach { it.onSharedPreferenceChanged(this, key) }
     }
+
+    fun notifyHoldingLock(key: String, held: CountDownLatch, proceed: CountDownLatch) {
+        synchronized(lock) {
+            held.countDown()
+            check(proceed.await(3, TimeUnit.SECONDS)) { "callback not released" }
+            listeners.forEach { it.onSharedPreferenceChanged(this, key) }
+        }
+    }
+
+    private fun awaitRead(key: String?) {
+        val pending = pause ?: return
+        if (pending.key != key) return
+        pause = null
+        pending.entered.countDown()
+        check(pending.resume.await(3, TimeUnit.SECONDS)) { "read not resumed" }
+    }
+
+    override fun registerOnSharedPreferenceChangeListener(
+        listener: SharedPreferences.OnSharedPreferenceChangeListener?,
+    ) {
+        onRegister?.invoke()
+        if (listener != null) synchronized(lock) { listeners.add(listener) }
+    }
+
+    override fun unregisterOnSharedPreferenceChangeListener(
+        listener: SharedPreferences.OnSharedPreferenceChangeListener?,
+    ) {
+        beforeUnregister?.invoke()
+        if (listener != null) synchronized(lock) { listeners.remove(listener) }
+    }
+
+    override fun getBoolean(key: String?, defValue: Boolean): Boolean {
+        awaitRead(key)
+        return when (key) {
+            DUAL_SIGNAL_ENABLED_KEY -> dual
+            FEATURE_ENABLED_KEY -> featureEnabled
+            else -> defValue
+        }
+    }
+
+    override fun getAll(): MutableMap<String, *> = mutableMapOf<String, Any>()
+    override fun getString(key: String?, defValue: String?): String? =
+        if (key == DIAG_LEVEL_KEY) {
+            if (detailed) "Detailed" else "General"
+        } else {
+            defValue
+        }
+    override fun getStringSet(key: String?, defValues: MutableSet<String>?): MutableSet<String>? =
+        defValues
+    override fun getInt(key: String?, defValue: Int): Int = defValue
+    override fun getLong(key: String?, defValue: Long): Long = defValue
+    override fun getFloat(key: String?, defValue: Float): Float = defValue
+    override fun contains(key: String?): Boolean = false
+    override fun edit(): SharedPreferences.Editor =
+        throw UnsupportedOperationException("Read only")
 }
