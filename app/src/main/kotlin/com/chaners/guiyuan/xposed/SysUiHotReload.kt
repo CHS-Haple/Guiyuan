@@ -135,6 +135,7 @@ internal object SysUiHotReload {
             }
         }
 
+    @Suppress("TooGenericExceptionCaught")
     fun takeOverHooks(
         param: HotReloadedParam,
         onCaptured: (SysUiHostRegistry.Capture) -> Unit,

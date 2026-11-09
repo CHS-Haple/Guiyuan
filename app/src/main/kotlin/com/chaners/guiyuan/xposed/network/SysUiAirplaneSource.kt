@@ -105,6 +105,7 @@ internal object SysUiAirplaneSource {
     }
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     private fun publish(source: String, force: Boolean = false) {
         val currentResolver = resolver ?: return
         val enabled =

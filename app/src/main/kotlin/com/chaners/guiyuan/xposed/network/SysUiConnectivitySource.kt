@@ -161,6 +161,7 @@ internal object SysUiConnectivitySource {
 
     // Default data SIM can change while the network stays connected.
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun refreshDataSubscription() {
         val subId = SysUiDefaultDataSubSource.currentSubscriptionId()
         if (subId == dataSubscriptionId && dataCallback != null) {

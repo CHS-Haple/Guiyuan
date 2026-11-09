@@ -656,6 +656,7 @@ internal object NativeStatusObserver {
     }
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     internal fun deliverPresentation(
         presentation: PresentationStore.StatusIconPresentation,
         deliver: (PresentationStore.StatusIconPresentation) -> Unit,

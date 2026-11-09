@@ -450,6 +450,7 @@ internal object SysUiCcSource {
             "]"
     }
 
+    @Suppress("TooGenericExceptionCaught")
     internal fun dispatchRuntimeCallback(
         callback: (() -> Unit)?,
         onFailure: ((Throwable) -> Unit)? = null,
