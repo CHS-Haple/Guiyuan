@@ -2,18 +2,49 @@
 
 > Historical checkpoint only. Stable [v1.0.0](https://github.com/CHS-Haple/Guiyuan/releases/tag/v1.0.0) was published on 2026-11-02 with the B1716 Release APK. The gates and decisions below describe the dated pre-release review, **not** the current publication status, a new release instruction, or proof that every planned smoke test was completed. For current engineering status use [CURRENT](CURRENT.md), the live source and GitHub CI.
 
-**Status:** Historical source preflight recorded on 2026-10-31; B1714 CI, Canary signing and bounded device feedback recorded on 2026-11-02. The maintainer approved formal 1.0.0 promotion with **HyperOS 4 as the sole advertised OS family**, subject to a final repository cleanup, protected-branch CI, isolated Release signature verification and actual publication. This record must not claim publication until the signed Release and tag are verified.
-**Authority at the time:** [CONTRIBUTING](../../CONTRIBUTING.md) for engineering rules and [CURRENT](CURRENT.md) for accepted runtime state. The original pre-release criteria remain preserved in this dated record and Git history; this document does not set present-day release gates. This record tracks proof and open acceptance work; it is not a new CI workflow, a Build history, an alternative roadmap or a version-promotion instruction. Refresh each item against the final candidate SHA rather than copying today's results forward.
+**Status:** Historical source preflight recorded on 2026-10-31; B1714 CI, Canary
+signing and bounded device feedback recorded on 2026-11-02. The maintainer
+approved formal 1.0.0 promotion with **HyperOS 4 as the sole advertised OS
+family**, subject to a final repository cleanup, protected-branch CI, isolated
+Release signature verification and actual publication. This record must not
+claim publication until the signed Release and tag are verified.
+**Authority at the time:** [CONTRIBUTING](../../CONTRIBUTING.md) for engineering
+rules and [CURRENT](CURRENT.md) for accepted runtime state. The original
+pre-release criteria remain preserved in this dated record and Git history; this
+document does not set present-day release gates. This record tracks proof and
+open acceptance work; it is not a new CI workflow, a Build history, an
+alternative roadmap or a version-promotion instruction. Refresh each item
+against the final candidate SHA rather than copying today's results forward.
 
 ## B1714 device checkpoint — 2026-11-02
 
 - **Candidate runtime:** `feat/1.0.0-release-qualification` at `956779f67e0212df49b7b4d3ecfd2d07ec1c5b20`, versionName `1.0.0`, versionCode `261102714`, Build `20261102-1714`. Its [exact-source CI](https://github.com/CHS-Haple/Guiyuan/actions/runs/41353388437) succeeded and the isolated [Canary signer](https://github.com/CHS-Haple/Guiyuan/actions/runs/41354068914) produced a verified signed artifact. A later documentation-only commit is not a new installable Build or a distinct runtime-acceptance result.
-- **Onboarding defect:** B1713 one-off device trace established that successive warm Back-to-Home resumes preserved the live Welcome navigation stack but stale retained callbacks advanced to later stages. B1714 binds continuation to its originating page and verifies that page is current. The maintainer explicitly confirmed “1714引导页正常了”. Temporary diagnostic PR [#1161](https://github.com/CHS-Haple/Guiyuan/pull/1161) was closed without merge; its logging is not present in B1714.
-- **Maintainer smoke feedback:** After the grouped inspection of guide/Terms/Privacy sheets and scrollbars, Home/Keyguard/AOD/CC and network/battery presentation, ordinary hot reload/lifecycle, OS3/OS4 settings, diagnostics and backup, the maintainer said “以上这些暂时都没发现问题”. Record this as **no observed issue in the exercised paths**, not proof of every offset, SIM topology, Root failure, accessibility variant or abnormal native ownership interleaving.
+- **Onboarding defect:** B1713 one-off device trace established that successive
+  warm Back-to-Home resumes preserved the live Welcome navigation stack but
+  stale retained callbacks advanced to later stages. B1714 binds continuation to
+  its originating page and verifies that page is current. The maintainer
+  explicitly confirmed “1714引导页正常了”. Temporary diagnostic PR
+  [#1161](https://github.com/CHS-Haple/Guiyuan/pull/1161) was closed without
+  merge; its logging is not present in B1714.
+- **Maintainer smoke feedback:** After the grouped inspection of
+  guide/Terms/Privacy sheets and scrollbars, Home/Keyguard/AOD/CC and
+  network/battery presentation, ordinary hot reload/lifecycle, OS3/OS4 settings,
+  diagnostics and backup, the maintainer said “以上这些暂时都没发现问题”. Record this as
+  **no observed issue in the exercised paths**, not proof of every offset, SIM
+  topology, Root failure, accessibility variant or abnormal native ownership
+  interleaving.
 - **Open evidence/scope:** [#1151](https://github.com/CHS-Haple/Guiyuan/issues/1151) documents a measured Wi-Fi-to-ring clearance variation under vertical offsets; the existing rounded-corner analytic source and tests are integrated, but its full glyph/offset acceptance matrix remains open. [#758](https://github.com/CHS-Haple/Guiyuan/issues/758) exceptional native setter ownership is not a reproduced failure. Third-party variable fonts [#769](https://github.com/CHS-Haple/Guiyuan/issues/769), elective MIUIX effects [#954](https://github.com/CHS-Haple/Guiyuan/issues/954), and source refresh [#1047](https://github.com/CHS-Haple/Guiyuan/issues/1047) must not be claimed as verified compatibility or silently adopted.
-- **Release decision:** The maintainer selected **HyperOS 4 only** for advertised OS support and authorized first-stable promotion following repository cleanup. The 1.0.0 changelog is dated on the chosen 2026-11-02 release day. Protected `dev` integration, `dev → main` full CI, isolated signed **Release** (not Canary), final package/signature/version/upgrade checks and stable GitHub Release remain separate technical gates; do not claim them complete until run. The OS3 UI option is not a HyperOS 3 support claim. No `it` synchronization without instruction.
+- **Release decision:** The maintainer selected **HyperOS 4 only** for
+  advertised OS support and authorized first-stable promotion following
+  repository cleanup. The 1.0.0 changelog is dated on the chosen 2026-11-02
+  release day. Protected `dev` integration, `dev → main` full CI, isolated
+  signed **Release** (not Canary), final package/signature/version/upgrade
+  checks and stable GitHub Release remain separate technical gates; do not claim
+  them complete until run. The OS3 UI option is not a HyperOS 3 support claim.
+  No `it` synchronization without instruction.
 
-The older source inventory and matrix below are historical **2026-10-31** evidence, not statements that current `dev/main/it` still have those SHA values.
+The older source inventory and matrix below are historical **2026-10-31**
+evidence, not statements that current `dev/main/it` still have those SHA values.
 
 ## Historical source and branch checkpoint — 2026-10-31
 
@@ -40,26 +71,64 @@ The older source inventory and matrix below are historical **2026-10-31** eviden
 
 This is a reproducible **source inventory and bounded static review**, not a claim that every runtime branch was manually simulated. The exact reviewed Git tree was `dev@4e265b14aec545417fb4556180c4684cf9d9c0e2` (431 tracked blobs). All 188 application Kotlin source files (77 `xposed`, 111 app/settings/system/MIUIX UI) were entered in an initial exception/lifetime/unsafe-call site inspection. The audit explicitly examined native Hook installers and release owners, network callback/prefs listeners, `SandboxClient`/lease and Activity stop, Root/restart and reports, configuration import/rollback, UI Compose owners, shader/UI bridges and supporting platform/build scripts. `!!` sites were checked in their containing null-guard/typed method context rather than automatically treated as defects. This is an **inspection**, not branch-by-branch proof of no bugs.
 
-- Repository composition: 102 Kotlin unit-test files, 77 Android resource files and 431 tracked blobs total; no tracked APK/DEX/signing-key source or large device dump located in the recursive Git tree. A filename-only scan is not a security review of every payload.
-- Localization: `values` and `values-zh-rCN` define exactly the same 505 main and 100 Home resource keys (605 each), with no missing sibling names or mismatched Android string-format placeholders in the scan.
+- Repository composition: 102 Kotlin unit-test files, 77 Android resource files
+  and 431 tracked blobs total; no tracked APK/DEX/signing-key source or large
+  device dump located in the recursive Git tree. A filename-only scan is not a
+  security review of every payload.
+- Localization: `values` and `values-zh-rCN` define exactly the same 505 main
+  and 100 Home resource keys (605 each), with no missing sibling names or
+  mismatched Android string-format placeholders in the scan.
 - The latest verified **code-affecting** dev CI was [#41115183239](https://github.com/CHS-Haple/Guiyuan/actions/runs/41115183239) on `a162347`: `:app:testDebugUnitTest`, `assembleDebug`, exact target-profile and Xposed metadata steps succeeded. Subsequent `dev` commits changed text/automation/docs; their later green **light** checks did **not** rerun the full Gradle tasks. Before declaring a new 1.0.0 candidate releasable, require its own source-matched **Full** test/build/signing job.
 - Build shapes: `app/build.gradle.kts` conditionally selects *exactly one* of `src/os4Published/kotlin` and `src/os4Upstream/kotlin`; ordinary local builds are not equivalent to signed matched-OS4 source CI. Review both separately; do not claim upstream ABI or feature coverage from the fallback.
 - Upstream [miuix #321](https://github.com/compose-miuix-ui/miuix/pull/321), [#423](https://github.com/compose-miuix-ui/miuix/pull/423), [#461](https://github.com/compose-miuix-ui/miuix/pull/461) remained open when checked; retain the accepted pinned source and no speculative AGP/MIUIX upgrade.
 - **Scope and prose cleanup:** old `CURRENT.md` was 48,656 characters dominated by historical B1193–B1670 checkpoints, duplicating changelog/PR records despite the file's current-state contract. Historical revisions remain discoverable via Git, while current owner, verified limitations and issue gates are retained in `CURRENT.md`. Large `third_party/miuix-glass/{UI_AUDIT,CONFORMANCE,README}.md` need a **separate** unique-evidence and current-reference review before deletion/condensation; these may hold platform source contract facts not safely discarded by size alone. User-facing copy must distinguish a tested exact SystemUI from generic HyperOS support, and an OS4 **UI style** from proof of cross-ROM compatibility. Preserve truthful provisional-release wording until actual promotion.
-- **Decision:** no source evidence established a new deterministic shipping blocker that justifies a speculative native Hook/animation/security rewrite. This does **not** clear unobserved exception paths, future 1.0.0 compiled bytes, OS4 graphics device acceptance or the final Release checklist. Therefore no `1.0.0` version bump is warranted **from source preflight alone**.
+- **Decision:** no source evidence established a new deterministic shipping
+  blocker that justifies a speculative native Hook/animation/security rewrite.
+  This does **not** clear unobserved exception paths, future 1.0.0 compiled
+  bytes, OS4 graphics device acceptance or the final Release checklist.
+  Therefore no `1.0.0` version bump is warranted **from source preflight
+  alone**.
 
 ## Final device smoke matrix — one coherent signed 1.0.0 candidate
 
-Use *one exact source SHA and Build*, a short video/log only when an anomaly is observed; avoid repeated unrelated diagnosis builds. This table is an acceptance plan, **not results**.
+Use *one exact source SHA and Build*, a short video/log only when an anomaly is
+observed; avoid repeated unrelated diagnosis builds. This table is an acceptance
+plan, **not results**.
 
-1. **Start / scoped native fallback:** fresh SystemUI launch and Settings entry, module enabled/disabled, Root unavailable; incompatible or missing native host must return to original icons without retained suppression.
-2. **Live status data:** Wi-Fi signal 0–4, airplane/hotspot/no-SIM/dual-SIM state transitions, SIM/data change when available, native tint and charging; no duplicate original icons or stale combined indicator.
-3. **Scene matrix:** Home→CC partial/full→Home; repeated rapid reversals; Keyguard→CC fully expanded→AOD and Keyguard→AOD direct; AOD→Keyguard, with combined Keyguard/AOD options both on and off.
-4. **Lifetime:** two successive supported V10 Hot Reload actions, host replacement/SystemUI restart, app force-stop/reopen and preference updates near handoff; no old callback applying to a new generation.
-5. **Appearance / accessibility:** OS3 and OS4 selected styles, light/dark/dynamic color, large text, search/back/cancel, Glass sheet/dialog, bottom floating touch area and native no-shader fallback, RTL where applicable.
-6. **Data / maintenance:** diagnostics log refresh with/without Root, history clear and new entries, report share/export; settings backup restore and malformed-input rejection; ensure Root scope commands and report paths remain user controlled.
-7. **Distribution upgrade:** install over an actual older distributed Canary/IT where permitted by package/version/signature (especially beyond delivered B1676), check no settings loss; compare APK's signing cert, applicationId, versionCode, versionName, debuggable flag and source SHA with recorded CI proof.
+1. **Start / scoped native fallback:** fresh SystemUI launch and Settings entry,
+   module enabled/disabled, Root unavailable; incompatible or missing native
+   host must return to original icons without retained suppression.
+2. **Live status data:** Wi-Fi signal 0–4, airplane/hotspot/no-SIM/dual-SIM
+   state transitions, SIM/data change when available, native tint and charging;
+   no duplicate original icons or stale combined indicator.
+3. **Scene matrix:** Home→CC partial/full→Home; repeated rapid reversals;
+   Keyguard→CC fully expanded→AOD and Keyguard→AOD direct; AOD→Keyguard, with
+   combined Keyguard/AOD options both on and off.
+4. **Lifetime:** two successive supported V10 Hot Reload actions, host
+   replacement/SystemUI restart, app force-stop/reopen and preference updates
+   near handoff; no old callback applying to a new generation.
+5. **Appearance / accessibility:** OS3 and OS4 selected styles,
+   light/dark/dynamic color, large text, search/back/cancel, Glass sheet/dialog,
+   bottom floating touch area and native no-shader fallback, RTL where
+   applicable.
+6. **Data / maintenance:** diagnostics log refresh with/without Root, history
+   clear and new entries, report share/export; settings backup restore and
+   malformed-input rejection; ensure Root scope commands and report paths remain
+   user controlled.
+7. **Distribution upgrade:** install over an actual older distributed Canary/IT
+   where permitted by package/version/signature (especially beyond delivered
+   B1676), check no settings loss; compare APK's signing cert, applicationId,
+   versionCode, versionName, debuggable flag and source SHA with recorded CI
+   proof.
 
 ## Historical decision at this review checkpoint
 
-**At the time of this pre-release review, the evidence note did not authorize a 1.0.0 bump or stable tag.** Source-level scope, ordinary CI and an older signed Release are not a replacement for the *final candidate's* Full CI, newly signed APK and target-device smoke. A third-party VF, unmerged MIUIX effect or unobserved native setter exception is a **documented limitation**, not an invented confirmed regression. Decide final release support claims explicitly, address any concrete failed gate via the smallest owner-correct fix, then ask the maintainer to authorize promotion. No background timer, additional CI workflow or opportunistic Build is required for this document.
+**At the time of this pre-release review, the evidence note did not authorize a
+1.0.0 bump or stable tag.** Source-level scope, ordinary CI and an older signed
+Release are not a replacement for the *final candidate's* Full CI, newly signed
+APK and target-device smoke. A third-party VF, unmerged MIUIX effect or
+unobserved native setter exception is a **documented limitation**, not an
+invented confirmed regression. Decide final release support claims explicitly,
+address any concrete failed gate via the smallest owner-correct fix, then ask
+the maintainer to authorize promotion. No background timer, additional CI
+workflow or opportunistic Build is required for this document.

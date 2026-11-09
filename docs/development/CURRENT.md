@@ -1,6 +1,9 @@
 # Current Development State
 
-This file records **accepted behavior, current constraints and next work**, not a Build-by-Build history. For the exact live branch, version and CI results, check GitHub and `gradle.properties` first. Historical experiments and rejection evidence remain in PRs, issues, commits and the reference documents.
+This file records **accepted behavior, current constraints and next work**, not
+a Build-by-Build history. For the exact live branch, version and CI results,
+check GitHub and `gradle.properties` first. Historical experiments and rejection
+evidence remain in PRs, issues, commits and the reference documents.
 
 ## Current release scope and accepted runtime
 
@@ -14,7 +17,15 @@ This file records **accepted behavior, current constraints and next work**, not 
 - **Previous MIUIX UI-style acceptance (B1810, 2026-11-09):** The maintainer reported **“正常”** after installing signed B1810 (`versionName=1.0.0`, `versionCode=261109810`, `buildId=20261109-1810`) for the grouped OS4 Glass UI checks. The exact work-branch source `91b84c9abceb7f4627ac181a11ef93c935028d0d` passed [full Android, alternate OS4 and direct published-Maven JVM CI #42546207293](https://github.com/CHS-Haple/Guiyuan/actions/runs/42546207293), then [isolated trusted signing #42546874538](https://github.com/CHS-Haple/Guiyuan/actions/runs/42546874538) verified its signed Canary and identity. [PR #1370](https://github.com/CHS-Haple/Guiyuan/pull/1370) was squash-merged into `dev` at `ac2e6dbafb646e97b90e0c35e611db07547f0324`, adopting same-revision MIUIX `ea1b935d` 28dp Glass icon assets, upstream popup intrinsic sizing, combined material blur for top bar/TabRow/search, and navigation drag/accent handling with app-owned adaptations. The one Codacy complexity warning is a reviewed upstream-identical gesture return, not a zero-issue claim. The device's broad normal feedback is not exhaustive proof of RTL, extreme font scale, GPU resume or all devices; [merged-dev CI #42547782718](https://github.com/CHS-Haple/Guiyuan/actions/runs/42547782718) is a separate integration gate. Neither the B1810 app test nor the `dev` integration promotes `main` or changes HyperOS runtime support.
 - **Previous MIUIX UI-style qualification (historical):** B1786 (`versionName=1.0.0`, `versionCode=261108786`, `buildId=20261108-1786`) was the earlier maintainer-tested **app UI** checkpoint. [PR #1299](https://github.com/CHS-Haple/Guiyuan/pull/1299) was squash-merged to `dev` at `6072f35e6833595c800ce9f320269325dd8ff54e` after [exact-head source CI #42428663093](https://github.com/CHS-Haple/Guiyuan/actions/runs/42428663093) and [signed Canary #42427816564](https://github.com/CHS-Haple/Guiyuan/actions/runs/42427816564) passed. After the grouped B1786 device checks, the maintainer reported no issue, including the earlier low-saturation battery-scheme swipe crash and anchored menu behavior. The MIUIX source graph is pinned to `b7a5f08f` for shared UI/navigation fixes; OS3-style controls retain native MIUIX Overlay/TopAppBar contracts, while OS4 Glass app-local bridges keep their scoped adaptations. No wholesale Glass module replacement or HyperOS 3 runtime support is implied. Two upstream-derived menu complexity findings remain documented in #1299 rather than declared fixed. Device evidence is specific to the reported scenarios, not exhaustive hardware or lifecycle coverage.
 - **Release and branches:** Stable [`v1.0.0`](https://github.com/CHS-Haple/Guiyuan/releases/tag/v1.0.0) was published on 2026-11-02 with a B1716 signed Release APK on `main`. Ongoing changes enter `dev` via reviewed PRs and promote to `main` under release gates. The historical `it` branch is retained for provenance only. The active `main`/`dev` Build and Work Branch APK workflows no longer accept IT Build or signing sources after [#1189](https://github.com/CHS-Haple/Guiyuan/pull/1189) and [#1190](https://github.com/CHS-Haple/Guiyuan/pull/1190). Check live GitHub heads and CI for the exact current source.
-- **Deferred compatibility evidence:** [#1151](https://github.com/CHS-Haple/Guiyuan/issues/1151) (optical clearance), [#758](https://github.com/CHS-Haple/Guiyuan/issues/758) (exceptional native property ownership), [#769](https://github.com/CHS-Haple/Guiyuan/issues/769) (third-party variable font), [#954](https://github.com/CHS-Haple/Guiyuan/issues/954) and [#1047](https://github.com/CHS-Haple/Guiyuan/issues/1047) (MIUIX) were closed as **not planned** on 2026-11-01. Closure is not evidence that their untested scenarios passed. They are not active tasks or 1.0.0 release blockers.
+- **Deferred compatibility evidence:**
+  [#1151](https://github.com/CHS-Haple/Guiyuan/issues/1151) (optical clearance),
+  [#758](https://github.com/CHS-Haple/Guiyuan/issues/758) (exceptional native
+  property ownership), [#769](https://github.com/CHS-Haple/Guiyuan/issues/769)
+  (third-party variable font),
+  [#954](https://github.com/CHS-Haple/Guiyuan/issues/954) and
+  [#1047](https://github.com/CHS-Haple/Guiyuan/issues/1047) (MIUIX) were closed
+  as **not planned** on 2026-11-01. Closure is not evidence that their untested
+  scenarios passed. They are not active tasks or 1.0.0 release blockers.
 
 ## Historical development evidence
 
@@ -24,25 +35,61 @@ For active decisions consult [DECISIONS](DECISIONS.md), the [architecture policy
 
 ## Presentation ownership and lifecycle
 
-- Home projects the combined indicator while surrounding native slot layout remains SystemUI-owned. Keyguard/AOD use one host-scoped family; AOD never becomes a CC transition source. Full Control Center remains native. The optional dual-row mobile presentation requires two verified subscriptions and complete SIM-slot identity; ambiguous or missing inputs use the existing single/native-safe fallback without clearing the saved preference.
-- Partial CC transitions use verified native FAKE/FINAL endpoints, measured native peers and retained native typography where available. Compound-row shape morphing requires optically verified rows and does not independently assert a row's SIM ownership. Charging changes retarget the existing reservation writer. Do not mutate native FINAL view layout, visibility, alpha or translation to hide alignment errors.
-- `SysUiPresentationOwner` owns limited masking/reservations; CC Session owns its temporary projection and observer registration. Invalidation checks native bind, direct root changes, slot/optical ancestry and configuration, with observer cleanup on the registration-time `ViewTreeObserver` and any distinct live observer. Avoid per-frame tree probes or unbounded polling.
+- Home projects the combined indicator while surrounding native slot layout
+  remains SystemUI-owned. Keyguard/AOD use one host-scoped family; AOD never
+  becomes a CC transition source. Full Control Center remains native. The
+  optional dual-row mobile presentation requires two verified subscriptions and
+  complete SIM-slot identity; ambiguous or missing inputs use the existing
+  single/native-safe fallback without clearing the saved preference.
+- Partial CC transitions use verified native FAKE/FINAL endpoints, measured
+  native peers and retained native typography where available. Compound-row
+  shape morphing requires optically verified rows and does not independently
+  assert a row's SIM ownership. Charging changes retarget the existing
+  reservation writer. Do not mutate native FINAL view layout, visibility, alpha
+  or translation to hide alignment errors.
+- `SysUiPresentationOwner` owns limited masking/reservations; CC Session owns
+  its temporary projection and observer registration. Invalidation checks native
+  bind, direct root changes, slot/optical ancestry and configuration, with
+  observer cleanup on the registration-time `ViewTreeObserver` and any distinct
+  live observer. Avoid per-frame tree probes or unbounded polling.
 - **CC projection retirement:** [#898](https://github.com/CHS-Haple/Guiyuan/pull/898) attempts native CC and Guiyuan FAKE overlay/listener cleanup independently. A partly released projection remains ineligible for reuse or Hot Reload until a real lifecycle event completes cleanup; unresolved native property restore failures remain under [#758](https://github.com/CHS-Haple/Guiyuan/issues/758). [#900](https://github.com/CHS-Haple/Guiyuan/pull/900) also treats prearm host-listener registration and cancellation as distinct lifecycle phases; only a fully armed listener pair is reusable, and incomplete release never claims native fallback.
 - **CC FAKE/native release ownership:** [#907](https://github.com/CHS-Haple/Guiyuan/pull/907) and [#909](https://github.com/CHS-Haple/Guiyuan/pull/909) register the carrier width lease before mutation and acknowledge failed hidden release. [#911](https://github.com/CHS-Haple/Guiyuan/pull/911) keeps a still-owned width receipt on failed terminal restore; [#913](https://github.com/CHS-Haple/Guiyuan/pull/913) does the same for Padding/ignored-slot stop failures while letting independently changed native padding stand. [#927](https://github.com/CHS-Haple/Guiyuan/pull/927) binds failure callbacks to the originating Session; [#928](https://github.com/CHS-Haple/Guiyuan/pull/928) preserves failed retired Sessions per surface and blocks new ownership while their native release remains unverified. Padding *acquisition* on an exceptional inherited setter remains open under [#758](https://github.com/CHS-Haple/Guiyuan/issues/758).
 - **Renderer and passive-observer cleanup:** Native property receipts, render overlays and preference listeners have distinct owners; their retirement gates must not be multiplied or conflated. [#939](https://github.com/CHS-Haple/Guiyuan/pull/939) reuses the existing independent sibling-release mechanism for Home/Keyguard render cleanup without adding gates. [#940](https://github.com/CHS-Haple/Guiyuan/pull/940) lets native charging-icon reconciliation proceed independently of the passive anchor diagnostics, while [#941](https://github.com/CHS-Haple/Guiyuan/pull/941) confines detailed native slot probe failures to diagnostics rather than retiring the Home runtime. These source-level exceptional-path repairs passed their exact-head Runtime CIs; none establishes a reproduced Android listener exception or solves the inherited Padding setter acquisition question under [#758](https://github.com/CHS-Haple/Guiyuan/issues/758).
-- API 102 Hot Reload uses neutral V10 transfer data and main-thread retirement of old view/listener owners before accepting a new generation, then validates the host/hook before reacquiring presentation. Older V9 owners require a one-time SystemUI restart when crossing the migration boundary. Native icons may appear briefly during an unavoidable inter-generation gap; no frame-atomic handoff is claimed.
-- Feature and visual preference callbacks are generation-gated and must not retain a binding lock while the framework owns its callback lock. App settings UI, snackbar, sheets and previews retain their existing MIUIX/Compose ownership.
+- API 102 Hot Reload uses neutral V10 transfer data and main-thread retirement
+  of old view/listener owners before accepting a new generation, then validates
+  the host/hook before reacquiring presentation. Older V9 owners require a
+  one-time SystemUI restart when crossing the migration boundary. Native icons
+  may appear briefly during an unavoidable inter-generation gap; no frame-atomic
+  handoff is claimed.
+- Feature and visual preference callbacks are generation-gated and must not
+  retain a binding lock while the framework owns its callback lock. App settings
+  UI, snackbar, sheets and previews retain their existing MIUIX/Compose
+  ownership.
 
 ## Compatibility limits and retained evidence
 
 - **LSPosed 7930 normal-path evidence:** B1181/B1186/B1187 (2026-10-21) prove successful V10 Hot Reload handoffs on the target LSPosed 2.2.1/7930; two B1232 diagnostic reports (2026-10-23, 15:35:14 and 15:35:25 +08) additionally record consecutive same-Build reloads in one SystemUI PID with preserved host identity, retired-before-reload handoff, `staleHooks=32`, `restartScope=false` and restored Home combined presentation. Settings B1136 records a 7930 module load. These establish **observed normal-path** behavior only; full/soft reboot, injected-wrapper internals, failure paths and longer-term listener-leak checks remain unverified. [7930 evidence](../reference/lsposed-7930-compatibility.md).
 - Other HyperOS/SystemUI fonts, dual-SIM aggregation variants and third-party-modified view trees still need their own verification. B1229 positions split 5GA using cached floating-point ink bounds from its current native `Paint`, with suffix-em-scaled clearance and original integer-bounds fallback. The maintainer accepted the minor heavy-weight 5GA expansion as visually normal; [#646](https://github.com/CHS-Haple/Guiyuan/issues/646) was closed and diagnostic-only [#705](https://github.com/CHS-Haple/Guiyuan/pull/705) was closed without merging. Do not force a fixed gap or remove an optical allowance. Cached native geometry cannot guarantee detection of silent descendant replacement without a native event.
-- Short, conditionally expanded Settings lists can have scroll-position edge cases; menu-to-modal timing remains upstream MIUIX-owned absent a concrete reproducible defect. [#521](https://github.com/CHS-Haple/Guiyuan/issues/521) was closed after the verified native-slot and observer fixes.
+- Short, conditionally expanded Settings lists can have scroll-position edge
+  cases; menu-to-modal timing remains upstream MIUIX-owned absent a concrete
+  reproducible defect. [#521](https://github.com/CHS-Haple/Guiyuan/issues/521)
+  was closed after the verified native-slot and observer fixes.
 
 ## Historical evidence gaps (not scheduled tasks)
 
-The linked historical Issues below are closed; these observations constrain compatibility claims but do not authorize speculative fixes or reopen work without a reproducible new need.
+The linked historical Issues below are closed; these observations constrain
+compatibility claims but do not authorize speculative fixes or reopen work
+without a reproducible new need.
 
 - **[#758](https://github.com/CHS-Haple/Guiyuan/issues/758) — exceptional native writes, closed not planned:** [#902](https://github.com/CHS-Haple/Guiyuan/pull/902), [#905](https://github.com/CHS-Haple/Guiyuan/pull/905), [#911](https://github.com/CHS-Haple/Guiyuan/pull/911) and [#913](https://github.com/CHS-Haple/Guiyuan/pull/913) preserve already-acquired Clip/Padding/ignored-slot/width receipts and report unverified release, and [#928](https://github.com/CHS-Haple/Guiyuan/pull/928) retains their Session after failed release with per-surface admission gates. Native Padding **acquisition** still writes before a new receipt can be recorded. Official `haotian` ROM `OS4.0.0.19.XOBCNXM` was fingerprint-verified to contain byte-identical core SystemUI APK and `framework.jar` to the previously inspected files. Exact OEM `View`/`ViewGroup` setter order and the separately verified ROM19 Xiaomi stub provider now establish the write-before-return opportunity, **not** a demonstrated exception, reentrant callback or foreign same-View writer. Any future change to post-return receipts or guarded native restoration requires a bounded exceptional-path/device witness first; stale native values must not be replayed against another writer. See the maintainer-controlled private SystemUI reference for exact fingerprints and DEX evidence.
-- **[#769](https://github.com/CHS-Haple/Guiyuan/issues/769) — variable fonts, closed not planned:** A real third-party Typeface/TTC face has not been qualified on the target device across native Home/CC transitions and fallback. Pure `FontAxesTest` does not prove rendered compatibility.
-- **Long-tail evidence, not current runtime blockers:** Dependabot [#629](https://github.com/CHS-Haple/Guiyuan/issues/629) was closed after authentication changes, but a bot-origin cold-cache request for all five pinned MIUIX modules remains unverified. Reopen only for a concrete failing bot PR; keep secrets protected and dependencies pinned. One accepted target-device Sandbox force-stop return-to-native observation does not prove other process-death or LSPosed timing paths.
+- **[#769](https://github.com/CHS-Haple/Guiyuan/issues/769) — variable fonts,
+  closed not planned:** A real third-party Typeface/TTC face has not been
+  qualified on the target device across native Home/CC transitions and fallback.
+  Pure `FontAxesTest` does not prove rendered compatibility.
+- **Long-tail evidence, not current runtime blockers:** Dependabot
+  [#629](https://github.com/CHS-Haple/Guiyuan/issues/629) was closed after
+  authentication changes, but a bot-origin cold-cache request for all five
+  pinned MIUIX modules remains unverified. Reopen only for a concrete failing
+  bot PR; keep secrets protected and dependencies pinned. One accepted
+  target-device Sandbox force-stop return-to-native observation does not prove
+  other process-death or LSPosed timing paths.
