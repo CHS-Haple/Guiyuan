@@ -32,6 +32,7 @@ internal object SysUiAirplaneSource {
     private var lastDelivery: Delivery? = null
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun attach(
         context: Context,
         onAirplaneMode: (Boolean) -> Unit,
