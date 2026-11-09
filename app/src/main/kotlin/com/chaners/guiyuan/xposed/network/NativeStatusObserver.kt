@@ -102,6 +102,7 @@ internal object NativeStatusObserver {
         @Synchronized get() = installedHandles.size
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
@@ -341,6 +342,7 @@ internal object NativeStatusObserver {
 
     // The native method has already run. Observation cannot replace its return
     // or make a diagnostic/renderer callback fail the SystemUI caller.
+    @Suppress("TooGenericExceptionCaught")
     internal inline fun <T> observeAfterNative(
         result: T,
         onFailure: (Throwable) -> Unit,
