@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.icons.Os4GlassSearch
 import com.chaners.guiyuan.GyApplication
@@ -1543,7 +1544,7 @@ private fun HubPage(
             if (os4) {
                 Box(Modifier.fillMaxWidth()) {
                     GlassTopAppBar(
-                        progressiveBlur = true,
+                        progressiveBlur = LocalTopBarProgressiveBlur.current,
                         title = if (searchMotion.mounted && searchExpanded) "" else title,
                         titleAlpha = { titleReveal.value },
                         largeTitle = title,

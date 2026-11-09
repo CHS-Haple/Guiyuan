@@ -72,6 +72,7 @@ internal fun AppearanceScreen(
     appearance: Appearance,
     dark: Boolean,
     onUiStyleChange: (UiStyle) -> Unit,
+    onTopBarProgressiveBlurChange: (Boolean) -> Unit,
     onThemeChange: (ThemeMode) -> Unit,
     onDynamicChange: (Boolean) -> Unit,
     onColorSpecChange: (ThemeColorSpec?) -> Unit,
@@ -242,6 +243,13 @@ internal fun AppearanceScreen(
                         if (style != appearance.uiStyle) onUiStyleChange(style)
                     }
                 },
+            )
+            SwitchPreference(
+                title = stringResource(R.string.top_bar_progressive_blur),
+                summary = stringResource(R.string.top_bar_progressive_blur_summary),
+                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_gradient) },
+                checked = appearance.topBarProgressiveBlur,
+                onCheckedChange = onTopBarProgressiveBlurChange,
             )
             SliderPreference(
                 value = sliderPercent,

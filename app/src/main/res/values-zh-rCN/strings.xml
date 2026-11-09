@@ -548,6 +548,8 @@
     <string name="feature_search_empty">没有找到相关功能项</string>
     <string name="ui_style_title">MIUIX界面规范</string>
     <string name="ui_style_summary">切换应用的界面与交互风格</string>
+    <string name="top_bar_progressive_blur">顶栏渐进模糊</string>
+    <string name="top_bar_progressive_blur_summary">滚动页面时渐进模糊顶栏背景</string>
     <string name="ui_style_os3">OS3</string>
     <string name="ui_style_os4">OS4（实验性）</string>
 
