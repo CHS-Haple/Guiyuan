@@ -47,6 +47,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.components.UiTopBarNavigationIcon
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
@@ -207,7 +208,7 @@ internal fun SettingsPage(
         topBar = {
             if (os4) {
                 GlassTopAppBar(
-                    progressiveBlur = true,
+                    progressiveBlur = LocalTopBarProgressiveBlur.current,
                     isContentScrolled = resolvedListState.canScrollBackward,
                     title = title,
                     modifier =
