@@ -150,6 +150,7 @@ internal object SysUiSceneSource {
             else -> Surface.UNKNOWN
         }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun publish(
         sourceView: View,
         rawState: Int,
