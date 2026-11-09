@@ -45,6 +45,7 @@ internal object SysUiKeyguardAodSource {
     @Volatile private var animToAodField: Field? = null
     @Volatile private var storedStyleField: Field? = null
 
+    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
