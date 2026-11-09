@@ -1,6 +1,12 @@
 # 1.0.0 Release Qualification — historical evidence and acceptance
 
-> Historical checkpoint only. Stable [v1.0.0](https://github.com/CHS-Haple/Guiyuan/releases/tag/v1.0.0) was published on 2026-11-02 with the B1716 Release APK. The gates and decisions below describe the dated pre-release review, **not** the current publication status, a new release instruction, or proof that every planned smoke test was completed. For current engineering status use [CURRENT](CURRENT.md), the live source and GitHub CI.
+> Historical checkpoint only. Stable
+> [v1.0.0](https://github.com/CHS-Haple/Guiyuan/releases/tag/v1.0.0) was
+> published on 2026-11-02 with the B1716 Release APK. The gates and decisions
+> below describe the dated pre-release review, **not** the current publication
+> status, a new release instruction, or proof that every planned smoke test was
+> completed. For current engineering status use [CURRENT](CURRENT.md), the live
+> source and GitHub CI.
 
 **Status:** Historical source preflight recorded on 2026-10-31; B1714 CI, Canary
 signing and bounded device feedback recorded on 2026-11-02. The maintainer

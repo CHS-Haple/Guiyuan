@@ -36,7 +36,13 @@ Current boundaries:
 
 The steady Home hierarchy is:
 
-`MiuiNotificationStatusContainer / system_icon_area -> MiuiStatusBatteryContainer / system_icons -> Guiyuan child -> logical viewport -> renderer`
+```text
+MiuiNotificationStatusContainer / system_icon_area
+  -> MiuiStatusBatteryContainer / system_icons
+  -> Guiyuan child
+  -> logical viewport
+  -> renderer
+```
 
 The logical viewport is independent from transparent drawing overflow. Enlarging
 Guiyuan's drawing surface must not change native slot geometry or peer motion.
