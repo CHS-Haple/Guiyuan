@@ -30,8 +30,7 @@ versions remain listed here.
 ## Adapted optical code
 
 Guiyuan's liquid navigation includes Apache-2.0 optical helpers adapted from the
-pinned
-[MIUIX Liquid Glass example](https://github.com/compose-miuix-ui/miuix/tree/8972f941c194bd3c4e14c34543d5ebc7b39e40da/example/shared/src/commonMain/kotlin/component/liquid),
+pinned [MIUIX Liquid Glass example](https://github.com/compose-miuix-ui/miuix/tree/8972f941c194bd3c4e14c34543d5ebc7b39e40da/example/shared/src/commonMain/kotlin/component/liquid),
 which credits AndroidLiquidGlass. Source copyright and license headers are
 retained in the adapted files. Neither Backdrop nor Kyant Shapes is a direct
 runtime dependency in this experimental implementation.
@@ -41,10 +40,7 @@ runtime dependency in this experimental implementation.
 `app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` contains a pinned, adapted
 subset of the
 [MIUIX miuix-glass PR #423](https://github.com/compose-miuix-ui/miuix/pull/423),
-at the current development checkout revision
-`45645854cd46c32275c5666e3aafa9980d8f104e`. The published v1.0.0 stable branch
-retains its earlier source checkout `b9f70838509fbc3f63f1a972777a7e6ce07f578f`
-(Apache-2.0; [license text](third_party/miuix-glass/LICENSE)).
+at the current development checkout revision `45645854cd46c32275c5666e3aafa9980d8f104e`. The published v1.0.0 stable branch retains its earlier source checkout `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (Apache-2.0; [license text](third_party/miuix-glass/LICENSE)).
 `GlassPopupSurface.kt` and `GlassPopupColumn.kt` were initially based on PR #423
 commit `8d52b45f223d4bec9a719d3d6ca52972cc7ea5fb` to use upstream popup
 measurement, scroll and outside-gesture ownership. This is provenance, not a
@@ -52,14 +48,7 @@ claim
 that those files remain byte-identical to the current upstream revision. The
 remaining compatibility
 bridge is not claimed to be the latest complete `miuix-glass` module.
-The adapted source includes documented compatibility bridges (including title
-rendering), so it is not a byte-for-byte copy of the entire upstream module. The
-menu migration in Guiyuan PR #1316 also selectively ports the material-opacity
-behavior of upstream commit `799d3d09f996d66cb2b1c2318deed8242c4f440e` into
-app-local `GlassIconButton` and `GlassTransformPopup`; this does not advance the
-complete matched-source dependency graph. Accepted OS4 source-mode CI checks out
-the branch-pinned MIUIX source graph; ordinary Gradle builds retain
-published-module compatibility paths.
+The adapted source includes documented compatibility bridges (including title rendering), so it is not a byte-for-byte copy of the entire upstream module. The menu migration in Guiyuan PR #1316 also selectively ports the material-opacity behavior of upstream commit `799d3d09f996d66cb2b1c2318deed8242c4f440e` into app-local `GlassIconButton` and `GlassTransformPopup`; this does not advance the complete matched-source dependency graph. Accepted OS4 source-mode CI checks out the branch-pinned MIUIX source graph; ordinary Gradle builds retain published-module compatibility paths.
 These app-local primitives remain until a qualified upstream public API can
 preserve their host contracts; they must not be silently
 updated independently from the corresponding MIUIX UI/Blur contracts. See
@@ -89,16 +78,7 @@ The selected Material Symbols are stored as local Android vector drawables
 sourced from Google's `google/material-design-icons` repository. They are app
 resources, not a runtime library dependency.
 
-Both OS4 source variants now share
-`app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4GlassIcons.kt`, which
-aliases the published MIUIX Glass Regular vectors for Back, Search, Close,
-Refresh, Filter, More, Edit, Copy, Delete and Share. The previous six local
-`os4Published` vector copies and the separate upstream alias were removed by
-#1370. Diagnostics export uses `Glass.Regular.Share` in the OS4 UI style and
-ordinary `MiuixIcons.Share` in OS3; the input clear control continues to use
-MIUIX `Basic.SearchCleanup`, while Glass.Close is used for outside Cancel. This
-module does not import or publish the entire upstream `miuix-glass` runtime
-implementation.
+Both OS4 source variants now share `app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4GlassIcons.kt`, which aliases the published MIUIX Glass Regular vectors for Back, Search, Close, Refresh, Filter, More, Edit, Copy, Delete and Share. The previous six local `os4Published` vector copies and the separate upstream alias were removed by #1370. Diagnostics export uses `Glass.Regular.Share` in the OS4 UI style and ordinary `MiuixIcons.Share` in OS3; the input clear control continues to use MIUIX `Basic.SearchCleanup`, while Glass.Close is used for outside Cancel. This module does not import or publish the entire upstream `miuix-glass` runtime implementation.
 
 ## Test dependencies
 

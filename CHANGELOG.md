@@ -65,15 +65,12 @@ updates**；省略空分类，必要时补充简明兼容性说明。不按 Buil
 
 #### 上游依赖更新
 
-- **MIUIX：** `0.9.4-8972f941-SNAPSHOT` → `0.9.4-45645854-SNAPSHOT`，同步更新 Glass
-  组件和官方图标资源。
+- **MIUIX：** `0.9.4-8972f941-SNAPSHOT` → `0.9.4-45645854-SNAPSHOT`，同步更新 Glass 组件和官方图标资源。
 - **Gradle Wrapper：** `9.8.2` → `9.9.0`。
 - **Android Gradle Plugin：** `9.5.0` → `9.5.1`。
 - **GitHub Actions setup-java：** `6.1.0` → `6.2.0`。
 
-**兼容性：** 继续面向 **Xiaomi HyperOS 4** 与兼容 **Modern Xposed API 102** 的 LSPosed
-环境。OS3/OS4 是应用内界面风格选项，不代表支持在 HyperOS 3 系统运行。libxposed API/Service 版本保持
-`102.0.0`。
+**兼容性：** 继续面向 **Xiaomi HyperOS 4** 与兼容 **Modern Xposed API 102** 的 LSPosed 环境。OS3/OS4 是应用内界面风格选项，不代表支持在 HyperOS 3 系统运行。libxposed API/Service 版本保持 `102.0.0`。
 
 ### English
 
@@ -142,16 +139,12 @@ This release summarizes the user-facing changes from **1.0.0 to 1.1.0**.
 
 #### Upstream dependency updates
 
-- **MIUIX:** `0.9.4-8972f941-SNAPSHOT` → `0.9.4-45645854-SNAPSHOT`, including
-  refreshed Glass components and official icons.
+- **MIUIX:** `0.9.4-8972f941-SNAPSHOT` → `0.9.4-45645854-SNAPSHOT`, including refreshed Glass components and official icons.
 - **Gradle Wrapper:** `9.8.2` → `9.9.0`.
 - **Android Gradle Plugin:** `9.5.0` → `9.5.1`.
 - **GitHub Actions setup-java:** `6.1.0` → `6.2.0`.
 
-**Compatibility:** Guiyuan continues to target **Xiaomi HyperOS 4** with an
-LSPosed environment compatible with **Modern Xposed API 102**. OS3/OS4 are
-in-app visual styles, not HyperOS 3 runtime support. libxposed API/Service
-remains at `102.0.0`.
+**Compatibility:** Guiyuan continues to target **Xiaomi HyperOS 4** with an LSPosed environment compatible with **Modern Xposed API 102**. OS3/OS4 are in-app visual styles, not HyperOS 3 runtime support. libxposed API/Service remains at `102.0.0`.
 
 ## [1.0.0] - 2026-11-02
 
@@ -193,9 +186,7 @@ remains at `102.0.0`.
 - **Officially supports Xiaomi HyperOS 4**, with an LSPosed environment
   compatible with Modern Xposed API 102. The OS3 visual style does **not** imply
   HyperOS 3 runtime support.
-- The device-tested baseline is **Xiaomi 15 Pro**, HyperOS `4.0.0.19.XOBCNXM`,
-  SystemUI `17.03.260226.r`. Other HyperOS 4 devices, system builds, third-party
-  fonts and framework combinations are not all individually certified.
+- The device-tested baseline is **Xiaomi 15 Pro**, HyperOS `4.0.0.19.XOBCNXM`, SystemUI `17.03.260226.r`. Other HyperOS 4 devices, system builds, third-party fonts and framework combinations are not all individually certified.
 
 ### 简体中文
 
@@ -218,5 +209,4 @@ remains at `102.0.0`.
 
 - **正式支持 Xiaomi HyperOS 4**，需要兼容 Modern Xposed API 102 的 LSPosed 环境；应用内的 OS3
   视觉风格不代表支持 HyperOS 3。
-- 已实机验证的基线为 **Xiaomi 15 Pro**、HyperOS `4.0.0.19.XOBCNXM`、SystemUI
-  `17.03.260226.r`。其他 HyperOS 4 机型、系统版本、第三方字体和框架组合未全部独立验证。
+- 已实机验证的基线为 **Xiaomi 15 Pro**、HyperOS `4.0.0.19.XOBCNXM`、SystemUI `17.03.260226.r`。其他 HyperOS 4 机型、系统版本、第三方字体和框架组合未全部独立验证。

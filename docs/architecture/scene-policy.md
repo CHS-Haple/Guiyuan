@@ -1,7 +1,6 @@
 # Scene capability policy
 
-This document defines current scene capabilities and presentation ownership.
-Shared geometry belongs in [layout-policy.md](layout-policy.md).
+This document defines current scene capabilities and presentation ownership. Shared geometry belongs in [layout-policy.md](layout-policy.md).
 
 Build chronology, rejected candidates and one-off device investigations do not
 belong here.
@@ -28,8 +27,7 @@ The current source policy is:
 | Keyguard | PROJECTED | SYSTEM_UI | STATIC_VERIFIED |
 | AOD | PROJECTED | SYSTEM_UI | STATIC_VERIFIED |
 
-The table mirrors `ScenePolicy`. Runtime acceptance and the active development
-baseline are tracked separately in `docs/development/CURRENT.md`.
+The table mirrors `ScenePolicy`. Runtime acceptance and the active development baseline are tracked separately in `docs/development/CURRENT.md`.
 
 Classification never grants permission to mutate SystemUI. Every integration
 still requires a verified host, lifecycle, writer boundary and fail-native path.
@@ -174,8 +172,7 @@ there; its carrier inherits native motion.
 
 Notification Shade and Control Center use `SYSTEM_UI`.
 
-Keyguard/AOD projected presentation also keeps native scene motion under
-`SYSTEM_UI`.
+Keyguard/AOD projected presentation also keeps native scene motion under `SYSTEM_UI`.
 
 No current scene grants Guiyuan ownership of native motion. Any future
 module-owned transition would require proof of the complete start-to-cleanup
@@ -183,8 +180,7 @@ motion lifecycle before the capability policy could change.
 
 ## Promotion rule
 
-Changing a scene from `NATIVE_ONLY` to `PROJECTED`, or adding a new native
-geometry/motion write, requires:
+Changing a scene from `NATIVE_ONLY` to `PROJECTED`, or adding a new native geometry/motion write, requires:
 
 1. exact target SystemUI evidence;
 2. runtime host/lifecycle verification;
