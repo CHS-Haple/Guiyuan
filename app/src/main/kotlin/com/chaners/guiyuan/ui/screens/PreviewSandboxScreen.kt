@@ -232,6 +232,16 @@ internal fun PreviewSandboxScreen(
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
+    val scrollToTop: () -> Unit = {
+        scope.launch {
+            listState.animateScrollToItem(0)
+            if (!listState.canScrollBackward) {
+                // Programmatic list scrolling does not update MIUIX's nested-scroll state.
+                scrollBehavior.state.contentOffset = 0f
+                scrollBehavior.state.heightOffset = 0f
+            }
+        }
+    }
     val os4 = LocalUiStyle.current == UiStyle.OS4
     // Match MIUIX's 52dp compact title center plus its 4dp bottom title clearance.
     val dockPadding = if (os4) {
@@ -354,7 +364,7 @@ internal fun PreviewSandboxScreen(
                     TooltipBox(text = backTop) {
                         if (os4) {
                             GlassIconButton(
-                                onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                                onClick = scrollToTop,
                                 backdrop = topBarBackdrop,
                             ) {
                                 Icon(
@@ -363,7 +373,7 @@ internal fun PreviewSandboxScreen(
                                 )
                             }
                         } else IconButton(
-                            onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                            onClick = scrollToTop,
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
