@@ -170,6 +170,7 @@ internal object OwnedEntries {
         return live.filterNot(owned::contains)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun <T> add(
         target: MutableList<T>,
         entries: Collection<T>,
