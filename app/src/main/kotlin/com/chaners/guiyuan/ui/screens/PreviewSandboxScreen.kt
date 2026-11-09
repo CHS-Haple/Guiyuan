@@ -391,6 +391,7 @@ internal fun PreviewSandboxScreen(
               Box(Modifier.onSizeChanged { nativeBarHeightPx = it.height }) {
                 if (os4) {
                     GlassTopAppBar(
+                        progressiveBlur = true,
                         isContentScrolled = listState.canScrollBackward,
                         title = stringResource(R.string.home_preview_sandbox_title),
                         backdrop = topBarBackdrop,
