@@ -24,6 +24,7 @@ internal object RootShell {
             cacheDir = context.cacheDir,
         )
 
+    @Suppress("TooGenericExceptionCaught")
     internal suspend fun execute(
         builder: ProcessBuilder,
         timeoutSeconds: Long,
