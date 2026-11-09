@@ -24,7 +24,7 @@ internal object SysUiNetworkRuntime {
         onRuntimeFailure: (String, Throwable) -> Unit,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
         onMobileActivityResource: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
-        onMobileActivityVisibility: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
+        onMobileActivityVisibility: (subscriptionId: Int, visible: Boolean) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,

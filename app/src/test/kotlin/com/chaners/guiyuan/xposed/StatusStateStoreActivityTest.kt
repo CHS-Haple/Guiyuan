@@ -66,14 +66,14 @@ class StatusStateStoreActivityTest {
     fun nativeVisibilityWinsOverLaterResourceEventsWithoutExtraListeners() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateMobileActivity(1, 220)
-        val shown = StatusStateStore.updateMobileActivityVisibility(1, 220, true)
+        val shown = StatusStateStore.updateMobileActivityVisibility(1, true)
             ?: error("initial native visibility must be observed")
         assertTrue(1 in shown.mobileActivityShownIds)
         assertTrue(1 in shown.mobileActivityVisibilityObservedIds)
-        assertNull(StatusStateStore.updateMobileActivityVisibility(1, 220, true))
+        assertNull(StatusStateStore.updateMobileActivityVisibility(1, true))
         assertTrue(shown === StatusStateStore.snapshot())
 
-        val gone = StatusStateStore.updateMobileActivityVisibility(1, null, false)
+        val gone = StatusStateStore.updateMobileActivityVisibility(1, false)
             ?: error("native GONE must hide the activity")
         assertEquals(220, gone.mobileActivityResIds[1])
         assertTrue(1 !in gone.mobileActivityShownIds)
@@ -86,7 +86,7 @@ class StatusStateStoreActivityTest {
         assertEquals(221, laterResource.mobileActivityResIds[1])
         assertTrue(1 !in laterResource.mobileActivityShownIds)
 
-        val restored = StatusStateStore.updateMobileActivityVisibility(1, 221, true)
+        val restored = StatusStateStore.updateMobileActivityVisibility(1, true)
             ?: error("native VISIBLE must restore activity")
         assertTrue(1 in restored.mobileActivityShownIds)
         assertEquals(221, restored.mobileActivityResIds[1])
@@ -102,7 +102,7 @@ class StatusStateStoreActivityTest {
         assertTrue(1 in shown.mobileActivityShownIds)
 
         // A visibility-only callback with no tag must retain the last drawable.
-        assertNull(StatusStateStore.updateMobileActivityVisibility(1, null, true))
+        assertNull(StatusStateStore.updateMobileActivityVisibility(1, true))
         assertEquals(220, StatusStateStore.snapshot().mobileActivityResIds[1])
 
         // Only the original resource collector's explicit absence clears it.
@@ -117,20 +117,20 @@ class StatusStateStoreActivityTest {
     fun nativeVisibilityNoOpRetainsTheAppliedChildDrawable() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateMobileActivity(1, 220)
-        val shown = StatusStateStore.updateMobileActivityVisibility(1, 220, true)
+        val shown = StatusStateStore.updateMobileActivityVisibility(1, true)
             ?: error("initial native visibility is required")
         assertEquals(220, shown.mobileActivityResIds[1])
 
         // Native visibility flow can temporarily hide the root without
         // writing a new child visibility or drawable.
-        val rootHidden = StatusStateStore.updateMobileActivityVisibility(1, 220, false)
+        val rootHidden = StatusStateStore.updateMobileActivityVisibility(1, false)
             ?: error("root hidden must change effective visibility")
         assertEquals(220, rootHidden.mobileActivityResIds[1])
         assertTrue(1 !in rootHidden.mobileActivityShownIds)
 
         // On root return the OEM child may remain VISIBLE; no resource emit
         // is required to display the same native drawable again.
-        val visibleAgain = StatusStateStore.updateMobileActivityVisibility(1, 220, true)
+        val visibleAgain = StatusStateStore.updateMobileActivityVisibility(1, true)
             ?: error("root reappearance must restore effective visibility")
         assertEquals(220, visibleAgain.mobileActivityResIds[1])
         assertTrue(1 in visibleAgain.mobileActivityShownIds)
@@ -142,7 +142,7 @@ class StatusStateStoreActivityTest {
         StatusStateStore.restoreHotReloadState(null)
 
         // A native VISIBLE event can precede the independent drawable collector.
-        val visible = StatusStateStore.updateMobileActivityVisibility(1, null, true)
+        val visible = StatusStateStore.updateMobileActivityVisibility(1, true)
             ?: error("first native visibility must be committed")
         assertTrue(1 in visible.mobileActivityShownIds)
         assertTrue(1 in visible.mobileActivityVisibilityObservedIds)

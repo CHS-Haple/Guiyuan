@@ -94,8 +94,8 @@ internal object StatusStateStore {
         return current.takeIf { changed }
     }
 
-    // Resource collector receipts may explicitly clear the drawable. Commit the
-    // accompanying native visibility in the same snapshot, without a half-state render.
+    // Only the resource collector can explicitly clear the drawable; coalesce
+    // its paired visibility receipt before notifying the renderer.
     @Synchronized
     fun updateMobileActivityResource(
         subscriptionId: Int,
@@ -105,7 +105,7 @@ internal object StatusStateStore {
         if (subscriptionId < 0) return null
         val before = current
         updateMobileActivity(subscriptionId, resourceId)
-        updateMobileActivityVisibility(subscriptionId, null, visible)
+        updateMobileActivityVisibility(subscriptionId, visible)
         return current.takeIf { it != before }
     }
 
@@ -115,14 +115,11 @@ internal object StatusStateStore {
     @Synchronized
     fun updateMobileActivityVisibility(
         subscriptionId: Int,
-        resourceId: Int?,
         visible: Boolean,
     ): Snapshot? {
         if (subscriptionId < 0) return null
         val before = current
-        // The visibility collector can observe an existing native drawable,
-        // but a missing tag here is not an explicit resource-removal event.
-        if (resourceId != null) updateMobileActivity(subscriptionId, resourceId)
+        // Only the native resource collector may change drawable identity.
         val nextShown = current.mobileActivityShownIds.toMutableSet().apply {
             if (visible) add(subscriptionId) else remove(subscriptionId)
         }

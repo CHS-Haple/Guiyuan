@@ -207,7 +207,7 @@ internal object SysUiNetworkSource {
         onRuntimeFailure: (String, Throwable) -> Unit,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
         onMobileActivityResource: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
-        onMobileActivityVisibility: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
+        onMobileActivityVisibility: (subscriptionId: Int, visible: Boolean) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -453,7 +453,7 @@ internal object SysUiNetworkSource {
         classLoader: ClassLoader,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
         onMobileActivityResource: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
-        onMobileActivityVisibility: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
+        onMobileActivityVisibility: (subscriptionId: Int, visible: Boolean) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
@@ -673,20 +673,20 @@ internal object SysUiNetworkSource {
                                 rootVisible = rootVisible,
                                 childVisible = childVisible,
                             )
-                            val taggedResId = image?.let(::nativeMobileActivityResourceId)
                             if (binding != null && effectiveVisible != null) {
                                 try {
                                     // The native visibility collector can fire without
                                     // another resource emission. A drawable is required
                                     // to draw, but not to remember native visibility.
                                     onMobileActivityVisibility(
-                                        binding.subscriptionId, taggedResId, effectiveVisible,
+                                        binding.subscriptionId, effectiveVisible,
                                     )
                                 } catch (error: Throwable) {
                                     callbackFailed("mobile-activity-visibility", error, onRuntimeFailure)
                                 }
                             }
                             if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                val taggedResId = image?.let(::nativeMobileActivityResourceId)
                                 readOrNull {
                                     onEvent.invoke(
                                         "networkPipeline mobile activityVisibility " +
