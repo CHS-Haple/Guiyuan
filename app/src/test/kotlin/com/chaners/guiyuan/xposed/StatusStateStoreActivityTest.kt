@@ -153,6 +153,4 @@ class StatusStateStoreActivityTest {
         assertEquals(220, resource.mobileActivityResIds[1])
 
         StatusStateStore.restoreHotReloadState(null)
-    }
-
-}
+    }}
