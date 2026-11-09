@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.ui.components
 
 import androidx.compose.foundation.layout.Box
+import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
@@ -43,7 +44,7 @@ internal fun MiuixBlurredTopBar(
     fadeExtension: Dp = 0.dp,
     content: @Composable (Color) -> Unit,
 ) {
-    val blurActive = backdrop != null
+    val blurActive = backdrop != null && LocalTopBarProgressiveBlur.current
     val surface = MiuixTheme.colorScheme.surface
 
     Box {
