@@ -14,6 +14,9 @@ import com.chaners.guiyuan.xposed.network.SysUiCarrierMetrics
 import java.lang.ref.WeakReference
 
 internal object KeyguardRenderSession {
+    private const val HOST_VISUAL_LOG_PREFIX = " hostVisual={"
+    private const val NATIVE_CC_LOG_PREFIX = " nativeCc="
+    private const val OVERLAY_VISIBLE_LOG_PREFIX = " overlayVisible="
     private var current: Session? = null
     private val retirement = RetirementGate<Session>()
 
@@ -340,8 +343,8 @@ internal object KeyguardRenderSession {
                             "keyguardAodWitness source=renderView.onDraw" +
                                 " shown=true statusIconsAlpha=" +
                                 statusIcons.get()?.alpha +
-                                " hostVisual={" + visualChainSummary(host.get()) + "}" +
-                                " nativeCc=" + SysUiCcSource.nativeVisualState()
+                                HOST_VISUAL_LOG_PREFIX + visualChainSummary(host.get()) + "}" +
+                                NATIVE_CC_LOG_PREFIX + SysUiCcSource.nativeVisualState()
                         }
                     }
                 },
@@ -459,13 +462,7 @@ internal object KeyguardRenderSession {
                 VisualPrefsOwner.current(),
             )
             SysUiTintSource.currentState(battery)?.let { state ->
-                applyTintState(
-                    TintAuthority.resolveBatteryEvent(
-                        batteryState = state,
-                        liveStatusIconTint = null,
-                    ),
-                    "seed",
-                )
+                applyTintState(state, "seed")
             }
             layoutProbe()
         }
@@ -483,7 +480,7 @@ internal object KeyguardRenderSession {
                             "keyguardAodWitness source=session-stop" +
                                 " shownDuringAod=" + aodShown +
                                 " freshVisibleDraw=" + drewAod +
-                                " nativeCc=" + SysUiCcSource.nativeVisualState()
+                                NATIVE_CC_LOG_PREFIX + SysUiCcSource.nativeVisualState()
                         }
                     }
                 },
@@ -517,7 +514,7 @@ internal object KeyguardRenderSession {
             val visible = applyResolvedVisibility()
             emitEvent {
                 scene.logPrefix + "Feature enabled=" + featureEnabled +
-                    " overlayVisible=" + visible +
+                    OVERLAY_VISIBLE_LOG_PREFIX + visible +
                     " nativeHandoffActive=" + nativeHandoffActive
             }
             dispatchPresentationReadiness("feature")
@@ -529,7 +526,7 @@ internal object KeyguardRenderSession {
             val visible = applyResolvedVisibility()
             emitEvent {
                 scene.logPrefix + "Handoff nativeActive=" + nativeHandoffActive +
-                    " overlayVisible=" + visible
+                    OVERLAY_VISIBLE_LOG_PREFIX + visible
             }
         }
 
@@ -638,12 +635,12 @@ internal object KeyguardRenderSession {
                     " animToAod=" + (update.animToAod ?: "unavailable") +
                     " sceneEligible=" + sceneEligible +
                     " eligibilityAuthority=scene-policy" +
-                    " overlayVisible=" + visible +
+                    OVERLAY_VISIBLE_LOG_PREFIX + visible +
                     " childAlpha=" + renderView.alpha +
                     " batteryAlphaReadOnly=" + battery.alpha +
                     " statusIconsAlphaReadOnly=" + (statusIcons.get()?.alpha ?: -1f) +
                     " systemIconsAlphaReadOnly=" + (systemIcons.get()?.alpha ?: -1f) +
-                    " hostVisual={" + visualChainSummary(host.get()) + "}" +
+                    HOST_VISUAL_LOG_PREFIX + visualChainSummary(host.get()) + "}" +
                     " contentVisual={" +
                     visualChainSummary(
                         host.get()?.let { owner ->
@@ -661,8 +658,8 @@ internal object KeyguardRenderSession {
                 "keyguardAodWitness source=renderView.visibility" +
                     " shown=true statusIconsAlpha=" +
                     statusIcons.get()?.alpha +
-                    " hostVisual={" + visualChainSummary(host.get()) + "}" +
-                    " nativeCc=" + SysUiCcSource.nativeVisualState()
+                    HOST_VISUAL_LOG_PREFIX + visualChainSummary(host.get()) + "}" +
+                    NATIVE_CC_LOG_PREFIX + SysUiCcSource.nativeVisualState()
             }
         }
 
@@ -670,10 +667,7 @@ internal object KeyguardRenderSession {
             val battery = batteryView.get() ?: return
             if (update.sourceView !== battery) return
             applyTintState(
-                TintAuthority.resolveBatteryEvent(
-                    batteryState = update.state,
-                    liveStatusIconTint = null,
-                ),
+                update.state,
                 if (scene == Scene.AOD) "aod-battery" else "keyguard-battery",
             )
         }
@@ -755,9 +749,15 @@ internal object KeyguardRenderSession {
                     logicalWidthPx = anchorRect.width(),
                     logicalHeightPx = anchorRect.height(),
                 )
+            val bottomOverflowPx =
+                renderView.requiredBottomOverflowPx(
+                    logicalWidthPx = anchorRect.width(),
+                    logicalHeightPx = anchorRect.height(),
+                )
             applyAnchorBounds(
                 bounds = anchorRect,
                 topOverflowPx = topOverflowPx,
+                bottomOverflowPx = bottomOverflowPx,
             )
             layoutReady = true
             if (!layoutLogged) {
@@ -815,12 +815,14 @@ internal object KeyguardRenderSession {
         private fun applyAnchorBounds(
             bounds: Rect,
             topOverflowPx: Int,
+            bottomOverflowPx: Int,
         ) {
             val physical =
                 VerticalOverflowPolicy.resolve(
                     logicalTopPx = bounds.top,
                     logicalHeightPx = bounds.height(),
                     requestedTopOverflowPx = topOverflowPx,
+                    requestedBottomOverflowPx = bottomOverflowPx,
                 )
             renderView.setLogicalViewport(
                 widthPx = bounds.width(),
@@ -846,7 +848,7 @@ internal object KeyguardRenderSession {
                 bounds.left,
                 physical.physicalTopPx,
                 bounds.right,
-                bounds.bottom,
+                bounds.bottom + bottomOverflowPx,
             )
         }
 
@@ -899,10 +901,8 @@ internal object KeyguardRenderSession {
         }
 
         private inline fun emitEvent(message: () -> String) {
-            try {
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
                 if (isDetailedDiagnosticsEnabled()) onEvent(message())
-            } catch (error: Throwable) {
-                SysUiPresentationRuntime.throwIfFatal(error)
             }
         }
     }

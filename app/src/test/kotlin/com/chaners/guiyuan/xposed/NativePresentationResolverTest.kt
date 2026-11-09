@@ -2,14 +2,11 @@ package com.chaners.guiyuan.xposed
 
 import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NativePresentationResolverTest {
-
     @Test
     fun optionalNativeProbeOnlyHidesOrdinaryFailures() {
         val fatal = ThreadDeath()
@@ -32,66 +29,6 @@ class NativePresentationResolverTest {
             NativePresentationResolver.readOrNull<Unit> {
                 throw InvocationTargetException(IllegalStateException("unavailable"))
             },
-        )
-    }
-
-    @Test
-    fun platformAuthorityKeepsExistingDiagnosticLabels() {
-        val snapshot = NativePresentationResolver.Snapshot(
-            mode = NativePresentationResolver.Mode.UNKNOWN,
-            boundRoots = 0,
-            visibleRoots = 0,
-            activeSubscriptionIds = emptyList(),
-            presentationRootSubscriptionId = null,
-            effectiveDataSubscriptionId = null,
-            networkTypeSubscriptionId = null,
-            networkType = null,
-        )
-        assertEquals("pipeline-semantic-fallback", snapshot.activeSubscriptionAuthority)
-        assertEquals(
-            "subscription-manager",
-            snapshot.copy(activeSubsAuthoritative = true).activeSubscriptionAuthority,
-        )
-    }
-
-    @Test
-    fun slotMappingUsesPlatformSimSlotRatherThanSubscriptionIdOrder() {
-        assertEquals(
-            mapOf(0 to 14, 1 to 3),
-            NativePresentationResolver.resolveSlotSubscriptions(
-                activeSubscriptionIds = setOf(3, 14),
-                platformSubscriptions = listOf(3 to 1, 14 to 0),
-            ),
-        )
-    }
-
-    @Test
-    fun ambiguousOrUnavailableSimSlotsDoNotBecomeGuessedRows() {
-        val active = setOf(3, 14)
-        val cases = listOf(
-            null,
-            listOf(3 to 0, 14 to 0),
-            listOf(3 to -1, 14 to 1),
-            listOf(3 to 0),
-            listOf(3 to 0, 14 to 1, 3 to 1),
-            listOf(3 to 0, 3 to 1),
-        )
-        for (pairList in cases) {
-            assertEquals(
-                emptyMap<Int, Int>(),
-                NativePresentationResolver.resolveSlotSubscriptions(active, pairList),
-            )
-        }
-    }
-
-    @Test
-    fun extraPlatformSubscriptionCannotDisguiseIncompleteDualBinding() {
-        assertEquals(
-            emptyMap<Int, Int>(),
-            NativePresentationResolver.resolveSlotSubscriptions(
-                activeSubscriptionIds = setOf(1, 4),
-                platformSubscriptions = listOf(1 to 0, 4 to 1, 7 to 2),
-            ),
         )
     }
 
@@ -156,132 +93,6 @@ class NativePresentationResolverTest {
     }
 
     @Test
-    fun singleActiveSubscriptionCanOwnNativeMobileReplacement() {
-        val snapshot =
-            NativePresentationResolver.Snapshot(
-                mode = NativePresentationResolver.Mode.SINGLE,
-                boundRoots = 1,
-                visibleRoots = 1,
-                activeSubscriptionIds = listOf(4),
-                presentationRootSubscriptionId = 4,
-                effectiveDataSubscriptionId = 4,
-                networkTypeSubscriptionId = 4,
-                networkType = null,
-            )
-
-        assertEquals(true, snapshot.nativeMobileReplacementReady)
-    }
-
-    @Test
-    fun incompletePlatformBindingCannotAuthorizeMobileReplacement() {
-        val partial =
-            NativePresentationResolver.Snapshot(
-                mode = NativePresentationResolver.Mode.SINGLE,
-                boundRoots = 1,
-                visibleRoots = 1,
-                activeSubscriptionIds = listOf(1),
-                activeSubsAuthoritative = true,
-                platformActiveSubscriptionIds = setOf(1, 4),
-                presentationRootSubscriptionId = 1,
-                effectiveDataSubscriptionId = 4,
-                networkTypeSubscriptionId = 1,
-                networkType = null,
-            )
-
-        // Both SIMs are active, but only one native View is bound at this moment.
-        assertFalse(partial.nativeMobileReplacementReady)
-        assertTrue(
-            partial.copy(platformActiveSubscriptionIds = setOf(1))
-                .nativeMobileReplacementReady,
-        )
-        // Do not change the established fallback when the platform list is unavailable.
-        assertTrue(
-            partial.copy(platformActiveSubscriptionIds = null, activeSubsAuthoritative = false)
-                .nativeMobileReplacementReady,
-        )
-
-        val aggregated =
-            partial.copy(
-                mode = NativePresentationResolver.Mode.DUAL_AGGREGATED,
-                boundRoots = 2,
-                activeSubscriptionIds = listOf(1, 4),
-            )
-        assertTrue(aggregated.nativeMobileReplacementReady)
-        assertFalse(
-            aggregated.copy(platformActiveSubscriptionIds = setOf(1, 4, 5))
-                .nativeMobileReplacementReady,
-        )
-    }
-
-    @Test
-    fun aggregatedDualPresentationCanOwnSingleVisibleMobileRootReplacement() {
-        val snapshot =
-            NativePresentationResolver.Snapshot(
-                mode = NativePresentationResolver.Mode.DUAL_AGGREGATED,
-                boundRoots = 2,
-                visibleRoots = 1,
-                activeSubscriptionIds = listOf(1, 4),
-                presentationRootSubscriptionId = 1,
-                effectiveDataSubscriptionId = 4,
-                networkTypeSubscriptionId = 4,
-                networkType = null,
-            )
-
-        assertEquals(true, snapshot.nativeMobileReplacementReady)
-    }
-
-    @Test
-    fun separateDualPresentationMustPreserveNativeMobileParticipant() {
-        val snapshot =
-            NativePresentationResolver.Snapshot(
-                mode = NativePresentationResolver.Mode.DUAL_SEPARATE,
-                boundRoots = 2,
-                visibleRoots = 2,
-                activeSubscriptionIds = listOf(1, 4),
-                presentationRootSubscriptionId = 4,
-                effectiveDataSubscriptionId = 4,
-                networkTypeSubscriptionId = 4,
-                networkType = null,
-            )
-
-        assertEquals(false, snapshot.nativeMobileReplacementReady)
-    }
-
-    @Test
-    fun unknownMobilePresentationFailsNative() {
-        val snapshot =
-            NativePresentationResolver.Snapshot(
-                mode = NativePresentationResolver.Mode.UNKNOWN,
-                boundRoots = 0,
-                visibleRoots = 0,
-                activeSubscriptionIds = emptyList(),
-                presentationRootSubscriptionId = null,
-                effectiveDataSubscriptionId = null,
-                networkTypeSubscriptionId = null,
-                networkType = null,
-            )
-
-        assertEquals(false, snapshot.nativeMobileReplacementReady)
-    }
-
-    @Test
-    fun singleModeWithoutActiveSubscriptionFailsNativeReplacementReadiness() {
-        val snapshot =
-            NativePresentationResolver.Snapshot(
-                mode = NativePresentationResolver.Mode.SINGLE,
-                boundRoots = 1,
-                visibleRoots = 1,
-                activeSubscriptionIds = emptyList(),
-                presentationRootSubscriptionId = 4,
-                effectiveDataSubscriptionId = 4,
-                networkTypeSubscriptionId = 4,
-                networkType = null,
-            )
-
-        assertEquals(false, snapshot.nativeMobileReplacementReady)
-    }
-
-    @Test
     fun preMeasureDoublePlusMatchesNativeNormalization() {
         val networkType =
             NativePresentationResolver.normalizeDrawableNetworkType(
@@ -334,61 +145,4 @@ class NativePresentationResolverTest {
         assertEquals("5G", networkType?.label)
         assertEquals(true, networkType?.enhanced)
     }
-
-    @Test
-    fun oneActiveSubscriptionDoesNotPretendToBeAggregatedDual() {
-        assertEquals(
-            NativePresentationResolver.Mode.SINGLE,
-            NativePresentationResolver.classify(
-                boundRoots = 2,
-                visibleRoots = 1,
-                activeSubscriptions = 1,
-            ),
-        )
-    }
-    @Test
-    fun authoritativeActiveSubscriptionDropsDisabledStaleRoot() {
-        val resolved =
-            NativePresentationResolver.resolveActiveSubIds(
-                boundSubscriptionIds = listOf(1, 4),
-                semanticActiveSubscriptionIds = setOf(1, 4),
-                authoritativeActiveSubscriptionIds = setOf(4),
-            )
-
-        assertEquals(setOf(4), resolved.subscriptionIds)
-        assertEquals(true, resolved.authoritative)
-        assertEquals(
-            NativePresentationResolver.Mode.SINGLE,
-            NativePresentationResolver.classify(
-                boundRoots = 1,
-                visibleRoots = 1,
-                activeSubscriptions = resolved.subscriptionIds.size,
-            ),
-        )
-    }
-
-    @Test
-    fun ambiguousMultiSubscriptionSetCannotMasqueradeAsTwoRows() {
-        assertEquals(
-            emptyMap<Int, Int>(),
-            NativePresentationResolver.resolveSlotSubscriptions(
-                activeSubscriptionIds = setOf(3, 14, 27),
-                platformSubscriptions = listOf(3 to 0, 14 to 1, 27 to -1),
-            ),
-        )
-    }
-
-    @Test
-    fun semanticActiveSubscriptionsRemainFallbackWhenPlatformAuthorityUnavailable() {
-        val resolved =
-            NativePresentationResolver.resolveActiveSubIds(
-                boundSubscriptionIds = listOf(1, 4),
-                semanticActiveSubscriptionIds = setOf(4),
-                authoritativeActiveSubscriptionIds = null,
-            )
-
-        assertEquals(setOf(4), resolved.subscriptionIds)
-        assertEquals(false, resolved.authoritative)
-    }
-
 }

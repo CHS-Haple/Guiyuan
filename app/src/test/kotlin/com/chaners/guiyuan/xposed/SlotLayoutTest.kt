@@ -46,6 +46,34 @@ class SlotLayoutTest {
     }
 
     @Test
+    fun nativePrivacyOccupancyDoesNotDependOnBatteryHide() {
+        assertEquals(true, HomePrivacyLayoutPolicy.occupiesEnd("START_SHOW_PRIVACY"))
+        assertEquals(true, HomePrivacyLayoutPolicy.occupiesEnd("COMPLETE_SHOW_PRIVACY"))
+        for (state in listOf(
+            "START_HIDE_PRIVACY", "COMPLETE_HIDE_PRIVACY",
+            "START_HOME_TO_DOT", "COMPLETE_HOME_TO_DOT",
+        )) {
+            assertEquals(false, HomePrivacyLayoutPolicy.occupiesEnd(state))
+        }
+        assertEquals(false, HomePrivacyLayoutPolicy.occupiesEnd(null))
+    }
+
+    @Test
+    fun privacyAnchorFollowsNativeStatusIconsBoundaryInBothDirections() {
+        val normal = requireNotNull(SteadyLayoutResolver.resolve(587, 108, 105, false))
+        assertEquals(587, normal.right)
+        val privacy = requireNotNull(HomePrivacyAnchorPolicy.resolve(587, 108, 105, 524, false))
+        assertEquals(419, privacy.left)
+        assertEquals(524, privacy.right)
+        assertEquals(105, privacy.visualWidth)
+        val rtl = requireNotNull(HomePrivacyAnchorPolicy.resolve(587, 108, 105, 63, true))
+        assertEquals(63, rtl.left)
+        assertEquals(168, rtl.right)
+        assertNull(HomePrivacyAnchorPolicy.resolve(587, 108, 105, 80, false))
+        assertNull(HomePrivacyAnchorPolicy.resolve(587, 108, 105, 510, true))
+    }
+
+    @Test
     fun centeredShrinkReservationTracksVisibleLeadingEdge() {
         assertEquals(
             105,

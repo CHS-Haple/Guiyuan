@@ -82,50 +82,64 @@ internal fun Os4SearchField(
                 materialProgress = materialProgress,
                 shadowProgress = shadowProgress,
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Icon(
-                        Os4GlassSearch,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = colors.disabledOnSurface,
-                    )
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                        if (query.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.feature_search),
-                                style = MiuixTheme.textStyles.body1,
-                                color = colors.disabledOnSurface,
-                            )
-                        }
-                        field()
-                    }
-                    if (query.isNotEmpty()) {
-                        TooltipBox(text = stringResource(R.string.feature_search_clear)) {
-                            IconButton(
-                                onClick = {
-                                    onQueryChange("")
-                                    focusRequester.requestFocus()
-                                },
-                                modifier = Modifier.size(24.dp),
-                                minHeight = 24.dp,
-                                minWidth = 24.dp,
-                            ) {
-                                Icon(
-                                    MiuixIcons.Basic.SearchCleanup,
-                                    contentDescription = stringResource(R.string.feature_search_clear),
-                                    tint = colors.onSurfaceContainerHighest,
-                                )
-                            }
-                        }
-                    }
-                }
+                SearchDecoration(
+                    query = query,
+                    onClear = {
+                        onQueryChange("")
+                        focusRequester.requestFocus()
+                    },
+                    field = field,
+                )
             }
         },
     )
+}
+
+@Composable
+private fun SearchDecoration(
+    query: String,
+    onClear: () -> Unit,
+    field: @Composable () -> Unit,
+) {
+    val colors = MiuixTheme.colorScheme
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            Os4GlassSearch,
+            contentDescription = null,
+            modifier = Modifier.size(28.dp),
+            tint = colors.disabledOnSurface,
+        )
+        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+            if (query.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.feature_search),
+                    style = MiuixTheme.textStyles.body1,
+                    color = colors.disabledOnSurface,
+                )
+            }
+            field()
+        }
+        if (query.isNotEmpty()) {
+            TooltipBox(text = stringResource(R.string.feature_search_clear)) {
+                IconButton(
+                    onClick = onClear,
+                    modifier = Modifier.size(24.dp),
+                    minHeight = 24.dp,
+                    minWidth = 24.dp,
+                ) {
+                    Icon(
+                        MiuixIcons.Basic.SearchCleanup,
+                        contentDescription = stringResource(R.string.feature_search_clear),
+                        tint = colors.onSurfaceContainerHighest,
+                    )
+                }
+            }
+        }
+    }
 }

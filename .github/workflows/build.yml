@@ -338,7 +338,7 @@ jobs:
 
       - name: Set up Java
         if: steps.scope.outputs.run_android == 'true'
-        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: '21'
@@ -446,6 +446,50 @@ jobs:
             exit 1
           fi
 
+      - name: Test alternate OS4 fallback icons against matched source
+        if: github.event_name == 'pull_request' && steps.scope.outputs.run_android == 'true'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+          if ! git diff --name-only "$base" "$HEAD_SHA" -- \
+            app/src/os4Published/kotlin app/src/os4Upstream/kotlin \
+            app/src/test/kotlin/com/chaners/guiyuan/ui/icons/GlassIconCanvasTest.kt | grep -q .; then
+            echo "OS4 Glass icon variants and canvas tests unchanged; skip alternate tests."
+            exit 0
+          fi
+          test -n "$MIUIX_SOURCE_REVISION" && test -n "$MIUIX_SOURCE_DIR"
+          ./gradlew \
+            -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
+            -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
+            -Pgy.os4.dialogSurfaces=false \
+            :app:testDebugUnitTest --no-daemon --max-workers=3 --stacktrace
+      # Only trusted same-repo PRs may use the job's packages:read token.
+      # This build deliberately omits the source-composite flags to verify Maven ABI and artifacts.
+      - name: Verify new MIUIX Maven dependencies without source substitution
+        if: github.event_name == 'pull_request' && steps.scope.outputs.run_android == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+          if git diff --quiet "$base" "$HEAD_SHA" -- gradle.properties app/src/os4Published/kotlin app/src/os4Upstream/kotlin; then
+            echo "MIUIX version and OS4 source variants unchanged; skip published dependency preflight."
+            exit 0
+          fi
+          test -z "${GY_OS4_MIUIXDIR:-}"
+          ./gradlew \
+            -Pgy.os4.dialogSurfaces=false \
+            :app:compileDebugKotlin :app:testDebugUnitTest --refresh-dependencies \
+            --no-daemon --max-workers=3 --stacktrace
+
       - name: Record exact source Build identity
         id: identity
         if: steps.scope.outputs.run_canary == 'true'
@@ -533,7 +577,7 @@ jobs:
           path: candidate
 
       - name: Set up JDK
-        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: '21'

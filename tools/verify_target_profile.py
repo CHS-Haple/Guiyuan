@@ -207,17 +207,32 @@ battery_source_class = source_string_constant(
 )
 
 battery_hook_constants = {
-    "batteryIconLevelChanged": "BATTERY_LEVEL_METHOD_NAME",
-    "batteryIconChargeStateChanged": "CHARGE_STATE_METHOD_NAME",
-    "batteryIconPowerSaveChanged": "POWER_SAVE_METHOD_NAME",
-    "batteryIconPerformanceModeChanged": "PERFORMANCE_METHOD_NAME",
-    "batteryIconMiuiOptimizationChanged": "MIUI_OPTIMIZATION_METHOD_NAME",
+    "batteryMeterLevelChanged": (
+        "BATTERY_METER_VIEW_CLASS_NAME", "BATTERY_LEVEL_METHOD_NAME",
+    ),
+    "batteryMeterChargeStateChanged": (
+        "BATTERY_METER_VIEW_CLASS_NAME", "CHARGE_STATE_METHOD_NAME",
+    ),
+    "batteryMeterPowerSaveChanged": (
+        "BATTERY_METER_VIEW_CLASS_NAME", "POWER_SAVE_METHOD_NAME",
+    ),
+    "batteryMeterPerformanceModeChanged": (
+        "BATTERY_METER_VIEW_CLASS_NAME", "PERFORMANCE_METHOD_NAME",
+    ),
+    "batteryIconMiuiOptimizationChanged": (
+        "BATTERY_ICON_VIEW_CLASS_NAME", "MIUI_OPTIMIZATION_METHOD_NAME",
+    ),
 }
-for hook_name, method_constant in battery_hook_constants.items():
+for hook_name, (class_constant, method_constant) in battery_hook_constants.items():
     hook_point = hook_points.get(hook_name)
     if not isinstance(hook_point, dict):
         fail(f"missing battery semantic hook point: {hook_name}")
-    if battery_source_class != hook_point.get("className"):
+    hook_class = source_string_constant(
+        battery_source_text,
+        class_constant,
+        f"battery semantic source {hook_name}",
+    )
+    if hook_class != hook_point.get("className"):
         fail(f"battery semantic source class drifted from profile: {hook_name}")
     method_name = source_string_constant(
         battery_source_text,

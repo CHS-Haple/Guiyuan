@@ -15,6 +15,7 @@ internal const val BATTERY_COLOR_SCHEME_IOS_KEY = "builtin:ios"
 internal const val BATTERY_COLOR_SCHEME_LOW_SATURATION_KEY = "builtin:low_saturation"
 
 private const val BATTERY_COLOR_SCHEME_PREFIX = "battery_color_scheme_library."
+private const val CUSTOM_SCHEME_KEY_PREFIX = "custom:"
 
 internal fun isBatterySchemeStorageKey(key: String): Boolean =
     key.startsWith(BATTERY_COLOR_SCHEME_PREFIX)
@@ -634,12 +635,14 @@ internal fun entriesFromBuiltIn(
 }
 
 internal fun customSchemeKey(id: Int): String =
-    "custom:" + id
+    CUSTOM_SCHEME_KEY_PREFIX + id
 
 internal fun customSchemeId(key: String): Int? =
-    key.removePrefix("custom:")
-        .takeIf { key.startsWith("custom:") }
-        ?.toIntOrNull()
+    if (key.startsWith(CUSTOM_SCHEME_KEY_PREFIX)) {
+        key.removePrefix(CUSTOM_SCHEME_KEY_PREFIX).toIntOrNull()
+    } else {
+        null
+    }
 
 private fun customPrefix(id: Int): String =
     BATTERY_COLOR_SCHEME_PREFIX + "custom." + id + "."

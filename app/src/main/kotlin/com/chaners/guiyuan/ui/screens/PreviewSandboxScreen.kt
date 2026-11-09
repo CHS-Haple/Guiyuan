@@ -59,11 +59,13 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.icons.Os4GlassBack
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
@@ -110,18 +112,17 @@ internal fun PreviewSandboxScreen(
     state: PreviewSandboxUiState,
     parasiteActive: Boolean,
     onParasiteChange: (Boolean, PreviewSandboxUiState) -> Unit,
-    onSimPresentChange: (Boolean) -> Unit,
     onAirplaneModeChange: (Boolean) -> Unit,
     onNetworkModeChange: (PreviewNetworkMode) -> Unit,
     onMobileNetworkChange: (PreviewMobileNetwork) -> Unit,
     onMobileSignalLevelChange: (Int) -> Unit,
-    onDualMobileChange: (Boolean) -> Unit,
     onSim2SignalLevelChange: (Int) -> Unit,
     onSim2NetworkChange: (PreviewMobileNetwork) -> Unit,
     onDataSimChange: (PreviewDataSim) -> Unit,
     onSimCardsChange: (PreviewSimCards) -> Unit,
     onWifiStateChange: (PreviewWifiState) -> Unit,
     onWifiSignalLevelChange: (Int) -> Unit,
+    onNetworkActivityChange: (PreviewNetworkActivity) -> Unit,
     onBatteryPercentChange: (Int) -> Unit,
     onBatteryModeChange: (PreviewBatteryMode) -> Unit,
     onChargingStateChange: (PreviewChargingState) -> Unit,
@@ -146,8 +147,12 @@ internal fun PreviewSandboxScreen(
         FeatureRepo(context.applicationContext)
     }
     val feature by featureRepo.settings.collectAsState(initial = featureRepo.current())
-    val renderModel = remember(state, feature.lowBatteryThreshold, resourceResolver, LocalConfiguration.current) {
-        state.toRenderModel(resourceResolver, lowBatteryThreshold = feature.lowBatteryThreshold)
+    val renderModel = remember(state, visual.dualSignal, feature.lowBatteryThreshold, resourceResolver, LocalConfiguration.current) {
+        state.toRenderModel(
+            resourceResolver,
+            dualSignalEnabled = visual.dualSignal,
+            lowBatteryThreshold = feature.lowBatteryThreshold,
+        )
     }
 
     val networkModeOptions =
@@ -155,11 +160,6 @@ internal fun PreviewSandboxScreen(
             stringResource(R.string.home_preview_network_none),
             stringResource(R.string.home_preview_network_mode_mobile),
             stringResource(R.string.home_preview_network_mode_wifi),
-        )
-    val simOptions =
-        listOf(
-            stringResource(R.string.home_preview_sim_present),
-            stringResource(R.string.home_preview_sim_absent),
         )
     val dataSimOptions =
         listOf(
@@ -189,7 +189,18 @@ internal fun PreviewSandboxScreen(
             stringResource(R.string.home_preview_wifi_connected),
             stringResource(R.string.home_preview_wifi_no_internet),
             stringResource(R.string.home_preview_wifi_hotspot),
+            stringResource(R.string.home_preview_wifi_dual_acceleration),
         )
+    val networkActivityOptions = listOf(
+        stringResource(R.string.home_preview_activity_upload),
+        stringResource(R.string.home_preview_activity_download),
+        stringResource(R.string.home_preview_activity_both),
+        stringResource(R.string.home_preview_activity_idle),
+    )
+    val activitySupported =
+        visual.dualSignal &&
+            visual.dualRowDotArrangement == SignalDotArrangement.BOTH_SIDES &&
+            state.dualLevels != null
     val batteryModeOptions =
         listOf(
             stringResource(R.string.home_preview_battery_mode_balanced),
@@ -203,13 +214,6 @@ internal fun PreviewSandboxScreen(
             stringResource(R.string.home_preview_charging_normal),
             stringResource(R.string.home_preview_charging_super_fast_compact),
         )
-
-    val mobileDisabledSummary =
-        when {
-            state.airplaneMode -> stringResource(R.string.home_preview_mobile_disabled_airplane)
-            !state.hasSim -> stringResource(R.string.home_preview_mobile_disabled_no_sim)
-            else -> null
-        }
 
     // The dock is an overlay; compare the preview against the list's native content inset.
     val listState = rememberLazyListState()
@@ -229,6 +233,15 @@ internal fun PreviewSandboxScreen(
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
+    val scrollToTop: () -> Unit = {
+        scope.launch {
+            listState.animateScrollToItem(0)
+            if (!listState.canScrollBackward) {
+                // Clear stale Glass shadow while keeping MIUIX's current title collapse state.
+                scrollBehavior.state.contentOffset = 0f
+            }
+        }
+    }
     val os4 = LocalUiStyle.current == UiStyle.OS4
     // Match MIUIX's 52dp compact title center plus its 4dp bottom title clearance.
     val dockPadding = if (os4) {
@@ -351,7 +364,7 @@ internal fun PreviewSandboxScreen(
                     TooltipBox(text = backTop) {
                         if (os4) {
                             GlassIconButton(
-                                onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                                onClick = scrollToTop,
                                 backdrop = topBarBackdrop,
                             ) {
                                 Icon(
@@ -360,7 +373,7 @@ internal fun PreviewSandboxScreen(
                                 )
                             }
                         } else IconButton(
-                            onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                            onClick = scrollToTop,
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
@@ -379,6 +392,7 @@ internal fun PreviewSandboxScreen(
               Box(Modifier.onSizeChanged { nativeBarHeightPx = it.height }) {
                 if (os4) {
                     GlassTopAppBar(
+                        progressiveBlur = LocalTopBarProgressiveBlur.current,
                         isContentScrolled = listState.canScrollBackward,
                         title = stringResource(R.string.home_preview_sandbox_title),
                         backdrop = topBarBackdrop,
@@ -496,35 +510,17 @@ internal fun PreviewSandboxScreen(
                                 .padding(horizontal = 12.dp)
                                 .padding(bottom = 12.dp),
                     ) {
-                        SwitchPreference(
-                            title = stringResource(R.string.home_preview_dual_mobile_title),
-                            summary = stringResource(R.string.home_preview_dual_mobile_summary),
-                            checked = state.dualMobile,
-                            onCheckedChange = { enabled ->
-                                onDualMobileChange(enabled)
-                            },
-                            startAction = {
-                                SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_cards)
-                            },
-                            insideMargin = SandboxPreferenceInsideMargin,
-                        )
                         SandboxSegmentedField(
                             title = stringResource(R.string.home_preview_sim_title),
                             iconRes = R.drawable.ic_material_symbol_sim_card,
-                            options = if (state.dualMobile) dualSimOptions else simOptions,
-                            selectedIndex =
-                                if (state.dualMobile) state.simCards.ordinal
-                                else if (state.simPresent) 0 else 1,
+                            options = dualSimOptions,
+                            selectedIndex = state.simCards.ordinal,
                             onSelected = { index ->
-                                if (state.dualMobile) {
-                                    PreviewSimCards.entries.getOrNull(index)?.let(onSimCardsChange)
-                                } else {
-                                    onSimPresentChange(index == 0)
-                                }
+                                PreviewSimCards.entries.getOrNull(index)?.let(onSimCardsChange)
                             },
                             maxWidth = 300.dp,
                         )
-                        if (state.mobileOptionsVisible && state.dualMobile) {
+                        AnimatedPreferenceGroup(visible = state.mobileOptionsVisible && state.simCards == PreviewSimCards.BOTH) {
                             UiDropdownPreference(
                                 title = stringResource(R.string.home_preview_data_sim_title),
                                 startAction = {
@@ -545,16 +541,22 @@ internal fun PreviewSandboxScreen(
                                 modifier = Modifier.padding(top = 4.dp),
                             )
                         }
-                        if (state.networkMode == PreviewNetworkMode.WIFI) {
-                            SandboxSegmentedField(
+                        AnimatedPreferenceGroup(visible = state.networkMode == PreviewNetworkMode.WIFI) {
+                            UiDropdownPreference(
                                 title = stringResource(R.string.home_preview_wifi_state_title),
-                                iconRes = R.drawable.ic_material_symbol_wifi,
-                                detailRes = R.drawable.ic_material_symbol_swap_horiz,
-                                options = wifiOptions,
-                                selectedIndex = state.wifiState.ordinal,
-                                onSelected = { index ->
-                                    onWifiStateChange(PreviewWifiState.entries[index])
+                                startAction = {
+                                    SemanticLeadingIcon(
+                                        iconRes = R.drawable.ic_material_symbol_wifi,
+                                        detailRes = R.drawable.ic_material_symbol_swap_horiz,
+                                    )
                                 },
+                                items = wifiOptions,
+                                selectedIndex = state.wifiState.ordinal,
+                                onSelectedIndexChange = { index ->
+                                    PreviewWifiState.entries.getOrNull(index)?.let(onWifiStateChange)
+                                },
+                                insideMargin = SandboxPreferenceInsideMargin,
+                                maxHeight = 280.dp,
                                 modifier = Modifier.padding(top = 4.dp),
                             )
                             SliderPreference(
@@ -574,111 +576,139 @@ internal fun PreviewSandboxScreen(
                             )
                         }
 
-                        if (state.mobileControlsEnabled) {
-                            if (state.sim1Active) {
-                                if (state.mobileOptionsVisible) {
-                                    UiDropdownPreference(
-                                        title = stringResource(
-                                            if (state.dualMobile) R.string.home_preview_sim1_network_title
-                                            else R.string.home_preview_mobile_network_title,
-                                        ),
-                                        startAction = {
-                                            SemanticLeadingIcon(
-                                                iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
-                                                detailRes = R.drawable.ic_material_symbol_category_w500,
-                                            )
-                                        },
-                                        items = mobileNetworkChoices.map { it.second },
-                                        selectedIndex =
-                                            mobileNetworkChoices.indexOfFirst {
-                                                it.first == state.mobileNetwork
-                                            }.coerceAtLeast(0),
-                                        onSelectedIndexChange = { index ->
-                                            mobileNetworkChoices.getOrNull(index)
-                                                ?.first
-                                                ?.let { network ->
-                                                    onMobileNetworkChange(network)
-                                                }
-                                        },
-                                        insideMargin = SandboxPreferenceInsideMargin,
-                                        maxHeight = 360.dp,
-                                        modifier = Modifier.padding(top = 4.dp),
+                        AnimatedPreferenceGroup(visible = state.mobileOptionsVisible && state.sim1Active) {
+                            UiDropdownPreference(
+                                title = stringResource(
+                                    if (state.simCards == PreviewSimCards.BOTH) R.string.home_preview_sim1_network_title
+                                    else R.string.home_preview_mobile_network_title,
+                                ),
+                                startAction = {
+                                    SemanticLeadingIcon(
+                                        iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
+                                        detailRes = R.drawable.ic_material_symbol_category_w500,
                                     )
-                                }
-                                SliderPreference(
-                                    value = state.mobileSignalLevel.toFloat(),
-                                    onValueChange = { value ->
+                                },
+                                items = mobileNetworkChoices.map { it.second },
+                                selectedIndex =
+                                    mobileNetworkChoices.indexOfFirst {
+                                        it.first == state.mobileNetwork
+                                    }.coerceAtLeast(0),
+                                onSelectedIndexChange = { index ->
+                                    mobileNetworkChoices.getOrNull(index)
+                                        ?.first
+                                        ?.let { network ->
+                                            onMobileNetworkChange(network)
+                                        }
+                                },
+                                insideMargin = SandboxPreferenceInsideMargin,
+                                maxHeight = 360.dp,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                        }
+                        AnimatedPreferenceGroup(visible = state.sim1Active || !state.hasSim) {
+                            SliderPreference(
+                                value = state.mobileSignalLevel.toFloat(),
+                                onValueChange = { value ->
+                                    if (state.mobileControlsEnabled && state.sim1Active) {
                                         onMobileSignalLevelChange(value.roundToInt().coerceIn(0, 4))
-                                    },
-                                    title = stringResource(
-                                        if (state.dualMobile) R.string.home_preview_sim1_signal_title
-                                        else R.string.home_preview_mobile_signal_title,
-                                    ),
-                                    startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt) },
-                                    valueText = signalValueText(state.mobileSignalLevel),
-                                    insideMargin = SandboxPreferenceInsideMargin,
-                                    valueRange = 0f..4f,
-                                    steps = 3,
-                                    showKeyPoints = true,
-                                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                                    keyPoints = listOf(0f, 1f, 2f, 3f, 4f),
-                                )
-                            }
-                            if (state.sim2Active) {
-                                if (state.mobileOptionsVisible) {
-                                    UiDropdownPreference(
-                                        title = stringResource(R.string.home_preview_sim2_network_title),
-                                        startAction = {
-                                            SemanticLeadingIcon(
-                                                iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
-                                                detailRes = R.drawable.ic_material_symbol_category_w500,
-                                            )
-                                        },
-                                        items = mobileNetworkChoices.map { it.second },
-                                        selectedIndex =
-                                            mobileNetworkChoices.indexOfFirst {
-                                                it.first == state.sim2MobileNetwork
-                                            }.coerceAtLeast(0),
-                                        onSelectedIndexChange = { index ->
-                                            mobileNetworkChoices.getOrNull(index)
-                                                ?.first
-                                                ?.let { network ->
-                                                    onSim2NetworkChange(network)
-                                                }
-                                        },
-                                        insideMargin = SandboxPreferenceInsideMargin,
-                                        maxHeight = 360.dp,
-                                        modifier = Modifier.padding(top = 4.dp),
-                                    )
-                                }
-                                SliderPreference(
-                                    value = state.sim2SignalLevel.toFloat(),
-                                    onValueChange = { value ->
-                                        onSim2SignalLevelChange(value.roundToInt().coerceIn(0, 4))
-                                    },
-                                    title = stringResource(R.string.home_preview_sim2_signal_title),
+                                    }
+                                },
+                                title = stringResource(
+                                    if (state.simCards == PreviewSimCards.BOTH) R.string.home_preview_sim1_signal_title
+                                    else R.string.home_preview_mobile_signal_title,
+                                ),
+                                summary = when {
+                                    state.airplaneMode -> stringResource(R.string.home_preview_mobile_disabled_airplane)
+                                    !state.sim1Active -> stringResource(R.string.home_preview_mobile_disabled_no_sim)
+                                    else -> null
+                                },
+                                enabled = state.mobileControlsEnabled && state.sim1Active,
+                                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt) },
+                                valueText = signalValueText(state.mobileSignalLevel),
+                                insideMargin = SandboxPreferenceInsideMargin,
+                                valueRange = 0f..4f,
+                                steps = 3,
+                                showKeyPoints = true,
+                                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                                keyPoints = listOf(0f, 1f, 2f, 3f, 4f),
+                            )
+                        }
+                        AnimatedPreferenceGroup(visible = state.sim2Active) {
+                            AnimatedPreferenceGroup(visible = state.mobileOptionsVisible && state.sim2Active) {
+                                UiDropdownPreference(
+                                    title = stringResource(R.string.home_preview_sim2_network_title),
                                     startAction = {
-                                        SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt)
+                                        SemanticLeadingIcon(
+                                            iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
+                                            detailRes = R.drawable.ic_material_symbol_category_w500,
+                                        )
                                     },
-                                    valueText = signalValueText(state.sim2SignalLevel),
+                                    items = mobileNetworkChoices.map { it.second },
+                                    selectedIndex =
+                                        mobileNetworkChoices.indexOfFirst {
+                                            it.first == state.sim2MobileNetwork
+                                        }.coerceAtLeast(0),
+                                    onSelectedIndexChange = { index ->
+                                        mobileNetworkChoices.getOrNull(index)
+                                            ?.first
+                                            ?.let { network ->
+                                                onSim2NetworkChange(network)
+                                            }
+                                    },
                                     insideMargin = SandboxPreferenceInsideMargin,
-                                    valueRange = 0f..4f,
-                                    steps = 3,
-                                    showKeyPoints = true,
-                                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                                    keyPoints = listOf(0f, 1f, 2f, 3f, 4f),
+                                    maxHeight = 360.dp,
+                                    modifier = Modifier.padding(top = 4.dp),
                                 )
                             }
-                        } else {
-                            BasicComponent(
-                                title = stringResource(R.string.home_preview_mobile_signal_title),
-                                summary = mobileDisabledSummary.orEmpty(),
+                            SliderPreference(
+                                value = state.sim2SignalLevel.toFloat(),
+                                onValueChange = { value ->
+                                    if (state.mobileControlsEnabled && state.sim2Active) {
+                                        onSim2SignalLevelChange(value.roundToInt().coerceIn(0, 4))
+                                    }
+                                },
+                                title = stringResource(R.string.home_preview_sim2_signal_title),
+                                summary = when {
+                                    state.airplaneMode -> stringResource(R.string.home_preview_mobile_disabled_airplane)
+                                    !state.sim2Active -> stringResource(R.string.home_preview_mobile_disabled_no_sim)
+                                    else -> null
+                                },
+                                enabled = state.mobileControlsEnabled && state.sim2Active,
                                 startAction = {
                                     SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt)
                                 },
+                                valueText = signalValueText(state.sim2SignalLevel),
                                 insideMargin = SandboxPreferenceInsideMargin,
+                                valueRange = 0f..4f,
+                                steps = 3,
+                                showKeyPoints = true,
+                                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                                keyPoints = listOf(0f, 1f, 2f, 3f, 4f),
                             )
                         }
+                        UiDropdownPreference(
+                            title = stringResource(R.string.home_preview_activity_state_title),
+                            summary = if (activitySupported) null
+                                else stringResource(R.string.home_preview_activity_unavailable_summary),
+                            enabled = activitySupported,
+                            startAction = {
+                                SemanticLeadingIcon(
+                                    iconRes = R.drawable.ic_guiyuan_network_activity_triangles,
+                                    detailRes = R.drawable.ic_material_symbol_swap_horiz,
+                                )
+                            },
+                            items = networkActivityOptions,
+                            selectedIndex = state.networkActivity.ordinal,
+                            onSelectedIndexChange = { index ->
+                                if (activitySupported) {
+                                    PreviewNetworkActivity.entries.getOrNull(index)
+                                        ?.let(onNetworkActivityChange)
+                                }
+                            },
+                            insideMargin = SandboxPreferenceInsideMargin,
+                            maxHeight = 280.dp,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
                         SwitchPreference(
                             checked = state.airplaneMode,
                             onCheckedChange = { enabled ->
@@ -807,34 +837,7 @@ private fun SandboxSegmentedField(
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val glass = LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()
-        val requiredWidth = if (glass) {
-            val measurer = rememberTextMeasurer()
-            val density = LocalDensity.current
-            val layoutDirection = LocalLayoutDirection.current
-            val selectedStyle = MiuixTheme.textStyles.subtitle
-            val idleStyle = MiuixTheme.textStyles.body2
-            remember(options, measurer, density, layoutDirection, selectedStyle, idleStyle) {
-                val widest = options.maxOfOrNull { option ->
-                    val text = AnnotatedString(option)
-                    maxOf(
-                        measurer.measure(text, style = selectedStyle, softWrap = false, maxLines = 1).size.width,
-                        measurer.measure(text, style = idleStyle, softWrap = false, maxLines = 1).size.width,
-                    )
-                } ?: 0
-                val spacing = with(density) {
-                    (
-                        GlassSegmentedTabRowDefaults.TrackPadding * 2 +
-                            GlassSegmentedTabRowDefaults.TabPaddingHorizontal * (options.size * 2) +
-                            GlassSegmentedTabRowDefaults.TabGap * (options.size - 1).coerceAtLeast(0) +
-                            SandboxPreferenceInsideMargin.calculateStartPadding(layoutDirection) +
-                            SandboxPreferenceInsideMargin.calculateEndPadding(layoutDirection)
-                        ).roundToPx()
-                }
-                widest * options.size + spacing
-            }
-        } else {
-            0
-        }
+        val requiredWidth = if (glass) sandboxSegmentedRequiredWidth(options) else 0
 
         if (glass && requiredWidth > constraints.maxWidth) {
             // Equal-width segments cannot fit these labels; show the full options in a popup.
@@ -868,6 +871,35 @@ private fun SandboxSegmentedField(
                 },
             )
         }
+    }
+}
+
+
+@Composable
+private fun sandboxSegmentedRequiredWidth(options: List<String>): Int {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
+    val selectedStyle = MiuixTheme.textStyles.subtitle
+    val idleStyle = MiuixTheme.textStyles.body2
+    return remember(options, measurer, density, layoutDirection, selectedStyle, idleStyle) {
+        val widest = options.maxOfOrNull { option ->
+            val text = AnnotatedString(option)
+            maxOf(
+                measurer.measure(text, style = selectedStyle, softWrap = false, maxLines = 1).size.width,
+                measurer.measure(text, style = idleStyle, softWrap = false, maxLines = 1).size.width,
+            )
+        } ?: 0
+        val spacing = with(density) {
+            (
+                GlassSegmentedTabRowDefaults.TrackPadding * 2 +
+                    GlassSegmentedTabRowDefaults.TabPaddingHorizontal * (options.size * 2) +
+                    GlassSegmentedTabRowDefaults.TabGap * (options.size - 1).coerceAtLeast(0) +
+                    SandboxPreferenceInsideMargin.calculateStartPadding(layoutDirection) +
+                    SandboxPreferenceInsideMargin.calculateEndPadding(layoutDirection)
+                ).roundToPx()
+        }
+        widest * options.size + spacing
     }
 }
 

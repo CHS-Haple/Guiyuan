@@ -51,6 +51,18 @@ class DiagLogParserTest {
     }
 
     @Test
+    fun legacyRepeatedFieldsRetainLastValueAndNormalizedPrefix() {
+        val entry = DiagLogParser.parse(
+            "native   activity source=old source=new status=ready",
+        )
+
+        assertEquals("native.activity", entry.event)
+        assertEquals("new", entry.fields["source"])
+        assertEquals("ready", entry.fields["status"])
+        assertFalse(entry.structured)
+    }
+
+    @Test
     fun parsesLogcatFallbackEnvelope() {
         val entry =
             DiagLogParser.parse(

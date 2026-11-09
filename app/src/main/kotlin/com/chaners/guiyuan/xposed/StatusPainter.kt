@@ -15,12 +15,12 @@ import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.DualDotStyle
+import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.settings.VisualCfg
-import com.chaners.guiyuan.xposed.battery.BatteryArcSegments
+import com.chaners.guiyuan.settings.topChargingIconUiScale
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import com.chaners.guiyuan.xposed.battery.BatteryTopArcPolicy
-import com.chaners.guiyuan.xposed.battery.batteryArcSegments
+import com.chaners.guiyuan.settings.MOBILE_TYPE_BOTTOM_ZERO_REFERENCE
 import com.chaners.guiyuan.xposed.battery.batteryTopBaseCenterY
 import com.chaners.guiyuan.xposed.battery.batteryTopCenterY
 import com.chaners.guiyuan.xposed.battery.batteryTopOverflowPx
@@ -53,6 +53,7 @@ internal class StatusPainter(
         }
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
+    private val activityResourceIds = HashMap<String, Int>()
     private val nativeCenterAssets =
         LinkedHashMap<PresentationStore.NativeIconResource, NativeCenterAsset>(
             NATIVE_CENTER_CACHE_SIZE,
@@ -137,6 +138,7 @@ internal class StatusPainter(
         mobileInkSamples.clear()
         airplaneDrawableResolved = false
         cachedAirplaneResourceId = 0
+        activityResourceIds.clear()
     }
 
     private fun checkNativeResources() {
@@ -176,7 +178,7 @@ internal class StatusPainter(
         canvas.translate(offsetX, offsetY)
         canvas.scale(scale, scale)
 
-        val outerGeometry = resolveOuterGeometry(outerWeightScale)
+        val outerGeometry = resolveOuterGeometry(outerWeightScale, reservesBothSidesBottomSlot(model, visual))
         val centerGeometry = resolveCenterGeometry(visual)
         drawBattery(
             canvas = canvas,
@@ -224,15 +226,27 @@ internal class StatusPainter(
             nativeTransform = nativeTransform,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
             visual = visual,
+            mobileTypeBottom = visual.centeredMobileSignal && !model.mobileUnavailableMark,
         )
-        drawMobile(
+        drawNetworkSwitchMobile(
             canvas = canvas,
             model = model,
             tint = colors.mobileTint,
             opacity = opacity,
             geometry = outerGeometry,
-            style = visual.dualDotStyle,
-            mobileOffsetY = visual.dualMobileOffsetY,
+            visual = visual,
+            previousCenter = previousCenterIndicator,
+            progress = centerEnterAmount,
+        )
+        drawBothSidesBottomInformation(
+            canvas = canvas,
+            model = model,
+            visual = visual,
+            colors = colors,
+            opacity = opacity,
+            nativeTransform = nativeTransform,
+            previousCenter = previousCenterIndicator,
+            progress = centerEnterAmount,
         )
         canvas.restoreToCount(save)
     }
@@ -282,6 +296,44 @@ internal class StatusPainter(
             transformOffsetY = offsetY,
             contentTopY = topBounds.top,
         )
+    }
+
+    fun requiredBottomOverflowPx(
+        width: Int,
+        height: Int,
+        model: RenderModel,
+        visual: VisualCfg,
+        previousCenterIndicator: CenterIndicator? = null,
+        scaleMobileTypeWithCanvas: Boolean = false,
+    ): Int {
+        val transform = resolveCanvasTransform(width, height, visual) ?: return 0
+        fun overflow(bottomY: Float): Int {
+            val bottomPx = transform.offsetY + bottomY * transform.scale
+            return if (bottomPx.isFinite() && bottomPx > height) {
+                ceil(bottomPx - height).toInt() + 1
+            } else 0
+        }
+        val centeredOverflow =
+            if (!visual.centeredMobileSignal || model.mobileUnavailableMark) 0
+            else {
+                val geometry = resolveCenterGeometry(visual)
+                listOfNotNull(
+                    model.centerIndicator as? CenterIndicator.MobileType,
+                    previousCenterIndicator as? CenterIndicator.MobileType,
+                ).maxOfOrNull { type ->
+                    val layout = resolveMobileTypeLayout(
+                        indicator = type,
+                        scale = transform.scale,
+                        geometry = geometry,
+                        scaleWithCanvas = scaleMobileTypeWithCanvas,
+                    )
+                    overflow(layout.bounds.bottom + mobileTypeBottomTranslation(visual, layout))
+                } ?: 0
+            }
+        val iconOverflow = resolveBothSidesBottomInformation(model, visual)
+            ?.let { bothSidesBottomOpticalBounds(it, visual)?.bottom }
+            ?.let(::overflow) ?: 0
+        return maxOf(centeredOverflow, iconOverflow)
     }
 
     fun drawTransitionComponent(
@@ -340,6 +392,7 @@ internal class StatusPainter(
                     geometry =
                         resolveOuterGeometry(
                             visual.outerWeightScale,
+                            reservesBothSidesBottomSlot(model, visual),
                         ),
                     centerGeometry =
                         resolveCenterGeometry(visual),
@@ -369,6 +422,18 @@ internal class StatusPainter(
                     targetWeight = batteryNumberTargetWeight,
                     targetStyle = batteryNumberTargetStyle,
                     nativeTransform = nativeTransform,
+                )
+
+            TransitionComponent.NETWORK_ACTIVITY ->
+                drawBothSidesBottomInformation(
+                    canvas = canvas,
+                    model = model,
+                    visual = visual,
+                    colors = colors,
+                    opacity = opacity,
+                    nativeTransform = nativeTransform,
+                    previousCenter = null,
+                    progress = 1f,
                 )
 
             TransitionComponent.CHARGING_ICON ->
@@ -408,6 +473,7 @@ internal class StatusPainter(
                     nativeTransform = nativeTransform,
                     scaleMobileTypeWithCanvas = false,
                     visual = visual,
+                    mobileTypeBottom = visual.centeredMobileSignal && !model.mobileUnavailableMark,
                     mobileTypeTargetStyle = centerTargetTextStyle,
                     mobileTypeTransitionProgress = motion,
                     mobileTypeNativeTarget = centerNativeTarget,
@@ -419,6 +485,7 @@ internal class StatusPainter(
                 val outerGeometry =
                     resolveOuterGeometry(
                         visual.outerWeightScale,
+                        reservesBothSidesBottomSlot(model, visual),
                     )
                 if (shapePolicy == TransitionShapePolicy.MOBILE_SIGNAL) {
                     drawMobileSignalTransition(
@@ -433,9 +500,18 @@ internal class StatusPainter(
                         targetBars = mobileTargetBars,
                         aggregateRows = mobileAggregateRows,
                         row = mobileRow,
-                        style = visual.dualDotStyle,
-                        mobileOffsetY = visual.dualMobileOffsetY,
+                        style = if (model.dualMobileLevels == null) visual.singleRowDotArrangement
+                            else visual.dualRowDotArrangement,
+                        mobileOffsetY = if (model.dualMobileLevels == null) visual.singleRowDotOffsetY else visual.dualRowDotOffsetY,
+                        centered = visual.centeredMobileSignal &&
+                            model.centerIndicator is CenterIndicator.MobileType &&
+                            !model.mobileUnavailableMark,
                     )
+                } else if (visual.centeredMobileSignal &&
+                    model.centerIndicator is CenterIndicator.MobileType &&
+                    !model.mobileUnavailableMark
+                ) {
+                    drawCenteredMobile(canvas, model, colors.mobileTint, opacity, outerGeometry)
                 } else {
                     drawMobile(
                         canvas = canvas,
@@ -443,8 +519,9 @@ internal class StatusPainter(
                         tint = colors.mobileTint,
                         opacity = opacity,
                         geometry = outerGeometry,
-                        style = visual.dualDotStyle,
-                        mobileOffsetY = visual.dualMobileOffsetY,
+                        style = if (model.dualMobileLevels == null) visual.singleRowDotArrangement
+                            else visual.dualRowDotArrangement,
+                        mobileOffsetY = if (model.dualMobileLevels == null) visual.singleRowDotOffsetY else visual.dualRowDotOffsetY,
                     )
                 }
             }
@@ -458,6 +535,7 @@ internal class StatusPainter(
         BATTERY,
         BATTERY_NUMBER,
         CHARGING_ICON,
+        NETWORK_ACTIVITY,
         CENTER,
         MOBILE,
     }
@@ -477,6 +555,7 @@ internal class StatusPainter(
         data object BatteryIcon : TransitionTarget
         data object BatteryNumber : TransitionTarget
         data object BatteryChargingIcon : TransitionTarget
+        data object NetworkActivity : TransitionTarget
 
         data class Slots(
             val preferredSlots: List<String>,
@@ -511,6 +590,9 @@ internal class StatusPainter(
         val scalePolicy: TransitionScalePolicy,
         val targetOpticalBounds: TransitionNormalizedBounds? = null,
         val mobileRow: Int? = null,
+        // Only the bottom charging bolt travels with the eight outer signal dots.
+        // The regular charging icon keeps its established battery/readout motion.
+        val followDualMobileMotion: Boolean = false,
     )
 
     internal data class TransitionNormalizedBounds(
@@ -549,7 +631,7 @@ internal class StatusPainter(
         val offsetX = nativeTransform.offsetX
         val offsetY = nativeTransform.offsetY
         val outerGeometry =
-            resolveOuterGeometry(visual.outerWeightScale)
+            resolveOuterGeometry(visual.outerWeightScale, reservesBothSidesBottomSlot(model, visual))
         val centerGeometry =
             resolveCenterGeometry(visual)
 
@@ -561,7 +643,7 @@ internal class StatusPainter(
                 bottom = offsetY + bounds.bottom * scale,
             )
 
-        val specs = ArrayList<TransitionComponentSpec>(5)
+        val specs = ArrayList<TransitionComponentSpec>(6)
         val batteryHalfStroke = outerGeometry.ringStroke / 2f
         specs +=
             TransitionComponentSpec(
@@ -611,6 +693,24 @@ internal class StatusPainter(
             }
         }
 
+        // Bottom charging is the same logical charging participant as the top
+        // bolt. Only its source optical bounds differ; CC keeps the established
+        // battery-number follower and native charging-target handoff policy.
+        resolveBothSidesBottomInformation(model, visual)
+            ?.takeIf { it.charging }
+            ?.let { charging ->
+                bothSidesBottomOpticalBounds(charging, visual)?.let { bounds ->
+                    specs += TransitionComponentSpec(
+                        component = TransitionComponent.CHARGING_ICON,
+                        sourceBounds = toViewBounds(bounds),
+                        target = TransitionTarget.BatteryChargingIcon,
+                        shapePolicy = TransitionShapePolicy.RIGID,
+                        scalePolicy = TransitionScalePolicy.TARGET,
+                        followDualMobileMotion = true,
+                    )
+                }
+            }
+
         val centerSpec =
             when (model.centerIndicator) {
                 is CenterIndicator.Wifi -> {
@@ -656,7 +756,14 @@ internal class StatusPainter(
                                     scale = scale,
                                     geometry = centerGeometry,
                                     scaleWithCanvas = false,
-                                ).bounds,
+                                ).let { layout ->
+                                    if (visual.centeredMobileSignal && !model.mobileUnavailableMark) {
+                                        shiftBoundsY(
+                                            layout.bounds,
+                                            mobileTypeBottomTranslation(visual, layout),
+                                        )
+                                    } else layout.bounds
+                                },
                             ),
                         target =
                             TransitionTarget.Slots(
@@ -742,14 +849,33 @@ internal class StatusPainter(
                 }
         }
 
+        // Draw the steady bottom activity icon at the CC source only.
+        // It fades out without revealing a final native target.
+        if (!(visual.centeredMobileSignal && model.centerIndicator is CenterIndicator.MobileType)) {
+            resolveBothSidesBottomInformation(model, visual)
+                ?.takeUnless { it.charging }
+                ?.let { activity ->
+                    bothSidesBottomOpticalBounds(activity, visual)?.let { bounds ->
+                        specs += TransitionComponentSpec(
+                            component = TransitionComponent.NETWORK_ACTIVITY,
+                            sourceBounds = toViewBounds(bounds),
+                            target = TransitionTarget.NetworkActivity,
+                            shapePolicy = TransitionShapePolicy.RIGID,
+                            scalePolicy = TransitionScalePolicy.TARGET,
+                            followDualMobileMotion = true,
+                        )
+                    }
+                }
+        }
+
+        val centeredMobile = visual.centeredMobileSignal &&
+            model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
         val mobileBounds =
-            if (model.dualMobileLevels != null && !model.mobileUnavailableMark) {
-                dualMobileTransitionBounds(outerGeometry, visual.dualDotStyle, visual.dualMobileOffsetY)
-            } else {
-                resolveMobileSignalTransitionLayout(
-                    geometry = outerGeometry,
-                    model = model,
-                ).bounds
+            when {
+                centeredMobile -> centeredMobileBounds(outerGeometry, model.dualMobileLevels != null)
+                model.dualMobileLevels != null ->
+                    dualMobileTransitionBounds(outerGeometry, visual.dualRowDotArrangement, visual.dualRowDotOffsetY)
+                else -> resolveMobileSignalTransitionLayout(outerGeometry, model, visual.singleRowDotArrangement, visual.singleRowDotOffsetY).bounds
             }
         specs +=
             TransitionComponentSpec(
@@ -776,12 +902,17 @@ internal class StatusPainter(
     internal fun dualMobileRowSpecs(
         source: TransitionComponentSpec,
         visual: VisualCfg,
+        model: RenderModel,
     ): List<TransitionComponentSpec> {
-        val geometry = resolveOuterGeometry(visual.outerWeightScale)
-        val group = dualMobileTransitionBounds(geometry, visual.dualDotStyle, visual.dualMobileOffsetY)
+        val geometry = resolveOuterGeometry(visual.outerWeightScale, reservesBothSidesBottomSlot(model, visual))
+        val centered = visual.centeredMobileSignal &&
+            model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
+        val group = if (centered) centeredMobileBounds(geometry, true)
+            else dualMobileTransitionBounds(geometry, visual.dualRowDotArrangement, visual.dualRowDotOffsetY)
         if (group.width <= 0f || group.height <= 0f) return emptyList()
         return (0..1).map { row ->
-            val local = dualMobileRowBounds(geometry, row, visual.dualDotStyle, visual.dualMobileOffsetY)
+            val local = if (centered) centeredMobileRowBounds(geometry, row)
+                else dualMobileRowBounds(geometry, row, visual.dualRowDotArrangement, visual.dualRowDotOffsetY)
             fun x(value: Float) = source.sourceBounds.left +
                 (value - group.left) / group.width * source.sourceBounds.width
             fun y(value: Float) = source.sourceBounds.top +
@@ -1125,12 +1256,19 @@ internal class StatusPainter(
         }
     }
 
-    private fun resolveOuterGeometry(weightScale: Float): OuterGeometry.Resolved {
-        val normalized =
-            OuterGeometry.normalizeWeightScale(weightScale)
-        if (cachedOuterWeightScale != normalized) {
+    private fun resolveOuterGeometry(
+        weightScale: Float,
+        bothSidesBottomIconVisible: Boolean = true,
+    ): OuterGeometry.Resolved {
+        val normalized = OuterGeometry.normalizeWeightScale(weightScale)
+        if (cachedOuterWeightScale != normalized ||
+            cachedOuterGeometry.bothSidesBottomIconVisible != bothSidesBottomIconVisible
+        ) {
             cachedOuterWeightScale = normalized
-            cachedOuterGeometry = OuterGeometry.resolve(normalized)
+            cachedOuterGeometry = OuterGeometry.resolve(
+                normalized,
+                bothSidesBottomIconVisible,
+            )
         }
         return cachedOuterGeometry
     }
@@ -1436,6 +1574,9 @@ internal class StatusPainter(
     private fun resolveBatteryTopGap(
         avoidance: TopSlotAvoidance,
         ringStroke: Float,
+        startDegrees: Float = BATTERY_START_DEGREES,
+        maxSweep: Float = BATTERY_MAX_SWEEP,
+        visualClearance: Float = BATTERY_TOP_RING_VISUAL_CLEARANCE,
     ): BatteryTopArcPolicy.Gap {
         // Preserve disconnected visible shapes (notably Wi-Fi arcs) instead of
         // reserving the empty corners of their union rectangle.
@@ -1452,12 +1593,223 @@ internal class StatusPainter(
                         ringCenterY = batteryRing.centerY(),
                         ringRadius = batteryRing.width() / 2f,
                         ringStroke = ringStroke,
-                        visualClearance = BATTERY_TOP_RING_VISUAL_CLEARANCE,
-                        startDegrees = BATTERY_START_DEGREES,
-                        maxSweep = BATTERY_MAX_SWEEP,
+                        visualClearance = visualClearance,
+                        startDegrees = startDegrees,
+                        maxSweep = maxSweep,
                     )
                 }
         return BatteryTopArcPolicy.mergeGaps(gaps)
+    }
+
+    private fun resolveBatteryBottomAvoidance(
+        model: RenderModel,
+        visual: VisualCfg,
+        outerGeometry: OuterGeometry.Resolved,
+        centerGeometry: CenterGeometry.Resolved,
+        scale: Float,
+        scaleMobileTypeWithCanvas: Boolean,
+        previousCenterIndicator: CenterIndicator?,
+        centerExitAmount: Float,
+        centerEnterAmount: Float,
+        includeOutsideDots: Boolean,
+    ): TopSlotAvoidance? {
+        val centeredNow = visual.centeredMobileSignal &&
+            model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
+        val centeredBefore = visual.centeredMobileSignal &&
+            previousCenterIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
+        val switching = previousCenterIndicator != null && previousCenterIndicator != model.centerIndicator
+        val relocating = MobileDotRelocationPolicy.shouldInterpolate(
+            previousCenterIndicator, model.centerIndicator, centeredBefore, centeredNow,
+        )
+        var avoidance: TopSlotAvoidance? = null
+
+        if (relocating) {
+            val progress = centerEnterAmount.coerceIn(0f, 1f)
+            val dual = model.dualMobileLevels != null
+            val rows = if (dual) 2 else 1
+            val centeredScale = outerGeometry.centeredScale(dual)
+            var left = Float.POSITIVE_INFINITY
+            var top = Float.POSITIVE_INFINITY
+            var right = Float.NEGATIVE_INFINITY
+            var bottom = Float.NEGATIVE_INFINITY
+            for (row in 0 until rows) {
+                val centeredY = centeredMobileRowY(outerGeometry, if (dual) row else null)
+                val outerRadius = if (dual) {
+                    outerGeometry.dualDotRadius(visual.dualRowDotArrangement)
+                } else outerGeometry.mobileDotRadius
+                val innerRadius = outerRadius * centeredScale
+                for (index in 0 until MOBILE_DOT_COUNT) {
+                    val innerX = CENTER_TRANSITION_PIVOT_X + outerGeometry.horizontalDotX(index) * centeredScale
+                    val outerX = if (dual) {
+                        MOBILE_CENTER_X + outerGeometry.dualDotX(index, row, visual.dualRowDotArrangement)
+                    } else {
+                        MOBILE_CENTER_X + outerGeometry.singleDotX(index, visual.singleRowDotArrangement)
+                    }
+                    val outerY = if (dual) {
+                        MOBILE_CENTER_Y + outerGeometry.dualDotY(
+                            index, row, visual.dualRowDotArrangement, visual.dualRowDotOffsetY,
+                        )
+                    } else {
+                        MOBILE_CENTER_Y + outerGeometry.singleDotY(
+                            index, visual.singleRowDotArrangement, visual.singleRowDotOffsetY,
+                        )
+                    }
+                    val x = MobileDotRelocationPolicy.coordinate(
+                        if (centeredBefore) innerX else outerX,
+                        if (centeredNow) innerX else outerX, progress,
+                    )
+                    val y = MobileDotRelocationPolicy.coordinate(
+                        if (centeredBefore) centeredY else outerY,
+                        if (centeredNow) centeredY else outerY, progress,
+                    )
+                    val radius = MobileDotRelocationPolicy.coordinate(
+                        if (centeredBefore) innerRadius else outerRadius,
+                        if (centeredNow) innerRadius else outerRadius, progress,
+                    )
+                    left = min(left, x - radius)
+                    top = min(top, y - radius)
+                    right = max(right, x + radius)
+                    bottom = max(bottom, y + radius)
+                }
+            }
+            avoidance = singleTopSlotAvoidance(TransitionBounds(left, top, right, bottom))
+        } else if (!centeredNow && (includeOutsideDots || model.mobileUnavailableMark)) {
+            val bounds = if (model.dualMobileLevels != null && !model.mobileUnavailableMark) {
+                dualMobileTransitionBounds(
+                    outerGeometry, visual.dualRowDotArrangement, visual.dualRowDotOffsetY,
+                )
+            } else {
+                resolveMobileSignalTransitionLayout(
+                    outerGeometry, model, visual.singleRowDotArrangement, visual.singleRowDotOffsetY,
+                ).bounds
+            }
+            avoidance = singleTopSlotAvoidance(bounds)
+        }
+
+        if (centeredNow || centeredBefore) {
+            fun includeMobileType(indicator: CenterIndicator?, amount: Float) {
+                val type = indicator as? CenterIndicator.MobileType ?: return
+                val layout = resolveMobileTypeLayout(
+                    indicator = type,
+                    scale = scale,
+                    geometry = centerGeometry,
+                    scaleWithCanvas = scaleMobileTypeWithCanvas,
+                )
+                val bounds = shiftBoundsY(layout.bounds, mobileTypeBottomTranslation(visual, layout))
+                val scaled = scaleAvoidanceAroundPivot(
+                    singleTopSlotAvoidance(bounds),
+                    pivotX = CENTER_TRANSITION_PIVOT_X,
+                    pivotY = CENTER_TRANSITION_PIVOT_Y,
+                    amount = amount,
+                ) ?: return
+                avoidance = unionAvoidance(avoidance, scaled)
+            }
+            if (switching) {
+                includeMobileType(previousCenterIndicator, centerExitAmount)
+                includeMobileType(model.centerIndicator, centerEnterAmount)
+            } else {
+                includeMobileType(model.centerIndicator, 1f)
+            }
+        }
+        return avoidance
+    }
+
+    private fun resolveBatteryDrawableArcs(
+        model: RenderModel,
+        visual: VisualCfg,
+        topAvoidance: TopSlotAvoidance?,
+        outerGeometry: OuterGeometry.Resolved,
+        centerGeometry: CenterGeometry.Resolved,
+        scale: Float,
+        scaleMobileTypeWithCanvas: Boolean,
+        previousCenterIndicator: CenterIndicator?,
+        centerExitAmount: Float,
+        centerEnterAmount: Float,
+    ): List<BatteryTopArcPolicy.Arc> {
+        fun halfGap(
+            avoidance: TopSlotAvoidance?,
+            center: Float,
+            start: Float,
+            clearance: Float = BATTERY_TOP_RING_VISUAL_CLEARANCE,
+        ): Float {
+            if (avoidance == null) return 0f
+            val gap = resolveBatteryTopGap(
+                avoidance = avoidance,
+                ringStroke = outerGeometry.ringStroke,
+                startDegrees = start,
+                maxSweep = 180f,
+                visualClearance = clearance,
+            )
+            if (gap.sweepDegrees <= 0f) return 0f
+            val half = gap.sweepDegrees / 2f
+            return maxOf(
+                center - (gap.centerDegrees - half),
+                (gap.centerDegrees + half) - center,
+            ).coerceIn(0f, 90f)
+        }
+        val topHalf = halfGap(topAvoidance, center = 270f, start = 180f)
+        // A stored opening choice from another arrangement cannot override two-sided auto avoidance.
+        val bothSidesSelected = visual.dualSignal &&
+            visual.dualRowDotArrangement == SignalDotArrangement.BOTH_SIDES
+        val fixedOpening = visual.fixedLowerOpening && !bothSidesSelected
+        val bottomHalf = halfGap(
+            resolveBatteryBottomAvoidance(
+                model = model,
+                visual = visual,
+                outerGeometry = outerGeometry,
+                centerGeometry = centerGeometry,
+                scale = scale,
+                scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+                previousCenterIndicator = previousCenterIndicator,
+                centerExitAmount = centerExitAmount,
+                centerEnterAmount = centerEnterAmount,
+                includeOutsideDots = fixedOpening,
+            ),
+            center = 90f,
+            start = 0f,
+            clearance = if (
+                visual.centeredMobileSignal && !model.mobileUnavailableMark &&
+                (model.centerIndicator is CenterIndicator.MobileType ||
+                    previousCenterIndicator is CenterIndicator.MobileType)
+            ) BATTERY_BOTTOM_RING_VISUAL_CLEARANCE else BATTERY_TOP_RING_VISUAL_CLEARANCE,
+        )
+        val dualRows = model.dualMobileLevels != null && !model.mobileUnavailableMark
+        val bothSidesOutside = dualRows &&
+            visual.dualRowDotArrangement == SignalDotArrangement.BOTH_SIDES
+        val outsideHalf = if (bothSidesOutside) {
+            outerGeometry.followingLowerHalfGap(
+                dual = true,
+                style = SignalDotArrangement.BOTH_SIDES,
+                offsetY = visual.dualRowDotOffsetY,
+                additionalContentHalfGap = bothSidesBottomInformationHalfGap(
+                    model = model,
+                    visual = visual,
+                    outerGeometry = outerGeometry,
+                ),
+            )
+        } else if (fixedOpening) 60f else outerGeometry.followingLowerHalfGap(
+            dual = dualRows,
+            style = if (dualRows) visual.dualRowDotArrangement else visual.singleRowDotArrangement,
+            offsetY = if (dualRows) visual.dualRowDotOffsetY else visual.singleRowDotOffsetY,
+        )
+        val centeredNow = visual.centeredMobileSignal &&
+            model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
+        // No previous frame means this is already the stable presentation, not
+        // a Wi-Fi→mobile relocation. Do not briefly reserve the outer curved gap.
+        val centeredBefore = if (previousCenterIndicator == null) centeredNow else
+            visual.centeredMobileSignal &&
+                previousCenterIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
+        return BatteryTopArcPolicy.drawableRingArcs(
+            topHalfDegrees = topHalf,
+            bottomHalfDegrees = BatteryTopArcPolicy.autoBottomHalfGap(
+                measuredHalf = bottomHalf,
+                outsideHalfDegrees = outsideHalf,
+                centeredBefore = centeredBefore,
+                centeredNow = centeredNow,
+                motion = centerEnterAmount,
+            ),
+            allowExtendedBottomGap = bothSidesOutside,
+        )
     }
 
     private fun batteryReadoutPreferredCenterY(
@@ -1516,146 +1868,66 @@ internal class StatusPainter(
                     ?.let(::singleTopSlotAvoidance)
             }
 
+        val drawableArcs = resolveBatteryDrawableArcs(
+            model = model,
+            visual = visual,
+            topAvoidance = topContentAvoidance,
+            outerGeometry = geometry,
+            centerGeometry = centerGeometry,
+            scale = scale,
+            scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
+            previousCenterIndicator = previousCenterIndicator,
+            centerExitAmount = centerExitAmount,
+            centerEnterAmount = centerEnterAmount,
+        )
         if (ringRetractProgress != null) {
-            val drawableArcs =
-                if (topContentAvoidance == null) {
-                    listOf(
-                        BatteryTopArcPolicy.Arc(
-                            startDegrees = BATTERY_START_DEGREES,
-                            sweepDegrees = BATTERY_MAX_SWEEP,
-                        ),
-                    )
-                } else {
-                    val gap =
-                        resolveBatteryTopGap(
-                            avoidance = topContentAvoidance,
-                            ringStroke = geometry.ringStroke,
-                        )
-                    BatteryTopArcPolicy.drawableArcs(
-                        startDegrees = BATTERY_START_DEGREES,
-                        maxSweep = BATTERY_MAX_SWEEP,
-                        gapCenterDegrees = gap.centerDegrees,
-                        gapSweepDegrees = gap.sweepDegrees,
-                    )
-                }
-            val segments =
-                BatteryRingTransitionPolicy.resolve(
-                    drawableArcs = drawableArcs,
-                    batteryPercent = model.batteryPercent,
-                    progress = ringRetractProgress,
-                    exitDirection = ringRetractExitDirection,
-                    followRetractEndpoint =
-                        visual.fillFollowsRetract,
-                )
+            val segments = BatteryRingTransitionPolicy.resolve(
+                drawableArcs = drawableArcs,
+                batteryPercent = model.batteryPercent,
+                progress = ringRetractProgress,
+                exitDirection = ringRetractExitDirection,
+                followRetractEndpoint = visual.fillFollowsRetract,
+            )
             val totalSweepDegrees =
-                drawableArcs
-                    .sumOf { arc -> arc.sweepDegrees.coerceAtLeast(0f).toDouble() }
-                    .toFloat()
-            val terminalCapDominated =
-                BatteryRingTransitionPolicy.isTerminalCapDominated(
-                    remainingFraction = segments.remainingFraction,
-                    totalSweepDegrees = totalSweepDegrees,
-                    radiusPx = OuterGeometry.RING_RADIUS,
-                    strokeWidthPx = geometry.ringStroke,
-                )
-
+                drawableArcs.sumOf { it.sweepDegrees.coerceAtLeast(0f).toDouble() }.toFloat()
+            val terminalCapDominated = BatteryRingTransitionPolicy.isTerminalCapDominated(
+                remainingFraction = segments.remainingFraction,
+                totalSweepDegrees = totalSweepDegrees,
+                radiusPx = OuterGeometry.RING_RADIUS,
+                strokeWidthPx = geometry.ringStroke,
+            )
             if (!terminalCapDominated) {
                 stroke(batteryTint, 48, geometry.ringStroke, opacity)
                 segments.background.forEach { arc ->
                     if (arc.sweepDegrees > 0f) {
-                        canvas.drawArc(
-                            batteryRing,
-                            arc.startDegrees,
-                            arc.sweepDegrees,
-                            false,
-                            paint,
-                        )
+                        canvas.drawArc(batteryRing, arc.startDegrees, arc.sweepDegrees, false, paint)
                     }
                 }
                 stroke(batteryTint, 255, geometry.ringStroke, opacity)
                 segments.active.forEach { arc ->
                     if (arc.sweepDegrees > 0f) {
-                        canvas.drawArc(
-                            batteryRing,
-                            arc.startDegrees,
-                            arc.sweepDegrees,
-                            false,
-                            paint,
-                        )
+                        canvas.drawArc(batteryRing, arc.startDegrees, arc.sweepDegrees, false, paint)
                     }
                 }
             }
-        } else if (topContentAvoidance == null) {
-            val segments =
-                batteryArcSegments(
-                    batteryPercent = model.batteryPercent,
-                    startDegrees = BATTERY_START_DEGREES,
-                    maxSweep = BATTERY_MAX_SWEEP,
-                    degreesPerPercent = BATTERY_DEGREES_PER_PERCENT,
-                )
-            if (segments.inactiveSweep > 0f) {
-                stroke(batteryTint, 48, geometry.ringStroke, opacity)
-                canvas.drawArc(
-                    batteryRing,
-                    segments.inactiveStart,
-                    segments.inactiveSweep,
-                    false,
-                    paint,
-                )
-            }
-            if (segments.activeSweep > 0f) {
-                stroke(batteryTint, 255, geometry.ringStroke, opacity)
-                canvas.drawArc(
-                    batteryRing,
-                    BATTERY_START_DEGREES,
-                    segments.activeSweep,
-                    false,
-                    paint,
-                )
-            }
         } else {
-            val gap =
-                resolveBatteryTopGap(
-                    avoidance = topContentAvoidance,
-                    ringStroke = geometry.ringStroke,
-                )
-            val segments =
-                BatteryTopArcPolicy.resolve(
-                    batteryPercent = model.batteryPercent,
-                    startDegrees = BATTERY_START_DEGREES,
-                    maxSweep = BATTERY_MAX_SWEEP,
-                    gapCenterDegrees = gap.centerDegrees,
-                    gapSweepDegrees = gap.sweepDegrees,
-                )
-
+            val segments = BatteryTopArcPolicy.resolve(drawableArcs, model.batteryPercent)
             stroke(batteryTint, 48, geometry.ringStroke, opacity)
             segments.inactive.forEach { arc ->
                 if (arc.sweepDegrees > 0f) {
-                    canvas.drawArc(
-                        batteryRing,
-                        arc.startDegrees,
-                        arc.sweepDegrees,
-                        false,
-                        paint,
-                    )
+                    canvas.drawArc(batteryRing, arc.startDegrees, arc.sweepDegrees, false, paint)
                 }
             }
             stroke(batteryTint, 255, geometry.ringStroke, opacity)
             segments.active.forEach { arc ->
                 if (arc.sweepDegrees > 0f) {
-                    canvas.drawArc(
-                        batteryRing,
-                        arc.startDegrees,
-                        arc.sweepDegrees,
-                        false,
-                        paint,
-                    )
+                    canvas.drawArc(batteryRing, arc.startDegrees, arc.sweepDegrees, false, paint)
                 }
             }
         }
 
         if (
-            visual.layout == ContentLayout.NETWORK_CENTER &&
+            visual.layout != ContentLayout.BATTERY_CENTER &&
             readout != null
         ) {
             drawBatteryTopReadout(
@@ -1678,7 +1950,8 @@ internal class StatusPainter(
     ): BatteryTopReadoutLayout? {
         val textVisible = visual.showTopReadout
         val chargingSlotVisible =
-            model.charging && visual.showTopChargingIcon
+            model.charging && visual.showChargingIcon &&
+                !(resolveBothSidesBottomInformation(model, visual)?.charging == true)
         if (!textVisible && !chargingSlotVisible) return null
 
         val text = model.batteryPercent.coerceIn(0, 100).toString()
@@ -1966,6 +2239,28 @@ internal class StatusPainter(
         visual: VisualCfg,
         nativeTransform: NativeRenderTransform,
     ) {
+        // Reuse the established charging transition component, including CC
+        // target matching and clipping, with the bottom slot as its source.
+        resolveBothSidesBottomInformation(model, visual)
+            ?.takeIf { it.charging }
+            ?.let { bottom ->
+                drawNativeCenterResource(
+                    canvas = canvas,
+                    resource = bottom.resource,
+                    tint = chargingIconTint,
+                    opacity = opacity,
+                    centerX = BATTERY_COMPONENT_CENTER_X,
+                    centerY = bothSidesBottomCenterY(visual, charging = true),
+                    maxWidth = BOTH_SIDES_CHARGING_SLOT_WIDTH *
+                        bothSidesBottomScale(visual, charging = true),
+                    maxHeight = BOTH_SIDES_CHARGING_SLOT_HEIGHT *
+                        bothSidesBottomScale(visual, charging = true),
+                    nativeTransform = nativeTransform,
+                    pixelAligned = true,
+                    opticalInkCentered = true,
+                )
+                return
+            }
         val layout =
             resolveBatteryTopReadoutLayout(
                 model = model,
@@ -1999,6 +2294,7 @@ internal class StatusPainter(
         targetStyle: TransitionTextStyle?,
         progress: Float,
         nativeTargetAvailable: Boolean = false,
+        mobileTypeBottom: Boolean = false,
         visual: VisualCfg = VisualCfg(),
     ): TransitionBounds? {
         if (width <= 0 || height <= 0) return null
@@ -2018,7 +2314,7 @@ internal class StatusPainter(
                 progress = progress,
             )
         val current = base.copy(mobileTypeWeight = weight)
-        val baseLocal =
+        val textLayout =
             resolveMobileTypeLayout(
                 indicator = indicator,
                 scale = scale,
@@ -2027,7 +2323,13 @@ internal class StatusPainter(
                 targetStyle = targetStyle,
                 transitionProgress = progress,
                 nativeTargetAvailable = nativeTargetAvailable,
-            ).bounds
+            )
+        val baseLocal =
+            if (mobileTypeBottom) {
+                shiftBoundsY(textLayout.bounds, mobileTypeBottomTranslation(visual, textLayout))
+            } else {
+                textLayout.bounds
+            }
         val local =
             if (visual.layout == ContentLayout.BATTERY_CENTER) {
                 shiftBoundsY(baseLocal, networkTopTranslationY(visual, indicator))
@@ -2236,6 +2538,7 @@ internal class StatusPainter(
         nativeTransform: NativeRenderTransform,
         scaleMobileTypeWithCanvas: Boolean,
         visual: VisualCfg,
+        mobileTypeBottom: Boolean,
     ) {
         if (previous == null || previous == current) {
             drawCenterIndicator(
@@ -2249,6 +2552,7 @@ internal class StatusPainter(
                 nativeTransform = nativeTransform,
                 scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
                 visual = visual,
+                mobileTypeBottom = mobileTypeBottom,
             )
             return
         }
@@ -2264,6 +2568,7 @@ internal class StatusPainter(
             nativeTransform = nativeTransform,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
             visual = visual,
+            mobileTypeBottom = mobileTypeBottom,
         )
         drawCenterIndicator(
             canvas = canvas,
@@ -2276,6 +2581,7 @@ internal class StatusPainter(
             nativeTransform = nativeTransform,
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
             visual = visual,
+            mobileTypeBottom = mobileTypeBottom,
         )
     }
 
@@ -2290,6 +2596,7 @@ internal class StatusPainter(
         nativeTransform: NativeRenderTransform,
         scaleMobileTypeWithCanvas: Boolean,
         visual: VisualCfg,
+        mobileTypeBottom: Boolean = visual.centeredMobileSignal,
         mobileTypeTargetStyle: TransitionTextStyle? = null,
         mobileTypeTransitionProgress: Float = 0f,
         mobileTypeNativeTarget: Boolean = false,
@@ -2335,6 +2642,7 @@ internal class StatusPainter(
                     scale = scale,
                     geometry = geometry,
                     scaleWithCanvas = scaleMobileTypeWithCanvas,
+                    bottomVisual = if (mobileTypeBottom) visual else null,
                     targetStyle = mobileTypeTargetStyle,
                     transitionProgress = mobileTypeTransitionProgress,
                     nativeTargetAvailable = mobileTypeNativeTarget,
@@ -2682,6 +2990,7 @@ internal class StatusPainter(
         nativeTransform: NativeRenderTransform,
         pixelAligned: Boolean,
         strokeWeight: Int = 100,
+        opticalInkCentered: Boolean = false,
     ): Boolean {
         // Resolve draw size and actual current-resource optical bounds through
         // one geometry path shared with top-slot avoidance.
@@ -2699,6 +3008,15 @@ internal class StatusPainter(
         val intrinsicHeight = asset.intrinsicHeight
         val drawWidth = geometry.drawWidth
         val drawHeight = geometry.drawHeight
+        val (viewportCenterX, viewportCenterY) =
+            if (opticalInkCentered) NativeOpticalGeometry.viewportCenterForInkAnchor(
+                anchorX = centerX,
+                anchorY = centerY,
+                drawWidth = drawWidth,
+                drawHeight = drawHeight,
+                opticalCenterX = (asset.opticalBounds.left + asset.opticalBounds.right) / 2f,
+                inkCenterY = asset.inkCenterY,
+            ) else Pair(centerX, centerY)
 
         val drawable = asset.drawable
         val styledStroke = nativeStrokePath(resource, strokeWeight)
@@ -2709,8 +3027,8 @@ internal class StatusPainter(
         if (pixelAligned && nativeTransform.scale > 0f) {
             val bounds =
                 NativeRenderGeometry.resolvePixelBounds(
-                    centerX = centerX,
-                    centerY = centerY,
+                    centerX = viewportCenterX,
+                    centerY = viewportCenterY,
                     drawWidth = drawWidth,
                     drawHeight = drawHeight,
                     transform = nativeTransform,
@@ -2742,8 +3060,8 @@ internal class StatusPainter(
             drawNativeDrawable(
                 canvas = canvas,
                 drawable = drawable,
-                left = centerX - drawWidth / 2f,
-                top = centerY - drawHeight / 2f,
+                left = viewportCenterX - drawWidth / 2f,
+                top = viewportCenterY - drawHeight / 2f,
                 width = drawWidth,
                 height = drawHeight,
                 intrinsicWidth = intrinsicWidth,
@@ -2919,6 +3237,7 @@ internal class StatusPainter(
         scale: Float,
         geometry: CenterGeometry.Resolved,
         scaleWithCanvas: Boolean,
+        bottomVisual: VisualCfg? = null,
         targetStyle: TransitionTextStyle? = null,
         transitionProgress: Float = 0f,
         nativeTargetAvailable: Boolean = false,
@@ -2933,6 +3252,10 @@ internal class StatusPainter(
                 transitionProgress = transitionProgress,
                 nativeTargetAvailable = nativeTargetAvailable,
             )
+        val textSave = if (bottomVisual != null) canvas.save() else null
+        if (bottomVisual != null) {
+            canvas.translate(0f, mobileTypeBottomTranslation(bottomVisual, layout))
+        }
 
         // Draw with the text style already used to measure this layout.
         mobileTypePaint.color = tint
@@ -2962,6 +3285,21 @@ internal class StatusPainter(
                 mobileTypePaint,
             )
         }
+        if (textSave != null) canvas.restoreToCount(textSave)
+    }
+
+    private fun mobileTypeBottomTranslation(visual: VisualCfg, layout: MobileTypeLayout): Float {
+        val innerBottom = centeredMobileBounds(
+            resolveOuterGeometry(visual.outerWeightScale),
+            true,
+        ).bottom
+        return CenteredMobileTypePositionPolicy.translation(
+            sourceTop = layout.bounds.top,
+            mobileBottom = innerBottom,
+            requested = MOBILE_TYPE_BOTTOM_CENTER_Y - MOBILE_TYPE_CENTER_Y +
+                MOBILE_TYPE_BOTTOM_ZERO_REFERENCE - visual.mobileTypeBottomOffsetY,
+            clearance = BATTERY_TOP_RING_VISUAL_CLEARANCE,
+        )
     }
 
     private fun resolveMobileTypeLayout(
@@ -3235,37 +3573,95 @@ internal class StatusPainter(
         mobileTypePaint.textSize = textSize
     }
 
+    private fun centeredMobileRowY(geometry: OuterGeometry.Resolved, row: Int?): Float =
+        CENTER_TRANSITION_PIVOT_Y +
+            when (row) {
+                0 -> -geometry.dualRowGap * geometry.centeredScale(true) / 2f
+                1 -> geometry.dualRowGap * geometry.centeredScale(true) / 2f
+                else -> 0f
+            }
+
+    private fun centeredMobileRowBounds(
+        geometry: OuterGeometry.Resolved,
+        row: Int?,
+    ): TransitionBounds {
+        val dual = row != null
+        val scale = geometry.centeredScale(dual)
+        val radius = (if (dual) geometry.dualMobileDotRadius else geometry.mobileDotRadius) * scale
+        val y = centeredMobileRowY(geometry, row)
+        return TransitionBounds(
+            CENTER_TRANSITION_PIVOT_X + geometry.horizontalDotX(0) * scale - radius,
+            y - radius,
+            CENTER_TRANSITION_PIVOT_X + geometry.horizontalDotX(MOBILE_DOT_COUNT - 1) * scale + radius,
+            y + radius,
+        )
+    }
+
+    private fun centeredMobileBounds(geometry: OuterGeometry.Resolved, dual: Boolean): TransitionBounds {
+        if (!dual) return centeredMobileRowBounds(geometry, null)
+        val top = centeredMobileRowBounds(geometry, 0)
+        val bottom = centeredMobileRowBounds(geometry, 1)
+        return TransitionBounds(top.left, top.top, top.right, bottom.bottom)
+    }
+
+    private fun resolveCenteredMobileTransitionLayout(
+        geometry: OuterGeometry.Resolved,
+        row: Int?,
+    ): MobileSignalTransitionLayout {
+        val bounds = centeredMobileRowBounds(geometry, row)
+        val dual = row != null
+        val scale = geometry.centeredScale(dual)
+        val radius = (if (dual) geometry.dualMobileDotRadius else geometry.mobileDotRadius) * scale
+        val centers = (0 until MOBILE_DOT_COUNT).map { index ->
+            TransitionPoint(CENTER_TRANSITION_PIVOT_X + geometry.horizontalDotX(index) * scale, bounds.centerY)
+        }
+        return MobileSignalTransitionLayout(
+            bounds = bounds,
+            sourceCenters = centers,
+            targetCenters = (0 until MOBILE_DOT_COUNT).map { index ->
+                TransitionPoint(
+                    bounds.left + radius + index * (bounds.width - 2f * radius) /
+                        (MOBILE_DOT_COUNT - 1),
+                    bounds.centerY,
+                )
+            },
+        )
+    }
+
     private fun dualMobileRowBounds(
         geometry: OuterGeometry.Resolved,
         row: Int,
-        style: DualDotStyle,
+        style: SignalDotArrangement,
         mobileOffsetY: Float,
     ): TransitionBounds {
-        val radius = geometry.dualMobileDotRadius
+        val radius = geometry.dualDotRadius(style)
         val ys = (0 until MOBILE_DOT_COUNT).map { index ->
             MOBILE_CENTER_Y + geometry.dualDotY(index, row, style, mobileOffsetY)
         }
+        val xs = (0 until MOBILE_DOT_COUNT).map { index ->
+            MOBILE_CENTER_X + geometry.dualDotX(index, row, style)
+        }
         return TransitionBounds(
-            MOBILE_CENTER_X + geometry.dualDotX(0) - radius,
+            xs.min() - radius,
             ys.min() - radius,
-            MOBILE_CENTER_X + geometry.dualDotX(MOBILE_DOT_COUNT - 1) + radius,
+            xs.max() + radius,
             ys.max() + radius,
         )
     }
 
     private fun dualMobileTransitionBounds(
         geometry: OuterGeometry.Resolved,
-        style: DualDotStyle,
+        style: SignalDotArrangement,
         mobileOffsetY: Float,
     ): TransitionBounds {
-        val radius = geometry.dualMobileDotRadius
+        val radius = geometry.dualDotRadius(style)
         var left = Float.POSITIVE_INFINITY
         var top = Float.POSITIVE_INFINITY
         var right = Float.NEGATIVE_INFINITY
         var bottom = Float.NEGATIVE_INFINITY
         for (row in 0..1) {
             for (index in 0 until MOBILE_DOT_COUNT) {
-                val x = MOBILE_CENTER_X + geometry.dualDotX(index)
+                val x = MOBILE_CENTER_X + geometry.dualDotX(index, row, style)
                 val y = MOBILE_CENTER_Y + geometry.dualDotY(index, row, style, mobileOffsetY)
                 left = min(left, x - radius)
                 top = min(top, y - radius)
@@ -3279,6 +3675,8 @@ internal class StatusPainter(
     private fun resolveMobileSignalTransitionLayout(
         geometry: OuterGeometry.Resolved,
         model: RenderModel,
+        style: SignalDotArrangement,
+        mobileOffsetY: Float,
     ): MobileSignalTransitionLayout {
         val sourceCenters = ArrayList<TransitionPoint>(MOBILE_DOT_COUNT)
         var left = Float.POSITIVE_INFINITY
@@ -3286,13 +3684,8 @@ internal class StatusPainter(
         var right = Float.NEGATIVE_INFINITY
         var bottom = Float.NEGATIVE_INFINITY
         for (index in 0 until MOBILE_DOT_COUNT) {
-            val angle = geometry.bottomDotAngle(index)
-            val x =
-                MOBILE_CENTER_X +
-                    cos(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS
-            val y =
-                MOBILE_CENTER_Y +
-                    sin(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS
+            val x = MOBILE_CENTER_X + geometry.singleDotX(index, style)
+            val y = MOBILE_CENTER_Y + geometry.singleDotY(index, style, mobileOffsetY)
             sourceCenters += TransitionPoint(x, y)
             left = min(left, x - geometry.mobileDotRadius)
             top = min(top, y - geometry.mobileDotRadius)
@@ -3334,13 +3727,13 @@ internal class StatusPainter(
     private fun resolveDualMobileSignalTransitionLayout(
         geometry: OuterGeometry.Resolved,
         row: Int,
-        style: DualDotStyle,
+        style: SignalDotArrangement,
         mobileOffsetY: Float,
     ): MobileSignalTransitionLayout {
         val bounds = dualMobileRowBounds(geometry, row, style, mobileOffsetY)
         val centers = (0 until MOBILE_DOT_COUNT).map { index ->
             TransitionPoint(
-                MOBILE_CENTER_X + geometry.dualDotX(index),
+                MOBILE_CENTER_X + geometry.dualDotX(index, row, style),
                 MOBILE_CENTER_Y + geometry.dualDotY(index, row, style, mobileOffsetY),
             )
         }
@@ -3349,8 +3742,8 @@ internal class StatusPainter(
             sourceCenters = centers,
             targetCenters = (0 until MOBILE_DOT_COUNT).map { index ->
                 TransitionPoint(
-                    bounds.left + geometry.dualMobileDotRadius +
-                        index * (bounds.width - 2f * geometry.dualMobileDotRadius) /
+                    bounds.left + geometry.dualDotRadius(style) +
+                        index * (bounds.width - 2f * geometry.dualDotRadius(style)) /
                             (MOBILE_DOT_COUNT - 1),
                     bounds.centerY,
                 )
@@ -3370,14 +3763,22 @@ internal class StatusPainter(
         targetBars: List<TransitionNormalizedBounds>?,
         aggregateRows: ParticipantVisualSnapshot.DualMobileRows?,
         row: Int?,
-        style: DualDotStyle,
+        style: SignalDotArrangement,
         mobileOffsetY: Float,
+        centered: Boolean = false,
     ) {
         val layout =
-            if (row != null) resolveDualMobileSignalTransitionLayout(geometry, row, style, mobileOffsetY)
-            else resolveMobileSignalTransitionLayout(geometry, model)
+            when {
+                centered -> resolveCenteredMobileTransitionLayout(geometry, row)
+                row != null -> resolveDualMobileSignalTransitionLayout(geometry, row, style, mobileOffsetY)
+                else -> resolveMobileSignalTransitionLayout(geometry, model, style, mobileOffsetY)
+            }
         val radius =
-            if (row == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius
+            (if (row == null) geometry.mobileDotRadius
+             else if (centered) geometry.dualMobileDotRadius
+             else geometry.dualDotRadius(style)) *
+                (if (centered) geometry.centeredScale(row != null || model.dualMobileLevels != null)
+                 else 1f)
         val level = when (row) {
             0 -> model.dualMobileLevels?.sim1
             1 -> model.dualMobileLevels?.sim2
@@ -3390,7 +3791,8 @@ internal class StatusPainter(
         val barProgress = MobileSignalMorphPolicy.barProgress(phase)
         val diameter = radius * 2f
         if (row == null && model.dualMobileLevels != null && aggregateRows != null) {
-            val bounds = dualMobileTransitionBounds(geometry, style, mobileOffsetY)
+            val bounds = if (centered) centeredMobileBounds(geometry, true)
+                else dualMobileTransitionBounds(geometry, style, mobileOffsetY)
             val top = aggregateRows.top
             val bottom = aggregateRows.bottom
             val outerScale = MobileSignalMorphPolicy.outerSimilarityScale(
@@ -3413,14 +3815,16 @@ internal class StatusPainter(
                         targetAxisRatio = targetHeightRatio,
                         outerScale = outerScale,
                     ),
-                dotDiameter = geometry.dualMobileDotRadius * 2f,
+                dotDiameter = geometry.dualMobileDotRadius * 2f *
+                    (if (centered) geometry.centeredScale(true) else 1f),
             )
             for ((index, targets) in listOf(top, bottom).withIndex()) {
                 val shapes = targets.map { rect ->
                     TransitionNormalizedBounds(rect.left, rect.top, rect.right, rect.bottom)
                 }
                 val rowLayout =
-                    resolveDualMobileSignalTransitionLayout(geometry, index, style, mobileOffsetY)
+                    (if (centered) resolveCenteredMobileTransitionLayout(geometry, index)
+                     else resolveDualMobileSignalTransitionLayout(geometry, index, style, mobileOffsetY))
                         .copy(bounds = bounds)
                 drawMobileSignalTransitionToExactBars(
                     canvas = canvas,
@@ -3428,7 +3832,8 @@ internal class StatusPainter(
                         else model.dualMobileLevels.sim2,
                     tint = tint,
                     opacity = opacity,
-                    radius = geometry.dualMobileDotRadius,
+                    radius = geometry.dualMobileDotRadius *
+                        (if (centered) geometry.centeredScale(true) else 1f),
                     layout = rowLayout,
                     trim = trim,
                     move = move,
@@ -3439,6 +3844,7 @@ internal class StatusPainter(
                     targetBars = shapes,
                     pairedAnchorX = anchors[0],
                     pairedAnchorY = anchors[index + 1],
+                    bothSidesStagedMotion = !centered && style == SignalDotArrangement.BOTH_SIDES,
                     targetDots = if (index == 0) {
                         aggregateRows.topShape == ParticipantVisualSnapshot.RowShape.DOTS
                     } else {
@@ -3467,6 +3873,7 @@ internal class StatusPainter(
                 targetWidthRatio = targetWidthRatio,
                 targetHeightRatio = targetHeightRatio,
                 targetBars = exactBars,
+                bothSidesStagedMotion = !centered && style == SignalDotArrangement.BOTH_SIDES,
             )
             return
         }
@@ -3486,13 +3893,25 @@ internal class StatusPainter(
             val source = layout.sourceCenters[index]
             val target = layout.targetCenters[index]
             val centerX =
-                MobileSignalMorphPolicy.dotCoordinate(
-                    source.x, anchor.x, first.x, target.x, dotTrim, move, spread,
-                )
+                if (!centered && style == SignalDotArrangement.BOTH_SIDES) {
+                    MobileSignalMorphPolicy.bothSidesDotX(
+                        source.x, anchor.x, first.x, target.x, dotTrim, move, spread,
+                    )
+                } else {
+                    MobileSignalMorphPolicy.dotCoordinate(
+                        source.x, anchor.x, first.x, target.x, dotTrim, move, spread,
+                    )
+                }
             val centerY =
-                MobileSignalMorphPolicy.dotCoordinate(
-                    source.y, anchor.y, first.y, target.y, dotTrim, move, spread,
-                )
+                if (!centered && style == SignalDotArrangement.BOTH_SIDES) {
+                    MobileSignalMorphPolicy.bothSidesDotY(
+                        source.y, anchor.y, first.y, target.y, dotTrim, move, barProgress,
+                    )
+                } else {
+                    MobileSignalMorphPolicy.dotCoordinate(
+                        source.y, anchor.y, first.y, target.y, dotTrim, move, spread,
+                    )
+                }
             val targetBarHeight =
                 MobileSignalMorphPolicy.targetBarHeight(
                     index = index,
@@ -3541,6 +3960,7 @@ internal class StatusPainter(
         targetBars: List<TransitionNormalizedBounds>,
         pairedAnchorX: Float? = null,
         pairedAnchorY: Float? = null,
+        bothSidesStagedMotion: Boolean = false,
         targetDots: Boolean = false,
     ) {
         val diameter = radius * 2f
@@ -3617,13 +4037,25 @@ internal class StatusPainter(
                 else targetBottom - diameter / 2f
 
             val rowCenterX =
-                MobileSignalMorphPolicy.dotCoordinate(
-                    source.x, anchor.x, firstX, targetBarCenterX, dotTrim, move, spread,
-                )
+                if (bothSidesStagedMotion) {
+                    MobileSignalMorphPolicy.bothSidesDotX(
+                        source.x, anchor.x, firstX, targetBarCenterX, dotTrim, move, spread,
+                    )
+                } else {
+                    MobileSignalMorphPolicy.dotCoordinate(
+                        source.x, anchor.x, firstX, targetBarCenterX, dotTrim, move, spread,
+                    )
+                }
             val rowCenterY =
-                MobileSignalMorphPolicy.dotCoordinate(
-                    source.y, anchor.y, firstY, targetBottomCenterY, dotTrim, move, spread,
-                )
+                if (bothSidesStagedMotion) {
+                    MobileSignalMorphPolicy.bothSidesDotY(
+                        source.y, anchor.y, firstY, targetBottomCenterY, dotTrim, move, barProgress,
+                    )
+                } else {
+                    MobileSignalMorphPolicy.dotCoordinate(
+                        source.y, anchor.y, firstY, targetBottomCenterY, dotTrim, move, spread,
+                    )
+                }
             val startLeft = rowCenterX - dotRadius
             val startRight = rowCenterX + dotRadius
             val startTop = rowCenterY - dotRadius
@@ -3656,13 +4088,310 @@ internal class StatusPainter(
         }
     }
 
+    // The center glyph already owns a short family-transition animator. Project
+    // the signal dots through the same progress instead of snapping positions
+    // when the active display changes between mobile type and Wi-Fi.
+    private fun drawNetworkSwitchMobile(
+        canvas: Canvas,
+        model: RenderModel,
+        tint: Int,
+        opacity: Float,
+        geometry: OuterGeometry.Resolved,
+        visual: VisualCfg,
+        previousCenter: CenterIndicator?,
+        progress: Float,
+    ) {
+        val centeredNow = visual.centeredMobileSignal &&
+            model.centerIndicator is CenterIndicator.MobileType && !model.mobileUnavailableMark
+        val centeredBefore = visual.centeredMobileSignal &&
+            previousCenter is CenterIndicator.MobileType && !model.mobileUnavailableMark
+        if (MobileDotRelocationPolicy.shouldInterpolate(
+                previousCenter, model.centerIndicator, centeredBefore, centeredNow,
+            )
+        ) {
+            val dual = model.dualMobileLevels
+            val scale = geometry.centeredScale(dual != null)
+            val fraction = progress.coerceIn(0f, 1f)
+            val count = if (dual == null) 1 else 2
+            for (row in 0 until count) {
+                val level = if (dual == null) model.mobileLevel
+                    else if (row == 0) dual.sim1 else dual.sim2
+                val centeredY = centeredMobileRowY(geometry, if (dual == null) null else row)
+                val outerRadius = if (dual == null) {
+                    geometry.mobileDotRadius
+                } else geometry.dualDotRadius(visual.dualRowDotArrangement)
+                val innerRadius = outerRadius * scale
+                for (index in 0 until MOBILE_DOT_COUNT) {
+                    val innerX = CENTER_TRANSITION_PIVOT_X + geometry.horizontalDotX(index) * scale
+                    val outerX = if (dual == null) {
+                        MOBILE_CENTER_X + geometry.singleDotX(index, visual.singleRowDotArrangement)
+                    } else MOBILE_CENTER_X + geometry.dualDotX(index, row, visual.dualRowDotArrangement)
+                    val outerY = if (dual == null) {
+                        MOBILE_CENTER_Y + geometry.singleDotY(
+                            index, visual.singleRowDotArrangement, visual.singleRowDotOffsetY,
+                        )
+                    } else {
+                        MOBILE_CENTER_Y + geometry.dualDotY(
+                            index, row, visual.dualRowDotArrangement,
+                            visual.dualRowDotOffsetY,
+                        )
+                    }
+                    fill(
+                        color = tint,
+                        alpha = if (level != null && level > index) 255 else 48,
+                        opacity = opacity,
+                    )
+                    canvas.drawCircle(
+                        MobileDotRelocationPolicy.coordinate(if (centeredBefore) innerX else outerX,
+                            if (centeredNow) innerX else outerX, fraction),
+                        MobileDotRelocationPolicy.coordinate(if (centeredBefore) centeredY else outerY,
+                            if (centeredNow) centeredY else outerY, fraction),
+                        MobileDotRelocationPolicy.coordinate(if (centeredBefore) innerRadius else outerRadius,
+                            if (centeredNow) innerRadius else outerRadius, fraction),
+                        paint,
+                    )
+                }
+            }
+            return
+        }
+        if (centeredNow) {
+            drawCenteredMobile(canvas, model, tint, opacity, geometry)
+        } else {
+            drawMobile(
+                canvas, model, tint, opacity, geometry,
+                if (model.dualMobileLevels == null) visual.singleRowDotArrangement
+                    else visual.dualRowDotArrangement,
+                if (model.dualMobileLevels == null) visual.singleRowDotOffsetY else visual.dualRowDotOffsetY,
+            )
+        }
+    }
+
+    private fun drawCenteredMobile(
+        canvas: Canvas,
+        model: RenderModel,
+        tint: Int,
+        opacity: Float,
+        geometry: OuterGeometry.Resolved,
+    ) {
+        val dual = model.dualMobileLevels
+        val rows = if (dual == null) 1 else 2
+        val centerScale = geometry.centeredScale(dual != null)
+        for (row in 0 until rows) {
+            val level = if (dual == null) model.mobileLevel
+                else if (row == 0) dual.sim1 else dual.sim2
+            val y = centeredMobileRowY(geometry, if (dual == null) null else row)
+            val radius = (if (dual == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius) * centerScale
+            for (index in 0 until MOBILE_DOT_COUNT) {
+                fill(
+                    color = tint,
+                    alpha = if (level != null && level > index) 255 else 48,
+                    opacity = opacity,
+                )
+                canvas.drawCircle(
+                    CENTER_TRANSITION_PIVOT_X + geometry.horizontalDotX(index) * centerScale,
+                    y,
+                    radius,
+                    paint,
+                )
+            }
+        }
+    }
+
+    private fun bothSidesOutsideActive(model: RenderModel, visual: VisualCfg): Boolean =
+        model.dualMobileLevels != null &&
+            !model.mobileUnavailableMark &&
+            visual.dualRowDotArrangement == SignalDotArrangement.BOTH_SIDES &&
+            !(visual.centeredMobileSignal && model.centerIndicator is CenterIndicator.MobileType)
+
+    private data class BothSidesBottomInformation(
+        val resource: PresentationStore.NativeIconResource,
+        val charging: Boolean,
+    )
+
+    private fun bothSidesBottomScale(visual: VisualCfg, charging: Boolean): Float =
+        if (charging) topChargingIconUiScale(visual.topChargingIconScale)
+        else visual.bothSidesActivityScale
+
+    private fun bothSidesBottomCenterY(visual: VisualCfg, charging: Boolean): Float =
+        BOTH_SIDES_BOTTOM_INK_CENTER_Y -
+            if (charging) visual.bothSidesChargingOffsetY else visual.bothSidesActivityOffsetY
+
+    private fun activityResourceId(name: String): Int? {
+        checkNativeResources()
+        val id = activityResourceIds.getOrPut(name) {
+            runCatching {
+                val resourceContext = if (context.packageName == SYSTEM_UI_PACKAGE) {
+                    context
+                } else {
+                    context.createPackageContext(SYSTEM_UI_PACKAGE, 0)
+                }
+                resourceContext.resources.getIdentifier(name, "drawable", SYSTEM_UI_PACKAGE)
+            }.onFailure { rethrowRenderFatal(it) }.getOrDefault(0)
+        }
+        return id.takeIf { it > 0 }
+    }
+
+    private fun resolveBothSidesBottomInformation(
+        model: RenderModel,
+        visual: VisualCfg,
+    ): BothSidesBottomInformation? {
+        if (!bothSidesOutsideActive(model, visual)) return null
+
+        fun drawableAvailable(resourceId: Int, charging: Boolean): BothSidesBottomInformation? {
+            if (resourceId <= 0) return null
+            val resource = PresentationStore.NativeIconResource(SYSTEM_UI_PACKAGE, resourceId)
+            val width = (if (charging) BOTH_SIDES_CHARGING_SLOT_WIDTH else BOTH_SIDES_BOTTOM_SLOT_WIDTH) *
+                bothSidesBottomScale(visual, charging)
+            val height = (if (charging) BOTH_SIDES_CHARGING_SLOT_HEIGHT else BOTH_SIDES_BOTTOM_SLOT_HEIGHT) *
+                bothSidesBottomScale(visual, charging)
+            if (resolveNativeCenterDrawGeometry(
+                    resource = resource,
+                    centerX = BATTERY_COMPONENT_CENTER_X,
+                    centerY = bothSidesBottomCenterY(visual, charging),
+                    maxWidth = width,
+                    maxHeight = height,
+                ) == null
+            ) return null
+            return BothSidesBottomInformation(resource, charging)
+        }
+
+        if (visual.showChargingIcon && visual.bothSidesBottomCharging && model.charging) {
+            model.chargingIconResId?.let { drawableAvailable(it, true) }?.let { return it }
+        }
+        if (visual.bothSidesShowActivity) {
+            // HyperOS maps no cellular in/out traffic to this native idle drawable.
+            // Honor the user's idle-hide option without inventing network visibility.
+            val nativeActivityId = model.networkActivityResId?.takeUnless { id ->
+                visual.bothSidesHideIdleActivity &&
+                    id == activityResourceId("stat_sys_signal_data_left")
+            }
+            nativeActivityId?.let { drawableAvailable(it, false) }?.let { return it }
+        }
+        return null
+    }
+
+    // Bottom-dot spacing follows the same native-backed drawable that is
+    // actually drawn. A configured but hidden/missing/idle-suppressed glyph
+    // must not leave an empty gap; the charging glyph keeps its priority.
+    private fun reservesBothSidesBottomSlot(model: RenderModel, visual: VisualCfg): Boolean =
+        resolveBothSidesBottomInformation(model, visual) != null
+
+    // Both opening avoidance and host overflow consume the same optical ink.
+    private fun bothSidesBottomOpticalBounds(
+        bottom: BothSidesBottomInformation,
+        visual: VisualCfg,
+    ): TransitionBounds? {
+        val centerX = BATTERY_COMPONENT_CENTER_X
+        val centerY = bothSidesBottomCenterY(visual, bottom.charging)
+        val width = (if (bottom.charging) BOTH_SIDES_CHARGING_SLOT_WIDTH else BOTH_SIDES_BOTTOM_SLOT_WIDTH) *
+            bothSidesBottomScale(visual, bottom.charging)
+        val height = (if (bottom.charging) BOTH_SIDES_CHARGING_SLOT_HEIGHT else BOTH_SIDES_BOTTOM_SLOT_HEIGHT) *
+            bothSidesBottomScale(visual, bottom.charging)
+        val geometry = resolveNativeCenterDrawGeometry(
+            resource = bottom.resource,
+            centerX = centerX,
+            centerY = centerY,
+            maxWidth = width,
+            maxHeight = height,
+        ) ?: return null
+        val ink = geometry.asset
+        val (viewportX, viewportY) = NativeOpticalGeometry.viewportCenterForInkAnchor(
+            anchorX = centerX,
+            anchorY = centerY,
+            drawWidth = geometry.drawWidth,
+            drawHeight = geometry.drawHeight,
+            opticalCenterX = (ink.opticalBounds.left + ink.opticalBounds.right) / 2f,
+            inkCenterY = ink.inkCenterY,
+        )
+        val deltaX = viewportX - centerX
+        val deltaY = viewportY - centerY
+        return geometry.opticalBounds.let { bounds ->
+            TransitionBounds(
+                bounds.left + deltaX, bounds.top + deltaY,
+                bounds.right + deltaX, bounds.bottom + deltaY,
+            )
+        }
+    }
+
+    private fun bothSidesBottomInformationHalfGap(
+        model: RenderModel,
+        visual: VisualCfg,
+        outerGeometry: OuterGeometry.Resolved,
+    ): Float {
+        val bottom = resolveBothSidesBottomInformation(model, visual) ?: return 0f
+        val bounds = bothSidesBottomOpticalBounds(bottom, visual) ?: return 0f
+        val gap = BatteryTopArcPolicy.resolveGap(
+            contentLeft = bounds.left,
+            contentTop = bounds.top,
+            contentRight = bounds.right,
+            contentBottom = bounds.bottom,
+            ringCenterX = batteryRing.centerX(),
+            ringCenterY = batteryRing.centerY(),
+            ringRadius = batteryRing.width() / 2f,
+            ringStroke = outerGeometry.ringStroke,
+            visualClearance = BATTERY_BOTTOM_RING_VISUAL_CLEARANCE,
+            startDegrees = 0f,
+            maxSweep = 180f,
+        )
+        if (gap.sweepDegrees <= 0f) return 0f
+        val half = gap.sweepDegrees / 2f
+        return maxOf(
+            90f - (gap.centerDegrees - half),
+            (gap.centerDegrees + half) - 90f,
+        ).coerceIn(0f, 110f)
+    }
+
+    private fun drawBothSidesBottomInformation(
+        canvas: Canvas,
+        model: RenderModel,
+        visual: VisualCfg,
+        colors: RenderColors,
+        opacity: Float,
+        nativeTransform: NativeRenderTransform,
+        previousCenter: CenterIndicator?,
+        progress: Float,
+    ) {
+        val bottom = resolveBothSidesBottomInformation(model, visual) ?: return
+        val centeredNow =
+            visual.centeredMobileSignal && model.centerIndicator is CenterIndicator.MobileType
+        val centeredBefore =
+            visual.centeredMobileSignal && previousCenter is CenterIndicator.MobileType
+        // A centered frame already owns the charging icon's normal position.
+        // Do not leave the bottom icon fading out on the same frame.
+        if (centeredNow) return
+        val outsideAmount = if (centeredBefore) {
+            progress.coerceIn(0f, 1f)
+        } else {
+            1f
+        }
+        if (outsideAmount <= 0f) return
+
+        val bottomCharging = bottom.charging
+        drawNativeCenterResource(
+            canvas = canvas,
+            resource = bottom.resource,
+            tint = if (bottomCharging) colors.chargingIconTint else colors.centerTint,
+            opacity = opacity * outsideAmount,
+            centerX = BATTERY_COMPONENT_CENTER_X,
+            centerY = bothSidesBottomCenterY(visual, bottomCharging),
+            maxWidth = (if (bottomCharging) BOTH_SIDES_CHARGING_SLOT_WIDTH else BOTH_SIDES_BOTTOM_SLOT_WIDTH) *
+                bothSidesBottomScale(visual, bottomCharging),
+            maxHeight = (if (bottomCharging) BOTH_SIDES_CHARGING_SLOT_HEIGHT else BOTH_SIDES_BOTTOM_SLOT_HEIGHT) *
+                bothSidesBottomScale(visual, bottomCharging),
+            nativeTransform = nativeTransform,
+            // Match steady Wi-Fi and airplane icons: settle native ink on physical pixels.
+            pixelAligned = true,
+            opticalInkCentered = true,
+        )
+    }
+
     private fun drawMobile(
         canvas: Canvas,
         model: RenderModel,
         tint: Int,
         opacity: Float,
         geometry: OuterGeometry.Resolved,
-        style: DualDotStyle,
+        style: SignalDotArrangement,
         mobileOffsetY: Float,
     ) {
         val dualLevels = model.dualMobileLevels
@@ -3675,12 +4404,12 @@ internal class StatusPainter(
                         alpha = if (level != null && level > index) 255 else 48,
                         opacity = opacity,
                     )
-                    val x = geometry.dualDotX(index)
+                    val x = geometry.dualDotX(index, row, style)
                     val y = geometry.dualDotY(index, row, style, mobileOffsetY)
                     canvas.drawCircle(
                         MOBILE_CENTER_X + x,
                         MOBILE_CENTER_Y + y,
-                        geometry.dualMobileDotRadius,
+                        geometry.dualDotRadius(style),
                         paint,
                     )
                 }
@@ -3695,12 +4424,9 @@ internal class StatusPainter(
                 alpha = if (level != null && level > index) 255 else 48,
                 opacity = opacity,
             )
-            val angle = geometry.bottomDotAngle(index)
             canvas.drawCircle(
-                MOBILE_CENTER_X +
-                    cos(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS,
-                MOBILE_CENTER_Y +
-                    sin(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS,
+                MOBILE_CENTER_X + geometry.singleDotX(index, style),
+                MOBILE_CENTER_Y + geometry.singleDotY(index, style, mobileOffsetY),
                 geometry.mobileDotRadius,
                 paint,
             )
@@ -3854,6 +4580,8 @@ internal class StatusPainter(
         const val CENTER_TRANSITION_PIVOT_Y = 60f
         const val MOBILE_TYPE_CENTER_X = 60f
         const val MOBILE_TYPE_CENTER_Y = 60f
+        // Use the native bottom mobile slot rather than creating another layout owner.
+        const val MOBILE_TYPE_BOTTOM_CENTER_Y = 103f
         const val MOBILE_TYPE_SUFFIX_GAP = 2f
         const val MOBILE_TYPE_SUFFIX_EM_CLEARANCE = 0.08f
         const val NATIVE_CENTER_CACHE_SIZE = 8
@@ -3861,10 +4589,19 @@ internal class StatusPainter(
         const val NATIVE_STEADY_APPEAR_THRESHOLD = 0.999f
         const val BATTERY_COMPONENT_CENTER_X = 60f
         const val BATTERY_COMPONENT_CENTER_Y = 58f
+        // Center the native icon ink on the ring's actual six-o'clock tangent.
+        const val BOTH_SIDES_BOTTOM_INK_CENTER_Y =
+            BATTERY_COMPONENT_CENTER_Y + OuterGeometry.RING_RADIUS
         const val BATTERY_TOP_TEXT_SIZE = 24f
         const val BATTERY_TOP_CHARGING_ICON_SIZE = 18f
+        const val BOTH_SIDES_BOTTOM_SLOT_WIDTH = 19f
+        const val BOTH_SIDES_BOTTOM_SLOT_HEIGHT = 22f
+        // Native charging and traffic assets have different intrinsic optical frames.
+        const val BOTH_SIDES_CHARGING_SLOT_WIDTH = 18f
+        const val BOTH_SIDES_CHARGING_SLOT_HEIGHT = 26f
         const val BATTERY_TOP_ICON_TEXT_GAP = 1f
         const val BATTERY_TOP_RING_VISUAL_CLEARANCE = 2f
+        const val BATTERY_BOTTOM_RING_VISUAL_CLEARANCE = 4f
         const val BATTERY_TOP_DEFAULT_OPTICAL_RISE = 1.5f
         const val BATTERY_TOP_CONTENT_CENTER_Y = 16f
         const val TOP_SLOT_CENTER_Y =

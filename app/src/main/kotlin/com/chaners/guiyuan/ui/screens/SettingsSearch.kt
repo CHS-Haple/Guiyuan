@@ -19,6 +19,12 @@ import kotlinx.coroutines.withContext
 import com.chaners.guiyuan.R
 import java.util.Locale
 
+private fun foldSearch(text: String): String =
+    text.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+
+// Compiled once for all locale titles and aliases when the search index is built.
+private val SEARCH_TOKEN_SEPARATOR = Regex("[^a-z0-9]+")
+
 // Index terms, not configuration values. The native ICU table supplies Han pronunciations.
 internal class SearchTerm(
     text: String,
@@ -26,26 +32,25 @@ internal class SearchTerm(
     foreign: Boolean = false,
 ) {
     private val allowInitials = !foreign || text.any { it.isLetter() && it.code > 127 }
-    private val plain = fold(text)
+    private val plain = foldSearch(text)
     private val tokens = romanized.lowercase(Locale.ROOT)
-        .split(Regex("[^a-z0-9]+"))
+        .split(SEARCH_TOKEN_SEPARATOR)
         .filter(String::isNotEmpty)
     private val full = tokens.joinToString("")
     private val initials = tokens.joinToString("") { it.take(1) }
 
-    fun matches(input: String, includeInitials: Boolean = true): Boolean {
-        val term = fold(input)
-        return term.isNotEmpty() &&
+    fun matches(input: String, includeInitials: Boolean = true): Boolean =
+        matchesFolded(foldSearch(input), includeInitials)
+
+    fun matchesInitials(input: String): Boolean =
+        matchesInitialsFolded(foldSearch(input))
+
+    internal fun matchesFolded(term: String, includeInitials: Boolean = true): Boolean =
+        term.isNotEmpty() &&
             (term in plain || term in full || (includeInitials && allowInitials && term in initials))
-    }
 
-    fun matchesInitials(input: String): Boolean {
-        val term = fold(input)
-        return term.isNotEmpty() && allowInitials && term in initials
-    }
-
-    private fun fold(text: String) =
-        text.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+    internal fun matchesInitialsFolded(term: String): Boolean =
+        term.isNotEmpty() && allowInitials && term in initials
 }
 
 private val cellularTerms = listOf(
@@ -67,8 +72,18 @@ internal object FeatureSearchIds {
     val layout = intArrayOf(
         R.string.content_layout_title,
         R.string.dual_signal_title,
-        R.string.dual_dot_style_title,
-        R.string.dual_mobile_vertical_offset,
+        R.string.single_row_signal_dot_arrangement_title,
+        R.string.dual_row_signal_dot_arrangement_title,
+        R.string.both_sides_activity_title,
+        R.string.both_sides_idle_activity_title,
+        R.string.both_sides_charging_title,
+        R.string.both_sides_activity_size,
+        R.string.both_sides_activity_vertical_offset,
+        R.string.both_sides_charging_vertical_offset,
+        R.string.mobile_type_bottom_offset,
+        R.string.curved_signal_dot_vertical_offset,
+        R.string.horizontal_signal_dot_vertical_offset,
+        R.string.battery_lower_opening_title,
         R.string.combined_size,
         R.string.outer_weight,
         R.string.wifi_vertical_offset,
@@ -153,12 +168,13 @@ internal class PageSearch(private val context: Context) {
             null
         } else {
             val terms = index
+            val foldedQuery = foldSearch(query)
             SearchMatches(
                 FeatureSearchIds.all,
-                { id -> terms?.titles?.get(id)?.current?.matches(query) ?: quickMatch(id) },
-                { id -> terms?.aliases?.get(id)?.any { it.matches(query) } ?: quickAlias(id) },
-                { id -> terms?.titles?.get(id)?.other?.any { it.matches(query, includeInitials = false) } == true },
-                { id -> terms?.titles?.get(id)?.other?.any { it.matchesInitials(query) } == true },
+                { id -> terms?.titles?.get(id)?.current?.matchesFolded(foldedQuery) ?: quickMatch(id, foldedQuery) },
+                { id -> terms?.aliases?.get(id)?.any { it.matchesFolded(foldedQuery) } ?: quickAlias(id, foldedQuery) },
+                { id -> terms?.titles?.get(id)?.other?.any { it.matchesFolded(foldedQuery, includeInitials = false) } == true },
+                { id -> terms?.titles?.get(id)?.other?.any { it.matchesInitialsFolded(foldedQuery) } == true },
             )
         }
     }
@@ -174,19 +190,20 @@ internal class PageSearch(private val context: Context) {
     fun matches(@StringRes title: Int): Boolean =
         matchSet?.matches(title) ?: true
 
-    fun any(vararg ids: Int): Boolean =
+    fun any(vararg ids: Int): Boolean = anyFrom(ids)
+
+    // Reuse stable feature ID arrays instead of copying them via vararg spread
+    // during Compose recomposition.
+    fun anyFrom(ids: IntArray): Boolean =
         !filtering || ids.any(::matches)
 
     // The index may still be preparing when the user types immediately after opening the page.
     // Use only cheap current-language and curated-name checks until the complete index arrives.
-    private fun quickMatch(@StringRes id: Int): Boolean =
-        fold(context.getString(id)).contains(fold(query))
+    private fun quickMatch(@StringRes id: Int, foldedQuery: String): Boolean =
+        foldSearch(context.getString(id)).contains(foldedQuery)
 
-    private fun quickAlias(@StringRes id: Int): Boolean =
-        searchAliases(id).any { fold(it).contains(fold(query)) }
-
-    private fun fold(value: String): String =
-        value.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+    private fun quickAlias(@StringRes id: Int, foldedQuery: String): Boolean =
+        searchAliases(id).any { foldSearch(it).contains(foldedQuery) }
 
     private fun buildIndex(): Index {
         val romanizer = runCatching {
@@ -233,10 +250,28 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
     R.string.aod_combined_status_title -> listOf("息屏显示", "熄屏显示", "常亮显示", "AOD")
     R.string.control_center_tint_transition -> listOf("控制中心变色", "下拉颜色过渡")
     R.string.battery_fill_follow_retract -> listOf("电池段收口", "电量环回收", "电量段动画")
-    R.string.content_layout_title -> listOf("排列", "网络居中", "电量居中")
-    R.string.dual_signal_title -> listOf("双卡", "双 SIM", "双卡信号", "单排信号", "单卡显示")
-    R.string.dual_dot_style_title -> listOf("双卡样式", "Duo", "八点")
-    R.string.dual_mobile_vertical_offset -> listOf("双卡偏移", "双排位置", "双排上下偏移")
+    R.string.content_layout_title -> listOf(
+        "排列", "网络居中", "网络信息居中", "电量居中",
+        "移动信号居中", "信号强度居中", "信号点居中", "网络制式下方", "三种布局",
+    )
+    R.string.dual_signal_title -> listOf("双卡", "双 SIM", "双卡信号点", "双排信号", "双排信号点", "单卡显示")
+    R.string.single_row_signal_dot_arrangement_title -> listOf(
+        "单排", "单排信号", "单排信号点", "单卡", "单卡信号点", "单SIM", "单排样式", "弧形排列", "横向排列",
+        "Single row signal", "Single-row dots", "Single-SIM dots", "Curved arrangement", "Horizontal arrangement",
+    )
+    R.string.dual_row_signal_dot_arrangement_title -> listOf(
+        "双排", "双排信号", "双排信号点", "双卡", "双卡信号点", "双卡样式", "Duo", "八点", "双排样式", "弧形排列", "横向排列",
+        "Dual-row dots", "Dual-SIM dots", "Curved arrangement", "Horizontal arrangement",
+    )
+    R.string.curved_signal_dot_vertical_offset -> listOf("弧形偏移", "弧形上下位置", "Curved dot offset")
+    R.string.horizontal_signal_dot_vertical_offset -> listOf("横向偏移", "横排上下位置", "Horizontal dot offset")
+    R.string.both_sides_activity_title -> listOf("上传下载", "网络活动", "流量指示器", "activity indicator")
+    R.string.both_sides_idle_activity_title -> listOf("空闲箭头", "保留活动箭头", "隐藏活动箭头", "空闲隐藏", "隐藏空闲网络指示器", "空闲网络活动指示器", "Hide network activity when idle")
+    R.string.both_sides_activity_size -> listOf("活动箭头大小", "流量图标大小")
+    R.string.both_sides_activity_vertical_offset -> listOf("活动箭头位置", "网络活动上下偏移")
+    R.string.both_sides_charging_title -> listOf("底部闪电", "充电图标")
+    R.string.both_sides_charging_vertical_offset -> listOf("底部闪电位置", "充电闪电上下偏移")
+    R.string.battery_lower_opening_title -> listOf("开口", "电量环开口", "弧形开口", "横排开口", "固定开口", "跟随位置", "避让", "Lower opening", "Follow position", "Fixed opening")
     R.string.combined_size -> listOf("整体缩放", "总大小", "三合一大小", "三合一缩放")
     R.string.outer_weight -> listOf("环形粗细", "圆环粗细", "外环宽度", "电量环粗细")
     R.string.wifi_vertical_offset -> listOf("WiFi 位置", "WiFi 垂直位置", "无线位置")

@@ -147,6 +147,11 @@ internal fun AppSettingsRows(
         checked = iconHidden,
         onCheckedChange = onIconHiddenChange,
     )
+    AppSettingsEntryRows(entryState)
+}
+
+@Composable
+private fun AppSettingsEntryRows(entryState: AppSettingsEntryState) {
     UiDropdownPreference(
         items = listOf(
             stringResource(R.string.settings_entry_disabled),
@@ -172,7 +177,7 @@ internal fun AppSettingsRows(
             SettingsEntry.entries.getOrNull(index)?.let(entryState.selectEntry)
         },
     )
-    if (entryState.config.entry != SettingsEntry.Disabled) {
+    AnimatedPreferenceGroup(visible = entryState.config.entry != SettingsEntry.Disabled) {
         UiDropdownPreference(
             items = listOf(
                 stringResource(R.string.settings_entry_icon_rounded),

@@ -181,9 +181,7 @@ internal object ParticipantVisualSnapshot {
                     resources = resources,
                 )
             }.getOrElse { error ->
-                if (error is VirtualMachineError || error is ThreadDeath) {
-                    throw error
-                }
+                SysUiPresentationRuntime.throwIfFatal(error)
                 null
             }
         drawableCache
@@ -344,6 +342,8 @@ internal object ParticipantVisualSnapshot {
     private fun resolveViewGroup(group: ViewGroup): Snapshot? {
         if (group.width <= 0 || group.height <= 0) return null
         val components = ArrayList<NormalizedRect>()
+        val matrix = Matrix()
+        val rect = RectF()
 
         fun collect(view: View) {
             if (
@@ -355,17 +355,16 @@ internal object ParticipantVisualSnapshot {
             }
             if (view is ImageView) {
                 val snapshot = resolveImageView(view) ?: return
-                val matrix = Matrix()
+                matrix.reset()
                 view.transformMatrixToGlobal(matrix)
                 group.transformMatrixToLocal(matrix)
                 snapshot.components.forEach { component ->
-                    val rect =
-                        RectF(
-                            component.left * view.width,
-                            component.top * view.height,
-                            component.right * view.width,
-                            component.bottom * view.height,
-                        )
+                    rect.set(
+                        component.left * view.width,
+                        component.top * view.height,
+                        component.right * view.width,
+                        component.bottom * view.height,
+                    )
                     matrix.mapRect(rect)
                     components +=
                         NormalizedRect(
@@ -431,49 +430,56 @@ internal object ParticipantVisualSnapshot {
             probeDrawable.setBounds(0, 0, probeWidth, probeHeight)
             probeDrawable.draw(Canvas(bitmap))
 
-            val pixels = IntArray(probeWidth * probeHeight)
-            bitmap.getPixels(
-                pixels,
-                0,
-                probeWidth,
-                0,
-                0,
-                probeWidth,
-                probeHeight,
-            )
-            val raw =
-                connectedComponents(
-                    pixels = pixels,
-                    width = probeWidth,
-                    height = probeHeight,
-                )
-            if (raw.isEmpty()) return null
-            val inkCenter =
-                resolveAlphaWeightedCenter(
-                    pixels = pixels,
-                    width = probeWidth,
-                    height = probeHeight,
-                )
-            val meaningful =
-                filterProbeComponents(
-                    components = raw,
-                    probeWidth = probeWidth,
-                    probeHeight = probeHeight,
-                )
-            val finalComponents =
-                (meaningful.takeIf { it.isNotEmpty() } ?: raw)
-                    .sortedBy { component -> component.centerX }
-            val envelope = union(finalComponents) ?: return null
-            return Snapshot(
-                envelope = envelope,
-                components = finalComponents,
-                topology = classifyComponents(finalComponents),
-                inkCenterX = inkCenter?.x,
-                inkCenterY = inkCenter?.y,
-            )
+            return snapshotFromProbeBitmap(bitmap)
         } finally {
             bitmap.recycle()
         }
+    }
+
+    // Bitmap ownership and recycling stay with probeDrawable; this only reads pixels.
+    private fun snapshotFromProbeBitmap(bitmap: Bitmap): Snapshot? {
+        val probeWidth = bitmap.width
+        val probeHeight = bitmap.height
+        val pixels = IntArray(probeWidth * probeHeight)
+        bitmap.getPixels(
+            pixels,
+            0,
+            probeWidth,
+            0,
+            0,
+            probeWidth,
+            probeHeight,
+        )
+        val raw =
+            connectedComponents(
+                pixels = pixels,
+                width = probeWidth,
+                height = probeHeight,
+            )
+        if (raw.isEmpty()) return null
+        val inkCenter =
+            resolveAlphaWeightedCenter(
+                pixels = pixels,
+                width = probeWidth,
+                height = probeHeight,
+            )
+        val meaningful =
+            filterProbeComponents(
+                components = raw,
+                probeWidth = probeWidth,
+                probeHeight = probeHeight,
+            )
+        val finalComponents =
+            (meaningful.takeIf { it.isNotEmpty() } ?: raw)
+                .sortedBy { component -> component.centerX }
+        val envelope = union(finalComponents) ?: return null
+        return Snapshot(
+            envelope = envelope,
+            components = finalComponents,
+            topology = classifyComponents(finalComponents),
+            inkCenterX = inkCenter?.x,
+            inkCenterY = inkCenter?.y,
+        )
     }
 
     private fun connectedComponents(

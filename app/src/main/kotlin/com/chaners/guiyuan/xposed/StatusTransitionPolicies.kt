@@ -58,6 +58,10 @@ internal object BatteryNumberFollowerPolicy {
         return smooth(reveal)
     }
 
+    // Activity is a source-only CC glyph: no native FINAL reveal after fade-out.
+    fun networkActivityVisibleFraction(progress: Float): Float =
+        smooth(chargingSourceVisibleFraction(progress))
+
     internal fun chargingSourceVisibleFraction(progress: Float): Float {
         val ringLifetime = chargingRingLifetimeProgress(progress)
         return (
@@ -150,6 +154,41 @@ internal object MobileSignalMorphPolicy {
         val packed = source + (sourceAnchor - source) * trim
         val moved = packed + (targetAnchor - packed) * move
         return moved + (target - moved) * spread
+    }
+
+    // In the left/right split arrangement, an outgoing dot shrinks at its
+    // current X. Only after it becomes fully invisible may it join the
+    // surviving dot's X. This prevents an opposite-direction visible detour
+    // without removing the collapse -> travel -> spread phases.
+    fun bothSidesDotX(
+        source: Float,
+        sourceAnchor: Float,
+        targetAnchor: Float,
+        target: Float,
+        trim: Float,
+        move: Float,
+        spread: Float,
+    ): Float {
+        val packed = if (trim >= 1f) sourceAnchor else source
+        val moved = packed + (targetAnchor - packed) * move
+        return moved + (target - moved) * spread
+    }
+
+    // Horizontal expansion holds the row's Y at the native anchor. If native
+    // bars have distinct final Y positions, reconcile those only during the
+    // subsequent bar-shape stage, never while the dots spread in X.
+    fun bothSidesDotY(
+        source: Float,
+        sourceAnchor: Float,
+        targetAnchor: Float,
+        target: Float,
+        trim: Float,
+        move: Float,
+        barProgress: Float,
+    ): Float {
+        val packed = source + (sourceAnchor - source) * trim
+        val moved = packed + (targetAnchor - packed) * move
+        return moved + (target - moved) * barProgress
     }
 
     fun outerSimilarityScale(

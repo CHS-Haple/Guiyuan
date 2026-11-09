@@ -8,6 +8,9 @@ import kotlinx.coroutines.withContext
 
 internal object DiagLogReader {
     private const val TIMEOUT_SEC = 10L
+    private const val MODULE_LOG_TAG = "CombinedStatus"
+    private const val SESSION_ID_FIELD = "sessionId"
+    private const val MODULE_LOADED_MESSAGE = "Module loaded in com.android.systemui"
     private const val HISTORY_PREFS = "guiyuan_diagnostics_history"
     private const val CLEAR_BOUNDARY_KEY = "cleared_at_local"
 
@@ -32,25 +35,35 @@ internal object DiagLogReader {
     ): List<String> {
         if (boundary == null) return lines
         return lines.filter { line ->
-            val stamp = DiagLogParser.parse(line).timestamp ?: return@filter false
-            val time = runCatching {
-                if ('T' in stamp) {
-                    LocalDateTime.parse(stamp)
-                } else {
-                    // logcat uses MM-dd without a year; the bounded read is recent.
-                    val candidate = LocalDateTime.parse("${now.year}-${stamp.replace(' ', 'T')}")
-                    if (candidate.isAfter(now.plusDays(1))) candidate.minusYears(1) else candidate
-                }
-            }.getOrNull()
-            time != null && time.isAfter(boundary)
+            val stamp = DiagLogParser.parse(line).timestamp
+            if (stamp == null) {
+                false
+            } else {
+                val time = runCatching {
+                    if ('T' in stamp) {
+                        LocalDateTime.parse(stamp)
+                    } else {
+                        // logcat uses MM-dd without a year; the bounded read is recent.
+                        val candidate = LocalDateTime.parse("${now.year}-${stamp.replace(' ', 'T')}")
+                        if (candidate.isAfter(now.plusDays(1))) candidate.minusYears(1) else candidate
+                    }
+                }.getOrNull()
+                time != null && time.isAfter(boundary)
+            }
         }
     }
 
     private const val LSP_CMD =
-        "for f in \$(ls -1t /data/adb/lspd/log/modules_*.log " +
-            "/data/adb/lspd/log.old/modules_*.log 2>/dev/null | head -n 8); do " +
-            "if grep -Fq 'com.chaners.guiyuan' \"\$f\"; then " +
-            "grep -F 'com.chaners.guiyuan' \"\$f\" || true; break; fi; done"
+        "files=\$(ls -1t /data/adb/lspd/log/modules_*.log " +
+            "/data/adb/lspd/log.old/modules_*.log 2>/dev/null | head -n 8); " +
+            "fallback=''; selected=''; " +
+            "for f in \$files; do " +
+            "if [ -z \"\$fallback\" ] && grep -Fq 'com.chaners.guiyuan' \"\$f\"; then " +
+            "fallback=\"\$f\"; fi; " +
+            "if grep -F 'com.chaners.guiyuan' \"\$f\" | " +
+            "grep -Fq '(com.android.systemui)'; then selected=\"\$f\"; break; fi; done; " +
+            "target=\${selected:-\$fallback}; " +
+            "if [ -n \"\$target\" ]; then grep -F 'com.chaners.guiyuan' \"\$target\" || true; fi"
 
     private const val LOGCAT_CMD =
         "logcat -d -b all -v threadtime -t 3000"
@@ -68,6 +81,7 @@ internal object DiagLogReader {
         val lines: List<String>,
         val sessionLines: List<String>,
         val clearedAt: LocalDateTime? = null,
+        val liveSystemUiPids: Set<String> = emptySet(),
     )
 
     suspend fun read(context: Context): Snapshot = withContext(Dispatchers.Default) {
@@ -82,51 +96,59 @@ internal object DiagLogReader {
 
         // A cleared LSP history may have no new entries; filter logcat too before fallback.
         if (lspLines.isNotEmpty() || !lspResult.isSuccess) {
-            return@withContext Snapshot(
+            Snapshot(
                 source = Source.LspModules,
                 result = lspResult,
                 lines = lspLines,
                 sessionLines = latestSession(lspLines),
                 clearedAt = boundary,
             )
-        }
-
-        val logcatResult =
-            RootShell.execute(
-                context = context,
-                command = LOGCAT_CMD,
-                timeoutSeconds = TIMEOUT_SEC,
+        } else {
+            val logcatResult =
+                RootShell.execute(
+                    context = context,
+                    command = LOGCAT_CMD,
+                    timeoutSeconds = TIMEOUT_SEC,
+                )
+            val logcatLines = afterHistoryClear(filterLogcatLines(logcatResult.output), boundary)
+            Snapshot(
+                source = Source.LogcatFallback,
+                result = logcatResult,
+                lines = logcatLines,
+                sessionLines = latestSession(logcatLines),
+                clearedAt = boundary,
             )
-        val logcatLines = afterHistoryClear(filterLogcatLines(logcatResult.output), boundary)
-        Snapshot(
-            source = Source.LogcatFallback,
-            result = logcatResult,
-            lines = logcatLines,
-            sessionLines = latestSession(logcatLines),
-            clearedAt = boundary,
-        )
+        }
     }
 
-    internal fun filterModuleLines(output: String): List<String> =
-        output
-            .lineSequence()
-            .filter { line ->
-                line.contains("com.chaners.guiyuan") &&
-                    line.contains("CombinedStatus")
-            }
-            .toList()
+    internal fun filterModuleLines(output: String): List<String> {
+        val lines =
+            output.lineSequence()
+                .filter { line ->
+                    line.contains("com.chaners.guiyuan") &&
+                        line.contains(MODULE_LOG_TAG)
+                }
+                .toList()
+        val systemUi = lines.filter { line ->
+            DiagLogParser.parse(line).hostPkg == "com.android.systemui"
+        }
+        return systemUi.ifEmpty { lines }
+    }
 
     internal fun filterLogcatLines(output: String): List<String> =
         output
             .lineSequence()
             .filter { line ->
-                if ("CombinedStatus" !in line) return@filter false
-                if ("com.chaners.guiyuan" in line) return@filter true
-
-                val entry = DiagLogParser.parse(line)
-                entry.framework == "logcat" &&
-                    entry.tag == "CombinedStatus" &&
-                    entry.structured
+                when {
+                    MODULE_LOG_TAG !in line -> false
+                    "com.chaners.guiyuan" in line -> true
+                    else -> {
+                        val entry = DiagLogParser.parse(line)
+                        entry.framework == "logcat" &&
+                            entry.tag == MODULE_LOG_TAG &&
+                            entry.structured
+                    }
+                }
             }
             .toList()
 
@@ -138,11 +160,22 @@ internal object DiagLogReader {
         // The new generation can fail before module.reloaded; old teardown may log later.
         val tagged =
             lines.mapIndexedNotNull { index, line ->
-                if ("sessionId=" !in line) return@mapIndexedNotNull null
-                DiagProtocol.parse(line)
-                    ?.takeIf { event -> event.fields["sessionId"] != null }
-                    ?.let { event -> index to event }
+                if ("sessionId=" in line) {
+                    DiagProtocol.parse(line)
+                        ?.takeIf { event -> event.fields[SESSION_ID_FIELD] != null }
+                        ?.let { event -> index to event }
+                } else {
+                    null
+                }
             }
+        // Reuse the earliest event index for each generation while inspecting
+        // failed reloads and selecting the current session.
+        val firstIndexBySession = mutableMapOf<String, Int>()
+        tagged.forEach { (index, event) ->
+            event.fields[SESSION_ID_FIELD]?.let { id ->
+                firstIndexBySession.getOrPut(id) { index }
+            }
+        }
         val latestStart =
             tagged.lastOrNull { (_, event) ->
                 event.event == "module.loaded" || event.event == "module.reloaded"
@@ -155,10 +188,7 @@ internal object DiagLogReader {
                 ) {
                     false
                 } else {
-                    val id = event.fields["sessionId"]
-                    val first =
-                        tagged.firstOrNull { (_, prior) -> prior.fields["sessionId"] == id }
-                            ?.first
+                    val first = event.fields[SESSION_ID_FIELD]?.let { id -> firstIndexBySession[id] }
                     first != null && (latestStart == null || first > latestStart.first)
                 }
             }
@@ -166,15 +196,13 @@ internal object DiagLogReader {
             (failedNewGeneration ?: latestStart ?: tagged.lastOrNull())
                 ?.second
                 ?.fields
-                ?.get("sessionId")
+                ?.get(SESSION_ID_FIELD)
         if (sessionId != null) {
-            val start =
-                tagged.firstOrNull { (_, event) -> event.fields["sessionId"] == sessionId }?.first
-                    ?: return lines
+            val start = firstIndexBySession[sessionId] ?: return lines
             val stale =
                 tagged.asSequence()
                     .filter { (index, event) ->
-                        index >= start && event.fields["sessionId"] != sessionId
+                        index >= start && event.fields[SESSION_ID_FIELD] != sessionId
                     }
                     .map { it.first }
                     .toSet()
@@ -186,12 +214,16 @@ internal object DiagLogReader {
                 }
         }
 
+        return latestSessionFromLegacyMarkers(lines)
+    }
+
+    private fun latestSessionFromLegacyMarkers(lines: List<String>): List<String> {
         val buildToken = "build=" + BuildConfig.BUILD_ID
         val buildAnchor =
             lines.indexOfLast { line ->
                 line.contains(buildToken) &&
                     (
-                        line.contains("Module loaded in com.android.systemui") ||
+                        line.contains(MODULE_LOADED_MESSAGE) ||
                             line.contains("Hot reload completed")
                     )
             }
@@ -200,7 +232,7 @@ internal object DiagLogReader {
                 buildAnchor
             } else {
                 lines.indexOfLast { line ->
-                    line.contains("Module loaded in com.android.systemui")
+                    line.contains(MODULE_LOADED_MESSAGE)
                 }
             }
 
@@ -212,7 +244,7 @@ internal object DiagLogReader {
         val start =
             (anchor downTo 0).firstOrNull { index ->
                 pidOf(lines[index]) == pid &&
-                    lines[index].contains("Module loaded in com.android.systemui")
+                    lines[index].contains(MODULE_LOADED_MESSAGE)
             } ?: anchor
 
         return lines

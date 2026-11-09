@@ -13,18 +13,18 @@ class AgreementVersionTest {
         assertFalse(first.canAcknowledge(true, false))
         assertTrue(first.canAcknowledge(true, true))
 
-        val privacyOnly = AppPlatform.readingRequirements(3, 2)
+        val privacyOnly = AppPlatform.readingRequirements(3, 3)
         assertFalse(privacyOnly.terms)
         assertTrue(privacyOnly.privacy)
         assertFalse(privacyOnly.canAcknowledge(false, false))
         assertTrue(privacyOnly.canAcknowledge(false, true))
 
-        val termsOnly = AppPlatform.readingRequirements(4, 1)
+        val termsOnly = AppPlatform.readingRequirements(4, 2)
         assertTrue(termsOnly.terms)
         assertFalse(termsOnly.privacy)
         assertTrue(termsOnly.canAcknowledge(true, false))
 
-        val current = AppPlatform.readingRequirements(4, 2)
+        val current = AppPlatform.readingRequirements(4, 3)
         assertFalse(current.terms || current.privacy)
         assertTrue(current.canAcknowledge(false, false))
     }
@@ -38,7 +38,7 @@ class AgreementVersionTest {
         // B1700 acknowledged the privacy notice, but did not agree to it.
         assertFalse(AppPlatform.hasCurrentAgreementAcknowledgment(3, 2))
         assertFalse(AppPlatform.hasCurrentAgreementAcknowledgment(4, 1))
-        assertTrue(AppPlatform.hasCurrentAgreementAcknowledgment(4, 2))
+        assertFalse(AppPlatform.hasCurrentAgreementAcknowledgment(4, 2))
         assertTrue(AppPlatform.hasCurrentAgreementAcknowledgment(4, 3))
     }
 }

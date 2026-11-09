@@ -108,6 +108,10 @@ class BatteryColorSchemeLibraryTest {
     fun customKeysRoundTripAndRejectBuiltIns() {
         assertEquals("custom:3", customSchemeKey(3))
         assertEquals(3, customSchemeId("custom:3"))
+        assertEquals(3, customSchemeId("custom:+3"))
+        assertNull(customSchemeId("custom:"))
+        assertNull(customSchemeId("custom:3-extra"))
+        assertNull(customSchemeId("Custom:3"))
         assertNull(customSchemeId(BATTERY_COLOR_SCHEME_HYPEROS_KEY))
     }
     @Test

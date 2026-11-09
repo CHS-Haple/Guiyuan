@@ -13,6 +13,7 @@ import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.PreviewSysUiResources
 import com.chaners.guiyuan.ui.screens.toRenderModel
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
+import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
 import com.chaners.guiyuan.xposed.prefs.PrefListenerRetirement
 import com.chaners.guiyuan.ui.screens.previewCenterSource
 
@@ -105,13 +106,17 @@ internal object SandboxHost {
                 lease.state.previewCenterSource() ==
                 com.chaners.guiyuan.ui.screens.PreviewCenterSource.MOBILE &&
                 verifiedFace == null
-            ) return@runCatching null
-            lease.state.toRenderModel(
-                resolver,
-                mobileTypeface = verifiedFace,
-                lowBatteryThreshold = FeaturePrefsOwner.current().lowBatteryThreshold,
-                nativeLowColor = StatusStateStore.snapshot().battery?.lowSystemColor,
-            )
+            ) {
+                null
+            } else {
+                lease.state.toRenderModel(
+                    resolver,
+                    dualSignalEnabled = VisualPrefsOwner.current().dualSignal,
+                    mobileTypeface = verifiedFace,
+                    lowBatteryThreshold = FeaturePrefsOwner.current().lowBatteryThreshold,
+                    nativeLowColor = StatusStateStore.snapshot().battery?.lowSystemColor,
+                )
+            }
         }.getOrElse { error ->
             rethrowSandboxFatal(error)
             null

@@ -1,9 +1,29 @@
 package com.chaners.guiyuan.settings
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import kotlinx.serialization.json.Json
 import org.junit.Test
 
 class VisualCfgTest {
+
+    @Test
+    fun invalidSingleRowTwoSidedStyleNormalizesToCurved() {
+        val invalid = VisualCfg(singleRowDotArrangement = SignalDotArrangement.BOTH_SIDES)
+        assertEquals(SignalDotArrangement.CURVED, invalid.normalized().singleRowDotArrangement)
+        assertEquals(SignalDotArrangement.BOTH_SIDES, invalid.dualRowDotArrangement)
+    }
+
+    @Test
+    fun bothSidesKeepsReleasedStyleWireIdentity() {
+        assertEquals("left_right", SignalDotArrangement.BOTH_SIDES.persistedValue)
+        assertEquals(SignalDotArrangement.BOTH_SIDES, SignalDotArrangement.fromPersisted("left_right"))
+        assertEquals(
+            "\"LEFT_RIGHT\"",
+            Json.encodeToString(SignalDotArrangement.serializer(), SignalDotArrangement.BOTH_SIDES),
+        )
+    }
+
     @Test
     fun finiteBoundPreservesValidInputsAndRejectsNonFinite() {
         for (invalid in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) {
@@ -40,9 +60,12 @@ class VisualCfgTest {
         assertEquals(1f, settings.combinedScale, 0.0001f)
         assertEquals(1f, settings.outerWeightScale, 0.0001f)
         assertEquals(1f, settings.wifiScale, 0.0001f)
+        assertEquals(0.85f, BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT, 0.0001f)
+        assertEquals(BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT, settings.bothSidesActivityScale, 0.0001f)
+        assertEquals(1f, settings.copy(bothSidesActivityScale = 1f).normalized().bothSidesActivityScale, 0.0001f)
         assertEquals(0f, settings.wifiOffsetY, 0f)
         assertEquals(0f, settings.mobileTypeOffsetY, 0f)
-        assertEquals(0f, settings.dualMobileOffsetY, 0f)
+        assertEquals(0f, settings.activeSignalDotOffsetY, 0f)
         assertEquals(1f, settings.airplaneScale, 0.0001f)
         assertEquals(1f, settings.noSimScale, 0.0001f)
         assertEquals(1f, settings.mobileTypeScale, 0.0001f)
@@ -56,6 +79,11 @@ class VisualCfgTest {
         assertEquals(true, VisualCfg(layout = ContentLayout.BATTERY_CENTER).showTopReadout)
         assertEquals(false, VisualCfg(layout = ContentLayout.BATTERY_CENTER, showTopReadout = false).showTopReadout)
 
+    }
+
+    @Test
+    fun newGeometryControlsClampOutOfRangeInputs() {
+        val settings = VisualCfg()
         val normalized =
             settings.copy(
                 combinedScale = 9f,
@@ -63,8 +91,8 @@ class VisualCfgTest {
                 wifiScale = 9f,
                 wifiOffsetY = -99f,
                 mobileTypeOffsetY = 99f,
-                dualDefaultOffsetY = -99f,
-                dualDuoOffsetY = 99f,
+                curvedSignalDotOffsetY = -99f,
+                horizontalSignalDotOffsetY = 99f,
                 airplaneScale = 9f,
                 noSimScale = 9f,
                 mobileTypeScale = 9f,
@@ -81,16 +109,16 @@ class VisualCfgTest {
         assertEquals(WIFI_SIZE_SCALE_MAX, normalized.wifiScale, 0.0001f)
         assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.wifiOffsetY, 0f)
         assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.mobileTypeOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.dualDefaultOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.dualDuoOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.dualMobileOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(dualDotStyle = DualDotStyle.DUO).dualMobileOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.curvedSignalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.horizontalSignalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, normalized.activeSignalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, normalized.copy(singleRowDotArrangement = SignalDotArrangement.HORIZONTAL).activeSignalDotOffsetY, 0f)
         val invalidOffsets = settings.copy(
-            dualDefaultOffsetY = Float.NaN,
-            dualDuoOffsetY = Float.POSITIVE_INFINITY,
+            curvedSignalDotOffsetY = Float.NaN,
+            horizontalSignalDotOffsetY = Float.POSITIVE_INFINITY,
         ).normalized()
-        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.dualDefaultOffsetY, 0f)
-        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.dualDuoOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.curvedSignalDotOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_DEFAULT, invalidOffsets.horizontalSignalDotOffsetY, 0f)
         assertEquals(AIRPLANE_SIZE_SCALE_MAX, normalized.airplaneScale, 0.0001f)
         assertEquals(NO_SIM_SIZE_SCALE_MAX, normalized.noSimScale, 0.0001f)
         assertEquals(MOBILE_TYPE_SIZE_SCALE_MAX, normalized.mobileTypeScale, 0.0001f)
@@ -106,6 +134,102 @@ class VisualCfgTest {
         assertEquals(WIFI_SIZE_SCALE_MAX, NO_SIM_SIZE_SCALE_MAX, 0.0001f)
         assertEquals(0.40f, MOBILE_TYPE_SIZE_SCALE_MIN, 0.0001f)
     }
+}
+
+class VisualCfgLayoutTest {
+    @Test
+    fun mobileCenteredIsAnIndependentLayoutWithOwnDefaults() {
+        val centered = VisualCfg(layout = ContentLayout.MOBILE_CENTER)
+        assertTrue(centered.centeredMobileSignal)
+        assertEquals(SignalDotArrangement.BOTH_SIDES, centered.dualRowDotArrangement)
+        assertEquals(SignalDotArrangement.CURVED, centered.singleRowDotArrangement)
+        assertEquals(0.85f, centered.mobileTypeScale, 0f)
+        assertEquals(-3f, centered.mobileTypeBottomOffsetY, 0f)
+        assertEquals(false, centered.copy(layout = ContentLayout.NETWORK_CENTER).centeredMobileSignal)
+        assertEquals(NETWORK_TOP_OFFSET_MAX,
+            centered.copy(mobileTypeBottomOffsetY = 99f).normalized().mobileTypeBottomOffsetY, 0f)
+        assertEquals(-3f,
+            centered.copy(mobileTypeBottomOffsetY = Float.NaN).normalized().mobileTypeBottomOffsetY, 0f)
+    }
+
+    @Test
+    fun outsideSingleAndDualRowsHaveIndependentStyleChoices() {
+        val singleCurvedDualFlat = VisualCfg(
+            layout = ContentLayout.MOBILE_CENTER,
+            dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+            singleRowDotArrangement = SignalDotArrangement.CURVED,
+        )
+        assertEquals(SignalDotArrangement.CURVED, singleCurvedDualFlat.singleRowDotArrangement)
+        assertEquals(SignalDotArrangement.HORIZONTAL, singleCurvedDualFlat.dualRowDotArrangement)
+        val singleFlatDualCurved = singleCurvedDualFlat.copy(
+            dualRowDotArrangement = SignalDotArrangement.CURVED,
+            singleRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+        )
+        assertEquals(SignalDotArrangement.HORIZONTAL, singleFlatDualCurved.singleRowDotArrangement)
+        assertEquals(SignalDotArrangement.CURVED, singleFlatDualCurved.dualRowDotArrangement)
+        assertTrue(singleFlatDualCurved.centeredMobileSignal)
+    }
+
+    @Test
+    fun lowerOpeningChoiceAppliesToAllSignalDotArrangements() {
+        for (layout in ContentLayout.entries) {
+            for (singleStyle in SignalDotArrangement.entries) {
+                for (dualStyle in SignalDotArrangement.entries) {
+                    val config = VisualCfg(
+                        layout = layout,
+                        dualSignal = true,
+                        singleRowDotArrangement = singleStyle,
+                        dualRowDotArrangement = dualStyle,
+                    )
+                    assertEquals(false, config.fixedLowerOpening)
+                    assertEquals(true, config.copy(fixedLowerOpening = true).fixedLowerOpening)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun outsideRowsUseTheActualRowStyleForGeometryAndOffset() {
+        for (dual in listOf(false, true)) {
+            for (singleStyle in SignalDotArrangement.entries) {
+                for (dualStyle in SignalDotArrangement.entries) {
+                    val visual = VisualCfg(
+                        layout = ContentLayout.MOBILE_CENTER,
+                        dualSignal = dual,
+                        dualRowDotArrangement = dualStyle,
+                        singleRowDotArrangement = singleStyle,
+                        curvedSignalDotOffsetY = 2f,
+                        horizontalSignalDotOffsetY = 5f,
+                        bothSidesSignalDotOffsetY = 7f,
+                    )
+                    assertEquals(singleStyle, visual.singleRowDotArrangement)
+                    assertEquals(dualStyle, visual.dualRowDotArrangement)
+                    assertEquals(
+                        when (dualStyle) {
+                            SignalDotArrangement.HORIZONTAL -> 5f
+                            SignalDotArrangement.BOTH_SIDES -> 0f
+                            SignalDotArrangement.CURVED -> 2f
+                        },
+                        visual.dualRowDotOffsetY,
+                        0f,
+                    )
+                    assertEquals(
+                        if (singleStyle == SignalDotArrangement.HORIZONTAL) 5f else 2f,
+                        visual.singleRowDotOffsetY,
+                        0f,
+                    )
+                    assertEquals(
+                        if (dual) visual.dualRowDotOffsetY
+                        else visual.singleRowDotOffsetY,
+                        visual.activeSignalDotOffsetY,
+                        0f,
+                    )
+                }
+            }
+        }
+        assertEquals(ContentLayout.MOBILE_CENTER, ContentLayout.fromPersisted("mobile_center"))
+        assertEquals(ContentLayout.BATTERY_CENTER, ContentLayout.fromPersisted("battery_center"))
+    }
 
     @Test
     fun nonFiniteGeometryFallsBackToLayoutDefaults() {
@@ -116,8 +240,9 @@ class VisualCfgTest {
                     topOffsetY = invalid,
                     wifiOffsetY = invalid,
                     mobileTypeOffsetY = invalid,
-                    dualDefaultOffsetY = invalid,
-                    dualDuoOffsetY = invalid,
+                    curvedSignalDotOffsetY = invalid,
+                    horizontalSignalDotOffsetY = invalid,
+                    bothSidesSignalDotOffsetY = invalid,
                     topChargingIconScale = invalid,
                     combinedScale = invalid,
                     outerWeightScale = invalid,
@@ -131,473 +256,49 @@ class VisualCfgTest {
             assertEquals(BATTERY_TOP_VERTICAL_OFFSET_DEFAULT, normalized.topOffsetY, 0f)
             assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.wifiOffsetY, 0f)
             assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.mobileTypeOffsetY, 0f)
-            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.dualDefaultOffsetY, 0f)
-            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.dualDuoOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.curvedSignalDotOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.horizontalSignalDotOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, normalized.bothSidesSignalDotOffsetY, 0f)
             assertEquals(topChargingIconScaleDefault(raw.layout), normalized.topChargingIconScale, 0f)
             assertEquals(COMBINED_SCALE_DEFAULT, normalized.combinedScale, 0f)
             assertEquals(OUTER_WEIGHT_SCALE_DEFAULT, normalized.outerWeightScale, 0f)
             assertEquals(WIFI_SIZE_SCALE_DEFAULT, normalized.wifiScale, 0f)
             assertEquals(AIRPLANE_SIZE_SCALE_DEFAULT, normalized.airplaneScale, 0f)
             assertEquals(NO_SIM_SIZE_SCALE_DEFAULT, normalized.noSimScale, 0f)
-            assertEquals(MOBILE_TYPE_SIZE_SCALE_DEFAULT, normalized.mobileTypeScale, 0f)
+            assertEquals(mobileTypeScaleDefault(raw.layout), normalized.mobileTypeScale, 0f)
         }
     }
 
     @Test
-    fun nativeWeightDefaultsStayAligned() {
-        assertEquals(BATTERY_TOP_TEXT_WEIGHT_DEFAULT, MOBILE_TYPE_WEIGHT_DEFAULT)
-        assertEquals(1, MOBILE_TYPE_WEIGHT_MIN)
-        assertEquals(1000, MOBILE_TYPE_WEIGHT_MAX)
-    }
-
-    @Test
-    fun nativeWeightBoundsPreserveValidProfiles() {
-        val previous = VisualCfg(
-            mobileTypeWeight = 1400,
-            wifiWeight = WIFI_WEIGHT_MAX,
-            topTextWeight = 1400,
-        )
-        val updated = previous.normalized()
-        assertEquals(1000, updated.mobileTypeWeight)
-        assertEquals(WIFI_WEIGHT_MAX, updated.wifiWeight)
-        assertEquals(1000, updated.topTextWeight)
-        assertEquals(1, previous.copy(topTextWeight = -1).normalized().topTextWeight)
-        assertEquals(1000, previous.copy(topTextWeight = 1001).normalized().topTextWeight)
-        assertEquals(900, previous.copy(topTextWeight = 900).normalized().topTextWeight)
-        assertEquals(200, previous.copy(topTextWeight = 200).normalized().topTextWeight)
-        assertEquals(1, previous.copy(mobileTypeWeight = -1).normalized().mobileTypeWeight)
-        assertEquals(1000, previous.copy(mobileTypeWeight = 1001).normalized().mobileTypeWeight)
-        assertEquals(200, previous.copy(mobileTypeWeight = 200).normalized().mobileTypeWeight)
-    }
-
-    @Test
-    fun singleKeysStayCompatibleAndDualProfilesStaySeparate() {
-        assertEquals("content_layout", visualModeKey(false, CONTENT_LAYOUT_KEY))
-        assertEquals("dual.content_layout", visualModeKey(true, CONTENT_LAYOUT_KEY))
-        assertEquals("network_center.combined_scale", visualProfileKey(ContentLayout.NETWORK_CENTER, COMBINED_SCALE_KEY))
-        assertEquals("dual.network_center.combined_scale", visualProfileKey(ContentLayout.NETWORK_CENTER, COMBINED_SCALE_KEY, dual = true))
-        assertEquals(false, VisualCfg().dualSignal)
-    }
-
-    @Test
-    fun hyperosIsTheDefaultPreset() {
-        assertEquals(
-            BatteryColorPreset.HYPEROS,
-            VisualCfg().batteryColorPreset,
-        )
-        assertEquals(
-            BatteryColorPreset.HYPEROS,
-            BatteryColorPreset.fromPersisted(null),
-        )
-    }
-
-    @Test
-    fun legacyStoredCustomColorInfersCustomMode() {
-        assertEquals(
-            BatteryColorMode.CUSTOM,
-            batteryColorModeFromPersisted(
-                persistedMode = null,
-                hasStoredColor = true,
-            ),
-        )
-        assertEquals(
-            BatteryColorMode.PRESET,
-            batteryColorModeFromPersisted(
-                persistedMode = null,
-                hasStoredColor = false,
-            ),
-        )
-        assertEquals(
-            BatteryColorMode.FOLLOW_SYSTEM,
-            batteryColorModeFromPersisted(
-                persistedMode = "follow_system",
-                hasStoredColor = true,
-            ),
-        )
-    }
-
-    @Test
-    fun recommendedPaletteUsesMutedSemanticDefaults() {
-        assertEquals(0xFF3FA760.toInt(), RecommendedBatteryPalette.CHARGING)
-        assertEquals(0xFFD5A623.toInt(), RecommendedBatteryPalette.POWER_SAVE)
-        assertEquals(0xFF4A7FC1.toInt(), RecommendedBatteryPalette.PERFORMANCE)
-        assertEquals(0xFFD8752C.toInt(), RecommendedBatteryPalette.SUPER_POWER_SAVE)
-        assertEquals(0xFFD64A4A.toInt(), RecommendedBatteryPalette.LOW)
-        assertEquals(
-            null,
-            RecommendedBatteryPalette.colorFor(
-                BatteryColorSlot.NORMAL,
-            ),
-        )
-    }
-
-    @Test
-    fun hyperosPaletteUsesPinnedSystemUiSemanticDefaults() {
-        assertEquals(0xFF1DCD3A.toInt(), HyperOsBatteryPalette.CHARGING)
-        assertEquals(0xFFFF9F05.toInt(), HyperOsBatteryPalette.POWER_SAVE)
-        assertEquals(0xFF3482FF.toInt(), HyperOsBatteryPalette.PERFORMANCE)
-        assertEquals(0xFFFF9F05.toInt(), HyperOsBatteryPalette.SUPER_POWER_SAVE)
-        assertEquals(0xFFFA382E.toInt(), HyperOsBatteryPalette.LOW)
-        assertEquals(
-            null,
-            HyperOsBatteryPalette.colorFor(BatteryColorSlot.NORMAL),
-        )
-    }
-
-    @Test
-    fun iosStylePaletteUsesExpectedSemanticDefaults() {
-        assertEquals(0xFF34C759.toInt(), IosStyleBatteryPalette.CHARGING)
-        assertEquals(0xFFFFCC00.toInt(), IosStyleBatteryPalette.POWER_SAVE)
-        assertEquals(0xFF007AFF.toInt(), IosStyleBatteryPalette.PERFORMANCE)
-        assertEquals(0xFFFF9500.toInt(), IosStyleBatteryPalette.SUPER_POWER_SAVE)
-        assertEquals(0xFFFF3B30.toInt(), IosStyleBatteryPalette.LOW)
-        assertEquals(
-            null,
-            IosStyleBatteryPalette.colorFor(BatteryColorSlot.NORMAL),
-        )
-    }
-
-    @Test
-    fun customColorOverridesAreForcedOpaque() {
-        val overrides =
-            BatteryColorOverrides().withColor(
-                BatteryColorSlot.CHARGING,
-                0x0034C759,
-            )
-        assertEquals(0xFF34C759.toInt(), overrides.charging)
-    }
-
-    @Test
-    fun previousPhysicalPlusThreeIsTheNewUserFacingZero() {
-        assertEquals(
-            0f,
-            topOffsetYUi(3f),
-            0.0001f,
-        )
-        assertEquals(
-            3f,
-            topOffsetYRaw(0f),
-            0.0001f,
-        )
-        assertEquals(8f, topOffsetYRaw(5f), 0.0001f)
-    }
-
-    @Test
-    fun networkCenteredTopOffsetDefaultsToPlusThreeWithoutChangingBatteryCenteredReference() {
-        val network = VisualCfg()
-        assertEquals(ContentLayout.NETWORK_CENTER, network.layout)
-        assertEquals(false, network.showTopReadout)
-        assertEquals(3f, topOffsetYUi(network.topOffsetY), 0f)
-        assertEquals(6f, network.topOffsetY, 0f)
-
-        val battery = VisualCfg(layout = ContentLayout.BATTERY_CENTER)
-        assertEquals(0f, topOffsetYUi(battery.topOffsetY), 0f)
-        assertEquals(3f, battery.topOffsetY, 0f)
-        assertEquals(6f, Float.NaN.finiteIn(
-            BATTERY_TOP_VERTICAL_OFFSET_MIN,
-            BATTERY_TOP_VERTICAL_OFFSET_MAX,
-            topOffsetYDefault(ContentLayout.NETWORK_CENTER),
-        ), 0f)
-        assertEquals(6f, network.copy(topOffsetY = Float.NaN).normalized().topOffsetY, 0f)
-        assertEquals(3f, battery.copy(topOffsetY = Float.NaN).normalized().topOffsetY, 0f)
-    }
-
-    @Test
-    fun userFacingOffsetRangeIsPlusMinusTenAroundPhysicalReference() {
-        assertEquals(-10f, BATTERY_TOP_VERTICAL_OFFSET_UI_MIN, 0.0001f)
-        assertEquals(10f, BATTERY_TOP_VERTICAL_OFFSET_UI_MAX, 0.0001f)
-        assertEquals(
-            -7f,
-            topOffsetYRaw(-10f),
-            0.0001f,
-        )
-        assertEquals(
-            13f,
-            topOffsetYRaw(10f),
-            0.0001f,
-        )
-    }
-
-    @Test
-    fun offsetMappingClampsOnlyAtVisibleSliderEnds() {
-        assertEquals(
-            -10f,
-            topOffsetYUi(-30f),
-            0.0001f,
-        )
-        assertEquals(
-            10f,
-            topOffsetYUi(30f),
-            0.0001f,
-        )
-    }
-
-    @Test
-    fun normalizedRuntimeOffsetUsesThePhysicalRangeBehindTheVisibleSlider() {
-        val high =
-            VisualCfg(
-                topOffsetY = 30f,
+    fun bottomActivityAndChargingSettingsRejectInvalidBackupValues() {
+        val defaults = VisualCfg()
+        for (invalid in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) {
+            val restored = defaults.copy(
+                bothSidesActivityScale = invalid,
+                bothSidesActivityOffsetY = invalid,
+                bothSidesChargingOffsetY = invalid,
             ).normalized()
-        val low =
-            VisualCfg(
-                topOffsetY = -30f,
-            ).normalized()
-
-        assertEquals(13f, high.topOffsetY, 0.0001f)
-        assertEquals(-7f, low.topOffsetY, 0.0001f)
-    }
-
-
-    @Test
-    fun clearNotificationParticipatesInVisualRuntimeSync() {
-        assertEquals(true, isVisualPreferenceKey(null))
-    }
-
-    @Test
-    fun allNewVisualKeysParticipateInRuntimeSync() {
-        val keys =
-            listOf(
-                CONTENT_LAYOUT_KEY,
-                BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY,
-                BATTERY_TOP_CHARGING_ICON_ENABLED_KEY,
-                BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY,
-                CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
-                WIFI_VERTICAL_OFFSET_KEY,
-                MOBILE_TYPE_VERTICAL_OFFSET_KEY,
-            )
-
-        keys.forEach { key ->
-            assertEquals(true, isVisualPreferenceKey(key))
+            assertEquals(BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT, restored.bothSidesActivityScale, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, restored.bothSidesActivityOffsetY, 0f)
+            assertEquals(NETWORK_TOP_OFFSET_DEFAULT, restored.bothSidesChargingOffsetY, 0f)
         }
+        val above = defaults.copy(
+            bothSidesActivityScale = Float.MAX_VALUE,
+            bothSidesActivityOffsetY = Float.MAX_VALUE,
+            bothSidesChargingOffsetY = Float.MAX_VALUE,
+        ).normalized()
+        assertEquals(BOTH_SIDES_BOTTOM_INFO_SCALE_MAX, above.bothSidesActivityScale, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, above.bothSidesActivityOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MAX, above.bothSidesChargingOffsetY, 0f)
+
+        val below = defaults.copy(
+            bothSidesActivityScale = -Float.MAX_VALUE,
+            bothSidesActivityOffsetY = -Float.MAX_VALUE,
+            bothSidesChargingOffsetY = -Float.MAX_VALUE,
+        ).normalized()
+        assertEquals(BOTH_SIDES_BOTTOM_INFO_SCALE_MIN, below.bothSidesActivityScale, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, below.bothSidesActivityOffsetY, 0f)
+        assertEquals(NETWORK_TOP_OFFSET_MIN, below.bothSidesChargingOffsetY, 0f)
     }
 
-
-    @Test
-    fun layoutProfilesUseIndependentPersistedKeys() {
-        assertEquals(
-            "network_center.battery_top_text_scale",
-            visualProfileKey(
-                ContentLayout.NETWORK_CENTER,
-                BATTERY_TOP_TEXT_SCALE_KEY,
-            ),
-        )
-        assertEquals(
-            "battery_center.battery_top_text_scale",
-            visualProfileKey(
-                ContentLayout.BATTERY_CENTER,
-                BATTERY_TOP_TEXT_SCALE_KEY,
-            ),
-        )
-    }
-
-    @Test
-    fun networkStateSizeControlsUseIndependentLayoutProfileKeys() {
-        assertEquals(
-            "network_center.airplane_size_scale",
-            visualProfileKey(
-                ContentLayout.NETWORK_CENTER,
-                AIRPLANE_SIZE_SCALE_KEY,
-            ),
-        )
-        assertEquals(
-            "battery_center.airplane_size_scale",
-            visualProfileKey(
-                ContentLayout.BATTERY_CENTER,
-                AIRPLANE_SIZE_SCALE_KEY,
-            ),
-        )
-        assertEquals(
-            "network_center.no_sim_size_scale",
-            visualProfileKey(
-                ContentLayout.NETWORK_CENTER,
-                NO_SIM_SIZE_SCALE_KEY,
-            ),
-        )
-        assertEquals(
-            "battery_center.no_sim_size_scale",
-            visualProfileKey(
-                ContentLayout.BATTERY_CENTER,
-                NO_SIM_SIZE_SCALE_KEY,
-            ),
-        )
-    }
-
-    @Test
-    fun profileKeysParticipateInRuntimeSync() {
-        ContentLayout.entries.forEach { layout ->
-            listOf(
-                MOBILE_FOLLOWS_BATTERY_COLOR_KEY,
-                CENTER_FOLLOWS_BATTERY_COLOR_KEY,
-                BATTERY_TOP_READOUT_ENABLED_KEY,
-                BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY,
-                BATTERY_TOP_CHARGING_ICON_ENABLED_KEY,
-                BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY,
-                BATTERY_TOP_TEXT_SCALE_KEY,
-                BATTERY_TOP_TEXT_WEIGHT_KEY,
-                BATTERY_TOP_VERTICAL_OFFSET_KEY,
-                BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
-                COMBINED_SCALE_KEY,
-                OUTER_WEIGHT_SCALE_KEY,
-                WIFI_SIZE_SCALE_KEY,
-                AIRPLANE_SIZE_SCALE_KEY,
-                NO_SIM_SIZE_SCALE_KEY,
-                MOBILE_TYPE_SIZE_SCALE_KEY,
-                MOBILE_TYPE_WEIGHT_KEY,
-            ).forEach { baseKey ->
-                assertEquals(
-                    true,
-                    isVisualPreferenceKey(
-                        visualProfileKey(layout, baseKey),
-                    ),
-                )
-            }
-        }
-    }
-
-    @Test
-    fun globalBatteryColorKeysParticipateInRuntimeSync() {
-        listOf(
-            BATTERY_COLOR_PRESET_KEY,
-            BATTERY_COLOR_MODE_NORMAL_KEY,
-            BATTERY_COLOR_MODE_POWER_SAVE_KEY,
-            BATTERY_COLOR_MODE_PERFORMANCE_KEY,
-            BATTERY_COLOR_MODE_SUPER_POWER_SAVE_KEY,
-            BATTERY_COLOR_MODE_CHARGING_KEY,
-            BATTERY_COLOR_MODE_LOW_KEY,
-            BATTERY_COLOR_NORMAL_KEY,
-            BATTERY_COLOR_POWER_SAVE_KEY,
-            BATTERY_COLOR_PERFORMANCE_KEY,
-            BATTERY_COLOR_SUPER_POWER_SAVE_KEY,
-            BATTERY_COLOR_CHARGING_KEY,
-            BATTERY_COLOR_LOW_KEY,
-        ).forEach { key ->
-            assertEquals(true, isVisualPreferenceKey(key))
-        }
-    }
-
-    @Test
-    fun newBatteryVisualControlsKeepRequestedDefaults() {
-        val settings = VisualCfg()
-
-        assertEquals(ContentLayout.NETWORK_CENTER, settings.layout)
-        assertEquals(true, settings.topTextFollowsBatteryColor)
-        assertEquals(true, settings.showTopChargingIcon)
-        assertEquals(true, settings.topChargingIconFollowsBatteryColor)
-    }
-
-    @Test
-    fun persistedLayoutFallsBackToNetworkCenter() {
-        assertEquals(
-            ContentLayout.NETWORK_CENTER,
-            ContentLayout.fromPersisted("unknown"),
-        )
-        assertEquals(
-            ContentLayout.BATTERY_CENTER,
-            ContentLayout.fromPersisted("battery_center"),
-        )
-    }
-
-
-    @Test
-    fun batteryCenteredProfileUsesRequestedTopDefaults() {
-        assertEquals(
-            1.3f,
-            topTextUiScaleDefault(ContentLayout.BATTERY_CENTER),
-            0.0001f,
-        )
-        assertEquals(
-            1.1f,
-            topChargingIconUiScaleDefault(ContentLayout.BATTERY_CENTER),
-            0.0001f,
-        )
-        assertEquals(
-            1.3f,
-            topTextUiScale(
-                topTextScaleDefault(ContentLayout.BATTERY_CENTER),
-            ),
-            0.0001f,
-        )
-        assertEquals(
-            1.1f,
-            topChargingIconUiScale(
-                topChargingIconScaleDefault(ContentLayout.BATTERY_CENTER),
-            ),
-            0.0001f,
-        )
-        assertEquals(
-            0.8f,
-            mobileTypeScaleDefault(ContentLayout.BATTERY_CENTER),
-            0.0001f,
-        )
-    }
-
-
-    @Test
-    fun directBatteryCenteredSettingsConstructionUsesProfileDefaults() {
-        val settings =
-            VisualCfg(
-                layout = ContentLayout.BATTERY_CENTER,
-            )
-
-        assertEquals(true, settings.showTopReadout)
-        assertEquals(
-            1.3f,
-            topTextUiScale(settings.topTextScale),
-            0.0001f,
-        )
-        assertEquals(
-            1.1f,
-            topChargingIconUiScale(settings.topChargingIconScale),
-            0.0001f,
-        )
-        assertEquals(0.8f, settings.mobileTypeScale, 0.0001f)
-    }
-
-    @Test
-    fun networkCenteredProfileUsesRequestedTopDefaults() {
-        assertEquals(
-            1.2f,
-            topTextUiScaleDefault(ContentLayout.NETWORK_CENTER),
-            0.0001f,
-        )
-        assertEquals(
-            1f,
-            topChargingIconUiScaleDefault(ContentLayout.NETWORK_CENTER),
-            0.0001f,
-        )
-        assertEquals(
-            1f,
-            mobileTypeScaleDefault(ContentLayout.NETWORK_CENTER),
-            0.0001f,
-        )
-    }
-
-    @Test
-    fun batteryTopScaleRangesAreFortyToOneHundredSixtyPercent() {
-        assertEquals(0.4f, BATTERY_TOP_TEXT_UI_SCALE_MIN, 0.0001f)
-        assertEquals(1.6f, BATTERY_TOP_TEXT_UI_SCALE_MAX, 0.0001f)
-        assertEquals(0.4f, BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN, 0.0001f)
-        assertEquals(1.6f, BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX, 0.0001f)
-
-        assertEquals(
-            0.4f,
-            topTextUiScale(0f),
-            0.0001f,
-        )
-        assertEquals(
-            1.6f,
-            topTextUiScale(Float.MAX_VALUE),
-            0.0001f,
-        )
-        assertEquals(
-            0.4f,
-            topChargingIconUiScale(0f),
-            0.0001f,
-        )
-        assertEquals(
-            1.6f,
-            topChargingIconUiScale(Float.MAX_VALUE),
-            0.0001f,
-        )
-    }
 }

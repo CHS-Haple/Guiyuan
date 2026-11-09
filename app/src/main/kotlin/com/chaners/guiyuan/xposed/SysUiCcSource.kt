@@ -19,12 +19,7 @@ internal object SysUiCcSource {
     }
 
     internal inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private const val CONTROL_CENTER_CLASS =
         "com.miui.systemui.controlcenter.container.ControlCenterExpandControllerDelegate"
@@ -423,27 +418,27 @@ internal object SysUiCcSource {
                 if (resolvedFields.none { (name, _) -> name == "inIslandState" } &&
                     methodNames.none { name -> name.contains("island", ignoreCase = true) }
                 ) {
-                    return@mapNotNull null
+                    null
+                } else {
+                    val location = IntArray(2)
+                    view.getLocationOnScreen(location)
+                    val values =
+                        resolvedFields.joinToString(",") { (name, resolved) ->
+                            val value =
+                                readOrNull { resolved.get(view) }
+                                    ?.toString()
+                                    ?: "unavailable"
+                            name + "=" + value
+                        }
+                    view.javaClass.name +
+                        "(x=" + location[0] +
+                        ",y=" + location[1] +
+                        ",w=" + view.width +
+                        ",h=" + view.height +
+                        ",fields={" + values +
+                        "},methods=[" + methodNames.take(16).joinToString(",") +
+                        "])"
                 }
-
-                val location = IntArray(2)
-                view.getLocationOnScreen(location)
-                val values =
-                    resolvedFields.joinToString(",") { (name, resolved) ->
-                        val value =
-                            readOrNull { resolved.get(view) }
-                                ?.toString()
-                                ?: "unavailable"
-                        name + "=" + value
-                    }
-                view.javaClass.name +
-                    "(x=" + location[0] +
-                    ",y=" + location[1] +
-                    ",w=" + view.width +
-                    ",h=" + view.height +
-                    ",fields={" + values +
-                    "},methods=[" + methodNames.take(16).joinToString(",") +
-                    "])"
             }
                 .distinct()
                 .take(8)

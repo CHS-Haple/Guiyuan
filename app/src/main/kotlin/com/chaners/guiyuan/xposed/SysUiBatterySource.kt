@@ -56,12 +56,7 @@ internal object SysUiBatterySource {
     }
 
     private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            null
-        }
+        SysUiPresentationRuntime.optionalNativeRead(block)
 
     internal data class VerifiedFont(
         val host: View,
@@ -87,6 +82,7 @@ internal object SysUiBatterySource {
         onChargingIconResource: (Int) -> Unit,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
         check(!hooksReady && failedInstallHandles.isEmpty()) { "battery-hooks-already-installed" }
 
@@ -96,6 +92,7 @@ internal object SysUiBatterySource {
             Class.forName(BATTERY_METER_VIEW_CLASS_NAME, false, classLoader)
         val levelField = iconClass.requiredField("mLevel")
         val chargingField = iconClass.requiredField("mCharging")
+        val meterIconField = meterClass.requiredField("mBatteryIconView")
         val progressStatusMethod =
             iconClass.getDeclaredMethod("getProgressStatus")
                 .apply { isAccessible = true }
@@ -184,21 +181,21 @@ internal object SysUiBatterySource {
         val warned = AtomicBoolean(false)
         fun fallback(source: String, error: Throwable) {
             rethrowFatal(error)
-            try {
+            SysUiPresentationRuntime.emitPassiveDiagnostic {
                 onRuntimeFailure(source, error)
-            } catch (failure: Throwable) {
-                rethrowFatal(failure)
             }
         }
 
         fun report(message: () -> String) {
             val sink = onEvent ?: return
             try {
-                sink(message())
+                if (isDetailedDiagnosticsEnabled()) sink(message())
             } catch (error: Throwable) {
                 rethrowFatal(error)
                 if (warned.compareAndSet(false, true)) {
-                    readOrNull { Log.w("Guiyuan[Battery]", "Diagnostic failed", error) }
+                    SysUiPresentationRuntime.emitPassiveDiagnostic {
+                        Log.w("Guiyuan[Battery]", "Diagnostic failed", error)
+                    }
                 }
             }
         }
@@ -231,7 +228,7 @@ internal object SysUiBatterySource {
                 return
             }
             report {
-                "batteryState source=MiuiBatteryMeterIconView." + sourceMethod +
+                "batteryState source=" + sourceMethod +
                     " percent=" + state.percent +
                     " charging=" + state.charging +
                     " semantic=" + (state.semanticState?.name ?: "unavailable") +
@@ -284,40 +281,49 @@ internal object SysUiBatterySource {
                     Hooker { chain ->
                         val result = chain.proceed()
                         if (!hooksReady) return@Hooker result
-                        val iconView = readOrNull { chain.thisObject as? View }
+                        val targetView = readOrNull { chain.thisObject as? View }
                             ?: return@Hooker result
-                        try {
-                            publish(
-                                iconView = iconView,
-                                sourceMethod = method.name,
-                            )
-                        } catch (error: Throwable) {
-                            fallback("state", error)
+                        val iconView =
+                            when {
+                                iconClass.isInstance(targetView) -> targetView
+                                meterClass.isInstance(targetView) ->
+                                    readOrNull { meterIconField.get(targetView) as? View }
+                                else -> null
+                            }
+                        if (iconView != null) {
+                            try {
+                                publish(
+                                    iconView = iconView,
+                                    sourceMethod = method.declaringClass.simpleName + "." + method.name,
+                                )
+                            } catch (error: Throwable) {
+                                fallback("state", error)
+                            }
                         }
                         result
                     },
                 )
 
         val levelMethod =
-            iconClass.getDeclaredMethod(
+            meterClass.getDeclaredMethod(
                 BATTERY_LEVEL_METHOD_NAME,
                 Int::class.javaPrimitiveType,
                 Boolean::class.javaPrimitiveType,
                 Boolean::class.javaPrimitiveType,
             ).apply { isAccessible = true }
         val chargeMethod =
-            iconClass.getDeclaredMethod(
+            meterClass.getDeclaredMethod(
                 CHARGE_STATE_METHOD_NAME,
                 Boolean::class.javaPrimitiveType,
                 Boolean::class.javaPrimitiveType,
             ).apply { isAccessible = true }
         val powerSaveMethod =
-            iconClass.getDeclaredMethod(
+            meterClass.getDeclaredMethod(
                 POWER_SAVE_METHOD_NAME,
                 Boolean::class.javaPrimitiveType,
             ).apply { isAccessible = true }
         val performanceMethod =
-            iconClass.getDeclaredMethod(
+            meterClass.getDeclaredMethod(
                 PERFORMANCE_METHOD_NAME,
                 Boolean::class.javaPrimitiveType,
             ).apply { isAccessible = true }

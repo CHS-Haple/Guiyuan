@@ -5,6 +5,7 @@ import androidx.compose.ui.res.stringResource
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.icons.Os4GlassRefresh
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TooltipBox
@@ -29,7 +30,7 @@ internal fun HotReloadAction(
                 holdDownState = inProgress,
             ) {
                 Icon(
-                    imageVector = MiuixIcons.Refresh,
+                    imageVector = Os4GlassRefresh,
                     contentDescription = label,
                     tint = if (enabled) MiuixTheme.colorScheme.onSurface
                         else MiuixTheme.colorScheme.disabledOnSecondaryVariant,

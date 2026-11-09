@@ -22,6 +22,7 @@ import top.yukonga.miuix.kmp.glass.GlassDefaults
 import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.glassOnActionBar
 import top.yukonga.miuix.kmp.glass.glassShadow
+import top.yukonga.miuix.kmp.glass.withUnderlayBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** The search geometry stays fixed while only the surface transitions with page overlap. */
@@ -45,9 +46,8 @@ internal fun Os4SearchSurface(
     ) { if (it) 1f else 0f }
     val pressedOverlay = GlassTopAppBarDefaults.buttonPressedOverlay()
     val shape = GlassShape(22.dp)
-    val material = GlassTopAppBarDefaults.buttonMaterial().copy(
-        blurRadius = GlassTopAppBarDefaults.nestedMaterialBlurRadius(),
-    )
+    val underlayMaterial = GlassTopAppBarDefaults.actionBarUnderlayMaterial()
+    val material = GlassTopAppBarDefaults.buttonMaterial().withUnderlayBlur(underlayMaterial)
     Box(
         modifier = modifier
             .glassShadow(shape, GlassShadows.Regular) { shadowProgress.value }
@@ -65,7 +65,7 @@ internal fun Os4SearchSurface(
                         style = GlassDefaults.Style,
                         alpha = 1f,
                         material = material,
-                        underlayMaterial = GlassTopAppBarDefaults.actionBarUnderlayMaterial(),
+                        underlayMaterial = underlayMaterial,
                         stroke = GlassTopAppBarDefaults.buttonStroke(),
                     ),
             )

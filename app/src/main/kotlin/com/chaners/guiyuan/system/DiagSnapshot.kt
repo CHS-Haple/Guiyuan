@@ -15,6 +15,40 @@ internal data class DiagSnapshot(
     val entries: List<LogEntry>,
     val capturedAt: OffsetDateTime,
 ) {
+    // Only the selected SystemUI generation can confirm that the runtime setting took effect.
+    internal fun isRuntimeDetailConfirmed(): Boolean {
+        if (level != DiagLevel.Detailed) return false
+        val session = runtimeEvents.sessionId ?: return false
+        if (log.liveSystemUiPids.isEmpty()) return false
+        var bound = false
+        var level: String? = null
+        for (entry in entries) {
+            val fromSystemUi =
+                entry.hostPkg == "com.android.systemui" ||
+                    (
+                        log.source == DiagLogReader.Source.LogcatFallback &&
+                            entry.framework == "logcat" &&
+                            entry.tag == "CombinedStatus"
+                    )
+            if (
+                !entry.structured ||
+                !fromSystemUi ||
+                entry.pid !in log.liveSystemUiPids ||
+                entry.component != "diagnostics" ||
+                entry.fields["sessionId"] != session
+            ) {
+                continue
+            }
+            if (entry.event == "diagnostics.bind" || entry.event == "diagnostics.snapshot") {
+                bound = entry.state == "ready"
+                level = entry.fields["level"]
+            } else if (entry.event == "diagnostics.level") {
+                level = entry.fields["level"]
+            }
+        }
+        return bound && level == "detailed"
+    }
+
     companion object {
         // Capture once so the screen and exported report describe the same runtime session.
         suspend fun capture(context: Context): DiagSnapshot {
@@ -22,6 +56,23 @@ internal data class DiagSnapshot(
             val env = RuntimeEnv.resolve(appCtx)
             val level = DiagRepo(appCtx).current()
             val log = DiagLogReader.read(appCtx)
+            val liveSystemUiPids =
+                if (level == DiagLevel.Detailed && log.result.isSuccess && log.sessionLines.isNotEmpty()) {
+                    val pidResult = RootShell.execute(
+                        context = appCtx,
+                        command = "/system/bin/pidof com.android.systemui",
+                        timeoutSeconds = 3L,
+                    )
+                    if (pidResult.isSuccess) {
+                        pidResult.output.split(Regex("\\s+"))
+                            .filter { pid -> pid.isNotBlank() && pid.all(Char::isDigit) }
+                            .toSet()
+                    } else {
+                        emptySet()
+                    }
+                } else {
+                    emptySet()
+                }
             val (entries, runtimeEvents) =
                 withContext(Dispatchers.Default) {
                     val lines = log.sessionLines
@@ -31,7 +82,7 @@ internal data class DiagSnapshot(
             return DiagSnapshot(
                 env = env,
                 level = level,
-                log = log,
+                log = log.copy(liveSystemUiPids = liveSystemUiPids),
                 runtimeEvents = runtimeEvents,
                 entries = entries,
                 capturedAt = OffsetDateTime.now(),

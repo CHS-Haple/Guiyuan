@@ -111,7 +111,7 @@ import com.chaners.guiyuan.ui.components.UiOverlayBottomSheet
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
-import com.chaners.guiyuan.ui.screens.about.BgEffectBackground
+import com.chaners.guiyuan.ui.screens.about.GyBgEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
@@ -471,8 +471,6 @@ internal fun OnboardingFlow(
                                         is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
                                     },
                                     checked = connected != null,
-                                    warning = framework == XposedStatus.FrameworkUnavailable ||
-                                        framework == XposedStatus.QueryUnavailable,
                                     expanded = expandedPermission == 1,
                                     onToggleDetails = {
                                         expandedPermission = if (expandedPermission == 1) 0 else 1
@@ -499,7 +497,6 @@ internal fun OnboardingFlow(
                                         else -> stringResource(R.string.runtime_scope_disabled)
                                     },
                                     checked = sysUiInScope,
-                                    warning = !sysUiInScope && framework != XposedStatus.Checking && !scopeBusy,
                                     expanded = expandedPermission == 2,
                                     onToggleDetails = {
                                         expandedPermission = if (expandedPermission == 2) 0 else 2
@@ -542,7 +539,6 @@ internal fun OnboardingFlow(
                                         else -> stringResource(R.string.guide_root_not_checked)
                                     },
                                     checked = rootAccess == true,
-                                    warning = !rootChecking && rootAccess == false,
                                     expanded = expandedPermission == 3,
                                     onToggleDetails = {
                                         expandedPermission = if (expandedPermission == 3) 0 else 3
@@ -907,12 +903,10 @@ private fun GuiyuanBrandGuide(completed: Boolean, onNext: () -> Unit) {
     var titleDistance by remember { mutableFloatStateOf(0f) }
     var completionDistance by remember { mutableFloatStateOf(0f) }
     Box(modifier = Modifier.fillMaxSize().background(fallback)) {
-        BgEffectBackground(
-            dynamicBackground = resumed,
-            modifier = Modifier.fillMaxSize(),
+        GyBgEffect(
+            playing = resumed,
             bgModifier = if (blurSupported) Modifier.layerBackdrop(backdrop) else Modifier,
-            isFullSize = true,
-        ) {}
+        )
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -1106,7 +1100,6 @@ private fun GuidePermissionItem(
     status: String,
     purpose: String,
     checked: Boolean,
-    warning: Boolean,
     expanded: Boolean,
     onToggleDetails: () -> Unit,
     guidance: String? = null,
@@ -1121,13 +1114,6 @@ private fun GuidePermissionItem(
                     contentDescription = status,
                     modifier = Modifier.size(26.dp),
                     tint = MiuixTheme.colorScheme.primary,
-                )
-            } else if (warning) {
-                Icon(
-                    imageVector = MiuixIcons.Regular.Report,
-                    contentDescription = status,
-                    modifier = Modifier.size(26.dp),
-                    tint = MiuixTheme.colorScheme.error,
                 )
             } else {
                 Text(
@@ -1170,6 +1156,15 @@ private fun GuidePermissionItem(
             }
         }
     }
+    GuidePermissionDetails(expanded = expanded, purpose = purpose, guidance = guidance)
+}
+
+@Composable
+private fun GuidePermissionDetails(
+    expanded: Boolean,
+    purpose: String,
+    guidance: String?,
+) {
     if (expanded) {
         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
     }

@@ -14,10 +14,12 @@ val miuixSourceRevision = providers.gradleProperty("gy.os4.miuixRevision").orNul
 require(miuixSourceRevision == null || (miuixSourceDir != null && Regex("[0-9a-f]{40}").matches(miuixSourceRevision))) {
     "MIUIX source revision must be a full lowercase commit SHA paired with a source directory"
 }
-// Do not report the published dependency baseline as the version of a source-built candidate.
+// Source builds use MIUIX's version-SHA-SNAPSHOT convention, not the published artifact identity.
 val miuixDisplayVersion =
     if (miuixSourceDir == null) miuixVersion
-    else "source ${miuixSourceRevision?.take(8) ?: "(revision unspecified)"}"
+    else miuixSourceRevision?.let { revision ->
+        "${miuixVersion.substringBefore('-')}-${revision.take(8)}-SNAPSHOT"
+    } ?: "source (revision unspecified)"
 val miuixDisplayRevision =
     if (miuixSourceDir == null) miuixRevision
     else miuixSourceRevision ?: "unverified local source"
@@ -29,6 +31,7 @@ val dataStorePreferencesVersion = "1.3.0"
 val kotlinxSerializationCoreVersion = "1.12.0"
 val junitVersion = "4.13.2"
 val gradleVersion = gradle.gradleVersion
+val deepDiagnosticsBuildField = "DEEP_DIAGNOSTICS"
 val os4DebugSuffix = providers.gradleProperty("gy.os4.debugSuffix").orNull
 val os4DialogSurfaces = providers.gradleProperty("gy.os4.dialogSurfaces").orNull == "true"
 // The marker exists only on the protected IT branch and is blocked from public PR targets.
@@ -116,6 +119,7 @@ android {
             buildConfigField("String", "BUILD_CHANNEL", "\"debug\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "true")
             buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+            buildConfigField("boolean", deepDiagnosticsBuildField, "true")
             buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
             if (hapleSigningEnabled) {
                 signingConfig = signingConfigs.getByName("haple")
@@ -124,7 +128,8 @@ android {
         release {
             buildConfigField("String", "BUILD_CHANNEL", "\"release\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
-            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "false")
+            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+            buildConfigField("boolean", deepDiagnosticsBuildField, "false")
             buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
             isMinifyEnabled = true
             isShrinkResources = true
@@ -140,9 +145,8 @@ android {
             initWith(getByName("release"))
             matchingFallbacks += listOf("release")
             isDebuggable = false
+            // Keep routine diagnostics identical to Release; Canary validates candidate code, not extra probes.
             buildConfigField("String", "BUILD_CHANNEL", "\"canary\"")
-            buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
-            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
         }
     }
 
@@ -175,6 +179,8 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion")
+    // Both OS4 UI source sets reuse the same upstream Glass icons from the pinned dependency.
+    implementation("top.yukonga.miuix.kmp:miuix-glass-icons-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinxSerializationCoreVersion")

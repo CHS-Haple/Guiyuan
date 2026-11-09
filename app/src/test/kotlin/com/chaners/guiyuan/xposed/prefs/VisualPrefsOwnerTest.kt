@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import com.chaners.guiyuan.settings.DUAL_SIGNAL_ENABLED_KEY
 import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.settings.VisualCfg
+import java.lang.reflect.InvocationTargetException
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -136,6 +137,31 @@ class VisualPrefsOwnerTest {
     }
 
     @Test
+    fun reflectedFatalUnregisterFailureEscapesFailedInitialBinding() {
+        val prefs = FakePreferences(dual = false)
+        val ordinary = IllegalStateException("initial-delivery")
+        val fatal = OutOfMemoryError("unregister-fatal")
+        prefs.unregisterFailure = InvocationTargetException(fatal)
+        try {
+            val actual =
+                runCatching {
+                    VisualPrefsOwner.bind(
+                    prefs,
+                    onChanged = { throw ordinary },
+                )
+                }.exceptionOrNull()
+            assertSame(fatal, actual)
+            assertEquals(VisualCfg(), VisualPrefsOwner.current())
+            assertEquals(1, prefs.listenerCount)
+        } finally {
+            // The failed listener unregister must remain retryable after the fatal.
+            prefs.unregisterFailure = null
+            VisualPrefsOwner.unbind()
+        }
+        assertEquals(0, prefs.listenerCount)
+    }
+
+    @Test
     fun failedUnregisterBlocksRebindUntilOldListenerLeaves() {
         val old = FakePreferences(dual = false)
         val next = FakePreferences(dual = true)
@@ -181,6 +207,8 @@ class VisualPrefsOwnerTest {
         assertEquals(0, prefs.listenerCount)
     }
 
+    // Android SharedPreferences requires this full method surface in a test double.
+    @Suppress("TooManyFunctions")
     private class FakePreferences(private var dual: Boolean) : SharedPreferences {
         private val listeners =
             linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
@@ -188,7 +216,7 @@ class VisualPrefsOwnerTest {
         var lastListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
             private set
 
-        var unregisterFailure: RuntimeException? = null
+        var unregisterFailure: Throwable? = null
         private var requestId = 0L
 
         fun requestAxis(id: Long) {

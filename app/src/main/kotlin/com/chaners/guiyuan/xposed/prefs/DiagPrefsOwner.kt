@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.isDiagKey
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 
 internal object DiagPrefsOwner {
     private data class Binding(
@@ -70,7 +71,7 @@ internal object DiagPrefsOwner {
                 try {
                     unbindLocked()
                 } catch (cleanup: Throwable) {
-                    if (cleanup is VirtualMachineError || cleanup is ThreadDeath) throw cleanup
+                    SysUiPresentationRuntime.throwIfFatal(cleanup)
                     if (cleanup !== error) error.addSuppressed(cleanup)
                 }
             }

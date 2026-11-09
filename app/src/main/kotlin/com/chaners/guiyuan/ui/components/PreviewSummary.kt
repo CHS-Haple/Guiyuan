@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -34,31 +35,22 @@ internal fun PreviewSummary(
     state: PreviewSandboxUiState,
     modifier: Modifier = Modifier,
 ) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        PreviewNetworkSummary(state, modifier = Modifier.weight(1f))
+        PreviewBatterySummary(state, modifier = Modifier.width(IntrinsicSize.Max))
+    }
+}
+
+@Composable
+private fun PreviewNetworkSummary(
+    state: PreviewSandboxUiState,
+    modifier: Modifier,
+) {
     val center = state.previewCenterSource()
-    val network =
-        when (center) {
-            PreviewCenterSource.WIFI ->
-                when (state.wifiState) {
-                    PreviewWifiState.CONNECTED -> stringResource(R.string.home_preview_network_mode_wifi)
-                    PreviewWifiState.NO_INTERNET -> stringResource(R.string.home_preview_wifi_no_internet)
-                    PreviewWifiState.HOTSPOT -> stringResource(R.string.home_preview_wifi_hotspot)
-                }
-            PreviewCenterSource.AIRPLANE -> stringResource(R.string.home_preview_airplane_title)
-            PreviewCenterSource.NO_SIM -> stringResource(R.string.home_preview_sim_absent)
-            PreviewCenterSource.EMPTY -> stringResource(R.string.home_preview_network_none)
-            PreviewCenterSource.MOBILE ->
-                when (state.dataMobileNetwork) {
-                    PreviewMobileNetwork.NONE -> stringResource(R.string.home_preview_network_none)
-                    PreviewMobileNetwork.TWO_G -> stringResource(R.string.home_preview_network_2g)
-                    PreviewMobileNetwork.EDGE -> stringResource(R.string.home_preview_network_edge)
-                    PreviewMobileNetwork.THREE_G -> stringResource(R.string.home_preview_network_3g)
-                    PreviewMobileNetwork.H_PLUS -> stringResource(R.string.home_preview_network_h_plus)
-                    PreviewMobileNetwork.FOUR_G -> stringResource(R.string.home_preview_network_4g)
-                    PreviewMobileNetwork.LTE -> stringResource(R.string.home_preview_network_lte)
-                    PreviewMobileNetwork.FIVE_G -> stringResource(R.string.home_preview_network_5g)
-                    PreviewMobileNetwork.FIVE_GA -> stringResource(R.string.home_preview_network_5ga)
-                }
-        }
+    val network = previewCenterLabel(state, center)
     val mobileSignal =
         if (state.dualLevels != null) {
             stringResource(
@@ -83,34 +75,21 @@ internal fun PreviewSummary(
             PreviewCenterSource.AIRPLANE -> R.drawable.ic_material_symbol_airplanemode_active
             PreviewCenterSource.NO_SIM -> R.drawable.ic_material_symbol_sim_card
         }
-    val networkDetails =
-        listOfNotNull(
-            if (state.mobileControlsEnabled && center != PreviewCenterSource.MOBILE) {
-                SummaryDetail(
-                    icon = R.drawable.ic_material_symbol_signal_cellular_alt,
-                    value = stringResource(R.string.home_preview_summary_mobile_title),
-                    alongside = mobileSignal,
-                )
-            } else {
-                null
-            },
-            if (state.networkMode == PreviewNetworkMode.WIFI && state.airplaneMode) {
-                SummaryDetail(
-                    icon = R.drawable.ic_material_symbol_airplanemode_active,
-                    value = stringResource(R.string.home_preview_airplane_title),
-                )
-            } else {
-                null
-            },
-            if (!state.hasSim && center != PreviewCenterSource.NO_SIM) {
-                SummaryDetail(
-                    icon = R.drawable.ic_material_symbol_sim_card,
-                    value = stringResource(R.string.home_preview_sim_absent),
-                )
-            } else {
-                null
-            },
-        )
+    val networkDetails = previewNetworkDetails(state, center, mobileSignal)
+    SummaryField(
+        icon = networkIcon,
+        value = network,
+        alongside = networkSignal,
+        details = networkDetails,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun PreviewBatterySummary(
+    state: PreviewSandboxUiState,
+    modifier: Modifier,
+) {
     val batteryMode =
         when (state.batteryMode) {
             PreviewBatteryMode.BALANCED -> R.string.home_preview_battery_mode_balanced
@@ -125,32 +104,84 @@ internal fun PreviewSummary(
             PreviewChargingState.SUPER_FAST_CHARGING -> R.string.home_preview_charging_super_fast_compact
         }
 
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        SummaryField(
-            icon = networkIcon,
-            value = network,
-            alongside = networkSignal,
-            details = networkDetails,
-            modifier = Modifier.weight(1f),
-        )
-        SummaryField(
-            icon = R.drawable.ic_material_symbol_battery_5_bar,
-            value = stringResource(R.string.home_preview_battery_percent, state.batteryPercent),
-            alongside = stringResource(batteryMode),
-            details =
-                listOf(
-                    SummaryDetail(
-                        icon = R.drawable.ic_material_symbol_bolt,
-                        value = stringResource(charging),
-                    ),
+    SummaryField(
+        icon = R.drawable.ic_material_symbol_battery_5_bar,
+        value = stringResource(R.string.home_preview_battery_percent, state.batteryPercent),
+        alongside = stringResource(batteryMode),
+        details =
+            listOf(
+                SummaryDetail(
+                    icon = R.drawable.ic_material_symbol_bolt,
+                    value = stringResource(charging),
                 ),
-            modifier = Modifier.width(IntrinsicSize.Max),
-        )
-    }
+            ),
+        modifier = modifier,
+    )
 }
+
+@Composable
+private fun previewCenterLabel(
+    state: PreviewSandboxUiState,
+    center: PreviewCenterSource,
+): String =
+    when (center) {
+        PreviewCenterSource.WIFI ->
+            when (state.wifiState) {
+                PreviewWifiState.CONNECTED -> stringResource(R.string.home_preview_network_mode_wifi)
+                PreviewWifiState.NO_INTERNET -> stringResource(R.string.home_preview_wifi_no_internet)
+                PreviewWifiState.HOTSPOT -> stringResource(R.string.home_preview_wifi_hotspot)
+                PreviewWifiState.DUAL_WIFI -> stringResource(R.string.home_preview_wifi_dual_acceleration)
+            }
+        PreviewCenterSource.AIRPLANE -> stringResource(R.string.home_preview_airplane_title)
+        PreviewCenterSource.NO_SIM -> stringResource(R.string.home_preview_sim_absent)
+        PreviewCenterSource.EMPTY -> stringResource(R.string.home_preview_network_none)
+        PreviewCenterSource.MOBILE ->
+            when (state.dataMobileNetwork) {
+                PreviewMobileNetwork.NONE -> stringResource(R.string.home_preview_network_none)
+                PreviewMobileNetwork.TWO_G -> stringResource(R.string.home_preview_network_2g)
+                PreviewMobileNetwork.EDGE -> stringResource(R.string.home_preview_network_edge)
+                PreviewMobileNetwork.THREE_G -> stringResource(R.string.home_preview_network_3g)
+                PreviewMobileNetwork.H_PLUS -> stringResource(R.string.home_preview_network_h_plus)
+                PreviewMobileNetwork.FOUR_G -> stringResource(R.string.home_preview_network_4g)
+                PreviewMobileNetwork.LTE -> stringResource(R.string.home_preview_network_lte)
+                PreviewMobileNetwork.FIVE_G -> stringResource(R.string.home_preview_network_5g)
+                PreviewMobileNetwork.FIVE_GA -> stringResource(R.string.home_preview_network_5ga)
+            }
+    }
+
+@Composable
+private fun previewNetworkDetails(
+    state: PreviewSandboxUiState,
+    center: PreviewCenterSource,
+    mobileSignal: String,
+): List<SummaryDetail> =
+    listOfNotNull(
+        if (state.mobileControlsEnabled && center != PreviewCenterSource.MOBILE) {
+            SummaryDetail(
+                icon = R.drawable.ic_material_symbol_signal_cellular_alt,
+                value = stringResource(R.string.home_preview_summary_mobile_title),
+                alongside = mobileSignal,
+            )
+        } else {
+            null
+        },
+        if (state.networkMode == PreviewNetworkMode.WIFI && state.airplaneMode) {
+            SummaryDetail(
+                icon = R.drawable.ic_material_symbol_airplanemode_active,
+                value = stringResource(R.string.home_preview_airplane_title),
+            )
+        } else {
+            null
+        },
+        if (!state.hasSim && center != PreviewCenterSource.NO_SIM) {
+            SummaryDetail(
+                icon = R.drawable.ic_material_symbol_sim_card,
+                value = stringResource(R.string.home_preview_sim_absent),
+            )
+        } else {
+            null
+        },
+    )
 
 private data class SummaryDetail(
     @DrawableRes val icon: Int,
@@ -174,57 +205,44 @@ private fun SummaryField(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Image(
-                painter = painterResource(icon),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(primary),
-                modifier = Modifier.size(18.dp),
-            )
-            Text(
-                text = value,
-                style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
-                color = primary,
-            )
-            if (alongside != null) {
-                Text(
-                    text = alongside,
-                    modifier = Modifier.weight(1f, fill = false),
-                    style = MiuixTheme.textStyles.body2,
-                    color = companion,
-                )
-            }
-        }
+        SummaryLine(icon, value, alongside, primary, companion)
         details.forEach { detail ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Image(
-                    painter = painterResource(detail.icon),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(primary),
-                    modifier = Modifier.size(18.dp),
-                )
-                Text(
-                    text = detail.value,
-                    style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
-                    color = primary,
-                )
-                if (detail.alongside != null) {
-                    Text(
-                        text = detail.alongside,
-                        modifier = Modifier.weight(1f, fill = false),
-                        style = MiuixTheme.textStyles.body2,
-                        color = companion,
-                    )
-                }
-            }
+            SummaryLine(detail.icon, detail.value, detail.alongside, primary, companion)
+        }
+    }
+}
+
+@Composable
+private fun SummaryLine(
+    @DrawableRes icon: Int,
+    value: String,
+    alongside: String?,
+    primary: Color,
+    companion: Color,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Image(
+            painter = painterResource(icon),
+            contentDescription = null,
+            colorFilter = ColorFilter.tint(primary),
+            modifier = Modifier.size(18.dp),
+        )
+        Text(
+            text = value,
+            style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
+            color = primary,
+        )
+        if (alongside != null) {
+            Text(
+                text = alongside,
+                modifier = Modifier.weight(1f, fill = false),
+                style = MiuixTheme.textStyles.body2,
+                color = companion,
+            )
         }
     }
 }

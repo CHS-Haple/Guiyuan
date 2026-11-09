@@ -90,27 +90,27 @@
       "methodName": "updateState",
       "descriptor": "(I)V"
     },
-    "batteryIconLevelChanged": {
+    "batteryMeterLevelChanged": {
       "sourceArtifact": "systemUi",
-      "className": "com.android.systemui.statusbar.views.MiuiBatteryMeterIconView",
+      "className": "com.android.systemui.statusbar.views.MiuiBatteryMeterView",
       "methodName": "onBatteryLevelChanged",
       "descriptor": "(IZZ)V"
     },
-    "batteryIconChargeStateChanged": {
+    "batteryMeterChargeStateChanged": {
       "sourceArtifact": "systemUi",
-      "className": "com.android.systemui.statusbar.views.MiuiBatteryMeterIconView",
+      "className": "com.android.systemui.statusbar.views.MiuiBatteryMeterView",
       "methodName": "onChargeStateChanged",
       "descriptor": "(ZZ)V"
     },
-    "batteryIconPowerSaveChanged": {
+    "batteryMeterPowerSaveChanged": {
       "sourceArtifact": "systemUi",
-      "className": "com.android.systemui.statusbar.views.MiuiBatteryMeterIconView",
+      "className": "com.android.systemui.statusbar.views.MiuiBatteryMeterView",
       "methodName": "onPowerSaveChanged",
       "descriptor": "(Z)V"
     },
-    "batteryIconPerformanceModeChanged": {
+    "batteryMeterPerformanceModeChanged": {
       "sourceArtifact": "systemUi",
-      "className": "com.android.systemui.statusbar.views.MiuiBatteryMeterIconView",
+      "className": "com.android.systemui.statusbar.views.MiuiBatteryMeterView",
       "methodName": "onPerformanceModeChanged",
       "descriptor": "(Z)V"
     },
@@ -200,6 +200,10 @@
       "emit(Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;"
     ],
     "com.android.systemui.statusbar.views.MiuiBatteryMeterView": [
+      "onBatteryLevelChanged(IZZ)V",
+      "onChargeStateChanged(ZZ)V",
+      "onPowerSaveChanged(Z)V",
+      "onPerformanceModeChanged(Z)V",
       "updateState(I)V",
       "setIsAodAnimate(Z)V",
       "toggleAodMode(Z)V"
@@ -253,6 +257,7 @@
   },
   "verifiedSystemUiFields": {
     "com.android.systemui.statusbar.views.MiuiBatteryMeterView": [
+      "mBatteryIconView",
       "mStatusBarState",
       "mToAod",
       "mIsAodAnimate",

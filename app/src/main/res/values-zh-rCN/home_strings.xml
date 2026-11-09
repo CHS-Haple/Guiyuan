@@ -35,7 +35,7 @@
     <string name="home_preview_parasite_title">寄生模式</string>
     <string name="home_preview_parasite_summary">让模拟状态临时接管系统状态栏，关闭或离开沙盒页面后恢复</string>
     <string name="home_preview_open_title">预览沙盒</string>
-    <string name="home_preview_home_summary">模拟网络、信号、电量与充电状态，不影响系统实际状态</string>
+    <string name="home_preview_home_summary">模拟网络、信号点、电量与充电状态，不影响系统实际状态</string>
     <string name="home_preview_live_title">实时预览</string>
     <string name="home_preview_section_preview">预览</string>
     <string name="home_preview_section_network">网络</string>
@@ -44,7 +44,6 @@
     <string name="home_preview_network_mode_mobile">移动</string>
     <string name="home_preview_network_mode_wifi">Wi-Fi</string>
     <string name="home_preview_sim_title">SIM 状态</string>
-    <string name="home_preview_sim_present">已插卡</string>
     <string name="home_preview_sim_absent">未插卡</string>
     <string name="home_preview_sim_both">双卡</string>
     <string name="home_preview_sim1_only">仅 SIM1</string>
@@ -67,8 +66,8 @@
     <string name="home_preview_network_4g">4G</string>
     <string name="home_preview_network_5g">5G</string>
     <string name="home_preview_network_5ga">5G-A</string>
-    <string name="home_preview_mobile_signal_title">移动信号</string>
-    <string name="home_preview_summary_mobile_title">移动信号</string>
+    <string name="home_preview_mobile_signal_title">移动信号点</string>
+    <string name="home_preview_summary_mobile_title">移动信号点</string>
     <string name="home_preview_mobile_disabled_no_sim">未插卡时不可调节</string>
     <string name="home_preview_mobile_disabled_airplane">飞行模式下不可调节</string>
 
@@ -76,12 +75,13 @@
     <string name="home_preview_wifi_connected">已连接</string>
     <string name="home_preview_wifi_no_internet">无网络</string>
     <string name="home_preview_wifi_hotspot">热点 Wi-Fi</string>
+    <string name="home_preview_wifi_dual_acceleration">双 Wi-Fi 加速</string>
     <string name="home_preview_wifi_signal_title">Wi‑Fi 信号</string>
 
     <string name="home_preview_signal_none">无</string>
     <string name="home_preview_signal_level">%1$d 格</string>
     <string name="home_preview_signal_dual">%1$d格｜%2$d格</string>
-    <string name="home_preview_summary_mobile_signal">移动信号 %1$s</string>
+    <string name="home_preview_summary_mobile_signal">移动信号点 %1$s</string>
 
     <string name="home_preview_battery_level_title">电量</string>
     <string name="home_preview_battery_percent">%1$d%%</string>
@@ -99,10 +99,8 @@
     <string name="home_preview_charging_normal">充电</string>
     <string name="home_preview_charging_super_fast">超级快充</string>
     <string name="home_preview_charging_super_fast_compact">超级快充</string>
-    <string name="home_preview_dual_mobile_title">双排信号预览</string>
-    <string name="home_preview_dual_mobile_summary">SIM1 内排，SIM2 外排，网络制式跟随流量卡</string>
-    <string name="home_preview_sim1_signal_title">SIM1 信号</string>
-    <string name="home_preview_sim2_signal_title">SIM2 信号</string>
+    <string name="home_preview_sim1_signal_title">SIM1 信号点</string>
+    <string name="home_preview_sim2_signal_title">SIM2 信号点</string>
     <string name="home_preview_network_mode_title">网络模式</string>
     <string name="home_preview_state_on">开</string>
     <string name="home_preview_state_off">关</string>

@@ -230,7 +230,7 @@ class SceneControlCenterTest {
     }
 
     @Test
-    fun keyguardControlCenterLeaseExistsOnlyInsideVerifiedNativeTransitionLifetime() {
+    fun keyguardCcLeaseAcquiresOnlyWithNativeTransitionProgress() {
         assertTrue(
             ScenePolicy.shouldAcquireKeyguardCcLease(
                 sourceScene = SourceScene.KEYGUARD,
@@ -245,7 +245,10 @@ class SceneControlCenterTest {
                 nativeFraction = 0f,
             ),
         )
+    }
 
+    @Test
+    fun keyguardCcLeaseRetainsOnlyWhileNativeOwnerIsEligible() {
         assertTrue(
             ScenePolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
