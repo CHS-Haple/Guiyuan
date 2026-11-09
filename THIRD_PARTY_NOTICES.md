@@ -74,7 +74,7 @@ Both OS4 source variants now share `app/src/main/kotlin/com/chaners/guiyuan/ui/i
 
 ## Build tooling
 
-The repository includes the official Gradle Wrapper for Gradle 9.8.2. Gradle 9.8.2 is distributed under Apache-2.0.
+The repository includes the official Gradle Wrapper with the verified Gradle 9.9.0 binary distribution. Gradle 9.9.0 is distributed under Apache-2.0.
 
 Android Gradle Plugin and Kotlin Gradle plugins are resolved through their standard upstream repositories and retain their respective upstream licenses.
 
