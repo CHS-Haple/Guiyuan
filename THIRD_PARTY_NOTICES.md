@@ -80,15 +80,15 @@ Android Gradle Plugin and Kotlin Gradle plugins are resolved through their stand
 
 ## Upstream projects
 
-- libxposed API (published upstream): https://github.com/libxposed/api
-- libxposed service (published upstream): https://github.com/libxposed/service
-- AndroidX: https://github.com/androidx/androidx
-- MIUIX: https://github.com/compose-miuix-ui/miuix
-- AndroidLiquidGlass: https://github.com/Kyant0/AndroidLiquidGlass (Apache-2.0; source of adapted optics, not a direct runtime dependency)
-- Material Symbols: https://github.com/google/material-design-icons
-- kotlinx.serialization: https://github.com/Kotlin/kotlinx.serialization
-- JUnit 4: https://github.com/junit-team/junit4
-- Gradle: https://github.com/gradle/gradle
+- libxposed API (published upstream): [libxposed/api](https://github.com/libxposed/api)
+- libxposed service (published upstream): [libxposed/service](https://github.com/libxposed/service)
+- AndroidX: [androidx/androidx](https://github.com/androidx/androidx)
+- MIUIX: [compose-miuix-ui/miuix](https://github.com/compose-miuix-ui/miuix)
+- AndroidLiquidGlass: [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) (Apache-2.0; source of adapted optics, not a direct runtime dependency)
+- Material Symbols: [google/material-design-icons](https://github.com/google/material-design-icons)
+- kotlinx.serialization: [Kotlin/kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization)
+- JUnit 4: [junit-team/junit4](https://github.com/junit-team/junit4)
+- Gradle: [gradle/gradle](https://github.com/gradle/gradle)
 
 ## Packaging note
 
