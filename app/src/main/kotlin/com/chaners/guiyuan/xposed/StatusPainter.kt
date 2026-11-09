@@ -4270,14 +4270,11 @@ internal class StatusPainter(
         return null
     }
 
-    // Reserve the configured information slot even while SystemUI hides its
-    // activity drawable. Activity visibility must not change dual-dot spacing.
+    // Bottom-dot spacing follows the same native-backed drawable that is
+    // actually drawn. A configured but hidden/missing/idle-suppressed glyph
+    // must not leave an empty gap; the charging glyph keeps its priority.
     private fun reservesBothSidesBottomSlot(model: RenderModel, visual: VisualCfg): Boolean =
-        bothSidesOutsideActive(model, visual) &&
-            (
-                visual.bothSidesShowActivity ||
-                    (visual.showChargingIcon && visual.bothSidesBottomCharging && model.charging)
-            )
+        resolveBothSidesBottomInformation(model, visual) != null
 
     // Both opening avoidance and host overflow consume the same optical ink.
     private fun bothSidesBottomOpticalBounds(
