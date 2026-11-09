@@ -1964,46 +1964,6 @@ class GyModule : XposedModule() {
         }
     }
 
-    // Diagnostic-only native View snapshot at an existing default-network boundary.
-    // A retained drawable or visible child is NOT a verified getShowName semantic.
-    // No extra collector, listener, View writes, or lifetime beyond this callback.
-    private fun logNativeMobileTypeHandoff(
-        previous: SysUiConnectivitySource.Transport,
-        current: SysUiConnectivitySource.Transport,
-    ) {
-        if (!detailedDiagnosticsEnabled ||
-            (previous != SysUiConnectivitySource.Transport.NONE &&
-                current != SysUiConnectivitySource.Transport.NONE)
-        ) return
-
-        val nativeViews = SysUiPresentationRuntime.optionalNativeRead {
-            fun visibleState(view: View?): String =
-                if (view == null) "missing"
-                else "visibility=${view.visibility},shown=${view.isShown},attached=${view.isAttachedToWindow}"
-
-            val bindings = SysUiNetworkSource.mobilePresentationBindings()
-            bindings.size to bindings.joinToString(";") { binding ->
-                val drawable = NativeParticipantAccess.findResourceView(binding.root, "mobile_type")
-                val single = NativeParticipantAccess.findResourceView(binding.root, "mobile_type_single")
-                "subId=${binding.subscriptionId}," +
-                    "root=[${visibleState(binding.root)}]," +
-                    "drawable=[${visibleState(drawable)}]," +
-                    "single=[${visibleState(single)}]"
-            }
-        }
-        logDiagnostic(
-            level = Log.INFO,
-            event = "network.nativeTypeHandoff",
-            component = "network",
-            state = if (nativeViews == null) "unavailable" else "observed",
-            "previousTransport" to previous.name,
-            "transport" to current.name,
-            "rootCount" to nativeViews?.first,
-            "nativeTypeViews" to nativeViews?.second,
-            "cachedType" to PresentationStore.snapshot().mobilePresentation?.networkType?.label,
-        )
-    }
-
     private fun onCombinedStateChanged(
         snapshot: StatusStateStore.Snapshot,
         trace: RuntimeRenderTrace? = null,
@@ -3950,10 +3910,6 @@ class GyModule : XposedModule() {
                         )
                     },
                     onConnectivityState = { state ->
-                        logNativeMobileTypeHandoff(
-                            previous = PresentationStore.snapshot().connectivity.transport,
-                            current = state.transport,
-                        )
                         val trace = beginRenderTrace("connectivity")
                         val changed =
                             PresentationStore.updateConnectivity(state)
