@@ -204,7 +204,6 @@ internal object SysUiNetworkSource {
         onWifiActivity: (Int?) -> Unit,
         onRuntimeFailure: (String, Throwable) -> Unit,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
-        onMobileActivity: (subscriptionId: Int, resourceId: Int?) -> Unit,
         onMobileActivityVisibility: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onEvent: ((String) -> Unit)?,
@@ -252,7 +251,6 @@ internal object SysUiNetworkSource {
                 module = module,
                 classLoader = classLoader,
                 onMobileSignal = onMobileSignal,
-                onMobileActivity = onMobileActivity,
                 onMobileActivityVisibility = onMobileActivityVisibility,
                 onPresentationChanged = onPresentationChanged,
                 onRuntimeFailure = onRuntimeFailure,
@@ -450,7 +448,6 @@ internal object SysUiNetworkSource {
         module: XposedModule,
         classLoader: ClassLoader,
         onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
-        onMobileActivity: (subscriptionId: Int, resourceId: Int?) -> Unit,
         onMobileActivityVisibility: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
         onPresentationChanged: (() -> Unit)?,
         onRuntimeFailure: (String, Throwable) -> Unit,
@@ -525,7 +522,6 @@ internal object SysUiNetworkSource {
                             mobileBindHooker(
                                 active = active,
                                 subscriptionIdMethod = subscriptionIdMethod,
-                                onMobileActivity = onMobileActivity,
                                 classLoader = classLoader,
                                 onPresentationChanged = onPresentationChanged,
                                 onRuntimeFailure = onRuntimeFailure,
@@ -574,7 +570,10 @@ internal object SysUiNetworkSource {
                                         if (onEvent != null && isDetailedDiagnosticsEnabled()) {
                                             readOrNull { nativeActivityObservation(image, result) }
                                         } else null
-                                    onMobileActivity(subId, taggedResId)
+                                    // The resource collector may run before the separate
+                                    // visibility collector. Read the already-applied
+                                    // native Home View instead of waiting for a replay.
+                                    onMobileActivityVisibility(subId, taggedResId, image.isShown)
                                     nativeWitness?.let { witness ->
                                         readOrNull {
                                             onEvent?.invoke(
@@ -1417,7 +1416,6 @@ internal object SysUiNetworkSource {
     private fun mobileBindHooker(
         active: AtomicBoolean,
         subscriptionIdMethod: Method,
-        onMobileActivity: (Int, Int?) -> Unit,
         classLoader: ClassLoader,
         onPresentationChanged: (() -> Unit)?,
         onRuntimeFailure: (String, Throwable) -> Unit,

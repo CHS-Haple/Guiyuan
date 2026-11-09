@@ -266,6 +266,46 @@ class RenderModelTest {
     }
 
     @Test
+    fun aggregatedNativeResourceEventShowsOnlyItsVisibleRootWithoutAnotherFlowEmission() {
+        StatusStateStore.restoreHotReloadState(null)
+        try {
+            val native = dualPresentation(mapOf(0 to 1, 1 to 4))
+            // The OEM aggregate displays activity on SIM1's root even when SIM2
+            // owns mobile data; the resource collector may arrive first.
+            StatusStateStore.updateMobileActivityVisibility(1, 2131237576, true)
+            StatusStateStore.updateMobileActivityVisibility(4, 2131237576, false)
+            val observed = StatusStateStore.snapshot().copy(
+                battery = StatusStateStore.BatteryState(percent = 100, charging = false),
+                wifi = StatusStateStore.WifiState.Hidden,
+                mobile = mapOf(
+                    1 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                    4 to StatusStateStore.MobileState(signal = SignalStrength.Level(4)),
+                ),
+                airplaneMode = false,
+            )
+            val shown = RenderModel.from(observed, native, 4, dualSignalEnabled = true)
+            assertEquals(4, shown?.effectiveDataSubscriptionId)
+            assertEquals(2131237576, shown?.networkActivityResId)
+
+            val hidden = StatusStateStore.updateMobileActivityVisibility(1, 2131237576, false)
+                ?: error("native GONE must update the aggregate activity")
+            assertNull(
+                RenderModel.from(
+                    hidden.copy(
+                        battery = observed.battery,
+                        wifi = observed.wifi,
+                        mobile = observed.mobile,
+                        airplaneMode = observed.airplaneMode,
+                    ),
+                    native, 4, dualSignalEnabled = true,
+                )?.networkActivityResId,
+            )
+        } finally {
+            StatusStateStore.restoreHotReloadState(null)
+        }
+    }
+
+    @Test
     fun separateAndUnverifiedMobileLayoutsDoNotBorrowAnotherSimsActivity() {
         val aggregated = dualPresentation(mapOf(0 to 14, 1 to 3))
         val native = aggregated.mobilePresentation!!

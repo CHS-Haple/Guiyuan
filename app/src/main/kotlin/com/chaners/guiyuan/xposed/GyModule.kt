@@ -852,14 +852,6 @@ class GyModule : XposedModule() {
                         )
                     }
                 },
-                onMobileActivity = { subscriptionId, resourceId ->
-                    StatusStateStore.updateMobileActivity(subscriptionId, resourceId)?.let { snapshot ->
-                        onCombinedStateChanged(
-                            snapshot = snapshot,
-                            trace = markStateCommitted(beginRenderTrace("mobileActivity")),
-                        )
-                    }
-                },
                 onMobileActivityVisibility = { subscriptionId, resourceId, visible ->
                     StatusStateStore.updateMobileActivityVisibility(
                         subscriptionId, resourceId, visible,
