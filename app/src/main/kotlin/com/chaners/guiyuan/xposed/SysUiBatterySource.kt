@@ -75,6 +75,7 @@ internal object SysUiBatterySource {
             if (face != null && axis != null) VerifiedFont(host, face, axis) else null
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
