@@ -6,6 +6,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Test
 
+private const val TEST_VERIFIED_SYSTEM_UI_PACKAGE = "com.android.systemui"
+
 class NativeFontAxisTest {
     @Test
     fun fatalPreferenceReadErrorsPreserveOriginalCause() {
@@ -21,13 +23,13 @@ class NativeFontAxisTest {
 
     @Test
     fun senderMustOwnInstalledSystemUiPackage() {
-        assertEquals(true, NativeFontAxis.isSystemUiSender(10224, "com.android.systemui", 10224))
-        assertEquals(true, NativeFontAxis.isSystemUiSender(1000, "com.android.systemui", 1000))
-        assertEquals(false, NativeFontAxis.isSystemUiSender(10224, "com.android.systemui", 1000))
+        assertEquals(true, NativeFontAxis.isSystemUiSender(10224, TEST_VERIFIED_SYSTEM_UI_PACKAGE, 10224))
+        assertEquals(true, NativeFontAxis.isSystemUiSender(1000, TEST_VERIFIED_SYSTEM_UI_PACKAGE, 1000))
+        assertEquals(false, NativeFontAxis.isSystemUiSender(10224, TEST_VERIFIED_SYSTEM_UI_PACKAGE, 1000))
         assertEquals(false, NativeFontAxis.isSystemUiSender(10224, "com.example.app", 10224))
-        assertEquals(false, NativeFontAxis.isSystemUiSender(-1, "com.android.systemui", -1))
+        assertEquals(false, NativeFontAxis.isSystemUiSender(-1, TEST_VERIFIED_SYSTEM_UI_PACKAGE, -1))
         assertEquals(false, NativeFontAxis.isSystemUiSender(10224, null, 10224))
-        assertEquals(false, NativeFontAxis.isSystemUiSender(10224, "com.android.systemui", null))
+        assertEquals(false, NativeFontAxis.isSystemUiSender(10224, TEST_VERIFIED_SYSTEM_UI_PACKAGE, null))
     }
 
     @Test
