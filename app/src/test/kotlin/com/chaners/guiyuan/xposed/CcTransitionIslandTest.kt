@@ -72,9 +72,9 @@ class CcTransitionIslandTest {
 
     @Test
     fun semanticReservationRequiresKnownSourceScene() {
-        assertTrue(CcTransitionPolicy.usesSemanticTransitionReservation(SourceScene.HOME))
-        assertTrue(CcTransitionPolicy.usesSemanticTransitionReservation(SourceScene.KEYGUARD))
-        assertTrue(!CcTransitionPolicy.usesSemanticTransitionReservation(SourceScene.UNKNOWN))
+        assertTrue(CcReservationPolicy.usesSemanticTransitionReservation(SourceScene.HOME))
+        assertTrue(CcReservationPolicy.usesSemanticTransitionReservation(SourceScene.KEYGUARD))
+        assertTrue(!CcReservationPolicy.usesSemanticTransitionReservation(SourceScene.UNKNOWN))
     }
 
     @Test
