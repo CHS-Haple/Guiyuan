@@ -117,7 +117,7 @@ class CcTransitionGeometryTest {
                 169f,
             )
         val logicalCarrier =
-            CcTransitionPolicy
+            CcCarrierGeometryPolicy
                 .endAnchoredMotionCarrierGeometry(
                     carrierGeometry = expandedCarrier,
                     carrierWidth = 728,
@@ -133,7 +133,7 @@ class CcTransitionGeometryTest {
         val source = floatArrayOf(1240f, 55f, 105f, 0f, 0f, 108f)
         val sourceCarrier = floatArrayOf(997f, 54f, 478f, 0f, 0f, 108f)
         val carried =
-            CcTransitionPolicy
+            CcCarrierGeometryPolicy
                 .rebaseSourceToCurrentCarrier(
                     source = source,
                     sourceCarrier = sourceCarrier,
@@ -154,7 +154,7 @@ class CcTransitionGeometryTest {
                 169f,
             )
         val logicalCarrier =
-            CcTransitionPolicy
+            CcCarrierGeometryPolicy
                 .endAnchoredMotionCarrierGeometry(
                     carrierGeometry = expandedCarrier,
                     carrierWidth = 728,
