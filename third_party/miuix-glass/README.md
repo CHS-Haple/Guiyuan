@@ -56,17 +56,23 @@ previous light/dark grouping, 16dp inset, Squircle silhouette, header,
 palette, actions and interaction feedback. No global theme tokens, storage,
 paging, nested-sheet lifecycle or color data are changed.
 
-The OS4 custom scheme management button uses the existing native
-`GlassIconButton` plus `GlassTransformPopup` anchor contract. Its shadow
-is now explicitly `GlassShadows.Float`, the official floating-control
-preset (source radius 24 at `SourceDensity=3`, versus the larger panel
-`Regular` radius 64). This better matches a control inset inside the
-16dp Card while retaining the visible shadow; the expanded popup keeps its
-own upstream default panel shadow and exit animation. The button still
-does not sample the Sheet's own recorded surface, avoiding the previously
-identified recursive HWUI backdrop dependency. OS3 continues using the
-upstream `OverlayIconDropdownMenu` and its native surface/feedback. This is
-a scoped menu styling alignment, not a claim of completed device parity.
+The OS4 custom scheme management button retains the existing native
+`GlassIconButton` plus `GlassTransformPopup` anchor contract. B1826
+experimentally overrode the button shadow to `GlassShadows.Float`, but
+the supplied device recording showed a pronounced shadow discontinuity
+as the trigger became the popup. The explicit override was removed:
+both the upstream `GlassIconButton` and the upstream
+`GlassPopupDefaults.visuals()` use `GlassShadows.Regular` by default.
+The popup transforms the button surface and panel material but does
+**not** animate between different `GlassShadow` presets; using `Float`
+on one end introduced a mismatch. Leave both defaults intact rather
+than layering custom shadows or altering the host lifecycle.
+
+The root-hosted popup still owns Back and its exit; the button still does
+not sample the Sheet's own recorded surface to avoid a recursive HWUI
+RenderNode dependency. OS3 continues using native
+`OverlayIconDropdownMenu`. Restoring the preset is source-backed, but
+the entire shadow transition remains subject to device verification.
 
 OS4's current GlassBottomSheet draws its complete rim (including the square screen-edge bottom); upstream `ca674992` retains this default behavior. Setting `stroke = null` would remove the required top/side highlights and was reverted. This is intentionally **not** represented as a fix to the OS4 white bottom border or a proof of Squircle internal band-join parity. The user's earlier acceptance of other MIUIX candidate changes is separate from the new Battery Colors layout: final source CI and one consolidated visual acceptance still apply. Do not merge solely on compilation.
 
