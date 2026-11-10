@@ -6,16 +6,23 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private const val SLOT_MOBILE = "mobile"
+private const val SLOT_WIFI = "wifi"
+private const val SLOT_NO_SIM = "no_sim"
+private const val SLOT_NATIVE = "native"
+private const val SLOT_ALARM_CLOCK = "alarm_clock"
+private const val SLOT_AIRPLANE = "airplane"
+
 class PresentationPoliciesTest {
 
     @Test
     fun ownedEntriesPreserveExistingAndRestoreOnlyAddedSlots() {
-        val slots = mutableListOf("alarm_clock", "wifi")
-        val owned = OwnedEntries.add(slots, listOf("wifi", "mobile", "no_sim"))
-        assertEquals(listOf("mobile", "no_sim"), owned)
-        assertEquals(listOf("alarm_clock", "wifi", "mobile", "no_sim"), slots)
+        val slots = mutableListOf(SLOT_ALARM_CLOCK, SLOT_WIFI)
+        val owned = OwnedEntries.add(slots, listOf(SLOT_WIFI, SLOT_MOBILE, SLOT_NO_SIM))
+        assertEquals(listOf(SLOT_MOBILE, SLOT_NO_SIM), owned)
+        assertEquals(listOf(SLOT_ALARM_CLOCK, SLOT_WIFI, SLOT_MOBILE, SLOT_NO_SIM), slots)
         OwnedEntries.restore(slots, owned)
-        assertEquals(listOf("alarm_clock", "wifi"), slots)
+        assertEquals(listOf(SLOT_ALARM_CLOCK, SLOT_WIFI), slots)
     }
 
     @Test
@@ -25,19 +32,19 @@ class PresentationPoliciesTest {
         val slots =
             object : ArrayList<String>() {
                 override fun add(element: String): Boolean {
-                    if (element == "airplane") throw addError
+                    if (element == SLOT_AIRPLANE) throw addError
                     return super.add(element)
                 }
 
                 override fun remove(element: String): Boolean {
-                    if (element == "mobile") throw rollbackError
+                    if (element == SLOT_MOBILE) throw rollbackError
                     return super.remove(element)
                 }
             }
-        slots.add("native")
+        slots.add(SLOT_NATIVE)
         val error =
             runCatching {
-                OwnedEntries.add(slots, listOf("mobile", "airplane"))
+                OwnedEntries.add(slots, listOf(SLOT_MOBILE, SLOT_AIRPLANE))
             }.exceptionOrNull()
         assertTrue(error === addError)
         assertEquals(listOf(rollbackError), error?.suppressed?.toList())
@@ -49,19 +56,19 @@ class PresentationPoliciesTest {
         val slots =
             object : ArrayList<String>() {
                 override fun remove(element: String): Boolean {
-                    if (element == "mobile") throw InvocationTargetException(fatal)
+                    if (element == SLOT_MOBILE) throw InvocationTargetException(fatal)
                     return super.remove(element)
                 }
             }
-        slots.addAll(listOf("native", "mobile", "wifi"))
+        slots.addAll(listOf(SLOT_NATIVE, SLOT_MOBILE, SLOT_WIFI))
 
         val error = runCatching {
-            OwnedEntries.restore(slots, listOf("wifi", "mobile"))
+            OwnedEntries.restore(slots, listOf(SLOT_WIFI, SLOT_MOBILE))
         }.exceptionOrNull()
 
         assertSame(fatal, error)
         // No later sibling writes after a VM-fatal restoration error.
-        assertEquals(listOf("native", "mobile", "wifi"), slots)
+        assertEquals(listOf(SLOT_NATIVE, SLOT_MOBILE, SLOT_WIFI), slots)
     }
 
     @Test
@@ -71,23 +78,23 @@ class PresentationPoliciesTest {
         val slots =
             object : ArrayList<String>() {
                 override fun add(element: String): Boolean {
-                    if (element == "airplane") throw addError
+                    if (element == SLOT_AIRPLANE) throw addError
                     return super.add(element)
                 }
 
                 override fun remove(element: String): Boolean {
-                    if (element == "mobile") throw InvocationTargetException(fatal)
+                    if (element == SLOT_MOBILE) throw InvocationTargetException(fatal)
                     return super.remove(element)
                 }
             }
-        slots.add("native")
+        slots.add(SLOT_NATIVE)
 
         val error = runCatching {
-            OwnedEntries.add(slots, listOf("mobile", "airplane"))
+            OwnedEntries.add(slots, listOf(SLOT_MOBILE, SLOT_AIRPLANE))
         }.exceptionOrNull()
 
         assertSame(fatal, error)
-        assertEquals(listOf("native", "mobile"), slots)
+        assertEquals(listOf(SLOT_NATIVE, SLOT_MOBILE), slots)
     }
 
     @Test
@@ -96,33 +103,33 @@ class PresentationPoliciesTest {
         val slots =
             object : ArrayList<String>() {
                 override fun remove(element: String): Boolean {
-                    if (element == "no_sim") throw removalError
+                    if (element == SLOT_NO_SIM) throw removalError
                     return super.remove(element)
                 }
             }
-        slots.addAll(listOf("native", "mobile", "no_sim", "airplane"))
+        slots.addAll(listOf(SLOT_NATIVE, SLOT_MOBILE, SLOT_NO_SIM, SLOT_AIRPLANE))
         val error =
             runCatching {
-                OwnedEntries.restore(slots, listOf("mobile", "no_sim", "airplane"))
+                OwnedEntries.restore(slots, listOf(SLOT_MOBILE, SLOT_NO_SIM, SLOT_AIRPLANE))
             }.exceptionOrNull()
         assertTrue(error === removalError)
-        assertEquals(listOf("native", "no_sim"), slots)
+        assertEquals(listOf(SLOT_NATIVE, SLOT_NO_SIM), slots)
     }
 
     @Test
     fun persistentIgnoredSlotRestoreRemovesOnlySessionOwnedDelta() {
-        val existing = listOf("alarm_clock", "wifi")
-        val requested = listOf("wifi", "mobile", "no_sim")
+        val existing = listOf(SLOT_ALARM_CLOCK, SLOT_WIFI)
+        val requested = listOf(SLOT_WIFI, SLOT_MOBILE, SLOT_NO_SIM)
         val owned =
             OwnedEntries.delta(
                 existing = existing,
                 requested = requested,
             )
-        assertEquals(listOf("mobile", "no_sim"), owned)
+        assertEquals(listOf(SLOT_MOBILE, SLOT_NO_SIM), owned)
 
-        val live = listOf("alarm_clock", "wifi", "mobile", "no_sim", "vpn")
+        val live = listOf(SLOT_ALARM_CLOCK, SLOT_WIFI, SLOT_MOBILE, SLOT_NO_SIM, "vpn")
         assertEquals(
-            listOf("alarm_clock", "wifi", "vpn"),
+            listOf(SLOT_ALARM_CLOCK, SLOT_WIFI, "vpn"),
             OwnedEntries.restoreTarget(
                 live = live,
                 ownedEntries = owned,
