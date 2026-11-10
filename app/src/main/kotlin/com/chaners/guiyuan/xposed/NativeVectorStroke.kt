@@ -113,58 +113,54 @@ internal object NativeVectorStroke {
     }
 
     fun style(source: Source, weight: Int): Styled? =
-        runCatching { styleSource(source, weight) }
-            .onFailure { rethrowRenderFatal(it) }
-            .getOrNull()
-
-    private fun styleSource(source: Source, weight: Int): Styled? {
-        val offset = edgeOffset(weight, source.viewportWidth, source.viewportHeight)
-        if (!offset.isFinite() || offset == 0f) return null
-        val rimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = 2f * abs(offset)
-            strokeJoin = Paint.Join.ROUND
-            strokeCap = Paint.Cap.ROUND
-        }
-        val bounds = RectF()
-        val rimBounds = RectF()
-        val combined = RectF()
-        val styled = ArrayList<Layer>(source.layers.size)
-        source.layers.forEachIndexed { index, layer ->
-            val rim = Path()
-            if (!rimPaint.getFillPath(layer.path, rim)) return null
-            val changed =
-                if (offset > 0f) {
-                    // Keep the native Bezier paths in the final draw: filling and
-                    // stroking directly avoids merged-outline corner artifacts.
-                    Path(layer.path).also {
-                        it.computeBounds(bounds, true)
-                        rim.computeBounds(rimBounds, true)
-                        bounds.union(rimBounds)
+        runCatching {
+            val offset = edgeOffset(weight, source.viewportWidth, source.viewportHeight)
+            if (!offset.isFinite() || offset == 0f) return@runCatching null
+            val rimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
+                strokeWidth = 2f * abs(offset)
+                strokeJoin = Paint.Join.ROUND
+                strokeCap = Paint.Cap.ROUND
+            }
+            val bounds = RectF()
+            val rimBounds = RectF()
+            val combined = RectF()
+            val styled = ArrayList<Layer>(source.layers.size)
+            source.layers.forEachIndexed { index, layer ->
+                val rim = Path()
+                if (!rimPaint.getFillPath(layer.path, rim)) return@runCatching null
+                val changed =
+                    if (offset > 0f) {
+                        // Keep the native Bezier paths in the final draw: filling and
+                        // stroking directly avoids merged-outline corner artifacts.
+                        Path(layer.path).also {
+                            it.computeBounds(bounds, true)
+                            rim.computeBounds(rimBounds, true)
+                            bounds.union(rimBounds)
+                        }
+                    } else {
+                        Path(layer.path).apply {
+                            if (!op(rim, Path.Op.DIFFERENCE)) return@runCatching null
+                            computeBounds(bounds, true)
+                        }
                     }
-                } else {
-                    Path(layer.path).apply {
-                        if (!op(rim, Path.Op.DIFFERENCE)) return null
-                        computeBounds(bounds, true)
-                    }
-                }
-            if (changed.isEmpty || !bounds.left.isFinite() || !bounds.top.isFinite() ||
-                !bounds.right.isFinite() || !bounds.bottom.isFinite() || bounds.isEmpty
-            ) return null
-            if (index == 0) combined.set(bounds) else combined.union(bounds)
-            styled.add(Layer(changed, layer.alpha))
-        }
-        return Styled(
-            source.viewportWidth, source.viewportHeight, styled,
-            RectF(
-                combined.left / source.viewportWidth,
-                combined.top / source.viewportHeight,
-                combined.right / source.viewportWidth,
-                combined.bottom / source.viewportHeight,
-            ),
-            offset.coerceAtLeast(0f) * 2f,
-        )
-    }
+                if (changed.isEmpty || !bounds.left.isFinite() || !bounds.top.isFinite() ||
+                    !bounds.right.isFinite() || !bounds.bottom.isFinite() || bounds.isEmpty
+                ) return@runCatching null
+                if (index == 0) combined.set(bounds) else combined.union(bounds)
+                styled.add(Layer(changed, layer.alpha))
+            }
+            Styled(
+                source.viewportWidth, source.viewportHeight, styled,
+                RectF(
+                    combined.left / source.viewportWidth,
+                    combined.top / source.viewportHeight,
+                    combined.right / source.viewportWidth,
+                    combined.bottom / source.viewportHeight,
+                ),
+                offset.coerceAtLeast(0f) * 2f,
+            )
+        }.onFailure { rethrowRenderFatal(it) }.getOrNull()
 
     private fun onlyKeys(xml: android.content.res.XmlResourceParser, allowed: Set<String>): Boolean =
         (0 until xml.attributeCount).all { xml.getAttributeName(it) in allowed }
