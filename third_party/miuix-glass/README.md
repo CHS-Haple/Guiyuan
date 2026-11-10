@@ -39,9 +39,9 @@ library.
   [THIRD_PARTY_NOTICES](../../THIRD_PARTY_NOTICES.md) and preserved source
   headers. Do not remove SPDX/copyright notices from adapted files.
 
-## MIUIX material migration and battery sheet layout candidate (PR #1440, 2026-11-10)
+## MIUIX Material migration and B1827 acceptance (PR #1440, 2026-11-10)
 
-PR [#1440](https://github.com/CHS-Haple/Guiyuan/pull/1440) is an experimental branch, not yet part of accepted `dev` or released `main`. Its exact upstream base is [`ca674992`](https://github.com/compose-miuix-ui/miuix/commit/ca674992c9645395cdb0d5109d66504ff53d018c). This migration introduces `miuix-material-android` and replaces the removed `miuix-shader` source-graph module with upstream `miuix-material`, while retaining the existing application-local Glass owner and UI adapters. The accepted `45645854` pin is documented below.
+PR [#1440](https://github.com/CHS-Haple/Guiyuan/pull/1440) integrates the maintainer-accepted B1827 candidate into `dev` without promoting `main`. Its exact upstream base is [`ca674992`](https://github.com/compose-miuix-ui/miuix/commit/ca674992c9645395cdb0d5109d66504ff53d018c). This migration introduces `miuix-material-android` and replaces the removed `miuix-shader` source-graph module with upstream `miuix-material`, while retaining the existing application-local Glass owner and UI adapters. The previous B1821 `45645854` pin is documented below.
 
 The UI audit found that the Battery Colors sheet had a meaningful outer MIUIX `Card`
 with its own full-page background and a nested settings `Card`. The B1824
@@ -94,7 +94,7 @@ new global Squircle override, extra background strip, black-line mask,
 shader patch or change to bottom-sheet overscroll has been introduced.
 The original card color is retained as the maintainer requested.
 
-OS4's current GlassBottomSheet draws its complete rim (including the square screen-edge bottom); upstream `ca674992` retains this default behavior. Setting `stroke = null` would remove the required top/side highlights and was reverted. This is intentionally **not** represented as a fix to the OS4 white bottom border or a proof of Squircle internal band-join parity. The user's earlier acceptance of other MIUIX candidate changes is separate from the new Battery Colors layout: final source CI and one consolidated visual acceptance still apply. Do not merge solely on compilation.
+OS4's current GlassBottomSheet draws its complete rim (including the square screen-edge bottom); upstream `ca674992` retains this default behavior. Setting `stroke = null` would remove the required top/side highlights and was reverted. This is intentionally **not** represented as a fix to the OS4 white bottom border or a proof of Squircle internal band-join parity. The maintainer reported signed B1827 normal on the target device. The integrated source passed full Android CI. This scoped acceptance does not prove that the historical OS3 dark overscroll seam disappeared, and no independent rendering workaround is claimed.
 
 ## Accepted upstream OS4 Glass graph (B1821, 2026-11-09)
 
