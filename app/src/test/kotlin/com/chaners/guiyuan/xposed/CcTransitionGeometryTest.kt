@@ -39,12 +39,12 @@ class CcTransitionGeometryTest {
         val native5GA = native5G.copy(label = "5GA")
         val nativePlus = native5G.copy(enhanced = true)
 
-        assertEquals(false, CcTransitionPolicy.mobileTypeMatches("5GA", false, native5G))
-        assertEquals(true, CcTransitionPolicy.mobileTypeMatches("5GA", false, native5GA))
-        assertEquals(true, CcTransitionPolicy.mobileTypeMatches("5G-A", false, native5GA))
-        assertEquals(true, CcTransitionPolicy.mobileTypeMatches("5G++", false, nativePlus))
-        assertEquals(false, CcTransitionPolicy.mobileTypeMatches("4G", false, native5G))
-        assertNull(CcTransitionPolicy.mobileTypeMatches("5GA", false, null))
+        assertEquals(false, CcDualMobilePolicy.mobileTypeMatches("5GA", false, native5G))
+        assertEquals(true, CcDualMobilePolicy.mobileTypeMatches("5GA", false, native5GA))
+        assertEquals(true, CcDualMobilePolicy.mobileTypeMatches("5G-A", false, native5GA))
+        assertEquals(true, CcDualMobilePolicy.mobileTypeMatches("5G++", false, nativePlus))
+        assertEquals(false, CcDualMobilePolicy.mobileTypeMatches("4G", false, native5G))
+        assertNull(CcDualMobilePolicy.mobileTypeMatches("5GA", false, null))
     }
 
     @Test

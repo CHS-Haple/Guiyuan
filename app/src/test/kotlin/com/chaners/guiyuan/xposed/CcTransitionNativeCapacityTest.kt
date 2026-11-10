@@ -9,19 +9,19 @@ class CcTransitionNativeCapacityTest {
     fun chargingPeerReservationHoldsThenConvergesToLiveNativeEndpoint() {
         val compact = 105
         val unplugged = listOf(
-            CcTransitionPolicy.ReservationSpan(
+            CcReservationPolicy.ReservationSpan(
                 sourceLeft = -105f, sourceRight = 0f,
                 targetLeft = -220f, targetRight = 0f,
             ),
         )
         val plugged = listOf(
-            CcTransitionPolicy.ReservationSpan(
+            CcReservationPolicy.ReservationSpan(
                 sourceLeft = -105f, sourceRight = 0f,
                 targetLeft = -250f, targetRight = 0f,
             ),
         )
-        fun width(spans: List<CcTransitionPolicy.ReservationSpan>, p: Float) =
-            CcTransitionPolicy.resolveTransitionReservationWidth(
+        fun width(spans: List<CcReservationPolicy.ReservationSpan>, p: Float) =
+            CcReservationPolicy.resolveTransitionReservationWidth(
                 compactWidthPx = compact, spans = spans, progress = p,
             )
         val held = 0.6f
@@ -61,7 +61,7 @@ class CcTransitionNativeCapacityTest {
     fun transitionReservationInterpolatesTotalWidthFromNativeProgress() {
         val spans =
             listOf(
-                CcTransitionPolicy.ReservationSpan(
+                CcReservationPolicy.ReservationSpan(
                     sourceLeft = -10f,
                     sourceRight = 0f,
                     targetLeft = -30f,
@@ -102,7 +102,7 @@ class CcTransitionNativeCapacityTest {
     fun totalWidthInterpolationAvoidsOverlappingSpanDeadZone() {
         val spans =
             listOf(
-                CcTransitionPolicy.ReservationSpan(
+                CcReservationPolicy.ReservationSpan(
                     sourceLeft = 0f,
                     sourceRight = 0f,
                     targetLeft = -180f,
@@ -111,7 +111,7 @@ class CcTransitionNativeCapacityTest {
             )
 
         val oldGeometryUnion =
-            CcTransitionPolicy.resolveReservationWidth(
+            CcReservationPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0.25f,
@@ -133,7 +133,7 @@ class CcTransitionNativeCapacityTest {
     fun batteryIslandNativePeerReservationDoesNotPreReserveLatentGap() {
         val spans =
             listOf(
-                CcTransitionPolicy.ReservationSpan(
+                CcReservationPolicy.ReservationSpan(
                     sourceLeft = 0f,
                     sourceRight = 0f,
                     targetLeft = -180f,
@@ -164,7 +164,7 @@ class CcTransitionNativeCapacityTest {
     fun batteryIslandNativePeerReservationProjectsTargetIntoCurrentFakeEndFrame() {
         val spans =
             listOf(
-                CcTransitionPolicy.ReservationSpan(
+                CcReservationPolicy.ReservationSpan(
                     sourceLeft = -105f,
                     sourceRight = 0f,
                     targetLeft = -240f,
@@ -198,7 +198,7 @@ class CcTransitionNativeCapacityTest {
     fun batteryIslandNativePeerReservationIgnoresEndSideProjection() {
         val spans =
             listOf(
-                CcTransitionPolicy.ReservationSpan(
+                CcReservationPolicy.ReservationSpan(
                     sourceLeft = -40f,
                     sourceRight = 0f,
                     targetLeft = -140f,
@@ -223,7 +223,7 @@ class CcTransitionNativeCapacityTest {
     fun batteryIslandNativePeerReservationFollowsCurrentSpanAndConverges() {
         val spans =
             listOf(
-                CcTransitionPolicy.ReservationSpan(
+                CcReservationPolicy.ReservationSpan(
                     sourceLeft = 0f,
                     sourceRight = 0f,
                     targetLeft = -180f,
@@ -258,7 +258,7 @@ class CcTransitionNativeCapacityTest {
                     compactWidthPx = 105,
                     spans =
                         listOf(
-                            CcTransitionPolicy.ReservationSpan(
+                            CcReservationPolicy.ReservationSpan(
                                 sourceLeft = -105f,
                                 sourceRight = 0f,
                                 targetLeft = -220f,

@@ -12,7 +12,7 @@ class CcTransitionMorphGeometryTest {
     fun chargingFollowsEightDotsInsteadOfBatteryNumber() {
         val top = transitionGeometry(centerX = 20f, centerY = 10f, width = 40f, height = 10f)
         val bottom = transitionGeometry(centerX = 20f, centerY = 32f, width = 40f, height = 10f)
-        val sourceGroup = requireNotNull(CcTransitionPolicy.dualMobileGroupGeometry(listOf(top, bottom)))
+        val sourceGroup = requireNotNull(CcDualMobilePolicy.dualMobileGroupGeometry(listOf(top, bottom)))
         // The bolt sits between the two rows, not above the ring.
         val bolt = transitionGeometry(
             centerX = sourceGroup[0],
@@ -36,7 +36,7 @@ class CcTransitionMorphGeometryTest {
                     scalePolicy = StatusPainter.TransitionScalePolicy.SHRINK_ONLY,
                 )
             }
-            val mobileCurrent = requireNotNull(CcTransitionPolicy.dualMobileGroupGeometry(rows))
+            val mobileCurrent = requireNotNull(CcDualMobilePolicy.dualMobileGroupGeometry(rows))
             val follower = requireNotNull(
                 CcTransitionPolicy.followAnchorGeometry(
                     follower = bolt,
@@ -155,7 +155,7 @@ class CcTransitionMorphGeometryTest {
             dataSubId: Int,
             targetSubId: Int?,
             nativeType: NativePresentationResolver.NetworkType?,
-        ) = CcTransitionPolicy.matchesDualMobileTypeTarget(
+        ) = CcDualMobilePolicy.matchesDualMobileTypeTarget(
                 dataSubId = dataSubId,
                 targetSubId = targetSubId,
                 source = source,
@@ -191,7 +191,7 @@ class CcTransitionMorphGeometryTest {
         assertEquals(ParticipantVisualSnapshot.RowShape.DOTS, rows.bottomShape)
 
         val bounds = StatusPainter.TransitionBounds(0f, 0f, 80f, 70f)
-        val anchors = CcTransitionPolicy.aggregateAnchors(
+        val anchors = CcDualMobilePolicy.aggregateAnchors(
             bounds = bounds,
             top = rows.top.first(),
             bottom = rows.bottom.first(),
@@ -267,7 +267,7 @@ class CcTransitionMorphGeometryTest {
             dataSubId: Int = 4,
             targetSubId: Int? = 1,
             soleNativeRoot: Boolean = true,
-        ) = CcTransitionPolicy.verifiedAggregateTypeRoot(
+        ) = CcDualMobilePolicy.verifiedAggregateTypeRoot(
                 state, dataSubId, targetSubId, soleNativeRoot,
             )
         assertTrue(verified())
@@ -299,7 +299,7 @@ class CcTransitionMorphGeometryTest {
             dataSubId: Int = 4,
             targetSubId: Int? = 1,
             soleVisibleRoot: Boolean = true,
-        ) = CcTransitionPolicy.mobileActivityRootMatches(
+        ) = CcDualMobilePolicy.mobileActivityRootMatches(
             state, dataSubId, targetSubId, soleVisibleRoot,
         )
         assertTrue(activity())
@@ -325,31 +325,31 @@ class CcTransitionMorphGeometryTest {
         val presentation = aggregateRootPresentation()
         val target = requireNotNull(presentation.networkType)
         val source = CenterIndicator.MobileType("5G", false, InternetState.VALIDATED)
-        val verifiedAggregateRoot = CcTransitionPolicy.verifiedAggregateTypeRoot(
+        val verifiedAggregateRoot = CcDualMobilePolicy.verifiedAggregateTypeRoot(
             presentation, 4, 1, true,
         )
-        assertTrue(CcTransitionPolicy.matchesDualMobileTypeTarget(
+        assertTrue(CcDualMobilePolicy.matchesDualMobileTypeTarget(
             dataSubId = 4,
             targetSubId = 1,
             source = source,
             target = target,
             verifiedAggregateRoot = verifiedAggregateRoot,
         ))
-        assertEquals(false, CcTransitionPolicy.matchesDualMobileTypeTarget(
+        assertEquals(false, CcDualMobilePolicy.matchesDualMobileTypeTarget(
             dataSubId = 4,
             targetSubId = 1,
             source = source,
             target = target.copy(label = "4G"),
             verifiedAggregateRoot = verifiedAggregateRoot,
         ))
-        assertEquals(false, CcTransitionPolicy.matchesDualMobileTypeTarget(
+        assertEquals(false, CcDualMobilePolicy.matchesDualMobileTypeTarget(
             dataSubId = 4,
             targetSubId = 1,
             source = source,
             target = null,
             verifiedAggregateRoot = verifiedAggregateRoot,
         ))
-        assertEquals(false, CcTransitionPolicy.matchesDualMobileTypeTarget(
+        assertEquals(false, CcDualMobilePolicy.matchesDualMobileTypeTarget(
             dataSubId = 4,
             targetSubId = 1,
             source = source,

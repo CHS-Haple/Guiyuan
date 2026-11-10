@@ -235,7 +235,7 @@ internal object CcTransitionOwner {
             nativeAppearance = nativeAppearance,
             nativeAppearanceAnimated = nativeAppearanceAnimated,
             transitionReservationEnabled =
-                CcTransitionPolicy.usesSemanticTransitionReservation(sourceScene),
+                CcReservationPolicy.usesSemanticTransitionReservation(sourceScene),
             nativeBatteryIslandActive = nativeBatteryIslandActive,
         )
     }
@@ -339,7 +339,7 @@ internal object CcTransitionOwner {
         private var overlayAdded = false
         private var sourceMaskApplied = false
         private var cachedNativePeerTint: Int? = null
-        private var frozenReservationSpans: List<CcTransitionPolicy.ReservationSpan>? = null
+        private var frozenReservationSpans: List<CcReservationPolicy.ReservationSpan>? = null
         private var reservationLayout: ChargeLayout? = null
         private var reservationRetarget: ReservationRetarget? = null
         private var lastReservationWidthPx: Int? = null
@@ -576,7 +576,7 @@ internal object CcTransitionOwner {
                                 model.centerIndicator is CenterIndicator.MobileType &&
                                 tag == nativeIdleMobileActivityResId}"
                     } ?: "missing"
-                    val rootOwnsTransport = CcTransitionPolicy.mobileActivityRootMatches(
+                    val rootOwnsTransport = CcDualMobilePolicy.mobileActivityRootMatches(
                         presentation = native,
                         dataSubId = dataSubId,
                         targetSubId = rootSubId,
@@ -749,7 +749,7 @@ internal object CcTransitionOwner {
             // Source content can change without a native FINAL layout change.
             // Retarget its held reservation instead of snapping to a new width.
             if (
-                CcTransitionPolicy.reservationSourceChanged(
+                CcReservationPolicy.reservationSourceChanged(
                     previous = previous,
                     current = model,
                     visualChanged = currentSnapshot.visual != next.visual,
@@ -931,7 +931,7 @@ internal object CcTransitionOwner {
                 } else {
                     val presentation = PresentationStore.snapshot().mobilePresentation
                     val order = presentation?.let {
-                        CcTransitionPolicy.dualRootRowIndices(
+                        CcDualMobilePolicy.dualRootRowIndices(
                             mode = it.mode,
                             slots = it.slotSubscriptionIds,
                             rootSubIds = nativeDualTargets.map { target -> target.subscriptionId },
@@ -1271,7 +1271,7 @@ internal object CcTransitionOwner {
                                             )
                                         }
                                     }
-                                    CcTransitionPolicy.dualMobileGroupGeometry(currentRows) ?: carried
+                                    CcDualMobilePolicy.dualMobileGroupGeometry(currentRows) ?: carried
                                 }
 
                                 aggregateTarget != null ->
@@ -1342,7 +1342,7 @@ internal object CcTransitionOwner {
                         model.centerIndicator is CenterIndicator.MobileType &&
                         targetGeometry != null
                     ) {
-                        CcTransitionPolicy.mobileTypeMatches(
+                        CcDualMobilePolicy.mobileTypeMatches(
                             sourceLabel = model.centerIndicator.label,
                             sourceEnhanced = model.centerIndicator.enhanced,
                             target = NativePresentationResolver.nativeTargetType(witness?.opticalView),
@@ -2420,12 +2420,12 @@ internal object CcTransitionOwner {
                 // Freeze source semantics, not FINAL geometry across charge modes.
                 val refreshed = resolveReservationSpans()
                 if (refreshed != null) {
-                    val oldWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+                    val oldWidth = CcReservationPolicy.resolveTransitionReservationWidth(
                         compactWidthPx = compactWidth,
                         spans = spans,
                         progress = progress,
                     )
-                    val newWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+                    val newWidth = CcReservationPolicy.resolveTransitionReservationWidth(
                         compactWidthPx = compactWidth,
                         spans = refreshed,
                         progress = progress,
@@ -2445,7 +2445,7 @@ internal object CcTransitionOwner {
                     spans = refreshed
                 }
             }
-            val baseWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+            val baseWidth = CcReservationPolicy.resolveTransitionReservationWidth(
                 compactWidthPx = compactWidth,
                 spans = spans,
                 progress = progress,
@@ -2485,7 +2485,7 @@ internal object CcTransitionOwner {
                                 return
                             }
                     lastNativePeerTargetEndOffsetPx = targetEndOffsetPx
-                    CcTransitionPolicy.resolveBatteryIslandNativePeerReservationWidth(
+                    CcReservationPolicy.resolveBatteryIslandNativePeerReservationWidth(
                         compactWidthPx = compactWidth,
                         spans = spans,
                         semanticWidthPx = requestedWidth,
@@ -2552,7 +2552,7 @@ internal object CcTransitionOwner {
             return targetEndLogical - fakeEndLogical
         }
 
-        private fun resolveReservationSpans(): List<CcTransitionPolicy.ReservationSpan>? {
+        private fun resolveReservationSpans(): List<CcReservationPolicy.ReservationSpan>? {
             val source = sourceViewRef.get() ?: return null
             if (source.width <= 0 || source.height <= 0) return null
             if (!isUsableSlotView(finalBattery)) return null
@@ -2596,7 +2596,7 @@ internal object CcTransitionOwner {
                     .mobilePresentation
                     ?.presentationRootSubscriptionId
 
-            val result = ArrayList<CcTransitionPolicy.ReservationSpan>(specs.size)
+            val result = ArrayList<CcReservationPolicy.ReservationSpan>(specs.size)
             specs.forEach { spec ->
                 val witness =
                     resolveSpecTarget(
@@ -2617,7 +2617,7 @@ internal object CcTransitionOwner {
                         (targetLocation[0] + slot.width).toFloat(),
                     )
                 result +=
-                    CcTransitionPolicy.ReservationSpan(
+                    CcReservationPolicy.ReservationSpan(
                         sourceLeft = min(sourceA, sourceB),
                         sourceRight = maxOf(sourceA, sourceB),
                         targetLeft = min(targetA, targetB),
@@ -2639,7 +2639,7 @@ internal object CcTransitionOwner {
                     }
                     val sourceA = logicalSourceX(mobileSpec.sourceBounds.left)
                     val sourceB = logicalSourceX(mobileSpec.sourceBounds.right)
-                    result += CcTransitionPolicy.ReservationSpan(
+                    result += CcReservationPolicy.ReservationSpan(
                         sourceLeft = min(sourceA, sourceB),
                         sourceRight = maxOf(sourceA, sourceB),
                         targetLeft = targetEdges.minOf { edge -> min(edge.first, edge.second) },
@@ -2669,7 +2669,7 @@ internal object CcTransitionOwner {
                             (targetLocation[0] + slot.width).toFloat(),
                         )
                     result +=
-                        CcTransitionPolicy.ReservationSpan(
+                        CcReservationPolicy.ReservationSpan(
                             sourceLeft = min(sourceA, sourceB),
                             sourceRight = maxOf(sourceA, sourceB),
                             targetLeft = min(targetA, targetB),
@@ -2694,7 +2694,7 @@ internal object CcTransitionOwner {
                             (targetLocation[0] + slot.width).toFloat(),
                         )
                     result +=
-                        CcTransitionPolicy.ReservationSpan(
+                        CcReservationPolicy.ReservationSpan(
                             sourceLeft = collapsedEnd,
                             sourceRight = collapsedEnd,
                             targetLeft = min(targetA, targetB),
@@ -2721,7 +2721,7 @@ internal object CcTransitionOwner {
                             (targetLocation[0] + slot.width).toFloat(),
                         )
                     result +=
-                        CcTransitionPolicy.ReservationSpan(
+                        CcReservationPolicy.ReservationSpan(
                             sourceLeft = collapsedEnd,
                             sourceRight = collapsedEnd,
                             targetLeft = min(targetA, targetB),
@@ -2768,7 +2768,7 @@ internal object CcTransitionOwner {
                 ParticipantVisualSnapshot.resolveView(optical)
                     ?.dualMobileRowsWithinEnvelope() != null
             } == true
-            val mode = CcTransitionPolicy.dualMobileTarget(
+            val mode = CcDualMobilePolicy.dualMobileTarget(
                 activeSubIds = platformIds,
                 targetSubIds = witnesses.map { it.subscriptionId },
                 aggregateProven =
@@ -2776,7 +2776,7 @@ internal object CcTransitionOwner {
                         (witnesses.size == 1 &&
                             presentation.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED),
             )
-            if (mode == CcTransitionPolicy.DualMobileTarget.NONE) return null
+            if (mode == CcDualMobilePolicy.DualMobileTarget.NONE) return null
             return witnesses
         }
 
@@ -2794,7 +2794,7 @@ internal object CcTransitionOwner {
                     targetOpticalBounds = spec.targetOpticalBounds,
                 ) ?: return null
             }
-            return CcTransitionPolicy.dualMobileGroupGeometry(targets)
+            return CcDualMobilePolicy.dualMobileGroupGeometry(targets)
         }
 
         private fun resolveSpecTarget(
@@ -2825,7 +2825,7 @@ internal object CcTransitionOwner {
             // An aggregate root need not belong to the data SIM.
             val aggregateRootVerified =
                 dualCenter &&
-                    CcTransitionPolicy.verifiedAggregateTypeRoot(
+                    CcDualMobilePolicy.verifiedAggregateTypeRoot(
                         presentation = PresentationStore.snapshot().mobilePresentation,
                         dataSubId = model.effectiveDataSubscriptionId,
                         targetSubId = witness.subscriptionId,
@@ -2839,7 +2839,7 @@ internal object CcTransitionOwner {
                                 .singleOrNull() === witness.slotView,
                     )
             if (dualCenter &&
-                !CcTransitionPolicy.matchesDualMobileTypeTarget(
+                !CcDualMobilePolicy.matchesDualMobileTypeTarget(
                     dataSubId = model.effectiveDataSubscriptionId,
                     targetSubId = witness.subscriptionId,
                     source = centerType,

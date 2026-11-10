@@ -204,13 +204,13 @@ class SysUiCcTransitionTest {
     fun transitionReservationExpandsOnlyWhenSemanticSpanLeavesCompactBoundary() {
         val spans =
             listOf(
-                CcTransitionPolicy.ReservationSpan(
+                CcReservationPolicy.ReservationSpan(
                     sourceLeft = -22f,
                     sourceRight = -12f,
                     targetLeft = -145f,
                     targetRight = -110f,
                 ),
-                CcTransitionPolicy.ReservationSpan(
+                CcReservationPolicy.ReservationSpan(
                     sourceLeft = -44f,
                     sourceRight = -32f,
                     targetLeft = -96f,
@@ -220,7 +220,7 @@ class SysUiCcTransitionTest {
 
         assertEquals(
             105,
-            CcTransitionPolicy.resolveReservationWidth(
+            CcReservationPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0f,
@@ -228,7 +228,7 @@ class SysUiCcTransitionTest {
         )
         assertEquals(
             105,
-            CcTransitionPolicy.resolveReservationWidth(
+            CcReservationPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0.5f,
@@ -236,7 +236,7 @@ class SysUiCcTransitionTest {
         )
         assertEquals(
             145,
-            CcTransitionPolicy.resolveReservationWidth(
+            CcReservationPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 1f,
