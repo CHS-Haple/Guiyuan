@@ -183,6 +183,7 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-glass-icons-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion")
+    implementation("top.yukonga.miuix.kmp:miuix-material-android:$miuixVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinxSerializationCoreVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationCoreVersion")
 }

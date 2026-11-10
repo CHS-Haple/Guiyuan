@@ -12,6 +12,20 @@ evidence remain in PRs, issues, commits and the reference documents.
   environment. The tested target is Xiaomi 15 Pro, HyperOS `OS4.0.0.19.XOBCNXM`,
   SystemUI `17.03.260226.r`. This does not certify every HyperOS 4 variant. The
   “OS3” selector is an optional **UI style**, not support for HyperOS 3.
+- **B1827 MIUIX Material acceptance (2026-11-10):** The maintainer reported
+  signed B1827 (`1.1.0`, `versionCode=261110827`,
+  `buildId=20261110-1827`) normal on the target device.
+  [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440) integrates MIUIX
+  `ca674992` into `dev`, replacing the upstream `miuix-shader` source module
+  with `miuix-material` and retaining the original Battery Colors Card/colour
+  hierarchy plus default `Regular` Glass menu shadows. Original B1827
+  [full CI](https://github.com/CHS-Haple/Guiyuan/actions/runs/42809922890)
+  and
+  [signing](https://github.com/CHS-Haple/Guiyuan/actions/runs/42811386871)
+  passed; the integrated source at `c9ea2848` passed
+  [full CI](https://github.com/CHS-Haple/Guiyuan/actions/runs/42835579470).
+  This is scoped UI/device evidence, not proof of all OS3-style edge cases,
+  every GPU resume path or a stable `main` promotion.
 - **B1822 accepted 1.1.0 release candidate (2026-11-09):** The maintainer
   installed the signed **Guiyuan 1.1.0 B1822** Canary and reported “1822没问题” (no
   observed issue in the tested scope). Exact `dev` source
@@ -94,8 +108,8 @@ evidence remain in PRs, issues, commits and the reference documents.
 - **B1821 accepted MIUIX/Glass integration (2026-11-09):** Upstream MIUIX
   [`45645854`](https://github.com/compose-miuix-ui/miuix/commit/45645854cd46c32275c5666e3aafa9980d8f104e)
   includes merged [#478](https://github.com/compose-miuix-ui/miuix/pull/478).
-  Guiyuan now pins official published Maven `0.9.4-45645854-SNAPSHOT` and the
-  exact same full source/checkout revision.
+  At B1821 Guiyuan pinned official published Maven
+  `0.9.4-45645854-SNAPSHOT` and the exact same full source/checkout revision.
   [PR #1384](https://github.com/CHS-Haple/Guiyuan/pull/1384) integrated the
   shared default-on OS3/OS4 UI-style progressive top-bar preference, OS4 Preview
   Sandbox top bar and measured dock-band extension, and the official W400
@@ -110,9 +124,9 @@ evidence remain in PRs, issues, commits and the reference documents.
   ownership remain intact; this is scoped target-device acceptance, not broad
   GPU/RTL/font-scale coverage or promotion to `main`. See
   [OS4 Glass provenance](../../third_party/miuix-glass/README.md).
-- **Pinned MIUIX UI adoption boundary:** The accepted pinned MIUIX Maven/source
-  graph is now `45645854` (via B1821), with app-local Glass bridges still
-  retained for verified compatibility needs. Upstream
+- **Previous MIUIX UI adoption boundary (B1821):** The pin at that checkpoint
+  was `45645854`. PR #1440 advances `dev` to `ca674992` while keeping app-local
+  Glass bridges for verified compatibility needs. Upstream
   [#478](https://github.com/compose-miuix-ui/miuix/pull/478) has now **merged**
   into `main` at `45645854`, while its isolated navigation layout/25dp
   destination icon presentation was already reviewed in Guiyuan B1818; its

@@ -7,7 +7,7 @@ runs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: compose-miuix-ui/miuix
-        ref: 45645854cd46c32275c5666e3aafa9980d8f104e
+        ref: ca674992c9645395cdb0d5109d66504ff53d018c
         path: miuix-upstream
         persist-credentials: false
     - name: Verify exact source revision and dialog dependencies
@@ -19,6 +19,7 @@ runs:
         test -n "$expected" && test "$actual" = "$expected"
         test -f miuix-upstream/miuix-ui/build.gradle.kts
         test -f miuix-upstream/miuix-blur/build.gradle.kts
+        test -f miuix-upstream/miuix-material/build.gradle.kts
         test -f miuix-upstream/miuix-core/build.gradle.kts
         test -f miuix-upstream/miuix-preference/build.gradle.kts
         test -f miuix-upstream/miuix-glass/build.gradle.kts

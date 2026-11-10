@@ -39,6 +39,77 @@ library.
   [THIRD_PARTY_NOTICES](../../THIRD_PARTY_NOTICES.md) and preserved source
   headers. Do not remove SPDX/copyright notices from adapted files.
 
+## MIUIX Material migration and B1827 acceptance (PR #1440, 2026-11-10)
+
+PR [#1440](https://github.com/CHS-Haple/Guiyuan/pull/1440) integrates the
+maintainer-accepted B1827 MIUIX Material revision into `dev` without promoting
+`main`. Its exact upstream base is
+[`ca674992`](https://github.com/compose-miuix-ui/miuix/commit/ca674992).
+This migrates the removed `miuix-shader` source module to
+`miuix-material-android` while retaining Guiyuan's Glass ownership and UI
+adapters. The previous B1821 `45645854` pin is documented below.
+
+The UI audit found that the Battery Colors sheet had a meaningful outer
+MIUIX `Card` with its own full-page background and a nested settings `Card`.
+The B1824
+experiment removed the outer Card, but the maintainer's screenshot confirmed
+that this **lost the intended visual grouping** and must not be kept. The
+B1825 correction restored the complete native `Card` hierarchy for built-in,
+custom and add pages. The follow-up correction restores the **original** outer
+Card theme pair, `surface/onSurface`, including the original dark
+`surface=#000000`. The inner Card keeps its normal native
+`surfaceContainer/onSurfaceContainer` defaults. This preserves the exact
+previous light/dark grouping, 16dp inset, Squircle silhouette, header,
+palette, actions and interaction feedback. No global theme tokens, storage,
+paging, nested-sheet lifecycle or color data are changed.
+
+The OS4 custom scheme management button retains the existing native
+`GlassIconButton` plus `GlassTransformPopup` anchor contract. B1826
+experimentally overrode the button shadow to `GlassShadows.Float`, but
+the supplied device recording showed a pronounced shadow discontinuity
+as the trigger became the popup. The explicit override was removed:
+both the upstream `GlassIconButton` and the upstream
+`GlassPopupDefaults.visuals()` use `GlassShadows.Regular` by default.
+The popup transforms the button surface and panel material but does
+**not** animate between different `GlassShadow` presets; using `Float`
+on one end introduced a mismatch. Leave both defaults intact rather
+than layering custom shadows or altering the host lifecycle.
+
+The root-hosted popup still owns Back and its exit; the button still does
+not sample the Sheet's own recorded surface to avoid a recursive HWUI
+RenderNode dependency. OS3 continues using native
+`OverlayIconDropdownMenu`. Restoring the preset is source-backed, but
+the entire shadow transition remains subject to device verification.
+
+OS3 dark-mode battery scheme Card bottom-line review (2026-11-10):
+the sheet's `BottomSheetContentLayout` uses upstream `squircleSurface`
+for the opaque shell and an independently drawn `OverscrollBackground`
+for negative drag offsets, deliberately extending its fill by `1.dp`.
+The scheme pager additionally has `HorizontalPager.clipToBounds()`;
+the full-size parent/child Cards are upstream MIUIX `Card`, with the
+requested original `surface/onSurface` and default `surfaceContainer`
+theme colors. On tall surfaces (>2048 physical pixels), upstream
+`SquircleBackground.kt` intentionally records the content and draws
+masked top/bottom corner bands separated by a straight middle, using
+whole-pixel `ceil`/`floor` boundaries. This affects both UI styles
+where the same Card is used; it does not establish a new Guiyuan-only
+z-order implementation fault. A thin visible seam in a device recording
+cannot be certified as **intended** merely because this native strategy
+is present, but the repository currently provides no demonstrated
+upstream-incompatible local crop or clip operation to fix. Therefore no
+new global Squircle override, extra background strip, black-line mask,
+shader patch or change to bottom-sheet overscroll has been introduced.
+The original card color is retained as the maintainer requested.
+
+OS4's GlassBottomSheet still draws its complete rim, including the square
+screen-edge bottom. Upstream `ca674992` retains this behavior. The trial
+`stroke = null` removed top and side highlights and was reverted. This is
+not proof that the white lower rim or internal Squircle joins are fixed.
+The maintainer reported signed B1827 normal on the target device. The
+integrated source passed full Android CI. These scoped checks do not establish
+that the historical OS3 dark overscroll seam was eliminated; no local
+rendering workaround is claimed.
+
 ## Accepted upstream OS4 Glass graph (B1821, 2026-11-09)
 
 - **Accepted pinned revision:** MIUIX upstream `main` commit [`45645854cd46c32275c5666e3aafa9980d8f104e`](https://github.com/compose-miuix-ui/miuix/commit/45645854cd46c32275c5666e3aafa9980d8f104e), containing merged [#478](https://github.com/compose-miuix-ui/miuix/pull/478). Guiyuan B1821 uses its official same-revision Maven artifacts and checkout, integrated by #1384 after source/CI checks and the maintainer's device acceptance. This advances the dependency graph from `ea1b935d` while preserving app-local Glass presentation and ownership contracts.

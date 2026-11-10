@@ -68,7 +68,7 @@ providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.
         "miuix-preference",
         "miuix-icons",
         "miuix-nav",
-        "miuix-shader",
+        "miuix-material",
         "miuix-squircle",
         "miuix-glass",
         "miuix-glass-icons",
@@ -83,7 +83,7 @@ providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.
     includeBuild(miuix) {
         dependencySubstitution {
             substitute(module("top.yukonga.miuix.kmp:miuix-core-android")).using(project(":miuix-core"))
-            substitute(module("top.yukonga.miuix.kmp:miuix-shader-android")).using(project(":miuix-shader"))
+            substitute(module("top.yukonga.miuix.kmp:miuix-material-android")).using(project(":miuix-material"))
             substitute(module("top.yukonga.miuix.kmp:miuix-squircle-android")).using(project(":miuix-squircle"))
             substitute(module("top.yukonga.miuix.kmp:miuix-ui-android")).using(project(":miuix-ui"))
             substitute(module("top.yukonga.miuix.kmp:miuix-blur-android")).using(project(":miuix-blur"))

@@ -8,8 +8,9 @@ import top.yukonga.miuix.kmp.basic.FloatingToolbarDefaults
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurDefaults
-import top.yukonga.miuix.kmp.blur.highlight.Highlight
 import top.yukonga.miuix.kmp.blur.textureBlur
+import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
+import top.yukonga.miuix.kmp.material.edgeStroke
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal const val NAV_BLUR_RADIUS = 25f
@@ -26,9 +27,10 @@ internal fun Modifier.floatingNavMaterial(
 ): Modifier {
     if (!style.requiresTextureBackdrop) return this
 
+    val shape = RoundedCornerShape(FloatingToolbarDefaults.CornerRadius)
     return textureBlur(
         backdrop = backdrop,
-        shape = RoundedCornerShape(FloatingToolbarDefaults.CornerRadius),
+        shape = shape,
         blurRadius = NAV_BLUR_RADIUS,
         colors =
             BlurDefaults.blurColors(
@@ -42,11 +44,11 @@ internal fun Modifier.floatingNavMaterial(
                         ),
                     ),
             ),
-        highlight =
-            if (style == NavStyle.Glass) {
-                if (dark) Highlight.GlassStrokeMiddleDark else Highlight.GlassStrokeMiddleLight
-            } else {
-                null
-            },
+    ).then(
+        if (style == NavStyle.Glass) {
+            Modifier.edgeStroke(shape, GlassEdgeStrokes.forTheme(dark))
+        } else {
+            Modifier
+        },
     )
 }
