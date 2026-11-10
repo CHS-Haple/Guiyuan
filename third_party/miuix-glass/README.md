@@ -74,6 +74,26 @@ RenderNode dependency. OS3 continues using native
 `OverlayIconDropdownMenu`. Restoring the preset is source-backed, but
 the entire shadow transition remains subject to device verification.
 
+OS3 dark-mode battery scheme Card bottom-line review (2026-11-10):
+the sheet's `BottomSheetContentLayout` uses upstream `squircleSurface`
+for the opaque shell and an independently drawn `OverscrollBackground`
+for negative drag offsets, deliberately extending its fill by `1.dp`.
+The scheme pager additionally has `HorizontalPager.clipToBounds()`;
+the full-size parent/child Cards are upstream MIUIX `Card`, with the
+requested original `surface/onSurface` and default `surfaceContainer`
+theme colors. On tall surfaces (>2048 physical pixels), upstream
+`SquircleBackground.kt` intentionally records the content and draws
+masked top/bottom corner bands separated by a straight middle, using
+whole-pixel `ceil`/`floor` boundaries. This affects both UI styles
+where the same Card is used; it does not establish a new Guiyuan-only
+z-order implementation fault. A thin visible seam in a device recording
+cannot be certified as **intended** merely because this native strategy
+is present, but the repository currently provides no demonstrated
+upstream-incompatible local crop or clip operation to fix. Therefore no
+new global Squircle override, extra background strip, black-line mask,
+shader patch or change to bottom-sheet overscroll has been introduced.
+The original card color is retained as the maintainer requested.
+
 OS4's current GlassBottomSheet draws its complete rim (including the square screen-edge bottom); upstream `ca674992` retains this default behavior. Setting `stroke = null` would remove the required top/side highlights and was reverted. This is intentionally **not** represented as a fix to the OS4 white bottom border or a proof of Squircle internal band-join parity. The user's earlier acceptance of other MIUIX candidate changes is separate from the new Battery Colors layout: final source CI and one consolidated visual acceptance still apply. Do not merge solely on compilation.
 
 ## Accepted upstream OS4 Glass graph (B1821, 2026-11-09)
