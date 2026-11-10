@@ -166,7 +166,9 @@ internal object SysUiDefaultDataSubSource {
         }
     }
 
+    // Roll back the delivery receipt for any callback failure, then rethrow.
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     internal fun deliverSubscription(
         next: Int,
         force: Boolean,
