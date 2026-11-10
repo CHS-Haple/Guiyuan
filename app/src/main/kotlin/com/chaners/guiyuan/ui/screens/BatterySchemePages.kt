@@ -299,42 +299,39 @@ private fun BatterySchemePageContent(
             Modifier
                 .fillMaxWidth()
                 .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
-                .verticalScroll(scrollState),
+                .verticalScroll(scrollState)
+                .padding(16.dp),
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-        ) {
-            BatterySchemeHeader(
-                name = name,
-                previewPage =
-                    if (builtIn != null) {
-                        BatterySchemePage.BuiltIn(builtIn)
-                    } else {
-                        custom?.let(BatterySchemePage::Custom)
-                    },
-                endAction =
-                    if (custom != null && onRename != null && onCopy != null && onDelete != null) {
-                        {
-                            BatterySchemeManageMenu(
-                                canCopy = canCreateCustom,
-                                onRename = onRename,
-                                onCopy = onCopy,
-                                onDelete = onDelete,
-                            )
-                        }
-                    } else {
-                        null
-                    },
-            )
-            BatterySchemeApplyAction(isActive, onApply)
-            BatterySchemeSettingsCard(
-                builtIn = builtIn,
-                custom = custom,
-                canCreateCustom = canCreateCustom,
-                onSlotClick = onSlotClick,
-                onSettingsCardMeasured = onSettingsCardMeasured,
-            )
-        }
+        BatterySchemeHeader(
+            name = name,
+            previewPage =
+                if (builtIn != null) {
+                    BatterySchemePage.BuiltIn(builtIn)
+                } else {
+                    custom?.let(BatterySchemePage::Custom)
+                },
+            endAction =
+                if (custom != null && onRename != null && onCopy != null && onDelete != null) {
+                    {
+                        BatterySchemeManageMenu(
+                            canCopy = canCreateCustom,
+                            onRename = onRename,
+                            onCopy = onCopy,
+                            onDelete = onDelete,
+                        )
+                    }
+                } else {
+                    null
+                },
+        )
+        BatterySchemeApplyAction(isActive, onApply)
+        BatterySchemeSettingsCard(
+            builtIn = builtIn,
+            custom = custom,
+            canCreateCustom = canCreateCustom,
+            onSlotClick = onSlotClick,
+            onSettingsCardMeasured = onSettingsCardMeasured,
+        )
     }
 }
 
