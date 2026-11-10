@@ -6,6 +6,8 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private const val ADD_FAILURE_MESSAGE = "add-failed"
+private const val UNOWNED_SLOT_VPN = "vpn"
 private const val SLOT_MOBILE = "mobile"
 private const val SLOT_WIFI = "wifi"
 private const val SLOT_NO_SIM = "no_sim"
@@ -27,7 +29,7 @@ class PresentationPoliciesTest {
 
     @Test
     fun rollbackFailureKeepsOriginalAdditionError() {
-        val addError = IllegalStateException("add-failed")
+        val addError = IllegalStateException(ADD_FAILURE_MESSAGE)
         val rollbackError = IllegalStateException("rollback-failed")
         val slots =
             object : ArrayList<String>() {
@@ -73,7 +75,7 @@ class PresentationPoliciesTest {
 
     @Test
     fun reflectedFatalRollbackFailureOutranksOrdinarySlotAdditionFailure() {
-        val addError = IllegalStateException("add-failed")
+        val addError = IllegalStateException(ADD_FAILURE_MESSAGE)
         val fatal = OutOfMemoryError("slot-rollback-fatal")
         val slots =
             object : ArrayList<String>() {
@@ -127,9 +129,9 @@ class PresentationPoliciesTest {
             )
         assertEquals(listOf(SLOT_MOBILE, SLOT_NO_SIM), owned)
 
-        val live = listOf(SLOT_ALARM_CLOCK, SLOT_WIFI, SLOT_MOBILE, SLOT_NO_SIM, "vpn")
+        val live = listOf(SLOT_ALARM_CLOCK, SLOT_WIFI, SLOT_MOBILE, SLOT_NO_SIM, UNOWNED_SLOT_VPN)
         assertEquals(
-            listOf(SLOT_ALARM_CLOCK, SLOT_WIFI, "vpn"),
+            listOf(SLOT_ALARM_CLOCK, SLOT_WIFI, UNOWNED_SLOT_VPN),
             OwnedEntries.restoreTarget(
                 live = live,
                 ownedEntries = owned,
