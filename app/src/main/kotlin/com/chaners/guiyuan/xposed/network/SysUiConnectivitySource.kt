@@ -213,6 +213,7 @@ internal object SysUiConnectivitySource {
         onDataChanged?.invoke()
     }
 
+    @Suppress("TooGenericExceptionCaught")
     @Synchronized
     fun detach() {
         // Failed unregisters still own their handles, but cannot publish stale state.

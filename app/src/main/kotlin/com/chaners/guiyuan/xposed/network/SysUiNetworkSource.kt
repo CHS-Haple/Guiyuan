@@ -451,6 +451,7 @@ internal object SysUiNetworkSource {
     }
 
 
+    @Suppress("TooGenericExceptionCaught")
     private fun installMobile(
         module: XposedModule,
         classLoader: ClassLoader,

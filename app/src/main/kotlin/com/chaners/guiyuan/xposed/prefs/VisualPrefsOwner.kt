@@ -90,6 +90,7 @@ internal object VisualPrefsOwner {
     }
 
     // A committed generation owns its callback failure until a newer generation wins.
+    @Suppress("TooGenericExceptionCaught")
     private fun deliverCommittedChange(
         previous: State,
         pending: State,
