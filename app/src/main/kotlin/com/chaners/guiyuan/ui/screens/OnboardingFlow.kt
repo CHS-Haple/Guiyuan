@@ -84,7 +84,7 @@ import top.yukonga.miuix.kmp.blur.textureBlur
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
-import com.chaners.guiyuan.settings.AppPlatform
+import com.chaners.guiyuan.settings.OnboardingPrefs
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
@@ -232,7 +232,7 @@ internal fun OnboardingFlow(
         }
         if (next !in pages) pages.add(next)
     }
-    val requiredReading = remember(context) { AppPlatform.readingRequirements(context) }
+    val requiredReading = remember(context) { OnboardingPrefs.readingRequirements(context) }
     var termsViewed by remember { mutableStateOf(false) }
     var privacyViewed by remember { mutableStateOf(false) }
     var openDocument by remember { mutableStateOf<AgreementDocument?>(null) }
