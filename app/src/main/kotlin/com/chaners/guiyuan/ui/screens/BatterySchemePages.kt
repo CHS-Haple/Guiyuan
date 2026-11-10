@@ -300,39 +300,48 @@ private fun BatterySchemePageContent(
             Modifier
                 .fillMaxWidth()
                 .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
-                .verticalScroll(scrollState)
-                .padding(16.dp),
+                .verticalScroll(scrollState),
     ) {
-        BatterySchemeHeader(
-            name = name,
-            previewPage =
-                if (builtIn != null) {
-                    BatterySchemePage.BuiltIn(builtIn)
-                } else {
-                    custom?.let(BatterySchemePage::Custom)
-                },
-            endAction =
-                if (custom != null && onRename != null && onCopy != null && onDelete != null) {
-                    {
-                        BatterySchemeManageMenu(
-                            canCopy = canCreateCustom,
-                            onRename = onRename,
-                            onCopy = onCopy,
-                            onDelete = onDelete,
-                        )
-                    }
-                } else {
-                    null
-                },
-        )
-        BatterySchemeApplyAction(isActive, onApply)
-        BatterySchemeSettingsCard(
-            builtIn = builtIn,
-            custom = custom,
-            canCreateCustom = canCreateCustom,
-            onSlotClick = onSlotClick,
-            onSettingsCardMeasured = onSettingsCardMeasured,
-        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors =
+                CardDefaults.defaultColors(
+                    color = MiuixTheme.colorScheme.surfaceContainerHighest,
+                    contentColor = MiuixTheme.colorScheme.onSurfaceContainerHighest,
+                ),
+            insideMargin = PaddingValues(16.dp),
+        ) {
+            BatterySchemeHeader(
+                name = name,
+                previewPage =
+                    if (builtIn != null) {
+                        BatterySchemePage.BuiltIn(builtIn)
+                    } else {
+                        custom?.let(BatterySchemePage::Custom)
+                    },
+                endAction =
+                    if (custom != null && onRename != null && onCopy != null && onDelete != null) {
+                        {
+                            BatterySchemeManageMenu(
+                                canCopy = canCreateCustom,
+                                onRename = onRename,
+                                onCopy = onCopy,
+                                onDelete = onDelete,
+                            )
+                        }
+                    } else {
+                        null
+                    },
+            )
+            BatterySchemeApplyAction(isActive, onApply)
+            BatterySchemeSettingsCard(
+                builtIn = builtIn,
+                custom = custom,
+                canCreateCustom = canCreateCustom,
+                onSlotClick = onSlotClick,
+                onSettingsCardMeasured = onSettingsCardMeasured,
+            )
+        }
     }
 }
 
@@ -375,10 +384,6 @@ private fun BatterySchemeSettingsCard(
                 .onSizeChanged { size ->
                     onSettingsCardMeasured(size.height)
                 },
-        colors = CardDefaults.defaultColors(
-            color = MiuixTheme.colorScheme.surfaceContainerHighest,
-            contentColor = MiuixTheme.colorScheme.onSurfaceContainerHighest,
-        ),
     ) {
         BatteryColorSlot.entries.forEach { slot ->
             val color =
