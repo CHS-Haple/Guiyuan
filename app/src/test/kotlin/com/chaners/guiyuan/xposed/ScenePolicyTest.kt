@@ -8,21 +8,21 @@ class ScenePolicyTest {
     @Test
     fun retainedSourceRequiresSizeAndAttachedHost() {
         assertTrue(
-            ScenePolicy.retainedTransitionSourceWitnessAvailable(
+            SceneCcPolicy.retainedTransitionSourceWitnessAvailable(
                 widthPx = 105,
                 heightPx = 169,
                 hostAttached = true,
             ),
         )
         assertFalse(
-            ScenePolicy.retainedTransitionSourceWitnessAvailable(
+            SceneCcPolicy.retainedTransitionSourceWitnessAvailable(
                 widthPx = 0,
                 heightPx = 169,
                 hostAttached = true,
             ),
         )
         assertFalse(
-            ScenePolicy.retainedTransitionSourceWitnessAvailable(
+            SceneCcPolicy.retainedTransitionSourceWitnessAvailable(
                 widthPx = 105,
                 heightPx = 169,
                 hostAttached = false,

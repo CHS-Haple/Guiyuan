@@ -8,25 +8,27 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private const val TEST_CC_CALLBACK_FAILURE = "callback-failure"
+
 class SysUiCcSourceTest {
     @Test
     fun runtimeCallbackFailureIsContainedAndReported() {
         var reported: Throwable? = null
         val completed =
             SysUiCcSource.dispatchRuntimeCallback(
-                callback = { error("callback-failure") },
+                callback = { error(TEST_CC_CALLBACK_FAILURE) },
                 onFailure = { reported = it },
             )
 
         assertFalse(completed)
-        assertEquals("callback-failure", reported?.message)
+        assertEquals(TEST_CC_CALLBACK_FAILURE, reported?.message)
     }
 
     @Test
     fun runtimeCallbackFailureHandlerCannotEscapeTheHookBoundary() {
         val completed =
             SysUiCcSource.dispatchRuntimeCallback(
-                callback = { error("callback-failure") },
+                callback = { error(TEST_CC_CALLBACK_FAILURE) },
                 onFailure = { error("failure-handler-failure") },
             )
 
@@ -166,7 +168,7 @@ class SysUiCcTransitionTest {
             )
         val component =
             requireNotNull(
-                CcTransitionPolicy.componentGeometry(
+                CcCarrierGeometryPolicy.componentGeometry(
                     parentGeometry = parent,
                     parentWidth = 120,
                     parentHeight = 120,
@@ -204,13 +206,13 @@ class SysUiCcTransitionTest {
     fun transitionReservationExpandsOnlyWhenSemanticSpanLeavesCompactBoundary() {
         val spans =
             listOf(
-                CcTransitionPolicy.ReservationSpan(
+                CcReservationPolicy.ReservationSpan(
                     sourceLeft = -22f,
                     sourceRight = -12f,
                     targetLeft = -145f,
                     targetRight = -110f,
                 ),
-                CcTransitionPolicy.ReservationSpan(
+                CcReservationPolicy.ReservationSpan(
                     sourceLeft = -44f,
                     sourceRight = -32f,
                     targetLeft = -96f,
@@ -220,7 +222,7 @@ class SysUiCcTransitionTest {
 
         assertEquals(
             105,
-            CcTransitionPolicy.resolveReservationWidth(
+            CcReservationPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0f,
@@ -228,7 +230,7 @@ class SysUiCcTransitionTest {
         )
         assertEquals(
             105,
-            CcTransitionPolicy.resolveReservationWidth(
+            CcReservationPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 0.5f,
@@ -236,7 +238,7 @@ class SysUiCcTransitionTest {
         )
         assertEquals(
             145,
-            CcTransitionPolicy.resolveReservationWidth(
+            CcReservationPolicy.resolveReservationWidth(
                 compactWidthPx = 105,
                 spans = spans,
                 progress = 1f,
@@ -248,27 +250,27 @@ class SysUiCcTransitionTest {
     fun mobileSignalMorphRowsDotsBeforeGrowingBars() {
         assertEquals(
             0f,
-            MobileSignalMorphPolicy.rowProgress(0f),
+            MobileSignalStagePolicy.rowProgress(0f),
             0.0001f,
         )
         assertEquals(
             0f,
-            MobileSignalMorphPolicy.rowProgress(0.5f),
+            MobileSignalStagePolicy.rowProgress(0.5f),
             0.0001f,
         )
         assertEquals(
             1f,
-            MobileSignalMorphPolicy.rowProgress(0.72f),
+            MobileSignalStagePolicy.rowProgress(0.72f),
             0.0001f,
         )
         assertEquals(
             0f,
-            MobileSignalMorphPolicy.barProgress(0.72f),
+            MobileSignalStagePolicy.barProgress(0.72f),
             0.0001f,
         )
         assertEquals(
             1f,
-            MobileSignalMorphPolicy.barProgress(1f),
+            MobileSignalStagePolicy.barProgress(1f),
             0.0001f,
         )
     }
@@ -277,17 +279,17 @@ class SysUiCcTransitionTest {
     fun mobileSignalMorphKeepsBarGrowthOutUntilRowPhaseCompletes() {
         assertEquals(
             0f,
-            MobileSignalMorphPolicy.barProgress(0.25f),
+            MobileSignalStagePolicy.barProgress(0.25f),
             0.0001f,
         )
         assertEquals(
             0.5f,
-            MobileSignalMorphPolicy.rowProgress(0.645f),
+            MobileSignalStagePolicy.rowProgress(0.645f),
             0.0001f,
         )
         assertEquals(
             0.5f,
-            MobileSignalMorphPolicy.barProgress(0.86f),
+            MobileSignalStagePolicy.barProgress(0.86f),
             0.0001f,
         )
     }
@@ -297,13 +299,13 @@ class SysUiCcTransitionTest {
         val maxBarHeight = 54f
         val diameter = 6f
         val half =
-            MobileSignalMorphPolicy.sharedBottomExpansion(
+            MobileSignalTargetGeometry.sharedBottomExpansion(
                 maxBarHeight = maxBarHeight,
                 diameter = diameter,
                 barProgress = 0.5f,
             )
         val full =
-            MobileSignalMorphPolicy.sharedBottomExpansion(
+            MobileSignalTargetGeometry.sharedBottomExpansion(
                 maxBarHeight = maxBarHeight,
                 diameter = diameter,
                 barProgress = 1f,
@@ -317,19 +319,19 @@ class SysUiCcTransitionTest {
     @Test
     fun mobileSignalMorphUsesNativeHeightOnlyAsACap() {
         val maxBarHeight =
-            MobileSignalMorphPolicy.targetMaxBarHeight(
+            MobileSignalTargetGeometry.targetMaxBarHeight(
                 sourceBoundsHeight = 24f,
                 diameter = 6f,
                 targetHeightRatio = 3f,
             )
         val highest =
-            MobileSignalMorphPolicy.targetBarHeight(
+            MobileSignalTargetGeometry.targetBarHeight(
                 index = 3,
                 maxBarHeight = maxBarHeight,
                 diameter = 6f,
             )
         val lowest =
-            MobileSignalMorphPolicy.targetBarHeight(
+            MobileSignalTargetGeometry.targetBarHeight(
                 index = 0,
                 maxBarHeight = maxBarHeight,
                 diameter = 6f,

@@ -101,4 +101,25 @@ class SysUiDefaultDataSubSourceTest {
             SysUiDefaultDataSubSource.detach()
         }
     }
+
+    @Test
+    fun errorDeliveryDoesNotAcknowledgeTheUnfinishedSubscription() {
+        SysUiDefaultDataSubSource.detach()
+        try {
+            val failure = AssertionError("delivery-aborted")
+            assertSame(
+                failure,
+                runCatching {
+                    SysUiDefaultDataSubSource.deliverSubscription(17, false) { throw failure }
+                }.exceptionOrNull(),
+            )
+            assertEquals(17, SysUiDefaultDataSubSource.currentSubscriptionId())
+            var retries = 0
+            assertTrue(SysUiDefaultDataSubSource.deliverSubscription(17, false) { retries++ })
+            assertFalse(SysUiDefaultDataSubSource.deliverSubscription(17, false) { retries++ })
+            assertEquals(1, retries)
+        } finally {
+            SysUiDefaultDataSubSource.detach()
+        }
+    }
 }

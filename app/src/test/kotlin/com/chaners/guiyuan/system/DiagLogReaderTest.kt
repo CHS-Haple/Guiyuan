@@ -4,6 +4,19 @@ import java.time.LocalDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+private const val EVENT_MODULE_LOADED = "module.loaded"
+private const val EVENT_MODULE_RELOADED = "module.reloaded"
+private const val EVENT_HOT_RELOAD_COMPLETE = "hotReload.complete"
+private const val EVENT_RUNTIME_TEARDOWN = "runtime.teardown"
+private const val FIELD_SESSION_ID = "sessionId"
+private const val EVENT_DIAGNOSTICS_BIND = "diagnostics.bind"
+private const val EVENT_MODULE_PREFIX = "module."
+private const val COMPONENT_MODULE = "module"
+private const val COMPONENT_HOT_RELOAD = "hotReload"
+private const val STATE_READY = "ready"
+private const val STATE_ERROR = "error"
+private const val STATE_UNAVAILABLE = "unavailable"
+
 class DiagLogReaderTest {
     @Test
     fun legacySessionSelectionKeepsLatestNativeStartAndMatchingPid() {
@@ -31,7 +44,7 @@ class DiagLogReaderTest {
                 "(com.android.systemui) [com.chaners.guiyuan,CombinedStatus,1,0,1] " +
                 "diag schema=2 event=$event component=diagnostics"
 
-        val before = line("09.900", "diagnostics.bind")
+        val before = line("09.900", EVENT_DIAGNOSTICS_BIND)
         val atBoundary = line("10.000", "diagnostics.snapshot")
         val after = line("10.001", "presentation.resolve")
         val logs = listOf(before, atBoundary, after)
@@ -74,13 +87,13 @@ class DiagLogReaderTest {
                 "($process) [com.chaners.guiyuan,CombinedStatus,876,0,1] " +
                 DiagProtocol.format(
                     event = kind,
-                    component = if (kind == "module.loaded") "module" else "network",
-                    fields = mapOf("sessionId" to session),
+                    component = if (kind == EVENT_MODULE_LOADED) COMPONENT_MODULE else "network",
+                    fields = mapOf(FIELD_SESSION_ID to session),
                 )
 
-        val nativeStart = event("com.android.systemui", 2200, 30, "module.loaded", "native")
+        val nativeStart = event("com.android.systemui", 2200, 30, EVENT_MODULE_LOADED, "native")
         val nativeNetwork = event("com.android.systemui", 2200, 31, "source.install", "native")
-        val remoteStart = event("com.android.settings:remote", 3300, 38, "module.loaded", "remote")
+        val remoteStart = event("com.android.settings:remote", 3300, 38, EVENT_MODULE_LOADED, "remote")
         val mixed = listOf(nativeStart, nativeNetwork, remoteStart).joinToString("\n")
 
         val selected = DiagLogReader.filterModuleLines(mixed)
@@ -102,7 +115,7 @@ class DiagLogReaderTest {
         val lspModule =
             "[ 2026-10-04T12:38:57.185 1000: 17495: 17495 I/LSPosedFramework ] " +
                 "(com.android.systemui) [com.chaners.guiyuan,CombinedStatus,817,0,1] " +
-                "module.loaded"
+                EVENT_MODULE_LOADED
 
         assertEquals(
             listOf(structured, lspModule),
@@ -121,9 +134,9 @@ class DiagLogReaderSessionTest {
         fun event(pid: Int, second: Int, session: String): String =
             "10-10 21:53:${second.toString().padStart(2, '0')}.000 $pid $pid I CombinedStatus: " +
                 DiagProtocol.format(
-                    event = "module.loaded",
-                    component = "module",
-                    fields = mapOf("sessionId" to session),
+                    event = EVENT_MODULE_LOADED,
+                    component = COMPONENT_MODULE,
+                    fields = mapOf(FIELD_SESSION_ID to session),
                 )
 
         val previous = event(1100, 30, "old")
@@ -152,18 +165,18 @@ class DiagLogReaderSessionTest {
                     event = kind,
                     component =
                         when {
-                            kind.startsWith("module.") -> "module"
-                            kind == "runtime.teardown" -> "runtimeSession"
-                            else -> "hotReload"
+                            kind.startsWith(EVENT_MODULE_PREFIX) -> COMPONENT_MODULE
+                            kind == EVENT_RUNTIME_TEARDOWN -> "runtimeSession"
+                            else -> COMPONENT_HOT_RELOAD
                         },
-                    fields = mapOf("sessionId" to session),
+                    fields = mapOf(FIELD_SESSION_ID to session),
                 )
 
-        val firstStart = event(30, "module.loaded", "old")
-        val newStart = event(31, "module.reloaded", "new")
-        val oldTeardown = event(32, "runtime.teardown", "old")
-        val newComplete = event(33, "hotReload.complete", "new")
-        val delayedOld = event(34, "hotReload.complete", "old")
+        val firstStart = event(30, EVENT_MODULE_LOADED, "old")
+        val newStart = event(31, EVENT_MODULE_RELOADED, "new")
+        val oldTeardown = event(32, EVENT_RUNTIME_TEARDOWN, "old")
+        val newComplete = event(33, EVENT_HOT_RELOAD_COMPLETE, "new")
+        val delayedOld = event(34, EVENT_HOT_RELOAD_COMPLETE, "old")
 
         assertEquals(
             listOf(newStart, newComplete),
@@ -179,17 +192,17 @@ class DiagLogReaderSessionTest {
             "10-11 19:15:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
                 DiagProtocol.format(
                     event = kind,
-                    component = if (kind.startsWith("module.")) "module" else "hotReload",
-                    fields = mapOf("sessionId" to session),
+                    component = if (kind.startsWith(EVENT_MODULE_PREFIX)) COMPONENT_MODULE else COMPONENT_HOT_RELOAD,
+                    fields = mapOf(FIELD_SESSION_ID to session),
                 )
 
-        val oldStart = event(30, "module.loaded", "old")
-        val newStart = event(31, "module.reloaded", "new")
-        val oldEvent = event(32, "runtime.teardown", "old")
+        val oldStart = event(30, EVENT_MODULE_LOADED, "old")
+        val newStart = event(31, EVENT_MODULE_RELOADED, "new")
+        val oldEvent = event(32, EVENT_RUNTIME_TEARDOWN, "old")
         val legacy =
             "10-11 19:15:33.000 2200 2200 I CombinedStatus: " +
                 "com.chaners.guiyuan legacy event"
-        val newEvent = event(34, "hotReload.complete", "new")
+        val newEvent = event(34, EVENT_HOT_RELOAD_COMPLETE, "new")
 
         assertEquals(
             listOf(newStart, legacy, newEvent),
@@ -206,13 +219,13 @@ class DiagLogReaderSessionTest {
         fun event(kind: String, session: String): String =
             DiagProtocol.format(
                 event = kind,
-                component = "module",
-                fields = mapOf("sessionId" to session),
+                component = COMPONENT_MODULE,
+                fields = mapOf(FIELD_SESSION_ID to session),
             )
 
-        val oldStart = event("module.loaded", "old")
-        val newStart = event("module.reloaded", "new")
-        val lateOld = event("runtime.teardown", "old")
+        val oldStart = event(EVENT_MODULE_LOADED, "old")
+        val newStart = event(EVENT_MODULE_RELOADED, "new")
+        val lateOld = event(EVENT_RUNTIME_TEARDOWN, "old")
         val untagged = "untagged legacy log line"
 
         assertEquals(
@@ -229,19 +242,19 @@ class DiagLogReaderSessionTest {
                     event = kind,
                     component =
                         when {
-                            kind.startsWith("module.") -> "module"
-                            kind == "diagnostics.bind" -> "diagnostics"
-                            kind == "runtime.teardown" -> "runtimeSession"
-                            else -> "hotReload"
+                            kind.startsWith(EVENT_MODULE_PREFIX) -> COMPONENT_MODULE
+                            kind == EVENT_DIAGNOSTICS_BIND -> "diagnostics"
+                            kind == EVENT_RUNTIME_TEARDOWN -> "runtimeSession"
+                            else -> COMPONENT_HOT_RELOAD
                         },
                     state = state,
-                    fields = mapOf("sessionId" to session),
+                    fields = mapOf(FIELD_SESSION_ID to session),
                 )
 
-        val oldStart = event(30, "module.loaded", "ready", "old")
-        val newBind = event(31, "diagnostics.bind", "ready", "new")
-        val failedTakeover = event(32, "hotReload.complete", "error", "new")
-        val delayedOld = event(33, "runtime.teardown", "released", "old")
+        val oldStart = event(30, EVENT_MODULE_LOADED, STATE_READY, "old")
+        val newBind = event(31, EVENT_DIAGNOSTICS_BIND, STATE_READY, "new")
+        val failedTakeover = event(32, EVENT_HOT_RELOAD_COMPLETE, STATE_ERROR, "new")
+        val delayedOld = event(33, EVENT_RUNTIME_TEARDOWN, "released", "old")
 
         assertEquals(
             listOf(newBind, failedTakeover),
@@ -255,14 +268,14 @@ class DiagLogReaderSessionTest {
             "10-11 20:17:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
                 DiagProtocol.format(
                     event = kind,
-                    component = if (kind.startsWith("module.")) "module" else "hotReload",
+                    component = if (kind.startsWith(EVENT_MODULE_PREFIX)) COMPONENT_MODULE else COMPONENT_HOT_RELOAD,
                     state = state,
-                    fields = mapOf("sessionId" to session),
+                    fields = mapOf(FIELD_SESSION_ID to session),
                 )
 
-        val oldStart = event(30, "module.loaded", "ready", "old")
-        val unavailable = event(31, "hotReload.complete", "unavailable", "new")
-        val delayedOld = event(32, "runtime.teardown", "released", "old")
+        val oldStart = event(30, EVENT_MODULE_LOADED, STATE_READY, "old")
+        val unavailable = event(31, EVENT_HOT_RELOAD_COMPLETE, STATE_UNAVAILABLE, "new")
+        val delayedOld = event(32, EVENT_RUNTIME_TEARDOWN, "released", "old")
 
         assertEquals(
             listOf(unavailable),
@@ -276,16 +289,16 @@ class DiagLogReaderSessionTest {
             "10-11 20:18:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
                 DiagProtocol.format(
                     event = kind,
-                    component = if (kind.startsWith("module.")) "module" else "hotReload",
+                    component = if (kind.startsWith(EVENT_MODULE_PREFIX)) COMPONENT_MODULE else COMPONENT_HOT_RELOAD,
                     state = state,
-                    fields = mapOf("sessionId" to session),
+                    fields = mapOf(FIELD_SESSION_ID to session),
                 )
 
-        val oldStart = event(30, "module.loaded", "ready", "old")
-        val oldUnavailable = event(31, "hotReload.complete", "unavailable", "old")
-        val newStart = event(32, "module.reloaded", "ready", "new")
-        val delayedOldUnavailable = event(33, "hotReload.complete", "unavailable", "old")
-        val newComplete = event(34, "hotReload.complete", "ready", "new")
+        val oldStart = event(30, EVENT_MODULE_LOADED, STATE_READY, "old")
+        val oldUnavailable = event(31, EVENT_HOT_RELOAD_COMPLETE, STATE_UNAVAILABLE, "old")
+        val newStart = event(32, EVENT_MODULE_RELOADED, STATE_READY, "new")
+        val delayedOldUnavailable = event(33, EVENT_HOT_RELOAD_COMPLETE, STATE_UNAVAILABLE, "old")
+        val newComplete = event(34, EVENT_HOT_RELOAD_COMPLETE, STATE_READY, "new")
 
         assertEquals(
             listOf(newStart, newComplete),
@@ -301,16 +314,16 @@ class DiagLogReaderSessionTest {
             "10-11 20:16:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
                 DiagProtocol.format(
                     event = kind,
-                    component = if (kind.startsWith("module.")) "module" else "hotReload",
+                    component = if (kind.startsWith(EVENT_MODULE_PREFIX)) COMPONENT_MODULE else COMPONENT_HOT_RELOAD,
                     state = state,
-                    fields = mapOf("sessionId" to session),
+                    fields = mapOf(FIELD_SESSION_ID to session),
                 )
 
-        val oldStart = event(30, "module.loaded", "ready", "old")
-        val oldError = event(31, "hotReload.complete", "error", "old")
-        val newStart = event(32, "module.reloaded", "ready", "new")
-        val delayedOldError = event(33, "hotReload.complete", "error", "old")
-        val newComplete = event(34, "hotReload.complete", "ready", "new")
+        val oldStart = event(30, EVENT_MODULE_LOADED, STATE_READY, "old")
+        val oldError = event(31, EVENT_HOT_RELOAD_COMPLETE, STATE_ERROR, "old")
+        val newStart = event(32, EVENT_MODULE_RELOADED, STATE_READY, "new")
+        val delayedOldError = event(33, EVENT_HOT_RELOAD_COMPLETE, STATE_ERROR, "old")
+        val newComplete = event(34, EVENT_HOT_RELOAD_COMPLETE, STATE_READY, "new")
 
         assertEquals(
             listOf(newStart, newComplete),
@@ -327,9 +340,9 @@ class DiagLogReaderSessionTest {
                 "1000: $pid: $pid I/LSPosedFramework ] " +
                 "(com.android.systemui) [com.chaners.guiyuan,CombinedStatus,876,0,1] " +
                 DiagProtocol.format(
-                    event = "module.loaded",
-                    component = "module",
-                    fields = mapOf("sessionId" to session),
+                    event = EVENT_MODULE_LOADED,
+                    component = COMPONENT_MODULE,
+                    fields = mapOf(FIELD_SESSION_ID to session),
                 )
 
         val old = event(1100, 30, "old")

@@ -4,6 +4,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
+private const val TEST_SCHEME_NAME = "Alpha Beta"
+
 class BatteryColorSchemeLibraryTest {
     @Test
     fun builtInOrderAndHyperosValuesMatchPinnedTarget() {
@@ -116,12 +118,12 @@ class BatteryColorSchemeLibraryTest {
     }
     @Test
     fun customSchemeNamesNormalizePastedControlAndBidiCharacters() {
-        assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\nBeta"))
-        assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\u2028Beta"))
-        assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\u202EBeta"))
-        assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\u200FBeta"))
-        assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\u061CBeta"))
-        assertEquals("Alpha Beta", normalizeCustomSchemeName("Alpha\uD800Beta"))
+        assertEquals(TEST_SCHEME_NAME, normalizeCustomSchemeName("Alpha\nBeta"))
+        assertEquals(TEST_SCHEME_NAME, normalizeCustomSchemeName("Alpha\u2028Beta"))
+        assertEquals(TEST_SCHEME_NAME, normalizeCustomSchemeName("Alpha\u202EBeta"))
+        assertEquals(TEST_SCHEME_NAME, normalizeCustomSchemeName("Alpha\u200FBeta"))
+        assertEquals(TEST_SCHEME_NAME, normalizeCustomSchemeName("Alpha\u061CBeta"))
+        assertEquals(TEST_SCHEME_NAME, normalizeCustomSchemeName("Alpha\uD800Beta"))
         assertEquals("Rocket \uD83D\uDE80", normalizeCustomSchemeName("Rocket \uD83D\uDE80"))
     }
 

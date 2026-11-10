@@ -6,13 +6,17 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private const val WIFI_RESOURCE_LEVEL_2 = "stat_sys_wifi_signal_2"
+private const val WIFI_RESOURCE_LEVEL_3 = "stat_sys_wifi_signal_3"
+private const val WIFI_RESOURCE_UNAVAILABLE_2 = "stat_sys_wifi_signal_unavailable_2"
+
 class WifiOpticalReferenceTest {
     @Test
     fun connectedResourceKeepsItsOwnLevelReference() {
         assertEquals(
-            "stat_sys_wifi_signal_3",
+            WIFI_RESOURCE_LEVEL_3,
             WifiOpticalReference.connectedReferenceEntry(
-                "stat_sys_wifi_signal_3",
+                WIFI_RESOURCE_LEVEL_3,
             ),
         )
     }
@@ -20,9 +24,9 @@ class WifiOpticalReferenceTest {
     @Test
     fun unavailableResourceMapsToConnectedPeerAtSameLevel() {
         assertEquals(
-            "stat_sys_wifi_signal_2",
+            WIFI_RESOURCE_LEVEL_2,
             WifiOpticalReference.connectedReferenceEntry(
-                "stat_sys_wifi_signal_unavailable_2",
+                WIFI_RESOURCE_UNAVAILABLE_2,
             ),
         )
     }
@@ -40,7 +44,7 @@ class WifiOpticalReferenceTest {
     @Test
     fun qualifiedUnavailableResourceMapsToConnectedPeer() {
         assertEquals(
-            "stat_sys_wifi_signal_3",
+            WIFI_RESOURCE_LEVEL_3,
             WifiOpticalReference.connectedReferenceEntry(
                 "com.android.systemui:drawable/stat_sys_wifi_signal_unavailable_3",
             ),
@@ -50,7 +54,7 @@ class WifiOpticalReferenceTest {
     @Test
     fun tintLikeConnectedVariantMapsBackToBaseReference() {
         assertEquals(
-            "stat_sys_wifi_signal_2",
+            WIFI_RESOURCE_LEVEL_2,
             WifiOpticalReference.connectedReferenceEntry(
                 "stat_sys_wifi_signal_2_tint",
             ),
@@ -75,12 +79,12 @@ class WifiOpticalReferenceTest {
             ),
         )
         assertEquals(
-            "stat_sys_wifi_signal_2",
-            WifiOpticalReference.fitReferenceEntry("stat_sys_wifi_signal_2"),
+            WIFI_RESOURCE_LEVEL_2,
+            WifiOpticalReference.fitReferenceEntry(WIFI_RESOURCE_LEVEL_2),
         )
         assertEquals(
-            "stat_sys_wifi_signal_2",
-            WifiOpticalReference.fitReferenceEntry("stat_sys_wifi_signal_unavailable_2"),
+            WIFI_RESOURCE_LEVEL_2,
+            WifiOpticalReference.fitReferenceEntry(WIFI_RESOURCE_UNAVAILABLE_2),
         )
         assertNull(WifiOpticalReference.fitReferenceEntry(null))
     }

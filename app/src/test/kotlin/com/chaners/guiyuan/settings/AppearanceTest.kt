@@ -10,6 +10,10 @@ import org.junit.Test
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
+private const val TEST_UI_STYLE_KEY = "ui_style"
+private const val TEST_NAV_CONTENT_KEY = "floating_navigation_content"
+private const val TEST_UNKNOWN_INPUT = "Unknown"
+
 class AppearanceTest {
     @Test
     fun legacyAppearanceKeepsTheUnmodifiedSystemPalette() {
@@ -115,9 +119,9 @@ class AppearanceCompatibilityTest {
 
     @Test
     fun os4MigrationUpdatesExistingUserWithoutResettingNavigation() {
-        val uiStyle = stringPreferencesKey("ui_style")
+        val uiStyle = stringPreferencesKey(TEST_UI_STYLE_KEY)
         val navStyle = stringPreferencesKey("floating_navigation_style")
-        val navContent = stringPreferencesKey("floating_navigation_content")
+        val navContent = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
         val navEnabled = booleanPreferencesKey("floating_navigation_bar_enabled")
         val prefs = mutablePreferencesOf(
             uiStyle to UiStyle.OS3.name,
@@ -142,16 +146,16 @@ class AppearanceCompatibilityTest {
     fun cleanInstallGetsOs4AndIconText() {
         val prefs = mutablePreferencesOf()
         migrateOs4Appearance(prefs)
-        assertEquals(UiStyle.OS4.name, prefs[stringPreferencesKey("ui_style")])
+        assertEquals(UiStyle.OS4.name, prefs[stringPreferencesKey(TEST_UI_STYLE_KEY)])
         assertEquals(
             NavContent.IconAndText.name,
-            prefs[stringPreferencesKey("floating_navigation_content")],
+            prefs[stringPreferencesKey(TEST_NAV_CONTENT_KEY)],
         )
     }
 
     @Test
     fun existingNavigationLabelPreferencesRemainSeparateAcrossMigration() {
-        val regularKey = stringPreferencesKey("floating_navigation_content")
+        val regularKey = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
         val liquidKey = stringPreferencesKey("floating_navigation_liquid_content")
         val prefs = mutablePreferencesOf(
             regularKey to NavContent.IconOnly.name,
@@ -176,14 +180,14 @@ class AppearanceCompatibilityTest {
     fun uiStyleMigrationDoesNotResetProgressiveBlurPreference() {
         val blurKey = booleanPreferencesKey("top_bar_progressive_blur")
         val prefs = mutablePreferencesOf(
-            stringPreferencesKey("ui_style") to UiStyle.OS3.name,
+            stringPreferencesKey(TEST_UI_STYLE_KEY) to UiStyle.OS3.name,
             blurKey to false,
         )
 
         migrateOs4Appearance(prefs)
 
         assertEquals(false, prefs[blurKey])
-        assertEquals(UiStyle.OS4.name, prefs[stringPreferencesKey("ui_style")])
+        assertEquals(UiStyle.OS4.name, prefs[stringPreferencesKey(TEST_UI_STYLE_KEY)])
     }
 
     @Test
@@ -286,7 +290,7 @@ class AppearanceNavigationTest {
         )
         assertEquals(
             NavContent.IconOnly,
-            decodeNavContent("Unknown"),
+            decodeNavContent(TEST_UNKNOWN_INPUT),
         )
         assertEquals(
             NavContent.IconAndText,
@@ -318,7 +322,7 @@ class AppearanceNavigationTest {
     fun liquidContentDefaultsToIconsAndText() {
         assertEquals(NavContent.IconAndText, decodeNavContent(null, NavContent.IconAndText))
         assertEquals(NavContent.IconOnly, decodeNavContent("IconOnly", NavContent.IconAndText))
-        assertEquals(NavContent.IconAndText, decodeNavContent("Unknown", NavContent.IconAndText))
+        assertEquals(NavContent.IconAndText, decodeNavContent(TEST_UNKNOWN_INPUT, NavContent.IconAndText))
     }
 
     @Test
@@ -326,7 +330,7 @@ class AppearanceNavigationTest {
         assertEquals(listOf(LiquidMode.Blur, LiquidMode.Balanced, LiquidMode.Clear), LiquidMode.entries)
         assertEquals(LiquidMode.Balanced, Appearance().liquidMode)
         assertEquals(LiquidMode.Balanced, decodeLiquidMode(null))
-        assertEquals(LiquidMode.Balanced, decodeLiquidMode("Unknown"))
+        assertEquals(LiquidMode.Balanced, decodeLiquidMode(TEST_UNKNOWN_INPUT))
         assertEquals(LiquidMode.Balanced, decodeLiquidMode("Blur"))
         assertEquals(LiquidMode.Blur, decodeLiquidMode("Blur8"))
         assertEquals(LiquidMode.Balanced, decodeLiquidMode("Default"))
@@ -383,7 +387,7 @@ class AppearanceThemeModeTest {
     fun unknownStoredModeFallsBackToSystem() {
         val result =
             decodeTheme(
-                storedMode = "Unknown",
+                storedMode = TEST_UNKNOWN_INPUT,
                 storedDynamicColorEnabled = null,
             )
 

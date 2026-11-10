@@ -8,6 +8,11 @@ import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private const val TEST_LAYOUT_KEY = "layout"
+private const val TEST_OLD_VALUE = "old"
+private const val TEST_FEATURE_ROLLBACK = "feature rollback"
+private const val TEST_FEATURE_WRITE = "feature write"
+
 class ConfigRestoreTest {
     @Test
     fun successDoesNotAttemptCompensation() {
@@ -25,31 +30,31 @@ class ConfigRestoreTest {
 
     @Test
     fun visualFalseCompensatesPartialWriteWithoutTouchingFeatures() {
-        val visuals = mutableMapOf("layout" to "old")
+        val visuals = mutableMapOf(TEST_LAYOUT_KEY to TEST_OLD_VALUE)
         var featureCalls = 0
         var featureRollbacks = 0
         assertFalse(
             restoreBackupStores(
                 restoreVisual = {
-                    visuals["layout"] = "new"
+                    visuals[TEST_LAYOUT_KEY] = "new"
                     false
                 },
                 restoreFeature = { featureCalls++; true },
                 rollbackVisual = {
-                    visuals["layout"] = "old"
+                    visuals[TEST_LAYOUT_KEY] = TEST_OLD_VALUE
                     true
                 },
                 rollbackFeature = { featureRollbacks++; true },
             ),
         )
-        assertEquals(mapOf("layout" to "old"), visuals)
+        assertEquals(mapOf(TEST_LAYOUT_KEY to TEST_OLD_VALUE), visuals)
         assertEquals(0, featureCalls)
         assertEquals(0, featureRollbacks)
     }
 
     @Test
     fun featureCommitThrowRestoresBothKeyMapsIncludingAbsentKeysAndTimestamp() {
-        val visual = mutableMapOf<String, Any>("layout" to "old")
+        val visual = mutableMapOf<String, Any>(TEST_LAYOUT_KEY to TEST_OLD_VALUE)
         val feature = mutableMapOf<String, Any>(
             FEATURE_ENABLED_KEY to false,
             FEATURE_CHANGED_AT_NS_KEY to 17L,
@@ -60,7 +65,7 @@ class ConfigRestoreTest {
         val thrown =
             assertThrows(IOException::class.java) {
                 restoreBackupStores(
-                    restoreVisual = { visual["layout"] = "new"; true },
+                    restoreVisual = { visual[TEST_LAYOUT_KEY] = "new"; true },
                     restoreFeature = {
                         feature[FEATURE_AOD_KEY] = true
                         feature[FEATURE_CHANGED_AT_NS_KEY] = 999L
@@ -105,20 +110,20 @@ class ConfigRestoreTest {
         assertFalse(
             restoreBackupStores(
                 restoreVisual = { order.add("visual write"); true },
-                restoreFeature = { order.add("feature write"); false },
+                restoreFeature = { order.add(TEST_FEATURE_WRITE); false },
                 rollbackVisual = { order.add("visual rollback"); true },
-                rollbackFeature = { order.add("feature rollback"); true },
+                rollbackFeature = { order.add(TEST_FEATURE_ROLLBACK); true },
             ),
         )
         assertEquals(
-            listOf("visual write", "feature write", "feature rollback", "visual rollback"),
+            listOf("visual write", TEST_FEATURE_WRITE, TEST_FEATURE_ROLLBACK, "visual rollback"),
             order,
         )
     }
 
     @Test
     fun failureInFeatureRollbackDoesNotPreventVisualRollbackOrHideOriginalCause() {
-        val cause = IOException("feature write")
+        val cause = IOException(TEST_FEATURE_WRITE)
         var visualRolledBack = false
         val thrown =
             assertThrows(IOException::class.java) {
@@ -126,13 +131,13 @@ class ConfigRestoreTest {
                     restoreVisual = { true },
                     restoreFeature = { throw cause },
                     rollbackVisual = { visualRolledBack = true; true },
-                    rollbackFeature = { throw IllegalStateException("feature rollback") },
+                    rollbackFeature = { throw IllegalStateException(TEST_FEATURE_ROLLBACK) },
                 )
             }
         assertTrue(thrown === cause)
         assertTrue(visualRolledBack)
         assertEquals(1, thrown.suppressed.size)
-        assertTrue(thrown.suppressed[0].message!!.contains("feature rollback"))
+        assertTrue(thrown.suppressed[0].message!!.contains(TEST_FEATURE_ROLLBACK))
     }
 
     @Test
@@ -158,20 +163,20 @@ class ConfigRestoreTest {
                     restoreVisual = { true },
                     restoreFeature = { throw cause },
                     rollbackVisual = { false },
-                    rollbackFeature = { throw IllegalStateException("feature rollback") },
+                    rollbackFeature = { throw IllegalStateException(TEST_FEATURE_ROLLBACK) },
                 )
             }
         assertTrue(thrown === cause)
         assertEquals(1, thrown.suppressed.size)
         val rollbackFailure = thrown.suppressed[0]
-        assertTrue(rollbackFailure.message!!.contains("feature rollback"))
+        assertTrue(rollbackFailure.message!!.contains(TEST_FEATURE_ROLLBACK))
         assertEquals(1, rollbackFailure.suppressed.size)
         assertTrue(rollbackFailure.suppressed[0].message!!.contains("visual"))
     }
 
     @Test
     fun cancellationDuringRollbackTakesPriorityWithoutHidingTheWriteError() {
-        val cause = IOException("feature write")
+        val cause = IOException(TEST_FEATURE_WRITE)
         val cancellation = CancellationException("cancelled during visual rollback")
         val thrown =
             assertThrows(CancellationException::class.java) {

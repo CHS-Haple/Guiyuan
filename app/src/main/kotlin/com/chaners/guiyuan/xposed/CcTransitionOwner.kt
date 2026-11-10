@@ -235,7 +235,7 @@ internal object CcTransitionOwner {
             nativeAppearance = nativeAppearance,
             nativeAppearanceAnimated = nativeAppearanceAnimated,
             transitionReservationEnabled =
-                CcTransitionPolicy.usesSemanticTransitionReservation(sourceScene),
+                CcReservationPolicy.usesSemanticTransitionReservation(sourceScene),
             nativeBatteryIslandActive = nativeBatteryIslandActive,
         )
     }
@@ -339,7 +339,7 @@ internal object CcTransitionOwner {
         private var overlayAdded = false
         private var sourceMaskApplied = false
         private var cachedNativePeerTint: Int? = null
-        private var frozenReservationSpans: List<CcTransitionPolicy.ReservationSpan>? = null
+        private var frozenReservationSpans: List<CcReservationPolicy.ReservationSpan>? = null
         private var reservationLayout: ChargeLayout? = null
         private var reservationRetarget: ReservationRetarget? = null
         private var lastReservationWidthPx: Int? = null
@@ -576,7 +576,7 @@ internal object CcTransitionOwner {
                                 model.centerIndicator is CenterIndicator.MobileType &&
                                 tag == nativeIdleMobileActivityResId}"
                     } ?: "missing"
-                    val rootOwnsTransport = CcTransitionPolicy.mobileActivityRootMatches(
+                    val rootOwnsTransport = CcDualMobilePolicy.mobileActivityRootMatches(
                         presentation = native,
                         dataSubId = dataSubId,
                         targetSubId = rootSubId,
@@ -749,7 +749,7 @@ internal object CcTransitionOwner {
             // Source content can change without a native FINAL layout change.
             // Retarget its held reservation instead of snapping to a new width.
             if (
-                CcTransitionPolicy.reservationSourceChanged(
+                CcReservationPolicy.reservationSourceChanged(
                     previous = previous,
                     current = model,
                     visualChanged = currentSnapshot.visual != next.visual,
@@ -851,7 +851,7 @@ internal object CcTransitionOwner {
                             view = sourceView,
                             root = rootView,
                         ) ?: return
-                    CcTransitionPolicy.composeSourceGeometry(
+                    CcCarrierGeometryPolicy.composeSourceGeometry(
                         positionAuthority = sourcePositionSample,
                         basisAuthority = sourceBasisSample,
                     )
@@ -875,7 +875,7 @@ internal object CcTransitionOwner {
                         root = rootView,
                     )?.let { fullCurrentCarrier ->
                         val currentCarrier =
-                            CcTransitionPolicy.endAnchoredMotionCarrierGeometry(
+                            CcCarrierGeometryPolicy.endAnchoredMotionCarrierGeometry(
                                 carrierGeometry = fullCurrentCarrier,
                                 carrierWidth = fakeStatusIcons.width,
                                 carrierHeight = fakeStatusIcons.height,
@@ -931,7 +931,7 @@ internal object CcTransitionOwner {
                 } else {
                     val presentation = PresentationStore.snapshot().mobilePresentation
                     val order = presentation?.let {
-                        CcTransitionPolicy.dualRootRowIndices(
+                        CcDualMobilePolicy.dualRootRowIndices(
                             mode = it.mode,
                             slots = it.slotSubscriptionIds,
                             rootSubIds = nativeDualTargets.map { target -> target.subscriptionId },
@@ -944,7 +944,7 @@ internal object CcTransitionOwner {
                             if (mobileTargetBars(witness)?.size != 4) {
                                 null
                             } else {
-                                CcTransitionPolicy.componentGeometry(
+                                CcCarrierGeometryPolicy.componentGeometry(
                                     parentGeometry = sourceParentGeometry,
                                     parentWidth = sourceWidth,
                                     parentHeight = sourceHeight,
@@ -976,7 +976,7 @@ internal object CcTransitionOwner {
                             ?: return@let null
                         val sample = sample(optical, rootView) ?: return@let null
                         val bounds = snapshot.envelope
-                        val target = CcTransitionPolicy.componentGeometry(
+                        val target = CcCarrierGeometryPolicy.componentGeometry(
                             parentGeometry = sample,
                             parentWidth = optical.width,
                             parentHeight = optical.height,
@@ -1002,7 +1002,7 @@ internal object CcTransitionOwner {
             val dualRowTravel =
                 if (dualRowTargets == null) null
                 else rowSpecs?.mapNotNull { spec ->
-                    CcTransitionPolicy.componentGeometry(
+                    CcCarrierGeometryPolicy.componentGeometry(
                         parentGeometry = sourceParentGeometry,
                         parentWidth = sourceWidth,
                         parentHeight = sourceHeight,
@@ -1042,7 +1042,7 @@ internal object CcTransitionOwner {
                 it.component == StatusPainter.TransitionComponent.CENTER
             }
             val centerSource = centerSpec?.let { spec ->
-                CcTransitionPolicy.componentGeometry(
+                CcCarrierGeometryPolicy.componentGeometry(
                     parentGeometry = sourceParentGeometry,
                     parentWidth = sourceWidth,
                     parentHeight = sourceHeight,
@@ -1124,7 +1124,7 @@ internal object CcTransitionOwner {
                             source: Int,
                             tinted: Boolean,
                         ): Int =
-                            CcTransitionPolicy.resolveTransitionTint(
+                            CcTintPolicy.resolveTransitionTint(
                                 source = source,
                                 target = tint,
                                 progress = motionProgress,
@@ -1187,7 +1187,7 @@ internal object CcTransitionOwner {
                         StatusPainter.TransitionComponent.BATTERY_NUMBER
                 }?.let { numberSpec ->
                     val numberSource =
-                        CcTransitionPolicy.componentGeometry(
+                        CcCarrierGeometryPolicy.componentGeometry(
                             parentGeometry = sourceParentGeometry,
                             parentWidth = sourceWidth,
                             parentHeight = sourceHeight,
@@ -1242,7 +1242,7 @@ internal object CcTransitionOwner {
             val dualMobileFollowerFrames =
                 if (specs.any { it.followDualMobileMotion }) {
                     dualSpec?.let { mobileSpec ->
-                        val mobileSource = CcTransitionPolicy.componentGeometry(
+                        val mobileSource = CcCarrierGeometryPolicy.componentGeometry(
                             parentGeometry = sourceParentGeometry,
                             parentWidth = sourceWidth,
                             parentHeight = sourceHeight,
@@ -1255,7 +1255,7 @@ internal object CcTransitionOwner {
                                     rowSpecs?.size == 2 -> {
                                     val currentRows = rowSpecs.orEmpty().zip(dualRowTargets).mapNotNull {
                                         (rowSpec, target) ->
-                                        CcTransitionPolicy.componentGeometry(
+                                        CcCarrierGeometryPolicy.componentGeometry(
                                             parentGeometry = sourceParentGeometry,
                                             parentWidth = sourceWidth,
                                             parentHeight = sourceHeight,
@@ -1271,7 +1271,7 @@ internal object CcTransitionOwner {
                                             )
                                         }
                                     }
-                                    CcTransitionPolicy.dualMobileGroupGeometry(currentRows) ?: carried
+                                    CcDualMobilePolicy.dualMobileGroupGeometry(currentRows) ?: carried
                                 }
 
                                 aggregateTarget != null ->
@@ -1291,7 +1291,7 @@ internal object CcTransitionOwner {
 
             specs.forEach { spec ->
                 val sourceGeometry =
-                    CcTransitionPolicy.componentGeometry(
+                    CcCarrierGeometryPolicy.componentGeometry(
                         parentGeometry = sourceParentGeometry,
                         parentWidth = sourceWidth,
                         parentHeight = sourceHeight,
@@ -1342,7 +1342,7 @@ internal object CcTransitionOwner {
                         model.centerIndicator is CenterIndicator.MobileType &&
                         targetGeometry != null
                     ) {
-                        CcTransitionPolicy.mobileTypeMatches(
+                        CcDualMobilePolicy.mobileTypeMatches(
                             sourceLabel = model.centerIndicator.label,
                             sourceEnhanced = model.centerIndicator.enhanced,
                             target = NativePresentationResolver.nativeTargetType(witness?.opticalView),
@@ -1413,7 +1413,7 @@ internal object CcTransitionOwner {
                                 else batteryNumberFollowerFrames
                             followerFrames
                                 ?.let { (anchorSource, anchorCurrent) ->
-                                    CcTransitionPolicy.followAnchorGeometry(
+                                    CcCarrierGeometryPolicy.followAnchorGeometry(
                                         follower = sourceGeometry,
                                         sourceAnchor = anchorSource,
                                         currentAnchor = anchorCurrent,
@@ -1771,7 +1771,7 @@ internal object CcTransitionOwner {
                 return
             }
             val sourceGeometry =
-                CcTransitionPolicy.componentGeometry(
+                CcCarrierGeometryPolicy.componentGeometry(
                     parentGeometry = sourceParentGeometry,
                     parentWidth = sourceWidth,
                     parentHeight = sourceHeight,
@@ -1809,7 +1809,7 @@ internal object CcTransitionOwner {
                         current = sourceGeometry,
                     )
                 val outerSimilarityScale =
-                    MobileSignalMorphPolicy.outerSimilarityScale(
+                    MobileSignalTargetGeometry.outerSimilarityScale(
                         targetWidthRatio = targetWidthRatio,
                         targetHeightRatio = targetHeightRatio,
                     )
@@ -1817,13 +1817,13 @@ internal object CcTransitionOwner {
                     CcTransitionPolicy.expandedClipBounds(
                         bounds = mobileSpec.sourceBounds,
                         widthScale =
-                            MobileSignalMorphPolicy
+                            MobileSignalTargetGeometry
                                 .exactTargetAxisCompensation(
                                     targetAxisRatio = targetWidthRatio,
                                     outerScale = outerSimilarityScale,
                                 ),
                         heightScale =
-                            MobileSignalMorphPolicy
+                            MobileSignalTargetGeometry
                                 .exactTargetAxisCompensation(
                                     targetAxisRatio = targetHeightRatio,
                                     outerScale = outerSimilarityScale,
@@ -1921,7 +1921,7 @@ internal object CcTransitionOwner {
                     visual = currentSnapshot.visual,
                 ) ?: return
             val sourceGeometry =
-                CcTransitionPolicy.componentGeometry(
+                CcCarrierGeometryPolicy.componentGeometry(
                     parentGeometry = sourceParentGeometry,
                     parentWidth = sourceWidth,
                     parentHeight = sourceHeight,
@@ -2019,7 +2019,7 @@ internal object CcTransitionOwner {
                     visual = currentSnapshot.visual,
                 ) ?: return
             val sourceGeometry =
-                CcTransitionPolicy.componentGeometry(
+                CcCarrierGeometryPolicy.componentGeometry(
                     parentGeometry = sourceParentGeometry,
                     parentWidth = sourceWidth,
                     parentHeight = sourceHeight,
@@ -2205,7 +2205,7 @@ internal object CcTransitionOwner {
             carrierFrames: CarrierFrames?,
         ): FloatArray =
             carrierFrames?.let { frames ->
-                CcTransitionPolicy.interpolateCarriedSourceToRootTargetExact(
+                CcCarrierGeometryPolicy.interpolateCarriedSourceToRootTargetExact(
                     source = source,
                     target = target,
                     sourceCarrier = frames.source,
@@ -2246,7 +2246,7 @@ internal object CcTransitionOwner {
             carrierFrames: CarrierFrames?,
         ): FloatArray =
             carrierFrames?.let { frames ->
-                CcTransitionPolicy.rebaseSourceToCurrentCarrier(
+                CcCarrierGeometryPolicy.rebaseSourceToCurrentCarrier(
                     source = source,
                     sourceCarrier = frames.source,
                     currentCarrier = frames.current,
@@ -2378,7 +2378,7 @@ internal object CcTransitionOwner {
                 NativeStatusObserver
                     .currentStatusIconTint(fakeStatusIcons)
             val resolved =
-                CcTransitionPolicy.selectNativeTransitionTint(
+                CcTintPolicy.selectNativeTransitionTint(
                     statusIconPeerTint = peerTint,
                     cachedTint = cachedNativePeerTint,
                 )
@@ -2420,12 +2420,12 @@ internal object CcTransitionOwner {
                 // Freeze source semantics, not FINAL geometry across charge modes.
                 val refreshed = resolveReservationSpans()
                 if (refreshed != null) {
-                    val oldWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+                    val oldWidth = CcReservationPolicy.resolveTransitionReservationWidth(
                         compactWidthPx = compactWidth,
                         spans = spans,
                         progress = progress,
                     )
-                    val newWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+                    val newWidth = CcReservationPolicy.resolveTransitionReservationWidth(
                         compactWidthPx = compactWidth,
                         spans = refreshed,
                         progress = progress,
@@ -2445,7 +2445,7 @@ internal object CcTransitionOwner {
                     spans = refreshed
                 }
             }
-            val baseWidth = CcTransitionPolicy.resolveTransitionReservationWidth(
+            val baseWidth = CcReservationPolicy.resolveTransitionReservationWidth(
                 compactWidthPx = compactWidth,
                 spans = spans,
                 progress = progress,
@@ -2485,7 +2485,7 @@ internal object CcTransitionOwner {
                                 return
                             }
                     lastNativePeerTargetEndOffsetPx = targetEndOffsetPx
-                    CcTransitionPolicy.resolveBatteryIslandNativePeerReservationWidth(
+                    CcReservationPolicy.resolveBatteryIslandNativePeerReservationWidth(
                         compactWidthPx = compactWidth,
                         spans = spans,
                         semanticWidthPx = requestedWidth,
@@ -2552,7 +2552,7 @@ internal object CcTransitionOwner {
             return targetEndLogical - fakeEndLogical
         }
 
-        private fun resolveReservationSpans(): List<CcTransitionPolicy.ReservationSpan>? {
+        private fun resolveReservationSpans(): List<CcReservationPolicy.ReservationSpan>? {
             val source = sourceViewRef.get() ?: return null
             if (source.width <= 0 || source.height <= 0) return null
             if (!isUsableSlotView(finalBattery)) return null
@@ -2596,7 +2596,7 @@ internal object CcTransitionOwner {
                     .mobilePresentation
                     ?.presentationRootSubscriptionId
 
-            val result = ArrayList<CcTransitionPolicy.ReservationSpan>(specs.size)
+            val result = ArrayList<CcReservationPolicy.ReservationSpan>(specs.size)
             specs.forEach { spec ->
                 val witness =
                     resolveSpecTarget(
@@ -2617,7 +2617,7 @@ internal object CcTransitionOwner {
                         (targetLocation[0] + slot.width).toFloat(),
                     )
                 result +=
-                    CcTransitionPolicy.ReservationSpan(
+                    CcReservationPolicy.ReservationSpan(
                         sourceLeft = min(sourceA, sourceB),
                         sourceRight = maxOf(sourceA, sourceB),
                         targetLeft = min(targetA, targetB),
@@ -2639,7 +2639,7 @@ internal object CcTransitionOwner {
                     }
                     val sourceA = logicalSourceX(mobileSpec.sourceBounds.left)
                     val sourceB = logicalSourceX(mobileSpec.sourceBounds.right)
-                    result += CcTransitionPolicy.ReservationSpan(
+                    result += CcReservationPolicy.ReservationSpan(
                         sourceLeft = min(sourceA, sourceB),
                         sourceRight = maxOf(sourceA, sourceB),
                         targetLeft = targetEdges.minOf { edge -> min(edge.first, edge.second) },
@@ -2669,7 +2669,7 @@ internal object CcTransitionOwner {
                             (targetLocation[0] + slot.width).toFloat(),
                         )
                     result +=
-                        CcTransitionPolicy.ReservationSpan(
+                        CcReservationPolicy.ReservationSpan(
                             sourceLeft = min(sourceA, sourceB),
                             sourceRight = maxOf(sourceA, sourceB),
                             targetLeft = min(targetA, targetB),
@@ -2694,7 +2694,7 @@ internal object CcTransitionOwner {
                             (targetLocation[0] + slot.width).toFloat(),
                         )
                     result +=
-                        CcTransitionPolicy.ReservationSpan(
+                        CcReservationPolicy.ReservationSpan(
                             sourceLeft = collapsedEnd,
                             sourceRight = collapsedEnd,
                             targetLeft = min(targetA, targetB),
@@ -2721,7 +2721,7 @@ internal object CcTransitionOwner {
                             (targetLocation[0] + slot.width).toFloat(),
                         )
                     result +=
-                        CcTransitionPolicy.ReservationSpan(
+                        CcReservationPolicy.ReservationSpan(
                             sourceLeft = collapsedEnd,
                             sourceRight = collapsedEnd,
                             targetLeft = min(targetA, targetB),
@@ -2768,7 +2768,7 @@ internal object CcTransitionOwner {
                 ParticipantVisualSnapshot.resolveView(optical)
                     ?.dualMobileRowsWithinEnvelope() != null
             } == true
-            val mode = CcTransitionPolicy.dualMobileTarget(
+            val mode = CcDualMobilePolicy.dualMobileTarget(
                 activeSubIds = platformIds,
                 targetSubIds = witnesses.map { it.subscriptionId },
                 aggregateProven =
@@ -2776,7 +2776,7 @@ internal object CcTransitionOwner {
                         (witnesses.size == 1 &&
                             presentation.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED),
             )
-            if (mode == CcTransitionPolicy.DualMobileTarget.NONE) return null
+            if (mode == CcDualMobilePolicy.DualMobileTarget.NONE) return null
             return witnesses
         }
 
@@ -2794,7 +2794,7 @@ internal object CcTransitionOwner {
                     targetOpticalBounds = spec.targetOpticalBounds,
                 ) ?: return null
             }
-            return CcTransitionPolicy.dualMobileGroupGeometry(targets)
+            return CcDualMobilePolicy.dualMobileGroupGeometry(targets)
         }
 
         private fun resolveSpecTarget(
@@ -2825,7 +2825,7 @@ internal object CcTransitionOwner {
             // An aggregate root need not belong to the data SIM.
             val aggregateRootVerified =
                 dualCenter &&
-                    CcTransitionPolicy.verifiedAggregateTypeRoot(
+                    CcDualMobilePolicy.verifiedAggregateTypeRoot(
                         presentation = PresentationStore.snapshot().mobilePresentation,
                         dataSubId = model.effectiveDataSubscriptionId,
                         targetSubId = witness.subscriptionId,
@@ -2839,7 +2839,7 @@ internal object CcTransitionOwner {
                                 .singleOrNull() === witness.slotView,
                     )
             if (dualCenter &&
-                !CcTransitionPolicy.matchesDualMobileTypeTarget(
+                !CcDualMobilePolicy.matchesDualMobileTypeTarget(
                     dataSubId = model.effectiveDataSubscriptionId,
                     targetSubId = witness.subscriptionId,
                     source = centerType,
@@ -3140,7 +3140,7 @@ internal object CcTransitionOwner {
                     snapshot?.let { sample(visualView, root) }
                 if (snapshot != null && visualSample != null) {
                     val envelope = snapshot.envelope
-                    CcTransitionPolicy.componentGeometry(
+                    CcCarrierGeometryPolicy.componentGeometry(
                         parentGeometry = visualSample,
                         parentWidth = visualView.width,
                         parentHeight = visualView.height,
@@ -3170,7 +3170,7 @@ internal object CcTransitionOwner {
                 if (opticalSample != null) {
                     return resolvedTargetOpticalBounds
                         ?.let { bounds ->
-                            CcTransitionPolicy.componentGeometry(
+                            CcCarrierGeometryPolicy.componentGeometry(
                                 parentGeometry = opticalSample,
                                 parentWidth = opticalView.width,
                                 parentHeight = opticalView.height,
@@ -3233,7 +3233,7 @@ internal object CcTransitionOwner {
                     } else {
                         contentBounds
                     }
-            return CcTransitionPolicy.componentGeometry(
+            return CcCarrierGeometryPolicy.componentGeometry(
                 parentGeometry = slotSample,
                 parentWidth = slot.width,
                 parentHeight = slot.height,
@@ -3274,7 +3274,7 @@ internal object CcTransitionOwner {
             val left = view.compoundPaddingLeft + layout.getLineLeft(0) + ink.left
             val top = baseline + ink.top
             val sample = sample(view, root) ?: return null
-            return CcTransitionPolicy.componentGeometry(
+            return CcCarrierGeometryPolicy.componentGeometry(
                 parentGeometry = sample,
                 parentWidth = view.width,
                 parentHeight = view.height,
@@ -3329,7 +3329,7 @@ internal object CcTransitionOwner {
                         bottom = frame.bottom,
                     )
                 }
-            return CcTransitionPolicy.componentGeometry(
+            return CcCarrierGeometryPolicy.componentGeometry(
                 parentGeometry = imageSample,
                 parentWidth = image.width,
                 parentHeight = image.height,
@@ -3392,7 +3392,7 @@ internal object CcTransitionOwner {
                         bottom = frameTop + frameHeight,
                     )
                 }
-            return CcTransitionPolicy.componentGeometry(
+            return CcCarrierGeometryPolicy.componentGeometry(
                 parentGeometry = slotSample,
                 parentWidth = slot.width,
                 parentHeight = slot.height,
@@ -4209,7 +4209,7 @@ internal object CcTransitionOwner {
                                     root = root,
                                 ) ?: return@let null
                             val positionGeometry =
-                                CcTransitionPolicy.endAnchoredSlotGeometry(
+                                CcCarrierGeometryPolicy.endAnchoredSlotGeometry(
                                     hostGeometry = positionHostGeometry,
                                     hostWidth = witness.positionHost.width,
                                     hostHeight = witness.positionHost.height,
@@ -4227,7 +4227,7 @@ internal object CcTransitionOwner {
                                 width = witness.logicalWidthPx,
                                 height = witness.logicalHeightPx,
                                 geometry =
-                                    CcTransitionPolicy.composeSourceGeometry(
+                                    CcCarrierGeometryPolicy.composeSourceGeometry(
                                         positionAuthority = positionGeometry,
                                         basisAuthority = basisGeometry,
                                     ),

@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
-import com.chaners.guiyuan.xposed.network.CenterIndicator
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -86,74 +85,6 @@ internal object CcTransitionPolicy {
         return expansion + (1f - expansion) * appearance
     }
 
-    internal enum class DualMobileTarget {
-        NONE,
-        AGGREGATED,
-        SEPARATE,
-    }
-
-    // The target group needs no row identity; separate native slots do.
-    fun dualMobileTarget(
-        activeSubIds: Set<Int>,
-        targetSubIds: List<Int?>,
-        aggregateProven: Boolean,
-    ): DualMobileTarget {
-        if (activeSubIds.size != 2 || activeSubIds.any { it < 0 }) {
-            return DualMobileTarget.NONE
-        }
-        return when (targetSubIds.size) {
-            1 -> {
-                val subId = targetSubIds.single()
-                if (aggregateProven && (subId == null || subId in activeSubIds)) {
-                    DualMobileTarget.AGGREGATED
-                } else {
-                    DualMobileTarget.NONE
-                }
-            }
-            2 -> if (targetSubIds.all { it != null && it in activeSubIds } &&
-                targetSubIds.toSet() == activeSubIds
-            ) DualMobileTarget.SEPARATE else DualMobileTarget.NONE
-            else -> DualMobileTarget.NONE
-        }
-    }
-
-    // Both native views have already been sampled into the same root coordinates.
-    fun dualMobileGroupGeometry(parts: List<FloatArray>): FloatArray? {
-        if (parts.size !in 1..2 || parts.any { part ->
-                part.size != 6 || part.any { !it.isFinite() } ||
-                    kotlin.math.hypot(part[2], part[3]) <= 0f ||
-                    kotlin.math.hypot(part[4], part[5]) <= 0f
-            }
-        ) return null
-        if (parts.size == 1) return parts.single().copyOf()
-
-        // Keep the native root axes: merging unrelated rotations would invent geometry.
-        val first = parts[0]
-        if (parts.any { part ->
-                kotlin.math.abs(part[2]) <= 0f ||
-                    kotlin.math.abs(part[5]) <= 0f ||
-                    kotlin.math.abs(part[3]) > kotlin.math.abs(part[2]) * 0.05f ||
-                    kotlin.math.abs(part[4]) > kotlin.math.abs(part[5]) * 0.05f ||
-                    (part[2] < 0f) != (first[2] < 0f) ||
-                    (part[5] < 0f) != (first[5] < 0f)
-            }
-        ) return null
-
-        val left = parts.minOf { it[0] - kotlin.math.abs(it[2]) / 2f }
-        val top = parts.minOf { it[1] - kotlin.math.abs(it[5]) / 2f }
-        val right = parts.maxOf { it[0] + kotlin.math.abs(it[2]) / 2f }
-        val bottom = parts.maxOf { it[1] + kotlin.math.abs(it[5]) / 2f }
-        if (right <= left || bottom <= top) return null
-        return floatArrayOf(
-            (left + right) / 2f, (top + bottom) / 2f,
-            (right - left) * if (first[2] < 0f) -1f else 1f,
-            0f, 0f,
-            (bottom - top) * if (first[5] < 0f) -1f else 1f,
-        )
-    }
-
-    // One aggregate endpoint has no SIM identity. Its paired anchors share X;
-    // native ink determines each Y, so bar growth starts at the bar's bottom.
     fun aggregateAnchors(
         bounds: StatusPainter.TransitionBounds,
         top: ParticipantVisualSnapshot.NormalizedRect,
@@ -186,89 +117,6 @@ internal object CcTransitionPolicy {
             y(top, topShape),
             y(bottom, bottomShape),
         )
-    }
-
-    fun matchesDualMobileTypeTarget(
-        dataSubId: Int,
-        targetSubId: Int?,
-        source: CenterIndicator.MobileType,
-        target: NativePresentationResolver.NetworkType?,
-        verifiedAggregateRoot: Boolean = false,
-    ): Boolean =
-        dataSubId >= 0 &&
-            (targetSubId == dataSubId || verifiedAggregateRoot) &&
-            mobileTypeMatches(source.label, source.enhanced, target) == true
-
-    // The visible aggregate root has presentation ownership, not data-SIM ownership.
-    fun verifiedAggregateTypeRoot(
-        presentation: NativePresentationResolver.Snapshot?,
-        dataSubId: Int,
-        targetSubId: Int?,
-        soleNativeRoot: Boolean,
-    ): Boolean {
-        val state = presentation ?: return false
-        if (state.mode != NativePresentationResolver.Mode.DUAL_AGGREGATED ||
-            !state.activeSubsAuthoritative || state.visibleRoots != 1 ||
-            !soleNativeRoot
-        ) return false
-
-        val active = state.activeSubscriptionIds.toSet()
-        return active.size == 2 &&
-            active == state.platformActiveSubscriptionIds &&
-            dataSubId in active &&
-            targetSubId != null && targetSubId in active &&
-            state.effectiveDataSubscriptionId == dataSubId &&
-            state.networkTypeSubscriptionId == dataSubId &&
-            state.presentationRootSubscriptionId == targetSubId
-    }
-
-    // A sole verified aggregate root may belong to the other SIM, even when
-    // its native activity image represents the current data subscription.
-    fun mobileActivityRootMatches(
-        presentation: NativePresentationResolver.Snapshot?,
-        dataSubId: Int,
-        targetSubId: Int?,
-        soleVisibleRoot: Boolean,
-    ): Boolean {
-        if (dataSubId < 0) return false
-        if (targetSubId == dataSubId) return true
-        val state = presentation ?: return false
-        if (!soleVisibleRoot) return false
-        if (targetSubId == null) {
-            return dataSubId in state.activeSubscriptionIds &&
-                (state.activeSubscriptionIds.size == 1 ||
-                    state.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED)
-        }
-        return verifiedAggregateTypeRoot(state, dataSubId, targetSubId, soleVisibleRoot)
-    }
-
-    // Order optical roots by the platform's physical SIM slots, never by View order.
-    fun dualRootRowIndices(
-        mode: NativePresentationResolver.Mode,
-        slots: Map<Int, Int>,
-        rootSubIds: List<Int?>,
-    ): List<Int>? {
-        if (mode != NativePresentationResolver.Mode.DUAL_SEPARATE ||
-            slots.size != 2 || rootSubIds.size != 2
-        ) return null
-        val first = slots[0] ?: return null
-        val second = slots[1] ?: return null
-        if (first == second || rootSubIds.toSet() != setOf(first, second)) return null
-        return listOf(rootSubIds.indexOf(first), rootSubIds.indexOf(second))
-    }
-
-    fun mobileTypeMatches(
-        sourceLabel: String,
-        sourceEnhanced: Boolean,
-        target: NativePresentationResolver.NetworkType?,
-    ): Boolean? {
-        target ?: return null
-        fun shown(label: String, enhanced: Boolean): String {
-            val value = label.trim().uppercase().replace("-", "").replace("_", "")
-            return if (value == "5G" && enhanced) "5G++" else value
-        }
-        return shown(sourceLabel, sourceEnhanced) ==
-            shown(target.label, target.enhanced)
     }
 
     fun mobileSignalShapeProgress(rawProgress: Float): Float {
@@ -380,181 +228,6 @@ internal object CcTransitionPolicy {
         )
     }
 
-    fun selectNativeTransitionTint(
-        statusIconPeerTint: Int?,
-        cachedTint: Int?,
-    ): Int? {
-        fun valid(color: Int?): Int? =
-            color?.takeIf { candidate -> candidate ushr 24 != 0 }
-        return valid(statusIconPeerTint)
-            ?: valid(cachedTint)
-    }
-
-    fun usesSemanticTransitionReservation(sourceScene: SourceScene): Boolean =
-        when (sourceScene) {
-            SourceScene.HOME,
-            SourceScene.KEYGUARD,
-            -> true
-            SourceScene.UNKNOWN -> false
-        }
-
-    fun reservationSourceChanged(
-        previous: RenderModel,
-        current: RenderModel,
-        visualChanged: Boolean,
-    ): Boolean =
-        visualChanged ||
-            previous.centerIndicator != current.centerIndicator ||
-            previous.batteryPercent != current.batteryPercent ||
-            previous.charging != current.charging ||
-            previous.chargingIconResId != current.chargingIconResId ||
-            previous.mobileLevel != current.mobileLevel ||
-            previous.mobileUnavailableMark != current.mobileUnavailableMark ||
-            previous.effectiveDataSubscriptionId != current.effectiveDataSubscriptionId ||
-            previous.dualMobileLevels != current.dualMobileLevels
-
-    data class ReservationSpan(
-        val sourceLeft: Float,
-        val sourceRight: Float,
-        val targetLeft: Float,
-        val targetRight: Float,
-    )
-
-    fun resolveReservationWidth(
-        compactWidthPx: Int,
-        spans: List<ReservationSpan>,
-        progress: Float,
-    ): Int {
-        val compact = compactWidthPx.coerceAtLeast(0)
-        if (compact == 0) return 0
-        val p = geometryProgress(progress)
-        var left = -compact.toFloat()
-        var right = 0f
-        spans.forEach { span ->
-            val currentLeft =
-                span.sourceLeft +
-                    (span.targetLeft - span.sourceLeft) * p
-            val currentRight =
-                span.sourceRight +
-                    (span.targetRight - span.sourceRight) * p
-            left = min(left, currentLeft)
-            right = maxOf(right, currentRight)
-        }
-        return kotlin.math.ceil((right - left).coerceAtLeast(compact.toFloat())).toInt()
-    }
-
-    fun resolveFinalReservationWidth(
-        compactWidthPx: Int,
-        spans: List<ReservationSpan>,
-    ): Int =
-        resolveReservationWidth(
-            compactWidthPx = compactWidthPx,
-            spans = spans,
-            progress = 1f,
-        )
-
-    fun resolveTransitionReservationWidth(
-        compactWidthPx: Int,
-        spans: List<ReservationSpan>,
-        progress: Float,
-    ): Int {
-        val compact = compactWidthPx.coerceAtLeast(0)
-        if (compact == 0) return 0
-        val finalWidth =
-            resolveFinalReservationWidth(
-                compactWidthPx = compact,
-                spans = spans,
-            )
-        val p = geometryProgress(progress)
-        return (
-            compact +
-                (finalWidth - compact) * p
-            ).roundToInt().coerceAtLeast(compact)
-    }
-
-    fun resolveBatteryIslandNativePeerReservationWidth(
-        compactWidthPx: Int,
-        spans: List<ReservationSpan>,
-        semanticWidthPx: Int,
-        progress: Float,
-        targetEndOffsetPx: Float = 0f,
-    ): Int {
-        val compact = compactWidthPx.coerceAtLeast(0)
-        val semantic = semanticWidthPx.coerceAtLeast(compact)
-        if (compact == 0) return 0
-        val targetEndOffset =
-            targetEndOffsetPx
-                .takeIf(Float::isFinite)
-                ?: 0f
-        val p = geometryProgress(progress)
-        var left = -compact.toFloat()
-        spans.forEach { span ->
-            val currentLeft =
-                span.sourceLeft +
-                    (span.targetLeft + targetEndOffset - span.sourceLeft) * p
-            left = min(left, currentLeft)
-        }
-
-        // statusIcons.paddingEnd reserves space only on the peer side of the
-        // live QS_FAKE end edge (logical x=0). A projected Guiyuan span may
-        // extend to x>0 while converging on the final QS surface; that
-        // end-side extent is drawable occupancy, not native-peer intrusion.
-        return kotlin.math
-            .ceil((-left.coerceAtMost(0f)).coerceAtLeast(compact.toFloat()))
-            .toInt()
-            .coerceAtMost(semantic)
-    }
-
-    fun transitionTintProgress(progress: Float): Float {
-        val ringPhase =
-            BatteryRingTransitionPolicy
-                .transitionProgress(progress)
-                .coerceIn(0f, 1f)
-        return ringPhase * ringPhase * (3f - 2f * ringPhase)
-    }
-
-    fun resolveTransitionTint(
-        source: Int,
-        target: Int,
-        progress: Float,
-        tinted: Boolean,
-        transitionEnabled: Boolean,
-    ): Int =
-        when {
-            !tinted -> target
-            !transitionEnabled -> source
-            else ->
-                interpolateColor(
-                    source = source,
-                    target = target,
-                    progress = progress,
-                )
-        }
-
-    fun interpolateColor(
-        source: Int,
-        target: Int,
-        progress: Float,
-    ): Int {
-        val p = transitionTintProgress(progress)
-        fun channel(
-            fromShift: Int,
-            toShift: Int = fromShift,
-        ): Int {
-            val from = source ushr fromShift and 0xff
-            val to = target ushr toShift and 0xff
-            return (from + (to - from) * p)
-                .roundToInt()
-                .coerceIn(0, 255)
-        }
-        return (
-            channel(24) shl 24 or
-                (channel(16) shl 16) or
-                (channel(8) shl 8) or
-                channel(0)
-        )
-    }
-
     fun interpolateGeometry(
         source: FloatArray,
         target: FloatArray,
@@ -577,7 +250,7 @@ internal object CcTransitionPolicy {
         scalePolicy: StatusPainter.TransitionScalePolicy,
     ): FloatArray {
         require(source.size == 6 && target.size == 6)
-        val together = MobileSignalMorphPolicy.lockstepProgress(progress)
+        val together = MobileSignalStagePolicy.lockstepProgress(progress)
         val paired = source.copyOf().apply {
             this[0] += groupTravelX * together
             this[1] += groupTravelY * together
@@ -591,7 +264,7 @@ internal object CcTransitionPolicy {
         return interpolateGeometry(
             source = paired,
             target = normal,
-            progress = MobileSignalMorphPolicy.moveProgress(progress),
+            progress = MobileSignalStagePolicy.moveProgress(progress),
         )
     }
 
@@ -639,68 +312,6 @@ internal object CcTransitionPolicy {
         )
     }
 
-    fun composeSourceGeometry(
-        positionAuthority: FloatArray,
-        basisAuthority: FloatArray,
-    ): FloatArray {
-        require(positionAuthority.size == 6 && basisAuthority.size == 6)
-        return floatArrayOf(
-            positionAuthority[0],
-            positionAuthority[1],
-            basisAuthority[2],
-            basisAuthority[3],
-            basisAuthority[4],
-            basisAuthority[5],
-        )
-    }
-
-    fun endAnchoredMotionCarrierGeometry(
-        carrierGeometry: FloatArray,
-        carrierWidth: Int,
-        carrierHeight: Int,
-        logicalWidth: Int,
-        isRtl: Boolean,
-    ): FloatArray? =
-        endAnchoredSlotGeometry(
-            hostGeometry = carrierGeometry,
-            hostWidth = carrierWidth,
-            hostHeight = carrierHeight,
-            slotWidth = logicalWidth,
-            isRtl = isRtl,
-        )
-
-    fun endAnchoredSlotGeometry(
-        hostGeometry: FloatArray,
-        hostWidth: Int,
-        hostHeight: Int,
-        slotWidth: Int,
-        isRtl: Boolean,
-    ): FloatArray? {
-        if (
-            hostGeometry.size != 6 ||
-            hostWidth <= 0 ||
-            hostHeight <= 0 ||
-            slotWidth <= 0 ||
-            slotWidth > hostWidth
-        ) {
-            return null
-        }
-        val left = if (isRtl) 0f else (hostWidth - slotWidth).toFloat()
-        val right = if (isRtl) slotWidth.toFloat() else hostWidth.toFloat()
-        return componentGeometry(
-            parentGeometry = hostGeometry,
-            parentWidth = hostWidth,
-            parentHeight = hostHeight,
-            bounds =
-                StatusPainter.TransitionBounds(
-                    left = left,
-                    top = 0f,
-                    right = right,
-                    bottom = hostHeight.toFloat(),
-                ),
-        )
-    }
-
     fun interpolateCarriedSourceToRootTarget(
         source: FloatArray,
         target: FloatArray,
@@ -716,7 +327,7 @@ internal object CcTransitionPolicy {
                 currentCarrier.size == 6,
         )
         val carriedSource =
-            rebaseSourceToCurrentCarrier(
+            CcCarrierGeometryPolicy.rebaseSourceToCurrentCarrier(
                 source = source,
                 sourceCarrier = sourceCarrier,
                 currentCarrier = currentCarrier,
@@ -726,52 +337,6 @@ internal object CcTransitionPolicy {
             target = target,
             progress = geometryProgress(progress),
             scalePolicy = scalePolicy,
-        )
-    }
-
-    fun interpolateCarriedSourceToRootTargetExact(
-        source: FloatArray,
-        target: FloatArray,
-        sourceCarrier: FloatArray,
-        currentCarrier: FloatArray,
-        progress: Float,
-    ): FloatArray {
-        require(
-            source.size == 6 &&
-                target.size == 6 &&
-                sourceCarrier.size == 6 &&
-                currentCarrier.size == 6,
-        )
-        val carriedSource =
-            rebaseSourceToCurrentCarrier(
-                source = source,
-                sourceCarrier = sourceCarrier,
-                currentCarrier = currentCarrier,
-            )
-        return interpolateGeometry(
-            source = carriedSource,
-            target = target,
-            progress = geometryProgress(progress),
-        )
-    }
-
-    fun rebaseSourceToCurrentCarrier(
-        source: FloatArray,
-        sourceCarrier: FloatArray,
-        currentCarrier: FloatArray,
-    ): FloatArray {
-        require(
-            source.size == 6 &&
-                sourceCarrier.size == 6 &&
-                currentCarrier.size == 6,
-        )
-        return floatArrayOf(
-            source[0] + (currentCarrier[0] - sourceCarrier[0]),
-            source[1] + (currentCarrier[1] - sourceCarrier[1]),
-            source[2],
-            source[3],
-            source[4],
-            source[5],
         )
     }
 
@@ -905,83 +470,4 @@ internal object CcTransitionPolicy {
         x: Float,
         y: Float,
     ): Float = sqrt(x * x + y * y)
-
-    fun followAnchorGeometry(
-        follower: FloatArray,
-        sourceAnchor: FloatArray,
-        currentAnchor: FloatArray,
-    ): FloatArray? {
-        if (
-            follower.size != 6 ||
-            sourceAnchor.size != 6 ||
-            currentAnchor.size != 6
-        ) return null
-
-        val swx = sourceAnchor[2]
-        val swy = sourceAnchor[3]
-        val shx = sourceAnchor[4]
-        val shy = sourceAnchor[5]
-        val determinant = swx * shy - shx * swy
-        if (!determinant.isFinite() || kotlin.math.abs(determinant) < 0.0001f) {
-            return null
-        }
-
-        fun mapVector(x: Float, y: Float): Pair<Float, Float> {
-            val localX = (x * shy - shx * y) / determinant
-            val localY = (swx * y - x * swy) / determinant
-            return Pair(
-                currentAnchor[2] * localX + currentAnchor[4] * localY,
-                currentAnchor[3] * localX + currentAnchor[5] * localY,
-            )
-        }
-
-        val centerDeltaX = follower[0] - sourceAnchor[0]
-        val centerDeltaY = follower[1] - sourceAnchor[1]
-        val mappedCenterDelta = mapVector(centerDeltaX, centerDeltaY)
-        val mappedWidth = mapVector(follower[2], follower[3])
-        val mappedHeight = mapVector(follower[4], follower[5])
-        return floatArrayOf(
-            currentAnchor[0] + mappedCenterDelta.first,
-            currentAnchor[1] + mappedCenterDelta.second,
-            mappedWidth.first,
-            mappedWidth.second,
-            mappedHeight.first,
-            mappedHeight.second,
-        )
-    }
-
-    fun componentGeometry(
-        parentGeometry: FloatArray,
-        parentWidth: Int,
-        parentHeight: Int,
-        bounds: StatusPainter.TransitionBounds,
-    ): FloatArray? {
-        if (
-            parentGeometry.size != 6 ||
-            parentWidth <= 0 ||
-            parentHeight <= 0 ||
-            bounds.width <= 0f ||
-            bounds.height <= 0f
-        ) {
-            return null
-        }
-        val normalizedCenterX =
-            bounds.centerX / parentWidth.toFloat() - 0.5f
-        val normalizedCenterY =
-            bounds.centerY / parentHeight.toFloat() - 0.5f
-        val widthScale = bounds.width / parentWidth.toFloat()
-        val heightScale = bounds.height / parentHeight.toFloat()
-        return floatArrayOf(
-            parentGeometry[0] +
-                parentGeometry[2] * normalizedCenterX +
-                parentGeometry[4] * normalizedCenterY,
-            parentGeometry[1] +
-                parentGeometry[3] * normalizedCenterX +
-                parentGeometry[5] * normalizedCenterY,
-            parentGeometry[2] * widthScale,
-            parentGeometry[3] * widthScale,
-            parentGeometry[4] * heightScale,
-            parentGeometry[5] * heightScale,
-        )
-    }
 }

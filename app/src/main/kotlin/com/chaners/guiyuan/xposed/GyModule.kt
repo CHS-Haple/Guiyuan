@@ -1225,7 +1225,7 @@ class GyModule : XposedModule() {
         val incomingBoundaryReady =
             incomingKeyguardReadyForCc()
         val effectiveSourceScene =
-            ScenePolicy.resolveControlCenterSourceScene(
+            SceneCcPolicy.resolveControlCenterSourceScene(
                 reportedSourceScene = reportedSourceScene,
                 steadySourceScene = steadyStatusSourceScene,
                 lastStableFamilyScene = stableFamilyScene,
@@ -1306,7 +1306,7 @@ class GyModule : XposedModule() {
                 settings.keyguard &&
                 keyguardPresentationReady
         val nextEligible =
-            ScenePolicy.controlCenterProjectionEligible(
+            SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = settings.enabled,
                 sourceScene = sourceScene,
                 keyguardEnabled = keyguardEligible,
@@ -1372,7 +1372,7 @@ class GyModule : XposedModule() {
                 incomingKeyguardReadyForCc()
         if (
             keyguardCcLeaseActive ||
-            !ScenePolicy.shouldAcquireKeyguardCcLease(
+            !SceneCcPolicy.shouldAcquireKeyguardCcLease(
                 sourceScene = controlCenterSourceScene,
                 keyguardPresentationReady = keyguardPresentationReady,
                 nativeFraction = ccExpansion,
@@ -1461,7 +1461,7 @@ class GyModule : XposedModule() {
                 as? SysUiKeyguardHostResolver.ResolveResult.Ready
                 ?: return false
         val handoff = boundaryHandoff
-        return ScenePolicy.incomingKeyguardPresentationReady(
+        return SceneCcPolicy.incomingKeyguardPresentationReady(
             visualHandoffActive = handoff != null,
             layoutPrecommitActive = handoff?.precommit == true,
             compactLayoutReady = handoff?.layoutReady == true,
@@ -1479,7 +1479,7 @@ class GyModule : XposedModule() {
 
     private fun reconcileCcForKeyguard(authority: String) {
         if (
-            !ScenePolicy.shouldReconcileCcForKeyguard(
+            !SceneCcPolicy.shouldReconcileCcForKeyguard(
                 ccVisible = controlCenterSceneVisible,
                 nativeFraction = ccExpansion,
                 leaseActive = keyguardCcLeaseActive,
@@ -2054,7 +2054,7 @@ class GyModule : XposedModule() {
                 .homeCarrierVisible()
 
         if (
-            ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+            SceneAodBoundaryPolicy.shouldArmHomeNativeAodFallbackCandidate(
                 featureEnabled = settings.enabled,
                 keyguardEnabled = settings.keyguard,
                 aodEnabled = settings.aod,
@@ -2355,7 +2355,7 @@ class GyModule : XposedModule() {
     ) {
         val settings = FeaturePrefsOwner.current()
         when (
-            ScenePolicy.aodPeerAction(
+            SceneAodBoundaryPolicy.aodPeerAction(
                 enabled = settings.enabled,
                 keyguardEnabled = settings.keyguard,
                 aodEnabled = settings.aod,
@@ -2748,7 +2748,7 @@ class GyModule : XposedModule() {
         if (
             waiting != null &&
             !update.isAodAnimate &&
-            ScenePolicy.fullAodPendingTargetReachedStableState(
+            SceneAodBoundaryPolicy.fullAodPendingTargetReachedStableState(
                 pendingTargetToLockScreen = waiting.toLockScreen,
                 toAod = update.toAod,
                 isAodAnimate = update.isAodAnimate,
@@ -2935,7 +2935,7 @@ class GyModule : XposedModule() {
         ) {
             val settings = FeaturePrefsOwner.current()
             if (
-                ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+                SceneAodBoundaryPolicy.shouldArmHomeNativeAodFallbackCandidate(
                     featureEnabled = settings.enabled,
                     keyguardEnabled = settings.keyguard,
                     aodEnabled = settings.aod,
@@ -3037,7 +3037,7 @@ class GyModule : XposedModule() {
         val waiting = aodWindow as? AodWindow.Waiting
         if (
             waiting != null &&
-            !ScenePolicy.fullAodPendingTargetReachedStableState(
+            !SceneAodBoundaryPolicy.fullAodPendingTargetReachedStableState(
                 pendingTargetToLockScreen = waiting.toLockScreen,
                 toAod = update.toAod,
                 isAodAnimate = update.isAodAnimate,

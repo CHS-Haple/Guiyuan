@@ -9,6 +9,7 @@ import org.junit.Test
 
 class MobileSignalMorphPolicyTest {
     private val morph = MobileSignalMorphPolicy
+    private val stages = MobileSignalStagePolicy
 
     @Test
     fun switchingWifiAndMobileTypeRelocatesDotsWithoutSnapping() {
@@ -75,18 +76,18 @@ class MobileSignalMorphPolicyTest {
 
     @Test
     fun collapseEndsAtThirtyPercentWithoutChangingLaterPhases() {
-        fun phase(p: Float): Float = morph.handoffProgress(p * p)
-        assertEquals(0f, morph.trimProgress(phase(0f)), 0f)
-        assertEquals(0.5f, morph.trimProgress(phase(0.15f)), 0.0001f)
-        assertEquals(1f, morph.trimProgress(phase(0.30f)), 0.0001f)
-        assertEquals(0f, morph.moveProgress(phase(0.30f)), 0.0001f)
-        assertEquals(0.5f, morph.moveProgress(phase(0.435f)), 0.0001f)
-        assertEquals(1f, morph.moveProgress(phase(0.57f)), 0.0001f)
-        assertEquals(0f, morph.rowProgress(phase(0.57f)), 0.0001f)
-        assertEquals(0.5f, morph.rowProgress(phase(0.645f)), 0.0001f)
-        assertEquals(1f, morph.rowProgress(phase(0.72f)), 0.0001f)
-        assertEquals(0f, morph.barProgress(phase(0.72f)), 0.0001f)
-        assertEquals(1f, morph.barProgress(phase(1f)), 0f)
+        fun phase(p: Float): Float = stages.handoffProgress(p * p)
+        assertEquals(0f, stages.trimProgress(phase(0f)), 0f)
+        assertEquals(0.5f, stages.trimProgress(phase(0.15f)), 0.0001f)
+        assertEquals(1f, stages.trimProgress(phase(0.30f)), 0.0001f)
+        assertEquals(0f, stages.moveProgress(phase(0.30f)), 0.0001f)
+        assertEquals(0.5f, stages.moveProgress(phase(0.435f)), 0.0001f)
+        assertEquals(1f, stages.moveProgress(phase(0.57f)), 0.0001f)
+        assertEquals(0f, stages.rowProgress(phase(0.57f)), 0.0001f)
+        assertEquals(0.5f, stages.rowProgress(phase(0.645f)), 0.0001f)
+        assertEquals(1f, stages.rowProgress(phase(0.72f)), 0.0001f)
+        assertEquals(0f, stages.barProgress(phase(0.72f)), 0.0001f)
+        assertEquals(1f, stages.barProgress(phase(1f)), 0f)
     }
 
     @Test
@@ -153,9 +154,9 @@ class MobileSignalMorphPolicyTest {
             val actual = phases.map { progress ->
                 morph.dotCoordinate(
                     source, sourceAnchor, targetAnchor, target,
-                    morph.trimProgress(progress),
-                    morph.moveProgress(progress),
-                    morph.rowProgress(progress),
+                    stages.trimProgress(progress),
+                    stages.moveProgress(progress),
+                    stages.rowProgress(progress),
                 )
             }
             expected.zip(actual).forEach { (value, position) ->
@@ -163,8 +164,8 @@ class MobileSignalMorphPolicyTest {
             }
             assertEquals(expected.reversed(), actual.reversed())
         }
-        assertEquals(0f, morph.barProgress(0.72f), 0f)
-        assertEquals(1f, morph.barProgress(1f), 0f)
+        assertEquals(0f, stages.barProgress(0.72f), 0f)
+        assertEquals(1f, stages.barProgress(1f), 0f)
     }
 
     @Test
@@ -173,24 +174,24 @@ class MobileSignalMorphPolicyTest {
         assertEquals(130f, morph.dotCoordinate(70f, 10f, 100f, 130f, 1f, 1f, 1f), 0f)
         for (i in 0..3) assertEquals(1f, morph.dotScale(i, 1f, 1f), 0f)
         assertTrue(morph.dotScale(1, 1f, 0.2f) > morph.dotScale(2, 1f, 0.2f))
-        assertEquals(0f, morph.handoffProgress(Float.NaN), 0f)
+        assertEquals(0f, stages.handoffProgress(Float.NaN), 0f)
     }
 
     @Test
     fun neighboringStagesMeetWithoutAJumpOnReverse() {
-        val stages = listOf(
+        val stageVectors = listOf(
             Triple(0f, 0f, 0f), Triple(1f, 0f, 0f),
             Triple(1f, 1f, 0f), Triple(1f, 1f, 1f),
         )
         val expected = listOf(70f, 10f, 100f, 130f)
-        stages.forEachIndexed { index, (trim, move, spread) ->
+        stageVectors.forEachIndexed { index, (trim, move, spread) ->
             assertEquals(
                 expected[index],
                 morph.dotCoordinate(70f, 10f, 100f, 130f, trim, move, spread),
                 0.0001f,
             )
         }
-        assertEquals(0f, morph.rowProgress(0.57f), 0f)
-        assertEquals(1f, morph.rowProgress(0.72f), 0.0001f)
+        assertEquals(0f, stages.rowProgress(0.57f), 0f)
+        assertEquals(1f, stages.rowProgress(0.72f), 0.0001f)
     }
 }

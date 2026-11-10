@@ -7,6 +7,8 @@ import org.junit.Test
 private const val TEST_NATIVE_WIFI_LEVEL_3_RESOURCE = "com.android.systemui:drawable/stat_sys_wifi_signal_3"
 private const val TEST_NATIVE_HOTSPOT_LEVEL_3_RESOURCE = "com.android.systemui:drawable/stat_sys_hotspot_signal_3"
 
+private const val TEST_UNAVAILABLE_WIFI_LEVEL_2_RESOURCE = "com.android.systemui:drawable/stat_sys_wifi_signal_2_unavailable"
+
 class SysUiSignalParserTest {
     @Test
     fun wifiSignalLevelsCoverZeroThroughThree() {
@@ -25,7 +27,7 @@ class SysUiSignalParserTest {
         assertEquals(
             SignalStrength.Level(2),
             SysUiSignalParser.wifi(
-                "com.android.systemui:drawable/stat_sys_wifi_signal_2_unavailable",
+                TEST_UNAVAILABLE_WIFI_LEVEL_2_RESOURCE,
             ),
         )
         assertEquals(
@@ -63,7 +65,7 @@ class SysUiSignalParserTest {
         assertEquals(
             false,
             SysUiSignalParser.wifiInternetValidated(
-                "com.android.systemui:drawable/stat_sys_wifi_signal_2_unavailable",
+                TEST_UNAVAILABLE_WIFI_LEVEL_2_RESOURCE,
             ),
         )
         assertEquals(
