@@ -185,8 +185,7 @@ internal object HotReloadSnapshotCodec {
             mobileActivityVisibilityObservedIds = visibilityObserved,
             airplaneMode = airplane,
             mobileRecoveryPending = bundle.getBoolean(KEY_MOBILE_RECOVERY_PENDING, false),
-
-            )
+        )
     }
 
     private fun encodeSignal(signal: SignalStrength): Int =
