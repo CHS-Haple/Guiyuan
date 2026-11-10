@@ -36,7 +36,7 @@ class NativePresentationResolverTest {
     fun aggregatedNetworkTypeFollowsDefaultDataSubscription() {
         assertEquals(
             4,
-            NativePresentationResolver.selectNetworkTypeSubscriptionId(
+            NativeSubscriptionPolicy.selectNetworkTypeSubscriptionId(
                 effectiveDataSubscriptionId = 4,
                 presentationRootSubscriptionId = 1,
                 boundSubscriptionIds = listOf(1, 4),
@@ -48,7 +48,7 @@ class NativePresentationResolverTest {
     fun networkTypeFallsBackToPresentationRootWhenDefaultDataBindingIsMissing() {
         assertEquals(
             1,
-            NativePresentationResolver.selectNetworkTypeSubscriptionId(
+            NativeSubscriptionPolicy.selectNetworkTypeSubscriptionId(
                 effectiveDataSubscriptionId = 4,
                 presentationRootSubscriptionId = 1,
                 boundSubscriptionIds = listOf(1),
@@ -60,7 +60,7 @@ class NativePresentationResolverTest {
     fun singlePresentationIsDetected() {
         assertEquals(
             NativePresentationResolver.Mode.SINGLE,
-            NativePresentationResolver.classify(
+            NativeSubscriptionPolicy.classify(
                 boundRoots = 1,
                 visibleRoots = 1,
                 activeSubscriptions = 1,
@@ -72,7 +72,7 @@ class NativePresentationResolverTest {
     fun nativeDualPresentationIsDetected() {
         assertEquals(
             NativePresentationResolver.Mode.DUAL_SEPARATE,
-            NativePresentationResolver.classify(
+            NativeSubscriptionPolicy.classify(
                 boundRoots = 2,
                 visibleRoots = 2,
                 activeSubscriptions = 2,
@@ -84,7 +84,7 @@ class NativePresentationResolverTest {
     fun aggregatedDualPresentationRequiresTwoActiveSubscriptions() {
         assertEquals(
             NativePresentationResolver.Mode.DUAL_AGGREGATED,
-            NativePresentationResolver.classify(
+            NativeSubscriptionPolicy.classify(
                 boundRoots = 2,
                 visibleRoots = 1,
                 activeSubscriptions = 2,

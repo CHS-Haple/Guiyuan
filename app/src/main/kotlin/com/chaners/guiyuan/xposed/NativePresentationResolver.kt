@@ -57,7 +57,7 @@ internal object NativePresentationResolver {
                 ?.let(::activeSubscriptions)
         val platformActive = platformSubscriptions?.map { it.first }?.toSet()
         val resolvedActive =
-            resolveActiveSubIds(
+            NativeSubscriptionPolicy.resolveActiveSubIds(
                 boundSubscriptionIds =
                     bindings.map { binding -> binding.subscriptionId },
                 semanticActiveSubscriptionIds = semanticActiveSubIds,
@@ -66,7 +66,7 @@ internal object NativePresentationResolver {
             )
         val activeBindingSubIds = resolvedActive.subscriptionIds
         val slotSubscriptionIds =
-            resolveSlotSubscriptions(
+            NativeSubscriptionPolicy.resolveSlotSubscriptions(
                 activeBindingSubIds,
                 platformSubscriptions,
             )
@@ -80,7 +80,7 @@ internal object NativePresentationResolver {
             }
 
         val mode =
-            classify(
+            NativeSubscriptionPolicy.classify(
                 boundRoots = activeBindings.size,
                 visibleRoots = visible.size,
                 activeSubscriptions = activeBindingSubIds.size,
@@ -106,7 +106,7 @@ internal object NativePresentationResolver {
             }
 
         val networkTypeSubscriptionId =
-            selectNetworkTypeSubscriptionId(
+            NativeSubscriptionPolicy.selectNetworkTypeSubscriptionId(
                 effectiveDataSubscriptionId = effectiveDataSubscriptionId,
                 presentationRootSubscriptionId = target?.subscriptionId,
                 boundSubscriptionIds =
@@ -145,46 +145,6 @@ internal object NativePresentationResolver {
             networkType = networkType,
         )
     }
-
-    internal fun selectNetworkTypeSubscriptionId(
-        effectiveDataSubscriptionId: Int?,
-        presentationRootSubscriptionId: Int?,
-        boundSubscriptionIds: List<Int>,
-    ): Int? =
-        effectiveDataSubscriptionId
-            ?.takeIf { subscriptionId -> subscriptionId in boundSubscriptionIds }
-            ?: presentationRootSubscriptionId
-                ?.takeIf { subscriptionId -> subscriptionId in boundSubscriptionIds }
-            ?: boundSubscriptionIds.firstOrNull()
-
-    internal fun resolveActiveSubIds(
-        boundSubscriptionIds: List<Int>,
-        semanticActiveSubscriptionIds: Set<Int>,
-        authoritativeActiveSubscriptionIds: Set<Int>?,
-    ): ActiveBindingResolution {
-        val bound = boundSubscriptionIds.filter { it >= 0 }.toSet()
-        val authoritative = authoritativeActiveSubscriptionIds != null
-        val source =
-            authoritativeActiveSubscriptionIds
-                ?: semanticActiveSubscriptionIds
-        return ActiveBindingResolution(
-            subscriptionIds = bound.intersect(source),
-            authoritative = authoritative,
-        )
-    }
-
-    internal fun classify(
-        boundRoots: Int,
-        visibleRoots: Int,
-        activeSubscriptions: Int,
-    ): Mode =
-        when {
-            boundRoots <= 0 -> Mode.UNKNOWN
-            activeSubscriptions <= 1 && visibleRoots <= 1 -> Mode.SINGLE
-            activeSubscriptions >= 2 && visibleRoots >= 2 -> Mode.DUAL_SEPARATE
-            activeSubscriptions >= 2 && visibleRoots == 1 -> Mode.DUAL_AGGREGATED
-            else -> Mode.UNKNOWN
-        }
 
     // Binder callbacks are not replayed for an existing SystemUI icon after Hot Reload.
     // A sole visible native mobile view supplies its label, not an invented SIM binding.
@@ -408,27 +368,6 @@ internal object NativePresentationResolver {
         val fontPath: String? = null,
     )
 
-
-    // Slot order is physical SIM1/SIM2 order, not numeric subscription-ID order.
-    internal fun resolveSlotSubscriptions(
-        activeSubscriptionIds: Set<Int>,
-        platformSubscriptions: List<Pair<Int, Int>>?,
-    ): Map<Int, Int> {
-        val platform = platformSubscriptions ?: return emptyMap()
-        // Bound roots can lag behind an additional active platform subscription.
-        if (platform.size != 2) return emptyMap()
-        val pairs =
-            platform.filter { (id, slot) -> id in activeSubscriptionIds && slot in 0..1 }
-        if (
-            activeSubscriptionIds.size != 2 ||
-            pairs.size != 2 ||
-            pairs.map { it.first }.toSet() != activeSubscriptionIds ||
-            pairs.map { it.second }.toSet() != setOf(0, 1)
-        ) {
-            return emptyMap()
-        }
-        return pairs.associate { (id, slot) -> slot to id }
-    }
 
     private fun activeSubscriptions(context: Context): List<Pair<Int, Int>>? {
         val manager =
