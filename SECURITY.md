@@ -15,7 +15,7 @@ security-maintenance scope.
 Please report security-sensitive issues through GitHub's private vulnerability
 reporting flow:
 
-**Security -> Report a vulnerability**
+`Security -> Report a vulnerability`
 
 Do not publish credentials, signing material, exploit details, private
 diagnostic data, or other sensitive information in a public issue.

@@ -2,7 +2,7 @@
 
 [Privacy Policy / 隐私政策](PRIVACY.md)
 
-**Last updated / 最后更新: 2026-11-04**
+Last updated / 最后更新: **2026-11-04**
 
 ## English
 
