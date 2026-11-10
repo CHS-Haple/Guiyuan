@@ -776,4 +776,3 @@ private fun SharedPreferences.optionalColor(key: String): Int? =
     } else {
         null
     }
-
