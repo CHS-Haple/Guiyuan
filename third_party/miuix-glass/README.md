@@ -41,10 +41,17 @@ library.
 
 ## MIUIX Material migration and B1827 acceptance (PR #1440, 2026-11-10)
 
-PR [#1440](https://github.com/CHS-Haple/Guiyuan/pull/1440) integrates the maintainer-accepted B1827 candidate into `dev` without promoting `main`. Its exact upstream base is [`ca674992`](https://github.com/compose-miuix-ui/miuix/commit/ca674992c9645395cdb0d5109d66504ff53d018c). This migration introduces `miuix-material-android` and replaces the removed `miuix-shader` source-graph module with upstream `miuix-material`, while retaining the existing application-local Glass owner and UI adapters. The previous B1821 `45645854` pin is documented below.
+PR [#1440](https://github.com/CHS-Haple/Guiyuan/pull/1440) integrates the
+maintainer-accepted B1827 MIUIX Material revision into `dev` without promoting
+`main`. Its exact upstream base is
+[`ca674992`](https://github.com/compose-miuix-ui/miuix/commit/ca674992).
+This migrates the removed `miuix-shader` source module to
+`miuix-material-android` while retaining Guiyuan's Glass ownership and UI
+adapters. The previous B1821 `45645854` pin is documented below.
 
-The UI audit found that the Battery Colors sheet had a meaningful outer MIUIX `Card`
-with its own full-page background and a nested settings `Card`. The B1824
+The UI audit found that the Battery Colors sheet had a meaningful outer
+MIUIX `Card` with its own full-page background and a nested settings `Card`.
+The B1824
 experiment removed the outer Card, but the maintainer's screenshot confirmed
 that this **lost the intended visual grouping** and must not be kept. The
 B1825 correction restored the complete native `Card` hierarchy for built-in,
@@ -94,7 +101,14 @@ new global Squircle override, extra background strip, black-line mask,
 shader patch or change to bottom-sheet overscroll has been introduced.
 The original card color is retained as the maintainer requested.
 
-OS4's current GlassBottomSheet draws its complete rim (including the square screen-edge bottom); upstream `ca674992` retains this default behavior. Setting `stroke = null` would remove the required top/side highlights and was reverted. This is intentionally **not** represented as a fix to the OS4 white bottom border or a proof of Squircle internal band-join parity. The maintainer reported signed B1827 normal on the target device. The integrated source passed full Android CI. This scoped acceptance does not prove that the historical OS3 dark overscroll seam disappeared, and no independent rendering workaround is claimed.
+OS4's GlassBottomSheet still draws its complete rim, including the square
+screen-edge bottom. Upstream `ca674992` retains this behavior. The trial
+`stroke = null` removed top and side highlights and was reverted. This is
+not proof that the white lower rim or internal Squircle joins are fixed.
+The maintainer reported signed B1827 normal on the target device. The
+integrated source passed full Android CI. These scoped checks do not establish
+that the historical OS3 dark overscroll seam was eliminated; no local
+rendering workaround is claimed.
 
 ## Accepted upstream OS4 Glass graph (B1821, 2026-11-09)
 

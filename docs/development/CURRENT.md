@@ -20,7 +20,8 @@ evidence remain in PRs, issues, commits and the reference documents.
   with `miuix-material` and retaining the original Battery Colors Card/colour
   hierarchy plus default `Regular` Glass menu shadows. Original B1827
   [full CI](https://github.com/CHS-Haple/Guiyuan/actions/runs/42809922890)
-  and [trusted signing](https://github.com/CHS-Haple/Guiyuan/actions/runs/42811386871)
+  and
+  [signing](https://github.com/CHS-Haple/Guiyuan/actions/runs/42811386871)
   passed; the integrated source at `c9ea2848` passed
   [full CI](https://github.com/CHS-Haple/Guiyuan/actions/runs/42835579470).
   This is scoped UI/device evidence, not proof of all OS3-style edge cases,
