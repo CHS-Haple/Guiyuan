@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -421,55 +422,80 @@ internal fun RuntimeStatusMark(
             // The outer ring stays shared while center strokes retract or grow.
             val reveal = ((ringProgress - 0.15f) / 0.85f).coerceIn(0f, 1f)
             val checkProgress = (check * reveal).coerceIn(0f, 1f)
-            if (checkProgress > 0f) {
-                val path = Path().apply {
-                    moveTo(size.width * 0.29f, size.height * 0.52f)
-                    lineTo(size.width * 0.44f, size.height * 0.66f)
-                    lineTo(size.width * 0.72f, size.height * 0.35f)
-                }
-                val measure = PathMeasure().apply { setPath(path, false) }
-                val visible = Path()
-                if (measure.getSegment(0f, measure.length * checkProgress, visible, true)) {
-                    drawPath(
-                        path = visible,
-                        color = markColor.copy(alpha = markColor.alpha * checkProgress),
-                        style = Stroke(
-                            width = symbolStroke,
-                            cap = StrokeCap.Round,
-                            join = StrokeJoin.Round,
-                        ),
-                    )
-                }
-            }
+            drawRuntimeCheck(markColor, symbolStroke, checkProgress)
 
             val alertProgress = (alert * reveal).coerceIn(0f, 1f)
-            if (alertProgress > 0f) {
-                val tint = markColor.copy(alpha = markColor.alpha * alertProgress)
-                drawLine(
-                    color = tint,
-                    start = Offset(size.width * 0.50f, size.height * 0.29f),
-                    end = Offset(size.width * 0.50f, size.height * (0.29f + 0.27f * alertProgress)),
-                    strokeWidth = symbolStroke,
-                    cap = StrokeCap.Round,
-                )
-                drawCircle(
-                    color = tint,
-                    radius = symbolStroke * 0.58f * alertProgress,
-                    center = Offset(size.width * 0.50f, size.height * 0.70f),
-                )
-            }
+            drawRuntimeAlert(markColor, symbolStroke, alertProgress)
 
             val minusProgress = (minus * reveal).coerceIn(0f, 1f)
-            if (minusProgress > 0f) {
-                drawLine(
-                    color = markColor.copy(alpha = markColor.alpha * minusProgress),
-                    start = Offset(size.width * (0.50f - 0.19f * minusProgress), size.height * 0.50f),
-                    end = Offset(size.width * (0.50f + 0.19f * minusProgress), size.height * 0.50f),
-                    strokeWidth = symbolStroke,
-                    cap = StrokeCap.Round,
-                )
-            }
+            drawRuntimeMinus(markColor, symbolStroke, minusProgress)
+
         }
+    }
+}
+
+private fun DrawScope.drawRuntimeCheck(
+    markColor: Color,
+    symbolStroke: Float,
+    checkProgress: Float,
+) {
+    if (checkProgress > 0f) {
+        val path = Path().apply {
+            moveTo(size.width * 0.29f, size.height * 0.52f)
+            lineTo(size.width * 0.44f, size.height * 0.66f)
+            lineTo(size.width * 0.72f, size.height * 0.35f)
+        }
+        val measure = PathMeasure().apply { setPath(path, false) }
+        val visible = Path()
+        if (measure.getSegment(0f, measure.length * checkProgress, visible, true)) {
+            drawPath(
+                path = visible,
+                color = markColor.copy(alpha = markColor.alpha * checkProgress),
+                style = Stroke(
+                    width = symbolStroke,
+                    cap = StrokeCap.Round,
+                    join = StrokeJoin.Round,
+                ),
+            )
+        }
+    }
+}
+
+private fun DrawScope.drawRuntimeAlert(
+    markColor: Color,
+    symbolStroke: Float,
+    alertProgress: Float,
+) {
+    if (alertProgress > 0f) {
+        val tint = markColor.copy(alpha = markColor.alpha * alertProgress)
+        drawLine(
+            color = tint,
+            start = Offset(size.width * 0.50f, size.height * 0.29f),
+            end = Offset(size.width * 0.50f, size.height * (0.29f + 0.27f * alertProgress)),
+            strokeWidth = symbolStroke,
+            cap = StrokeCap.Round,
+        )
+        drawCircle(
+            color = tint,
+            radius = symbolStroke * 0.58f * alertProgress,
+            center = Offset(size.width * 0.50f, size.height * 0.70f),
+        )
+    }
+}
+
+private fun DrawScope.drawRuntimeMinus(
+    markColor: Color,
+    symbolStroke: Float,
+    minusProgress: Float,
+) {
+    if (minusProgress > 0f) {
+        drawLine(
+            color = markColor.copy(alpha = markColor.alpha * minusProgress),
+            start = Offset(size.width * (0.50f - 0.19f * minusProgress), size.height * 0.50f),
+            end = Offset(size.width * (0.50f + 0.19f * minusProgress), size.height * 0.50f),
+            strokeWidth = symbolStroke,
+            cap = StrokeCap.Round,
+        )
     }
 }
 
