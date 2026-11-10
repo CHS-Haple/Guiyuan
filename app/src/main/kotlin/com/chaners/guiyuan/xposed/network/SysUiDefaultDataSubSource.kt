@@ -166,7 +166,10 @@ internal object SysUiDefaultDataSubSource {
         }
     }
 
+    // Restore a pending delivery for any callback failure before rethrowing.
+    // A narrower catch could leave the last-delivered receipt falsely committed.
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     internal fun deliverSubscription(
         next: Int,
         force: Boolean,

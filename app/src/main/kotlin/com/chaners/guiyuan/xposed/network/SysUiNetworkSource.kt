@@ -895,6 +895,9 @@ internal object SysUiNetworkSource {
             }
         }
 
+    // Host installation can fail with non-Exception Throwables; preserve the
+    // stage boundary while rethrowFatal still escapes fatal failures.
+    @Suppress("TooGenericExceptionCaught")
     private inline fun <T> atStage(
         stage: String,
         block: () -> T,

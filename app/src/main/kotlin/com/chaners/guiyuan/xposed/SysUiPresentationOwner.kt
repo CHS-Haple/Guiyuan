@@ -1138,7 +1138,10 @@ internal object SysUiPresentationOwner {
         return homeRestored + keyguardFamilyRestored + controlCenterRestored
     }
 
+    // Cleanup must continue after any nonfatal release failure, retaining
+    // failed hook handles for retry; rethrowFatal never swallows fatal errors.
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun resetRuntimeState(source: String) {
         val failures = ArrayList<Throwable>(1)
         fun release(action: () -> Unit) {
