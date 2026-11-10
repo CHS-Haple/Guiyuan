@@ -443,6 +443,7 @@ internal object CcRenderSession {
         fun matches(candidate: ViewGroup): Boolean =
             phase == Phase.Armed && host.get() === candidate
 
+        @Suppress("TooGenericExceptionCaught")
         fun start(): Boolean {
             if (phase != Phase.Idle) return phase == Phase.Armed
             val root = host.get() ?: return false

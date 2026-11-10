@@ -105,6 +105,7 @@ internal object SysUiPresentationRuntime {
         onKeyguardAodEvent: ((String) -> Unit)?,
     ): AttachResult {
         val warned = AtomicBoolean(false)
+        @Suppress("TooGenericExceptionCaught")
         fun reportAodFailure(message: String) {
             try {
                 onKeyguardAodEvent?.invoke(message)
