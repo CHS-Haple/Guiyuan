@@ -67,25 +67,25 @@ internal object SysUiKeyguardHostResolver {
             }
 
     // Native screen-off decision, sampled only by detailed AOD diagnostics.
-    internal fun sleepLinkageState(resolved: ResolvedHost): String? =
-        SysUiPresentationRuntime.optionalNativeRead {
+    internal fun sleepLinkageState(resolved: ResolvedHost): String? {
+        return SysUiPresentationRuntime.optionalNativeRead {
             fun field(owner: Any, name: String): Any? =
                 findField(owner.javaClass, name)?.get(owner)
 
-            val dep = field(resolved.host, "mDep") ?: return@optionalNativeRead null
-            val lazy = field(dep, "dozeServiceHost") ?: return@optionalNativeRead null
+            val dep = field(resolved.host, "mDep") ?: return null
+            val lazy = field(dep, "dozeServiceHost") ?: return null
             val doze = lazy.javaClass.methods
                 .firstOrNull { it.name == "get" && it.parameterCount == 0 }
-                ?.invoke(lazy) ?: return@optionalNativeRead null
+                ?.invoke(lazy) ?: return null
             if (doze.javaClass.name !=
                 "com.android.keyguard.injector.DozeServiceHostInjector"
             ) {
-                return@optionalNativeRead null
+                return null
             }
-            val cc = field(doze, "mControlCenter") ?: return@optionalNativeRead null
+            val cc = field(doze, "mControlCenter") ?: return null
             val expanded = cc.javaClass.methods
                 .firstOrNull { it.name == "getExpanded" && it.parameterCount == 0 }
-                ?.invoke(cc) ?: return@optionalNativeRead null
+                ?.invoke(cc) ?: return null
             "ccExpanded=" + expanded +
                 ":linkage=" + field(doze, "mScreenOffNeedLinkageAnim") +
                 ":fullAod=" + field(doze, "mScreenOffNeedFullAodAnim") +
@@ -94,6 +94,7 @@ internal object SysUiKeyguardHostResolver {
                 ":sleepReason=" + field(doze, "mSleepReason") +
                 ":interactive=" + field(doze, "mDeviceInteractive")
         }
+    }
 
     internal fun statusIconsPresentationAlpha(
         resolved: ResolvedHost,
