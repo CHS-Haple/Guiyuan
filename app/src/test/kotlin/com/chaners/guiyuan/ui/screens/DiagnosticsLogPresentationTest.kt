@@ -10,12 +10,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-private const val RAW_FIELD_SOURCE = "source"
-private const val RAW_FIELD_REASON = "reason"
-private const val RAW_FIELD_NATIVE_CHARGING = "nativeCharging"
-private const val RAW_FIELD_TRACE_ID = "traceId"
-private const val RAW_FIELD_OWNER = "owner"
-
 class DiagnosticsLogPresentationTest {
     private fun structured(event: String, fields: Map<String, String> = emptyMap()) =
         DiagLogParser.parse(
@@ -87,20 +81,20 @@ class DiagnosticsLogPresentationTest {
         val entry = structured(
             "battery.reconcile",
             linkedMapOf(
-                RAW_FIELD_SOURCE to "hotReloadNativeIcon",
-                RAW_FIELD_REASON to "native-read",
-                RAW_FIELD_TRACE_ID to "a7",
-                RAW_FIELD_OWNER to "SystemUI",
+                "source" to "hotReloadNativeIcon",
+                "reason" to "native-read",
+                "traceId" to "a7",
+                "owner" to "SystemUI",
                 "extra" to "extra",
                 "transferredCharging" to "true",
-                RAW_FIELD_NATIVE_CHARGING to "false",
+                "nativeCharging" to "false",
                 "nativePercent" to "82",
             ),
         )
         val details = logDetailFields(entry)
         assertEquals(5, details.size)
         assertEquals(
-            listOf("transferredCharging", RAW_FIELD_NATIVE_CHARGING, "nativePercent", RAW_FIELD_SOURCE, RAW_FIELD_REASON),
+            listOf("transferredCharging", "nativeCharging", "nativePercent", "source", "reason"),
             details.map { it.first },
         )
         assertEquals(listOf("true", "false", "82"), details.take(3).map { it.second })
@@ -113,8 +107,8 @@ class DiagnosticsLogPresentationTest {
             "hotReload.complete",
             mapOf(
                 "alpha" to "1", "beta" to "2", "gamma" to "3",
-                "delta" to "4", RAW_FIELD_OWNER to "sysui", RAW_FIELD_SOURCE to "reload",
-                RAW_FIELD_REASON to "native-transition", RAW_FIELD_TRACE_ID to "trace-7",
+                "delta" to "4", "owner" to "sysui", "source" to "reload",
+                "reason" to "native-transition", "traceId" to "trace-7",
                 "sequence" to "45", "sessionId" to "build-session", "healthSnapshot" to "false",
             ),
         )
