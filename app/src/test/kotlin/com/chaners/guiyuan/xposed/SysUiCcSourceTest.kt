@@ -8,25 +8,27 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private const val TEST_CC_CALLBACK_FAILURE = "callback-failure"
+
 class SysUiCcSourceTest {
     @Test
     fun runtimeCallbackFailureIsContainedAndReported() {
         var reported: Throwable? = null
         val completed =
             SysUiCcSource.dispatchRuntimeCallback(
-                callback = { error("callback-failure") },
+                callback = { error(TEST_CC_CALLBACK_FAILURE) },
                 onFailure = { reported = it },
             )
 
         assertFalse(completed)
-        assertEquals("callback-failure", reported?.message)
+        assertEquals(TEST_CC_CALLBACK_FAILURE, reported?.message)
     }
 
     @Test
     fun runtimeCallbackFailureHandlerCannotEscapeTheHookBoundary() {
         val completed =
             SysUiCcSource.dispatchRuntimeCallback(
-                callback = { error("callback-failure") },
+                callback = { error(TEST_CC_CALLBACK_FAILURE) },
                 onFailure = { error("failure-handler-failure") },
             )
 
