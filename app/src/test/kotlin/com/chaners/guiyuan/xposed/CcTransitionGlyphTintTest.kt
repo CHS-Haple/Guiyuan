@@ -223,7 +223,7 @@ class CcTransitionGlyphTintTest {
 
     @Test
     fun transitionTintHoldsEndsAndChangesOnlyInMiddlePhase() {
-        val policy = CcTransitionPolicy
+        val policy = CcTintPolicy
         val source = 0xffff6600.toInt()
         val target = 0xe6ffffff.toInt()
 
@@ -261,7 +261,7 @@ class CcTransitionGlyphTintTest {
 
     @Test
     fun followSystemParticipantsUseLiveNativeTintWhileCustomTintUsesOptionalTransition() {
-        val policy = CcTransitionPolicy
+        val policy = CcTintPolicy
         val source = 0xff202020.toInt()
         val target = 0xffeeeeee.toInt()
 
