@@ -12,7 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
-import com.chaners.guiyuan.settings.AppPlatform
+import com.chaners.guiyuan.settings.OnboardingPrefs
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.LiquidMode
@@ -87,8 +87,8 @@ internal fun GyApp(
     ) {
         val hostActivity = LocalContext.current as? android.app.Activity
         val context = LocalContext.current.applicationContext
-        val agreementReviewOnly = remember(context) { AppPlatform.needsAgreementReview(context) }
-        var guideDone by remember(context) { mutableStateOf(!AppPlatform.needsOnboarding(context)) }
+        val agreementReviewOnly = remember(context) { OnboardingPrefs.needsAgreementReview(context) }
+        var guideDone by remember(context) { mutableStateOf(!OnboardingPrefs.needsOnboarding(context)) }
         if (!guideDone) {
             OnboardingFlow(
                 lang = lang,
@@ -98,7 +98,7 @@ internal fun GyApp(
                 swipeBackEnabled = appearance.swipeBack,
                 agreementReviewOnly = agreementReviewOnly,
                 onComplete = {
-                    AppPlatform.completeOnboarding(context)
+                    OnboardingPrefs.completeOnboarding(context)
                     guideDone = true
                 },
                 // Declining acknowledgment exits without writing agreement versions.
