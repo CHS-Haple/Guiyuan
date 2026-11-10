@@ -238,11 +238,8 @@ internal object OuterGeometry {
     const val MIN_WEIGHT_SCALE = 0.60f
     const val MAX_WEIGHT_SCALE = 2.00f
 
-    private const val LOWER_OPENING_LEFT_DEGREES = 30.0
-    private const val LOWER_OPENING_CENTER_DEGREES = 90.0
     private const val LOWER_OPENING_RIGHT_DEGREES = 150.0
     private const val DOT_COUNT = 4
-    private const val SOLVER_ITERATIONS = 32
 
     data class Resolved(
         val weightScale: Float,
@@ -410,12 +407,12 @@ internal object OuterGeometry {
         val unavailableMarkStroke = BASE_UNAVAILABLE_MARK_STROKE * normalized
         val unavailableMarkHalfExtent = BASE_UNAVAILABLE_MARK_HALF_EXTENT * normalized
 
-        val step = solveOuterDotStep(ringStroke = ringStroke, dotRadius = dotRadius)
+        val step = RingGapPolicy.solveOuterDotStep(ringStroke = ringStroke, dotRadius = dotRadius)
         val firstCenter =
-            LOWER_OPENING_CENTER_DEGREES.toFloat() -
+            RingGapPolicy.LOWER_OPENING_CENTER_DEGREES.toFloat() -
                 1.5f * step
         val gap =
-            dotToDotEdgeGap(
+            RingGapPolicy.dotToDotEdgeGap(
                 stepDegrees = step,
                 dotRadius = dotRadius,
             )
@@ -480,32 +477,6 @@ internal object OuterGeometry {
         )
     }
 
-    // Match the opening ring-to-dot gap with the nearest dot-to-dot gap.
-    private fun solveOuterDotStep(ringStroke: Float, dotRadius: Float): Float {
-        var lowerStep = 1f
-        var upperStep = 39.5f
-        repeat(SOLVER_ITERATIONS) {
-            val candidate = (lowerStep + upperStep) / 2f
-            val difference =
-                ringToDotEdgeGap(
-                    stepDegrees = candidate,
-                    ringStroke = ringStroke,
-                    dotRadius = dotRadius,
-                ) -
-                    dotToDotEdgeGap(
-                        stepDegrees = candidate,
-                        dotRadius = dotRadius,
-                    )
-            if (difference > 0f) {
-                lowerStep = candidate
-            } else {
-                upperStep = candidate
-            }
-        }
-
-        return (lowerStep + upperStep) / 2f
-    }
-
     private fun balanceBothSidesFirst(
         outermostAllowed: Double,
         bothSidesStep: Double,
@@ -529,39 +500,5 @@ internal object OuterGeometry {
             if (inner > edge) balancedUpper = first else balancedLower = first
         }
         return (balancedLower + balancedUpper) / 2.0
-    }
-
-    private fun ringToDotEdgeGap(
-        stepDegrees: Float,
-        ringStroke: Float,
-        dotRadius: Float,
-    ): Float {
-        val dotAngle =
-            Math.toRadians(
-                LOWER_OPENING_CENTER_DEGREES -
-                    1.5 * stepDegrees,
-            )
-        val ringAngle = Math.toRadians(LOWER_OPENING_LEFT_DEGREES)
-        val ringX = cos(ringAngle).toFloat() * RING_RADIUS
-        val ringY = sin(ringAngle).toFloat() * RING_RADIUS
-        val dotX = cos(dotAngle).toFloat() * MOBILE_ORBIT_RADIUS
-        val dotY = sin(dotAngle).toFloat() * MOBILE_ORBIT_RADIUS
-        val dx = dotX - ringX
-        val dy = dotY - ringY
-        return sqrt(dx * dx + dy * dy) -
-            ringStroke / 2f -
-            dotRadius
-    }
-
-    private fun dotToDotEdgeGap(
-        stepDegrees: Float,
-        dotRadius: Float,
-    ): Float {
-        val stepRadians = Math.toRadians(stepDegrees.toDouble())
-        val centerDistance =
-            2f *
-                MOBILE_ORBIT_RADIUS *
-                sin(stepRadians / 2.0).toFloat()
-        return centerDistance - 2f * dotRadius
     }
 }
