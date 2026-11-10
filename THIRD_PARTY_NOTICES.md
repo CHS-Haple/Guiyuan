@@ -18,7 +18,7 @@ versions remain listed here.
 | AndroidX Activity Compose | 1.13.0 | Android/Compose activity integration | Apache-2.0 |
 | AndroidX Navigation Event Compose | 1.2.0 | Predictive/navigation event integration | Apache-2.0 |
 | AndroidX DataStore Preferences | 1.3.0 | Local application preferences | Apache-2.0 |
-| MIUIX UI / Preference / Icons / Glass Icons / Nav / Blur | Stable `main`: published `0.9.4-8972f941-SNAPSHOT` with source checkout `b9f70838`; current `dev`: published `0.9.4-45645854-SNAPSHOT` and matching source checkout `45645854` | Xiaomi HyperOS-style UI; different branches intentionally retain their own pinned provenance and compatibility adapters | Apache-2.0 |
+| MIUIX UI / Preference / Icons / Glass Icons / Nav / Blur / Material | Stable `main` and currently accepted `dev`: `0.9.4-45645854-SNAPSHOT` (`45645854`); isolated PR #1440 candidate: `0.9.4-ca674992-SNAPSHOT` (`ca674992`) | Xiaomi HyperOS-style UI. The Material module replaces removed `miuix-shader`; released branch and experimental branch remain separately pinned. | Apache-2.0 |
 | kotlinx.serialization core / JSON | 1.12.0 | Versioned configuration file serialization | Apache-2.0 |
 
 ## Compile-only API
@@ -40,7 +40,7 @@ runtime dependency in this experimental implementation.
 `app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` contains a pinned, adapted
 subset of the
 [MIUIX miuix-glass PR #423](https://github.com/compose-miuix-ui/miuix/pull/423),
-at the current development checkout revision `45645854cd46c32275c5666e3aafa9980d8f104e`. The published v1.0.0 stable branch retains its earlier source checkout `b9f70838509fbc3f63f1a972777a7e6ce07f578f` (Apache-2.0; [license text](third_party/miuix-glass/LICENSE)).
+at the accepted development checkout revision `45645854cd46c32275c5666e3aafa9980d8f104e`. The isolated PR #1440 evaluates `ca674992c9645395cdb0d5109d66504ff53d018c`, retaining app-local compatibility adapters rather than claiming byte-for-byte identity with upstream `miuix-glass`. The released main branch uses its own pinned source and artifacts (Apache-2.0; [license text](third_party/miuix-glass/LICENSE)).
 `GlassPopupSurface.kt` and `GlassPopupColumn.kt` were initially based on PR #423
 commit `8d52b45f223d4bec9a719d3d6ca52972cc7ea5fb` to use upstream popup
 measurement, scroll and outside-gesture ownership. This is provenance, not a
@@ -72,7 +72,7 @@ This is a local source snapshot, not a published `miuix-effect` dependency.
 | Component | Variant | Purpose | Upstream license |
 | --- | --- | --- | --- |
 | Google Material Symbols | Local embedded vectors; no library version | Semantic leading glyphs for companion-app information surfaces | Apache-2.0 |
-| MIUIX OS4 Glass icons | Official `MiuixIcons.Glass.Regular` from the current same-revision `miuix-glass-icons-android` artifact (`45645854`) | Native icon aliases for OS4 navigation, menus and diagnostics; the OS3 UI style uses standard MIUIX icons where applicable | Apache-2.0 |
+| MIUIX OS4 Glass icons | Official `MiuixIcons.Glass.Regular` from the current same-revision `miuix-glass-icons-android` artifact (accepted `45645854`; PR #1440 candidate `ca674992`) | Native icon aliases for OS4 navigation, menus and diagnostics; the OS3 UI style uses standard MIUIX icons where applicable | Apache-2.0 |
 
 The selected Material Symbols are stored as local Android vector drawables
 sourced from Google's `google/material-design-icons` repository. They are app

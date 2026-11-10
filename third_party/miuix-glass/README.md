@@ -39,6 +39,14 @@ library.
   [THIRD_PARTY_NOTICES](../../THIRD_PARTY_NOTICES.md) and preserved source
   headers. Do not remove SPDX/copyright notices from adapted files.
 
+## MIUIX material migration and battery sheet layout candidate (PR #1440, 2026-11-10)
+
+PR [#1440](https://github.com/CHS-Haple/Guiyuan/pull/1440) is an experimental branch, not yet part of accepted `dev` or released `main`. Its exact upstream base is [`ca674992`](https://github.com/compose-miuix-ui/miuix/commit/ca674992c9645395cdb0d5109d66504ff53d018c). This migration introduces `miuix-material-android` and replaces the removed `miuix-shader` source-graph module with upstream `miuix-material`, while retaining the existing application-local Glass owner and UI adapters. The accepted `45645854` pin is documented below.
+
+The UI audit found that the Battery Colors sheet contained a project-owned outer `Card(surface)` around another MIUIX settings `Card`; in the upstream dark theme `surface` is black while the sheet and the default inner card use `#242424`. In the PR trial, the oversized outer Card is removed in both built-in/custom and add pages, leaving a single padded scrollable content owner and the inner native `Card`. The inner settings and add tiles use the existing `surfaceContainerHighest/onSurfaceContainerHighest` theme tokens for a bounded material contrast in both UI styles. The add page scrolls when necessary and retains its Card press feedback and measured height. The scheme pager, native Sheet host, nested-sheet/back state, settings callbacks and stored data stay unchanged.
+
+OS4's current GlassBottomSheet draws its complete rim (including the square screen-edge bottom); upstream `ca674992` retains this default behavior. Setting `stroke = null` would remove the required top/side highlights and was reverted. This is intentionally **not** represented as a fix to the OS4 white bottom border or a proof of Squircle internal band-join parity. The user's earlier acceptance of other MIUIX candidate changes is separate from the new Battery Colors layout: final source CI and one consolidated visual acceptance still apply. Do not merge solely on compilation.
+
 ## Accepted upstream OS4 Glass graph (B1821, 2026-11-09)
 
 - **Accepted pinned revision:** MIUIX upstream `main` commit [`45645854cd46c32275c5666e3aafa9980d8f104e`](https://github.com/compose-miuix-ui/miuix/commit/45645854cd46c32275c5666e3aafa9980d8f104e), containing merged [#478](https://github.com/compose-miuix-ui/miuix/pull/478). Guiyuan B1821 uses its official same-revision Maven artifacts and checkout, integrated by #1384 after source/CI checks and the maintainer's device acceptance. This advances the dependency graph from `ea1b935d` while preserving app-local Glass presentation and ownership contracts.

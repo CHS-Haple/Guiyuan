@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -38,6 +40,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
 internal fun BatteryAddSchemePage(
@@ -48,8 +51,14 @@ internal fun BatteryAddSchemePage(
     onClick: () -> Unit,
 ) {
     val density = LocalDensity.current
+    val scrollState = rememberScrollState()
+    val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
     Column(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
+            .verticalScroll(scrollState)
+            .padding(16.dp),
     ) {
         BatterySchemeHeader(
             name = name,
