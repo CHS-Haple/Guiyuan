@@ -1124,7 +1124,7 @@ internal object CcTransitionOwner {
                             source: Int,
                             tinted: Boolean,
                         ): Int =
-                            CcTransitionPolicy.resolveTransitionTint(
+                            CcTintPolicy.resolveTransitionTint(
                                 source = source,
                                 target = tint,
                                 progress = motionProgress,
@@ -2378,7 +2378,7 @@ internal object CcTransitionOwner {
                 NativeStatusObserver
                     .currentStatusIconTint(fakeStatusIcons)
             val resolved =
-                CcTransitionPolicy.selectNativeTransitionTint(
+                CcTintPolicy.selectNativeTransitionTint(
                     statusIconPeerTint = peerTint,
                     cachedTint = cachedNativePeerTint,
                 )

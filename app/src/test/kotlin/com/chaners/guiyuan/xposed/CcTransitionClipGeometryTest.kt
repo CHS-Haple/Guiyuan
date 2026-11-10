@@ -149,7 +149,7 @@ class CcTransitionClipGeometryTest {
 
     @Test
     fun nativePeerTintNeverFallsBackToBatteryTintAuthority() {
-        val policy = CcTransitionPolicy
+        val policy = CcTintPolicy
         val peer = 0xffe0e0e0.toInt()
         val cached = 0xffdddddd.toInt()
 
