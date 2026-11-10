@@ -62,13 +62,13 @@ import com.chaners.guiyuan.settings.NavContent
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.blur
 import top.yukonga.miuix.kmp.blur.drawBackdrop
-import top.yukonga.miuix.kmp.blur.highlight.BloomStroke
-import top.yukonga.miuix.kmp.blur.highlight.Highlight
-import top.yukonga.miuix.kmp.blur.highlight.LightPosition
-import top.yukonga.miuix.kmp.blur.highlight.LightSource
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.sensor.rememberDeviceTilt
+import top.yukonga.miuix.kmp.material.EdgeLightSource
+import top.yukonga.miuix.kmp.material.EdgePeak
+import top.yukonga.miuix.kmp.material.EdgeStroke
+import top.yukonga.miuix.kmp.material.drawEdgeStroke
+import top.yukonga.miuix.kmp.material.sensor.rememberDeviceTilt
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
@@ -86,24 +86,13 @@ import kotlin.math.sin
 
 // Liquid optics adapted from the MIUIX Liquid Glass example (Apache-2.0).
 // Guiyuan retains navigation content, gestures and fallback ownership.
-private val glassHighlight = Highlight(
+private val glassHighlight = EdgeStroke(
     width = 1.dp,
-    alpha = 1f,
-    style = BloomStroke(
-        color = Color.White.copy(alpha = 0.12f),
-        innerBlurRadius = 2.dp,
-        primaryLight = LightSource(
-            position = LightPosition(0.5f, -0.3f, -0.05f),
-            color = Color.White,
-            intensity = 1f,
-        ),
-        secondaryLight = LightSource(
-            position = LightPosition(0.5f, 0.8f, -0.5f),
-            color = Color.White,
-            intensity = 0.4f,
-        ),
-        dualPeak = true,
-    ),
+    bevel = 2.dp,
+    color = Color.White.copy(alpha = 0.12f),
+    primary = EdgeLightSource(0.5f, -0.3f, -0.05f, intensity = 1f),
+    secondary = EdgeLightSource(0.5f, 0.8f, -0.5f, intensity = 0.4f),
+    peak = EdgePeak.Dual,
 )
 
 private const val GRAVITY_THRESHOLD_SQ = 0.01f
@@ -148,8 +137,7 @@ private fun rememberGlassTilt(interactive: Boolean): State<GlassTilt> {
     }
 }
 
-internal fun litHighlight(tilt: GlassTilt, offsetDegrees: Float): Highlight {
-    val style = glassHighlight.style as BloomStroke
+internal fun litHighlight(tilt: GlassTilt, offsetDegrees: Float): EdgeStroke {
     // Pitch spans ±90°; center the light sweep at 45° to avoid saturating normal upright use.
     val pitchSweep =
         ((abs(tilt.pitch) - PITCH_NEUTRAL) * PITCH_SWEEP_PER_RAD)
@@ -157,14 +145,9 @@ internal fun litHighlight(tilt: GlassTilt, offsetDegrees: Float): Highlight {
     val rad = tilt.angle + (offsetDegrees * PI / 180.0).toFloat() + pitchSweep
     val dx = (tilt.roll * TILT_LIGHT_SENSITIVITY).coerceIn(-0.12f, 0.12f)
     return glassHighlight.copy(
-        style = style.copy(
-            primaryLight = style.primaryLight.copy(
-                position = LightPosition(
-                    0.5f + cos(rad) + dx,
-                    0.7f + sin(rad),
-                    style.primaryLight.position.z,
-                ),
-            ),
+        primary = glassHighlight.primary.copy(
+            x = 0.5f + cos(rad) + dx,
+            y = 0.7f + sin(rad),
         ),
     )
 }
@@ -375,7 +358,13 @@ internal fun LiquidNavBar(
                             blur(params.blur.toPx(), params.blur.toPx())
                             lens(params.refractionHeight.toPx(), params.refractionAmount.toPx())
                         },
-                        highlight = { panelHighlight.value.copy(alpha = 0.75f) },
+                        onDrawFront = {
+                            drawEdgeStroke(
+                                shape = pillShape,
+                                stroke = panelHighlight.value,
+                                alpha = 0.75f,
+                            )
+                        },
                         layerBlock = {
                             val progress = motion.pressProgress
                             val scale =
@@ -465,7 +454,13 @@ internal fun LiquidNavBar(
                                 chromaticAberration = 0.5f,
                             )
                         },
-                        highlight = { pillHighlight.value.copy(alpha = motion.pressProgress) },
+                        onDrawFront = {
+                            drawEdgeStroke(
+                                shape = pillShape,
+                                stroke = pillHighlight.value,
+                                alpha = motion.pressProgress,
+                            )
+                        },
                         layerBlock = {
                             scaleX = motion.scaleX
                             scaleY = motion.scaleY
