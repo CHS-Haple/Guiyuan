@@ -71,7 +71,7 @@ class CcTransitionNativeCapacityTest {
 
         assertEquals(
             10,
-            CcTransitionPolicy
+            CcReservationPolicy
                 .resolveTransitionReservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
@@ -80,7 +80,7 @@ class CcTransitionNativeCapacityTest {
         )
         assertEquals(
             20,
-            CcTransitionPolicy
+            CcReservationPolicy
                 .resolveTransitionReservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
@@ -89,7 +89,7 @@ class CcTransitionNativeCapacityTest {
         )
         assertEquals(
             30,
-            CcTransitionPolicy
+            CcReservationPolicy
                 .resolveTransitionReservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
@@ -117,7 +117,7 @@ class CcTransitionNativeCapacityTest {
                 progress = 0.25f,
             )
         val transitionWidth =
-            CcTransitionPolicy
+            CcReservationPolicy
                 .resolveTransitionReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -141,14 +141,14 @@ class CcTransitionNativeCapacityTest {
                 ),
             )
         val semantic =
-            CcTransitionPolicy
+            CcReservationPolicy
                 .resolveTransitionReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     progress = 0.25f,
                 )
         val native =
-            CcTransitionPolicy
+            CcReservationPolicy
                 .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -173,7 +173,7 @@ class CcTransitionNativeCapacityTest {
             )
 
         val unprojected =
-            CcTransitionPolicy
+            CcReservationPolicy
                 .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -181,7 +181,7 @@ class CcTransitionNativeCapacityTest {
                     progress = 0.5f,
                 )
         val projected =
-            CcTransitionPolicy
+            CcReservationPolicy
                 .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -208,7 +208,7 @@ class CcTransitionNativeCapacityTest {
 
         assertEquals(
             80,
-            CcTransitionPolicy
+            CcReservationPolicy
                 .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 40,
                     spans = spans,
@@ -233,7 +233,7 @@ class CcTransitionNativeCapacityTest {
 
         assertEquals(
             135,
-            CcTransitionPolicy
+            CcReservationPolicy
                 .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -243,7 +243,7 @@ class CcTransitionNativeCapacityTest {
         )
         assertEquals(
             180,
-            CcTransitionPolicy
+            CcReservationPolicy
                 .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
@@ -253,7 +253,7 @@ class CcTransitionNativeCapacityTest {
         )
         assertEquals(
             150,
-            CcTransitionPolicy
+            CcReservationPolicy
                 .resolveBatteryIslandNativePeerReservationWidth(
                     compactWidthPx = 105,
                     spans =

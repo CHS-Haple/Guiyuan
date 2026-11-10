@@ -64,7 +64,7 @@ class CcTransitionSourceContractTest {
 
     @Test
     fun dualSignalTargetNeedsVerifiedAggregateOrTwoMatchingSubscriptions() {
-        val policy = CcTransitionPolicy
+        val policy = CcDualMobilePolicy
         val active = setOf(1, 4)
         assertEquals(
             CcDualMobilePolicy.DualMobileTarget.AGGREGATED,
