@@ -7,17 +7,8 @@ library.
 
 ## Provenance and current dependency graph
 
-- **Current `dev` MIUIX dependency (B1821 accepted):** `0.9.4-45645854-SNAPSHOT`
-  from official `45645854cd46c32275c5666e3aafa9980d8f104e`, matched to the same
-  source checkout. [#1384](https://github.com/CHS-Haple/Guiyuan/pull/1384)
-  passed full
-  [Ready source CI #42592043065](https://github.com/CHS-Haple/Guiyuan/actions/runs/42592043065), direct official-Maven resolution, Codacy, and [trusted B1821 signing #42591053313](https://github.com/CHS-Haple/Guiyuan/actions/runs/42591053313); the maintainer accepted B1821, and it was squash-merged into `dev` as `e2a49b6e9938dbdeb08a78e3b5b8b31647ecb7f6`. The previous accepted `ea1b935d` graph and B1810 UI review through #1371/#1370 remain historical evidence, not a second active pin. `main` has not been promoted.
-- **Historical B1737 source-pinned graph (superseded by B1786):**
-  [MIUIX Glass PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at
-  `f4cfe9b0adaa5151b68ec169ed18d470b957a6f6`
-  (previous accepted graph `b9f70838509fbc3f63f1a972777a7e6ce07f578f`). Guiyuan
-  B1737 (`8f2f4bddc091f057b1f5dbbe07678f3cc7f9e20c`) passed
-  [exact-head Full CI](https://github.com/CHS-Haple/Guiyuan/actions/runs/41604585823), [isolated signed Canary verification](https://github.com/CHS-Haple/Guiyuan/actions/runs/41605488416), and focused maintainer device acceptance. It was integrated into `dev` through [#1179](https://github.com/CHS-Haple/Guiyuan/pull/1179) at `7eb025ddd99f00367377f8eaeadd6b155015c9e3`. **PR #423 was unmerged at B1737 acceptance and was merged to MIUIX `main` on 2026-11-07.** Device acceptance covers the tested app-local implementation, not direct replacement with the merged upstream Glass module or universal device compatibility.
+- **Current `dev` MIUIX dependency (B1821 accepted):** `0.9.4-45645854-SNAPSHOT` from official `45645854cd46c32275c5666e3aafa9980d8f104e`, matched to the same source checkout. [#1384](https://github.com/CHS-Haple/Guiyuan/pull/1384) passed full [Ready source CI #42592043065](https://github.com/CHS-Haple/Guiyuan/actions/runs/42592043065), direct official-Maven resolution, Codacy, and [trusted B1821 signing #42591053313](https://github.com/CHS-Haple/Guiyuan/actions/runs/42591053313); the maintainer accepted B1821, and it was squash-merged into `dev` as `e2a49b6e9938dbdeb08a78e3b5b8b31647ecb7f6`. The previous accepted `ea1b935d` graph and B1810 UI review through #1371/#1370 remain historical evidence, not a second active pin. `main` has not been promoted.
+- **Historical B1737 source-pinned graph (superseded by B1786):** [MIUIX Glass PR #423](https://github.com/compose-miuix-ui/miuix/pull/423) at `f4cfe9b0adaa5151b68ec169ed18d470b957a6f6` (previous accepted graph `b9f70838509fbc3f63f1a972777a7e6ce07f578f`). Guiyuan B1737 (`8f2f4bddc091f057b1f5dbbe07678f3cc7f9e20c`) passed [exact-head Full CI](https://github.com/CHS-Haple/Guiyuan/actions/runs/41604585823), [isolated signed Canary verification](https://github.com/CHS-Haple/Guiyuan/actions/runs/41605488416), and focused maintainer device acceptance. It was integrated into `dev` through [#1179](https://github.com/CHS-Haple/Guiyuan/pull/1179) at `7eb025ddd99f00367377f8eaeadd6b155015c9e3`. **PR #423 was unmerged at B1737 acceptance and was merged to MIUIX `main` on 2026-11-07.** Device acceptance covers the tested app-local implementation, not direct replacement with the merged upstream Glass module or universal device compatibility.
 - The CI composite build checks out the same pinned MIUIX source through
   [the repository Action](../../.github/actions/miuix-source/action.yml). The
   accepted published Maven version and exact source checkout now both match
@@ -50,10 +41,8 @@ library.
 
 ## Accepted upstream OS4 Glass graph (B1821, 2026-11-09)
 
-- **Accepted pinned revision:** MIUIX upstream `main` commit
-  [`45645854cd46c32275c5666e3aafa9980d8f104e`](https://github.com/compose-miuix-ui/miuix/commit/45645854cd46c32275c5666e3aafa9980d8f104e), containing merged [#478](https://github.com/compose-miuix-ui/miuix/pull/478). Guiyuan B1821 uses its official same-revision Maven artifacts and checkout, integrated by #1384 after source/CI checks and the maintainer's device acceptance. This advances the dependency graph from `ea1b935d` while preserving app-local Glass presentation and ownership contracts.
-- **Upstream/package evidence:** exact-head
-  [Build All Tests #42578007171](https://github.com/compose-miuix-ui/miuix/actions/runs/42578007171), [Example App #42578007061](https://github.com/compose-miuix-ui/miuix/actions/runs/42578007061) and [publication #42578007090](https://github.com/compose-miuix-ui/miuix/actions/runs/42578007090) succeeded. More importantly, Guiyuan's full [#1384 Ready CI #42592043065](https://github.com/CHS-Haple/Guiyuan/actions/runs/42592043065) resolved and built with official published Maven artifacts without source substitution, alongside the pinned source graph and OS4 fallback checks. This validates this application source, not every upstream Glass API or device.
+- **Accepted pinned revision:** MIUIX upstream `main` commit [`45645854cd46c32275c5666e3aafa9980d8f104e`](https://github.com/compose-miuix-ui/miuix/commit/45645854cd46c32275c5666e3aafa9980d8f104e), containing merged [#478](https://github.com/compose-miuix-ui/miuix/pull/478). Guiyuan B1821 uses its official same-revision Maven artifacts and checkout, integrated by #1384 after source/CI checks and the maintainer's device acceptance. This advances the dependency graph from `ea1b935d` while preserving app-local Glass presentation and ownership contracts.
+- **Upstream/package evidence:** exact-head [Build All Tests #42578007171](https://github.com/compose-miuix-ui/miuix/actions/runs/42578007171), [Example App #42578007061](https://github.com/compose-miuix-ui/miuix/actions/runs/42578007061) and [publication #42578007090](https://github.com/compose-miuix-ui/miuix/actions/runs/42578007090) succeeded. More importantly, Guiyuan's full [#1384 Ready CI #42592043065](https://github.com/CHS-Haple/Guiyuan/actions/runs/42592043065) resolved and built with official published Maven artifacts without source substitution, alongside the pinned source graph and OS4 fallback checks. This validates this application source, not every upstream Glass API or device.
 - **Exact upstream delta from `ea1b935d`:** one merge commit (#478), eight
   changed files, comprising Glass navigation bar/layout, new tests, example and
   docs. The app-local `GlassNavigationBarLayout.kt` blob SHA
@@ -91,18 +80,7 @@ library.
   composition. Those Glass implementations have **not** replaced Guiyuan's
   app-local components; advancing the source checkout alone does not migrate
   them.
-- **B1786 focused qualification:**
-  [PR #1299](https://github.com/CHS-Haple/Guiyuan/pull/1299) advances the
-  same-source OS4 **UI/Nav/Blur/core dependency checkout** to
-  `b7a5f08f5a8c20350406e1665a97fbf99b5d9c8c`. Comparing repository trees against
-  `f4cfe9b0` found only `Component.kt` (unbounded-width sizing),
-  `NavSwipeDismiss.kt` (consumed-release cancellation) and one navigation test
-  changed in the included runtime modules; the build catalog's AGP 9.5.1 is
-  guarded and normalized to Guiyuan's 9.5.0. **No wholesale Glass module
-  migration.** The app-local menu integrates upstream `GlassIconDropdownMenu`
-  with isolated root-host exit coordination and five JUnit tests.
-  [Exact-head CI](https://github.com/CHS-Haple/Guiyuan/actions/runs/42427142011)
-  and [signed Canary B1786](https://github.com/CHS-Haple/Guiyuan/actions/runs/42427816564) succeeded; the maintainer reported no problems after the requested device test, including the earlier B1783 low-saturation swipe regression. This is scoped device evidence, not general device certification. Two Codacy medium complexity alerts trace to the upstream-origin menu body and remain explicitly documented in the PR rather than blindly rewritten or suppressed.
+- **B1786 focused qualification:** [PR #1299](https://github.com/CHS-Haple/Guiyuan/pull/1299) advances the same-source OS4 **UI/Nav/Blur/core dependency checkout** to `b7a5f08f5a8c20350406e1665a97fbf99b5d9c8c`. Comparing repository trees against `f4cfe9b0` found only `Component.kt` (unbounded-width sizing), `NavSwipeDismiss.kt` (consumed-release cancellation) and one navigation test changed in the included runtime modules; the build catalog's AGP 9.5.1 is guarded and normalized to Guiyuan's 9.5.0. **No wholesale Glass module migration.** The app-local menu integrates upstream `GlassIconDropdownMenu` with isolated root-host exit coordination and five JUnit tests. [Exact-head CI](https://github.com/CHS-Haple/Guiyuan/actions/runs/42427142011) and [signed Canary B1786](https://github.com/CHS-Haple/Guiyuan/actions/runs/42427816564) succeeded; the maintainer reported no problems after the requested device test, including the earlier B1783 low-saturation swipe regression. This is scoped device evidence, not general device certification. Two Codacy medium complexity alerts trace to the upstream-origin menu body and remain explicitly documented in the PR rather than blindly rewritten or suppressed.
 - **Menu-source provenance (PR #1316):** the local OS4 Glass menu/transform
   chain was reconciled with upstream PR #423's accepted `b7a5f08f` source and
   its later `799d3d09` material-opacity correction. `GlassTransformPopup.kt`
@@ -139,16 +117,9 @@ and the upstream `GlassPopupItem` intrinsic-size rule; OS3 style retains the
 verified against the exact upstream `ea1b935d` source before switching to native
 aliases.
 
-**B1810 verification (historical):** MIUIX's official
-[tests](https://github.com/compose-miuix-ui/miuix/actions/runs/42486425937) and
-[package publication](https://github.com/compose-miuix-ui/miuix/actions/runs/42486425920) succeeded on `ea1b935d`. Guiyuan's exact B1810 source `91b84c9abceb7f4627ac181a11ef93c935028d0d` passed [full Android, two OS4 source modes, and direct published-Maven JVM CI #42546207293](https://github.com/CHS-Haple/Guiyuan/actions/runs/42546207293); [independent trusted signing #42546874538](https://github.com/CHS-Haple/Guiyuan/actions/runs/42546874538) verified the package/version/certificate. The maintainer then reported the B1810 grouped UI check **“正常”**. This is positive focused device acceptance, not proof of every exceptional input, extreme font scale, RTL, process resume, or alternate device. `dev` integration is [PR #1370](https://github.com/CHS-Haple/Guiyuan/pull/1370); `main` was not promoted.
+**B1810 verification (historical):** MIUIX's official [tests](https://github.com/compose-miuix-ui/miuix/actions/runs/42486425937) and [package publication](https://github.com/compose-miuix-ui/miuix/actions/runs/42486425920) succeeded on `ea1b935d`. Guiyuan's exact B1810 source `91b84c9abceb7f4627ac181a11ef93c935028d0d` passed [full Android, two OS4 source modes, and direct published-Maven JVM CI #42546207293](https://github.com/CHS-Haple/Guiyuan/actions/runs/42546207293); [independent trusted signing #42546874538](https://github.com/CHS-Haple/Guiyuan/actions/runs/42546874538) verified the package/version/certificate. The maintainer then reported the B1810 grouped UI check **“正常”**. This is positive focused device acceptance, not proof of every exceptional input, extreme font scale, RTL, process resume, or alternate device. `dev` integration is [PR #1370](https://github.com/CHS-Haple/Guiyuan/pull/1370); `main` was not promoted.
 
-The accepted app-local implementation also follows upstream
-`GlassMaterial.withUnderlayBlur()` for the action bar, both TabRow forms and OS4
-search surface, removing the former rounded blur constants and the last
-deprecated helper call. The final B1810 source and its additional
-published-Maven unit tests passed
-[CI #42546207293](https://github.com/CHS-Haple/Guiyuan/actions/runs/42546207293), followed by the maintainer's normal device feedback. Source and device evidence have distinct scopes; keep the current app-owned Back and popup contracts. Codacy's upstream-identical navigation labeled-return warning is still open.
+The accepted app-local implementation also follows upstream `GlassMaterial.withUnderlayBlur()` for the action bar, both TabRow forms and OS4 search surface, removing the former rounded blur constants and the last deprecated helper call. The final B1810 source and its additional published-Maven unit tests passed [CI #42546207293](https://github.com/CHS-Haple/Guiyuan/actions/runs/42546207293), followed by the maintainer's normal device feedback. Source and device evidence have distinct scopes; keep the current app-owned Back and popup contracts. Codacy's upstream-identical navigation labeled-return warning is still open.
 
 ## Follow-up upstream capability audit (2026-11-09)
 
@@ -217,21 +188,16 @@ and accepted with B1821 through #1384.
 
 ## Historical candidate: `ba0fca0` (subsumed by accepted `ea1b935d`)
 
-**Historical decision (before B1810): qualify later, without upgrading to this
-intermediate commit alone.** The candidate was upstream commit
-[`ba0fca0cae3ace964eef59a3108cd782f7f9ec3d`](https://github.com/compose-miuix-ui/miuix/commit/ba0fca0cae3ace964eef59a3108cd782f7f9ec3d). It is a **candidate source revision for one coherent, same-revision OS4 Glass dependency graph**, not an accepted artifact/version or authorization to replace local Glass code. At that earlier `ba0fca0` comparison, Guiyuan's dependency and Build identity had not changed; the dependency subsequently advanced through #1371 and then to `45645854` via B1821 #1384, as recorded above.
+**Historical decision (before B1810): qualify later, without upgrading to this intermediate commit alone.** The candidate was upstream commit [`ba0fca0cae3ace964eef59a3108cd782f7f9ec3d`](https://github.com/compose-miuix-ui/miuix/commit/ba0fca0cae3ace964eef59a3108cd782f7f9ec3d). It is a **candidate source revision for one coherent, same-revision OS4 Glass dependency graph**, not an accepted artifact/version or authorization to replace local Glass code. At that earlier `ba0fca0` comparison, Guiyuan's dependency and Build identity had not changed; the dependency subsequently advanced through #1371 and then to `45645854` via B1821 #1384, as recorded above.
 
 [Compared with the accepted `b7a5f08f` source](https://github.com/compose-miuix-ui/miuix/compare/b7a5f08f5a8c20350406e1665a97fbf99b5d9c8c...ba0fca0cae3ace964eef59a3108cd782f7f9ec3d), this revision adds two Glass-only commits across nine source/test files:
 - [`799d3d09`](https://github.com/compose-miuix-ui/miuix/commit/799d3d09f996d66cb2b1c2318deed8242c4f440e): separates button material-layer alpha from popup anchor visibility, with related Glass button/top-bar/popup changes and tests. A bounded correction from this commit is represented in Guiyuan's **merged** menu migration [#1316](https://github.com/CHS-Haple/Guiyuan/pull/1316); this is not adoption of the whole Glass module.
 - [`ba0fca0`](https://github.com/compose-miuix-ui/miuix/commit/ba0fca0cae3ace964eef59a3108cd782f7f9ec3d): retargets Glass navigation indicator drag/release to current geometry and adds dynamic-theme accent treatment, including new desktop interaction/colour tests. It does not itself establish Guiyuan's preview, touch-extension, compact top-bar or popup-host contracts.
 
-**Evidence at the candidate checkpoint (2026-11-08):** the upstream exact-SHA
-[Build All Tests](https://github.com/compose-miuix-ui/miuix/actions/runs/42464288102) is overall **failed**, although its Android `assembleAndroidTest` job passed; the JS/Wasm browser test job failed. The upstream [Example App build](https://github.com/compose-miuix-ui/miuix/actions/runs/42464288107) is **failed**, including its Android job. The [Publish to GitHub Packages](https://github.com/compose-miuix-ui/miuix/actions/runs/42464288129) job was still in progress when checked. None of these results establishes that all required Android modules are officially published at the identical source revision, independently resolvable by Guiyuan, or app-compatible. Latest verified tagged stable release remained `v0.9.4`, not this SHA.
+**Evidence at the candidate checkpoint (2026-11-08):** the upstream exact-SHA [Build All Tests](https://github.com/compose-miuix-ui/miuix/actions/runs/42464288102) is overall **failed**, although its Android `assembleAndroidTest` job passed; the JS/Wasm browser test job failed. The upstream [Example App build](https://github.com/compose-miuix-ui/miuix/actions/runs/42464288107) is **failed**, including its Android job. The [Publish to GitHub Packages](https://github.com/compose-miuix-ui/miuix/actions/runs/42464288129) job was still in progress when checked. None of these results establishes that all required Android modules are officially published at the identical source revision, independently resolvable by Guiyuan, or app-compatible. Latest verified tagged stable release remained `v0.9.4`, not this SHA.
 
 **Admission gates before a runtime dependency or module upgrade:**
-1. Obtain trustworthy official **same-revision** Android POM/Gradle metadata and
-   AAR artifacts for the complete resolved dependency graph
-   (including the relevant UI, Blur, Core, Preference, Icons, Nav, Shader, Squircle, Glass and Glass Icons modules); prove actual Maven/GitHub Packages resolution, source-version provenance and compatible transitive versions. A successful publish workflow alone, cached sources, a locally synthesized SNAPSHOT, and mixed-revision modules are insufficient. Keep credentials inside the trusted resolution path.
+1. Obtain trustworthy official **same-revision** Android POM/Gradle metadata and AAR artifacts for the complete resolved dependency graph (including the relevant UI, Blur, Core, Preference, Icons, Nav, Shader, Squircle, Glass and Glass Icons modules); prove actual Maven/GitHub Packages resolution, source-version provenance and compatible transitive versions. A successful publish workflow alone, cached sources, a locally synthesized SNAPSHOT, and mixed-revision modules are insufficient. Keep credentials inside the trusted resolution path.
 2. Require successful/understood upstream **Android library and Android
    example** build evidence at the selected exact SHA. Investigate any other
    failed upstream matrix jobs rather than reporting an unqualified all-green
