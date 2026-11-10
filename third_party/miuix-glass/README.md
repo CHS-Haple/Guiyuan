@@ -43,7 +43,23 @@ library.
 
 PR [#1440](https://github.com/CHS-Haple/Guiyuan/pull/1440) is an experimental branch, not yet part of accepted `dev` or released `main`. Its exact upstream base is [`ca674992`](https://github.com/compose-miuix-ui/miuix/commit/ca674992c9645395cdb0d5109d66504ff53d018c). This migration introduces `miuix-material-android` and replaces the removed `miuix-shader` source-graph module with upstream `miuix-material`, while retaining the existing application-local Glass owner and UI adapters. The accepted `45645854` pin is documented below.
 
-The UI audit found that the Battery Colors sheet contained a project-owned outer `Card(surface)` around another MIUIX settings `Card`; in the upstream dark theme `surface` is black while the sheet and the default inner card use `#242424`. In the PR trial, the oversized outer Card is removed in both built-in/custom and add pages, leaving a single padded scrollable content owner and the inner native `Card`. The inner settings and add tiles use the existing `surfaceContainerHighest/onSurfaceContainerHighest` theme tokens for a bounded material contrast in both UI styles. The add page scrolls when necessary and retains its Card press feedback and measured height. The scheme pager, native Sheet host, nested-sheet/back state, settings callbacks and stored data stay unchanged.
+The UI audit found that the Battery Colors sheet had a meaningful outer MIUIX `Card`
+with its own full-page background and a nested settings `Card`. The B1824
+experiment removed the outer Card, but the maintainer's screenshot confirmed
+that this **lost the intended visual grouping** and must not be kept. The
+B1825 correction restores the complete native `Card` hierarchy for built-in,
+custom and add pages. Instead of the old high-contrast dark `surface=#000000`,
+the outer Card uses the existing MIUIX
+`surfaceContainerHighest/onSurfaceContainerHighest` pair (dark `#2D2D2D`,
+light `#E8E8E8`). The inner Card restores MIUIX
+`surfaceContainer/onSurfaceContainer` defaults (dark `#242424`, light
+white), preserving the existing 16dp inset, squircle silhouette, header,
+palette, actions and press feedback. The original scroll and pagination
+owners are unchanged, as are the Sheet host, nested-sheet Back state,
+settings callbacks and stored data. Comparing with upstream `Surface`
+found its default `RectangleShape` requires more shape setup and offers
+no benefit over `Card` here; Glass surfaces are intended for a separate
+backdrop/overlay material, not a second nested blurred sheet.
 
 OS4's current GlassBottomSheet draws its complete rim (including the square screen-edge bottom); upstream `ca674992` retains this default behavior. Setting `stroke = null` would remove the required top/side highlights and was reverted. This is intentionally **not** represented as a fix to the OS4 white bottom border or a proof of Squircle internal band-join parity. The user's earlier acceptance of other MIUIX candidate changes is separate from the new Battery Colors layout: final source CI and one consolidated visual acceptance still apply. Do not merge solely on compilation.
 
