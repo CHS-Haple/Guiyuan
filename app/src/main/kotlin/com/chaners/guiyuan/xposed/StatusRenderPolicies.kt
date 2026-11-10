@@ -421,13 +421,7 @@ internal object OuterGeometry {
         // Eight circles no longer fit the lower semicircle if their radii grow
         // without bound. Limit only the split presentation at extreme weights.
         val splitDotRadius = min(dualDotRadius, 6.5f)
-        val minimumChord = 2f * splitDotRadius + 1f
-        val bothSidesStep = max(
-            if (bothSidesBottomIconVisible) 16.0 else 18.0,
-            Math.toDegrees(2.0 * kotlin.math.asin(
-                (minimumChord / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
-            )),
-        )
+        val bothSidesStep = bothSidesDotStep(bothSidesBottomIconVisible, splitDotRadius)
         val ringClearance = ringStroke / 2f + splitDotRadius + 2f
         val endMargin = Math.toDegrees(2.0 * kotlin.math.asin(
             (ringClearance / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
@@ -447,14 +441,7 @@ internal object OuterGeometry {
             ((normalized - DEFAULT_WEIGHT_SCALE) * DUAL_ROW_TIGHTENING_RATE)
                 .coerceIn(0f, DUAL_MAX_ROW_TIGHTENING)
         val dualRowGap = naturalRowGap - rowTightening
-        val middleColumnX = horizontalDotSpan / (DOT_COUNT - 1) / 2f
-        val middleArcY = sqrt(RING_RADIUS * RING_RADIUS - middleColumnX * middleColumnX)
-        val dualOpticalRise =
-            max(
-                DUAL_BASE_OPTICAL_RISE,
-                MOBILE_CENTER_Y + middleArcY + naturalRowGap / 2f + dualDotRadius +
-                    DUAL_BOTTOM_MARGIN - CANVAS_BOTTOM,
-            )
+        val dualOpticalRise = computeDualOpticalRise(horizontalDotSpan, naturalRowGap, dualDotRadius)
 
         return Resolved(
             weightScale = normalized,
@@ -475,6 +462,33 @@ internal object OuterGeometry {
             bothSidesWithSlotFirstDegrees = withSlotFirst,
             bothSidesBalancedFirstDegrees = balancedFirst,
         )
+    }
+
+    private fun bothSidesDotStep(
+        bothSidesBottomIconVisible: Boolean,
+        splitDotRadius: Float,
+    ): Double {
+        val minimumChord = 2f * splitDotRadius + 1f
+        return max(
+            if (bothSidesBottomIconVisible) 16.0 else 18.0,
+            Math.toDegrees(2.0 * kotlin.math.asin(
+                (minimumChord / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
+            )),
+        )
+    }
+
+    private fun computeDualOpticalRise(
+        horizontalDotSpan: Float,
+        naturalRowGap: Float,
+        dualDotRadius: Float,
+    ): Float {
+        val middleColumnX = horizontalDotSpan / (DOT_COUNT - 1) / 2f
+        val middleArcY = sqrt(RING_RADIUS * RING_RADIUS - middleColumnX * middleColumnX)
+        return max(
+                DUAL_BASE_OPTICAL_RISE,
+                MOBILE_CENTER_Y + middleArcY + naturalRowGap / 2f + dualDotRadius +
+                    DUAL_BOTTOM_MARGIN - CANVAS_BOTTOM,
+            )
     }
 
     private fun balanceBothSidesFirst(
