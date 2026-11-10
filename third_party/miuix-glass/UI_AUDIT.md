@@ -1,8 +1,20 @@
 # OS4 UI conformance and upstream adoption audit (historical record)
 
-> Dated source, CI and device investigations are retained for traceability. This is not a second current-state document, does not grant permission to revive obsolete workflows, and should not be treated as evidence for untested device variants. Current source boundaries: [README](README.md). Release acceptance: [RELEASE_READINESS](../../docs/development/RELEASE_READINESS.md).
+> Dated source, CI and device investigations are retained for traceability. This
+> is not a second current-state document, does not grant permission to revive
+> obsolete workflows, and should not be treated as evidence for untested device
+> variants. Current source boundaries: [README](README.md). Release acceptance:
+> [RELEASE_READINESS](../../docs/development/RELEASE_READINESS.md).
 
-Accepted source baseline: Guiyuan `dev` after merged PR #861, based on B1536 (exact-source signed Canary, configured unit/assemble/sign checks and the maintainer's focused device acceptance). Post-merge matched-source Canary succeeded; #946 subsequently changed documentation only. B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
+Accepted source baseline: Guiyuan `dev` after merged PR #861, based on B1536
+(exact-source signed Canary, configured unit/assemble/sign checks and the
+maintainer's focused device acceptance). Post-merge matched-source Canary
+succeeded; #946 subsequently changed documentation only. B1509 device acceptance
+rejected its search gap/background fade. B1510 signed CI produced a candidate
+whose shared scroll state and early title reveal were found during source review
+and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506
+was maintainer-accepted; B1507/B1508 interaction changes have no new device
+acceptance.
 MIUIX pinned published: `8972f941c194bd3c4e14c34543d5ebc7b39e40da`
 (`0.9.4-8972f941-SNAPSHOT`).
 MIUIX reviewed prerelease:
@@ -19,7 +31,13 @@ conformance.
   `docs/demo/src/commonMain/kotlin/GlassDialogDemo.kt` uses a 12dp gap between
   equal-weight Normal/Primary actions. This is an example layout, not a default
   enforced by `GlassDialogButton`; the maintainer elected to follow it for OS4.
-- **Prior mismatch and correction:** Eight dual-action dialog rows used 20dp in both UI eras (battery create/rename/delete, backup/default reset, settings-entry confirmation, scope restart and numeric input). One style-aware `dialogActionGap()` returns 12dp on OS4, retains the original 20dp on OS3, and is used by all eight rows. Single-action dialogs, 50dp button minimum height, roles, TextFields, IME validation, Back/dismiss, popup/Sheet backdrop and source capture are unchanged.
+- **Prior mismatch and correction:** Eight dual-action dialog rows used 20dp in
+  both UI eras (battery create/rename/delete, backup/default reset,
+  settings-entry confirmation, scope restart and numeric input). One style-aware
+  `dialogActionGap()` returns 12dp on OS4, retains the original 20dp on OS3, and
+  is used by all eight rows. Single-action dialogs, 50dp button minimum height,
+  roles, TextFields, IME validation, Back/dismiss, popup/Sheet backdrop and
+  source capture are unchanged.
 - **Scope review:** `UiDialogButton.kt`, `BatteryColorEditor.kt`,
   `BatteryColorControls.kt`, `HubScreens.kt`, `MainHub.kt`,
   `IntegerInputDialog.kt`. Exactly eight action-row gaps were located and
@@ -397,7 +415,11 @@ failures.
 
 ## OS4 battery detail sheet Back action (B1524)
 
-- **Source contract:** Matched PR423 `GlassTopAppBar.kt` @ `b9f7083` provides standalone `GlassIconButton` (44dp, 24dp glyph, one click owner, upstream pressDown/pressUp and opaque fallback when no sampler). The published `BottomSheetContentLayout.kt` owns title placement but delegates `startAction` unchanged to the caller; it does not adapt child buttons for OS4.
+- **Source contract:** Matched PR423 `GlassTopAppBar.kt` @ `b9f7083` provides
+  standalone `GlassIconButton` (44dp, 24dp glyph, one click owner, upstream
+  pressDown/pressUp and opaque fallback when no sampler). The published
+  `BottomSheetContentLayout.kt` owns title placement but delegates `startAction`
+  unchanged to the caller; it does not adapt child buttons for OS4.
 - **Mismatch:** `BatteryColorBottomSheet`'s detail sheet passed old MIUIX
   `IconButton` (minimum 40dp) with an OS4 `Glass.Back` graphic, leaving the
   control surface, gesture feedback and hit geometry OS3-style. This differs
