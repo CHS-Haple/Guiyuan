@@ -239,7 +239,7 @@ class SceneHomeAodFallbackTest {
     @Test
     fun disabledAodHomeFallbackRequiresHomeOriginAndOwnership() {
         assertTrue(
-            ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+            SceneAodBoundaryPolicy.shouldArmHomeNativeAodFallbackCandidate(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -248,7 +248,7 @@ class SceneHomeAodFallbackTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+            SceneAodBoundaryPolicy.shouldArmHomeNativeAodFallbackCandidate(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -257,7 +257,7 @@ class SceneHomeAodFallbackTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+            SceneAodBoundaryPolicy.shouldArmHomeNativeAodFallbackCandidate(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = false,
@@ -266,7 +266,7 @@ class SceneHomeAodFallbackTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldArmHomeNativeAodFallbackCandidate(
+            SceneAodBoundaryPolicy.shouldArmHomeNativeAodFallbackCandidate(
                 featureEnabled = true,
                 keyguardEnabled = true,
                 aodEnabled = true,
@@ -386,35 +386,35 @@ class SceneHomeAodFallbackTest {
     @Test
     fun pendingFullAodTargetClosesOnlyAtItsMatchingStableEndpoint() {
         assertFalse(
-            ScenePolicy.fullAodPendingTargetReachedStableState(
+            SceneAodBoundaryPolicy.fullAodPendingTargetReachedStableState(
                 pendingTargetToLockScreen = true,
                 toAod = true,
                 isAodAnimate = false,
             ),
         )
         assertTrue(
-            ScenePolicy.fullAodPendingTargetReachedStableState(
+            SceneAodBoundaryPolicy.fullAodPendingTargetReachedStableState(
                 pendingTargetToLockScreen = true,
                 toAod = false,
                 isAodAnimate = false,
             ),
         )
         assertFalse(
-            ScenePolicy.fullAodPendingTargetReachedStableState(
+            SceneAodBoundaryPolicy.fullAodPendingTargetReachedStableState(
                 pendingTargetToLockScreen = false,
                 toAod = false,
                 isAodAnimate = false,
             ),
         )
         assertTrue(
-            ScenePolicy.fullAodPendingTargetReachedStableState(
+            SceneAodBoundaryPolicy.fullAodPendingTargetReachedStableState(
                 pendingTargetToLockScreen = false,
                 toAod = true,
                 isAodAnimate = false,
             ),
         )
         assertFalse(
-            ScenePolicy.fullAodPendingTargetReachedStableState(
+            SceneAodBoundaryPolicy.fullAodPendingTargetReachedStableState(
                 pendingTargetToLockScreen = true,
                 toAod = false,
                 isAodAnimate = true,

@@ -577,7 +577,7 @@ internal object CcTransitionPolicy {
         scalePolicy: StatusPainter.TransitionScalePolicy,
     ): FloatArray {
         require(source.size == 6 && target.size == 6)
-        val together = MobileSignalMorphPolicy.lockstepProgress(progress)
+        val together = MobileSignalStagePolicy.lockstepProgress(progress)
         val paired = source.copyOf().apply {
             this[0] += groupTravelX * together
             this[1] += groupTravelY * together
@@ -591,7 +591,7 @@ internal object CcTransitionPolicy {
         return interpolateGeometry(
             source = paired,
             target = normal,
-            progress = MobileSignalMorphPolicy.moveProgress(progress),
+            progress = MobileSignalStagePolicy.moveProgress(progress),
         )
     }
 

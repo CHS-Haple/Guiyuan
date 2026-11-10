@@ -248,27 +248,27 @@ class SysUiCcTransitionTest {
     fun mobileSignalMorphRowsDotsBeforeGrowingBars() {
         assertEquals(
             0f,
-            MobileSignalMorphPolicy.rowProgress(0f),
+            MobileSignalStagePolicy.rowProgress(0f),
             0.0001f,
         )
         assertEquals(
             0f,
-            MobileSignalMorphPolicy.rowProgress(0.5f),
+            MobileSignalStagePolicy.rowProgress(0.5f),
             0.0001f,
         )
         assertEquals(
             1f,
-            MobileSignalMorphPolicy.rowProgress(0.72f),
+            MobileSignalStagePolicy.rowProgress(0.72f),
             0.0001f,
         )
         assertEquals(
             0f,
-            MobileSignalMorphPolicy.barProgress(0.72f),
+            MobileSignalStagePolicy.barProgress(0.72f),
             0.0001f,
         )
         assertEquals(
             1f,
-            MobileSignalMorphPolicy.barProgress(1f),
+            MobileSignalStagePolicy.barProgress(1f),
             0.0001f,
         )
     }
@@ -277,17 +277,17 @@ class SysUiCcTransitionTest {
     fun mobileSignalMorphKeepsBarGrowthOutUntilRowPhaseCompletes() {
         assertEquals(
             0f,
-            MobileSignalMorphPolicy.barProgress(0.25f),
+            MobileSignalStagePolicy.barProgress(0.25f),
             0.0001f,
         )
         assertEquals(
             0.5f,
-            MobileSignalMorphPolicy.rowProgress(0.645f),
+            MobileSignalStagePolicy.rowProgress(0.645f),
             0.0001f,
         )
         assertEquals(
             0.5f,
-            MobileSignalMorphPolicy.barProgress(0.86f),
+            MobileSignalStagePolicy.barProgress(0.86f),
             0.0001f,
         )
     }
@@ -297,13 +297,13 @@ class SysUiCcTransitionTest {
         val maxBarHeight = 54f
         val diameter = 6f
         val half =
-            MobileSignalMorphPolicy.sharedBottomExpansion(
+            MobileSignalTargetGeometry.sharedBottomExpansion(
                 maxBarHeight = maxBarHeight,
                 diameter = diameter,
                 barProgress = 0.5f,
             )
         val full =
-            MobileSignalMorphPolicy.sharedBottomExpansion(
+            MobileSignalTargetGeometry.sharedBottomExpansion(
                 maxBarHeight = maxBarHeight,
                 diameter = diameter,
                 barProgress = 1f,
@@ -317,19 +317,19 @@ class SysUiCcTransitionTest {
     @Test
     fun mobileSignalMorphUsesNativeHeightOnlyAsACap() {
         val maxBarHeight =
-            MobileSignalMorphPolicy.targetMaxBarHeight(
+            MobileSignalTargetGeometry.targetMaxBarHeight(
                 sourceBoundsHeight = 24f,
                 diameter = 6f,
                 targetHeightRatio = 3f,
             )
         val highest =
-            MobileSignalMorphPolicy.targetBarHeight(
+            MobileSignalTargetGeometry.targetBarHeight(
                 index = 3,
                 maxBarHeight = maxBarHeight,
                 diameter = 6f,
             )
         val lowest =
-            MobileSignalMorphPolicy.targetBarHeight(
+            MobileSignalTargetGeometry.targetBarHeight(
                 index = 0,
                 maxBarHeight = maxBarHeight,
                 diameter = 6f,

@@ -1809,7 +1809,7 @@ internal object CcTransitionOwner {
                         current = sourceGeometry,
                     )
                 val outerSimilarityScale =
-                    MobileSignalMorphPolicy.outerSimilarityScale(
+                    MobileSignalTargetGeometry.outerSimilarityScale(
                         targetWidthRatio = targetWidthRatio,
                         targetHeightRatio = targetHeightRatio,
                     )
@@ -1817,13 +1817,13 @@ internal object CcTransitionOwner {
                     CcTransitionPolicy.expandedClipBounds(
                         bounds = mobileSpec.sourceBounds,
                         widthScale =
-                            MobileSignalMorphPolicy
+                            MobileSignalTargetGeometry
                                 .exactTargetAxisCompensation(
                                     targetAxisRatio = targetWidthRatio,
                                     outerScale = outerSimilarityScale,
                                 ),
                         heightScale =
-                            MobileSignalMorphPolicy
+                            MobileSignalTargetGeometry
                                 .exactTargetAxisCompensation(
                                     targetAxisRatio = targetHeightRatio,
                                     outerScale = outerSimilarityScale,

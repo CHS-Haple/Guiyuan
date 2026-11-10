@@ -415,7 +415,7 @@ internal object KeyguardRenderSession {
             val motion = statusIcons.get() ?: return null
             val render = renderView
             if (
-                !ScenePolicy.retainedTransitionSourceWitnessAvailable(
+                !SceneCcPolicy.retainedTransitionSourceWitnessAvailable(
                     widthPx = render.width,
                     heightPx = render.height,
                     hostAttached =
@@ -602,7 +602,7 @@ internal object KeyguardRenderSession {
                     IconAlphaMode.INVERSE -> 1f - nativeAlpha
                     IconAlphaMode.BATTERY_EXIT -> {
                         val battery = batteryView.get()
-                        ScenePolicy.outgoingAodAlpha(
+                        SceneAodBoundaryPolicy.outgoingAodAlpha(
                             nativeToAod =
                                 battery?.let(SysUiKeyguardAodSource::currentState)?.toAod,
                             nativeBatteryAlpha = battery?.alpha,
