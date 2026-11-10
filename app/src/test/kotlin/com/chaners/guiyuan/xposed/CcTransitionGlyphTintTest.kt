@@ -206,7 +206,7 @@ class CcTransitionGlyphTintTest {
             )
 
         val follower =
-            CcTransitionPolicy.followAnchorGeometry(
+            CcCarrierGeometryPolicy.followAnchorGeometry(
                 follower = chargingSource,
                 sourceAnchor = numberSource,
                 currentAnchor = numberCurrent,

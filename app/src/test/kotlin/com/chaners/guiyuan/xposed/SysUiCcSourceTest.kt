@@ -166,7 +166,7 @@ class SysUiCcTransitionTest {
             )
         val component =
             requireNotNull(
-                CcTransitionPolicy.componentGeometry(
+                CcCarrierGeometryPolicy.componentGeometry(
                     parentGeometry = parent,
                     parentWidth = 120,
                     parentHeight = 120,

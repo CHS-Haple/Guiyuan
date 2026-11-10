@@ -59,7 +59,7 @@ class CcTransitionGeometryTest {
         val source = floatArrayOf(120f, 50f, 24f, 0f, 0f, 30f)
         val carrier = floatArrayOf(100f, 50f, 80f, 0f, 0f, 40f)
         val moved = carrier.copyOf().apply { this[0] += 20f }
-        val carried = policy.rebaseSourceToCurrentCarrier(source, carrier, moved)
+        val carried = CcCarrierGeometryPolicy.rebaseSourceToCurrentCarrier(source, carrier, moved)
         assertEquals(140f, carried[0], 0.0001f)
         assertEquals(24f, carried[2], 0.0001f)
         assertEquals(30f, carried[5], 0.0001f)
@@ -345,7 +345,7 @@ class CcTransitionCarrierMotionTest {
         val host = floatArrayOf(300f, 54f, 600f, 0f, 0f, 108f)
 
         val ltr =
-            CcTransitionPolicy.endAnchoredSlotGeometry(
+            CcCarrierGeometryPolicy.endAnchoredSlotGeometry(
                 hostGeometry = host,
                 hostWidth = 600,
                 hostHeight = 108,
@@ -359,7 +359,7 @@ class CcTransitionCarrierMotionTest {
         assertEquals(108f, ltr[5], 0.0001f)
 
         val rtl =
-            CcTransitionPolicy.endAnchoredSlotGeometry(
+            CcCarrierGeometryPolicy.endAnchoredSlotGeometry(
                 hostGeometry = host,
                 hostWidth = 600,
                 hostHeight = 108,
@@ -376,7 +376,7 @@ class CcTransitionCarrierMotionTest {
         val stableRenderBasis = floatArrayOf(900f, 900f, 105f, 0f, 0f, 169f)
 
         val result =
-            CcTransitionPolicy.composeSourceGeometry(
+            CcCarrierGeometryPolicy.composeSourceGeometry(
                 positionAuthority = nativePosition,
                 basisAuthority = stableRenderBasis,
             )

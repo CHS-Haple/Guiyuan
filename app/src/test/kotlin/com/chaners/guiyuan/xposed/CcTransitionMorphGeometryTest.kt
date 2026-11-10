@@ -38,7 +38,7 @@ class CcTransitionMorphGeometryTest {
             }
             val mobileCurrent = requireNotNull(CcDualMobilePolicy.dualMobileGroupGeometry(rows))
             val follower = requireNotNull(
-                CcTransitionPolicy.followAnchorGeometry(
+                CcCarrierGeometryPolicy.followAnchorGeometry(
                     follower = bolt,
                     sourceAnchor = sourceGroup,
                     currentAnchor = mobileCurrent,
@@ -51,7 +51,7 @@ class CcTransitionMorphGeometryTest {
             // The unrelated top battery number moves vertically in the opposite direction.
             if (progress > 0f) {
                 val batteryFollower = requireNotNull(
-                    CcTransitionPolicy.followAnchorGeometry(
+                    CcCarrierGeometryPolicy.followAnchorGeometry(
                         follower = bolt,
                         sourceAnchor = numberSource,
                         currentAnchor = numberCurrent,
