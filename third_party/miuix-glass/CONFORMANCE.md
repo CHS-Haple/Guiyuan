@@ -2,7 +2,11 @@
 
 > This record preserves source/CI observations from earlier OS4 integration checkpoints. It is not the current build specification or release-acceptance status. For the supported pinned integration and licensed provenance see [README](README.md); for current release gates see [RELEASE_READINESS](../../docs/development/RELEASE_READINESS.md). Do not extrapolate dated findings or obsolete workflow names to the current version.
 
-Source of truth: compose-miuix-ui/miuix [PR #423](https://github.com/compose-miuix-ui/miuix/pull/423), pinned `b9f70838509fbc3f63f1a972777a7e6ce07f578f`. This inventory covers **visual and behavioral contracts**, not merely class names. The pending PR is not a published full dependency set.
+Source of truth: compose-miuix-ui/miuix
+[PR #423](https://github.com/compose-miuix-ui/miuix/pull/423), pinned
+`b9f70838509fbc3f63f1a972777a7e6ce07f578f`. This inventory covers **visual and
+behavioral contracts**, not merely class names. The pending PR is not a
+published full dependency set.
 
 | Area | Upstream OS4 contract | Guiyuan status and required gate |
 | --- | --- | --- |
@@ -24,11 +28,16 @@ Source of truth: compose-miuix-ui/miuix [PR #423](https://github.com/compose-miu
 
 ## Design-first OS4 adaptation
 
-For each UI surface, begin with the user task, semantic hierarchy, state and interaction;
-then verify upstream OS4 visual, geometry, motion and accessibility contracts before
-choosing a component. A renamed or glass-coated OS3 widget is not sufficient. Review
-container constraints, system/window insets, typography and fontScale, dynamic density,
-keyboard/Back, scrolling, overlay host ownership and shader-free fallback together.
+For each UI surface, begin with the user task, semantic hierarchy, state and
+interaction;
+then verify upstream OS4 visual, geometry, motion and accessibility contracts
+before
+choosing a component. A renamed or glass-coated OS3 widget is not sufficient.
+Review
+container constraints, system/window insets, typography and fontScale, dynamic
+density,
+keyboard/Back, scrolling, overlay host ownership and shader-free fallback
+together.
 
 - **Sandbox title, fade and transient dock:** Both OS3 and OS4 retain MIUIX's
   native TopAppBar measurements and avoid transient `bottomContent` height in
@@ -41,29 +50,193 @@ keyboard/Back, scrolling, overlay host ownership and shader-free fallback togeth
   technique demonstrated in upstream GlassPage; OS4 extends the same
   GlassTopAppBar band via its public `bandOverhang`, without creating a second
   gradient writer. Header/scroll measurement remains stable; the popup slot
-  keeps the dock touchable even below the measured header. Verify popup layering,
+  keeps the dock touchable even below the measured header. Verify popup
+  layering,
   input, scroll continuity and fade in both UI eras on device. OS4 still uses
   12dp action insets; OS3 retains native 16dp. Unpublished `BlurTopAppBar`
   and matched MIUIX Blur source remain separate acceptance requirements.
-- **B1476 pinned-graph OS4 search glyph compatibility:** Upstream PR #423 GlassSearchOverlay uses MiuixIcons.Glass.Regular.Search/Close vector paths for input, clear text and cancel. The released b587aaf2 miuix-core has no `MiuixIcons.Glass` namespace and miuix-glass-icons is not published alongside the five pinned modules. Port only the two exact Apache-2.0 upstream Regular paths (with copyright/SPDX) into a tiny local search-only compatibility source. Wire Glass.Search to the OS4 action and input leading slot and Glass.Close to the OS4 trailing text-clear (16dp, native InputField spacing and fade) and outside cancel (24dp). Preserve single query writer, focus/IME and exit owner, and entire OS3 basic search/clear/text-cancel branch. Delete the compatibility source and import native icon module when its complete matched release exists. No new graphics shader or icon path approximation.
-- **B1480 OS4 search surface / dimensions (historical, input superseded by B1482):** Upstream PR #423's `GlassSearchOverlay` draws the idle search input and 44dp cancel icon as `surfaceContainerHigh` capsules; the published native `InputField` used in B1480 had a 45dp minimum. The previous B1475 local adaptation incorrectly put a live glass shader on the idle search capsule, washing out its surface even when no content passed underneath, and gave the cancel control a different solid treatment. Historical direct `glassPanel` replacement was superseded by B1500's paired solid-base and progressively composited glass overlay. Keep the native SearchBar host, but after B1482 the OS4 input uses its own 44dp BasicTextField and OS3 retains InputField; use **one** pill surface policy for both the input and cancel circle: solid `surfaceContainerHigh` at the top, and the stock pured-thin glass material with a small bloom border only once the underlying list has scrolled (`canScrollBackward`). Both fall back to the same solid native fill without an effective backdrop. Keep 12dp action margin, glass Regular search/clear/close glyphs, TooltipBox, query/focus/IME, and OS3 basic search untouched. This is a Guiyuan extension of the upstream *solid* example to reproduce the reported scrolled-glass state, **not** a claim that upstream publishes a glass SearchBar. Verify stroke, dark color, scrolling transitions, keyboard and Back on-device; no claim of flicker repair.
-- **B1481 top-bar search geometry:** The initial OS4 adaption installed `SearchBar` in `GlassTopAppBar.bottomContent`, forcing it below the large title and changing Scaffold's measured top-bar height on expansion. Upstream PR #423's search mode draws the search input at the status-bar inset over the title area, with the underlying bar fading. In OS4 only, retain the existing one `GlassTopAppBar` layout owner, animate its title alpha, and paint the native `SearchBar` as a sibling aligned at the status-bar inset rather than `bottomContent`. Do not add an extra popup host or change query, selection/focus, Back, results scroll-position or OS3 route. The original search `AnimatedVisibility` keeps the exit transition mounted. Native example transition geometry and physical motion/blurring still need A/B calibration; a correct source structure is not visual acceptance.
-- **B1482 OS4 filled-search conformance:** A 24dp `IconButton` inside the published `InputField` still receives that control's default 40dp minimum hitbox, making text, clear glyph and outer cancel geometries inconsistent; the legacy `InputField` also suppresses its label whenever expanded, unlike PR #423's BasicTextField decoration. Implement just the OS4 field content against upstream `GlassSearchOverlay`'s 44dp/24dp/16dp structure, retaining `SearchBar` ownership for Back/dismiss, `PageSearch` as the sole query writer, the single parent-provided native/glass surface and unchanged OS3 `InputField`. The clear control explicitly opts into 24dp minimum width/height; it keeps focus on clearing. Search input/completion/empty, focus/IME, accessibility, RTL, dark contrast and blur motion still require device acceptance.
-- **B1483 cross-control title-padding contract:** `SettingsPage(titlePadding = 0.dp)` was honored only in its OS3 `SmallTopAppBar` branch (Diagnostics) and ignored in OS4's locally vendored `GlassTopAppBar`. The published `TopAppBar` as well as PR #423's `BlurTopAppBar` both accept the `titlePadding` parameter. Thread the existing caller's value through both GlassTopAppBar overloads and the native title renderer, with the upstream default retained for unaffected consumers. No optical offsets, custom title draw, extra layout state or divergence of the two bar overloads. CI compilation and device title alignment are separate validation gates.
-- **B1485 OS4 search outer geometry:** Published `SearchBar` inserts a symmetric `InsideMargin = DpSize(12.dp, 0.dp)`; merely painting PR #423's icons and 44dp pills retained the correct 12dp outer inset but also a 12dp gap before cancel instead of the upstream 10dp gap. The upstream `GlassSearchOverlay` draws one row inside `GlassTopAppBarDefaults.HorizontalPadding` (12dp per side), and reserves precisely `54dp` at the end: a 44dp round cancel plus 10dp gap. B1485 preserves the native SearchBar as the single Back host, but for OS4 only sets that internal symmetric margin to zero, applies the upstream 12dp parent inset, and puts the 10dp gap in the cancel slot; the resulting width budget matches the source example with no hand-tuned optical offsets. B1482's 44dp field, clear hit target and input focus remain unchanged; OS3 retains the 12dp native SearchBar margin and text Cancel. The animation timings still differ from PR #423; physical keyboard/RTL and glass-edge appearance remain unverified. This corrects an erroneous initial B1485 review statement about 24dp: the actual official `HorizontalPadding` constant is 12dp in both the vendored and upstream PR #423 sources; the code always referenced this constant and did not adopt 24dp.
-- **B1486 OS4 search transition ownership:** The B1481 overlay moves the search row out of the native top-bar measurement, but retained the prior vertically expanding/shrinking `AnimatedVisibility`. That adds a second temporary height animation atop MIUIX SearchBar's own horizontal cancel transition, unlike PR #423's height-stable 44dp field. Keep SearchBar as the single Back/cancel state owner; use opacity-only enter/exit for the OS4 overlay, retaining the native OS3 vertical transition. The 150ms/120ms fade matches the upsteam search bar's opacity-phase durations, not its separate 400ms spring-shaped geometry. Verify keyboard, touch target stability, status-bar collision and reverse animation in-app before accepting OS4 visual parity.
-- **B1487 Diagnostics root-menu backdrop:** Both primary and secondary menu surfaces were deliberately root-hosted to avoid published TopAppBar clipping, but `Os4CascadingMenu` passed `backdrop = null` and hence always used `GlassPopupBackground`'s opaque fallback despite the component name. `SettingsPage` already provides `LocalGlassBackdrop` and captures only its `Scaffold` body through `topBarBackdropSource`, excluding the root-hosted menu; capture that compositional value in the caller *outside* `PopupLayout` and reuse it in both menu branches. No second `rememberLayerBackdrop`, popup host, material, animation or state writer. The same change is **not** applied to sheet-hosted battery popups until their clean recording source is proven. Native fallback for null source remains. Device testing of two-level transitions/glass and source alignment is required.
-- **B1488 Diagnostics title and action-group conformance:** `DiagnosticsScreen` supplied `titlePadding = 0.dp` before OS4 existed; B1483 dutifully forwarded it through the OS4 `GlassTopAppBar` bridge, causing the large title to start at the screen edge. PR #423's `TopAppBarDefaults.TitlePadding` is **26dp**, used here for OS4 only; OS3 keeps its historical 0dp. The native TopAppBar centers the collapsed compact title subject to measured leading/trailing widths. `SettingsPage` previously rendered adjacent GlassIconButtons with no spacing in either navigation (Back + Filter) or trailing actions (Share, Export, Menu); align multi-button OS4 groups with the **8dp** gap in the PR #423 GlassPage example. Keep 44dp button size from GlassTopAppBar, make Diagnostics icon glyph size consistently 24dp (the MIUIX default), retain caller ownership of onClick/disabled/tooltip/menu state and native dimensions. This resolves confirmed source-level layout policy errors, not measured mobile rendering acceptance; test scroll, RTL, text scaling and glass popups.
-- **B1489 Diagnostics visual icon family:** PR #423 supplies Glass.Regular Filter, Download and More. Their official 24dp ImageVectors are embedded with upstream Apache-2.0 provenance only because the pinned published MIUIX snapshot has no matching Glass icon artifact; OS4 binds these to the corresponding four Diagnostics actions, while OS3 retains the original MiuixIcons extended shapes. The existing callback, compact title layout, menu host, accessibility label and 24dp sizes are unchanged. As with Os4GlassBack and Search/Close, delete these compatibility vectors after the complete same-revision icon library is available. This is not approval to vendor unrelated glyphs.
-- **B1490 Diagnostics report action consolidation (OS3 + OS4):** The top bar now exposes one Download icon: tap retains ActivityResultContracts.CreateDocument and report export; long press executes the same existing DiagFiles.prepare/ACTION_SEND chooser path as the removed Share icon, with the same shared `reportBusy`, loading and exportOpen guard. MIUIX's TooltipBox consumes touch long presses for hints, so do *not* wrap this dual-action control in a competing TooltipBox; a labeled `combinedClickable` is its sole pointer/accessibility owner. OS4 GlassIconButton receives one optional onLongClick branch sharing its existing press interactionSource; OS3's click-only MIUIX IconButton has no long-click API, so mirror its exact default min size and squircleSurface once for this specific dual-action button. No duplicates and no changes to the report bytes or share URI lifecycle. This frees one right-side action slot, allowing native compact title measurement to rebalance; expanded Diagnostics title still uses native 26dp and original OS3 0dp. Verify collapsed title alignment, click vs hold gesture, failure snackbar, disabled, RTL and accessibility on device.
-- **B1536 Diagnostics icon semantics:** After accepting the single export/share action in B1535, the maintainer found that the Download glyph suggests an import/download rather than the intended sharing action. The OS4 top-bar action now uses the exact pinned PR #423 `Glass.Regular.Share` vector and OS3 reuses the existing published `MiuixIcons.Share`; the previous vendored Download vector is replaced, with Filter/More unchanged. Tap still invokes `CreateDocument` to save, hold still invokes the existing `ACTION_SEND` chooser, and click description (`exportTitle`) and long-click label (`shareTitle`), enabled guard, size, animation and press owner are unchanged. This is an icon-only semantic adaptation; source/CI do not attest the subjective appearance on device.
-- **B1473 dialog action policy — partial:** OS4 uses the existing upstream GlassDialogButton roles (normal, primary, destructive), preserving disabled/action/press semantics. OS3 keeps its original MIUIX TextButton visual treatment. The underlying OverlayDialog/OverlayBottomSheet remains the *released MIUIX host*, not GlassDialog/GlassBottomSheet: the published snapshot has no `surface` slot with animated scrim/scale, so glass panel blur, predictive-Back sampling and gesture-matched sheets cannot yet conform to PR #423. Never replace these with an extra popup host, a static background, or a fake scrim. Retain original per-screen onDismiss/onDismissFinished, input, and operation sequencing until a reviewed same-revision source-built or published module graph is integrated and device-tested.
-- **Sandbox OS3 network selector:** The network selector lives outside its Card; the published MIUIX `TabRowWithContour` defaults its track to `surface`, the same as the page background, so its outer silhouette disappears. Only the outside-Card OS3 track now uses the official `TabRowDefaults.tabRowColors(backgroundColor = surfaceContainerHighest)` color slot; the selected surface, native contour geometry, motion and semantics remain untouched. OS3 selectors inside cards and all OS4 segmented glass tabs are unchanged. Confirm light/dark device contrast.
+- **B1476 pinned-graph OS4 search glyph compatibility:** Upstream PR #423
+  GlassSearchOverlay uses MiuixIcons.Glass.Regular.Search/Close vector paths for
+  input, clear text and cancel. The released b587aaf2 miuix-core has no
+  `MiuixIcons.Glass` namespace and miuix-glass-icons is not published alongside
+  the five pinned modules. Port only the two exact Apache-2.0 upstream Regular
+  paths (with copyright/SPDX) into a tiny local search-only compatibility
+  source. Wire Glass.Search to the OS4 action and input leading slot and
+  Glass.Close to the OS4 trailing text-clear
+  (16dp, native InputField spacing and fade) and outside cancel (24dp). Preserve
+  single query writer, focus/IME and exit owner, and entire OS3 basic
+  search/clear/text-cancel branch. Delete the compatibility source and import
+  native icon module when its complete matched release exists. No new graphics
+  shader or icon path approximation.
+- **B1480 OS4 search surface / dimensions
+  (historical, input superseded by B1482):** Upstream PR #423's
+  `GlassSearchOverlay` draws the idle search input and 44dp cancel icon as
+  `surfaceContainerHigh` capsules; the published native `InputField` used in
+  B1480 had a 45dp minimum. The previous B1475 local adaptation incorrectly put
+  a live glass shader on the idle search capsule, washing out its surface even
+  when no content passed underneath, and gave the cancel control a different
+  solid treatment. Historical direct `glassPanel` replacement was superseded by
+  B1500's paired solid-base and progressively composited glass overlay. Keep the
+  native SearchBar host, but after B1482 the OS4 input uses its own 44dp
+  BasicTextField and OS3 retains InputField; use **one** pill surface policy for
+  both the input and cancel circle: solid `surfaceContainerHigh` at the top, and
+  the stock pured-thin glass material with a small bloom border only once the
+  underlying list has scrolled (`canScrollBackward`). Both fall back to the same
+  solid native fill without an effective backdrop. Keep 12dp action margin,
+  glass Regular search/clear/close glyphs, TooltipBox, query/focus/IME, and OS3
+  basic search untouched. This is a Guiyuan extension of the upstream *solid*
+  example to reproduce the reported scrolled-glass state, **not** a claim that
+  upstream publishes a glass SearchBar. Verify stroke, dark color, scrolling
+  transitions, keyboard and Back on-device; no claim of flicker repair.
+- **B1481 top-bar search geometry:** The initial OS4 adaption installed
+  `SearchBar` in `GlassTopAppBar.bottomContent`, forcing it below the large
+  title and changing Scaffold's measured top-bar height on expansion. Upstream
+  PR #423's search mode draws the search input at the status-bar inset over the
+  title area, with the underlying bar fading. In OS4 only, retain the existing
+  one `GlassTopAppBar` layout owner, animate its title alpha, and paint the
+  native `SearchBar` as a sibling aligned at the status-bar inset rather than
+  `bottomContent`. Do not add an extra popup host or change query,
+  selection/focus, Back, results scroll-position or OS3 route. The original
+  search `AnimatedVisibility` keeps the exit transition mounted. Native example
+  transition geometry and physical motion/blurring still need A/B calibration; a
+  correct source structure is not visual acceptance.
+- **B1482 OS4 filled-search conformance:** A 24dp `IconButton` inside the
+  published `InputField` still receives that control's default 40dp minimum
+  hitbox, making text, clear glyph and outer cancel geometries inconsistent; the
+  legacy `InputField` also suppresses its label whenever expanded, unlike PR
+  #423's BasicTextField decoration. Implement just the OS4 field content against
+  upstream `GlassSearchOverlay`'s 44dp/24dp/16dp structure, retaining
+  `SearchBar` ownership for Back/dismiss, `PageSearch` as the sole query writer,
+  the single parent-provided native/glass surface and unchanged OS3
+  `InputField`. The clear control explicitly opts into 24dp minimum
+  width/height; it keeps focus on clearing. Search input/completion/empty,
+  focus/IME, accessibility, RTL, dark contrast and blur motion still require
+  device acceptance.
+- **B1483 cross-control title-padding contract:**
+  `SettingsPage(titlePadding = 0.dp)` was honored only in its OS3
+  `SmallTopAppBar` branch (Diagnostics) and ignored in OS4's locally vendored
+  `GlassTopAppBar`. The published `TopAppBar` as well as PR #423's
+  `BlurTopAppBar` both accept the `titlePadding` parameter. Thread the existing
+  caller's value through both GlassTopAppBar overloads and the native title
+  renderer, with the upstream default retained for unaffected consumers. No
+  optical offsets, custom title draw, extra layout state or divergence of the
+  two bar overloads. CI compilation and device title alignment are separate
+  validation gates.
+- **B1485 OS4 search outer geometry:** Published `SearchBar` inserts a symmetric
+  `InsideMargin = DpSize(12.dp, 0.dp)`; merely painting PR #423's icons and 44dp
+  pills retained the correct 12dp outer inset but also a 12dp gap before cancel
+  instead of the upstream 10dp gap. The upstream `GlassSearchOverlay` draws one
+  row inside `GlassTopAppBarDefaults.HorizontalPadding` (12dp per side), and
+  reserves precisely `54dp` at the end: a 44dp round cancel plus 10dp gap. B1485
+  preserves the native SearchBar as the single Back host, but for OS4 only sets
+  that internal symmetric margin to zero, applies the upstream 12dp parent
+  inset, and puts the 10dp gap in the cancel slot; the resulting width budget
+  matches the source example with no hand-tuned optical offsets. B1482's 44dp
+  field, clear hit target and input focus remain unchanged; OS3 retains the 12dp
+  native SearchBar margin and text Cancel. The animation timings still differ
+  from PR #423; physical keyboard/RTL and glass-edge appearance remain
+  unverified. This corrects an erroneous initial B1485 review statement about
+  24dp: the actual official `HorizontalPadding` constant is 12dp in both the
+  vendored and upstream PR #423 sources; the code always referenced this
+  constant and did not adopt 24dp.
+- **B1486 OS4 search transition ownership:** The B1481 overlay moves the search
+  row out of the native top-bar measurement, but retained the prior vertically
+  expanding/shrinking `AnimatedVisibility`. That adds a second temporary height
+  animation atop MIUIX SearchBar's own horizontal cancel transition, unlike PR
+  #423's height-stable 44dp field. Keep SearchBar as the single Back/cancel
+  state owner; use opacity-only enter/exit for the OS4 overlay, retaining the
+  native OS3 vertical transition. The 150ms/120ms fade matches the upsteam
+  search bar's opacity-phase durations, not its separate 400ms spring-shaped
+  geometry. Verify keyboard, touch target stability, status-bar collision and
+  reverse animation in-app before accepting OS4 visual parity.
+- **B1487 Diagnostics root-menu backdrop:** Both primary and secondary menu
+  surfaces were deliberately root-hosted to avoid published TopAppBar clipping,
+  but `Os4CascadingMenu` passed `backdrop = null` and hence always used
+  `GlassPopupBackground`'s opaque fallback despite the component name.
+  `SettingsPage` already provides `LocalGlassBackdrop` and captures only its
+  `Scaffold` body through `topBarBackdropSource`, excluding the root-hosted
+  menu; capture that compositional value in the caller *outside* `PopupLayout`
+  and reuse it in both menu branches. No second `rememberLayerBackdrop`, popup
+  host, material, animation or state writer. The same change is **not** applied
+  to sheet-hosted battery popups until their clean recording source is proven.
+  Native fallback for null source remains. Device testing of two-level
+  transitions/glass and source alignment is required.
+- **B1488 Diagnostics title and action-group conformance:** `DiagnosticsScreen`
+  supplied `titlePadding = 0.dp` before OS4 existed; B1483 dutifully forwarded
+  it through the OS4 `GlassTopAppBar` bridge, causing the large title to start
+  at the screen edge. PR #423's `TopAppBarDefaults.TitlePadding` is **26dp**,
+  used here for OS4 only; OS3 keeps its historical 0dp. The native TopAppBar
+  centers the collapsed compact title subject to measured leading/trailing
+  widths. `SettingsPage` previously rendered adjacent GlassIconButtons with no
+  spacing in either navigation (Back + Filter) or trailing actions
+  (Share, Export, Menu); align multi-button OS4 groups with the **8dp** gap in
+  the PR #423 GlassPage example. Keep 44dp button size from GlassTopAppBar, make
+  Diagnostics icon glyph size consistently 24dp (the MIUIX default), retain
+  caller ownership of onClick/disabled/tooltip/menu state and native dimensions.
+  This resolves confirmed source-level layout policy errors, not measured mobile
+  rendering acceptance; test scroll, RTL, text scaling and glass popups.
+- **B1489 Diagnostics visual icon family:** PR #423 supplies Glass.Regular
+  Filter, Download and More. Their official 24dp ImageVectors are embedded with
+  upstream Apache-2.0 provenance only because the pinned published MIUIX
+  snapshot has no matching Glass icon artifact; OS4 binds these to the
+  corresponding four Diagnostics actions, while OS3 retains the original
+  MiuixIcons extended shapes. The existing callback, compact title layout, menu
+  host, accessibility label and 24dp sizes are unchanged. As with Os4GlassBack
+  and Search/Close, delete these compatibility vectors after the complete
+  same-revision icon library is available. This is not approval to vendor
+  unrelated glyphs.
+- **B1490 Diagnostics report action consolidation (OS3 + OS4):** The top bar now
+  exposes one Download icon: tap retains ActivityResultContracts.CreateDocument
+  and report export; long press executes the same existing
+  DiagFiles.prepare/ACTION_SEND chooser path as the removed Share icon, with the
+  same shared `reportBusy`, loading and exportOpen guard. MIUIX's TooltipBox
+  consumes touch long presses for hints, so do *not* wrap this dual-action
+  control in a competing TooltipBox; a labeled `combinedClickable` is its sole
+  pointer/accessibility owner. OS4 GlassIconButton receives one optional
+  onLongClick branch sharing its existing press interactionSource; OS3's
+  click-only MIUIX IconButton has no long-click API, so mirror its exact default
+  min size and squircleSurface once for this specific dual-action button. No
+  duplicates and no changes to the report bytes or share URI lifecycle. This
+  frees one right-side action slot, allowing native compact title measurement to
+  rebalance; expanded Diagnostics title still uses native 26dp and original OS3
+  0dp. Verify collapsed title alignment, click vs hold gesture, failure
+  snackbar, disabled, RTL and accessibility on device.
+- **B1536 Diagnostics icon semantics:** After accepting the single export/share
+  action in B1535, the maintainer found that the Download glyph suggests an
+  import/download rather than the intended sharing action. The OS4 top-bar
+  action now uses the exact pinned PR #423 `Glass.Regular.Share` vector and OS3
+  reuses the existing published `MiuixIcons.Share`; the previous vendored
+  Download vector is replaced, with Filter/More unchanged. Tap still invokes
+  `CreateDocument` to save, hold still invokes the existing `ACTION_SEND`
+  chooser, and click description (`exportTitle`) and long-click label
+  (`shareTitle`), enabled guard, size, animation and press owner are unchanged.
+  This is an icon-only semantic adaptation; source/CI do not attest the
+  subjective appearance on device.
+- **B1473 dialog action policy — partial:** OS4 uses the existing upstream
+  GlassDialogButton roles (normal, primary, destructive), preserving
+  disabled/action/press semantics. OS3 keeps its original MIUIX TextButton
+  visual treatment. The underlying OverlayDialog/OverlayBottomSheet remains the
+  *released MIUIX host*, not GlassDialog/GlassBottomSheet: the published
+  snapshot has no `surface` slot with animated scrim/scale, so glass panel blur,
+  predictive-Back sampling and gesture-matched sheets cannot yet conform to PR
+  #423. Never replace these with an extra popup host, a static background, or a
+  fake scrim. Retain original per-screen onDismiss/onDismissFinished, input, and
+  operation sequencing until a reviewed same-revision source-built or published
+  module graph is integrated and device-tested.
+- **Sandbox OS3 network selector:** The network selector lives outside its Card;
+  the published MIUIX `TabRowWithContour` defaults its track to `surface`, the
+  same as the page background, so its outer silhouette disappears. Only the
+  outside-Card OS3 track now uses the official
+  `TabRowDefaults.tabRowColors(backgroundColor = surfaceContainerHighest)` color
+  slot; the selected surface, native contour geometry, motion and semantics
+  remain untouched. OS3 selectors inside cards and all OS4 segmented glass tabs
+  are unchanged. Confirm light/dark device contrast.
 - **Sandbox choices:** segmented glass tabs remain for fitting short labels.
   Longer labels use the existing scaffold-hosted glass dropdown with full option
   text rather than squeezing equal-width segments or shrinking typography.
   Layout fit is measured with the active MIUIX text styles and font scale.
-- **Top-bar actions:** the experimental GlassIconButton has enabled and holdDownState
+- **Top-bar actions:** the experimental GlassIconButton has enabled and
+  holdDownState
   compatibility parameters for Home's long-running action; these must be
   reconciled with upstream before removing the vendor sources.
   Published TopAppBar still clips every child, unlike PR
@@ -78,13 +251,16 @@ keyboard/Back, scrolling, overlay host ownership and shader-free fallback togeth
   after upgrading the complete upstream UI revision. Rounded button
   interaction/animation remains pending device acceptance.
 - **Navigation configuration:** On the first B1464 appearance read, a one-time
-  DataStore migration selects OS4 for **all** existing users, including those with
+  DataStore migration selects OS4 for **all** existing users, including those
+  with
   a previously saved OS3 choice. A persisted migration marker prevents a later
   restart or collection from overriding the user's subsequent OS3 choice.
-  Existing navigation enablement, material, content and liquid preferences remain
+  Existing navigation enablement, material, content and liquid preferences
+  remain
   intact. A genuinely empty appearance store additionally seeds enabled Glass
   (shown as Soft Glass) with icon+text. Both UI eras retain independently
-  selectable navigation modes. Preview selection is inert even for glass drag gestures.
+  selectable navigation modes. Preview selection is inert even for glass drag
+  gestures.
 - **Bottom navigation:** 54dp is the upstream glass capsule's minimum
   content height, not the bottom placement. The upstream full GlassPage uses
   24dp horizontal and 20dp top margins, with bottom clearance
@@ -109,42 +285,73 @@ The source-screen pager still owns only the trigger, not the popup.
 
 ## Diagnostic glass menu acceptance boundary
 
-The Diagnostics top bar keeps share/export enabled state and tooltip semantics, but
+The Diagnostics top bar keeps share/export enabled state and tooltip semantics,
+but
 all OS4 actions now use official GlassIconButton, including the two report
 actions and the cascading-menu trigger. SettingsPage opts this populated
 right-side action row into the native-slot/glass-parent drawing boundary;
 pages with no actions reserve no empty 44dp placeholder.
 
-The Diagnostics filter menu keeps its existing level/category toggle callbacks and does not
-collapse when a selection changes. The other menu retains mode, scrolling and clear
-callbacks and closes after an action. OS4 uses the official glass dropdown primary
+The Diagnostics filter menu keeps its existing level/category toggle callbacks
+and does not
+collapse when a selection changes. The other menu retains mode, scrolling and
+clear
+callbacks and closes after an action. OS4 uses the official glass dropdown
+primary
 and secondary popup presentation inside one Scaffold-owned popup host; OS3 and
 devices without a usable shader still use the original Window cascading menu.
 All group boundaries use GlassPopupDefaults' 20dp inset, 7.75dp spacing and
-0.5dp divider rather than reusing OS3 separator styling. The host survives both closing animations and frees its anchor state on
-disposal. The secondary panel handles Back while expanded. During its exit, the primary
+0.5dp divider rather than reusing OS3 separator styling. The host survives both
+closing animations and frees its anchor state on
+disposal. The secondary panel handles Back while expanded. During its exit, the
+primary
 Back handler becomes active to prevent a second fast Back from reaching page
 navigation, but its dismiss callback is inert until the rendered secondary
 panel actually unmounts. The outside-tap catcher follows the same rule.
-No duplicate close or page navigation is initiated while secondary exits. This is source-only adaptation:
+No duplicate close or page navigation is initiated while secondary exits. This
+is source-only adaptation:
 real-device gesture/Back dispatch, window overlap, 80–110% density, RTL, focus
 and themes still require confirmation.
 
-- **B1536 Sandbox double-row geometry:** Native PR423 and published MIUIX collapse to a 56dp toolbar region (52dp collapsed height plus 4dp native title bottom spacing), with a 26dp button center. Sandbox's 50dp preview plus old 6dp/6dp dock padding made its overlay second row 62dp/31dp. OS4 now uses (1dp, 5dp) via upstream `TopAppBarDefaults` constants; OS3 retains 6dp/6dp. The popup host remains outside Scaffold content measurement, the measured primary toolbar includes the status inset, and no second content inset or glass-state owner was introduced. Verify with device gestures and scaling; source geometry is not visual acceptance.
+- **B1536 Sandbox double-row geometry:** Native PR423 and published MIUIX
+  collapse to a 56dp toolbar region
+  (52dp collapsed height plus 4dp native title bottom spacing), with a 26dp
+  button center. Sandbox's 50dp preview plus old 6dp/6dp dock padding made its
+  overlay second row 62dp/31dp. OS4 now uses (1dp, 5dp) via upstream
+  `TopAppBarDefaults` constants; OS3 retains 6dp/6dp. The popup host remains
+  outside Scaffold content measurement, the measured primary toolbar includes
+  the status inset, and no second content inset or glass-state owner was
+  introduced. Verify with device gestures and scaling; source geometry is not
+  visual acceptance.
 
 ## Current evidence and unresolved diagnostics
 
-- B1403 signed Canary compiled and passed configured tests, but physical device evidence reveals Sandbox launch crash, cropped top-bar action edge, a fixed-height mini-preview defect and unacceptable perceived bottom-bar proportions.
-- The supplied `Guiyuan-Diagnostic-20261026-1403-20261026-182500.txt` is a **SystemUI/LSPosed** report: it cannot establish the app-process crash stack or exonerate the Compose glass route.
-- Current `main` published MIUIX snapshots don't provide PR #423's modified basic UI/overlay host contract. A green APK using copied glass source and older basic UI does **not** constitute OS4 conformance.
-- Read app crash stack from `com.chaners.guiyuan` first; then isolate the corresponding component in the Sandbox Composable and apply a root-cause fix with proper ownership rather than catching UI rendering exceptions.
-- Require a single ABI-compatible MIUIX core/UI/blur/nav/preference/glass/icons module graph before removing vendor shims or claiming full OS4 support. An exact-revision source-built graph is permissible for an independently reviewed OS4 experiment; publication remains the preferred distribution path. A green source build or an isolated copied base-module class cannot close this gate. This PR remains Draft.
+- B1403 signed Canary compiled and passed configured tests, but physical device
+  evidence reveals Sandbox launch crash, cropped top-bar action edge, a
+  fixed-height mini-preview defect and unacceptable perceived bottom-bar
+  proportions.
+- The supplied `Guiyuan-Diagnostic-20261026-1403-20261026-182500.txt` is a
+  **SystemUI/LSPosed** report: it cannot establish the app-process crash stack
+  or exonerate the Compose glass route.
+- Current `main` published MIUIX snapshots don't provide PR #423's modified
+  basic UI/overlay host contract. A green APK using copied glass source and
+  older basic UI does **not** constitute OS4 conformance.
+- Read app crash stack from `com.chaners.guiyuan` first; then isolate the
+  corresponding component in the Sandbox Composable and apply a root-cause fix
+  with proper ownership rather than catching UI rendering exceptions.
+- Require a single ABI-compatible MIUIX core/UI/blur/nav/preference/glass/icons
+  module graph before removing vendor shims or claiming full OS4 support. An
+  exact-revision source-built graph is permissible for an independently reviewed
+  OS4 experiment; publication remains the preferred distribution path. A green
+  source build or an isolated copied base-module class cannot close this gate.
+  This PR remains Draft.
 
 ## Proven upstream API and source chain
 
 The following is a **revision-to-revision source comparison**, not a claim of
 target-device verification. The app and `dev` pinned published snapshot is
-`0.9.4-8972f941-SNAPSHOT` (not PR #423), which still lacks the PR-only glass contracts.
+`0.9.4-8972f941-SNAPSHOT` (not PR #423), which still lacks the PR-only glass
+contracts.
 
 | Producer / contract | PR #423 source evidence | App consumer and consequence |
 | --- | --- | --- |
@@ -196,7 +403,8 @@ physical-device comparison; see README.md.
 - [ ] Collect the **app process** crash stack for Sandbox; the supplied
   SystemUI/LSPosed diagnostic is not the app exception. The sampling cycle
   was fixed on B1405 source, but that alone is not crash proof.
-- [ ] **Device-accept** the now source-gated `GlassDialog` and `GlassBottomSheet` and remaining sheet-local glass popups/menus,
+- [ ] **Device-accept** the now source-gated `GlassDialog` and
+  `GlassBottomSheet` and remaining sheet-local glass popups/menus,
   and suitable native icon family. Verify animated backdrop geometry and
   single popup host across overlay dismissal, nested scroll and predictive Back.
 - [ ] Verify OS3 unchanged on the target, shader absence fail-native, RTL,
@@ -206,10 +414,40 @@ B1470 passed exact-source signed Canary tests and APK checks; the reported
 bottom-bar glyph flicker, Sandbox motion and any app-process crash reproduction
 remain **device-open**. This matrix is source-audited, not physical acceptance.
 
-- **B1491 dialog migration gate:** Published MIUIX lacks DialogSurfaceScope; only opt-in `gy.os4.miuixDir` plus `gy.os4.dialogSurfaces=true` compiles the exact-source PR423 native GlassDialog surface and scrim. All 12 callers now share a single UiOverlayDialog contract, with one root host and unchanged native dismissal handoff. Root Home has no clean full-scene backdrop and uses the native opaque fallback. The separate published/PR423 debug A/B builds test this opt-in, but no device visual proof yet.
+- **B1491 dialog migration gate:** Published MIUIX lacks DialogSurfaceScope;
+  only opt-in `gy.os4.miuixDir` plus `gy.os4.dialogSurfaces=true` compiles the
+  exact-source PR423 native GlassDialog surface and scrim. All 12 callers now
+  share a single UiOverlayDialog contract, with one root host and unchanged
+  native dismissal handoff. Root Home has no clean full-scene backdrop and uses
+  the native opaque fallback. The separate published/PR423 debug A/B builds test
+  this opt-in, but no device visual proof yet.
 
-- **B1491 source-set compile repair:** First normal Canary failed with every `UiOverlayDialog` symbol unresolved: AGP 9 built-in Kotlin ignores extra Kotlin directories registered through `AndroidSourceSet.java`. Register exactly one matching source directory through `AndroidSourceSet.kotlin.directories`, per the official AGP 9 migration contract. Dialog callsites and published/native fallback behavior are untouched. This is a Gradle ABI-dispatch registration repair only, pending another published Canary and pinned PR423 joint build.
+- **B1491 source-set compile repair:** First normal Canary failed with every
+  `UiOverlayDialog` symbol unresolved: AGP 9 built-in Kotlin ignores extra
+  Kotlin directories registered through `AndroidSourceSet.java`. Register
+  exactly one matching source directory through
+  `AndroidSourceSet.kotlin.directories`, per the official AGP 9 migration
+  contract. Dialog callsites and published/native fallback behavior are
+  untouched. This is a Gradle ABI-dispatch registration repair only, pending
+  another published Canary and pinned PR423 joint build.
 
-- **B1492 original contract:** only two sheet callsites change; both source-set bodies forward the same unmodified show/onDismissRequest/onDismissFinished and all existing sheet size/behavior args. The new upstream GlassBottomSheet uses the standard popup host/surface slot, never an extra window. It samples only the page body via LocalGlassBackdrop and uses the explicit previous backgroundColor as the fallback. Do not declare the sheet rendering verified from Kotlin compilation alone.
+- **B1492 original contract:** only two sheet callsites change; both source-set
+  bodies forward the same unmodified show/onDismissRequest/onDismissFinished and
+  all existing sheet size/behavior args. The new upstream GlassBottomSheet uses
+  the standard popup host/surface slot, never an extra window. It samples only
+  the page body via LocalGlassBackdrop and uses the explicit previous
+  backgroundColor as the fallback. Do not declare the sheet rendering verified
+  from Kotlin compilation alone.
 
-- **B1495 restart-scope dialog backdrop fix:** Root MainHub previously only created a MIUIX LayerBackdrop when a navigation style required texture. As a result, restart picker and scope-failure dialogs inherited a null backdrop in native/hidden nav modes and GlassDialog used its opaque fallback. Root now owns one clean OS4 page-body source regardless of navigation choice; navigation glass still uses a separate navBackdrop reference only when miuixMaterialActive. CompositionLocal is provided at the three dialog callsites outside the recorded Scaffold body, so popup host/scrim cannot self-sample. No additional popup host or second recorder. Queued restart still executes only after the native onDismissFinished callback, with scope revalidation unchanged. Confirm dialog edges, mixed nav types, bottom-bar boundary and shader-off native fallback on device.
+- **B1495 restart-scope dialog backdrop fix:** Root MainHub previously only
+  created a MIUIX LayerBackdrop when a navigation style required texture. As a
+  result, restart picker and scope-failure dialogs inherited a null backdrop in
+  native/hidden nav modes and GlassDialog used its opaque fallback. Root now
+  owns one clean OS4 page-body source regardless of navigation choice;
+  navigation glass still uses a separate navBackdrop reference only when
+  miuixMaterialActive. CompositionLocal is provided at the three dialog
+  callsites outside the recorded Scaffold body, so popup host/scrim cannot
+  self-sample. No additional popup host or second recorder. Queued restart still
+  executes only after the native onDismissFinished callback, with scope
+  revalidation unchanged. Confirm dialog edges, mixed nav types, bottom-bar
+  boundary and shader-off native fallback on device.
