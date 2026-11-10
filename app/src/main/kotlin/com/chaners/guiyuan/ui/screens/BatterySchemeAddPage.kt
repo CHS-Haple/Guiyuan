@@ -27,6 +27,7 @@ import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_CUSTOM_MAX
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.FloatingActionButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.SnackbarDefaults
@@ -88,6 +89,10 @@ internal fun BatteryAddSchemePage(
             pressFeedbackType =
                 if (enabled) PressFeedbackType.Sink else PressFeedbackType.None,
             onClick = if (enabled) onClick else null,
+            colors = CardDefaults.defaultColors(
+                color = MiuixTheme.colorScheme.surfaceContainerHighest,
+                contentColor = MiuixTheme.colorScheme.onSurfaceContainerHighest,
+            ),
         ) {
             BatteryAddSchemeCardBody(count, enabled)
         }
