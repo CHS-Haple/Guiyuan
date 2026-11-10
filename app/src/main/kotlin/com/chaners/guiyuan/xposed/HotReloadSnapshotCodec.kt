@@ -142,51 +142,51 @@ internal object HotReloadSnapshotCodec {
         }
 
     private fun readMobile(bundle: Bundle, battery: BatteryState?, wifi: WifiState): Snapshot {
-    val airplane =
-        when (bundle.getInt(KEY_AIRPLANE, AIRPLANE_UNKNOWN)) {
-            AIRPLANE_OFF -> false
-            AIRPLANE_ON -> true
-            else -> null
+        val airplane =
+            when (bundle.getInt(KEY_AIRPLANE, AIRPLANE_UNKNOWN)) {
+                AIRPLANE_OFF -> false
+                AIRPLANE_ON -> true
+                else -> null
+            }
+
+        val mobile = sortedMapOf<Int, MobileState>()
+        val flattened = bundle.getIntArray(KEY_MOBILE) ?: IntArray(0)
+        var offset = 0
+        while (offset + MOBILE_STRIDE <= flattened.size) {
+            val subscriptionId = flattened[offset]
+            mobile[subscriptionId] =
+                MobileState(
+                    signal = decodeSignal(flattened[offset + 2]),
+                )
+            offset += MOBILE_STRIDE
         }
 
-    val mobile = sortedMapOf<Int, MobileState>()
-    val flattened = bundle.getIntArray(KEY_MOBILE) ?: IntArray(0)
-    var offset = 0
-    while (offset + MOBILE_STRIDE <= flattened.size) {
-        val subscriptionId = flattened[offset]
-        mobile[subscriptionId] =
-            MobileState(
-                signal = decodeSignal(flattened[offset + 2]),
-            )
-        offset += MOBILE_STRIDE
-    }
-
-    val activity = bundle.getIntArray(KEY_MOBILE_ACTIVITY_RES_IDS) ?: IntArray(0)
-    val transferredActivity = buildMap {
-        for (index in 0 until activity.size - 1 step 2) {
-            if (activity[index] >= 0 && activity[index + 1] > 0) {
-                put(activity[index], activity[index + 1])
+        val activity = bundle.getIntArray(KEY_MOBILE_ACTIVITY_RES_IDS) ?: IntArray(0)
+        val transferredActivity = buildMap {
+            for (index in 0 until activity.size - 1 step 2) {
+                if (activity[index] >= 0 && activity[index + 1] > 0) {
+                    put(activity[index], activity[index + 1])
+                }
             }
         }
-    }
-    val visibilityObserved =
-        (bundle.getIntArray(KEY_MOBILE_ACTIVITY_VISIBILITY_OBSERVED_IDS)
-            ?: IntArray(0)).filter { it >= 0 }.toSet()
-    val shown =
-        (bundle.getIntArray(KEY_MOBILE_ACTIVITY_SHOWN_IDS)
-            ?: IntArray(0)).filter { it in visibilityObserved }.toSet()
+        val visibilityObserved =
+            (bundle.getIntArray(KEY_MOBILE_ACTIVITY_VISIBILITY_OBSERVED_IDS)
+                ?: IntArray(0)).filter { it >= 0 }.toSet()
+        val shown =
+            (bundle.getIntArray(KEY_MOBILE_ACTIVITY_SHOWN_IDS)
+                ?: IntArray(0)).filter { it in visibilityObserved }.toSet()
         return Snapshot(
-        battery = battery,
-        wifi = wifi,
-        wifiActivityResId = bundle.getInt(KEY_WIFI_ACTIVITY_RES_ID).takeIf { it > 0 },
-        mobile = mobile,
-        mobileActivityResIds = transferredActivity,
-        mobileActivityShownIds = shown,
-        mobileActivityVisibilityObservedIds = visibilityObserved,
-        airplaneMode = airplane,
-        mobileRecoveryPending = bundle.getBoolean(KEY_MOBILE_RECOVERY_PENDING, false),
+            battery = battery,
+            wifi = wifi,
+            wifiActivityResId = bundle.getInt(KEY_WIFI_ACTIVITY_RES_ID).takeIf { it > 0 },
+            mobile = mobile,
+            mobileActivityResIds = transferredActivity,
+            mobileActivityShownIds = shown,
+            mobileActivityVisibilityObservedIds = visibilityObserved,
+            airplaneMode = airplane,
+            mobileRecoveryPending = bundle.getBoolean(KEY_MOBILE_RECOVERY_PENDING, false),
 
-        )
+            )
     }
 
     private fun encodeSignal(signal: SignalStrength): Int =
