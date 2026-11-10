@@ -353,6 +353,7 @@ signing automatically.
 ## Git workflow
 
 Branch roles:
+
 - `feat/*` — coherent capability/behavior change;
 - `fix/*` — bounded correction;
 - `refactor/*` — behavior-neutral maintainability work;
@@ -408,6 +409,7 @@ accepted source-built OS4 graph.
 The dev-to-main PR is the stable promotion boundary.
 
 Before merge:
+
 - required CI is green;
 - the latest runtime-affecting state has applicable device acceptance;
 - no runtime blocker remains;
