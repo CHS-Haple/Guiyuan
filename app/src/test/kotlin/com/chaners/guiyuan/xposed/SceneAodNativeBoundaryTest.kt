@@ -39,7 +39,7 @@ class SceneAodNativeBoundaryTest {
             keyguard: Boolean = false,
             aod: Boolean = true,
             claimed: Boolean = true,
-        ) = ScenePolicy.aodPeerAction(
+        ) = SceneAodBoundaryPolicy.aodPeerAction(
             enabled = enabled,
             keyguardEnabled = keyguard,
             aodEnabled = aod,

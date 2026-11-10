@@ -27,7 +27,7 @@ class SceneAodFamilyEvidenceTest {
     fun ccSourceUsesFamilyHistoryForDirection() {
         assertEquals(
             SourceScene.HOME,
-            ScenePolicy.resolveControlCenterSourceScene(
+            SceneCcPolicy.resolveControlCenterSourceScene(
                 reportedSourceScene = SourceScene.HOME,
                 steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
@@ -36,7 +36,7 @@ class SceneAodFamilyEvidenceTest {
         )
         assertEquals(
             SourceScene.HOME,
-            ScenePolicy.resolveControlCenterSourceScene(
+            SceneCcPolicy.resolveControlCenterSourceScene(
                 reportedSourceScene = SourceScene.KEYGUARD,
                 steadySourceScene = SourceScene.HOME,
                 lastStableFamilyScene =
@@ -45,7 +45,7 @@ class SceneAodFamilyEvidenceTest {
         )
         assertEquals(
             SourceScene.KEYGUARD,
-            ScenePolicy.resolveControlCenterSourceScene(
+            SceneCcPolicy.resolveControlCenterSourceScene(
                 reportedSourceScene = SourceScene.KEYGUARD,
                 steadySourceScene = SourceScene.HOME,
                 lastStableFamilyScene =
@@ -54,7 +54,7 @@ class SceneAodFamilyEvidenceTest {
         )
         assertEquals(
             SourceScene.KEYGUARD,
-            ScenePolicy.resolveControlCenterSourceScene(
+            SceneCcPolicy.resolveControlCenterSourceScene(
                 reportedSourceScene = SourceScene.HOME,
                 steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
@@ -67,14 +67,14 @@ class SceneAodFamilyEvidenceTest {
     fun ccSourceFallsBackOrUsesIncomingPresentation() {
         assertEquals(
             SourceScene.HOME,
-            ScenePolicy.resolveControlCenterSourceScene(
+            SceneCcPolicy.resolveControlCenterSourceScene(
                 reportedSourceScene = SourceScene.HOME,
                 steadySourceScene = SourceScene.UNKNOWN,
             ),
         )
         assertEquals(
             SourceScene.KEYGUARD,
-            ScenePolicy.resolveControlCenterSourceScene(
+            SceneCcPolicy.resolveControlCenterSourceScene(
                 reportedSourceScene = SourceScene.HOME,
                 steadySourceScene = SourceScene.KEYGUARD,
                 lastStableFamilyScene =
@@ -84,7 +84,7 @@ class SceneAodFamilyEvidenceTest {
         )
         assertEquals(
             SourceScene.HOME,
-            ScenePolicy.resolveControlCenterSourceScene(
+            SceneCcPolicy.resolveControlCenterSourceScene(
                 reportedSourceScene = SourceScene.HOME,
                 steadySourceScene = SourceScene.HOME,
                 lastStableFamilyScene =
