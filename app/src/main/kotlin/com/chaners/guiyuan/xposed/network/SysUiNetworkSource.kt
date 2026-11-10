@@ -79,6 +79,8 @@ internal object SysUiNetworkSource {
     private const val WIFI_ICON_COLLECTOR_CLASS_ID = 1
     private const val MAX_PARENT_CHAIN_DEPTH = 8
     private const val WIFI_SEED_LOG_PREFIX = "networkPipeline wifi seed source="
+    private const val SUB_ID_LOG_FIELD = "subId="
+    private const val UNKNOWN_LOG_VALUE = "unknown"
     private const val ROOT_ID_LOG_FIELD = " rootId="
     private const val PARENT_CHAIN_LOG_FIELD = " parentChain="
     private const val LAYOUT_LOG_FIELD = " layout="
@@ -625,9 +627,9 @@ internal object SysUiNetworkSource {
                                             onEvent?.invoke(
                                                 "networkPipeline mobile activityEvent " +
                                                     "phase=afterNativeProceed/beforeModuleCommit " +
-                                                    "subId=" + binding.subscriptionId +
+                                                    SUB_ID_LOG_FIELD + binding.subscriptionId +
                                                     " appliedResId=" + (taggedResId ?: 0) +
-                                                    " nativeRootVisible=" + (rootVisible ?: "unknown") +
+                                                    " nativeRootVisible=" + (rootVisible ?: UNKNOWN_LOG_VALUE) +
                                                     " " + witness,
                                             )
                                         }
@@ -694,10 +696,10 @@ internal object SysUiNetworkSource {
                                 readOrNull {
                                     onEvent.invoke(
                                         "networkPipeline mobile activityVisibility " +
-                                            "subId=" + (binding?.subscriptionId ?: "unknown") +
-                                            " rootVisible=" + (rootVisible ?: "unknown") +
+                                            SUB_ID_LOG_FIELD + (binding?.subscriptionId ?: UNKNOWN_LOG_VALUE) +
+                                            " rootVisible=" + (rootVisible ?: UNKNOWN_LOG_VALUE) +
                                             " childVisible=" + childVisible +
-                                            " effectiveVisible=" + (effectiveVisible ?: "unknown") +
+                                            " effectiveVisible=" + (effectiveVisible ?: UNKNOWN_LOG_VALUE) +
                                             " appliedResId=" + (taggedResId ?: 0) +
                                             " accepted=" + (binding != null && effectiveVisible != null),
                                     )
@@ -1635,7 +1637,7 @@ internal object SysUiNetworkSource {
                             eventLog = readOrNull {
                                 "networkPipeline mobile iconEvent " +
                                     "phase=beforeProceed " +
-                                    "subId=" + subscriptionId +
+                                    SUB_ID_LOG_FIELD + subscriptionId +
                                     " viewId=" + resourceId(image) +
                                     " classId=" + classId +
                                     " value=" + valueText +
@@ -1688,9 +1690,10 @@ internal object SysUiNetworkSource {
             val group = current as? ViewGroup
             if (group != null && wifiRoots.containsKey(group)) {
                 // A transferred root can carry no VM; the native binding remains its owner.
-                if (wifiRoots[group]?.viewModel?.javaClass?.name != HOME_WIFI_VIEW_MODEL_CLASS_NAME) {
-                    nativeWifiViewModel(group)?.let { wifiRoots[group] = WifiBinding(it) }
-                }
+                val needsNativeRefresh =
+                    wifiRoots[group]?.viewModel?.javaClass?.name != HOME_WIFI_VIEW_MODEL_CLASS_NAME
+                val nativeViewModel = if (needsNativeRefresh) nativeWifiViewModel(group) else null
+                if (nativeViewModel != null) wifiRoots[group] = WifiBinding(nativeViewModel)
                 return true
             }
             if (
