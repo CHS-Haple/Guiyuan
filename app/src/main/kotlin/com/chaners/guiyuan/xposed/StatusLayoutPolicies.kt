@@ -268,4 +268,3 @@ internal object CenteredMobileTypePositionPolicy {
         clearance: Float,
     ): Float = max(requested, mobileBottom + clearance - sourceTop)
 }
-
