@@ -85,6 +85,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.FloatingActionButtonDefaults
@@ -374,6 +375,10 @@ private fun BatterySchemeSettingsCard(
                 .onSizeChanged { size ->
                     onSettingsCardMeasured(size.height)
                 },
+        colors = CardDefaults.defaultColors(
+            color = MiuixTheme.colorScheme.surfaceContainerHighest,
+            contentColor = MiuixTheme.colorScheme.onSurfaceContainerHighest,
+        ),
     ) {
         BatteryColorSlot.entries.forEach { slot ->
             val color =
