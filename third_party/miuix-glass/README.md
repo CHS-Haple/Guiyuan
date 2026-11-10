@@ -47,19 +47,26 @@ The UI audit found that the Battery Colors sheet had a meaningful outer MIUIX `C
 with its own full-page background and a nested settings `Card`. The B1824
 experiment removed the outer Card, but the maintainer's screenshot confirmed
 that this **lost the intended visual grouping** and must not be kept. The
-B1825 correction restores the complete native `Card` hierarchy for built-in,
-custom and add pages. Instead of the old high-contrast dark `surface=#000000`,
-the outer Card uses the existing MIUIX
-`surfaceContainerHighest/onSurfaceContainerHighest` pair (dark `#2D2D2D`,
-light `#E8E8E8`). The inner Card restores MIUIX
-`surfaceContainer/onSurfaceContainer` defaults (dark `#242424`, light
-white), preserving the existing 16dp inset, squircle silhouette, header,
-palette, actions and press feedback. The original scroll and pagination
-owners are unchanged, as are the Sheet host, nested-sheet Back state,
-settings callbacks and stored data. Comparing with upstream `Surface`
-found its default `RectangleShape` requires more shape setup and offers
-no benefit over `Card` here; Glass surfaces are intended for a separate
-backdrop/overlay material, not a second nested blurred sheet.
+B1825 correction restored the complete native `Card` hierarchy for built-in,
+custom and add pages. The follow-up correction restores the **original** outer
+Card theme pair, `surface/onSurface`, including the original dark
+`surface=#000000`. The inner Card keeps its normal native
+`surfaceContainer/onSurfaceContainer` defaults. This preserves the exact
+previous light/dark grouping, 16dp inset, Squircle silhouette, header,
+palette, actions and interaction feedback. No global theme tokens, storage,
+paging, nested-sheet lifecycle or color data are changed.
+
+The OS4 custom scheme management button uses the existing native
+`GlassIconButton` plus `GlassTransformPopup` anchor contract. Its shadow
+is now explicitly `GlassShadows.Float`, the official floating-control
+preset (source radius 24 at `SourceDensity=3`, versus the larger panel
+`Regular` radius 64). This better matches a control inset inside the
+16dp Card while retaining the visible shadow; the expanded popup keeps its
+own upstream default panel shadow and exit animation. The button still
+does not sample the Sheet's own recorded surface, avoiding the previously
+identified recursive HWUI backdrop dependency. OS3 continues using the
+upstream `OverlayIconDropdownMenu` and its native surface/feedback. This is
+a scoped menu styling alignment, not a claim of completed device parity.
 
 OS4's current GlassBottomSheet draws its complete rim (including the square screen-edge bottom); upstream `ca674992` retains this default behavior. Setting `stroke = null` would remove the required top/side highlights and was reverted. This is intentionally **not** represented as a fix to the OS4 white bottom border or a proof of Squircle internal band-join parity. The user's earlier acceptance of other MIUIX candidate changes is separate from the new Battery Colors layout: final source CI and one consolidated visual acceptance still apply. Do not merge solely on compilation.
 
