@@ -50,4 +50,3 @@ internal fun SharedPreferences.rollbackBackupVisuals(snapshot: Map<String, Any?>
     }
     return editor.commit()
 }
-
