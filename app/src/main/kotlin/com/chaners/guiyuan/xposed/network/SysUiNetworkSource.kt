@@ -895,6 +895,8 @@ internal object SysUiNetworkSource {
             }
         }
 
+    // Capture any nonfatal install error with its stage; fatal errors propagate.
+    @Suppress("TooGenericExceptionCaught")
     private inline fun <T> atStage(
         stage: String,
         block: () -> T,

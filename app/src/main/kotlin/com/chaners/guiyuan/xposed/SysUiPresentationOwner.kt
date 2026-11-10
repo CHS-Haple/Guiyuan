@@ -1138,7 +1138,9 @@ internal object SysUiPresentationOwner {
         return homeRestored + keyguardFamilyRestored + controlCenterRestored
     }
 
+    // Preserve unhook receipts when cleanup fails; release independent owners.
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun resetRuntimeState(source: String) {
         val failures = ArrayList<Throwable>(1)
         fun release(action: () -> Unit) {

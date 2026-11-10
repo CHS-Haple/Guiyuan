@@ -140,7 +140,9 @@ internal object SysUiAirplaneSource {
         }
     }
 
+    // Roll back the delivery receipt for any callback failure, then rethrow.
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     internal fun deliverState(
         enabled: Boolean,
         force: Boolean,
