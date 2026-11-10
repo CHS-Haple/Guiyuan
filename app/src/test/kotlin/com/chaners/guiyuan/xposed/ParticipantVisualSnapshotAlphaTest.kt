@@ -9,7 +9,7 @@ class ParticipantVisualSnapshotAlphaTest {
     @Test
     fun alphaWeightedCenterTracksInkMassInsteadOfEnvelopeMidpoint() {
         val center =
-            ParticipantVisualSnapshot.resolveAlphaWeightedCenter(
+            ParticipantPixelGeometry.resolveAlphaWeightedCenter(
                 pixels =
                     intArrayOf(
                         0xff000000.toInt(),
@@ -29,7 +29,7 @@ class ParticipantVisualSnapshotAlphaTest {
     @Test
     fun alphaWeightedCenterRejectsFullyTransparentInput() {
         val center =
-            ParticipantVisualSnapshot.resolveAlphaWeightedCenter(
+            ParticipantPixelGeometry.resolveAlphaWeightedCenter(
                 pixels = IntArray(4),
                 width = 2,
                 height = 2,
