@@ -3803,7 +3803,7 @@ internal class StatusPainter(
                 targetAxisRatio = targetWidthRatio,
                 outerScale = outerScale,
             )
-            val anchors = CcDualMobilePolicy.aggregateAnchors(
+            val anchors = CcTransitionPolicy.aggregateAnchors(
                 bounds = bounds,
                 top = top.first(),
                 bottom = bottom.first(),

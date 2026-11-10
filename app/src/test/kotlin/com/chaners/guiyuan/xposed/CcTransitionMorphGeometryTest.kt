@@ -191,7 +191,7 @@ class CcTransitionMorphGeometryTest {
         assertEquals(ParticipantVisualSnapshot.RowShape.DOTS, rows.bottomShape)
 
         val bounds = StatusPainter.TransitionBounds(0f, 0f, 80f, 70f)
-        val anchors = CcDualMobilePolicy.aggregateAnchors(
+        val anchors = CcTransitionPolicy.aggregateAnchors(
             bounds = bounds,
             top = rows.top.first(),
             bottom = rows.bottom.first(),

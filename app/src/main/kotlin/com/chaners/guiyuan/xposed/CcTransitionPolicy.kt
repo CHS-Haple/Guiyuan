@@ -85,6 +85,40 @@ internal object CcTransitionPolicy {
         return expansion + (1f - expansion) * appearance
     }
 
+    fun aggregateAnchors(
+        bounds: StatusPainter.TransitionBounds,
+        top: ParticipantVisualSnapshot.NormalizedRect,
+        bottom: ParticipantVisualSnapshot.NormalizedRect,
+        topShape: ParticipantVisualSnapshot.RowShape,
+        bottomShape: ParticipantVisualSnapshot.RowShape,
+        widthCompensation: Float,
+        heightCompensation: Float,
+        dotDiameter: Float,
+    ): FloatArray {
+        fun y(
+            rect: ParticipantVisualSnapshot.NormalizedRect,
+            shape: ParticipantVisualSnapshot.RowShape,
+        ): Float {
+            val normalized = if (shape == ParticipantVisualSnapshot.RowShape.DOTS) {
+                rect.centerY
+            } else {
+                rect.bottom
+            }
+            val position = bounds.centerY +
+                (normalized - 0.5f) * bounds.height * heightCompensation
+            return if (shape == ParticipantVisualSnapshot.RowShape.BARS) {
+                position - dotDiameter / 2f
+            } else position
+        }
+        return floatArrayOf(
+            bounds.centerX +
+                ((top.centerX + bottom.centerX) / 2f - 0.5f) *
+                    bounds.width * widthCompensation,
+            y(top, topShape),
+            y(bottom, bottomShape),
+        )
+    }
+
     fun mobileSignalShapeProgress(rawProgress: Float): Float {
         val p = geometryProgress(rawProgress)
         return p * p
