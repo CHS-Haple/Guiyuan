@@ -70,7 +70,7 @@ class CcTransitionMorphGeometryTest {
         val originalChargingFade = BatteryNumberFollowerPolicy
         assertTrue(originalChargingFade.chargingSourceVisibleFraction(0.12f) in 0f..1f)
         assertEquals(0f, originalChargingFade.chargingSourceVisibleFraction(0.30f), 0.0001f)
-        assertEquals(1f, 1f - MobileSignalMorphPolicy.moveProgress(0.30f), 0.0001f)
+        assertEquals(1f, 1f - MobileSignalStagePolicy.moveProgress(0.30f), 0.0001f)
         for (progress in listOf(0.05f, 0.12f, 0.18f, 0.30f, 0.57f, 0.90f)) {
             assertEquals(
                 originalChargingFade.chargingSourceVisibleFraction(progress),
@@ -108,7 +108,7 @@ class CcTransitionMorphGeometryTest {
             assertEquals(a[2], b[2], 0.0001f)
             assertEquals(a[5], b[5], 0.0001f)
             assertEquals(
-                20f + 60f * MobileSignalMorphPolicy.lockstepProgress(progress),
+                20f + 60f * MobileSignalStagePolicy.lockstepProgress(progress),
                 a[0], 0.0001f,
             )
         }
@@ -208,8 +208,8 @@ class CcTransitionMorphGeometryTest {
         val upperY = 15f
         val lowerY = 29f
         fun pairedDots(p: Float): FloatArray {
-            val move = MobileSignalMorphPolicy.moveProgress(p)
-            val spread = MobileSignalMorphPolicy.rowProgress(p)
+            val move = MobileSignalStagePolicy.moveProgress(p)
+            val spread = MobileSignalStagePolicy.rowProgress(p)
             return floatArrayOf(
                 MobileSignalMorphPolicy.dotCoordinate(
                     sourceX, sourceX, anchors[0], anchors[0], 0f, move, spread,

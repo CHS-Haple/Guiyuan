@@ -112,7 +112,7 @@ class CcTransitionSignalScaleTest {
     fun roundedCapsAreIncludedInsideTheNativeOpticalHeightBudget() {
         assertEquals(
             45f,
-            MobileSignalMorphPolicy.targetMaxBarHeight(
+            MobileSignalTargetGeometry.targetMaxBarHeight(
                 sourceBoundsHeight = 40f,
                 diameter = 10f,
                 targetHeightRatio = 1.25f,

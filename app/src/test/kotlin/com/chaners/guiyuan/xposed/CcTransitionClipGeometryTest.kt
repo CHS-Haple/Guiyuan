@@ -8,14 +8,14 @@ class CcTransitionClipGeometryTest {
 @Test
     fun exactBarTargetCompensatesInsideSimilarityBasis() {
         val outerScale =
-            MobileSignalMorphPolicy.outerSimilarityScale(
+            MobileSignalTargetGeometry.outerSimilarityScale(
                 targetWidthRatio = 1.5f,
                 targetHeightRatio = 2f,
             )
         assertEquals(1f, outerScale, 0.0001f)
         assertEquals(
             1.5f,
-            MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            MobileSignalTargetGeometry.exactTargetAxisCompensation(
                 targetAxisRatio = 1.5f,
                 outerScale = outerScale,
             ),
@@ -23,7 +23,7 @@ class CcTransitionClipGeometryTest {
         )
         assertEquals(
             2f,
-            MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            MobileSignalTargetGeometry.exactTargetAxisCompensation(
                 targetAxisRatio = 2f,
                 outerScale = outerScale,
             ),
@@ -34,14 +34,14 @@ class CcTransitionClipGeometryTest {
     @Test
     fun exactBarTargetPreservesUniformOuterShrinkAndCompensatesAxes() {
         val outerScale =
-            MobileSignalMorphPolicy.outerSimilarityScale(
+            MobileSignalTargetGeometry.outerSimilarityScale(
                 targetWidthRatio = 0.75f,
                 targetHeightRatio = 0.5f,
             )
         assertEquals(0.5f, outerScale, 0.0001f)
         assertEquals(
             1.5f,
-            MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            MobileSignalTargetGeometry.exactTargetAxisCompensation(
                 targetAxisRatio = 0.75f,
                 outerScale = outerScale,
             ),
@@ -49,7 +49,7 @@ class CcTransitionClipGeometryTest {
         )
         assertEquals(
             1f,
-            MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            MobileSignalTargetGeometry.exactTargetAxisCompensation(
                 targetAxisRatio = 0.5f,
                 outerScale = outerScale,
             ),

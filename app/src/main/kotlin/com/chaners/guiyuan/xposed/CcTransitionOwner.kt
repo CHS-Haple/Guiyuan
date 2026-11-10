@@ -1809,7 +1809,7 @@ internal object CcTransitionOwner {
                         current = sourceGeometry,
                     )
                 val outerSimilarityScale =
-                    MobileSignalMorphPolicy.outerSimilarityScale(
+                    MobileSignalTargetGeometry.outerSimilarityScale(
                         targetWidthRatio = targetWidthRatio,
                         targetHeightRatio = targetHeightRatio,
                     )

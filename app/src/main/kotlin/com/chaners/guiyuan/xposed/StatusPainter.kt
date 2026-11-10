@@ -3784,22 +3784,22 @@ internal class StatusPainter(
             1 -> model.dualMobileLevels?.sim2
             else -> model.mobileLevel
         }
-        val phase = MobileSignalMorphPolicy.handoffProgress(shapeProgress)
-        val trim = MobileSignalMorphPolicy.trimProgress(phase)
-        val move = MobileSignalMorphPolicy.moveProgress(phase)
-        val spread = MobileSignalMorphPolicy.rowProgress(phase)
-        val barProgress = MobileSignalMorphPolicy.barProgress(phase)
+        val phase = MobileSignalStagePolicy.handoffProgress(shapeProgress)
+        val trim = MobileSignalStagePolicy.trimProgress(phase)
+        val move = MobileSignalStagePolicy.moveProgress(phase)
+        val spread = MobileSignalStagePolicy.rowProgress(phase)
+        val barProgress = MobileSignalStagePolicy.barProgress(phase)
         val diameter = radius * 2f
         if (row == null && model.dualMobileLevels != null && aggregateRows != null) {
             val bounds = if (centered) centeredMobileBounds(geometry, true)
                 else dualMobileTransitionBounds(geometry, style, mobileOffsetY)
             val top = aggregateRows.top
             val bottom = aggregateRows.bottom
-            val outerScale = MobileSignalMorphPolicy.outerSimilarityScale(
+            val outerScale = MobileSignalTargetGeometry.outerSimilarityScale(
                 targetWidthRatio = targetWidthRatio,
                 targetHeightRatio = targetHeightRatio,
             )
-            val widthCompensation = MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            val widthCompensation = MobileSignalTargetGeometry.exactTargetAxisCompensation(
                 targetAxisRatio = targetWidthRatio,
                 outerScale = outerScale,
             )
@@ -3811,7 +3811,7 @@ internal class StatusPainter(
                 bottomShape = aggregateRows.bottomShape,
                 widthCompensation = widthCompensation,
                 heightCompensation =
-                    MobileSignalMorphPolicy.exactTargetAxisCompensation(
+                    MobileSignalTargetGeometry.exactTargetAxisCompensation(
                         targetAxisRatio = targetHeightRatio,
                         outerScale = outerScale,
                     ),
@@ -3878,7 +3878,7 @@ internal class StatusPainter(
             return
         }
         val maxBarHeight =
-            MobileSignalMorphPolicy.targetMaxBarHeight(
+            MobileSignalTargetGeometry.targetMaxBarHeight(
                 sourceBoundsHeight = layout.bounds.height,
                 diameter = diameter,
                 targetHeightRatio = targetHeightRatio,
@@ -3913,7 +3913,7 @@ internal class StatusPainter(
                     )
                 }
             val targetBarHeight =
-                MobileSignalMorphPolicy.targetBarHeight(
+                MobileSignalTargetGeometry.targetBarHeight(
                     index = index,
                     maxBarHeight = maxBarHeight,
                     diameter = diameter,
@@ -3922,7 +3922,7 @@ internal class StatusPainter(
                 2f * dotRadius + (targetBarHeight - 2f * dotRadius) * barProgress
             val bottom =
                 centerY + dotRadius +
-                    MobileSignalMorphPolicy.sharedBottomExpansion(
+                    MobileSignalTargetGeometry.sharedBottomExpansion(
                         maxBarHeight = maxBarHeight,
                         diameter = diameter,
                         barProgress = barProgress,
@@ -3965,17 +3965,17 @@ internal class StatusPainter(
     ) {
         val diameter = radius * 2f
         val outerScale =
-            MobileSignalMorphPolicy.outerSimilarityScale(
+            MobileSignalTargetGeometry.outerSimilarityScale(
                 targetWidthRatio = targetWidthRatio,
                 targetHeightRatio = targetHeightRatio,
             )
         val widthCompensation =
-            MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            MobileSignalTargetGeometry.exactTargetAxisCompensation(
                 targetAxisRatio = targetWidthRatio,
                 outerScale = outerScale,
             )
         val heightCompensation =
-            MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            MobileSignalTargetGeometry.exactTargetAxisCompensation(
                 targetAxisRatio = targetHeightRatio,
                 outerScale = outerScale,
             )
