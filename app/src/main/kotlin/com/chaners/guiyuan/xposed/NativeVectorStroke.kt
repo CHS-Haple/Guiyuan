@@ -59,11 +59,9 @@ internal object NativeVectorStroke {
                     XmlPullParser.START_TAG -> {
                         when {
                             depth == 0 && xml.name == "vector" && onlyKeys(xml, vectorKeys) -> {
-                                viewportWidth = xml.getAttributeFloatValue(NS, "viewportWidth", Float.NaN)
-                                viewportHeight = xml.getAttributeFloatValue(NS, "viewportHeight", Float.NaN)
-                                if (!viewportWidth.isFinite() || !viewportHeight.isFinite() ||
-                                    viewportWidth <= 0f || viewportHeight <= 0f
-                                ) return null
+                                val viewport = readViewport(xml) ?: return null
+                                viewportWidth = viewport.first
+                                viewportHeight = viewport.second
                             }
                             depth == 1 && xml.name == "path" && onlyKeys(xml, pathKeys) -> {
                                 if (layers.size >= 12) return null
@@ -80,6 +78,13 @@ internal object NativeVectorStroke {
             if (depth != 0 || layers.isEmpty()) null
             else Source(viewportWidth, viewportHeight, layers)
         }
+    }
+
+    private fun readViewport(xml: android.content.res.XmlResourceParser): Pair<Float, Float>? {
+        val width = xml.getAttributeFloatValue(NS, "viewportWidth", Float.NaN)
+        val height = xml.getAttributeFloatValue(NS, "viewportHeight", Float.NaN)
+        if (!width.isFinite() || !height.isFinite() || width <= 0f || height <= 0f) return null
+        return width to height
     }
 
     private fun readLayer(
