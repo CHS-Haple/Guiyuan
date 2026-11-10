@@ -168,7 +168,6 @@ internal object SysUiDefaultDataSubSource {
 
     // Roll back the delivery receipt for any callback failure, then rethrow.
     @Synchronized
-    @Suppress("TooGenericExceptionCaught")
     internal fun deliverSubscription(
         next: Int,
         force: Boolean,
@@ -180,11 +179,12 @@ internal object SysUiDefaultDataSubSource {
         val previous = lastDelivery
         val pending = Delivery(next)
         lastDelivery = pending
+        var completed = false
         try {
             deliver(next)
-        } catch (error: Throwable) {
-            if (lastDelivery === pending) lastDelivery = previous
-            throw error
+            completed = true
+        } finally {
+            if (!completed && lastDelivery === pending) lastDelivery = previous
         }
         return true
     }

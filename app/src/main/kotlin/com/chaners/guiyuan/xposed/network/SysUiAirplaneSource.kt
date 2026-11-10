@@ -142,7 +142,6 @@ internal object SysUiAirplaneSource {
 
     // Roll back the delivery receipt for any callback failure, then rethrow.
     @Synchronized
-    @Suppress("TooGenericExceptionCaught")
     internal fun deliverState(
         enabled: Boolean,
         force: Boolean,
@@ -153,11 +152,12 @@ internal object SysUiAirplaneSource {
         val previous = lastDelivery
         val next = Delivery(enabled)
         lastDelivery = next
+        var completed = false
         try {
             deliver(enabled)
-        } catch (error: Throwable) {
-            if (lastDelivery === next) lastDelivery = previous
-            throw error
+            completed = true
+        } finally {
+            if (!completed && lastDelivery === next) lastDelivery = previous
         }
         return true
     }

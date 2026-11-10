@@ -60,4 +60,24 @@ class SysUiAirplaneSourceTest {
             SysUiAirplaneSource.detach()
         }
     }
+    @Test
+    fun errorDeliveryDoesNotAcknowledgeTheUnfinishedAirplaneState() {
+        SysUiAirplaneSource.detach()
+        try {
+            val failure = AssertionError("delivery-aborted")
+            assertSame(
+                failure,
+                runCatching {
+                    SysUiAirplaneSource.deliverState(true, false) { throw failure }
+                }.exceptionOrNull(),
+            )
+            var retries = 0
+            assertTrue(SysUiAirplaneSource.deliverState(true, false) { retries++ })
+            assertFalse(SysUiAirplaneSource.deliverState(true, false) { retries++ })
+            assertEquals(1, retries)
+        } finally {
+            SysUiAirplaneSource.detach()
+        }
+    }
+
 }
