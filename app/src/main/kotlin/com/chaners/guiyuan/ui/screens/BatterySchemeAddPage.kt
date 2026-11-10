@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -40,7 +38,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
-import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
 internal fun BatteryAddSchemePage(
@@ -51,59 +48,59 @@ internal fun BatteryAddSchemePage(
     onClick: () -> Unit,
 ) {
     val density = LocalDensity.current
-    val scrollState = rememberScrollState()
-    val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
-            .verticalScroll(scrollState)
-            .padding(16.dp),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        BatterySchemeHeader(
-            name = name,
-            previewPage = BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS),
-        )
-        BatterySchemeActionArea {
-            TextButton(
-                text =
-                    stringResource(
-                        if (enabled) {
-                            R.string.battery_custom_scheme_add_page_title
-                        } else {
-                            R.string.battery_custom_scheme_limit
-                        },
-                    ),
-                onClick = onClick,
-                enabled = enabled,
-                minWidth = 26.dp,
-                minHeight = 26.dp,
-                cornerRadius = SnackbarDefaults.ActionCornerRadius,
-                insideMargin = SnackbarDefaults.ActionInsideMargin,
-                colors = ButtonDefaults.textButtonColorsPrimary(),
-                textStyle = TextStyle(fontSize = 15.sp),
-            )
-        }
         Card(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .then(
-                        if (settingsCardHeightPx > 0) {
-                            Modifier.height(with(density) { settingsCardHeightPx.toDp() })
-                        } else {
-                            Modifier.heightIn(min = 400.dp)
-                        },
-                    ),
-            pressFeedbackType =
-                if (enabled) PressFeedbackType.Sink else PressFeedbackType.None,
-            onClick = if (enabled) onClick else null,
-            colors = CardDefaults.defaultColors(
-                color = MiuixTheme.colorScheme.surfaceContainerHighest,
-                contentColor = MiuixTheme.colorScheme.onSurfaceContainerHighest,
-            ),
+            modifier = Modifier.fillMaxWidth(),
+            colors =
+                CardDefaults.defaultColors(
+                    color = MiuixTheme.colorScheme.surfaceContainerHighest,
+                    contentColor = MiuixTheme.colorScheme.onSurfaceContainerHighest,
+                ),
+            insideMargin = PaddingValues(16.dp),
         ) {
-            BatteryAddSchemeCardBody(count, enabled)
+            BatterySchemeHeader(
+                name = name,
+                previewPage = BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS),
+            )
+            BatterySchemeActionArea {
+                TextButton(
+                    text =
+                        stringResource(
+                            if (enabled) {
+                                R.string.battery_custom_scheme_add_page_title
+                            } else {
+                                R.string.battery_custom_scheme_limit
+                            },
+                        ),
+                    onClick = onClick,
+                    enabled = enabled,
+                    minWidth = 26.dp,
+                    minHeight = 26.dp,
+                    cornerRadius = SnackbarDefaults.ActionCornerRadius,
+                    insideMargin = SnackbarDefaults.ActionInsideMargin,
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    textStyle = TextStyle(fontSize = 15.sp),
+                )
+            }
+            Card(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (settingsCardHeightPx > 0) {
+                                Modifier.height(with(density) { settingsCardHeightPx.toDp() })
+                            } else {
+                                Modifier.heightIn(min = 400.dp)
+                            },
+                        ),
+                pressFeedbackType =
+                    if (enabled) PressFeedbackType.Sink else PressFeedbackType.None,
+                onClick = if (enabled) onClick else null,
+            ) {
+                BatteryAddSchemeCardBody(count, enabled)
+            }
         }
     }
 }
