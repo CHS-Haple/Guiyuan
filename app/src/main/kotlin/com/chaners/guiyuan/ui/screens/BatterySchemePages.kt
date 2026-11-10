@@ -108,6 +108,7 @@ import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassShadows
 import top.yukonga.miuix.kmp.glass.GlassTransformPopup
 import kotlinx.coroutines.flow.first
 import top.yukonga.miuix.kmp.glass.glassPopupAnchor
@@ -306,8 +307,8 @@ private fun BatterySchemePageContent(
             modifier = Modifier.fillMaxWidth(),
             colors =
                 CardDefaults.defaultColors(
-                    color = MiuixTheme.colorScheme.surfaceContainerHighest,
-                    contentColor = MiuixTheme.colorScheme.onSurfaceContainerHighest,
+                    color = MiuixTheme.colorScheme.surface,
+                    contentColor = MiuixTheme.colorScheme.onSurface,
                 ),
             insideMargin = PaddingValues(16.dp),
         ) {
@@ -691,6 +692,9 @@ private fun BatterySchemeManageMenu(
                     }
                 },
                 modifier = modifier.glassPopupAnchor(anchor, cornerRadius = GlassTopAppBarDefaults.ButtonSize / 2, floating = true),
+                // This inset menu trigger is a floating control, not an elevated panel.
+                // Use the upstream float shadow; the popup owns its separate panel shadow.
+                shadow = GlassShadows.Float,
                 // The sheet records the button itself in sheetBackdrop. Do not sample that same
                 // layer from the button: it creates a recursive HWUI RenderNode dependency.
                 // Retain the native fallback used before this migration; the popup is root-hosted.
