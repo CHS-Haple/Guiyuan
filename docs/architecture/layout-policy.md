@@ -16,7 +16,14 @@ another.
 
 The accepted Home path uses the existing native end-side host:
 
-`MiuiNotificationStatusContainer / system_icon_area -> MiuiStatusBatteryContainer / system_icons -> Guiyuan child -> logical viewport -> SteadyLayoutResolver -> renderer`
+```text
+MiuiNotificationStatusContainer / system_icon_area
+  -> MiuiStatusBatteryContainer / system_icons
+  -> Guiyuan child
+  -> logical viewport
+  -> SteadyLayoutResolver
+  -> renderer
+```
 
 SystemUI owns:
 

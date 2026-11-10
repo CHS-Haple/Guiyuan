@@ -2,7 +2,9 @@
 
 Describe the problem, change and scope. / 简述问题、改动内容及边界。
 
-> CI success is validation evidence, not merge approval. Final acceptance is a maintainer decision, and runtime-sensitive changes may require maintainer-side device validation.
+> CI success is validation evidence, not merge approval. Final acceptance is a
+> maintainer decision, and runtime-sensitive changes may require maintainer-side
+> device validation.
 
 ## Change type and boundary / 变更类型与范围
 
@@ -12,7 +14,8 @@ Describe the problem, change and scope. / 简述问题、改动内容及边界�
 - Explicitly unchanged:
 - Why these changes belong together:
 
-> Normal product/runtime contributions target `dev`. Promotion and hotfix pull requests are maintainer-managed.
+> Normal product/runtime contributions target `dev`. Promotion and hotfix pull
+> requests are maintainer-managed.
 
 ## MIUIX UI impact / MIUIX 界面影响（涉及界面时填写）
 

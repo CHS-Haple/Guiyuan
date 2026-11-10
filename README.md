@@ -54,7 +54,8 @@ runtime compatibility.
 
 ### Installation
 
-1. Download the signed APK from [Releases](https://github.com/CHS-Haple/Guiyuan/releases).
+1. Download the signed APK from
+   [Releases](https://github.com/CHS-Haple/Guiyuan/releases).
 2. Enable Guiyuan in a compatible LSPosed manager and authorize the **SystemUI**
    scope.
 3. Restart the relevant system process as required by your framework, then
@@ -67,7 +68,13 @@ disable the module in the framework manager to restore native behavior.
 
 ### Community and documentation
 
-Report ordinary bugs or requests through [Issues](https://github.com/CHS-Haple/Guiyuan/issues). Keep private logs and security details out of public discussions; use [private vulnerability reporting](https://github.com/CHS-Haple/Guiyuan/security/advisories/new) for security concerns.
+Report ordinary bugs or requests through
+[Issues](https://github.com/CHS-Haple/Guiyuan/issues). Keep private logs and
+security details out of public discussions; use
+[private vulnerability reporting][vuln]
+for security concerns.
+
+[vuln]: https://github.com/CHS-Haple/Guiyuan/security/advisories/new
 
 [Changelog](CHANGELOG.md) · [Terms](TERMS.md) · [Privacy](PRIVACY.md) ·
 [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) ·
@@ -122,4 +129,5 @@ Report ordinary bugs or requests through [Issues](https://github.com/CHS-Haple/G
 
 <sub>Guiyuan is an independent community project and is not affiliated with or endorsed by Xiaomi, LSPosed or MIUIX. 归元是独立开源项目，不隶属于 Xiaomi、LSPosed 或 MIUIX，也不代表这些项目的官方立场。</sub>
 
-**License:** [GPL-3.0-only](LICENSE). Third-party dependencies and incorporated assets retain their respective notices and licenses.
+**License:** [GPL-3.0-only](LICENSE). Third-party dependencies and incorporated
+assets retain their respective notices and licenses.
