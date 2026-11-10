@@ -55,8 +55,8 @@ internal fun BatteryAddSchemePage(
             modifier = Modifier.fillMaxWidth(),
             colors =
                 CardDefaults.defaultColors(
-                    color = MiuixTheme.colorScheme.surfaceContainerHighest,
-                    contentColor = MiuixTheme.colorScheme.onSurfaceContainerHighest,
+                    color = MiuixTheme.colorScheme.surface,
+                    contentColor = MiuixTheme.colorScheme.onSurface,
                 ),
             insideMargin = PaddingValues(16.dp),
         ) {
