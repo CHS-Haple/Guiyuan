@@ -85,7 +85,6 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.FloatingActionButtonDefaults
@@ -302,14 +301,8 @@ private fun BatterySchemePageContent(
                 .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                 .verticalScroll(scrollState),
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors =
-                CardDefaults.defaultColors(
-                    color = MiuixTheme.colorScheme.surface,
-                    contentColor = MiuixTheme.colorScheme.onSurface,
-                ),
-            insideMargin = PaddingValues(16.dp),
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
         ) {
             BatterySchemeHeader(
                 name = name,
