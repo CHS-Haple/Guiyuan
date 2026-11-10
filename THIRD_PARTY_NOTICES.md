@@ -40,7 +40,13 @@ runtime dependency in this experimental implementation.
 `app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` contains a pinned, adapted
 subset of the
 [MIUIX miuix-glass PR #423](https://github.com/compose-miuix-ui/miuix/pull/423),
-at the accepted development checkout revision `45645854cd46c32275c5666e3aafa9980d8f104e`. The isolated PR #1440 evaluates `ca674992c9645395cdb0d5109d66504ff53d018c`, retaining app-local compatibility adapters rather than claiming byte-for-byte identity with upstream `miuix-glass`. The released main branch uses its own pinned source and artifacts (Apache-2.0; [license text](third_party/miuix-glass/LICENSE)).
+at the accepted development checkout revision
+`45645854cd46c32275c5666e3aafa9980d8f104e`. The isolated PR #1440
+assesses `ca674992c9645395cdb0d5109d66504ff53d018c`, retaining app-local
+compatibility adapters rather than claiming byte-for-byte identity with
+upstream `miuix-glass`. The released main branch retains its own pinned
+source and artifacts (Apache-2.0;
+[license text](third_party/miuix-glass/LICENSE)).
 `GlassPopupSurface.kt` and `GlassPopupColumn.kt` were initially based on PR #423
 commit `8d52b45f223d4bec9a719d3d6ca52972cc7ea5fb` to use upstream popup
 measurement, scroll and outside-gesture ownership. This is provenance, not a
