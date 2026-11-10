@@ -179,12 +179,12 @@ class MobileSignalMorphPolicyTest {
 
     @Test
     fun neighboringStagesMeetWithoutAJumpOnReverse() {
-        val stages = listOf(
+        val stageVectors = listOf(
             Triple(0f, 0f, 0f), Triple(1f, 0f, 0f),
             Triple(1f, 1f, 0f), Triple(1f, 1f, 1f),
         )
         val expected = listOf(70f, 10f, 100f, 130f)
-        stages.forEachIndexed { index, (trim, move, spread) ->
+        stageVectors.forEachIndexed { index, (trim, move, spread) ->
             assertEquals(
                 expected[index],
                 morph.dotCoordinate(70f, 10f, 100f, 130f, trim, move, spread),
