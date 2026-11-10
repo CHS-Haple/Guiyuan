@@ -37,9 +37,6 @@ internal fun UiOverlayBottomSheet(
             enableWindowDim = enableWindowDim,
             allowDismiss = allowDismiss,
             backdrop = LocalGlassBackdrop.current,
-            // The attached sheet ends in a straight screen-edge seam, not an outlined card.
-            // Upstream supports null strokes; avoid drawing a bright bottom rim here.
-            stroke = null,
             onDismissRequest = onDismissRequest,
             onDismissFinished = onDismissFinished,
             content = content,
