@@ -34,7 +34,7 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
     )
 
     init {
-        migrateIfNeeded()
+        BatterySchemePersistence.migrateIfNeeded(preferences)
     }
 
     val library: Flow<BatteryColorSchemeLibrary> =
@@ -57,7 +57,7 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
         }.distinctUntilChanged()
 
     fun current(): BatteryColorSchemeLibrary =
-        readLibrary()
+        BatterySchemePersistence.readLibrary(preferences)
 
     fun nextAvailableCustomId(library: BatteryColorSchemeLibrary = current()): Int? {
         val used = library.customSchemes.mapTo(mutableSetOf()) { it.id }
@@ -71,7 +71,7 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
         val updated = library.copy(activeSchemeKey = target)
         val editor = preferences.edit()
         writeBatterySchemeLibrary(editor, updated)
-        applyProjection(editor, updated, target)
+        BatterySchemePersistence.applyProjection(editor, updated, target)
         editor.apply()
     }
 
@@ -136,7 +136,7 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
             .forEach(editor::remove)
         writeBatterySchemeLibrary(editor, updated)
         if (active != library.activeSchemeKey) {
-            applyProjection(editor, updated, active)
+            BatterySchemePersistence.applyProjection(editor, updated, active)
         }
         editor.apply()
     }
@@ -214,12 +214,14 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
         val editor = preferences.edit()
         writeBatterySchemeLibrary(editor, updated)
         if (changed.entries != current.entries && updated.activeSchemeKey == changed.key) {
-            applyProjection(editor, updated, changed.key)
+            BatterySchemePersistence.applyProjection(editor, updated, changed.key)
         }
         editor.apply()
     }
+}
 
-    private fun migrateIfNeeded() {
+private object BatterySchemePersistence {
+    fun migrateIfNeeded(preferences: SharedPreferences) {
         if (
             preferences.getInt(BATTERY_COLOR_SCHEME_SCHEMA_KEY, 0) >=
                 BATTERY_COLOR_SCHEME_SCHEMA_CURRENT
@@ -263,7 +265,7 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
         editor.apply()
     }
 
-    private fun readLibrary(): BatteryColorSchemeLibrary {
+    fun readLibrary(preferences: SharedPreferences): BatteryColorSchemeLibrary {
         val order =
             preferences.getString(BATTERY_COLOR_SCHEME_ORDER_KEY, null)
                 ?.split(',')
@@ -272,7 +274,7 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
                 ?.filter { it in 1..BATTERY_COLOR_SCHEME_CUSTOM_MAX }
                 .orEmpty()
 
-        val customs = order.mapNotNull(::readCustom)
+        val customs = order.mapNotNull { readCustom(preferences, it) }
         val rawActive =
             preferences.getString(
                 BATTERY_COLOR_SCHEME_ACTIVE_KEY,
@@ -290,7 +292,7 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
         }
     }
 
-    private fun readCustom(id: Int): BatteryCustomColorScheme? {
+    private fun readCustom(preferences: SharedPreferences, id: Int): BatteryCustomColorScheme? {
         val prefix = customPrefix(id)
         if (!preferences.contains(prefix + "base")) return null
         val base =
@@ -325,7 +327,7 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
         )
     }
 
-    private fun applyProjection(
+    fun applyProjection(
         editor: SharedPreferences.Editor,
         library: BatteryColorSchemeLibrary,
         key: String,
@@ -476,37 +478,6 @@ private fun customColorKey(
     slot: BatteryColorSlot,
 ): String =
     customPrefix(id) + "color." + slot.name.lowercase()
-
-
-internal fun limitCustomSchemeName(value: String): String {
-    val codePointCount = value.codePointCount(0, value.length)
-    if (codePointCount <= BATTERY_COLOR_SCHEME_NAME_MAX_CODE_POINTS) return value
-    val endIndex =
-        value.offsetByCodePoints(
-            0,
-            BATTERY_COLOR_SCHEME_NAME_MAX_CODE_POINTS,
-        )
-    return value.substring(0, endIndex)
-}
-
-internal fun normalizeCustomSchemeName(value: String): String {
-    val clean = buildString {
-        var index = 0
-        while (index < value.length) {
-            val point = Character.codePointAt(value, index)
-            val unsafe =
-                Character.isISOControl(point) ||
-                    point in 0xD800..0xDFFF ||
-                    point == 0x061C ||
-                    point in 0x200E..0x200F ||
-                    point in 0x2028..0x202E ||
-                    point in 0x2066..0x206F
-            if (unsafe) append(' ') else appendCodePoint(point)
-            index += Character.charCount(point)
-        }
-    }
-    return limitCustomSchemeName(clean.trim())
-}
 
 
 internal fun schemeSourceFromLegacy(
