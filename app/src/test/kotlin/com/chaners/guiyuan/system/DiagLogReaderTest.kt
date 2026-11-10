@@ -13,6 +13,9 @@ private const val EVENT_DIAGNOSTICS_BIND = "diagnostics.bind"
 private const val EVENT_MODULE_PREFIX = "module."
 private const val COMPONENT_MODULE = "module"
 private const val COMPONENT_HOT_RELOAD = "hotReload"
+private const val STATE_READY = "ready"
+private const val STATE_ERROR = "error"
+private const val STATE_UNAVAILABLE = "unavailable"
 
 class DiagLogReaderTest {
     @Test
@@ -248,9 +251,9 @@ class DiagLogReaderSessionTest {
                     fields = mapOf(FIELD_SESSION_ID to session),
                 )
 
-        val oldStart = event(30, EVENT_MODULE_LOADED, "ready", "old")
-        val newBind = event(31, EVENT_DIAGNOSTICS_BIND, "ready", "new")
-        val failedTakeover = event(32, EVENT_HOT_RELOAD_COMPLETE, "error", "new")
+        val oldStart = event(30, EVENT_MODULE_LOADED, STATE_READY, "old")
+        val newBind = event(31, EVENT_DIAGNOSTICS_BIND, STATE_READY, "new")
+        val failedTakeover = event(32, EVENT_HOT_RELOAD_COMPLETE, STATE_ERROR, "new")
         val delayedOld = event(33, EVENT_RUNTIME_TEARDOWN, "released", "old")
 
         assertEquals(
@@ -270,8 +273,8 @@ class DiagLogReaderSessionTest {
                     fields = mapOf(FIELD_SESSION_ID to session),
                 )
 
-        val oldStart = event(30, EVENT_MODULE_LOADED, "ready", "old")
-        val unavailable = event(31, EVENT_HOT_RELOAD_COMPLETE, "unavailable", "new")
+        val oldStart = event(30, EVENT_MODULE_LOADED, STATE_READY, "old")
+        val unavailable = event(31, EVENT_HOT_RELOAD_COMPLETE, STATE_UNAVAILABLE, "new")
         val delayedOld = event(32, EVENT_RUNTIME_TEARDOWN, "released", "old")
 
         assertEquals(
@@ -291,11 +294,11 @@ class DiagLogReaderSessionTest {
                     fields = mapOf(FIELD_SESSION_ID to session),
                 )
 
-        val oldStart = event(30, EVENT_MODULE_LOADED, "ready", "old")
-        val oldUnavailable = event(31, EVENT_HOT_RELOAD_COMPLETE, "unavailable", "old")
-        val newStart = event(32, EVENT_MODULE_RELOADED, "ready", "new")
-        val delayedOldUnavailable = event(33, EVENT_HOT_RELOAD_COMPLETE, "unavailable", "old")
-        val newComplete = event(34, EVENT_HOT_RELOAD_COMPLETE, "ready", "new")
+        val oldStart = event(30, EVENT_MODULE_LOADED, STATE_READY, "old")
+        val oldUnavailable = event(31, EVENT_HOT_RELOAD_COMPLETE, STATE_UNAVAILABLE, "old")
+        val newStart = event(32, EVENT_MODULE_RELOADED, STATE_READY, "new")
+        val delayedOldUnavailable = event(33, EVENT_HOT_RELOAD_COMPLETE, STATE_UNAVAILABLE, "old")
+        val newComplete = event(34, EVENT_HOT_RELOAD_COMPLETE, STATE_READY, "new")
 
         assertEquals(
             listOf(newStart, newComplete),
@@ -316,11 +319,11 @@ class DiagLogReaderSessionTest {
                     fields = mapOf(FIELD_SESSION_ID to session),
                 )
 
-        val oldStart = event(30, EVENT_MODULE_LOADED, "ready", "old")
-        val oldError = event(31, EVENT_HOT_RELOAD_COMPLETE, "error", "old")
-        val newStart = event(32, EVENT_MODULE_RELOADED, "ready", "new")
-        val delayedOldError = event(33, EVENT_HOT_RELOAD_COMPLETE, "error", "old")
-        val newComplete = event(34, EVENT_HOT_RELOAD_COMPLETE, "ready", "new")
+        val oldStart = event(30, EVENT_MODULE_LOADED, STATE_READY, "old")
+        val oldError = event(31, EVENT_HOT_RELOAD_COMPLETE, STATE_ERROR, "old")
+        val newStart = event(32, EVENT_MODULE_RELOADED, STATE_READY, "new")
+        val delayedOldError = event(33, EVENT_HOT_RELOAD_COMPLETE, STATE_ERROR, "old")
+        val newComplete = event(34, EVENT_HOT_RELOAD_COMPLETE, STATE_READY, "new")
 
         assertEquals(
             listOf(newStart, newComplete),
