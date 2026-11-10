@@ -135,12 +135,8 @@ conformance.
 
 ## B1532 CI compile correction
 
-- **Observed failure:**
-  [OS4 matched MIUIX run 40563572718](https://github.com/CHS-Haple/Guiyuan/actions/runs/40563572718) failed `:app:compileDebugKotlin` and `:app:compileCanaryKotlin` at `BatteryColorControls.kt:230,243` with `COMPOSABLE_INVOCATION`. Event lambdas invoked `customSchemeName(custom)`, whose implementation is `@Composable` because the blank-name fallback uses `stringResource`.
-- **Minimal correction:** Get `LocalContext.current` once inside
-  `BatteryColorBottomSheet` composition and resolve names at both ordinary click
-  callbacks using
-  `custom.name.ifBlank { context.getString(R.string.battery_custom_scheme_default_name, custom.id) }`. This preserves exactly the old nonblank and localized fallback names and request snapshot ownership. No dialog lifecycle, repository, external key, render ownership or OS3/OS4 style change.
+- **Observed failure:** [OS4 matched MIUIX run 40563572718](https://github.com/CHS-Haple/Guiyuan/actions/runs/40563572718) failed `:app:compileDebugKotlin` and `:app:compileCanaryKotlin` at `BatteryColorControls.kt:230,243` with `COMPOSABLE_INVOCATION`. Event lambdas invoked `customSchemeName(custom)`, whose implementation is `@Composable` because the blank-name fallback uses `stringResource`.
+- **Minimal correction:** Get `LocalContext.current` once inside `BatteryColorBottomSheet` composition and resolve names at both ordinary click callbacks using `custom.name.ifBlank { context.getString(R.string.battery_custom_scheme_default_name, custom.id) }`. This preserves exactly the old nonblank and localized fallback names and request snapshot ownership. No dialog lifecycle, repository, external key, render ownership or OS3/OS4 style change.
 - **Build identity:** Retain B1532: the preceding B1532 build failed to compile
   and did not produce an installable APK. Await a successful exact-source CI and
   signed artifact before distributing. Source review alone does not prove
@@ -355,8 +351,7 @@ failures.
   contains the first-sheet panel but never the popup itself. OS3, menu click
   selection, haptics, popup geometry and native transitions are unchanged. No
   second writer, timer or duplicate observer.
-- **Review:** Full PR diff and scene/dismissal path reviewed. Matched-source
-  [CI #40552048429](https://github.com/CHS-Haple/Guiyuan/actions/runs/40552048429) compiled/tested and signed runtime `4c22c87` successfully; extracted B1527 APK SHA-256 `f6797c25b6ad74be798932526e0ba5b4f48d7db9c5fc9190709b0eda2fb23375`. Physical menu glass/anchoring/scroll/backdrop flicker tests and both nested Sheets remain pending.
+- **Review:** Full PR diff and scene/dismissal path reviewed. Matched-source [CI #40552048429](https://github.com/CHS-Haple/Guiyuan/actions/runs/40552048429) compiled/tested and signed runtime `4c22c87` successfully; extracted B1527 APK SHA-256 `f6797c25b6ad74be798932526e0ba5b4f48d7db9c5fc9190709b0eda2fb23375`. Physical menu glass/anchoring/scroll/backdrop flicker tests and both nested Sheets remain pending.
 
 ## OS4 second-sheet source dropdown glass (B1526)
 
@@ -461,9 +456,7 @@ failures.
   outside this provider. Preserve one scoped fallback owner, existing `show`,
   `detailVisible`, `remember(show)` intent disposal, `allowDismiss`/Back,
   titles, padding and callbacks. The OS3 sheet host ignores the glass backdrop.
-- **Gates:** Full base→HEAD PR diff, sheet/dialog call path and pre-commit
-  ownership/maintainability checked.
-  [Signed matching-source CI #40545803559](https://github.com/CHS-Haple/Guiyuan/actions/runs/40545803559) passed both compile/unit/metadata and isolated sign jobs for runtime source `71b2ede`. Extracted APK SHA-256: `670823e06e0492495d26d065aad2c65e3a5cdfba3e9c853c95c93c2c95605e8f`. Device nested transitions (first sheet→detail→Back, source choices, create/rename/delete, dark/light/shader-off, rapid dismissal) still require acceptance. Primary sheet is unchanged.
+- **Gates:** Full base→HEAD PR diff, sheet/dialog call path and pre-commit ownership/maintainability checked. [Signed matching-source CI #40545803559](https://github.com/CHS-Haple/Guiyuan/actions/runs/40545803559) passed both compile/unit/metadata and isolated sign jobs for runtime source `71b2ede`. Extracted APK SHA-256: `670823e06e0492495d26d065aad2c65e3a5cdfba3e9c853c95c93c2c95605e8f`. Device nested transitions (first sheet→detail→Back, source choices, create/rename/delete, dark/light/shader-off, rapid dismissal) still require acceptance. Primary sheet is unchanged.
 
 ## OS4 battery modal backdrop ownership (B1522)
 
@@ -529,9 +522,7 @@ failures.
 - **Call path:** `HubPage` → `Os4SearchMode` → `Os4SearchSurface` →
   `clickable(onClose)` → `PageSearch.close()`. `NavigationBackHandler` / Escape
   share `onClose`.
-- **Validation:** Exact source `c42ddbd` passed matched-source Android tests,
-  APK verification and isolated signing (both CI jobs succeeded;
-  [run 40538872808](https://github.com/CHS-Haple/Guiyuan/actions/runs/40538872808)). Focused on-device press/close, glyph contrast, alpha/blur, rapid reversal, input/clear, Back/Escape, RTL/fontScale and scrolling-glass acceptance remains open. Source/CI do not certify physical gesture or animation quality.
+- **Validation:** Exact source `c42ddbd` passed matched-source Android tests, APK verification and isolated signing (both CI jobs succeeded; [run 40538872808](https://github.com/CHS-Haple/Guiyuan/actions/runs/40538872808)). Focused on-device press/close, glyph contrast, alpha/blur, rapid reversal, input/clear, Back/Escape, RTL/fontScale and scrolling-glass acceptance remains open. Source/CI do not certify physical gesture or animation quality.
 
 ## In-sheet battery source dropdown sampling (B1519)
 
@@ -931,10 +922,8 @@ signed workflow separately pins `b9f70838`.
   space; primary recording must exclude the secondary. The new wrapper does not
   expose a public `onDismissFinished` callback for an independently mounted
   outer `PopupLayout`.
-- **Existing ownership:**
-  `DiagnosticsScreen → Os4CascadingMenu → PopupLayout(renderInRootScaffold=true) → GlassDropdownPopupContent/GlassSecondaryPopup`. The root host escapes clipped TopAppBar actions; `mounted`, `primaryClosed`, `renderedSubmenu` and native dismissal callbacks keep the host alive until both levels finish exit. The primary/secondary background composite captures only the primary. The local `GlassDropdownPopupContent(handleBack)` prevents the first level handling Back while a second level owns it; the new upstream internal API removes that caller-specific parameter.
-- **Battery ownership:**
-  `BatterySchemePages → BatterySchemeManageMenu → PopupLayout(renderInRootScaffold=true) → GlassDropdownPopupContent`; the extra root host escapes the sheet pager clip. The caller owns rename/copy/delete and popup lifetime. Replacing only the popup body would lose the root ownership and animated exit, or leave an inert but mounted full-screen host.
+- **Existing ownership:** `DiagnosticsScreen → Os4CascadingMenu → PopupLayout(renderInRootScaffold=true) → GlassDropdownPopupContent/GlassSecondaryPopup`. The root host escapes clipped TopAppBar actions; `mounted`, `primaryClosed`, `renderedSubmenu` and native dismissal callbacks keep the host alive until both levels finish exit. The primary/secondary background composite captures only the primary. The local `GlassDropdownPopupContent(handleBack)` prevents the first level handling Back while a second level owns it; the new upstream internal API removes that caller-specific parameter.
+- **Battery ownership:** `BatterySchemePages → BatterySchemeManageMenu → PopupLayout(renderInRootScaffold=true) → GlassDropdownPopupContent`; the extra root host escapes the sheet pager clip. The caller owns rename/copy/delete and popup lifetime. Replacing only the popup body would lose the root ownership and animated exit, or leave an inert but mounted full-screen host.
 - **Decision:** Do not copy `GlassIconDropdownMenu.kt` alone or replace accepted
   arc-menu geometry with an untested transform. A full migration must provide an
   explicit root-host dismissal boundary, a valid anchored-button material

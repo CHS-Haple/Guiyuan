@@ -30,8 +30,7 @@ versions remain listed here.
 ## Adapted optical code
 
 Guiyuan's liquid navigation includes Apache-2.0 optical helpers adapted from the
-pinned
-[MIUIX Liquid Glass example](https://github.com/compose-miuix-ui/miuix/tree/8972f941c194bd3c4e14c34543d5ebc7b39e40da/example/shared/src/commonMain/kotlin/component/liquid),
+pinned [MIUIX Liquid Glass example](https://github.com/compose-miuix-ui/miuix/tree/8972f941c194bd3c4e14c34543d5ebc7b39e40da/example/shared/src/commonMain/kotlin/component/liquid),
 which credits AndroidLiquidGlass. Source copyright and license headers are
 retained in the adapted files. Neither Backdrop nor Kyant Shapes is a direct
 runtime dependency in this experimental implementation.
