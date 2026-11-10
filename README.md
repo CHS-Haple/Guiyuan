@@ -71,8 +71,10 @@ disable the module in the framework manager to restore native behavior.
 Report ordinary bugs or requests through
 [Issues](https://github.com/CHS-Haple/Guiyuan/issues). Keep private logs and
 security details out of public discussions; use
-[private vulnerability reporting](https://github.com/CHS-Haple/Guiyuan/security/advisories/new)
+[private vulnerability reporting][vuln]
 for security concerns.
+
+[vuln]: https://github.com/CHS-Haple/Guiyuan/security/advisories/new
 
 [Changelog](CHANGELOG.md) · [Terms](TERMS.md) · [Privacy](PRIVACY.md) ·
 [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) ·
