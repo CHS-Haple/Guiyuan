@@ -1,8 +1,20 @@
 # OS4 UI conformance and upstream adoption audit (historical record)
 
-> Dated source, CI and device investigations are retained for traceability. This is not a second current-state document, does not grant permission to revive obsolete workflows, and should not be treated as evidence for untested device variants. Current source boundaries: [README](README.md). Release acceptance: [RELEASE_READINESS](../../docs/development/RELEASE_READINESS.md).
+> Dated source, CI and device investigations are retained for traceability. This
+> is not a second current-state document, does not grant permission to revive
+> obsolete workflows, and should not be treated as evidence for untested device
+> variants. Current source boundaries: [README](README.md). Release acceptance:
+> [RELEASE_READINESS](../../docs/development/RELEASE_READINESS.md).
 
-Accepted source baseline: Guiyuan `dev` after merged PR #861, based on B1536 (exact-source signed Canary, configured unit/assemble/sign checks and the maintainer's focused device acceptance). Post-merge matched-source Canary succeeded; #946 subsequently changed documentation only. B1509 device acceptance rejected its search gap/background fade. B1510 signed CI produced a candidate whose shared scroll state and early title reveal were found during source review and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506 was maintainer-accepted; B1507/B1508 interaction changes have no new device acceptance.
+Accepted source baseline: Guiyuan `dev` after merged PR #861, based on B1536
+(exact-source signed Canary, configured unit/assemble/sign checks and the
+maintainer's focused device acceptance). Post-merge matched-source Canary
+succeeded; #946 subsequently changed documentation only. B1509 device acceptance
+rejected its search gap/background fade. B1510 signed CI produced a candidate
+whose shared scroll state and early title reveal were found during source review
+and superseded. B1507 signed CI passed at `e16fe95` (run `40498427702`); B1506
+was maintainer-accepted; B1507/B1508 interaction changes have no new device
+acceptance.
 MIUIX pinned published: `8972f941c194bd3c4e14c34543d5ebc7b39e40da`
 (`0.9.4-8972f941-SNAPSHOT`).
 MIUIX reviewed prerelease:
@@ -19,7 +31,13 @@ conformance.
   `docs/demo/src/commonMain/kotlin/GlassDialogDemo.kt` uses a 12dp gap between
   equal-weight Normal/Primary actions. This is an example layout, not a default
   enforced by `GlassDialogButton`; the maintainer elected to follow it for OS4.
-- **Prior mismatch and correction:** Eight dual-action dialog rows used 20dp in both UI eras (battery create/rename/delete, backup/default reset, settings-entry confirmation, scope restart and numeric input). One style-aware `dialogActionGap()` returns 12dp on OS4, retains the original 20dp on OS3, and is used by all eight rows. Single-action dialogs, 50dp button minimum height, roles, TextFields, IME validation, Back/dismiss, popup/Sheet backdrop and source capture are unchanged.
+- **Prior mismatch and correction:** Eight dual-action dialog rows used 20dp in
+  both UI eras (battery create/rename/delete, backup/default reset,
+  settings-entry confirmation, scope restart and numeric input). One style-aware
+  `dialogActionGap()` returns 12dp on OS4, retains the original 20dp on OS3, and
+  is used by all eight rows. Single-action dialogs, 50dp button minimum height,
+  roles, TextFields, IME validation, Back/dismiss, popup/Sheet backdrop and
+  source capture are unchanged.
 - **Scope review:** `UiDialogButton.kt`, `BatteryColorEditor.kt`,
   `BatteryColorControls.kt`, `HubScreens.kt`, `MainHub.kt`,
   `IntegerInputDialog.kt`. Exactly eight action-row gaps were located and
@@ -117,8 +135,12 @@ conformance.
 
 ## B1532 CI compile correction
 
-- **Observed failure:** [OS4 matched MIUIX run 40563572718](https://github.com/CHS-Haple/Guiyuan/actions/runs/40563572718) failed `:app:compileDebugKotlin` and `:app:compileCanaryKotlin` at `BatteryColorControls.kt:230,243` with `COMPOSABLE_INVOCATION`. Event lambdas invoked `customSchemeName(custom)`, whose implementation is `@Composable` because the blank-name fallback uses `stringResource`.
-- **Minimal correction:** Get `LocalContext.current` once inside `BatteryColorBottomSheet` composition and resolve names at both ordinary click callbacks using `custom.name.ifBlank { context.getString(R.string.battery_custom_scheme_default_name, custom.id) }`. This preserves exactly the old nonblank and localized fallback names and request snapshot ownership. No dialog lifecycle, repository, external key, render ownership or OS3/OS4 style change.
+- **Observed failure:**
+  [OS4 matched MIUIX run 40563572718](https://github.com/CHS-Haple/Guiyuan/actions/runs/40563572718) failed `:app:compileDebugKotlin` and `:app:compileCanaryKotlin` at `BatteryColorControls.kt:230,243` with `COMPOSABLE_INVOCATION`. Event lambdas invoked `customSchemeName(custom)`, whose implementation is `@Composable` because the blank-name fallback uses `stringResource`.
+- **Minimal correction:** Get `LocalContext.current` once inside
+  `BatteryColorBottomSheet` composition and resolve names at both ordinary click
+  callbacks using
+  `custom.name.ifBlank { context.getString(R.string.battery_custom_scheme_default_name, custom.id) }`. This preserves exactly the old nonblank and localized fallback names and request snapshot ownership. No dialog lifecycle, repository, external key, render ownership or OS3/OS4 style change.
 - **Build identity:** Retain B1532: the preceding B1532 build failed to compile
   and did not produce an installable APK. Await a successful exact-source CI and
   signed artifact before distributing. Source review alone does not prove
@@ -333,7 +355,8 @@ failures.
   contains the first-sheet panel but never the popup itself. OS3, menu click
   selection, haptics, popup geometry and native transitions are unchanged. No
   second writer, timer or duplicate observer.
-- **Review:** Full PR diff and scene/dismissal path reviewed. Matched-source [CI #40552048429](https://github.com/CHS-Haple/Guiyuan/actions/runs/40552048429) compiled/tested and signed runtime `4c22c87` successfully; extracted B1527 APK SHA-256 `f6797c25b6ad74be798932526e0ba5b4f48d7db9c5fc9190709b0eda2fb23375`. Physical menu glass/anchoring/scroll/backdrop flicker tests and both nested Sheets remain pending.
+- **Review:** Full PR diff and scene/dismissal path reviewed. Matched-source
+  [CI #40552048429](https://github.com/CHS-Haple/Guiyuan/actions/runs/40552048429) compiled/tested and signed runtime `4c22c87` successfully; extracted B1527 APK SHA-256 `f6797c25b6ad74be798932526e0ba5b4f48d7db9c5fc9190709b0eda2fb23375`. Physical menu glass/anchoring/scroll/backdrop flicker tests and both nested Sheets remain pending.
 
 ## OS4 second-sheet source dropdown glass (B1526)
 
@@ -397,7 +420,11 @@ failures.
 
 ## OS4 battery detail sheet Back action (B1524)
 
-- **Source contract:** Matched PR423 `GlassTopAppBar.kt` @ `b9f7083` provides standalone `GlassIconButton` (44dp, 24dp glyph, one click owner, upstream pressDown/pressUp and opaque fallback when no sampler). The published `BottomSheetContentLayout.kt` owns title placement but delegates `startAction` unchanged to the caller; it does not adapt child buttons for OS4.
+- **Source contract:** Matched PR423 `GlassTopAppBar.kt` @ `b9f7083` provides
+  standalone `GlassIconButton` (44dp, 24dp glyph, one click owner, upstream
+  pressDown/pressUp and opaque fallback when no sampler). The published
+  `BottomSheetContentLayout.kt` owns title placement but delegates `startAction`
+  unchanged to the caller; it does not adapt child buttons for OS4.
 - **Mismatch:** `BatteryColorBottomSheet`'s detail sheet passed old MIUIX
   `IconButton` (minimum 40dp) with an OS4 `Glass.Back` graphic, leaving the
   control surface, gesture feedback and hit geometry OS3-style. This differs
@@ -434,7 +461,9 @@ failures.
   outside this provider. Preserve one scoped fallback owner, existing `show`,
   `detailVisible`, `remember(show)` intent disposal, `allowDismiss`/Back,
   titles, padding and callbacks. The OS3 sheet host ignores the glass backdrop.
-- **Gates:** Full base→HEAD PR diff, sheet/dialog call path and pre-commit ownership/maintainability checked. [Signed matching-source CI #40545803559](https://github.com/CHS-Haple/Guiyuan/actions/runs/40545803559) passed both compile/unit/metadata and isolated sign jobs for runtime source `71b2ede`. Extracted APK SHA-256: `670823e06e0492495d26d065aad2c65e3a5cdfba3e9c853c95c93c2c95605e8f`. Device nested transitions (first sheet→detail→Back, source choices, create/rename/delete, dark/light/shader-off, rapid dismissal) still require acceptance. Primary sheet is unchanged.
+- **Gates:** Full base→HEAD PR diff, sheet/dialog call path and pre-commit
+  ownership/maintainability checked.
+  [Signed matching-source CI #40545803559](https://github.com/CHS-Haple/Guiyuan/actions/runs/40545803559) passed both compile/unit/metadata and isolated sign jobs for runtime source `71b2ede`. Extracted APK SHA-256: `670823e06e0492495d26d065aad2c65e3a5cdfba3e9c853c95c93c2c95605e8f`. Device nested transitions (first sheet→detail→Back, source choices, create/rename/delete, dark/light/shader-off, rapid dismissal) still require acceptance. Primary sheet is unchanged.
 
 ## OS4 battery modal backdrop ownership (B1522)
 
@@ -500,7 +529,9 @@ failures.
 - **Call path:** `HubPage` → `Os4SearchMode` → `Os4SearchSurface` →
   `clickable(onClose)` → `PageSearch.close()`. `NavigationBackHandler` / Escape
   share `onClose`.
-- **Validation:** Exact source `c42ddbd` passed matched-source Android tests, APK verification and isolated signing (both CI jobs succeeded; [run 40538872808](https://github.com/CHS-Haple/Guiyuan/actions/runs/40538872808)). Focused on-device press/close, glyph contrast, alpha/blur, rapid reversal, input/clear, Back/Escape, RTL/fontScale and scrolling-glass acceptance remains open. Source/CI do not certify physical gesture or animation quality.
+- **Validation:** Exact source `c42ddbd` passed matched-source Android tests,
+  APK verification and isolated signing (both CI jobs succeeded;
+  [run 40538872808](https://github.com/CHS-Haple/Guiyuan/actions/runs/40538872808)). Focused on-device press/close, glyph contrast, alpha/blur, rapid reversal, input/clear, Back/Escape, RTL/fontScale and scrolling-glass acceptance remains open. Source/CI do not certify physical gesture or animation quality.
 
 ## In-sheet battery source dropdown sampling (B1519)
 
@@ -900,8 +931,10 @@ signed workflow separately pins `b9f70838`.
   space; primary recording must exclude the secondary. The new wrapper does not
   expose a public `onDismissFinished` callback for an independently mounted
   outer `PopupLayout`.
-- **Existing ownership:** `DiagnosticsScreen → Os4CascadingMenu → PopupLayout(renderInRootScaffold=true) → GlassDropdownPopupContent/GlassSecondaryPopup`. The root host escapes clipped TopAppBar actions; `mounted`, `primaryClosed`, `renderedSubmenu` and native dismissal callbacks keep the host alive until both levels finish exit. The primary/secondary background composite captures only the primary. The local `GlassDropdownPopupContent(handleBack)` prevents the first level handling Back while a second level owns it; the new upstream internal API removes that caller-specific parameter.
-- **Battery ownership:** `BatterySchemePages → BatterySchemeManageMenu → PopupLayout(renderInRootScaffold=true) → GlassDropdownPopupContent`; the extra root host escapes the sheet pager clip. The caller owns rename/copy/delete and popup lifetime. Replacing only the popup body would lose the root ownership and animated exit, or leave an inert but mounted full-screen host.
+- **Existing ownership:**
+  `DiagnosticsScreen → Os4CascadingMenu → PopupLayout(renderInRootScaffold=true) → GlassDropdownPopupContent/GlassSecondaryPopup`. The root host escapes clipped TopAppBar actions; `mounted`, `primaryClosed`, `renderedSubmenu` and native dismissal callbacks keep the host alive until both levels finish exit. The primary/secondary background composite captures only the primary. The local `GlassDropdownPopupContent(handleBack)` prevents the first level handling Back while a second level owns it; the new upstream internal API removes that caller-specific parameter.
+- **Battery ownership:**
+  `BatterySchemePages → BatterySchemeManageMenu → PopupLayout(renderInRootScaffold=true) → GlassDropdownPopupContent`; the extra root host escapes the sheet pager clip. The caller owns rename/copy/delete and popup lifetime. Replacing only the popup body would lose the root ownership and animated exit, or leave an inert but mounted full-screen host.
 - **Decision:** Do not copy `GlassIconDropdownMenu.kt` alone or replace accepted
   arc-menu geometry with an untested transform. A full migration must provide an
   explicit root-host dismissal boundary, a valid anchored-button material
