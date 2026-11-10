@@ -1817,13 +1817,13 @@ internal object CcTransitionOwner {
                     CcTransitionPolicy.expandedClipBounds(
                         bounds = mobileSpec.sourceBounds,
                         widthScale =
-                            MobileSignalMorphPolicy
+                            MobileSignalTargetGeometry
                                 .exactTargetAxisCompensation(
                                     targetAxisRatio = targetWidthRatio,
                                     outerScale = outerSimilarityScale,
                                 ),
                         heightScale =
-                            MobileSignalMorphPolicy
+                            MobileSignalTargetGeometry
                                 .exactTargetAxisCompensation(
                                     targetAxisRatio = targetHeightRatio,
                                     outerScale = outerSimilarityScale,
