@@ -101,6 +101,7 @@ class SysUiDefaultDataSubSourceTest {
             SysUiDefaultDataSubSource.detach()
         }
     }
+
     @Test
     fun errorDeliveryDoesNotAcknowledgeTheUnfinishedSubscription() {
         SysUiDefaultDataSubSource.detach()
@@ -121,5 +122,4 @@ class SysUiDefaultDataSubSourceTest {
             SysUiDefaultDataSubSource.detach()
         }
     }
-
 }

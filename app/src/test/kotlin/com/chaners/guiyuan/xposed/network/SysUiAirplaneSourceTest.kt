@@ -60,6 +60,7 @@ class SysUiAirplaneSourceTest {
             SysUiAirplaneSource.detach()
         }
     }
+
     @Test
     fun errorDeliveryDoesNotAcknowledgeTheUnfinishedAirplaneState() {
         SysUiAirplaneSource.detach()
@@ -79,5 +80,4 @@ class SysUiAirplaneSourceTest {
             SysUiAirplaneSource.detach()
         }
     }
-
 }
