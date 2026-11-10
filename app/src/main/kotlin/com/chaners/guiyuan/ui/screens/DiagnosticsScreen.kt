@@ -652,27 +652,24 @@ internal fun DiagnosticsScreen(
 
 }
 
-// The same raw line can appear more than once in a capture.
-internal fun logRowKey(entry: LogEntry, index: Int): String = "${entry.key}:$index"
-
 private fun logProgress(progress: Float, index: Int): Float {
     // Off-screen rows share the last visible row's start.
     val start = index.coerceAtMost(7) * 0.07f
     return ((progress - start) / (1f - start)).coerceIn(0f, 1f)
 }
 
-private const val LEVEL_INFO = 1 shl 0
-private const val LEVEL_WARN = 1 shl 1
-private const val LEVEL_ERROR = 1 shl 2
+internal const val LEVEL_INFO = 1 shl 0
+internal const val LEVEL_WARN = 1 shl 1
+internal const val LEVEL_ERROR = 1 shl 2
 private const val LEVEL_ALL =
     LEVEL_INFO or LEVEL_WARN or LEVEL_ERROR
 
-private const val CAT_MODULE = 1 shl 0
-private const val CAT_NETWORK = 1 shl 1
-private const val CAT_DISPLAY = 1 shl 2
-private const val CAT_PERF = 1 shl 3
-private const val CAT_SETTINGS = 1 shl 4
-private const val CAT_OTHER = 1 shl 5
+internal const val CAT_MODULE = 1 shl 0
+internal const val CAT_NETWORK = 1 shl 1
+internal const val CAT_DISPLAY = 1 shl 2
+internal const val CAT_PERF = 1 shl 3
+internal const val CAT_SETTINGS = 1 shl 4
+internal const val CAT_OTHER = 1 shl 5
 private const val CAT_ALL =
     CAT_MODULE or
         CAT_NETWORK or
@@ -680,35 +677,6 @@ private const val CAT_ALL =
         CAT_PERF or
         CAT_SETTINGS or
         CAT_OTHER
-
-private fun matchesFilter(
-    entry: LogEntry,
-    levelMask: Int,
-    categoryMask: Int,
-): Boolean {
-    val levelBit =
-        when (entry.level) {
-            LogLevel.Warning -> LEVEL_WARN
-            LogLevel.Error,
-            LogLevel.Fatal,
-            -> LEVEL_ERROR
-            else -> LEVEL_INFO
-        }
-    val categoryBit =
-        when (entry.category) {
-            LogCategory.Module,
-            LogCategory.Native,
-            -> CAT_MODULE
-            LogCategory.Network -> CAT_NETWORK
-            LogCategory.Display,
-            LogCategory.Transition,
-            -> CAT_DISPLAY
-            LogCategory.Performance -> CAT_PERF
-            LogCategory.Settings -> CAT_SETTINGS
-            LogCategory.Other -> CAT_OTHER
-        }
-    return levelMask and levelBit != 0 && categoryMask and categoryBit != 0
-}
 
 private fun toggleMask(
     mask: Int,

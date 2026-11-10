@@ -69,6 +69,38 @@ internal fun categoryLabel(
         },
     )
 
+// The same raw line can appear more than once in a capture.
+internal fun logRowKey(entry: LogEntry, index: Int): String = "${entry.key}:$index"
+
+internal fun matchesFilter(
+    entry: LogEntry,
+    levelMask: Int,
+    categoryMask: Int,
+): Boolean {
+    val levelBit =
+        when (entry.level) {
+            LogLevel.Warning -> LEVEL_WARN
+            LogLevel.Error,
+            LogLevel.Fatal,
+            -> LEVEL_ERROR
+            else -> LEVEL_INFO
+        }
+    val categoryBit =
+        when (entry.category) {
+            LogCategory.Module,
+            LogCategory.Native,
+            -> CAT_MODULE
+            LogCategory.Network -> CAT_NETWORK
+            LogCategory.Display,
+            LogCategory.Transition,
+            -> CAT_DISPLAY
+            LogCategory.Performance -> CAT_PERF
+            LogCategory.Settings -> CAT_SETTINGS
+            LogCategory.Other -> CAT_OTHER
+        }
+    return levelMask and levelBit != 0 && categoryMask and categoryBit != 0
+}
+
 private val LOG_META_FIELDS =
     setOf(
         "sequence",
