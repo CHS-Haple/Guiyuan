@@ -2,7 +2,7 @@
 
 [Terms of Use / 使用条款](TERMS.md)
 
-**Last updated / 最后更新: 2026-11-04**
+Last updated / 最后更新: **2026-11-04**
 
 ## English
 
