@@ -5,6 +5,13 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private const val FIXTURE_WIFI_SIZE_EN = "Wi-Fi size"
+private const val FIXTURE_BATTERY_COLORS_EN = "Battery colors"
+private const val FIXTURE_BATTERY_COLORS_PINYIN = "dian liang yan se"
+private const val FIXTURE_RESTORE_CONFIGURATION_EN = "Restore configuration"
+private const val FIXTURE_WIFI_SIZE_ZH = "Wi-Fi 大小"
+private const val FIXTURE_WIFI_SIZE_PINYIN = "Wi-Fi da xiao"
+
 class SearchTermTest {
     @Test
     fun blankInputDoesNotEnterFilteredMode() {
@@ -24,8 +31,8 @@ class SearchTermTest {
     fun preFoldedQueriesPreserveRegularAndInitialsMatches() {
         val terms = listOf(
             SearchTerm("网络制式", "wang luo zhi shi"),
-            SearchTerm("Wi-Fi size", "Wi-Fi size", foreign = true),
-            SearchTerm("电量颜色", "dian liang yan se", foreign = true),
+            SearchTerm(FIXTURE_WIFI_SIZE_EN, FIXTURE_WIFI_SIZE_EN, foreign = true),
+            SearchTerm("电量颜色", FIXTURE_BATTERY_COLORS_PINYIN, foreign = true),
         )
         val queries = listOf("", "-  ", "5G", "Wi-FI", "wlzs", "wfs", "电量", "DLYS", "颜色")
         for (term in terms) {
@@ -63,7 +70,7 @@ class SearchTermTest {
         val signal = SearchTerm("双排信号", "shuang pai xin hao")
         assertTrue(signal.matches("spxh"))
         assertTrue(signal.matches("shuangpai"))
-        val wifi = SearchTerm("Wi-Fi 大小", "Wi-Fi da xiao")
+        val wifi = SearchTerm(FIXTURE_WIFI_SIZE_ZH, FIXTURE_WIFI_SIZE_PINYIN)
         assertTrue(wifi.matches("WIFI"))
         assertTrue(wifi.matches("wifi"))
         assertFalse(wifi.matches("电量"))
@@ -80,7 +87,7 @@ class SearchTermTest {
 
     @Test
     fun colorIsNotAWeightOrSizeMatch() {
-        val color = SearchTerm("电量颜色", "dian liang yan se")
+        val color = SearchTerm("电量颜色", FIXTURE_BATTERY_COLORS_PINYIN)
         assertTrue(color.matches("颜色"))
         assertTrue(color.matches("电量颜色"))
         assertFalse(color.matches("粗细"))
@@ -194,8 +201,8 @@ class SearchAliasesTest {
     @Test
     fun translatedTitlesMatchInEitherInterfaceLanguage() {
         val localized = listOf(
-            SearchTerm("电量颜色", "dian liang yan se"),
-            SearchTerm("Battery colors", "Battery colors"),
+            SearchTerm("电量颜色", FIXTURE_BATTERY_COLORS_PINYIN),
+            SearchTerm(FIXTURE_BATTERY_COLORS_EN, FIXTURE_BATTERY_COLORS_EN),
         )
         for (word in listOf("电量", "Battery", "colors", "dlys")) {
             assertTrue("Translated title missing $word", localized.any { it.matches(word) })
@@ -205,7 +212,7 @@ class SearchAliasesTest {
 
         val restore = listOf(
             SearchTerm("恢复配置", "hui fu pei zhi"),
-            SearchTerm("Restore configuration", "Restore configuration"),
+            SearchTerm(FIXTURE_RESTORE_CONFIGURATION_EN, FIXTURE_RESTORE_CONFIGURATION_EN),
         )
         assertTrue(restore.any { it.matches("恢复") })
         assertTrue(restore.any { it.matches("Restore") })
@@ -232,7 +239,7 @@ class SearchBilingualTest {
     @Test
     fun nativeInitialsAreNotConfusedWithForeignLatinInitials() {
         val native = SearchTerm("Wi-Fi 上下偏移", "Wi-Fi shang xia pian yi")
-        val foreign = SearchTerm("Wi-Fi size", "Wi-Fi size", foreign = true)
+        val foreign = SearchTerm(FIXTURE_WIFI_SIZE_EN, FIXTURE_WIFI_SIZE_EN, foreign = true)
         assertTrue(native.matches("wfs"))
         assertFalse(foreign.matchesInitials("wfs"))
         assertFalse(foreign.matches("wfs"))
@@ -245,11 +252,11 @@ class SearchBilingualTest {
         val ids = intArrayOf(1, 2)
         val query = "wifi"
         val native = mapOf(
-            1 to SearchTerm("Wi-Fi 大小", "Wi-Fi da xiao"),
+            1 to SearchTerm(FIXTURE_WIFI_SIZE_ZH, FIXTURE_WIFI_SIZE_PINYIN),
             2 to SearchTerm("网络图标颜色", "wang luo tu biao yan se"),
         )
         val foreign = mapOf(
-            1 to SearchTerm("Wi-Fi size", "Wi-Fi size", foreign = true),
+            1 to SearchTerm(FIXTURE_WIFI_SIZE_EN, FIXTURE_WIFI_SIZE_EN, foreign = true),
             2 to SearchTerm("Wi-Fi icon color", "Wi-Fi icon color", foreign = true),
         )
         val matches = SearchMatches(
@@ -267,11 +274,11 @@ class SearchBilingualTest {
     fun translatedHanPinyinInitialsAreAvailableAsFallback() {
         val ids = intArrayOf(1, 2)
         val native = mapOf(
-            1 to SearchTerm("Battery colors", "Battery colors"),
+            1 to SearchTerm(FIXTURE_BATTERY_COLORS_EN, FIXTURE_BATTERY_COLORS_EN),
             2 to SearchTerm("Content layout", "Content layout"),
         )
         val foreign = mapOf(
-            1 to SearchTerm("电量颜色", "dian liang yan se", foreign = true),
+            1 to SearchTerm("电量颜色", FIXTURE_BATTERY_COLORS_PINYIN, foreign = true),
             2 to SearchTerm("内容布局", "nei rong bu ju", foreign = true),
         )
         val query = "dl"
@@ -291,11 +298,11 @@ class SearchBilingualTest {
     fun nativeInitialismOutranksAmbiguousForeignPinyinInitials() {
         val query = "wfs"
         val native = mapOf(
-            1 to SearchTerm("Wi-Fi size", "Wi-Fi size"),
+            1 to SearchTerm(FIXTURE_WIFI_SIZE_EN, FIXTURE_WIFI_SIZE_EN),
             2 to SearchTerm("Wi-Fi vertical offset", "Wi-Fi vertical offset"),
         )
         val foreign = mapOf(
-            1 to SearchTerm("Wi-Fi 大小", "Wi-Fi da xiao", foreign = true),
+            1 to SearchTerm(FIXTURE_WIFI_SIZE_ZH, FIXTURE_WIFI_SIZE_PINYIN, foreign = true),
             2 to SearchTerm("Wi-Fi 上下偏移", "Wi-Fi shang xia pian yi", foreign = true),
         )
         val result = SearchMatches(
@@ -332,10 +339,10 @@ class SearchBilingualTest {
 
     @Test
     fun bilingualWordSearchWorksInBothDirections() {
-        val batteryZh = SearchTerm("电量颜色", "dian liang yan se")
-        val batteryEn = SearchTerm("Battery colors", "Battery colors", foreign = true)
+        val batteryZh = SearchTerm("电量颜色", FIXTURE_BATTERY_COLORS_PINYIN)
+        val batteryEn = SearchTerm(FIXTURE_BATTERY_COLORS_EN, FIXTURE_BATTERY_COLORS_EN, foreign = true)
         val restoreZh = SearchTerm("恢复配置", "hui fu pei zhi")
-        val restoreEn = SearchTerm("Restore configuration", "Restore configuration", foreign = true)
+        val restoreEn = SearchTerm(FIXTURE_RESTORE_CONFIGURATION_EN, FIXTURE_RESTORE_CONFIGURATION_EN, foreign = true)
         for (word in listOf("电量", "dianliang", "dlys")) {
             assertTrue(batteryZh.matches(word))
         }
