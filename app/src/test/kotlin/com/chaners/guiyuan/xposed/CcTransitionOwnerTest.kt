@@ -7,25 +7,30 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Test
 
+private const val TEST_SLOT_OVERLAY = "overlay"
+private const val TEST_SLOT_MASK = "mask"
+private const val TEST_SLOT_RESERVATION = "reservation"
+private const val TEST_SLOT_OBSERVER = "observer"
+
 class CcTransitionOwnerTest {
 
     @Test
     fun releaseContinuesAfterOrdinaryFailureAndKeepsFirstCause() {
         val visited = mutableListOf<String>()
-        val first = IllegalStateException("reservation")
-        val second = IllegalArgumentException("observer")
+        val first = IllegalStateException(TEST_SLOT_RESERVATION)
+        val second = IllegalArgumentException(TEST_SLOT_OBSERVER)
         val failure =
             runCatching {
                 releaseAll(
-                    { visited += "reservation"; throw first },
-                    { visited += "observer"; throw second },
-                    { visited += "overlay" },
-                    { visited += "mask" },
+                    { visited += TEST_SLOT_RESERVATION; throw first },
+                    { visited += TEST_SLOT_OBSERVER; throw second },
+                    { visited += TEST_SLOT_OVERLAY },
+                    { visited += TEST_SLOT_MASK },
                 )
             }.exceptionOrNull()
 
         assertSame(first, failure)
-        assertEquals(listOf("reservation", "observer", "overlay", "mask"), visited)
+        assertEquals(listOf(TEST_SLOT_RESERVATION, TEST_SLOT_OBSERVER, TEST_SLOT_OVERLAY, TEST_SLOT_MASK), visited)
         assertEquals(1, requireNotNull(failure).suppressed.size)
         assertSame(second, failure.suppressed.single())
     }
@@ -44,14 +49,14 @@ class CcTransitionOwnerTest {
                             { visited += "live-pre-draw" },
                         )
                     },
-                    { visited += "overlay" },
-                    { visited += "mask" },
+                    { visited += TEST_SLOT_OVERLAY },
+                    { visited += TEST_SLOT_MASK },
                 )
             }.exceptionOrNull()
 
         assertEquals("global-unregister", failure?.message)
         assertEquals(
-            listOf("global", "pre-draw", "live-global", "live-pre-draw", "overlay", "mask"),
+            listOf("global", "pre-draw", "live-global", "live-pre-draw", TEST_SLOT_OVERLAY, TEST_SLOT_MASK),
             visited,
         )
     }
