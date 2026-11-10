@@ -440,4 +440,3 @@ private fun BatteryModeSettingItem(
         },
     )
 }
-
