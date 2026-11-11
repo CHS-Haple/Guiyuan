@@ -348,7 +348,7 @@ internal object SysUiTintSource {
                 } else {
                     semanticTints.joinToString(",") { colorHex(it) }
                 }
-            ),
+            )
 
     private fun readColorFilterColor(filter: android.graphics.ColorFilter?): Int? {
         if (filter == null) {
