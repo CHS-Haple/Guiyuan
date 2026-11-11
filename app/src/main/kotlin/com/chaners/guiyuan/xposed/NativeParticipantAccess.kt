@@ -26,12 +26,13 @@ internal object NativeParticipantAccess {
     private inline fun <T> readOrNull(block: () -> T): T? =
         SysUiPresentationRuntime.optionalNativeRead(block)
 
+    private fun phoneStatusBarViewFor(host: View): View? =
+        generateSequence(host) { view -> view.parent as? View }
+            .firstOrNull { view -> view.javaClass.name == PHONE_STATUS_BAR_VIEW }
+
     fun managerFor(host: Any): Any? {
         val hostView = host as? View ?: return null
-        val statusBarView =
-            generateSequence(hostView) { view -> view.parent as? View }
-                .firstOrNull { view -> view.javaClass.name == PHONE_STATUS_BAR_VIEW }
-                ?: return null
+        val statusBarView = phoneStatusBarViewFor(hostView) ?: return null
         return statusBarView.readField("mDarkIconManager")
     }
 
@@ -43,8 +44,7 @@ internal object NativeParticipantAccess {
             ?: return ResolveResult.Failure("host-not-view")
 
         val statusBarView =
-            generateSequence(hostView) { view -> view.parent as? View }
-                .firstOrNull { view -> view.javaClass.name == PHONE_STATUS_BAR_VIEW }
+            phoneStatusBarViewFor(hostView)
                 ?: return ResolveResult.Failure("phone-status-bar-view-missing")
 
         val classLoader = statusBarView.javaClass.classLoader
