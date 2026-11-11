@@ -41,8 +41,9 @@ runtime dependency in this experimental implementation.
 subset of the
 [MIUIX miuix-glass PR #423](https://github.com/compose-miuix-ui/miuix/pull/423),
 originally adapted from the B1821 checkout revision
-`45645854cd46c32275c5666e3aafa9980d8f104e`. PR #1440
-integrated `ca674992c9645395cdb0d5109d66504ff53d018c`; the dependency graph now follows `d05ecf94de932c6b1d9ccf91033e18210b4538b2`, retaining app-local
+`45645854cd46c32275c5666e3aafa9980d8f104e`. PR #1440 first integrated
+`ca674992c9645395cdb0d5109d66504ff53d018c`. The current `dev` graph follows
+`d05ecf94de932c6b1d9ccf91033e18210b4538b2`, retaining app-local
 compatibility adapters rather than claiming byte-for-byte identity with
 upstream `miuix-glass`. The released main branch retains its own pinned
 source and artifacts (Apache-2.0;

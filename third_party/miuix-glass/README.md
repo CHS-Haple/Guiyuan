@@ -9,7 +9,8 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 - Guiyuan's `dev` uses MIUIX `0.9.4-d05ecf94-SNAPSHOT` at full revision
   `d05ecf94de932c6b1d9ccf91033e18210b4538b2`.
-  The prior Material integration was [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
+  The prior Material integration is documented in
+  [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
   The stable `main` line must be checked separately; do not treat a `dev`
   pin as a stable-release upgrade.
 - `app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` contains an adapted,
