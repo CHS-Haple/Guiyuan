@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
+import com.chaners.guiyuan.xposed.NativeStatusIdentity
 import com.chaners.guiyuan.xposed.SysUiHostRegistry
 import com.chaners.guiyuan.xposed.StatusStateStore
 import com.chaners.guiyuan.xposed.SysUiFatal
@@ -740,10 +741,10 @@ internal object SysUiNetworkSource {
         val drawable = image.drawable
         val nativeId = (image.tag as? Number)?.toInt() ?: 0
         val nativeName = nativeId.takeIf { it > 0 }?.let { resourceName(image, it) }
-        return "viewId=" + resourceId(image) +
+        return "viewId=" + NativeStatusIdentity.resourceId(image) +
             " tag=" + nativeId +
             " tagName=" + (nativeName ?: "none") +
-            " visibility=" + visibilityName(image.visibility) +
+            " visibility=" + NativeStatusIdentity.visibilityName(image.visibility) +
             " shown=" + image.isShown +
             " viewAlpha=" + image.alpha +
             " imageAlpha=" + image.imageAlpha +
@@ -883,7 +884,7 @@ internal object SysUiNetworkSource {
             wifiRoots.keys.forEach { root ->
                 add(
                     "nativeSlot binding=wifi root=" + root.javaClass.simpleName +
-                        ROOT_ID_LOG_FIELD + resourceId(root) +
+                        ROOT_ID_LOG_FIELD + NativeStatusIdentity.resourceId(root) +
                         PARENT_CHAIN_LOG_FIELD + parentChain(root) +
                         LAYOUT_LOG_FIELD + layoutToken(root),
                 )
@@ -893,7 +894,7 @@ internal object SysUiNetworkSource {
                     add(
                         "nativeSlot binding=mobile subId=" + subscriptionId +
                             " root=" + root.javaClass.simpleName +
-                            ROOT_ID_LOG_FIELD + resourceId(root) +
+                            ROOT_ID_LOG_FIELD + NativeStatusIdentity.resourceId(root) +
                             PARENT_CHAIN_LOG_FIELD + parentChain(root) +
                             LAYOUT_LOG_FIELD + layoutToken(root),
                     )
@@ -988,7 +989,7 @@ internal object SysUiNetworkSource {
                         "networkPipeline wifi bound " +
                         "stage=beforeProceed " +
                         "root=" + boundRoot.javaClass.simpleName +
-                        ROOT_ID_LOG_FIELD + resourceId(boundRoot) +
+                        ROOT_ID_LOG_FIELD + NativeStatusIdentity.resourceId(boundRoot) +
                         " vm=" + viewModel?.javaClass?.simpleName +
                         PARENT_CHAIN_LOG_FIELD + parentChain(boundRoot) +
                         LAYOUT_LOG_FIELD + layoutToken(boundRoot),
@@ -1418,7 +1419,7 @@ internal object SysUiNetworkSource {
                             onEvent(
                                 "networkPipeline wifi iconEvent " +
                                 "phase=semanticBeforeProceed/viewAfterProceed " +
-                                "viewId=" + resourceId(image) +
+                                "viewId=" + NativeStatusIdentity.resourceId(image) +
                                 " classId=" + classId +
                                 " valueType=" + semantic.valueType +
                                 " effectiveType=" + effective.valueType +
@@ -1432,7 +1433,7 @@ internal object SysUiNetworkSource {
                                 } else {
                                     "none"
                                 } +
-                                " visibility=" + visibilityName(image.visibility) +
+                                " visibility=" + NativeStatusIdentity.visibilityName(image.visibility) +
                                 " presentation=" + wifiPresentationToken(image),
                             )
                         }
@@ -1515,7 +1516,7 @@ internal object SysUiNetworkSource {
                         "networkPipeline mobile bound " +
                             "stage=beforeProceed " +
                             "root=" + boundRoot.javaClass.simpleName +
-                            ROOT_ID_LOG_FIELD + resourceId(boundRoot) +
+                            ROOT_ID_LOG_FIELD + NativeStatusIdentity.resourceId(boundRoot) +
                             " locationVm=" + locationViewModel?.javaClass?.simpleName +
                             " subId=" + subscriptionId +
                             " iconVm=" + (iconViewModel?.javaClass?.simpleName ?: "none") +
@@ -1640,7 +1641,7 @@ internal object SysUiNetworkSource {
                                 "networkPipeline mobile iconEvent " +
                                     "phase=beforeProceed " +
                                     SUB_ID_LOG_FIELD + subscriptionId +
-                                    " viewId=" + resourceId(image) +
+                                    " viewId=" + NativeStatusIdentity.resourceId(image) +
                                     " classId=" + classId +
                                     " value=" + valueText +
                                     " resource=" +
@@ -1822,7 +1823,7 @@ internal object SysUiNetworkSource {
                 val value = current ?: break
                 add(
                     value.javaClass.simpleName +
-                        "[" + resourceId(value) + "]",
+                        "[" + NativeStatusIdentity.resourceId(value) + "]",
                 )
                 current = value.parent as? View
             }
@@ -1898,23 +1899,6 @@ internal object SysUiNetworkSource {
         val resolved = tint.getColorForState(state, tint.defaultColor)
         return "0x" + resolved.toUInt().toString(16).padStart(8, '0') +
             "/default=0x" + tint.defaultColor.toUInt().toString(16).padStart(8, '0')
-    }
-
-    private fun visibilityName(visibility: Int): String = when (visibility) {
-        View.VISIBLE -> "VISIBLE"
-        View.INVISIBLE -> "INVISIBLE"
-        View.GONE -> "GONE"
-        else -> visibility.toString()
-    }
-
-    private fun resourceId(view: View): String {
-        if (view.id == View.NO_ID) {
-            return "none"
-        }
-
-        return readOrNull {
-            view.resources.getResourceName(view.id)
-        } ?: view.id.toString()
     }
 
     private fun resourceName(
