@@ -10,7 +10,6 @@ grouped here by ownership, not by build number.
 | [AI coding assistants](../AGENTS.md) | Assistant-only evidence, communications, permissions and verification boundaries |
 | [Current state](development/CURRENT.md) | The accepted runtime architecture, verified constraints and outstanding work (not a build diary) |
 | [Decisions](development/DECISIONS.md) | Stable design decisions and their technical rationale |
-| [Historical 1.0.0 qualification](development/RELEASE_READINESS.md) | Dated first-release evidence, historical gates and original sign-off scope; not a current release checklist |
 | [Architecture](architecture/README.md) | Runtime ownership, layout, scene, and native fallback contracts |
 | [UI iconography](architecture/ui-iconography.md) | Current settings-row icon semantics, weight and optical geometry |
 | [SystemUI reference](reference/systemui-contracts.md) | Public and reusable host contracts; sensitive binary analysis remains private |
@@ -30,15 +29,9 @@ device evidence override stale text.
 
 ## Maintenance rules
 
-- Do not duplicate long histories across README, CURRENT and RELEASE_READINESS.
-  Build-by-build logs belong in commits, PRs or CI.
+- Do not retain build-by-build histories as current engineering documents.
+  Use Git commits, PRs and CI for dated acceptance evidence.
 - A verified source or host observation takes precedence over stale
   documentation; update the **owning** document when behavior changes.
 - Keep real dependency attribution and licenses. Keep private ROM binaries, raw
   logs and local analysis tools out of this public repository.
-- The detailed
-  [OS4 conformance matrix](../third_party/miuix-glass/CONFORMANCE.md) and
-  [UI audit](../third_party/miuix-glass/UI_AUDIT.md) are **historical
-  engineering evidence**, not app-level documentation or a checklist that
-  overrides current source. Use their dated context before reusing an
-  observation.
