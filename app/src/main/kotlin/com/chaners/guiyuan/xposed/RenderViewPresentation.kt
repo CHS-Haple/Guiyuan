@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.graphics.Rect
 import android.view.View
+import java.lang.ref.WeakReference
 
 internal object VerticalOverflowPolicy {
     internal data class Resolved(
@@ -74,6 +75,33 @@ internal fun RenderView.layoutAtAnchor(
         physical.physicalTopPx,
         bounds.right,
         bounds.bottom + bottomOverflowPx,
+    )
+}
+
+internal inline fun RenderView.captureTransitionWitness(
+    motion: View,
+    hostRef: WeakReference<out View>,
+    representedSlots: () -> Set<String>,
+): TransitionSourceWitness? {
+    if (
+        !SceneCcPolicy.retainedTransitionSourceWitnessAvailable(
+            widthPx = width,
+            heightPx = height,
+            hostAttached =
+                hostRef.get()?.isAttachedToWindow == true &&
+                    motion.isAttachedToWindow,
+        )
+    ) return null
+    if (motion.width <= 0 || motion.height <= 0) return null
+    return TransitionSourceWitness(
+        renderView = this,
+        logicalLeftPx = 0,
+        logicalTopPx = currentLogicalViewportTopInsetPx(),
+        logicalWidthPx = currentLogicalViewportWidthPx(),
+        logicalHeightPx = currentLogicalViewportHeightPx(),
+        positionHost = hostRef.get() ?: return null,
+        motionCarrier = motion,
+        representedSlots = representedSlots(),
     )
 }
 

@@ -413,35 +413,9 @@ internal object KeyguardRenderSession {
         fun transitionSourceWitness(): TransitionSourceWitness? {
             if (scene != Scene.KEYGUARD) return null
             val motion = statusIcons.get() ?: return null
-            val render = renderView
-            if (
-                !SceneCcPolicy.retainedTransitionSourceWitnessAvailable(
-                    widthPx = render.width,
-                    heightPx = render.height,
-                    hostAttached =
-                        systemIcons.get()?.isAttachedToWindow == true &&
-                            motion.isAttachedToWindow,
-                )
-            ) {
-                return null
+            return renderView.captureTransitionWitness(motion, systemIcons) {
+                SysUiPresentationOwner.keyguardSlots()
             }
-            if (
-                motion.width <= 0 ||
-                motion.height <= 0
-            ) {
-                return null
-            }
-            return TransitionSourceWitness(
-                renderView = render,
-                logicalLeftPx = 0,
-                logicalTopPx = render.currentLogicalViewportTopInsetPx(),
-                logicalWidthPx = render.currentLogicalViewportWidthPx(),
-                logicalHeightPx = render.currentLogicalViewportHeightPx(),
-                positionHost = systemIcons.get() ?: return null,
-                motionCarrier = motion,
-                representedSlots =
-                    SysUiPresentationOwner.keyguardSlots(),
-            )
         }
 
         fun start() {
