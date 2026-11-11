@@ -43,6 +43,16 @@ These directories are **compile-time alternatives**, not two copies packaged
 into the same APK, two installable channels or separate HyperOS 3/4 runtime
 support. The `OS3` selector is a visual style only.
 
+## Material model ownership
+
+The source-matched and published MIUIX Material graph provides the canonical
+Glass shape, style, colour layers, material, shadow and preset definitions.
+`GlassMaterialBridge.kt` preserves local Kotlin source call sites through
+typealiases and delegates the two shape factories and blur combination to the
+published upstream API. Guiyuan keeps its adapted `GlassStroke`/shader and
+popup/Back lifecycle; these are not falsely claimed to use the upstream fused
+rim drawing pass. Do not introduce another app-owned copy of Material models.
+
 ## Live app-specific boundaries
 
 - Keep the native popup and transformed-anchor Back/dismiss lifecycle,

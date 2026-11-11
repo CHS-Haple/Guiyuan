@@ -88,8 +88,10 @@ reference, not this public repository.
   explains why the published-ABI and source-matched dialog/sheet/top-bar
   compile variants remain.
 - Upstream #479's fused rim/stroke pass is not in the app-local Glass renderer;
-  its local shape/stroke types still use separate passes. Any migration must
-  reconcile the Material type and drawing boundary without speculative shaders.
+  app-local Glass rendering still uses separate passes and a local stroke type.
+  Material models/presets are now canonical upstream aliases; a later renderer
+  migration must preserve local button, Back and popup ownership without
+  speculative shaders.
 - OS4 progressive top-bar material, navigation preview and menu/popup owners
   follow their upstream-aligned implementations. OS3 UI style uses its
   appropriate native MIUIX fallback. Original Battery Colors outer/inner
