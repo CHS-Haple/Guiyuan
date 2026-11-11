@@ -103,6 +103,17 @@ internal object SysUiPresentationOwner {
     private fun stopCc(session: Session, source: String, requestLayout: Boolean = true): Int =
         ccRetirement.release(session) { session.stop(source, requestLayout) }
 
+    // Keep independent releases running while retaining each non-fatal failure.
+    @Suppress("TooGenericExceptionCaught")
+    private inline fun releaseAttempt(failures: MutableList<Throwable>, action: () -> Unit) {
+        try {
+            action()
+        } catch (error: Throwable) {
+            rethrowFatal(error)
+            failures.add(error)
+        }
+    }
+
     // All scene activations use the same readiness-to-result contract.
     private fun startResult(session: Session, maskedViews: Int, reused: Boolean): Result =
         if (session.isLayoutCutoverReady()) {
@@ -1099,14 +1110,6 @@ internal object SysUiPresentationOwner {
     @Suppress("TooGenericExceptionCaught")
     fun resetRuntimeState(source: String) {
         val failures = ArrayList<Throwable>(1)
-        fun release(action: () -> Unit) {
-            try {
-                action()
-            } catch (error: Throwable) {
-                rethrowFatal(error)
-                failures.add(error)
-            }
-        }
         fun unhook(handle: HookHandle?): HookHandle? {
             if (handle == null) return null
             return try {
@@ -1122,13 +1125,13 @@ internal object SysUiPresentationOwner {
         val priorCc = ccRetirement.pending?.takeIf { it !== controlCenterCurrent }
         val priorFamily = familyRetirement.pending?.takeIf { it !== keyguardFamilyCurrent }
         val priorHome = homeRetirement.pending?.takeIf { it !== current }
-        release { deactivateCc(source) }
-        release { deactivateAod(source) }
-        release { deactivateKeyguard(source) }
-        release { deactivate(source) }
-        release { priorCc?.let { stopCc(it, source) } }
-        release { priorFamily?.let { stopFamily(it, source) } }
-        release { priorHome?.let { stopHome(it, source) } }
+        releaseAttempt(failures) { deactivateCc(source) }
+        releaseAttempt(failures) { deactivateAod(source) }
+        releaseAttempt(failures) { deactivateKeyguard(source) }
+        releaseAttempt(failures) { deactivate(source) }
+        releaseAttempt(failures) { priorCc?.let { stopCc(it, source) } }
+        releaseAttempt(failures) { priorFamily?.let { stopFamily(it, source) } }
+        releaseAttempt(failures) { priorHome?.let { stopHome(it, source) } }
         val failedMeasure = unhook(measureHook)
         val failedLayout = unhook(layoutHook)
         val failedBatteryHide = unhook(batteryHideHook)
@@ -1960,41 +1963,41 @@ internal object SysUiPresentationOwner {
             deferVisualMaskUntilLayout = false
 
             val failures = ArrayList<Throwable>(1)
-            fun release(action: () -> Unit) {
-                try {
-                    action()
-                } catch (error: Throwable) {
-                    rethrowFatal(error)
-                    failures.add(error)
-                }
+            releaseAttempt(failures) { host.get()?.removeOnAttachStateChangeListener(this) }
+            releaseAttempt(failures) {
+                battery.get()?.removeOnLayoutChangeListener(reservationWidthListener)
             }
-            release { host.get()?.removeOnAttachStateChangeListener(this) }
-            release { battery.get()?.removeOnLayoutChangeListener(reservationWidthListener) }
-            release { batteryCarrier.get()?.removeOnLayoutChangeListener(reservationWidthListener) }
+            releaseAttempt(failures) {
+                batteryCarrier.get()?.removeOnLayoutChangeListener(reservationWidthListener)
+            }
 
             var reservationRestored = false
             var ignoredSlotsRestored = false
             var restored = 0
-            release { reservationRestored = restoreEndReservation() }
+            releaseAttempt(failures) { reservationRestored = restoreEndReservation() }
             if (appliedPadding != null) {
                 failures += IllegalStateException("native-padding-restore-incomplete")
             }
             if (appliedFakeCarrierWidthPx != null) {
                 failures += IllegalStateException("native-capacity-restore-incomplete")
             }
-            release { ignoredSlotsRestored = restorePersistentIgnoredSlots(requestLayout) }
+            releaseAttempt(failures) {
+                ignoredSlotsRestored = restorePersistentIgnoredSlots(requestLayout)
+            }
             if (persistentIgnoredSlotsApplied) {
                 failures += IllegalStateException("native-ignored-slots-restore-incomplete")
             }
-            release { restored += restoreClipMasks(clipStates, failures) }
-            release { restored += restoreClipMasks(mirroredPeerClipStates, failures) }
+            releaseAttempt(failures) { restored += restoreClipMasks(clipStates, failures) }
+            releaseAttempt(failures) {
+                restored += restoreClipMasks(mirroredPeerClipStates, failures)
+            }
 
             val explicitLayoutRequest =
                 requestLayout && ignoreScope == IgnoreScope.CALL
             if (explicitLayoutRequest) {
-                release { batteryContainer.get()?.requestLayout() }
+                releaseAttempt(failures) { batteryContainer.get()?.requestLayout() }
             }
-            release {
+            releaseAttempt(failures) {
                 onEvent(
                     eventPrefix + " cleanup source=" + source +
                         " restoredClipBounds=" + restored +
