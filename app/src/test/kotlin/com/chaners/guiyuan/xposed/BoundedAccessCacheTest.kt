@@ -1,0 +1,33 @@
+package com.chaners.guiyuan.xposed
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class BoundedAccessCacheTest {
+    @Test
+    fun lookupPromotesAnEntryAndEvictsLeastRecentlyUsed() {
+        val cache = BoundedAccessCache<Int, String>(2)
+        cache[1] = "one"
+        cache[2] = "two"
+        assertEquals("one", cache[1])
+        cache[3] = "three"
+
+        assertEquals(listOf(1, 3), cache.keys.toList())
+        assertFalse(cache.containsKey(2))
+        assertEquals("one", cache[1])
+    }
+
+    @Test
+    fun textAndInkCapacitiesRetainTheirExistingLimits() {
+        for (capacity in listOf(128, 48)) {
+            val cache = BoundedAccessCache<Int, Int>(capacity)
+            for (value in 0..capacity) cache[value] = value
+
+            assertEquals(capacity, cache.size)
+            assertFalse(cache.containsKey(0))
+            assertTrue(cache.containsKey(capacity))
+        }
+    }
+}
