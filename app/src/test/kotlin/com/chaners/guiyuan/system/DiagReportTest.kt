@@ -19,6 +19,7 @@ private const val SESSION_TEST = "test-session"
 private const val FIELD_LEVEL = "level"
 private const val LEVEL_GENERAL = "general"
 private const val LEVEL_DETAILED = "detailed"
+private const val EXPECTED_RUNTIME_LEVEL_DETAILED = "runtimeLevel=detailed"
 private const val SESSION_CURRENT = "current"
 
 class DiagReportTest {
@@ -92,7 +93,7 @@ class DiagReportTest {
                 fields = mapOf(FIELD_LEVEL to LEVEL_DETAILED, FIELD_SESSION_ID to SESSION_TEST),
             ),
         )
-        assertTrue(report.contains("runtimeLevel=detailed"))
+        assertTrue(report.contains(EXPECTED_RUNTIME_LEVEL_DETAILED))
         assertTrue(report.contains("runtimeBinding=unavailable"))
     }
 
@@ -111,7 +112,7 @@ class DiagReportTest {
                 fields = mapOf(FIELD_LEVEL to LEVEL_DETAILED, FIELD_SESSION_ID to SESSION_CURRENT),
             ),
         )
-        assertTrue(report.contains("runtimeLevel=detailed"))
+        assertTrue(report.contains(EXPECTED_RUNTIME_LEVEL_DETAILED))
         assertTrue(report.contains("runtimeBinding=ready"))
     }
 
@@ -130,7 +131,7 @@ class DiagReportTest {
                 fields = mapOf(FIELD_LEVEL to LEVEL_DETAILED, FIELD_SESSION_ID to SESSION_CURRENT),
             ),
         )
-        assertTrue(report.contains("runtimeLevel=detailed"))
+        assertTrue(report.contains(EXPECTED_RUNTIME_LEVEL_DETAILED))
         assertTrue(report.contains("runtimeBinding=not-observed"))
     }
 }
