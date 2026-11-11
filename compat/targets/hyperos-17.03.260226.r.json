@@ -51,7 +51,10 @@
     "com.android.systemui.controlcenter.shade.ControlCenterHeaderExpandController$controlCenterCallback$1",
     "com.android.systemui.statusbar.phone.ui.DarkIconManager",
     "com.android.systemui.statusbar.phone.ui.StatusBarIconControllerImpl",
-    "com.android.systemui.statusbar.StatusBarIconView"
+    "com.android.systemui.statusbar.StatusBarIconView",
+    "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder$bind$1$1$4$1",
+    "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder$bind$1$1$8$1",
+    "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder$bind$1$1$13$1"
   ],
   "hookPoints": {
     "statusHostInflated": {
@@ -179,6 +182,24 @@
       "className": "com.android.systemui.statusbar.StatusBarIconView",
       "methodName": "isIconVisible",
       "descriptor": "()Z"
+    },
+    "wifiActivityApplied": {
+      "sourceArtifact": "systemUi",
+      "className": "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder$bind$1$1$4$1",
+      "methodName": "invokeSuspend",
+      "descriptor": "(Ljava/lang/Object;)Ljava/lang/Object;"
+    },
+    "mobileActivityResourceApplied": {
+      "sourceArtifact": "systemUi",
+      "className": "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder$bind$1$1$8$1",
+      "methodName": "invokeSuspend",
+      "descriptor": "(Ljava/lang/Object;)Ljava/lang/Object;"
+    },
+    "mobileActivityVisibilityApplied": {
+      "sourceArtifact": "systemUi",
+      "className": "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder$bind$1$1$13$1",
+      "methodName": "emit",
+      "descriptor": "(Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;"
     }
   },
   "verifiedSystemUiMethods": {
@@ -243,6 +264,15 @@
     ],
     "com.android.systemui.statusbar.StatusBarIconView": [
       "isIconVisible()Z"
+    ],
+    "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder$bind$1$1$4$1": [
+      "invokeSuspend(Ljava/lang/Object;)Ljava/lang/Object;"
+    ],
+    "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder$bind$1$1$8$1": [
+      "invokeSuspend(Ljava/lang/Object;)Ljava/lang/Object;"
+    ],
+    "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder$bind$1$1$13$1": [
+      "emit(Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;"
     ]
   },
   "nativeStatusViews": {
@@ -275,6 +305,16 @@
     "com.android.systemui.controlcenter.shade.NotificationHeaderExpandController": [
       "notification",
       "headerController"
+    ],
+    "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder$bind$1$1$4$1": [
+      "$wifiActivity"
+    ],
+    "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder$bind$1$1$8$1": [
+      "$leftInOut"
+    ],
+    "com.android.systemui.statusbar.pipeline.mobile.ui.binder.MiuiMobileIconBinder$bind$1$1$13$1": [
+      "$r8$classId",
+      "$satellite"
     ]
   },
   "batterySemanticContract": {

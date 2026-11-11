@@ -13,9 +13,12 @@ evidence remain in PRs, issues, commits and the reference documents.
 - **Current SystemUI target (2026-11-11):** The maintainer designated Xiaomi
   15 Pro HyperOS `4.0.3.0.XOBCNXM.D02` as the latest ROM baseline and
   supplied SystemUI `17.03.260226.r` (SHA-256 `2405ce30…304627c`).
-  Static verification found all 21 configured Hook descriptors and 14
-  recorded fields. One old profile class path and one return descriptor
-  required metadata correction. No new ROM403 runtime/OTA/Framework
+  Static verification initially confirmed 21 recorded Hook descriptors and 14
+  recorded fields. A follow-up source-to-DEX audit identified three additional
+  runtime activity collector Hooks (Wi-Fi activity, mobile activity resource,
+  mobile activity visibility); all three declared methods and required fields
+  exist in this APK, and the compatibility profile now tracks all 24. One old
+  class path and one return descriptor required metadata correction. No new ROM403 runtime/OTA/Framework
   equivalence or comprehensive device acceptance is claimed. The previous
   Xiaomi 15 Pro `OS4.0.0.19.XOBCNXM` target evidence remains historically
   valid for its different exact APK (`a0e738e4…78768d`); identical
