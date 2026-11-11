@@ -14,7 +14,6 @@ grouped here by ownership, not by build number.
 | [Architecture](architecture/README.md) | Runtime ownership, layout, scene, and native fallback contracts |
 | [UI iconography](architecture/ui-iconography.md) | Current settings-row icon semantics, weight and optical geometry |
 | [SystemUI reference](reference/systemui-contracts.md) | Public and reusable host contracts; sensitive binary analysis remains private |
-| [Framework references](reference/lsposed-7927-hot-reload.md) | Framework compatibility evidence (see related 7930 and 7936 files) |
 | [OS4 glass integration](../third_party/miuix-glass/README.md) | Pinned upstream provenance, adaptation boundary and license upkeep |
 
 User-facing policies: [CHANGELOG](../CHANGELOG.md), [TERMS](../TERMS.md),
