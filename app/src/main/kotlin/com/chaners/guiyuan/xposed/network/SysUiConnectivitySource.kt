@@ -10,6 +10,7 @@ import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
 import com.chaners.guiyuan.xposed.SysUiFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
+import com.chaners.guiyuan.xposed.throwIfCleanupIncomplete
 
 internal object SysUiConnectivitySource {
     internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
@@ -256,11 +257,7 @@ internal object SysUiConnectivitySource {
             manager = null
             callback = null
         }
-        if (failures.isNotEmpty()) {
-            val error = IllegalStateException("connectivity-release-incomplete", failures.first())
-            failures.drop(1).forEach(error::addSuppressed)
-            throw error
-        }
+        throwIfCleanupIncomplete("connectivity-release-incomplete", failures)
     }
 
     private fun mobileDataEnabled(context: Context): Boolean? {

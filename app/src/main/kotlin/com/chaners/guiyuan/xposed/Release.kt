@@ -17,3 +17,11 @@ internal fun releaseAll(vararg actions: () -> Unit) {
         throw error
     }
 }
+
+// Preserve each caller's labelled failure while collecting sibling cleanup errors.
+internal fun throwIfCleanupIncomplete(reason: String, failures: List<Throwable>) {
+    if (failures.isEmpty()) return
+    val error = IllegalStateException(reason, failures.first())
+    failures.drop(1).forEach(error::addSuppressed)
+    throw error
+}

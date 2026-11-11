@@ -205,7 +205,11 @@ internal object OwnedEntries {
                 target.remove(entry)
             } catch (error: Throwable) {
                 SysUiPresentationRuntime.throwIfFatal(error)
-                if (failure == null) failure = error else failure?.addSuppressed(error)
+                if (failure == null) {
+                    failure = error
+                } else if (failure !== error) {
+                    failure?.addSuppressed(error)
+                }
             }
         }
         failure?.let { throw it }

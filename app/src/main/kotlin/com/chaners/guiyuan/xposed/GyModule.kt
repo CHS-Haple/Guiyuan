@@ -3883,12 +3883,7 @@ class GyModule : XposedModule() {
         release { VisualPrefsOwner.unbind() }
         release { SandboxHost.unbind() }
 
-        if (errors.isNotEmpty()) {
-            val failure =
-                IllegalStateException("old-generation-cleanup-incomplete", errors.first())
-            errors.drop(1).forEach(failure::addSuppressed)
-            throw failure
-        }
+        throwIfCleanupIncomplete("old-generation-cleanup-incomplete", errors)
     }
 
     private fun attachHostRuntime(
@@ -4467,11 +4462,7 @@ class GyModule : XposedModule() {
         release { SysUiPresentationOwner.deactivate(source) }
         release { NativeStatusObserver.deactivate() }
         release { HomeRenderSession.setNativeHandoffActive(true) }
-        if (failures.isNotEmpty()) {
-            val error = IllegalStateException("feature-ownership-release-incomplete", failures.first())
-            failures.drop(1).forEach(error::addSuppressed)
-            throw error
-        }
+        throwIfCleanupIncomplete("feature-ownership-release-incomplete", failures)
     }
 
     private fun bindSandbox() {
