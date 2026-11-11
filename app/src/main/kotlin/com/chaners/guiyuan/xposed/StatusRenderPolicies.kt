@@ -15,6 +15,7 @@ import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN as SETTINGS_NO_SIM_SIZ
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX as SETTINGS_WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN as SETTINGS_WIFI_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.SignalDotArrangement
+import com.chaners.guiyuan.settings.finiteIn
 import kotlin.math.acos
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -22,6 +23,17 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
+
+// Same circle-intersection span for curved and split signal-dot openings.
+private fun ringIntersectionSpreadDegrees(
+    distance: Double,
+    ringRadius: Double,
+    reach: Double,
+): Double =
+    if (reach >= distance + ringRadius) 180.0 else Math.toDegrees(
+        acos(((distance * distance + ringRadius * ringRadius - reach * reach) /
+            (2.0 * distance * ringRadius)).coerceIn(-1.0, 1.0)),
+    )
 
 internal fun nativeCenterTintEntryName(entryName: String): String {
     val base =
@@ -177,27 +189,25 @@ internal object CenterGeometry {
         combinedScale: Float = COMBINED_SCALE_DEFAULT,
     ): Resolved {
         val wifi =
-            wifiScale.takeIf(Float::isFinite)?.coerceIn(MIN_WIFI_SIZE_SCALE, MAX_WIFI_SIZE_SCALE)
-                ?: DEFAULT_WIFI_SIZE_SCALE
-        val airplane =
-            airplaneScale.takeIf(Float::isFinite)
-                ?.coerceIn(MIN_AIRPLANE_SIZE_SCALE, MAX_AIRPLANE_SIZE_SCALE)
-                ?: DEFAULT_AIRPLANE_SIZE_SCALE
+            wifiScale.finiteIn(
+                MIN_WIFI_SIZE_SCALE, MAX_WIFI_SIZE_SCALE, DEFAULT_WIFI_SIZE_SCALE,
+            )
+        val airplane = airplaneScale.finiteIn(
+            MIN_AIRPLANE_SIZE_SCALE, MAX_AIRPLANE_SIZE_SCALE, DEFAULT_AIRPLANE_SIZE_SCALE,
+        )
         val noSim =
-            noSimScale.takeIf(Float::isFinite)
-                ?.coerceIn(MIN_NO_SIM_SIZE_SCALE, MAX_NO_SIM_SIZE_SCALE)
-                ?: DEFAULT_NO_SIM_SIZE_SCALE
-        val mobile =
-            mobileTypeScale.takeIf(Float::isFinite)
-                ?.coerceIn(MIN_MOBILE_TYPE_SIZE_SCALE, MAX_MOBILE_TYPE_SIZE_SCALE)
-                ?: DEFAULT_MOBILE_TYPE_SIZE_SCALE
+            noSimScale.finiteIn(
+                MIN_NO_SIM_SIZE_SCALE, MAX_NO_SIM_SIZE_SCALE, DEFAULT_NO_SIM_SIZE_SCALE,
+            )
+        val mobile = mobileTypeScale.finiteIn(
+            MIN_MOBILE_TYPE_SIZE_SCALE, MAX_MOBILE_TYPE_SIZE_SCALE, DEFAULT_MOBILE_TYPE_SIZE_SCALE,
+        )
         val weight =
             mobileTypeWeight.coerceIn(MIN_MOBILE_TYPE_WEIGHT, MAX_MOBILE_TYPE_WEIGHT)
         val combined =
-            combinedScale
-                .takeIf(Float::isFinite)
-                ?.coerceIn(COMBINED_SCALE_MIN, COMBINED_SCALE_MAX)
-                ?: COMBINED_SCALE_DEFAULT
+            combinedScale.finiteIn(
+                COMBINED_SCALE_MIN, COMBINED_SCALE_MAX, COMBINED_SCALE_DEFAULT,
+            )
         return Resolved(
             wifiScale = wifi,
             airplaneScale = airplane,
@@ -344,10 +354,7 @@ internal object OuterGeometry {
                         else singleDotY(index, style, offsetY)).toDouble()
                     val distance = sqrt(x * x + y * y)
                     if (reach <= kotlin.math.abs(distance - ringRadius)) continue
-                    val spread = if (reach >= distance + ringRadius) 180.0 else Math.toDegrees(
-                        acos(((distance * distance + ringRadius * ringRadius - reach * reach) /
-                            (2.0 * distance * ringRadius)).coerceIn(-1.0, 1.0)),
-                    )
+                    val spread = ringIntersectionSpreadDegrees(distance, ringRadius, reach)
                     halfGap = max(halfGap, kotlin.math.abs(Math.toDegrees(atan2(y, x)) - 90.0) + spread)
                 }
             }
@@ -367,10 +374,7 @@ internal object OuterGeometry {
                 val y = dualDotY(index, row, style, atOffset).toDouble()
                 val d = sqrt(x * x + y * y)
                 if (d <= 0.00001 || kotlin.math.abs(d - radius) >= clearance) continue
-                val spread = if (clearance >= d + radius) 180.0 else Math.toDegrees(
-                    acos(((d * d + radius * radius - clearance * clearance) /
-                        (2.0 * d * radius)).coerceIn(-1.0, 1.0)),
-                )
+                val spread = ringIntersectionSpreadDegrees(d, radius, clearance)
                 val angle = Math.toDegrees(atan2(y, x))
                 half = max(half, kotlin.math.abs(angle - 90.0) + spread)
             }
@@ -395,10 +399,7 @@ internal object OuterGeometry {
     }
 
     fun normalizeWeightScale(value: Float): Float =
-        value
-            .takeIf(Float::isFinite)
-            ?.coerceIn(MIN_WEIGHT_SCALE, MAX_WEIGHT_SCALE)
-            ?: DEFAULT_WEIGHT_SCALE
+        value.finiteIn(MIN_WEIGHT_SCALE, MAX_WEIGHT_SCALE, DEFAULT_WEIGHT_SCALE)
 
     fun resolve(weightScale: Float, bothSidesBottomIconVisible: Boolean = true): Resolved {
         val normalized = normalizeWeightScale(weightScale)
