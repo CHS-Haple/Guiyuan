@@ -2697,6 +2697,14 @@ internal class StatusPainter(
         canvas.restoreToCount(save)
     }
 
+    // Preserve the caller's package context without caching resource overlays.
+    private fun nativeResourceContext(packageName: String): Context =
+        if (packageName == context.packageName) {
+            context
+        } else {
+            context.createPackageContext(packageName, 0)
+        }
+
     private fun wifiOpticalReferenceResource(
         resource: PresentationStore.NativeIconResource,
     ): PresentationStore.NativeIconResource? {
@@ -2708,12 +2716,7 @@ internal class StatusPainter(
         val referenceId =
             nativeWifiReferenceIds.getOrPut(resource.resourceId) {
                 runCatching {
-                    val drawableContext =
-                        if (resource.packageName == context.packageName) {
-                            context
-                        } else {
-                            context.createPackageContext(resource.packageName, 0)
-                        }
+                    val drawableContext = nativeResourceContext(resource.packageName)
                     val entryName =
                         drawableContext.resources.getResourceEntryName(resource.resourceId)
                     val referenceEntry =
@@ -2768,12 +2771,7 @@ internal class StatusPainter(
 
         val asset =
             runCatching {
-                val drawableContext =
-                    if (resource.packageName == context.packageName) {
-                        context
-                    } else {
-                        context.createPackageContext(resource.packageName, 0)
-                    }
+                val drawableContext = nativeResourceContext(resource.packageName)
                 val drawable =
                     drawableContext.getDrawable(resource.resourceId)
                         ?.constantState
@@ -3103,8 +3101,7 @@ internal class StatusPainter(
             } else {
                 val resources =
                     runCatching {
-                        if (actual.packageName == context.packageName) context.resources
-                        else context.createPackageContext(actual.packageName, 0).resources
+                        nativeResourceContext(actual.packageName).resources
                     }.onFailure { rethrowRenderFatal(it) }.getOrNull()
                 val loaded = resources?.let { NativeVectorStroke.load(it, actual.resourceId) }
                 nativeStrokeSources[actual] = loaded
@@ -3139,12 +3136,7 @@ internal class StatusPainter(
         airplaneDrawableResolved = true
         cachedAirplaneResourceId =
             runCatching {
-                val resourceContext =
-                    if (context.packageName == SYSTEM_UI_PACKAGE) {
-                        context
-                    } else {
-                        context.createPackageContext(SYSTEM_UI_PACKAGE, 0)
-                    }
+                val resourceContext = nativeResourceContext(SYSTEM_UI_PACKAGE)
                 resourceContext.resources.getIdentifier(
                     AIRPLANE_RESOURCE_NAME,
                     "drawable",
@@ -4167,11 +4159,7 @@ internal class StatusPainter(
         checkNativeResources()
         val id = activityResourceIds.getOrPut(name) {
             runCatching {
-                val resourceContext = if (context.packageName == SYSTEM_UI_PACKAGE) {
-                    context
-                } else {
-                    context.createPackageContext(SYSTEM_UI_PACKAGE, 0)
-                }
+                val resourceContext = nativeResourceContext(SYSTEM_UI_PACKAGE)
                 resourceContext.resources.getIdentifier(name, "drawable", SYSTEM_UI_PACKAGE)
             }.onFailure { rethrowRenderFatal(it) }.getOrDefault(0)
         }
