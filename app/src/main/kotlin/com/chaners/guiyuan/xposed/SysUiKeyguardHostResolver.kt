@@ -7,7 +7,7 @@ import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 
 internal object SysUiKeyguardHostResolver {
-    private const val KEYGUARD_HOST_CLASS =
+    internal const val KEYGUARD_HOST_CLASS =
         "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"
     private const val STATUS_ICON_CONTAINER_CLASS =
         "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
