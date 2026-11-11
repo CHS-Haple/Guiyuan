@@ -6,7 +6,6 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
-import java.lang.reflect.InvocationTargetException
 import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -27,10 +26,7 @@ internal object SysUiKeyguardAodSource {
     private const val TOGGLE_AOD_HOOK_ID =
         "combinedstatus.keyguardAod.toggleAodMode"
 
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
+    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     private inline fun <T> readOrNull(block: () -> T): T? =
         SysUiPresentationRuntime.optionalNativeRead(block)

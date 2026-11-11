@@ -7,13 +7,9 @@ import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
-import java.lang.reflect.InvocationTargetException
 
 internal object SysUiHotReload {
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
+    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     internal sealed interface PrepareResult {
         data class Ready(

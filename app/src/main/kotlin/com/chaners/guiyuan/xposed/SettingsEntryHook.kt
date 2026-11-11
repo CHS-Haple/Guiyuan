@@ -20,7 +20,6 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
-import java.lang.reflect.InvocationTargetException
 import java.util.ArrayList
 
 // An unrecognized Settings list stays entirely native.
@@ -34,10 +33,7 @@ internal object SettingsEntryHook {
     private const val ICON_HOOK_ID = "guiyuan.settings.header.icon"
     private const val HEADER_ID = 0x475955414E4CL
 
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
+    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     internal fun reportFailure(message: String, error: Throwable) {
         rethrowFatal(error)

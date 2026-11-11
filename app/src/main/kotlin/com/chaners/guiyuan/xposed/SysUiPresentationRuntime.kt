@@ -4,16 +4,12 @@ import android.graphics.drawable.Drawable
 import android.util.Log
 import com.chaners.guiyuan.xposed.network.SysUiMobileTypeSource
 import io.github.libxposed.api.XposedModule
-import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiPresentationRuntime {
     private var current: AttachResult? = null
 
-    internal fun throwIfFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
+    internal fun throwIfFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     // Passive evidence must never become a SystemUI callback failure.
     @Suppress("TooGenericExceptionCaught")
