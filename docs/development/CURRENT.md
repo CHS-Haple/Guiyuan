@@ -87,11 +87,11 @@ reference, not this public repository.
   [MIUIX Glass source boundary](../../third_party/miuix-glass/README.md)
   documents the single published-API Dialog/Sheet/TopBar implementation.
   Source-matched and published-Maven builds are independent CI checks.
-- Upstream #479's fused rim/stroke pass is not in the app-local Glass renderer;
-  app-local Glass rendering still uses separate passes and a local stroke type.
-  Material models/presets are now canonical upstream aliases; a later renderer
-  migration must preserve local button, Back and popup ownership without
-  speculative shaders.
+- Glass shapes, materials, styles, shadows and preset strokes now use the
+  pinned MIUIX Material API. Upstream `EdgeStroke` owns the rim/edge/mask and
+  shadow overlays, including #479's conditional fused draw. App-local code
+  retains refracted backdrop/color blending and Guiyuan-owned button, popup
+  and Back lifecycles; do not infer device visual parity from compilation.
 - OS4 progressive top-bar material, navigation preview and menu/popup owners
   follow their upstream-aligned implementations. OS3 UI style uses its
   appropriate native MIUIX fallback. Original Battery Colors outer/inner

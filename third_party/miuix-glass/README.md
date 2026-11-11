@@ -41,13 +41,15 @@ paths, not separate compiled source trees.
 
 ## Material model ownership
 
-The source-matched and published MIUIX Material graph provides the canonical
-Glass shape, style, colour layers, material, shadow and preset definitions.
-`GlassMaterialBridge.kt` preserves local Kotlin source call sites through
-typealiases and delegates the two shape factories and blur combination to the
-published upstream API. Guiyuan keeps its adapted `GlassStroke`/shader and
-popup/Back lifecycle; these are not falsely claimed to use the upstream fused
-rim drawing pass. Do not introduce another app-owned copy of Material models.
+The pinned MIUIX Material graph owns the canonical shape, style, colour layers,
+material, shadow and stroke presets. `GlassMaterialBridge.kt` delegates the
+existing call sites to published upstream Material definitions and functions.
+`GlassStroke.kt` aliases the upstream `EdgeStroke` and `GlassEdgeStrokes`.
+The app renders strokes, rim, masks and shadows via Material; the accepted
+#479 fused edge pass runs only when shading, positive stroke width and additive
+blend mode allow it. App-specific backdrop refraction/color blending and
+popup/Back lifecycles stay locally owned. Do not copy upstream shader sources
+back into this package or add a second Material model.
 
 ## Live app-specific boundaries
 
@@ -71,17 +73,19 @@ rim drawing pass. Do not introduce another app-owned copy of Material models.
 
 ## Migration and verification
 
-Dialog, BottomSheet and title now use one source tree backed by published
-MIUIX APIs. Future consolidation concerns local Glass shaders and strokes.
+Dialog, BottomSheet, title and edge drawing now use one published MIUIX API
+contract. Remaining local source implements adapted backdrop/refraction and
+Guiyuan-specific UI and lifecycle ownership.
 A whole-module `miuix-glass-android` swap must atomically remove conflicting
 same-package local declarations; linking it alongside the local bridge causes
 duplicate classes and can expose `internal` visibility/ABI failures. Do not
 modify the upstream checkout during CI to bypass these issues.
 
-For later Glass renderer consolidation, preserve the owned shader, popup,
-Back/scrim and navigation contracts. Verify both source-matched and published
-Maven builds, OS3/OS4 UI styles, RTL, font scale, title clipping and dismissal
-before grouped signed-device acceptance. CI alone is not device acceptance.
+For later upstream alignment, preserve adapted backdrop/refraction and
+popup, Back/scrim and navigation ownership. Validate both source-matched and
+published-Maven builds; for rendering changes review OS3/OS4 UI styles,
+light/dark rims, alpha transitions, title clipping and dismissal on device.
+CI alone is not device acceptance.
 
 Dated integration evidence is in
 [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440),
