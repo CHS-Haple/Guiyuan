@@ -11,13 +11,12 @@ grouped here by ownership, not by build number.
 | [Current state](development/CURRENT.md) | The accepted runtime architecture, verified constraints and outstanding work (not a build diary) |
 | [Decisions](development/DECISIONS.md) | Stable design decisions and their technical rationale |
 | [Architecture](architecture/README.md) | Runtime ownership, layout, scene, and native fallback contracts |
-| [UI iconography](architecture/ui-iconography.md) | Current settings-row icon semantics, weight and optical geometry |
 | [SystemUI reference](reference/systemui-contracts.md) | Public and reusable host contracts; sensitive binary analysis remains private |
 | [OS4 glass integration](../third_party/miuix-glass/README.md) | Pinned upstream provenance, adaptation boundary and license upkeep |
 
 User-facing policies: [CHANGELOG](../CHANGELOG.md), [TERMS](../TERMS.md),
 [PRIVACY](../PRIVACY.md), [SECURITY](../SECURITY.md),
-[THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES.md), [Support](SUPPORT.md).
+[Third-party notices](../third_party/NOTICE.md), [Support](SUPPORT.md).
 
 ## Reading order
 

@@ -21,7 +21,7 @@ source checkout in `.github/actions/miuix-source/action.yml`.
   intentionally app-specific or from intermediate upstream commits.
   **This is not a byte-for-byte copy of the complete upstream module.**
 - Reused and adapted MIUIX source is Apache-2.0. Preserve upstream SPDX and
-  copyright headers, [the third-party notices](../../THIRD_PARTY_NOTICES.md)
+  copyright headers, [the third-party notices](../NOTICE.md)
   and this folder's [license](LICENSE). Do not silently copy a new upstream
   revision into local packages while retaining an older dependency graph.
 - MIUIX background effects are separately sourced; see
