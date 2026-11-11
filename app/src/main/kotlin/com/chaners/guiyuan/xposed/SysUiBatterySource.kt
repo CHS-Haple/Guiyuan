@@ -408,7 +408,7 @@ internal object SysUiBatterySource {
         if (hollowPaint.typeface !== hollowFace) return null
         val path = config.getField("FONT_MIPRO_PATH").get(null) as? String
             ?: return null
-        hollowFace to path
+        return hollowFace to path
     }
 
     // Reconcile the transferred snapshot with the same authority and delivery receipt as hooks.
