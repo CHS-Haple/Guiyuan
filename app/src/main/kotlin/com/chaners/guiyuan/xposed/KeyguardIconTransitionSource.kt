@@ -25,21 +25,17 @@ internal object KeyguardIconTransitionSource {
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
         val viewClass = Class.forName(KEYGUARD_VIEW_CLASS, false, classLoader)
-        val candidates =
-            viewClass.declaredMethods.filter { method ->
-                method.name == ANIMATE_ICON_CONTAINER_METHOD &&
-                    matchesSignature(
-                        parameterTypes = method.parameterTypes,
-                        returnType = method.returnType,
-                    )
-            }
         val method =
-            candidates.singleOrNull()
-                ?.apply { isAccessible = true }
-                ?: error(
-                    "keyguard-status-icon-animation-contract-" +
-                        if (candidates.isEmpty()) "missing" else "ambiguous",
+            SysUiPresentationRuntime.requireUniqueHookMethod(
+                viewClass,
+                ANIMATE_ICON_CONTAINER_METHOD,
+                "keyguard-status-icon-animation-contract-",
+            ) { method ->
+                matchesSignature(
+                    parameterTypes = method.parameterTypes,
+                    returnType = method.returnType,
                 )
+            }
 
         val warned = AtomicBoolean(false)
         return listOf(

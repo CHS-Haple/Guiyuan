@@ -27,21 +27,17 @@ internal object FullAodTransitionSource {
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
         val controllerClass = Class.forName(CONTROLLER_CLASS, false, classLoader)
-        val candidates =
-            controllerClass.declaredMethods.filter { method ->
-                method.name == ANIMATE_FULL_AOD_METHOD &&
-                    matchesSignature(
-                        parameterTypes = method.parameterTypes,
-                        returnType = method.returnType,
-                    )
-            }
         val method =
-            candidates.singleOrNull()
-                ?.apply { isAccessible = true }
-                ?: error(
-                    "full-aod-animation-method-contract-" +
-                        if (candidates.isEmpty()) "missing" else "ambiguous",
+            SysUiPresentationRuntime.requireUniqueHookMethod(
+                controllerClass,
+                ANIMATE_FULL_AOD_METHOD,
+                "full-aod-animation-method-contract-",
+            ) { method ->
+                matchesSignature(
+                    parameterTypes = method.parameterTypes,
+                    returnType = method.returnType,
                 )
+            }
 
         val warned = AtomicBoolean(false)
         fun fallback(stage: String, error: Throwable) {

@@ -4,6 +4,7 @@ import android.graphics.drawable.Drawable
 import android.util.Log
 import com.chaners.guiyuan.xposed.network.SysUiMobileTypeSource
 import io.github.libxposed.api.XposedModule
+import java.lang.reflect.Method
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiPresentationRuntime {
@@ -30,6 +31,21 @@ internal object SysUiPresentationRuntime {
             throwIfFatal(error)
             null
         }
+
+    // Preserve exact native signature selection; never guess among overloads.
+    internal inline fun requireUniqueHookMethod(
+        type: Class<*>,
+        name: String,
+        contract: String,
+        matches: (Method) -> Boolean,
+    ): Method {
+        val candidates = type.declaredMethods.filter { method ->
+            method.name == name && matches(method)
+        }
+        return candidates.singleOrNull()
+            ?.apply { isAccessible = true }
+            ?: error(contract + if (candidates.isEmpty()) "missing" else "ambiguous")
+    }
 
     val installedHookCount: Int
         @Synchronized get() =
