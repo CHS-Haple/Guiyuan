@@ -120,14 +120,21 @@ for security concerns.
 
 ### 反馈与安全
 
-普通故障、兼容性问题和功能建议请使用 [Issues](https://github.com/CHS-Haple/Guiyuan/issues)。反馈前请核对设备、HyperOS 与 SystemUI 版本，并移除日志中的敏感信息。安全漏洞请使用 GitHub 的[私密漏洞报告入口](https://github.com/CHS-Haple/Guiyuan/security/advisories/new)，不要在公开 Issue 中披露。
+普通故障、兼容性问题和功能建议请使用 [Issues][github-issues]。
+反馈前请核对设备、HyperOS 与 SystemUI 版本，并移除日志中的敏感信息。
+安全漏洞请使用 GitHub 的[私密漏洞报告入口][private-report]，不要在公开 Issue 中披露。
 
 [更新日志](CHANGELOG.md) · [使用条款](TERMS.md) · [隐私政策](PRIVACY.md) ·
 [安全政策](SECURITY.md) · [支持项目](docs/SUPPORT.md)
 
 ---
 
-<sub>Guiyuan is an independent community project and is not affiliated with or endorsed by Xiaomi, LSPosed or MIUIX. 归元是独立开源项目，不隶属于 Xiaomi、LSPosed 或 MIUIX，也不代表这些项目的官方立场。</sub>
+<sub>Guiyuan is an independent community project and is not affiliated with or
+endorsed by Xiaomi, LSPosed or MIUIX. 归元是独立开源项目，不隶属于 Xiaomi、LSPosed 或
+MIUIX，也不代表这些项目的官方立场。</sub>
 
 **License:** [GPL-3.0-only](LICENSE). Third-party dependencies and incorporated
 assets retain their respective notices and licenses.
+
+[github-issues]: https://github.com/CHS-Haple/Guiyuan/issues
+[private-report]: https://github.com/CHS-Haple/Guiyuan/security/advisories/new
