@@ -413,14 +413,7 @@ class GyModule : XposedModule() {
             SysUiBatteryRuntime.resetRuntimeState()
             SysUiNetworkRuntime.resetRuntimeState()
             islandSourceInstalled = false
-            ccSourceInstalled = false
-            controlCenterSceneVisible = false
-            controlCenterSceneEligible = false
-            controlCenterSourceScene = SourceScene.UNKNOWN
-            steadyStatusSourceScene = SourceScene.UNKNOWN
-            stableFamilyScene =
-                ScenePolicy.StableKeyguardAodScene.UNKNOWN
-            aodWindow = null
+            clearHotReloadSceneState()
             clearBoundaryHandoff()
             homeAodFallback = HomeAodFallback.NONE
             homeAodOriginPending = false
@@ -568,6 +561,17 @@ class GyModule : XposedModule() {
             "reason" to (error.message ?: error.javaClass.simpleName),
             "restartScope" to true,
         )
+    }
+
+    // Keep native scene state identical across reload recovery and old-generation retirement.
+    private fun clearHotReloadSceneState() {
+        ccSourceInstalled = false
+        controlCenterSceneVisible = false
+        controlCenterSceneEligible = false
+        controlCenterSourceScene = SourceScene.UNKNOWN
+        steadyStatusSourceScene = SourceScene.UNKNOWN
+        stableFamilyScene = ScenePolicy.StableKeyguardAodScene.UNKNOWN
+        aodWindow = null
     }
 
     private fun restoreHotReloadRuntimeOnMain(
@@ -3820,14 +3824,7 @@ class GyModule : XposedModule() {
 
     private fun teardownOldGeneration() {
         retiredForHotReload = true
-        ccSourceInstalled = false
-        controlCenterSceneVisible = false
-        controlCenterSceneEligible = false
-        controlCenterSourceScene = SourceScene.UNKNOWN
-        steadyStatusSourceScene = SourceScene.UNKNOWN
-        stableFamilyScene =
-            ScenePolicy.StableKeyguardAodScene.UNKNOWN
-        aodWindow = null
+        clearHotReloadSceneState()
         homeAodTargetPrearmPending = false
         ccExpansion = 0f
         keyguardRuntimeReady = false
