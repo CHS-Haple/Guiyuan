@@ -2056,10 +2056,9 @@ internal object SysUiPresentationOwner {
             if (container == null) {
                 return failAndProceed(REASON_STATUS_ICON_GROUP_RELEASED)
             }
-            @Suppress("UNCHECKED_CAST")
             val list =
                 readOrNull {
-                    ignoredSlotsField.get(container) as? MutableList<String>
+                    nativeIgnoredSlotsList(container)
                 }
             if (list == null) {
                 return failAndProceed(REASON_IGNORED_SLOTS_LIST_UNAVAILABLE)
@@ -2090,6 +2089,11 @@ internal object SysUiPresentationOwner {
             }
         }
 
+        // Read without swallowing failures; each caller retains its error boundary.
+        @Suppress("UNCHECKED_CAST")
+        private fun nativeIgnoredSlotsList(group: ViewGroup): MutableList<String>? =
+            ignoredSlotsField.get(group) as? MutableList<String>
+
         private fun applyPersistentIgnoredSlots(group: ViewGroup): Boolean {
             if (
                 ignoreScope != IgnoreScope.SESSION ||
@@ -2103,10 +2107,9 @@ internal object SysUiPresentationOwner {
                         onFailNative(REASON_ADD_IGNORED_SLOTS_METHOD_UNAVAILABLE)
                         return false
                     }
-            @Suppress("UNCHECKED_CAST")
             val live =
                 readOrNull {
-                    ignoredSlotsField.get(group) as? MutableList<String>
+                    nativeIgnoredSlotsList(group)
                 }
                     ?: run {
                         onFailNative(REASON_IGNORED_SLOTS_LIST_UNAVAILABLE)
@@ -2123,9 +2126,8 @@ internal object SysUiPresentationOwner {
                     if (owned.isNotEmpty()) {
                         addMethod.invoke(group, ArrayList(owned))
                     }
-                    @Suppress("UNCHECKED_CAST")
                     val after =
-                        ignoredSlotsField.get(group) as? MutableList<String>
+                        nativeIgnoredSlotsList(group)
                             ?: error("ignored-slots-list-unavailable-after-add")
                     check(representedSlots.all(after::contains)) {
                         "ignored-slots-native-api-did-not-retain-represented-slots"
@@ -2136,18 +2138,16 @@ internal object SysUiPresentationOwner {
                 val rollback =
                     setIgnoredSlotsMethod?.let { setMethod ->
                         runCatching {
-                            @Suppress("UNCHECKED_CAST")
                             val current =
-                                ignoredSlotsField.get(group) as? MutableList<String>
+                                nativeIgnoredSlotsList(group)
                                     ?: error("ignored-slots-list-unavailable-during-rollback")
                             // Native callbacks may add unrelated slots before the failed add returns.
                             val target = OwnedEntries.restoreTarget(current, owned)
                             if (target != current) {
                                 setMethod.invoke(group, ArrayList(target))
                             }
-                            @Suppress("UNCHECKED_CAST")
                             val restored =
-                                ignoredSlotsField.get(group) as? MutableList<String>
+                                nativeIgnoredSlotsList(group)
                                     ?: error("ignored-slots-list-unavailable-after-rollback")
                             restored == target
                         }.onFailure(::rethrowFatal).getOrDefault(false)
@@ -2190,10 +2190,9 @@ internal object SysUiPresentationOwner {
                 return true
             }
             val group = statusIcons.get() ?: return false
-            @Suppress("UNCHECKED_CAST")
             val live =
                 readOrNull {
-                    ignoredSlotsField.get(group) as? MutableList<String>
+                    nativeIgnoredSlotsList(group)
                 } ?: return false
             val target =
                 OwnedEntries.restoreTarget(
@@ -2217,9 +2216,8 @@ internal object SysUiPresentationOwner {
                             live.addAll(target)
                         }
                     }
-                    @Suppress("UNCHECKED_CAST")
                     val after =
-                        ignoredSlotsField.get(group) as? MutableList<String>
+                        nativeIgnoredSlotsList(group)
                             ?: return@runCatching false
                     after == target
                 }.getOrElse { error ->
