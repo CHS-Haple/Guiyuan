@@ -553,17 +553,21 @@ class GyModule : XposedModule() {
                 "restartScope" to false,
             )
         }.onFailure { error ->
-            SysUiHotReload.rethrowFatal(error)
-            logDiagnostic(
-                level = Log.ERROR,
-                event = "hotReload.complete",
-                component = "hotReload",
-                state = "error",
-                "reason" to (error.message ?: error.javaClass.simpleName),
-                "restartScope" to true,
-            )
+            reportHotReloadFailure(error)
             log(Log.ERROR, TAG, "Hot reload failed restartScope=true", error)
         }
+    }
+
+    private fun reportHotReloadFailure(error: Throwable) {
+        SysUiHotReload.rethrowFatal(error)
+        logDiagnostic(
+            level = Log.ERROR,
+            event = "hotReload.complete",
+            component = "hotReload",
+            state = "error",
+            "reason" to (error.message ?: error.javaClass.simpleName),
+            "restartScope" to true,
+        )
     }
 
     private fun restoreHotReloadRuntimeOnMain(
@@ -709,15 +713,7 @@ class GyModule : XposedModule() {
         }.onFailure { error ->
             retireFailedHostAttach(capture.host, error)
             SysUiHostRegistry.discardIfCurrent(capture.host)
-            SysUiHotReload.rethrowFatal(error)
-            logDiagnostic(
-                level = Log.ERROR,
-                event = "hotReload.complete",
-                component = "hotReload",
-                state = "error",
-                "reason" to (error.message ?: error.javaClass.simpleName),
-                "restartScope" to true,
-            )
+            reportHotReloadFailure(error)
             log(Log.ERROR, TAG, "Hot reload main-thread restore failed", error)
         }
     }
