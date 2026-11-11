@@ -38,9 +38,9 @@ internal object NativePresentationResolver {
         val bindings =
             SysUiNetworkSource.mobilePresentationBindings()
                 .filter { binding -> binding.root.isAttachedToWindow }
+        val boundSubscriptionIds = bindings.map { binding -> binding.subscriptionId }
         val semanticActiveSubIds =
-            bindings
-                .map { binding -> binding.subscriptionId }
+            boundSubscriptionIds
                 .distinct()
                 .filter { subscriptionId ->
                     state.mobile[subscriptionId]
@@ -58,8 +58,7 @@ internal object NativePresentationResolver {
         val platformActive = platformSubscriptions?.map { it.first }?.toSet()
         val resolvedActive =
             NativeSubscriptionPolicy.resolveActiveSubIds(
-                boundSubscriptionIds =
-                    bindings.map { binding -> binding.subscriptionId },
+                boundSubscriptionIds = boundSubscriptionIds,
                 semanticActiveSubscriptionIds = semanticActiveSubIds,
                 authoritativeActiveSubscriptionIds =
                     platformActive,
