@@ -1527,15 +1527,7 @@ internal object SysUiPresentationOwner {
         reason: String,
         handles: List<HookHandle>,
     ): String {
-        val remaining = handles.filter { handle ->
-            try {
-                handle.unhook()
-                false
-            } catch (error: Throwable) {
-                rethrowFatal(error)
-                true
-            }
-        }
+        val remaining = handles.filter { it.unhookFailed() }
         clearInstallState()
         measureHook = remaining.firstOrNull { it.id == MEASURE_HOOK_ID }
         layoutHook = remaining.firstOrNull { it.id == LAYOUT_HOOK_ID }

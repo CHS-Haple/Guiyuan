@@ -8,6 +8,7 @@ import android.graphics.drawable.Icon
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
 import com.chaners.guiyuan.xposed.PresentationStore
 import com.chaners.guiyuan.xposed.SysUiFatal
+import com.chaners.guiyuan.xposed.unhookFailed
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -252,15 +253,7 @@ internal object NativeStatusObserver {
     // Preserve any hook whose unhook failed; a partial install must not be retried.
     @Suppress("TooGenericExceptionCaught")
     private fun rollbackInstall(created: List<HookHandle>) {
-        val remaining = created.filter { handle ->
-            try {
-                handle.unhook()
-                false
-            } catch (failure: Throwable) {
-                rethrowFatal(failure)
-                true
-            }
-        }
+        val remaining = created.filter { it.unhookFailed() }
         installedHandles.clear()
         installedHandles.addAll(remaining)
         installIncomplete = remaining.isNotEmpty()

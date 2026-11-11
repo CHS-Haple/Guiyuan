@@ -136,15 +136,7 @@ internal object SysUiKeyguardAodSource {
             hooksReady = true
             return handles
         } catch (error: Throwable) {
-            val remaining = handles.asReversed().filter { handle ->
-                try {
-                    handle.unhook()
-                    false
-                } catch (failure: Throwable) {
-                    rethrowFatal(failure)
-                    true
-                }
-            }
+            val remaining = handles.asReversed().filter { it.unhookFailed() }
             failedInstallHandles = remaining
             clearSourceState()
             rethrowFatal(error)

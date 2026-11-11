@@ -9,6 +9,7 @@ import com.chaners.guiyuan.xposed.NativeParticipantAccess
 import com.chaners.guiyuan.xposed.SysUiHostRegistry
 import com.chaners.guiyuan.xposed.StatusStateStore
 import com.chaners.guiyuan.xposed.SysUiFatal
+import com.chaners.guiyuan.xposed.unhookFailed
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -925,15 +926,7 @@ internal object SysUiNetworkSource {
         error: InstallStageException,
         handles: List<HookHandle>,
     ): BranchInstallResult {
-        val remaining = handles.filter { handle ->
-            try {
-                handle.unhook()
-                false
-            } catch (error: Throwable) {
-                rethrowFatal(error)
-                true
-            }
-        }
+        val remaining = handles.filter { it.unhookFailed() }
         val failure = installFailure(component, error)
         return BranchInstallResult(
             handles = remaining,
