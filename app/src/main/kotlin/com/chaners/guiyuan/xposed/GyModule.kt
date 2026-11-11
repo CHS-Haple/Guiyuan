@@ -413,14 +413,7 @@ class GyModule : XposedModule() {
             SysUiBatteryRuntime.resetRuntimeState()
             SysUiNetworkRuntime.resetRuntimeState()
             islandSourceInstalled = false
-            ccSourceInstalled = false
-            controlCenterSceneVisible = false
-            controlCenterSceneEligible = false
-            controlCenterSourceScene = SourceScene.UNKNOWN
-            steadyStatusSourceScene = SourceScene.UNKNOWN
-            stableFamilyScene =
-                ScenePolicy.StableKeyguardAodScene.UNKNOWN
-            aodWindow = null
+            clearHotReloadSceneState()
             clearBoundaryHandoff()
             homeAodFallback = HomeAodFallback.NONE
             homeAodOriginPending = false
@@ -553,17 +546,32 @@ class GyModule : XposedModule() {
                 "restartScope" to false,
             )
         }.onFailure { error ->
-            SysUiHotReload.rethrowFatal(error)
-            logDiagnostic(
-                level = Log.ERROR,
-                event = "hotReload.complete",
-                component = "hotReload",
-                state = "error",
-                "reason" to (error.message ?: error.javaClass.simpleName),
-                "restartScope" to true,
-            )
+            reportHotReloadFailure(error)
             log(Log.ERROR, TAG, "Hot reload failed restartScope=true", error)
         }
+    }
+
+    private fun reportHotReloadFailure(error: Throwable) {
+        SysUiHotReload.rethrowFatal(error)
+        logDiagnostic(
+            level = Log.ERROR,
+            event = "hotReload.complete",
+            component = "hotReload",
+            state = "error",
+            "reason" to (error.message ?: error.javaClass.simpleName),
+            "restartScope" to true,
+        )
+    }
+
+    // Keep native scene state identical across reload recovery and old-generation retirement.
+    private fun clearHotReloadSceneState() {
+        ccSourceInstalled = false
+        controlCenterSceneVisible = false
+        controlCenterSceneEligible = false
+        controlCenterSourceScene = SourceScene.UNKNOWN
+        steadyStatusSourceScene = SourceScene.UNKNOWN
+        stableFamilyScene = ScenePolicy.StableKeyguardAodScene.UNKNOWN
+        aodWindow = null
     }
 
     private fun restoreHotReloadRuntimeOnMain(
@@ -709,15 +717,7 @@ class GyModule : XposedModule() {
         }.onFailure { error ->
             retireFailedHostAttach(capture.host, error)
             SysUiHostRegistry.discardIfCurrent(capture.host)
-            SysUiHotReload.rethrowFatal(error)
-            logDiagnostic(
-                level = Log.ERROR,
-                event = "hotReload.complete",
-                component = "hotReload",
-                state = "error",
-                "reason" to (error.message ?: error.javaClass.simpleName),
-                "restartScope" to true,
-            )
+            reportHotReloadFailure(error)
             log(Log.ERROR, TAG, "Hot reload main-thread restore failed", error)
         }
     }
@@ -3824,14 +3824,7 @@ class GyModule : XposedModule() {
 
     private fun teardownOldGeneration() {
         retiredForHotReload = true
-        ccSourceInstalled = false
-        controlCenterSceneVisible = false
-        controlCenterSceneEligible = false
-        controlCenterSourceScene = SourceScene.UNKNOWN
-        steadyStatusSourceScene = SourceScene.UNKNOWN
-        stableFamilyScene =
-            ScenePolicy.StableKeyguardAodScene.UNKNOWN
-        aodWindow = null
+        clearHotReloadSceneState()
         homeAodTargetPrearmPending = false
         ccExpansion = 0f
         keyguardRuntimeReady = false

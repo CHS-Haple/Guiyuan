@@ -1632,24 +1632,8 @@ internal object SysUiPresentationOwner {
             }
         private val clipStates = mutableListOf<ClipState>()
         private val mirroredPeerClipStates = mutableListOf<ClipState>()
-        private val batteryLayoutListener =
-            View.OnLayoutChangeListener {
-                    _,
-                    left,
-                    _,
-                    right,
-                    _,
-                    oldLeft,
-                    _,
-                    oldRight,
-                    _,
-                ->
-                if (right - left != oldRight - oldLeft) {
-                    syncEndReservation()
-                }
-            }
-
-        private val carrierLayoutListener =
+        // Both views report width changes to the same reservation owner.
+        private val reservationWidthListener =
             View.OnLayoutChangeListener {
                     _,
                     left,
@@ -1809,8 +1793,8 @@ internal object SysUiPresentationOwner {
                         return 0
                     }
             nativePadding = PaddingState.from(group)
-            battery.get()?.addOnLayoutChangeListener(batteryLayoutListener)
-            batteryCarrier.get()?.addOnLayoutChangeListener(carrierLayoutListener)
+            battery.get()?.addOnLayoutChangeListener(reservationWidthListener)
+            batteryCarrier.get()?.addOnLayoutChangeListener(reservationWidthListener)
             if (deferNativeLayoutOwnershipUntilCommit) {
                 nativeLayoutOwnershipDeferred = true
                 compactLayoutReady = false
@@ -2011,8 +1995,8 @@ internal object SysUiPresentationOwner {
                 }
             }
             release { host.get()?.removeOnAttachStateChangeListener(this) }
-            release { battery.get()?.removeOnLayoutChangeListener(batteryLayoutListener) }
-            release { batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) }
+            release { battery.get()?.removeOnLayoutChangeListener(reservationWidthListener) }
+            release { batteryCarrier.get()?.removeOnLayoutChangeListener(reservationWidthListener) }
 
             var reservationRestored = false
             var ignoredSlotsRestored = false
