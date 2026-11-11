@@ -1409,31 +1409,13 @@ internal object SysUiPresentationOwner {
             result
         }
 
-    // Ordinary restore failures must not block other owners' native fallback.
-    @Suppress("TooGenericExceptionCaught")
-    private fun finishFailure(vararg actions: () -> Unit) {
-        val failures = ArrayList<Throwable>(1)
-        actions.forEach { action ->
-            try {
-                action()
-            } catch (error: Throwable) {
-                rethrowFatal(error)
-                failures.add(error)
-            }
-        }
-        failures.firstOrNull()?.let { error ->
-            failures.drop(1).forEach(error::addSuppressed)
-            throw error
-        }
-    }
-
     @Synchronized
     private fun onSessionFailure(session: Session, reason: String) {
         if (current !== session) return
         current = null
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
-        finishFailure(
+        releaseAll(
             { controlCenterCurrent?.updateSteadyPeerMirror(active = false, hiddenSlots = emptySet()) },
             { stopHome(session, FAIL_NATIVE_SOURCE_PREFIX + reason) },
             { eventSink?.invoke("homePresentation failNative reason=" + reason) },
@@ -1448,7 +1430,7 @@ internal object SysUiPresentationOwner {
         keyguardFamilyCurrent = null
         keyguardFamilySurface = null
         try {
-            finishFailure(
+            releaseAll(
                 { stopFamily(session, FAIL_NATIVE_SOURCE_PREFIX + reason) },
                 {
                     keyguardFamilyEventSink?.invoke(
@@ -1533,7 +1515,7 @@ internal object SysUiPresentationOwner {
         if (controlCenterCurrent !== session) return
         controlCenterCurrent = null
         try {
-            finishFailure(
+            releaseAll(
                 { stopCc(session, FAIL_NATIVE_SOURCE_PREFIX + reason) },
                 { controlCenterEventSink?.invoke("controlCenterPresentation failNative reason=" + reason) },
                 { controlCenterFailNativeSink?.invoke(reason) },

@@ -36,6 +36,24 @@ class CcTransitionOwnerTest {
     }
 
     @Test
+    fun repeatedFailureInstanceDoesNotReplacePrimaryCause() {
+        val shared = IllegalStateException("shared-release-failure")
+        var laterReleaseRan = false
+        val failure =
+            runCatching {
+                releaseAll(
+                    { throw shared },
+                    { throw shared },
+                    { laterReleaseRan = true },
+                )
+            }.exceptionOrNull()
+
+        assertSame(shared, failure)
+        assertEquals(true, laterReleaseRan)
+        assertEquals(0, shared.suppressed.size)
+    }
+
+    @Test
     fun nestedListenerFailureStillReleasesOverlayAndMask() {
         val visited = mutableListOf<String>()
         val failure =
