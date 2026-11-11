@@ -7,11 +7,14 @@ evidence remain in PRs, issues, commits and the reference documents.
 
 ## Current release scope and accepted runtime
 
-- **Operating-system support:** Guiyuan's stable release line targets **Xiaomi
-  HyperOS 4 only** with a compatible LSPosed / Modern Xposed API 102
-  environment. The tested target is Xiaomi 15 Pro, HyperOS `OS4.0.0.19.XOBCNXM`,
-  SystemUI `17.03.260226.r`. This does not certify every HyperOS 4 variant. The
-  “OS3” selector is an optional **UI style**, not support for HyperOS 3.
+- **Operating-system support:** Guiyuan targets **Xiaomi HyperOS 4 only**
+  with compatible LSPosed / Modern Xposed API 102. The current compatibility
+  target is Xiaomi 15 Pro, HyperOS `4.0.3.0.XOBCNXM.D02`, SystemUI
+  `17.03.260226.r` (exact APK target verified statically). The previous
+  `4.0.0.19.XOBCNXM` build remains the separately device-tested baseline;
+  no comprehensive ROM403 device acceptance is implied. Other HyperOS 4
+  devices/builds are not all verified. The “OS3” selector changes only the
+  **UI style**, not HyperOS 3 runtime support.
 - **B1827 MIUIX Material acceptance (2026-11-10):** The maintainer reported
   signed B1827 (`1.1.0`, `versionCode=261110827`,
   `buildId=20261110-1827`) normal on the target device.
