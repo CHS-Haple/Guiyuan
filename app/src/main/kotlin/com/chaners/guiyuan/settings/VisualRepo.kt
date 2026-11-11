@@ -45,6 +45,18 @@ internal class VisualRepo(context: Context) {
     private fun activeProfileKey(baseKey: String): String =
         visualProfileKey(preferences.readLayout(), baseKey)
 
+    private fun writeProfileBoolean(key: String, enabled: Boolean) {
+        preferences.edit().putBoolean(activeProfileKey(key), enabled).apply()
+    }
+
+    private fun writeProfileFloat(key: String, value: Float) {
+        preferences.edit().putFloat(activeProfileKey(key), value).apply()
+    }
+
+    private fun writeProfileInt(key: String, value: Int) {
+        preferences.edit().putInt(activeProfileKey(key), value).apply()
+    }
+
     fun setDualSignal(enabled: Boolean) {
         preferences.edit()
             .putBoolean(DUAL_SIGNAL_ENABLED_KEY, enabled)
@@ -57,40 +69,31 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setBothSidesShowActivity(enabled: Boolean) {
-        preferences.edit().putBoolean(activeProfileKey(BOTH_SIDES_ACTIVITY_KEY), enabled).apply()
+        writeProfileBoolean(BOTH_SIDES_ACTIVITY_KEY, enabled)
     }
 
     fun setBothSidesHideIdleActivity(enabled: Boolean) {
-        preferences.edit().putBoolean(activeProfileKey(BOTH_SIDES_HIDE_IDLE_ACTIVITY_KEY), enabled).apply()
+        writeProfileBoolean(BOTH_SIDES_HIDE_IDLE_ACTIVITY_KEY, enabled)
     }
 
     fun setBothSidesBottomCharging(enabled: Boolean) {
-        preferences.edit().putBoolean(activeProfileKey(BOTH_SIDES_CHARGING_KEY), enabled).apply()
+        writeProfileBoolean(BOTH_SIDES_CHARGING_KEY, enabled)
     }
 
     fun setBothSidesActivityScale(scale: Float) {
-        preferences.edit().putFloat(
-            activeProfileKey(BOTH_SIDES_ACTIVITY_SCALE_KEY),
-            scale.finiteIn(
-                BOTH_SIDES_BOTTOM_INFO_SCALE_MIN,
-                BOTH_SIDES_BOTTOM_INFO_SCALE_MAX,
-                BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT,
-            ),
-        ).apply()
+        writeProfileFloat(BOTH_SIDES_ACTIVITY_SCALE_KEY, scale.finiteIn(
+            BOTH_SIDES_BOTTOM_INFO_SCALE_MIN,
+            BOTH_SIDES_BOTTOM_INFO_SCALE_MAX,
+            BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT,
+        ))
     }
 
     fun setBothSidesActivityOffsetY(offset: Float) {
-        preferences.edit().putFloat(
-            activeProfileKey(BOTH_SIDES_ACTIVITY_OFFSET_Y_KEY),
-            offset.normalizedNetworkOffset(),
-        ).apply()
+        writeProfileFloat(BOTH_SIDES_ACTIVITY_OFFSET_Y_KEY, offset.normalizedNetworkOffset())
     }
 
     fun setBothSidesChargingOffsetY(offset: Float) {
-        preferences.edit().putFloat(
-            activeProfileKey(BOTH_SIDES_CHARGING_OFFSET_Y_KEY),
-            offset.normalizedNetworkOffset(),
-        ).apply()
+        writeProfileFloat(BOTH_SIDES_CHARGING_OFFSET_Y_KEY, offset.normalizedNetworkOffset())
     }
 
     fun setSingleRowDotArrangement(style: SignalDotArrangement) {
@@ -104,7 +107,7 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setFixedLowerOpening(enabled: Boolean) {
-        preferences.edit().putBoolean(activeProfileKey(LOWER_FIXED_OPENING_KEY), enabled).apply()
+        writeProfileBoolean(LOWER_FIXED_OPENING_KEY, enabled)
     }
 
     fun setMobileTypeBottomOffsetY(offset: Float) {
@@ -127,17 +130,11 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setMobileFollowsBatteryColor(enabled: Boolean) {
-        preferences
-            .edit()
-            .putBoolean(activeProfileKey(MOBILE_FOLLOWS_BATTERY_COLOR_KEY), enabled)
-            .apply()
+        writeProfileBoolean(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, enabled)
     }
 
     fun setCenterFollowsBatteryColor(enabled: Boolean) {
-        preferences
-            .edit()
-            .putBoolean(activeProfileKey(CENTER_FOLLOWS_BATTERY_COLOR_KEY), enabled)
-            .apply()
+        writeProfileBoolean(CENTER_FOLLOWS_BATTERY_COLOR_KEY, enabled)
     }
 
     fun setTopReadout(enabled: Boolean) {
@@ -159,24 +156,15 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setTopTextFollowsBatteryColor(enabled: Boolean) {
-        preferences
-            .edit()
-            .putBoolean(activeProfileKey(BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY), enabled)
-            .apply()
+        writeProfileBoolean(BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY, enabled)
     }
 
     fun setChargingIcon(enabled: Boolean) {
-        preferences
-            .edit()
-            .putBoolean(activeProfileKey(BATTERY_TOP_CHARGING_ICON_ENABLED_KEY), enabled)
-            .apply()
+        writeProfileBoolean(BATTERY_TOP_CHARGING_ICON_ENABLED_KEY, enabled)
     }
 
     fun setTopChargingIconFollowsBatteryColor(enabled: Boolean) {
-        preferences
-            .edit()
-            .putBoolean(activeProfileKey(BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY), enabled)
-            .apply()
+        writeProfileBoolean(BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY, enabled)
     }
 
     fun setFillFollowsRetract(enabled: Boolean) {
@@ -211,13 +199,10 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setTopTextWeight(weight: Int) {
-        preferences
-            .edit()
-            .putInt(
-                activeProfileKey(BATTERY_TOP_TEXT_WEIGHT_KEY),
-                weight.coerceIn(BATTERY_TOP_TEXT_WEIGHT_MIN, BATTERY_TOP_TEXT_WEIGHT_MAX),
-            )
-            .apply()
+        writeProfileInt(
+            BATTERY_TOP_TEXT_WEIGHT_KEY,
+            weight.coerceIn(BATTERY_TOP_TEXT_WEIGHT_MIN, BATTERY_TOP_TEXT_WEIGHT_MAX),
+        )
     }
 
     fun setTopOffsetY(offset: Float) {
@@ -237,19 +222,11 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setWifiOffsetY(offset: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(WIFI_VERTICAL_OFFSET_KEY),
-                offset.normalizedNetworkOffset(),
-            ).apply()
+        writeProfileFloat(WIFI_VERTICAL_OFFSET_KEY, offset.normalizedNetworkOffset())
     }
 
     fun setMobileTypeOffsetY(offset: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(MOBILE_TYPE_VERTICAL_OFFSET_KEY),
-                offset.normalizedNetworkOffset(),
-            ).apply()
+        writeProfileFloat(MOBILE_TYPE_VERTICAL_OFFSET_KEY, offset.normalizedNetworkOffset())
     }
 
     fun setSignalDotOffsetY(offset: Float) {
@@ -257,80 +234,41 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setCombinedScale(scale: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(COMBINED_SCALE_KEY),
-                scale.finiteIn(
-                    COMBINED_SCALE_MIN,
-                    COMBINED_SCALE_MAX,
-                    COMBINED_SCALE_DEFAULT,
-                ),
-            )
-            .apply()
+        writeProfileFloat(COMBINED_SCALE_KEY, scale.finiteIn(
+            COMBINED_SCALE_MIN, COMBINED_SCALE_MAX, COMBINED_SCALE_DEFAULT,
+        ))
     }
 
     fun setOuterWeightScale(scale: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(OUTER_WEIGHT_SCALE_KEY),
-                scale.finiteIn(
-                    OUTER_WEIGHT_SCALE_MIN,
-                    OUTER_WEIGHT_SCALE_MAX,
-                    OUTER_WEIGHT_SCALE_DEFAULT,
-                ),
-            )
-            .apply()
+        writeProfileFloat(OUTER_WEIGHT_SCALE_KEY, scale.finiteIn(
+            OUTER_WEIGHT_SCALE_MIN, OUTER_WEIGHT_SCALE_MAX, OUTER_WEIGHT_SCALE_DEFAULT,
+        ))
     }
 
     fun setWifiWeight(weight: Int) {
-        preferences.edit()
-            .putInt(activeProfileKey(WIFI_WEIGHT_KEY), weight.coerceIn(WIFI_WEIGHT_MIN, WIFI_WEIGHT_MAX))
-            .apply()
+        writeProfileInt(WIFI_WEIGHT_KEY, weight.coerceIn(WIFI_WEIGHT_MIN, WIFI_WEIGHT_MAX))
     }
 
     fun setWifiScale(scale: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(WIFI_SIZE_SCALE_KEY),
-                scale.finiteIn(
-                    WIFI_SIZE_SCALE_MIN,
-                    WIFI_SIZE_SCALE_MAX,
-                    WIFI_SIZE_SCALE_DEFAULT,
-                ),
-            )
-            .apply()
+        writeProfileFloat(WIFI_SIZE_SCALE_KEY, scale.finiteIn(
+            WIFI_SIZE_SCALE_MIN, WIFI_SIZE_SCALE_MAX, WIFI_SIZE_SCALE_DEFAULT,
+        ))
     }
 
     fun setAirplaneWeight(weight: Int) {
-        preferences.edit()
-            .putInt(activeProfileKey(AIRPLANE_WEIGHT_KEY), weight.coerceIn(AIRPLANE_WEIGHT_MIN, AIRPLANE_WEIGHT_MAX))
-            .apply()
+        writeProfileInt(AIRPLANE_WEIGHT_KEY, weight.coerceIn(AIRPLANE_WEIGHT_MIN, AIRPLANE_WEIGHT_MAX))
     }
 
     fun setAirplaneScale(scale: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(AIRPLANE_SIZE_SCALE_KEY),
-                scale.finiteIn(
-                    AIRPLANE_SIZE_SCALE_MIN,
-                    AIRPLANE_SIZE_SCALE_MAX,
-                    AIRPLANE_SIZE_SCALE_DEFAULT,
-                ),
-            )
-            .apply()
+        writeProfileFloat(AIRPLANE_SIZE_SCALE_KEY, scale.finiteIn(
+            AIRPLANE_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MAX, AIRPLANE_SIZE_SCALE_DEFAULT,
+        ))
     }
 
     fun setNoSimScale(scale: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(NO_SIM_SIZE_SCALE_KEY),
-                scale.finiteIn(
-                    NO_SIM_SIZE_SCALE_MIN,
-                    NO_SIM_SIZE_SCALE_MAX,
-                    NO_SIM_SIZE_SCALE_DEFAULT,
-                ),
-            )
-            .apply()
+        writeProfileFloat(NO_SIM_SIZE_SCALE_KEY, scale.finiteIn(
+            NO_SIM_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MAX, NO_SIM_SIZE_SCALE_DEFAULT,
+        ))
     }
 
     fun setMobileTypeScale(scale: Float) {
@@ -347,12 +285,10 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setMobileTypeWeight(weight: Int) {
-        preferences.edit()
-            .putInt(
-                activeProfileKey(MOBILE_TYPE_WEIGHT_KEY),
-                weight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX),
-            )
-            .apply()
+        writeProfileInt(
+            MOBILE_TYPE_WEIGHT_KEY,
+            weight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX),
+        )
     }
 
     fun backup(): VisualBackup {
