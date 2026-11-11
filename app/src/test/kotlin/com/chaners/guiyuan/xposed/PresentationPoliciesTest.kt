@@ -53,6 +53,30 @@ class PresentationPoliciesTest {
     }
 
     @Test
+    fun repeatedSameRemovalExceptionPreservesOriginalAndContinues() {
+        val repeated = IllegalStateException("same-removal-failure")
+        val attempted = mutableListOf<String>()
+        val slots =
+            object : ArrayList<String>() {
+                override fun remove(element: String): Boolean {
+                    attempted += element
+                    if (element == SLOT_MOBILE || element == SLOT_NO_SIM) throw repeated
+                    return super.remove(element)
+                }
+            }
+        slots.addAll(listOf(SLOT_NATIVE, SLOT_MOBILE, SLOT_NO_SIM, SLOT_AIRPLANE))
+
+        val error = runCatching {
+            OwnedEntries.restore(slots, listOf(SLOT_MOBILE, SLOT_NO_SIM, SLOT_AIRPLANE))
+        }.exceptionOrNull()
+
+        assertSame(repeated, error)
+        assertEquals(0, repeated.suppressed.size)
+        assertEquals(listOf(SLOT_AIRPLANE, SLOT_NO_SIM, SLOT_MOBILE), attempted)
+        assertEquals(listOf(SLOT_NATIVE, SLOT_MOBILE, SLOT_NO_SIM), slots)
+    }
+
+    @Test
     fun reflectedFatalRestoreFailureStopsIndependentSlotRemovals() {
         val fatal = OutOfMemoryError("native-slot-restore")
         val slots =

@@ -1116,7 +1116,7 @@ internal object SysUiPresentationOwner {
 
         clearPresentationCallbacksAndPeerState()
 
-        throwIfCleanupFailed("hotReload-release-incomplete", failures)
+        throwIfCleanupIncomplete("hotReload-release-incomplete", failures)
         return homeRestored + keyguardFamilyRestored + controlCenterRestored
     }
 
@@ -1167,7 +1167,7 @@ internal object SysUiPresentationOwner {
         batteryHideHook = failedBatteryHide
         islandShowingHook = failedIsland
         privacyStateHook = failedPrivacyState
-        throwIfCleanupFailed("presentation-reset-incomplete", failures)
+        throwIfCleanupIncomplete("presentation-reset-incomplete", failures)
     }
 
     @Synchronized
@@ -1531,16 +1531,6 @@ internal object SysUiPresentationOwner {
         controlCenterSourceScene = SourceScene.UNKNOWN
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
-    }
-
-    private fun throwIfCleanupFailed(
-        reason: String,
-        failures: List<Throwable>,
-    ) {
-        if (failures.isEmpty()) return
-        val error = IllegalStateException(reason, failures.first())
-        failures.drop(1).forEach(error::addSuppressed)
-        throw error
     }
 
     private fun clearInstallState() {
@@ -2072,7 +2062,7 @@ internal object SysUiPresentationOwner {
                 )
             }
             failures.firstOrNull()?.let { error ->
-                failures.drop(1).forEach(error::addSuppressed)
+                failures.drop(1).filter { it !== error }.forEach(error::addSuppressed)
                 throw error
             }
             return restored
@@ -2616,7 +2606,9 @@ internal object SysUiPresentationOwner {
             val carrier = runCatching { restoreFakeCarrierCapacityLease() }
             carrier.exceptionOrNull()?.let(::rethrowFatal)
             if (paddingFailure != null) {
-                carrier.exceptionOrNull()?.let(paddingFailure::addSuppressed)
+                carrier.exceptionOrNull()
+                    ?.takeIf { it !== paddingFailure }
+                    ?.let(paddingFailure::addSuppressed)
                 throw paddingFailure
             }
             val carrierRestored = carrier.getOrThrow()
