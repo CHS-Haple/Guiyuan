@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.graphics.drawable.Icon
+import com.chaners.guiyuan.xposed.SysUiFatal
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
 import com.chaners.guiyuan.xposed.PresentationStore
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
@@ -14,14 +15,10 @@ import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 import java.lang.reflect.Method
-import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.ConcurrentHashMap
 
 internal object NativeStatusObserver {
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
+    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     private inline fun <T> readOrNull(block: () -> T): T? =
         SysUiPresentationRuntime.optionalNativeRead(block)

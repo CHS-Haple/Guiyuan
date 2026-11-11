@@ -5,17 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.telephony.SubscriptionManager
+import com.chaners.guiyuan.xposed.SysUiFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
-import java.lang.reflect.InvocationTargetException
 
 internal object SysUiDefaultDataSubSource {
     private const val DEFAULT_DATA_SUBSCRIPTION_CHANGED_ACTION =
         "android.intent.action.ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED"
 
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
+    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     private inline fun <T> readOrNull(block: () -> T): T? =
         SysUiPresentationRuntime.optionalNativeRead(block)

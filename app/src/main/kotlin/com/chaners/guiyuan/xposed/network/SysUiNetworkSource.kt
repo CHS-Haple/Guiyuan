@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import com.chaners.guiyuan.xposed.SysUiFatal
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
 import com.chaners.guiyuan.xposed.SysUiHostRegistry
 import com.chaners.guiyuan.xposed.StatusStateStore
@@ -14,7 +15,6 @@ import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.lang.reflect.Method
-import java.lang.reflect.InvocationTargetException
 import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -99,10 +99,7 @@ internal object SysUiNetworkSource {
         MOBILE_ACTIVITY_VISIBILITY_HOOK_ID,
     )
 
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
+    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     private inline fun <T> readOrNull(block: () -> T): T? =
         SysUiPresentationRuntime.optionalNativeRead(block)
