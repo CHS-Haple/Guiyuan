@@ -183,7 +183,7 @@ internal object SysUiKeyguardHostResolver {
         )
     }
 
-    private fun findAncestor(
+    internal fun findAncestor(
         start: View,
         className: String,
     ): View? {
@@ -204,7 +204,7 @@ internal object SysUiKeyguardHostResolver {
         findField(owner.javaClass, fieldName)
             ?.let { field -> SysUiPresentationRuntime.optionalNativeRead { field.get(owner) as? View } }
 
-    private fun findField(
+    internal fun findField(
         type: Class<*>,
         name: String,
     ): Field? {
