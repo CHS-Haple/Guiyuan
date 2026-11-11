@@ -20,13 +20,10 @@ execution ownership is in [architecture](../architecture/README.md).
   installed APK and current `main` or `dev` head are separate identities;
   compare their exact commits rather than assuming source equivalence.
 - **Current `dev` build identity:** read `combinedStatus.versionName`,
-  `combinedStatus.versionCode` and `combinedStatus.buildId` from
-  `gradle.properties` (at this checkpoint: `1.1.0`, `261110827`,
-  `20261110-1827`). The maintainer reported signed B1827 normal for its
-  exercised MIUIX Material UI scope before the new ROM403 pin. That feedback
-  does **not** certify ROM403 runtime behavior. The accepted MIUIX pin is
-  `ca674992` via [#1440](https://github.com/CHS-Haple/Guiyuan/pull/1440);
-  CI, Gradle and upstream source must remain on the same revision.
+  `combinedStatus.versionCode` and `combinedStatus.buildId` directly from
+  `gradle.properties`. The accepted MIUIX source/dependency pin is
+  `96d613aa` via [#1517](https://github.com/CHS-Haple/Guiyuan/pull/1517);
+  CI and the upstream checkout must use that exact revision.
 - **Branches:** work enters `dev` through reviewed PRs, then `main` through
   stable promotion. Retired `it` is historical only. A source-only change does
   not consume a Build; installable/signing gates are defined in
@@ -90,15 +87,19 @@ reference, not this public repository.
   [MIUIX Glass source boundary](../../third_party/miuix-glass/README.md)
   explains why the published-ABI and source-matched dialog/sheet/top-bar
   compile variants remain.
+- Upstream #479's fused rim/stroke pass is not in the app-local Glass renderer;
+  its local shape/stroke types still use separate passes. Any migration must
+  reconcile the Material type and drawing boundary without speculative shaders.
 - OS4 progressive top-bar material, navigation preview and menu/popup owners
   follow their upstream-aligned implementations. OS3 UI style uses its
   appropriate native MIUIX fallback. Original Battery Colors outer/inner
   `Card` hierarchy and colors, and consistent default `Regular` Glass
   button/popup shadows, are accepted. Avoid speculative changes to the
   native animation, shader or backdrop ownership.
-- B1827's positive device report covers the exercised UI. It does not
-  establish exhaustive RTL, extreme font scale, GPU resume, OS3 dark-mode
-  overscroll seam, modal dismissal or every Framework/ROM combination.
+- Signed B1828 Canary was reported visually normal for the exercised MIUIX
+  UI scope. This does not establish exhaustive RTL, extreme font scale,
+  GPU resume, keyboard/cutout geometry, predictive Back, OS3 dark-mode
+  overscroll seam or every Framework/ROM combination.
 
 ## Remaining evidence and quality boundaries
 
