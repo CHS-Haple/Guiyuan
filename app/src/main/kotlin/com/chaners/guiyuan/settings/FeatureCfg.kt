@@ -4,10 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.SystemClock
 import kotlinx.serialization.Serializable
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 internal const val FEATURE_KEYGUARD_DEFAULT = true
 internal const val FEATURE_AOD_DEFAULT = true
@@ -35,24 +32,7 @@ internal class FeatureRepo(context: Context) {
         )
 
     val settings: Flow<FeatureCfg> =
-        callbackFlow {
-            fun emitCurrent() {
-                trySend(current())
-            }
-
-            val listener =
-                SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                    if (isFeatureKey(key)) {
-                        emitCurrent()
-                    }
-                }
-
-            prefs.registerOnSharedPreferenceChangeListener(listener)
-            emitCurrent()
-            awaitClose {
-                prefs.unregisterOnSharedPreferenceChangeListener(listener)
-            }
-        }.distinctUntilChanged()
+        observePreferenceChanges(prefs, ::isFeatureKey, ::current)
 
     fun current(): FeatureCfg =
         FeatureCfg(

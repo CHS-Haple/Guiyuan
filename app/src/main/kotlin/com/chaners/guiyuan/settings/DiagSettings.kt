@@ -1,11 +1,7 @@
 package com.chaners.guiyuan.settings
 
 import android.content.Context
-import android.content.SharedPreferences
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 internal enum class DiagLevel {
     General,
@@ -29,24 +25,9 @@ internal class DiagRepo(context: Context) {
         )
 
     val settings: Flow<DiagSettings> =
-        callbackFlow {
-            fun emitCurrent() {
-                trySend(DiagSettings(level = current()))
-            }
-
-            val listener =
-                SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                    if (isDiagKey(key)) {
-                        emitCurrent()
-                    }
-                }
-
-            prefs.registerOnSharedPreferenceChangeListener(listener)
-            emitCurrent()
-            awaitClose {
-                prefs.unregisterOnSharedPreferenceChangeListener(listener)
-            }
-        }.distinctUntilChanged()
+        observePreferenceChanges(prefs, ::isDiagKey) {
+            DiagSettings(level = current())
+        }
 
     fun current(): DiagLevel =
         decodeDiagLevel(
