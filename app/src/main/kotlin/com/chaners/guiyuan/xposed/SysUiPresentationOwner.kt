@@ -3124,6 +3124,7 @@ internal object SysUiPresentationOwner {
             }
         }
 
+        @Suppress("TooGenericExceptionCaught")
         private fun restoreClipMasks(
             states: MutableList<ClipState>,
             failures: MutableList<Throwable>,
