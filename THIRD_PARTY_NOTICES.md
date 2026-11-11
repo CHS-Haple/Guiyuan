@@ -96,8 +96,8 @@ Both OS4 source variants now share
 `app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4GlassIcons.kt`, which
 aliases the published MIUIX Glass Regular vectors for Back, Search, Close,
 Refresh, Filter, More, Edit, Copy, Delete and Share. The previous six local
-`os4Published` vector copies and the separate upstream alias were removed by
-#1370. Diagnostics export uses `Glass.Regular.Share` in the OS4 UI style and
+`os4Published` vector copies and the separate upstream alias were removed
+by #1370. Diagnostics export uses `Glass.Regular.Share` in the OS4 UI style and
 ordinary `MiuixIcons.Share` in OS3; the input clear control continues to use
 MIUIX `Basic.SearchCleanup`, while Glass.Close is used for outside Cancel. This
 module does not import or publish the entire upstream `miuix-glass` runtime
