@@ -377,35 +377,38 @@ internal object SysUiBatterySource {
 
     // Verified against the exact SystemUI fingerprint: both native number
     // routes must use the known file-backed faces, not mipro family fallbacks.
-    fun readHostNumberFont(host: View): Pair<Typeface, String>? = readOrNull {
-        val root = host as? ViewGroup ?: return@readOrNull null
+    fun readHostNumberFont(host: View): Pair<Typeface, String>? =
+        readOrNull { readNumberFontContract(host) }
+
+    private fun readNumberFontContract(host: View): Pair<Typeface, String>? {
+        val root = host as? ViewGroup ?: return null
         val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
-            ?: return@readOrNull null
+            ?: return null
         val battery = container.directChild(BATTERY_METER_VIEW_CLASS_NAME)
-            ?: return@readOrNull null
-        val loader = battery.javaClass.classLoader ?: return@readOrNull null
+            ?: return null
+        val loader = battery.javaClass.classLoader ?: return null
         val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
         val percentFace = config.getField("sMiproTypefaceWght500").get(null) as? Typeface
-            ?: return@readOrNull null
+            ?: return null
         val markFace = config.getField("sMiproTypefaceWght600").get(null) as? Typeface
-            ?: return@readOrNull null
+            ?: return null
         val percent = battery.javaClass.getField("mBatteryPercentView").get(battery) as? TextView
-            ?: return@readOrNull null
+            ?: return null
         val mark = battery.javaClass.getField("mBatteryPercentMarkView").get(battery) as? TextView
-            ?: return@readOrNull null
+            ?: return null
         if (percent.typeface !== percentFace || mark.typeface !== markFace) {
-            return@readOrNull null
+            return null
         }
         val hollow = battery.javaClass.getField("mHollowBatteryIconView").get(battery)
-            ?: return@readOrNull null
+            ?: return null
         val hollowPaint = hollow.javaClass.getField("textPaint").get(hollow) as? Paint
-            ?: return@readOrNull null
+            ?: return null
         val hollowFace = loader.loadClass("com.android.systemui.statusbar.util.MiuiBatteryUtils")
-            .getField("FONT_WGHT").get(null) as? Typeface ?: return@readOrNull null
-        if (hollowPaint.typeface !== hollowFace) return@readOrNull null
+            .getField("FONT_WGHT").get(null) as? Typeface ?: return null
+        if (hollowPaint.typeface !== hollowFace) return null
         val path = config.getField("FONT_MIPRO_PATH").get(null) as? String
-            ?: return@readOrNull null
-        hollowFace to path
+            ?: return null
+        return hollowFace to path
     }
 
     // Reconcile the transferred snapshot with the same authority and delivery receipt as hooks.
