@@ -62,6 +62,47 @@ internal object SysUiKeyguardAodSource {
         val resolvedAnimToAod =
             resolveBooleanField(batteryClass, ANIM_TO_AOD_FIELD)
 
+        val hookMethods = resolveHookMethods(batteryClass)
+
+        toAodField = resolvedToAod
+        isAodAnimateField = resolvedIsAnimate
+        animToAodField = resolvedAnimToAod
+        storedStyleField = resolveIntField(batteryClass, STORED_STYLE_FIELD)
+
+        val warned = AtomicBoolean(false)
+        val onDiagnostic =
+            diagnosticCallback(onEvent, isDetailedDiagnosticsEnabled, warned)
+        val handles = ArrayList<HookHandle>(HOOK_COUNT)
+        try {
+            handles +=
+                module.hook(hookMethods.setAnimate)
+                    .setId(SET_AOD_ANIMATE_HOOK_ID)
+                    .intercept(aodHooker(SET_AOD_ANIMATE_METHOD, onAodState, onRuntimeFailure, onDiagnostic))
+            handles +=
+                module.hook(hookMethods.toggle)
+                    .setId(TOGGLE_AOD_HOOK_ID)
+                    .intercept(aodHooker(TOGGLE_AOD_METHOD, onAodState, onRuntimeFailure, onDiagnostic))
+            hooksReady = true
+            return handles
+        } catch (error: Throwable) {
+            val remaining = handles.asReversed().filter { it.unhookFailed() }
+            failedInstallHandles = remaining
+            clearSourceState()
+            rethrowFatal(error)
+            if (remaining.isNotEmpty()) {
+                throw IllegalStateException("keyguard-aod-hook-cleanup-failed", error)
+            }
+            throw error
+        }
+    }
+
+    // Verify both exact native hook method signatures before any hook is installed.
+    private data class HookMethods(
+        val setAnimate: java.lang.reflect.Method,
+        val toggle: java.lang.reflect.Method,
+    )
+
+    private fun resolveHookMethods(batteryClass: Class<*>): HookMethods {
         val setAnimateMethod =
             SysUiPresentationRuntime.requireUniqueHookMethod(
                 batteryClass,
@@ -84,60 +125,39 @@ internal object SysUiKeyguardAodSource {
                     returnType = method.returnType,
                 )
             }
+        return HookMethods(setAnimateMethod, toggleMethod)
+    }
 
-        toAodField = resolvedToAod
-        isAodAnimateField = resolvedIsAnimate
-        animToAodField = resolvedAnimToAod
-        storedStyleField = resolveIntField(batteryClass, STORED_STYLE_FIELD)
-
-        val warned = AtomicBoolean(false)
-        val onDiagnostic: ((AodUpdate) -> Unit)? =
-            onEvent?.let { sink ->
-                { update ->
-                    try {
-                        if (isDetailedDiagnosticsEnabled()) {
-                            sink(
-                                "keyguardAod source=" + update.source +
-                                    " toAod=" + update.toAod +
-                                    " isAodAnimate=" + update.isAodAnimate +
-                                    " animToAod=" + (update.animToAod ?: "unavailable") +
-                                    " blocked=" + update.blocksProjection,
-                            )
-                        }
-                    } catch (error: Throwable) {
-                        rethrowFatal(error)
-                        if (warned.compareAndSet(false, true)) {
-                            SysUiPresentationRuntime.emitPassiveDiagnostic {
-                                Log.w("Guiyuan[Aod]", "Diagnostic failed", error)
-                            }
+    // Optional AOD diagnostics are separate from native transition ownership.
+    @Suppress("TooGenericExceptionCaught")
+    private fun diagnosticCallback(
+        onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
+        warned: AtomicBoolean,
+    ): ((AodUpdate) -> Unit)? =
+        onEvent?.let { sink ->
+            { update ->
+                try {
+                    if (isDetailedDiagnosticsEnabled()) {
+                        sink(
+                            "keyguardAod source=" + update.source +
+                                " toAod=" + update.toAod +
+                                " isAodAnimate=" + update.isAodAnimate +
+                                " animToAod=" + (update.animToAod ?: "unavailable") +
+                                " blocked=" + update.blocksProjection,
+                        )
+                    }
+                } catch (error: Throwable) {
+                    rethrowFatal(error)
+                    if (warned.compareAndSet(false, true)) {
+                        SysUiPresentationRuntime.emitPassiveDiagnostic {
+                            Log.w("Guiyuan[Aod]", "Diagnostic failed", error)
                         }
                     }
                 }
             }
-
-        val handles = ArrayList<HookHandle>(HOOK_COUNT)
-        try {
-            handles +=
-                module.hook(setAnimateMethod)
-                    .setId(SET_AOD_ANIMATE_HOOK_ID)
-                    .intercept(aodHooker(SET_AOD_ANIMATE_METHOD, onAodState, onRuntimeFailure, onDiagnostic))
-            handles +=
-                module.hook(toggleMethod)
-                    .setId(TOGGLE_AOD_HOOK_ID)
-                    .intercept(aodHooker(TOGGLE_AOD_METHOD, onAodState, onRuntimeFailure, onDiagnostic))
-            hooksReady = true
-            return handles
-        } catch (error: Throwable) {
-            val remaining = handles.asReversed().filter { it.unhookFailed() }
-            failedInstallHandles = remaining
-            clearSourceState()
-            rethrowFatal(error)
-            if (remaining.isNotEmpty()) {
-                throw IllegalStateException("keyguard-aod-hook-cleanup-failed", error)
-            }
-            throw error
         }
-    }
+
 
     val failedInstallHookCount: Int
         get() = failedInstallHandles.size
