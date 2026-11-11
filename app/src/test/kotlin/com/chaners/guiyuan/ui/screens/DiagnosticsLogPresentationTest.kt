@@ -10,6 +10,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
+private const val EVENT_BATTERY_RECONCILE = "battery.reconcile"
+private const val TRANSPORT_CELLULAR = "CELLULAR"
+private const val SOURCE_CAPABILITIES = "capabilities"
+private const val FIELD_SOURCE = "source"
+private const val FIELD_REASON = "reason"
+private const val FIELD_TRACE_ID = "traceId"
+private const val FIELD_OWNER = "owner"
+private const val REASON_NATIVE_READ = "native-read"
+
 class DiagnosticsLogPresentationTest {
     private fun structured(event: String, fields: Map<String, String> = emptyMap()) =
         DiagLogParser.parse(
@@ -23,7 +32,7 @@ class DiagnosticsLogPresentationTest {
     @Test
     fun essentialHealthAndLegacyNetworkEventsRemainVisible() {
         assertTrue(isRuntimeLog(structured("diagnostics.snapshot")))
-        assertTrue(isRuntimeLog(structured("battery.reconcile", mapOf("nativeCharging" to "false"))))
+        assertTrue(isRuntimeLog(structured(EVENT_BATTERY_RECONCILE, mapOf("nativeCharging" to "false"))))
         assertTrue(isRuntimeLog(legacy("connectivity source=capabilities transport=WIFI validated=true")))
         assertTrue(isRuntimeLog(legacy("connectivity delivery-failed source=callback type=IllegalStateException")))
         assertFalse(isRuntimeLog(legacy("unrelated traceInfo=value")))
@@ -44,14 +53,14 @@ class DiagnosticsLogPresentationTest {
 
     @Test
     fun userFacingNetworkValuesMapWithoutChangingRawEvidence() {
-        assertEquals(R.string.diagnostics_log_source_mobile, transportRes("CELLULAR"))
+        assertEquals(R.string.diagnostics_log_source_mobile, transportRes(TRANSPORT_CELLULAR))
         assertEquals(R.string.diagnostics_log_source_none, transportRes("NONE"))
         assertEquals(R.string.diagnostics_log_source_other, transportRes("OTHER"))
-        assertNull(sourceRes("CELLULAR"))
+        assertNull(sourceRes(TRANSPORT_CELLULAR))
         assertNull(sourceRes("NONE"))
         assertNull(sourceRes("OTHER"))
         assertEquals(R.string.diagnostics_log_source_mobile, sourceRes("mobile"))
-        assertEquals(R.string.diagnostics_log_source_capabilities, sourceRes("capabilities"))
+        assertEquals(R.string.diagnostics_log_source_capabilities, sourceRes(SOURCE_CAPABILITIES))
         assertEquals(R.string.diagnostics_log_source_lost, sourceRes("lost"))
         assertEquals(R.string.diagnostics_log_source_mobile_data, sourceRes("mobile-data"))
         assertEquals(R.string.diagnostics_log_source_hot_reload_native_icon, sourceRes("hotReloadNativeIcon"))
@@ -81,10 +90,10 @@ class DiagnosticsLogPresentationTest {
         val entry = structured(
             "battery.reconcile",
             linkedMapOf(
-                "source" to "hotReloadNativeIcon",
-                "reason" to "native-read",
-                "traceId" to "a7",
-                "owner" to "SystemUI",
+                FIELD_SOURCE to "hotReloadNativeIcon",
+                FIELD_REASON to REASON_NATIVE_READ,
+                FIELD_TRACE_ID to "a7",
+                FIELD_OWNER to "SystemUI",
                 "extra" to "extra",
                 "transferredCharging" to "true",
                 "nativeCharging" to "false",
@@ -107,8 +116,8 @@ class DiagnosticsLogPresentationTest {
             "hotReload.complete",
             mapOf(
                 "alpha" to "1", "beta" to "2", "gamma" to "3",
-                "delta" to "4", "owner" to "sysui", "source" to "reload",
-                "reason" to "native-transition", "traceId" to "trace-7",
+                "delta" to "4", FIELD_OWNER to "sysui", FIELD_SOURCE to "reload",
+                FIELD_REASON to "native-transition", FIELD_TRACE_ID to "trace-7",
                 "sequence" to "45", "sessionId" to "build-session", "healthSnapshot" to "false",
             ),
         )
@@ -128,7 +137,7 @@ class DiagnosticsLogPresentationTest {
         )
         val ready = entry("module.loaded", "ready")
         assertTrue(shouldElideLogSummaryState(ready, null, false))
-        assertFalse(shouldElideLogSummaryState(ready, "native-read", false))
+        assertFalse(shouldElideLogSummaryState(ready, REASON_NATIVE_READ, false))
         assertFalse(shouldElideLogSummaryState(ready, null, true))
         assertFalse(shouldElideLogSummaryState(entry("module.loaded", "pending"), null, false))
         assertTrue(shouldElideLogSummaryState(entry("runtime.teardown", "released"), null, false))
