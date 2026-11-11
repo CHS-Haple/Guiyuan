@@ -121,6 +121,7 @@ internal object MobileSignalMorphPolicy {
         return maxOf(1f - trim.coerceIn(0f, 1f), restored)
     }
 
+    // The final interpolation stage is row spread for X, bar progress for Y.
     fun dotCoordinate(
         source: Float,
         sourceAnchor: Float,
@@ -151,23 +152,6 @@ internal object MobileSignalMorphPolicy {
         val packed = if (trim >= 1f) sourceAnchor else source
         val moved = packed + (targetAnchor - packed) * move
         return moved + (target - moved) * spread
-    }
-
-    // Horizontal expansion holds the row's Y at the native anchor. If native
-    // bars have distinct final Y positions, reconcile those only during the
-    // subsequent bar-shape stage, never while the dots spread in X.
-    fun bothSidesDotY(
-        source: Float,
-        sourceAnchor: Float,
-        targetAnchor: Float,
-        target: Float,
-        trim: Float,
-        move: Float,
-        barProgress: Float,
-    ): Float {
-        val packed = source + (sourceAnchor - source) * trim
-        val moved = packed + (targetAnchor - packed) * move
-        return moved + (target - moved) * barProgress
     }
 
 

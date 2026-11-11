@@ -57,10 +57,10 @@ class MobileSignalMorphPolicyTest {
             val spread = step / 20f
             // The per-dot target Y may differ: that must not tilt the spread.
             for (targetY in listOf(5f, 22f, 45f)) {
-                assertEquals(upperY, morph.bothSidesDotY(
+                assertEquals(upperY, morph.dotCoordinate(
                     8f, 8f, upperY, targetY, 0f, 1f, 0f,
                 ), 0f)
-                assertEquals(lowerY, morph.bothSidesDotY(
+                assertEquals(lowerY, morph.dotCoordinate(
                     36f, 36f, lowerY, targetY, 0f, 1f, 0f,
                 ), 0f)
             }
@@ -68,7 +68,7 @@ class MobileSignalMorphPolicyTest {
                 morph.bothSidesDotX(-40f, -40f, aggregateX, 70f, 0f, 1f, spread), 0.0001f)
         }
         // Native final ink may have different Y; match it only as bars morph.
-        assertEquals(22f, morph.bothSidesDotY(8f, 8f, upperY, 22f, 0f, 1f, 1f), 0f)
+        assertEquals(22f, morph.dotCoordinate(8f, 8f, upperY, 22f, 0f, 1f, 1f), 0f)
         // Separate SIM targets retain independent anchors, no shared-X coercion.
         assertEquals(-60f, morph.bothSidesDotX(-40f, -40f, -60f, -75f, 0f, 1f, 0f), 0f)
         assertEquals(60f, morph.bothSidesDotX(40f, 40f, 60f, 75f, 0f, 1f, 0f), 0f)
