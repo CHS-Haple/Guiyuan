@@ -11,18 +11,21 @@ internal fun limitCustomSchemeName(value: String): String {
     return value.substring(0, endIndex)
 }
 
+// Shared safety boundary for user-created names and imported archive metadata.
+internal fun isUnsafePortableTextCodePoint(point: Int): Boolean =
+    Character.isISOControl(point) ||
+        point == 0x061C ||
+        point in 0x200E..0x200F ||
+        point in 0x2028..0x202E ||
+        point in 0x2066..0x206F
+
 internal fun normalizeCustomSchemeName(value: String): String {
     val clean = buildString {
         var index = 0
         while (index < value.length) {
             val point = Character.codePointAt(value, index)
             val unsafe =
-                Character.isISOControl(point) ||
-                    point in 0xD800..0xDFFF ||
-                    point == 0x061C ||
-                    point in 0x200E..0x200F ||
-                    point in 0x2028..0x202E ||
-                    point in 0x2066..0x206F
+                point in 0xD800..0xDFFF || isUnsafePortableTextCodePoint(point)
             if (unsafe) append(' ') else appendCodePoint(point)
             index += Character.charCount(point)
         }
