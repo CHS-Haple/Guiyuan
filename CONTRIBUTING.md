@@ -319,10 +319,20 @@ risk gate, not a separate OS4 development or release pipeline.
 
 ### UI iconography
 
-For settings-row icon choices and current `SemanticLeadingIcon` sizing, follow
-[UI iconography](docs/architecture/ui-iconography.md) and recheck its
-implementation when editing UI. The MIUIX source/evidence and OS3/OS4 style
-review requirements above still apply.
+For settings-row leading icons, prefer meaningful Material Symbols; use MIUIX
+icons for native MIUIX controls, navigation and actions. Select the actual
+glyph shape before choosing weight: outlined/regular W400 is the default;
+use official W500 when W400 is visibly too light, and filled shapes only
+when state or legibility warrants them. Do not normalize individual icons
+with ad-hoc scaling, translation, alpha or stroke overrides.
+
+`SemanticLeadingIcon` in
+`app/src/main/kotlin/com/chaners/guiyuan/ui/screens/SettingsScreenLayout.kt`
+owns the shared 24 dp optical box and 22 dp main icon. A subordinate detail
+uses the existing 12 dp badge, contour cutout and 1 dp gap. Preserve the
+shared alignment/tint and verify adjacent icons in light and dark themes.
+The source implementation is authoritative; recheck pinned MIUIX and both
+OS3/OS4 UI styles for visual or behavior changes.
 
 ### Version and build identity
 
