@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.settings.finiteIn
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -8,8 +9,7 @@ import kotlin.math.sqrt
 internal object CcTransitionPolicy {
     private const val LATENT_REVEAL_COMPLETE_FRACTION = 0.35f
 
-    fun geometryProgress(raw: Float): Float =
-        if (raw.isFinite()) raw.coerceIn(0f, 1f) else 0f
+    fun geometryProgress(raw: Float): Float = raw.finiteIn(0f, 1f, 0f)
 
     // Keep a retargeted projected participant still at the held native fraction.
     // Continued panel motion, not a new timer, brings it to the live endpoint.
@@ -77,11 +77,7 @@ internal object CcTransitionPolicy {
     ): Float {
         val expansion = geometryProgress(expansionProgress)
         if (!finalAppearanceActive) return expansion
-        val appearance =
-            finalAppearanceAlpha
-                .takeIf(Float::isFinite)
-                ?.coerceIn(0f, 1f)
-                ?: 0f
+        val appearance = finalAppearanceAlpha.finiteIn(0f, 1f, 0f)
         return expansion + (1f - expansion) * appearance
     }
 
@@ -188,11 +184,7 @@ internal object CcTransitionPolicy {
         ) {
             return null
         }
-        val fraction =
-            visibleFraction
-                .takeIf(Float::isFinite)
-                ?.coerceIn(0f, 1f)
-                ?: 0f
+        val fraction = visibleFraction.finiteIn(0f, 1f, 0f)
         if (fraction <= 0f) return null
         if (fraction >= 1f) return floatArrayOf(left, top, right, bottom)
         val width = (right - left) * fraction
@@ -372,11 +364,7 @@ internal object CcTransitionPolicy {
             visualExtent <= 0f
         ) return 0f
 
-        val reservation =
-            reservationProgress
-                .takeIf(Float::isFinite)
-                ?.coerceIn(0f, 1f)
-                ?: 0f
+        val reservation = reservationProgress.finiteIn(0f, 1f, 0f)
         if (reservation <= 0f) return 0f
 
         val deltaX = target[0] - current[0]
@@ -396,13 +384,7 @@ internal object CcTransitionPolicy {
     }
 
     fun acceleratedLatentRevealProgress(progress: Float): Float {
-        val normalized =
-            (
-                progress
-                    .takeIf(Float::isFinite)
-                    ?.coerceIn(0f, 1f)
-                    ?: 0f
-            ) / LATENT_REVEAL_COMPLETE_FRACTION
+        val normalized = progress.finiteIn(0f, 1f, 0f) / LATENT_REVEAL_COMPLETE_FRACTION
         val phase = normalized.coerceIn(0f, 1f)
         return phase * phase * (3f - 2f * phase)
     }

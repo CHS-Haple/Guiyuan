@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.settings.finiteIn
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -179,9 +180,7 @@ internal object MobileSignalStagePolicy {
 
     // Use native handoff time, not its squared shape fraction, for equal stage durations.
     fun handoffProgress(shapeProgress: Float): Float =
-        kotlin.math.sqrt(
-            shapeProgress.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0f,
-        )
+        kotlin.math.sqrt(shapeProgress.finiteIn(0f, 1f, 0f))
 
     fun lockstepProgress(progress: Float): Float =
         smoothPhase(progress, 0f, TRIM_END) * TRIM_END

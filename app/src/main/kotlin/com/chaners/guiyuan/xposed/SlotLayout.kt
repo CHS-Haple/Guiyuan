@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.settings.finiteIn
 import kotlin.math.ceil
 
 internal data class SteadyLayout(
@@ -67,11 +68,7 @@ internal object CompactReservationPolicy {
     ): Int {
         val base = baseSlotWidthPx.coerceAtLeast(0)
         if (base == 0) return 0
-        val scale =
-            userScale
-                .takeIf(Float::isFinite)
-                ?.coerceIn(0f, 1f)
-                ?: 1f
+        val scale = userScale.finiteIn(0f, 1f, 1f)
         return ceil(base * (1f + scale) / 2f)
             .toInt()
             .coerceIn(0, base)
