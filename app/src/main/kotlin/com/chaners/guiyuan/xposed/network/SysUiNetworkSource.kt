@@ -171,6 +171,22 @@ internal object SysUiNetworkSource {
         val iconResourceIdAccessor: IconResourceIdAccessor,
     )
 
+    private data class WifiHookTargets(
+        val bindMethod: Method,
+        val iconEmitMethod: Method,
+        val iconImageField: Field,
+        val iconClassIdField: Field,
+        val seedContract: WifiSeedContract,
+    )
+
+    private data class MobileHookTargets(
+        val bindMethod: Method,
+        val signalEmitMethod: Method,
+        val imageField: Field,
+        val classIdField: Field,
+        val subscriptionIdMethod: Method,
+    )
+
     private data class IconResourceIdAccessor(
         val method: Method? = null,
         val field: Field? = null,
@@ -274,6 +290,151 @@ internal object SysUiNetworkSource {
         )
     }
 
+    private fun resolveWifiHookTargets(classLoader: ClassLoader): WifiHookTargets {
+        val wifiBinderClass =
+            atStage("wifi.resolve.binderClass") {
+                Class.forName(WIFI_BINDER_CLASS_NAME, false, classLoader)
+            }
+        val wifiLocationVmClass =
+            atStage("wifi.resolve.locationViewModelClass") {
+                Class.forName(WIFI_LOCATION_VIEW_MODEL_CLASS_NAME, false, classLoader)
+            }
+        val wifiBindMethod =
+            atStage("wifi.resolve.bindMethod") {
+                wifiBinderClass.getDeclaredMethod(
+                    WIFI_BIND_METHOD_NAME,
+                    ViewGroup::class.java,
+                    wifiLocationVmClass,
+                )
+            }
+        val wifiVisibleClass =
+            atStage("wifi.resolve.visibleClass") {
+                Class.forName(WIFI_ICON_VISIBLE_CLASS_NAME, false, classLoader)
+            }
+        val iconResourceClass =
+            atStage("wifi.resolve.iconResourceClass") {
+                Class.forName(ICON_RESOURCE_CLASS_NAME, false, classLoader)
+            }
+        val wifiVisibleIconField =
+            atStage("wifi.resolve.visibleIconField") {
+                wifiVisibleClass
+                    .getDeclaredField("icon")
+                    .apply { isAccessible = true }
+            }
+        val iconResourceIdAccessor =
+            atStage("wifi.resolve.iconResourceIdAccessor") {
+                resolveIconResourceIdAccessor(iconResourceClass)
+            }
+        val wifiIconEmitterClass =
+            atStage("wifi.resolve.iconEmitterClass") {
+                Class.forName(WIFI_ICON_EMITTER_CLASS_NAME, false, classLoader)
+            }
+        val wifiIconEmitMethod =
+            atStage("wifi.resolve.iconEmitMethod") {
+                resolveEmitterMethod(
+                    emitterClass = wifiIconEmitterClass,
+                    methodName = WIFI_ICON_EMIT_METHOD_NAME,
+                )
+            }
+        val wifiIconImageField =
+            atStage("wifi.resolve.iconViewField") {
+                wifiIconEmitterClass
+                    .getDeclaredField("\$iconView")
+                    .apply { isAccessible = true }
+            }
+        val wifiIconClassIdField =
+            atStage("wifi.resolve.classIdField") {
+                wifiIconEmitterClass
+                    .getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME)
+                    .apply { isAccessible = true }
+            }
+        val wifiIconGetter =
+            wifiLocationVmClass.methods
+                .firstOrNull { method ->
+                    method.name == "getWifiIcon" &&
+                        method.parameterCount == 0
+                }
+                ?.apply { isAccessible = true }
+        val seedContract =
+            WifiSeedContract(
+                wifiIconGetter = wifiIconGetter,
+                wifiVisibleIconField = wifiVisibleIconField,
+                iconResourceIdAccessor = iconResourceIdAccessor,
+            )
+        return WifiHookTargets(
+            bindMethod = wifiBindMethod,
+            iconEmitMethod = wifiIconEmitMethod,
+            iconImageField = wifiIconImageField,
+            iconClassIdField = wifiIconClassIdField,
+            seedContract = seedContract,
+        )
+    }
+
+    private fun resolveMobileHookTargets(classLoader: ClassLoader): MobileHookTargets {
+        val mobileBinderClass =
+            atStage("mobile.resolve.binderClass") {
+                Class.forName(MOBILE_BINDER_CLASS_NAME, false, classLoader)
+            }
+        val mobileLocationVmClass =
+            atStage("mobile.resolve.locationViewModelClass") {
+                Class.forName(MOBILE_LOCATION_VIEW_MODEL_CLASS_NAME, false, classLoader)
+            }
+        val mobileIconVmClass =
+            atStage("mobile.resolve.iconViewModelClass") {
+                Class.forName(MOBILE_ICON_VIEW_MODEL_CLASS_NAME, false, classLoader)
+            }
+        val mobileLoggerClass =
+            atStage("mobile.resolve.loggerClass") {
+                Class.forName(MOBILE_VIEW_LOGGER_CLASS_NAME, false, classLoader)
+            }
+        val mobileBindMethod =
+            atStage("mobile.resolve.bindMethod") {
+                mobileBinderClass.getDeclaredMethod(
+                    MOBILE_BIND_METHOD_NAME,
+                    ViewGroup::class.java,
+                    mobileLocationVmClass,
+                    mobileIconVmClass,
+                    mobileLoggerClass,
+                )
+            }
+        val mobileSignalEmitterClass =
+            atStage("mobile.resolve.signalEmitterClass") {
+                Class.forName(MOBILE_SIGNAL_EMITTER_CLASS_NAME, false, classLoader)
+            }
+        val mobileSignalEmitMethod =
+            atStage("mobile.resolve.signalEmitMethod") {
+                resolveEmitterMethod(
+                    emitterClass = mobileSignalEmitterClass,
+                    methodName = MOBILE_SIGNAL_EMIT_METHOD_NAME,
+                )
+            }
+        val mobileImageField =
+            atStage("mobile.resolve.imageField") {
+                mobileSignalEmitterClass
+                    .getDeclaredField("\$mobile")
+                    .apply { isAccessible = true }
+            }
+        val mobileClassIdField =
+            atStage("mobile.resolve.classIdField") {
+                mobileSignalEmitterClass
+                    .getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME)
+                    .apply { isAccessible = true }
+            }
+        val subscriptionIdMethod =
+            atStage("mobile.resolve.subscriptionIdMethod") {
+                mobileLocationVmClass
+                    .getDeclaredMethod("getSubscriptionId")
+                    .apply { isAccessible = true }
+            }
+        return MobileHookTargets(
+            bindMethod = mobileBindMethod,
+            signalEmitMethod = mobileSignalEmitMethod,
+            imageField = mobileImageField,
+            classIdField = mobileClassIdField,
+            subscriptionIdMethod = subscriptionIdMethod,
+        )
+    }
+
     @Suppress("TooGenericExceptionCaught")
     private fun installWifi(
         module: XposedModule,
@@ -288,76 +449,15 @@ internal object SysUiNetworkSource {
         val active = AtomicBoolean(false)
 
         return try {
-            val wifiBinderClass =
-                atStage("wifi.resolve.binderClass") {
-                    Class.forName(WIFI_BINDER_CLASS_NAME, false, classLoader)
-                }
-            val wifiLocationVmClass =
-                atStage("wifi.resolve.locationViewModelClass") {
-                    Class.forName(WIFI_LOCATION_VIEW_MODEL_CLASS_NAME, false, classLoader)
-                }
-            val wifiBindMethod =
-                atStage("wifi.resolve.bindMethod") {
-                    wifiBinderClass.getDeclaredMethod(
-                        WIFI_BIND_METHOD_NAME,
-                        ViewGroup::class.java,
-                        wifiLocationVmClass,
-                    )
-                }
-            val wifiVisibleClass =
-                atStage("wifi.resolve.visibleClass") {
-                    Class.forName(WIFI_ICON_VISIBLE_CLASS_NAME, false, classLoader)
-                }
-            val iconResourceClass =
-                atStage("wifi.resolve.iconResourceClass") {
-                    Class.forName(ICON_RESOURCE_CLASS_NAME, false, classLoader)
-                }
-            val wifiVisibleIconField =
-                atStage("wifi.resolve.visibleIconField") {
-                    wifiVisibleClass
-                        .getDeclaredField("icon")
-                        .apply { isAccessible = true }
-                }
-            val iconResourceIdAccessor =
-                atStage("wifi.resolve.iconResourceIdAccessor") {
-                    resolveIconResourceIdAccessor(iconResourceClass)
-                }
-            val wifiIconEmitterClass =
-                atStage("wifi.resolve.iconEmitterClass") {
-                    Class.forName(WIFI_ICON_EMITTER_CLASS_NAME, false, classLoader)
-                }
-            val wifiIconEmitMethod =
-                atStage("wifi.resolve.iconEmitMethod") {
-                    resolveEmitterMethod(
-                        emitterClass = wifiIconEmitterClass,
-                        methodName = WIFI_ICON_EMIT_METHOD_NAME,
-                    )
-                }
-            val wifiIconImageField =
-                atStage("wifi.resolve.iconViewField") {
-                    wifiIconEmitterClass
-                        .getDeclaredField("\$iconView")
-                        .apply { isAccessible = true }
-                }
-            val wifiIconClassIdField =
-                atStage("wifi.resolve.classIdField") {
-                    wifiIconEmitterClass
-                        .getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME)
-                        .apply { isAccessible = true }
-                }
-            val wifiIconGetter =
-                wifiLocationVmClass.methods
-                    .firstOrNull { method ->
-                        method.name == "getWifiIcon" &&
-                            method.parameterCount == 0
-                    }
-                    ?.apply { isAccessible = true }
-            val seedContract =
-                WifiSeedContract(
-                    wifiIconGetter = wifiIconGetter,
-                    wifiVisibleIconField = wifiVisibleIconField,
-                    iconResourceIdAccessor = iconResourceIdAccessor,
-                )
+            val (
+                wifiBindMethod,
+                wifiIconEmitMethod,
+                wifiIconImageField,
+                wifiIconClassIdField,
+                seedContract,
+            ) = resolveWifiHookTargets(classLoader)
+            val wifiVisibleIconField = seedContract.wifiVisibleIconField
+            val iconResourceIdAccessor = seedContract.iconResourceIdAccessor
             wifiSeedContract = seedContract
 
             created +=
@@ -469,61 +569,13 @@ internal object SysUiNetworkSource {
         val active = AtomicBoolean(false)
 
         return try {
-            val mobileBinderClass =
-                atStage("mobile.resolve.binderClass") {
-                    Class.forName(MOBILE_BINDER_CLASS_NAME, false, classLoader)
-                }
-            val mobileLocationVmClass =
-                atStage("mobile.resolve.locationViewModelClass") {
-                    Class.forName(MOBILE_LOCATION_VIEW_MODEL_CLASS_NAME, false, classLoader)
-                }
-            val mobileIconVmClass =
-                atStage("mobile.resolve.iconViewModelClass") {
-                    Class.forName(MOBILE_ICON_VIEW_MODEL_CLASS_NAME, false, classLoader)
-                }
-            val mobileLoggerClass =
-                atStage("mobile.resolve.loggerClass") {
-                    Class.forName(MOBILE_VIEW_LOGGER_CLASS_NAME, false, classLoader)
-                }
-            val mobileBindMethod =
-                atStage("mobile.resolve.bindMethod") {
-                    mobileBinderClass.getDeclaredMethod(
-                        MOBILE_BIND_METHOD_NAME,
-                        ViewGroup::class.java,
-                        mobileLocationVmClass,
-                        mobileIconVmClass,
-                        mobileLoggerClass,
-                    )
-                }
-            val mobileSignalEmitterClass =
-                atStage("mobile.resolve.signalEmitterClass") {
-                    Class.forName(MOBILE_SIGNAL_EMITTER_CLASS_NAME, false, classLoader)
-                }
-            val mobileSignalEmitMethod =
-                atStage("mobile.resolve.signalEmitMethod") {
-                    resolveEmitterMethod(
-                        emitterClass = mobileSignalEmitterClass,
-                        methodName = MOBILE_SIGNAL_EMIT_METHOD_NAME,
-                    )
-                }
-            val mobileImageField =
-                atStage("mobile.resolve.imageField") {
-                    mobileSignalEmitterClass
-                        .getDeclaredField("\$mobile")
-                        .apply { isAccessible = true }
-                }
-            val mobileClassIdField =
-                atStage("mobile.resolve.classIdField") {
-                    mobileSignalEmitterClass
-                        .getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME)
-                        .apply { isAccessible = true }
-                }
-            val subscriptionIdMethod =
-                atStage("mobile.resolve.subscriptionIdMethod") {
-                    mobileLocationVmClass
-                        .getDeclaredMethod("getSubscriptionId")
-                        .apply { isAccessible = true }
-                }
+            val (
+                mobileBindMethod,
+                mobileSignalEmitMethod,
+                mobileImageField,
+                mobileClassIdField,
+                subscriptionIdMethod,
+            ) = resolveMobileHookTargets(classLoader)
             created +=
                 atStage("mobile.hook.bind") {
                     module
