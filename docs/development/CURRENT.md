@@ -15,7 +15,7 @@ execution ownership is in [architecture](../architecture/README.md).
   `compat/targets/hyperos-17.03.260226.r.json`; this is **not** comprehensive
   device, OTA/Framework, Hot Reload or unusual-host acceptance. The “OS3”
   selector changes **UI style** only, not runtime support for HyperOS 3.
-- **Stable release:** [v1.1.0](https://github.com/CHS-Haple/Guiyuan/releases/tag/v1.1.0)
+- **Stable release:** [v1.1.0][stable-release]
   was published on 2026-11-09 with a signed B1822 Release APK. The release tag,
   installed APK and current `main` or `dev` head are separate identities;
   compare their exact commits rather than assuming source equivalence.
@@ -112,7 +112,7 @@ reference, not this public repository.
   [#769](https://github.com/CHS-Haple/Guiyuan/issues/769)).
   A new fix requires an actual witness and ownership review; never override
   a foreign writer or replay stale native state.
-- [Whole-source quality tracking #1206](https://github.com/CHS-Haple/Guiyuan/issues/1206)
+- [Whole-source quality tracking #1206][quality-tracker]
   owns remaining Codacy/complexity work. Review the **current** findings,
   code paths and CI rather than dated issue exports, and resolve coherent
   batches without changing accepted behavior for cosmetic cleanup.
@@ -120,5 +120,8 @@ reference, not this public repository.
 Historical signed candidates, rejected experiments and release qualification
 are available in [Releases](https://github.com/CHS-Haple/Guiyuan/releases),
 [CHANGELOG](../../CHANGELOG.md), related PRs/issues, CI and this document's
-[Git history](https://github.com/CHS-Haple/Guiyuan/commits/dev/docs/development/CURRENT.md).
+Git history.
 They are not separate current baselines or authorization for old workarounds.
+
+[stable-release]: https://github.com/CHS-Haple/Guiyuan/releases/tag/v1.1.0
+[quality-tracker]: https://github.com/CHS-Haple/Guiyuan/issues/1206
