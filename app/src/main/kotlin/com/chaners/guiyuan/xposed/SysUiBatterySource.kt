@@ -204,11 +204,7 @@ internal object SysUiBatterySource {
             val state = readState(iconView) ?: return
             val delivery =
                 synchronized(this) {
-                    if (!state.charging) {
-                        lastChargingIconResId = null
-                    } else if (state.chargingIconResId != null) {
-                        lastChargingIconResId = state.chargingIconResId
-                    }
+                    updateChargingIconReceiptLocked(state)
                     if (lastDelivery?.state == state) {
                         null
                     } else {
@@ -420,11 +416,7 @@ internal object SysUiBatterySource {
         if (!hooksReady) return null
         val readState = nativeStateReader ?: return null
         val priorDelivery = lastDelivery
-        val root = host as? ViewGroup ?: return null
-        val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
-            ?: return null
-        val meter = container.directChild(BATTERY_METER_VIEW_CLASS_NAME) as? ViewGroup
-            ?: return null
+        val meter = nativeBatteryMeter(host) as? ViewGroup ?: return null
         val pending = ArrayDeque<View>()
         pending.add(meter)
         var icon: View? = null
@@ -449,27 +441,35 @@ internal object SysUiBatterySource {
             // A reentrant hook delivery takes precedence over the initial native sample.
             if (lastDelivery === priorDelivery) {
                 lastDelivery = Delivery(state)
-                if (!state.charging) {
-                    lastChargingIconResId = null
-                } else if (state.chargingIconResId != null) {
-                    lastChargingIconResId = state.chargingIconResId
-                }
+                updateChargingIconReceiptLocked(state)
             }
         }
         return state
     }
 
     fun readHostChargingIconId(host: Any): Int? {
-        val root = host as? ViewGroup ?: return null
-        val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
-            ?: return null
-        val battery = container.directChild(BATTERY_METER_VIEW_CLASS_NAME)
-            ?: return null
+        val battery = nativeBatteryMeter(host) ?: return null
         return readOrNull {
             battery.javaClass.getDeclaredMethod("getHollowChargingIconId").apply {
                 isAccessible = true
             }.invoke(battery) as? Int
         }?.takeIf { it != 0 }
+    }
+
+    private fun nativeBatteryMeter(host: Any): View? {
+        val root = host as? ViewGroup ?: return null
+        val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
+            ?: return null
+        return container.directChild(BATTERY_METER_VIEW_CLASS_NAME)
+    }
+
+    // Both deliveries update this receipt only while holding the source monitor.
+    private fun updateChargingIconReceiptLocked(state: StatusStateStore.BatteryState) {
+        if (!state.charging) {
+            lastChargingIconResId = null
+        } else if (state.chargingIconResId != null) {
+            lastChargingIconResId = state.chargingIconResId
+        }
     }
 
     private fun ViewGroup.directChild(className: String): View? {
