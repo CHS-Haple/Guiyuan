@@ -20,6 +20,15 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+@Composable
+private fun bottomSystemGestureInset(): Dp =
+    maxOf(
+        WindowInsets.systemGestures.only(WindowInsetsSides.Bottom)
+            .asPaddingValues().calculateBottomPadding(),
+        WindowInsets.mandatorySystemGestures.only(WindowInsetsSides.Bottom)
+            .asPaddingValues().calculateBottomPadding(),
+    )
+
 // The existing empty bottom margin is hit-test space; the bar and system gestures keep their geometry.
 @Composable
 internal fun Modifier.navTouchExtension(
@@ -32,12 +41,7 @@ internal fun Modifier.navTouchExtension(
 ): Modifier {
     if (itemCount <= 0) return this
 
-    val bottomGestureInset = maxOf(
-        WindowInsets.systemGestures.only(WindowInsetsSides.Bottom)
-            .asPaddingValues().calculateBottomPadding(),
-        WindowInsets.mandatorySystemGestures.only(WindowInsetsSides.Bottom)
-            .asPaddingValues().calculateBottomPadding(),
-    )
+    val bottomGestureInset = bottomSystemGestureInset()
     val extension = navTouchExtensionHeight(bottomPadding, bottomGestureInset)
     if (extension == 0.dp) return this
 
@@ -104,12 +108,7 @@ internal fun Modifier.measuredNavTouchExtension(
         itemBounds.any { it == null }
     ) return this
 
-    val gestureInset = maxOf(
-        WindowInsets.systemGestures.only(WindowInsetsSides.Bottom)
-            .asPaddingValues().calculateBottomPadding(),
-        WindowInsets.mandatorySystemGestures.only(WindowInsetsSides.Bottom)
-            .asPaddingValues().calculateBottomPadding(),
-    )
+    val gestureInset = bottomSystemGestureInset()
     val density = LocalDensity.current
     val gesturePx = with(density) { gestureInset.toPx() }
     val extensionPx = with(density) { 12.dp.toPx() }
