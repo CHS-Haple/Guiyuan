@@ -359,35 +359,9 @@ internal object HomeRenderSession {
 
         fun transitionSourceWitness(): TransitionSourceWitness? {
             val motion = statusIcons.get() ?: return null
-            val render = probeView
-            if (
-                !SceneCcPolicy.retainedTransitionSourceWitnessAvailable(
-                    widthPx = render.width,
-                    heightPx = render.height,
-                    hostAttached =
-                        batteryContainer.get()?.isAttachedToWindow == true &&
-                            motion.isAttachedToWindow,
-                )
-            ) {
-                return null
+            return probeView.captureTransitionWitness(motion, batteryContainer) {
+                SysUiPresentationOwner.homeSlots()
             }
-            if (
-                motion.width <= 0 ||
-                motion.height <= 0
-            ) {
-                return null
-            }
-            return TransitionSourceWitness(
-                renderView = render,
-                logicalLeftPx = 0,
-                logicalTopPx = render.currentLogicalViewportTopInsetPx(),
-                logicalWidthPx = render.currentLogicalViewportWidthPx(),
-                logicalHeightPx = render.currentLogicalViewportHeightPx(),
-                positionHost = batteryContainer.get() ?: return null,
-                motionCarrier = motion,
-                representedSlots =
-                    SysUiPresentationOwner.homeSlots(),
-            )
         }
 
         fun stop(removeVisual: Boolean = true) {
@@ -591,17 +565,7 @@ internal object HomeRenderSession {
                 }
                 return
             }
-            val topOverflowPx =
-                probeView.requiredTopOverflowPx(
-                    logicalWidthPx = anchorRect.width(),
-                    logicalHeightPx = anchorRect.height(),
-                )
-            val bottomOverflowPx =
-                probeView.requiredBottomOverflowPx(
-                    logicalWidthPx = anchorRect.width(),
-                    logicalHeightPx = anchorRect.height(),
-                )
-            probeView.layoutAtAnchor(anchorRect, topOverflowPx, bottomOverflowPx)
+            probeView.layoutAtAnchor(anchorRect)
             layoutReady = true
 
             if (!layoutLogged) {
