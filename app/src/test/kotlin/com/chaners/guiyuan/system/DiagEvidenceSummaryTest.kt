@@ -6,13 +6,17 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private const val HOOK_INSTALL = "hook.install"
+private const val STATUS_HOST_HOOK = "statusHostHook"
+private const val CURRENT_SESSION = "current"
+
 class DiagEvidenceSummaryTest {
     @Test
     fun summarizesCurrentSessionWithoutClaimingNativeViewTree() {
         val entries = listOf(
-            event("W", "hook.install", "statusHostHook", "old", "bounds" to "old"),
-            event("W", "hook.install", "statusHostHook", "current", "bounds" to "0,0,10,10"),
-            event("I", "scene.update", "scene", "current"),
+            event("W", HOOK_INSTALL, STATUS_HOST_HOOK, "old", "bounds" to "old"),
+            event("W", HOOK_INSTALL, STATUS_HOST_HOOK, CURRENT_SESSION, "bounds" to "0,0,10,10"),
+            event("I", "scene.update", "scene", CURRENT_SESSION),
         )
         val report = DiagReport.build(snapshot(entries))
         assertTrue(report.contains("[Diagnostic evidence]"))
@@ -31,7 +35,7 @@ class DiagEvidenceSummaryTest {
     fun keepsOnlyFortyMostRecentRelevantEntriesAndBoundsFields() {
         val entries = (1..53).map { index ->
             event(
-                "E", "hook.error", "statusHostHook", "current",
+                "E", "hook.error", STATUS_HOST_HOOK, CURRENT_SESSION,
                 "index" to index.toString(),
                 "oversized" to "x".repeat(120),
             )
@@ -48,7 +52,7 @@ class DiagEvidenceSummaryTest {
     @Test
     fun ordinaryReportDoesNotIncludeExtraAnalysis() {
         val report = DiagReport.build(
-            snapshot(listOf(event("W", "hook.error", "statusHostHook", "current")))
+            snapshot(listOf(event("W", "hook.error", STATUS_HOST_HOOK, CURRENT_SESSION)))
                 .copy(level = DiagLevel.General),
         )
         assertFalse(report.contains("[Diagnostic evidence]"))
