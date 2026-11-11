@@ -15,6 +15,10 @@ internal fun VisualCfg.hasFiniteScalars(): Boolean =
         wifiScale, airplaneScale, noSimScale, mobileTypeScale,
     ).all(Float::isFinite)
 
+// One rule applies to both visual overrides and custom scheme colors.
+private fun isOpaqueOrAbsent(color: Int?): Boolean =
+    color == null || color ushr 24 == 0xFF
+
 internal object ConfigBackupGuards {
     internal fun validateMetadata(backup: ConfigBackup, format: String, schema: Int) {
         require(backup.format == format) { "Not a Guiyuan configuration file" }
@@ -61,7 +65,7 @@ internal object ConfigBackupGuards {
             }
             require(BatteryColorSlot.entries.all { slot ->
                 val color = cfg.batteryColorOverrides.colorFor(slot)
-                color == null || color ushr 24 == 0xFF
+                isOpaqueOrAbsent(color)
             }) { "Visual colors must be opaque" }
         }
 
@@ -91,7 +95,7 @@ internal object ConfigBackupGuards {
             }
             require(BatteryColorSlot.entries.all { slot ->
                 val color = scheme.entries.entryFor(slot).customColor
-                color == null || color ushr 24 == 0xFF
+                isOpaqueOrAbsent(color)
             }) { "Custom scheme colors must be opaque" }
         }
     }
@@ -100,10 +104,7 @@ internal object ConfigBackupGuards {
         var index = 0
         while (index < value.length) {
             val char = value[index]
-            if (Character.isISOControl(char) ||
-                char == '\u061C' || char in '\u200E'..'\u200F' ||
-                char in '\u2028'..'\u202E' || char in '\u2066'..'\u206F'
-            ) return false
+            if (isUnsafePortableTextCodePoint(char.code)) return false
             if (Character.isHighSurrogate(char)) {
                 if (index + 1 >= value.length ||
                     !Character.isLowSurrogate(value[index + 1])
