@@ -754,11 +754,7 @@ internal object KeyguardRenderSession {
                     logicalWidthPx = anchorRect.width(),
                     logicalHeightPx = anchorRect.height(),
                 )
-            applyAnchorBounds(
-                bounds = anchorRect,
-                topOverflowPx = topOverflowPx,
-                bottomOverflowPx = bottomOverflowPx,
-            )
+            renderView.layoutAtAnchor(anchorRect, topOverflowPx, bottomOverflowPx)
             layoutReady = true
             if (!layoutLogged) {
                 layoutLogged = true
@@ -812,46 +808,6 @@ internal object KeyguardRenderSession {
             return out.width() > 0 && out.height() > 0
         }
 
-        private fun applyAnchorBounds(
-            bounds: Rect,
-            topOverflowPx: Int,
-            bottomOverflowPx: Int,
-        ) {
-            val physical =
-                VerticalOverflowPolicy.resolve(
-                    logicalTopPx = bounds.top,
-                    logicalHeightPx = bounds.height(),
-                    requestedTopOverflowPx = topOverflowPx,
-                    requestedBottomOverflowPx = bottomOverflowPx,
-                )
-            renderView.setLogicalViewport(
-                widthPx = bounds.width(),
-                heightPx = bounds.height(),
-                topInsetPx = physical.logicalTopInsetPx,
-            )
-            if (
-                renderView.measuredWidth != bounds.width() ||
-                renderView.measuredHeight != physical.physicalHeightPx
-            ) {
-                renderView.measure(
-                    View.MeasureSpec.makeMeasureSpec(
-                        bounds.width(),
-                        View.MeasureSpec.EXACTLY,
-                    ),
-                    View.MeasureSpec.makeMeasureSpec(
-                        physical.physicalHeightPx,
-                        View.MeasureSpec.EXACTLY,
-                    ),
-                )
-            }
-            renderView.layout(
-                bounds.left,
-                physical.physicalTopPx,
-                bounds.right,
-                bounds.bottom + bottomOverflowPx,
-            )
-        }
-
         private fun applyResolvedVisibility(): Boolean {
             val visible =
                 resolveSceneOverlayVisible(
@@ -863,12 +819,7 @@ internal object KeyguardRenderSession {
                 // The sibling combined view follows status icons, not Battery's separate AOD fade.
                 updateRenderAlpha()
             }
-            renderView.visibility = if (visible) View.VISIBLE else View.GONE
-            if (visible) {
-                renderView.invalidate()
-            } else {
-                renderView.clearPendingLatency()
-            }
+            renderView.updateRenderVisibility(visible)
             return visible
         }
 

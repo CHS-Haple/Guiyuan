@@ -601,11 +601,7 @@ internal object HomeRenderSession {
                     logicalWidthPx = anchorRect.width(),
                     logicalHeightPx = anchorRect.height(),
                 )
-            applyAnchorBounds(
-                bounds = anchorRect,
-                topOverflowPx = topOverflowPx,
-                bottomOverflowPx = bottomOverflowPx,
-            )
+            probeView.layoutAtAnchor(anchorRect, topOverflowPx, bottomOverflowPx)
             layoutReady = true
 
             if (!layoutLogged) {
@@ -634,12 +630,7 @@ internal object HomeRenderSession {
                     controlCenterAllowsHome = controlCenterAllowsHome,
                     nativeHandoffActive = nativeHandoffActive,
                 )
-            probeView.visibility = if (visible) View.VISIBLE else View.GONE
-            if (visible) {
-                probeView.invalidate()
-            } else {
-                probeView.clearPendingLatency()
-            }
+            probeView.updateRenderVisibility(visible)
             return visible
         }
 
@@ -726,71 +717,7 @@ internal object HomeRenderSession {
             out.set(resolved.left, 0, resolved.right, hostHeight)
             return out.width() > 0 && out.height() > 0
         }
-
-        private fun applyAnchorBounds(
-            bounds: Rect,
-            topOverflowPx: Int,
-            bottomOverflowPx: Int,
-        ) {
-            val physical =
-                VerticalOverflowPolicy.resolve(
-                    logicalTopPx = bounds.top,
-                    logicalHeightPx = bounds.height(),
-                    requestedTopOverflowPx = topOverflowPx,
-                    requestedBottomOverflowPx = bottomOverflowPx,
-                )
-            probeView.setLogicalViewport(
-                widthPx = bounds.width(),
-                heightPx = bounds.height(),
-                topInsetPx = physical.logicalTopInsetPx,
-            )
-            if (
-                probeView.measuredWidth != bounds.width() ||
-                probeView.measuredHeight != physical.physicalHeightPx
-            ) {
-                val widthSpec = View.MeasureSpec.makeMeasureSpec(
-                    bounds.width(),
-                    View.MeasureSpec.EXACTLY,
-                )
-                val heightSpec = View.MeasureSpec.makeMeasureSpec(
-                    physical.physicalHeightPx,
-                    View.MeasureSpec.EXACTLY,
-                )
-                probeView.measure(widthSpec, heightSpec)
-            }
-            probeView.layout(
-                bounds.left,
-                physical.physicalTopPx,
-                bounds.right,
-                bounds.bottom + bottomOverflowPx,
-            )
-        }
     }
 
     private const val RENDER_OPACITY = 1f
-}
-
-
-internal object VerticalOverflowPolicy {
-    internal data class Resolved(
-        val physicalTopPx: Int,
-        val physicalHeightPx: Int,
-        val logicalTopInsetPx: Int,
-    )
-
-    fun resolve(
-        logicalTopPx: Int,
-        logicalHeightPx: Int,
-        requestedTopOverflowPx: Int,
-        requestedBottomOverflowPx: Int = 0,
-    ): Resolved {
-        val logicalHeight = logicalHeightPx.coerceAtLeast(0)
-        val top = requestedTopOverflowPx.coerceAtLeast(0)
-        val bottom = requestedBottomOverflowPx.coerceAtLeast(0)
-        return Resolved(
-            physicalTopPx = logicalTopPx - top,
-            physicalHeightPx = logicalHeight + top + bottom,
-            logicalTopInsetPx = top,
-        )
-    }
 }

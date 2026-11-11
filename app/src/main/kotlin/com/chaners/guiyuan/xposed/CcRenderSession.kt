@@ -1007,12 +1007,7 @@ internal object CcRenderSession {
 
         private fun applyVisibility() {
             val visible = requestedVisible && projectionReady()
-            renderView.visibility = if (visible) View.VISIBLE else View.GONE
-            if (visible) {
-                renderView.invalidate()
-            } else {
-                renderView.clearPendingLatency()
-            }
+            renderView.updateRenderVisibility(visible)
         }
 
         private fun dispatchReadiness(source: String) {
