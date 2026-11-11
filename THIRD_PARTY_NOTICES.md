@@ -54,7 +54,15 @@ claim
 that those files remain byte-identical to the current upstream revision. The
 remaining compatibility
 bridge is not claimed to be the latest complete `miuix-glass` module.
-The adapted source includes documented compatibility bridges (including title rendering), so it is not a byte-for-byte copy of the entire upstream module. The menu migration in Guiyuan PR #1316 also selectively ports the material-opacity behavior of upstream commit `799d3d09f996d66cb2b1c2318deed8242c4f440e` into app-local `GlassIconButton` and `GlassTransformPopup`; this does not advance the complete matched-source dependency graph. Accepted OS4 source-mode CI checks out the branch-pinned MIUIX source graph; ordinary Gradle builds retain published-module compatibility paths.
+The adapted source includes documented compatibility bridges (including title
+rendering), so it is not a byte-for-byte copy of the entire upstream module.
+The menu migration in Guiyuan PR #1316 also selectively ports the
+material-opacity behavior of upstream commit
+`799d3d09f996d66cb2b1c2318deed8242c4f440e` into app-local `GlassIconButton` and
+`GlassTransformPopup`; this does not advance the complete matched-source
+dependency graph. Accepted OS4 source-mode CI checks out the branch-pinned
+MIUIX source graph; ordinary Gradle builds retain published-module
+compatibility paths.
 These app-local primitives remain until a qualified upstream public API can
 preserve their host contracts; they must not be silently
 updated independently from the corresponding MIUIX UI/Blur contracts. See
@@ -84,7 +92,16 @@ The selected Material Symbols are stored as local Android vector drawables
 sourced from Google's `google/material-design-icons` repository. They are app
 resources, not a runtime library dependency.
 
-Both OS4 source variants now share `app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4GlassIcons.kt`, which aliases the published MIUIX Glass Regular vectors for Back, Search, Close, Refresh, Filter, More, Edit, Copy, Delete and Share. The previous six local `os4Published` vector copies and the separate upstream alias were removed by #1370. Diagnostics export uses `Glass.Regular.Share` in the OS4 UI style and ordinary `MiuixIcons.Share` in OS3; the input clear control continues to use MIUIX `Basic.SearchCleanup`, while Glass.Close is used for outside Cancel. This module does not import or publish the entire upstream `miuix-glass` runtime implementation.
+Both OS4 source variants now share
+`app/src/main/kotlin/com/chaners/guiyuan/ui/icons/Os4GlassIcons.kt`, which
+aliases the published MIUIX Glass Regular vectors for Back, Search, Close,
+Refresh, Filter, More, Edit, Copy, Delete and Share. The previous six local
+`os4Published` vector copies and the separate upstream alias were removed by
+#1370. Diagnostics export uses `Glass.Regular.Share` in the OS4 UI style and
+ordinary `MiuixIcons.Share` in OS3; the input clear control continues to use
+MIUIX `Basic.SearchCleanup`, while Glass.Close is used for outside Cancel. This
+module does not import or publish the entire upstream `miuix-glass` runtime
+implementation.
 
 ## Test dependencies
 
