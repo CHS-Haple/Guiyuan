@@ -4343,6 +4343,13 @@ class GyModule : XposedModule() {
         }
     }
 
+    // Retain native host-first delivery, with Main Looper fallback on failure.
+    private fun postSettingsChangeToMain(dispatch: Runnable): Boolean {
+        val hostView = SysUiHostRegistry.current() as? android.view.View
+        return (hostView?.post(dispatch) == true) ||
+            Handler(Looper.getMainLooper()).post(dispatch)
+    }
+
     private fun onFeatureCfgChanged(
         cfg: FeatureCfg,
         transportNs: Long?,
@@ -4356,13 +4363,7 @@ class GyModule : XposedModule() {
                         transportNs = transportNs,
                     )
                 }
-            val hostView = SysUiHostRegistry.current() as? android.view.View
-            val scheduled =
-                (hostView?.post(dispatch) == true) ||
-                    Handler(Looper.getMainLooper()).post(dispatch)
-            if (scheduled) {
-                return
-            }
+            if (postSettingsChangeToMain(dispatch)) return
             logDiagnostic(
                 level = Log.ERROR,
                 event = "featureSettings.dispatch",
@@ -4547,13 +4548,7 @@ class GyModule : XposedModule() {
                 Runnable {
                     onVisualCfgChanged(visual)
                 }
-            val hostView = SysUiHostRegistry.current() as? android.view.View
-            val scheduled =
-                (hostView?.post(dispatch) == true) ||
-                    Handler(Looper.getMainLooper()).post(dispatch)
-            if (scheduled) {
-                return
-            }
+            if (postSettingsChangeToMain(dispatch)) return
             logDiagnostic(
                 level = Log.ERROR,
                 event = "visualSettings.dispatch",
