@@ -1,11 +1,7 @@
 package com.chaners.guiyuan.settings
 
 import android.content.Context
-import android.content.SharedPreferences
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 internal class VisualRepo(context: Context) {
     private val context = context.applicationContext
@@ -21,24 +17,7 @@ internal class VisualRepo(context: Context) {
     }
 
     val settings: Flow<VisualCfg> =
-        callbackFlow {
-            fun emitCurrent() {
-                trySend(current())
-            }
-
-            val listener =
-                SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                    if (isVisualPreferenceKey(key)) {
-                        emitCurrent()
-                    }
-                }
-
-            preferences.registerOnSharedPreferenceChangeListener(listener)
-            emitCurrent()
-            awaitClose {
-                preferences.unregisterOnSharedPreferenceChangeListener(listener)
-            }
-        }.distinctUntilChanged()
+        observePreferenceChanges(preferences, ::isVisualPreferenceKey, ::current)
 
     fun current(): VisualCfg = preferences.readVisualCfg()
 

@@ -2,10 +2,7 @@ package com.chaners.guiyuan.settings
 
 import android.content.Context
 import android.content.SharedPreferences
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 internal const val BATTERY_COLOR_SCHEME_CUSTOM_MAX = 5
 internal const val BATTERY_COLOR_SCHEME_NAME_MAX_CODE_POINTS = 24
@@ -38,23 +35,9 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
     }
 
     val library: Flow<BatteryColorSchemeLibrary> =
-        callbackFlow {
-            fun emitCurrent() {
-                trySend(current())
-            }
-
-            val listener =
-                SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                    if (key == null || key.startsWith(BATTERY_COLOR_SCHEME_PREFIX)) {
-                        emitCurrent()
-                    }
-                }
-            preferences.registerOnSharedPreferenceChangeListener(listener)
-            emitCurrent()
-            awaitClose {
-                preferences.unregisterOnSharedPreferenceChangeListener(listener)
-            }
-        }.distinctUntilChanged()
+        observePreferenceChanges(preferences, { key ->
+            key == null || key.startsWith(BATTERY_COLOR_SCHEME_PREFIX)
+        }, ::current)
 
     fun current(): BatteryColorSchemeLibrary =
         BatterySchemePersistence.readLibrary(preferences)
