@@ -17,6 +17,7 @@ import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.settings.finiteIn
 import com.chaners.guiyuan.settings.topChargingIconUiScale
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import com.chaners.guiyuan.xposed.battery.BatteryTopArcPolicy
@@ -1197,10 +1198,9 @@ internal class StatusPainter(
     ): NativeRenderTransform? {
         if (width <= 0 || height <= 0) return null
         val combinedScale =
-            visual.combinedScale
-                .takeIf(Float::isFinite)
-                ?.coerceIn(COMBINED_SCALE_MIN, COMBINED_SCALE_MAX)
-                ?: COMBINED_SCALE_DEFAULT
+            visual.combinedScale.finiteIn(
+                COMBINED_SCALE_MIN, COMBINED_SCALE_MAX, COMBINED_SCALE_DEFAULT,
+            )
         val scale =
             min(width / CANONICAL_SIZE, height / CANONICAL_SIZE) *
                 combinedScale
@@ -3891,11 +3891,7 @@ internal class StatusPainter(
                         diameter = diameter,
                         barProgress = barProgress,
                     )
-            fill(
-                color = tint,
-                alpha = if (level != null && level > index) 255 else 48,
-                opacity = opacity,
-            )
+            fillMobileDot(tint, level, index, opacity)
             canvas.drawRoundRect(
                 centerX - dotRadius,
                 bottom - barHeight,
@@ -4035,11 +4031,7 @@ internal class StatusPainter(
                     (bottom - top).coerceAtLeast(0f) / 2f,
                 )
 
-            fill(
-                color = tint,
-                alpha = if (level != null && level > index) 255 else 48,
-                opacity = opacity,
-            )
+            fillMobileDot(tint, level, index, opacity)
             canvas.drawRoundRect(
                 left,
                 top,
@@ -4100,11 +4092,7 @@ internal class StatusPainter(
                             visual.dualRowDotOffsetY,
                         )
                     }
-                    fill(
-                        color = tint,
-                        alpha = if (level != null && level > index) 255 else 48,
-                        opacity = opacity,
-                    )
+                    fillMobileDot(tint, level, index, opacity)
                     canvas.drawCircle(
                         MobileDotRelocationPolicy.coordinate(if (centeredBefore) innerX else outerX,
                             if (centeredNow) innerX else outerX, fraction),
@@ -4130,6 +4118,15 @@ internal class StatusPainter(
         }
     }
 
+    private fun fillMobileDot(
+        tint: Int,
+        level: Int?,
+        index: Int,
+        opacity: Float,
+    ) {
+        fill(color = tint, alpha = if (level != null && level > index) 255 else 48, opacity = opacity)
+    }
+
     private fun drawCenteredMobile(
         canvas: Canvas,
         model: RenderModel,
@@ -4146,11 +4143,7 @@ internal class StatusPainter(
             val y = centeredMobileRowY(geometry, if (dual == null) null else row)
             val radius = (if (dual == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius) * centerScale
             for (index in 0 until MOBILE_DOT_COUNT) {
-                fill(
-                    color = tint,
-                    alpha = if (level != null && level > index) 255 else 48,
-                    opacity = opacity,
-                )
+                fillMobileDot(tint, level, index, opacity)
                 canvas.drawCircle(
                     CENTER_TRANSITION_PIVOT_X + geometry.horizontalDotX(index) * centerScale,
                     y,
@@ -4363,11 +4356,7 @@ internal class StatusPainter(
             for (row in 0..1) {
                 val level = if (row == 0) dualLevels.sim1 else dualLevels.sim2
                 for (index in 0 until MOBILE_DOT_COUNT) {
-                    fill(
-                        color = tint,
-                        alpha = if (level != null && level > index) 255 else 48,
-                        opacity = opacity,
-                    )
+                    fillMobileDot(tint, level, index, opacity)
                     val x = geometry.dualDotX(index, row, style)
                     val y = geometry.dualDotY(index, row, style, mobileOffsetY)
                     canvas.drawCircle(
@@ -4383,11 +4372,7 @@ internal class StatusPainter(
         val level = model.mobileLevel
 
         for (index in 0 until MOBILE_DOT_COUNT) {
-            fill(
-                color = tint,
-                alpha = if (level != null && level > index) 255 else 48,
-                opacity = opacity,
-            )
+            fillMobileDot(tint, level, index, opacity)
             canvas.drawCircle(
                 MOBILE_CENTER_X + geometry.singleDotX(index, style),
                 MOBILE_CENTER_Y + geometry.singleDotY(index, style, mobileOffsetY),
