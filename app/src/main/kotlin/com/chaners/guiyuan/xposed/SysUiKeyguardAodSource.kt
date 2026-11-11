@@ -62,36 +62,28 @@ internal object SysUiKeyguardAodSource {
         val resolvedAnimToAod =
             resolveBooleanField(batteryClass, ANIM_TO_AOD_FIELD)
 
-        val setAnimateCandidates =
-            batteryClass.declaredMethods.filter { method ->
-                method.name == SET_AOD_ANIMATE_METHOD &&
-                    method.parameterCount == 1 &&
+        val setAnimateMethod =
+            SysUiPresentationRuntime.requireUniqueHookMethod(
+                batteryClass,
+                SET_AOD_ANIMATE_METHOD,
+                "aod-set-animate-method-contract-",
+            ) { method ->
+                method.parameterCount == 1 &&
                     isBooleanType(method.parameterTypes[0]) &&
                     method.returnType == Void.TYPE
             }
-        val setAnimateMethod =
-            setAnimateCandidates.singleOrNull()
-                ?.apply { isAccessible = true }
-                ?: error(
-                    "aod-set-animate-method-contract-" +
-                        if (setAnimateCandidates.isEmpty()) "missing" else "ambiguous",
-                )
 
-        val toggleCandidates =
-            batteryClass.declaredMethods.filter { method ->
-                method.name == TOGGLE_AOD_METHOD &&
-                    matchesToggleAodSignature(
-                        parameterTypes = method.parameterTypes,
-                        returnType = method.returnType,
-                    )
-            }
         val toggleMethod =
-            toggleCandidates.singleOrNull()
-                ?.apply { isAccessible = true }
-                ?: error(
-                    "aod-toggle-method-contract-" +
-                        if (toggleCandidates.isEmpty()) "missing" else "ambiguous",
+            SysUiPresentationRuntime.requireUniqueHookMethod(
+                batteryClass,
+                TOGGLE_AOD_METHOD,
+                "aod-toggle-method-contract-",
+            ) { method ->
+                matchesToggleAodSignature(
+                    parameterTypes = method.parameterTypes,
+                    returnType = method.returnType,
                 )
+            }
 
         toAodField = resolvedToAod
         isAodAnimateField = resolvedIsAnimate
