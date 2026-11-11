@@ -8,18 +8,10 @@ evidence remain in PRs, issues, commits and the reference documents.
 ## Current release scope and accepted runtime
 
 - **Operating-system support:** Guiyuan's stable release line targets **Xiaomi
-  HyperOS 4 only** with compatible LSPosed / Modern Xposed API 102. The
-  "OS3" selector is an optional **UI style**, not HyperOS 3 runtime support.
-- **Current SystemUI target (2026-11-11):** The maintainer designated Xiaomi
-  15 Pro HyperOS `4.0.3.0.XOBCNXM.D02` as the latest ROM baseline and
-  supplied SystemUI `17.03.260226.r` (SHA-256 `2405ce30…304627c`).
-  Static verification found all 21 configured Hook descriptors and 14
-  recorded fields. One old profile class path and one return descriptor
-  required metadata correction. No new ROM403 runtime/OTA/Framework
-  equivalence or comprehensive device acceptance is claimed. The previous
-  Xiaomi 15 Pro `OS4.0.0.19.XOBCNXM` target evidence remains historically
-  valid for its different exact APK (`a0e738e4…78768d`); identical
-  displayed SystemUI versions do not establish binary parity.
+  HyperOS 4 only** with a compatible LSPosed / Modern Xposed API 102
+  environment. The tested target is Xiaomi 15 Pro, HyperOS `OS4.0.0.19.XOBCNXM`,
+  SystemUI `17.03.260226.r`. This does not certify every HyperOS 4 variant. The
+  “OS3” selector is an optional **UI style**, not support for HyperOS 3.
 - **B1827 MIUIX Material acceptance (2026-11-10):** The maintainer reported
   signed B1827 (`1.1.0`, `versionCode=261110827`,
   `buildId=20261110-1827`) normal on the target device.
