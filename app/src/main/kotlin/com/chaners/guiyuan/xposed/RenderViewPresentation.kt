@@ -27,6 +27,16 @@ internal object VerticalOverflowPolicy {
     }
 }
 
+internal fun RenderView.layoutAtAnchor(bounds: Rect) {
+    val width = bounds.width()
+    val height = bounds.height()
+    val topOverflowPx =
+        requiredTopOverflowPx(logicalWidthPx = width, logicalHeightPx = height)
+    val bottomOverflowPx =
+        requiredBottomOverflowPx(logicalWidthPx = width, logicalHeightPx = height)
+    layoutAtAnchor(bounds, topOverflowPx, bottomOverflowPx)
+}
+
 internal fun RenderView.layoutAtAnchor(
     bounds: Rect,
     topOverflowPx: Int,

@@ -591,17 +591,7 @@ internal object HomeRenderSession {
                 }
                 return
             }
-            val topOverflowPx =
-                probeView.requiredTopOverflowPx(
-                    logicalWidthPx = anchorRect.width(),
-                    logicalHeightPx = anchorRect.height(),
-                )
-            val bottomOverflowPx =
-                probeView.requiredBottomOverflowPx(
-                    logicalWidthPx = anchorRect.width(),
-                    logicalHeightPx = anchorRect.height(),
-                )
-            probeView.layoutAtAnchor(anchorRect, topOverflowPx, bottomOverflowPx)
+            probeView.layoutAtAnchor(anchorRect)
             layoutReady = true
 
             if (!layoutLogged) {

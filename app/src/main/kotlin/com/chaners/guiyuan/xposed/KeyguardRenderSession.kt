@@ -744,17 +744,7 @@ internal object KeyguardRenderSession {
                 }
                 return
             }
-            val topOverflowPx =
-                renderView.requiredTopOverflowPx(
-                    logicalWidthPx = anchorRect.width(),
-                    logicalHeightPx = anchorRect.height(),
-                )
-            val bottomOverflowPx =
-                renderView.requiredBottomOverflowPx(
-                    logicalWidthPx = anchorRect.width(),
-                    logicalHeightPx = anchorRect.height(),
-                )
-            renderView.layoutAtAnchor(anchorRect, topOverflowPx, bottomOverflowPx)
+            renderView.layoutAtAnchor(anchorRect)
             layoutReady = true
             if (!layoutLogged) {
                 layoutLogged = true
