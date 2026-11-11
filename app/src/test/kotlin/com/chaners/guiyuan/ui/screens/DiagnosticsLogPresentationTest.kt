@@ -72,8 +72,8 @@ class DiagnosticsLogPresentationTest {
         assertEquals(R.string.diagnostics_log_charging_off, chargingStateRes("FALSE"))
         assertNull(chargingStateRes("null"))
         val raw = legacy("connectivity source=capabilities transport=CELLULAR validated=true")
-        assertEquals("CELLULAR", raw.fields["transport"])
-        assertEquals("capabilities", raw.fields["source"])
+        assertEquals(TRANSPORT_CELLULAR, raw.fields["transport"])
+        assertEquals(SOURCE_CAPABILITIES, raw.fields["source"])
     }
 
     @Test
@@ -88,7 +88,7 @@ class DiagnosticsLogPresentationTest {
     @Test
     fun batteryReconcileDetailsPreferOriginalChargingFields() {
         val entry = structured(
-            "battery.reconcile",
+            EVENT_BATTERY_RECONCILE,
             linkedMapOf(
                 FIELD_SOURCE to "hotReloadNativeIcon",
                 FIELD_REASON to REASON_NATIVE_READ,
