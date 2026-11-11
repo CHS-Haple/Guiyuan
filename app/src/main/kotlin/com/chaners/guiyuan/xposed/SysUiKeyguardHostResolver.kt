@@ -7,7 +7,7 @@ import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 
 internal object SysUiKeyguardHostResolver {
-    private const val KEYGUARD_HOST_CLASS =
+    internal const val KEYGUARD_HOST_CLASS =
         "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"
     private const val STATUS_ICON_CONTAINER_CLASS =
         "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
@@ -183,7 +183,7 @@ internal object SysUiKeyguardHostResolver {
         )
     }
 
-    private fun findAncestor(
+    internal fun findAncestor(
         start: View,
         className: String,
     ): View? {
@@ -204,7 +204,7 @@ internal object SysUiKeyguardHostResolver {
         findField(owner.javaClass, fieldName)
             ?.let { field -> SysUiPresentationRuntime.optionalNativeRead { field.get(owner) as? View } }
 
-    private fun findField(
+    internal fun findField(
         type: Class<*>,
         name: String,
     ): Field? {
