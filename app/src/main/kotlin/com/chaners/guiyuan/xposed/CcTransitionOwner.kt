@@ -2607,19 +2607,24 @@ internal object CcTransitionOwner {
             if (mobileSpec != null && currentSnapshot.model.dualMobileLevels != null) {
                 val targets = resolveDualMobileTargets(mobileSpec, currentSnapshot.model)
                 if (targets != null) {
-                    val targetEdges = targets.map { witness ->
-                        val window = IntArray(2)
-                        witness.slotView.getLocationInWindow(window)
-                        logicalTargetX(window[0].toFloat()) to
-                            logicalTargetX((window[0] + witness.slotView.width).toFloat())
+                    // The verified native targets contain one or two distinct slot roots.
+                    var targetLeft = Float.POSITIVE_INFINITY
+                    var targetRight = Float.NEGATIVE_INFINITY
+                    targets.forEach { witness ->
+                        witness.slotView.getLocationInWindow(targetLocation)
+                        val left = logicalTargetX(targetLocation[0].toFloat())
+                        val right =
+                            logicalTargetX((targetLocation[0] + witness.slotView.width).toFloat())
+                        targetLeft = min(targetLeft, min(left, right))
+                        targetRight = maxOf(targetRight, left, right)
                     }
                     val sourceA = logicalSourceX(mobileSpec.sourceBounds.left)
                     val sourceB = logicalSourceX(mobileSpec.sourceBounds.right)
                     result += CcReservationPolicy.ReservationSpan(
                         sourceLeft = min(sourceA, sourceB),
                         sourceRight = maxOf(sourceA, sourceB),
-                        targetLeft = targetEdges.minOf { edge -> min(edge.first, edge.second) },
-                        targetRight = targetEdges.maxOf { edge -> maxOf(edge.first, edge.second) },
+                        targetLeft = targetLeft,
+                        targetRight = targetRight,
                     )
                 }
             }
