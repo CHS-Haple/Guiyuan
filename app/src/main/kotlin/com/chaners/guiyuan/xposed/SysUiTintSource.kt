@@ -307,33 +307,48 @@ internal object SysUiTintSource {
                 ?.imageTintList
                 ?.defaultColor
         onEvent(
-            "batteryIconProbe source=" + source +
-                " iconClass=" + iconView.javaClass.name +
-                " imageView=" + (iconView is ImageView) +
-                " clipFields=" +
-                (
-                    if (clipStates.isEmpty()) {
-                        "none"
-                    } else {
-                        clipStates.joinToString(",") { state ->
-                            state.fieldName + ":" +
-                                (state.filterClass ?: "no-filter") + ":" +
-                                (state.color?.let(::colorHex) ?: "color-unavailable")
-                        }
-                    }
-                ) +
-                " imageTint=" + (imageTint?.let(::colorHex) ?: "none") +
-                " semanticTints=" +
-                (
-                    if (semanticTints.isEmpty()) {
-                        "none"
-                    } else {
-                        semanticTints.joinToString(",") { colorHex(it) }
-                    }
-                ),
+            formatBatteryIconProbe(
+                source = source,
+                iconView = iconView,
+                clipStates = clipStates,
+                imageTint = imageTint,
+                semanticTints = semanticTints,
+            ),
         )
         synchronized(this) { batteryIconStructureLogged[iconView] = Unit }
     }
+
+    private fun formatBatteryIconProbe(
+        source: String,
+        iconView: View,
+        clipStates: List<BatteryClipTintState>,
+        imageTint: Int?,
+        semanticTints: List<Int>,
+    ): String =
+        "batteryIconProbe source=" + source +
+            " iconClass=" + iconView.javaClass.name +
+            " imageView=" + (iconView is ImageView) +
+            " clipFields=" +
+            (
+                if (clipStates.isEmpty()) {
+                    "none"
+                } else {
+                    clipStates.joinToString(",") { state ->
+                        state.fieldName + ":" +
+                            (state.filterClass ?: "no-filter") + ":" +
+                            (state.color?.let(::colorHex) ?: "color-unavailable")
+                    }
+                }
+            ) +
+            " imageTint=" + (imageTint?.let(::colorHex) ?: "none") +
+            " semanticTints=" +
+            (
+                if (semanticTints.isEmpty()) {
+                    "none"
+                } else {
+                    semanticTints.joinToString(",") { colorHex(it) }
+                }
+            ),
 
     private fun readColorFilterColor(filter: android.graphics.ColorFilter?): Int? {
         if (filter == null) {
