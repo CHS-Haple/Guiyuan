@@ -27,7 +27,7 @@ internal class ScrimBackdrop(
         density: Density,
         coordinates: LayoutCoordinates?,
         layerBlock: (GraphicsLayerScope.() -> Unit)?,
-        downscaleFactor: Int,
+        downscaleFactor: Float,
     ) {
         with(backdrop) {
             drawBackdrop(
@@ -47,11 +47,7 @@ internal class ScrimBackdrop(
         val color = scrimColor.value
         if (color.alpha > 0f) {
             val padding = (density as? BackdropEffectScope)?.padding ?: 0f
-            val scaledPadding = if (downscaleFactor > 1) {
-                (padding / downscaleFactor).toInt().toFloat()
-            } else {
-                padding
-            }
+            val scaledPadding = padding / downscaleFactor
             // Recording has translated by padding. Cover that margin too, without filling pixels
             // outside the scene: SrcAtop retains their alpha instead of creating a dark halo.
             drawRect(color, topLeft = Offset(-scaledPadding, -scaledPadding), size = size, blendMode = BlendMode.SrcAtop)

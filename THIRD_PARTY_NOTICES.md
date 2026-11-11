@@ -18,7 +18,7 @@ versions remain listed here.
 | AndroidX Activity Compose | 1.13.0 | Android/Compose activity integration | Apache-2.0 |
 | AndroidX Navigation Event Compose | 1.2.0 | Predictive/navigation event integration | Apache-2.0 |
 | AndroidX DataStore Preferences | 1.3.0 | Local application preferences | Apache-2.0 |
-| MIUIX UI / Preference / Icons / Glass Icons / Nav / Blur / Material | Stable `main`: `0.9.4-45645854-SNAPSHOT` (`45645854`); `dev` integration via PR #1440: `0.9.4-ca674992-SNAPSHOT` (`ca674992`) | Xiaomi HyperOS-style UI. The Material module replaces the removed `miuix-shader` source module; the prior B1821 `dev` used `45645854`. | Apache-2.0 |
+| MIUIX UI / Preference / Icons / Glass Icons / Nav / Blur / Material | Stable `main`: `0.9.4-45645854-SNAPSHOT` (`45645854`); `dev`: `0.9.4-d05ecf94-SNAPSHOT` (`d05ecf94`) (after `ca674992` in PR #1440) | Xiaomi HyperOS-style UI. The Material module replaces the removed `miuix-shader` source module; the prior B1821 `dev` used `45645854`. | Apache-2.0 |
 | kotlinx.serialization core / JSON | 1.12.0 | Versioned configuration file serialization | Apache-2.0 |
 
 ## Compile-only API
@@ -42,7 +42,7 @@ subset of the
 [MIUIX miuix-glass PR #423](https://github.com/compose-miuix-ui/miuix/pull/423),
 originally adapted from the B1821 checkout revision
 `45645854cd46c32275c5666e3aafa9980d8f104e`. PR #1440
-integrates `ca674992c9645395cdb0d5109d66504ff53d018c`, retaining app-local
+integrated `ca674992c9645395cdb0d5109d66504ff53d018c`; the dependency graph now follows `d05ecf94de932c6b1d9ccf91033e18210b4538b2`, retaining app-local
 compatibility adapters rather than claiming byte-for-byte identity with
 upstream `miuix-glass`. The released main branch retains its own pinned
 source and artifacts (Apache-2.0;
@@ -86,7 +86,7 @@ This is a local source snapshot, not a published `miuix-effect` dependency.
 | Component | Variant | Purpose | Upstream license |
 | --- | --- | --- | --- |
 | Google Material Symbols | Local embedded vectors; no library version | Semantic leading glyphs for companion-app information surfaces | Apache-2.0 |
-| MIUIX OS4 Glass icons | Official `MiuixIcons.Glass.Regular` from pinned `miuix-glass-icons-android` (stable `main` at `45645854`; `dev` integration PR #1440 at `ca674992`) | Native icon aliases for OS4 navigation, menus and diagnostics. OS3 style uses ordinary MIUIX icons where applicable. | Apache-2.0 |
+| MIUIX OS4 Glass icons | Official `MiuixIcons.Glass.Regular` from pinned `miuix-glass-icons-android` (stable `main` at `45645854`; `dev` at `d05ecf94`) | Native icon aliases for OS4 navigation, menus and diagnostics. OS3 style uses ordinary MIUIX icons where applicable. | Apache-2.0 |
 
 The selected Material Symbols are stored as local Android vector drawables
 sourced from Google's `google/material-design-icons` repository. They are app
@@ -112,7 +112,7 @@ implementation.
 ## Build tooling
 
 The repository includes the official Gradle Wrapper with the verified Gradle
-9.9.0 binary distribution. Gradle 9.9.0 is distributed under Apache-2.0.
+9.9.1 binary distribution. Gradle 9.9.1 is distributed under Apache-2.0.
 
 Android Gradle Plugin and Kotlin Gradle plugins are resolved through their
 standard upstream repositories and retain their respective upstream licenses.

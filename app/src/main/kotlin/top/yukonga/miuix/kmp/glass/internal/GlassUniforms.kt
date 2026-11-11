@@ -36,11 +36,11 @@ internal fun BackdropEffectScope.glassEffect(
     val height = size.height
     if (width <= 0f || height <= 0f) return
 
-    val scale = downscaleFactor.toFloat()
+    val scale = downscaleFactor
     val paddedWidth = width + padding * 2f
     val paddedHeight = height + padding * 2f
-    val textureWidth = (paddedWidth.toInt() / downscaleFactor).coerceAtLeast(1).toFloat()
-    val textureHeight = (paddedHeight.toInt() / downscaleFactor).coerceAtLeast(1).toFloat()
+    val textureWidth = (paddedWidth / downscaleFactor).coerceAtLeast(1f)
+    val textureHeight = (paddedHeight / downscaleFactor).coerceAtLeast(1f)
 
     val halfMin = min(width, height) * 0.5f
     val isLtr = layoutDirection == LayoutDirection.Ltr
