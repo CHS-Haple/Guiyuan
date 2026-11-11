@@ -52,15 +52,16 @@ internal class StatusPainter(
     private var cachedAirplaneResourceId: Int = 0
     private val activityResourceIds = HashMap<String, Int>()
     private val nativeCenterAssets =
-        LinkedHashMap<PresentationStore.NativeIconResource, NativeCenterAsset>(
+        BoundedAccessCache<PresentationStore.NativeIconResource, NativeCenterAsset>(
             NATIVE_CENTER_CACHE_SIZE,
-            0.75f,
-            true,
         )
     private val nativeStrokeSources =
-        LinkedHashMap<PresentationStore.NativeIconResource, NativeVectorStroke.Source?>(8, 0.75f, true)
+        BoundedAccessCache<PresentationStore.NativeIconResource, NativeVectorStroke.Source?>(8)
+    // Initial allocation stays at 24, while the native animated-weight cache retains 64.
     private val strokeAssets =
-        LinkedHashMap<Pair<PresentationStore.NativeIconResource, Int>, NativeVectorStroke.Styled>(24, 0.75f, true)
+        BoundedAccessCache<Pair<PresentationStore.NativeIconResource, Int>, NativeVectorStroke.Styled>(
+            capacity = 64, initialCapacity = 24,
+        )
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val nativeTintVariantIds = HashMap<Int, Int>()
     private val nativeWifiReferenceIds = HashMap<Int, Int>()
@@ -2797,10 +2798,6 @@ internal class StatusPainter(
                 ?: return null
 
         nativeCenterAssets[resource] = asset
-        if (nativeCenterAssets.size > NATIVE_CENTER_CACHE_SIZE) {
-            val eldest = nativeCenterAssets.entries.iterator().next()
-            nativeCenterAssets.remove(eldest.key)
-        }
         return asset
     }
 
@@ -3111,18 +3108,11 @@ internal class StatusPainter(
                     }.onFailure { rethrowRenderFatal(it) }.getOrNull()
                 val loaded = resources?.let { NativeVectorStroke.load(it, actual.resourceId) }
                 nativeStrokeSources[actual] = loaded
-                if (nativeStrokeSources.size > 8) {
-                    nativeStrokeSources.remove(nativeStrokeSources.keys.first())
-                }
                 loaded
             } ?: return null
 
         val styled = NativeVectorStroke.style(source, weight) ?: return null
         strokeAssets[key] = styled
-        // 60..100 alone spans 41 animated integer weights; cache a full gesture.
-        if (strokeAssets.size > 64) {
-            strokeAssets.remove(strokeAssets.keys.first())
-        }
         return styled
     }
 

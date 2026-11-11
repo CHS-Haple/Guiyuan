@@ -30,4 +30,31 @@ class BoundedAccessCacheTest {
             assertTrue(cache.containsKey(capacity))
         }
     }
+
+    @Test
+    fun nativeStrokeCapacityCanExceedInitialAllocation() {
+        val cache = BoundedAccessCache<Int, String>(capacity = 64, initialCapacity = 24)
+        for (value in 0..64) cache[value] = "weight-$value"
+
+        assertEquals(64, cache.size)
+        assertFalse(cache.containsKey(0))
+        assertEquals("weight-1", cache[1])
+        cache[65] = "weight-65"
+        assertFalse(cache.containsKey(2))
+        assertTrue(cache.containsKey(1))
+    }
+
+    @Test
+    fun nullValueStillCountsAsCachedAndPromotesOnRead() {
+        val cache = BoundedAccessCache<Int, String?>(2)
+        cache[1] = null
+        cache[2] = "present"
+        assertTrue(cache.containsKey(1))
+        assertEquals(null, cache[1])
+        cache[3] = "new"
+
+        assertTrue(cache.containsKey(1))
+        assertFalse(cache.containsKey(2))
+        assertEquals(listOf(1, 3), cache.keys.toList())
+    }
 }
