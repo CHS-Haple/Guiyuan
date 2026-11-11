@@ -44,61 +44,69 @@ internal object NativeVectorStroke {
     }
 
     fun load(resources: Resources, resourceId: Int): Source? =
-        runCatching {
-            resources.getXml(resourceId).use { xml ->
-                var depth = 0
-                var viewportWidth = Float.NaN
-                var viewportHeight = Float.NaN
-                val layers = ArrayList<Layer>(5)
-                while (xml.next() != XmlPullParser.END_DOCUMENT) {
-                    when (xml.eventType) {
-                        XmlPullParser.START_TAG -> {
-                            when {
-                                depth == 0 && xml.name == "vector" && onlyKeys(xml, vectorKeys) -> {
-                                    viewportWidth = xml.getAttributeFloatValue(NS, "viewportWidth", Float.NaN)
-                                    viewportHeight = xml.getAttributeFloatValue(NS, "viewportHeight", Float.NaN)
-                                    if (!viewportWidth.isFinite() || !viewportHeight.isFinite() ||
-                                        viewportWidth <= 0f || viewportHeight <= 0f
-                                    ) return@runCatching null
-                                }
-                                depth == 1 && xml.name == "path" && onlyKeys(xml, pathKeys) -> {
-                                    if (layers.size >= 12) return@runCatching null
-                                    val data = xml.getAttributeValue(NS, "pathData")
-                                        ?.takeIf { it.isNotBlank() && it.length <= 4096 }
-                                        ?: return@runCatching null
-                                    val values = resources.obtainAttributes(Xml.asAttributeSet(xml), pathAttrs)
-                                    val alpha: Int
-                                    val fillType: Int
-                                    try {
-                                        if (!values.hasValue(0)) return@runCatching null
-                                        val fill = values.getColor(0, Color.TRANSPARENT)
-                                        val fillAlpha = values.getFloat(1, 1f)
-                                        if (!fillAlpha.isFinite() || fillAlpha !in 0f..1f) {
-                                            return@runCatching null
-                                        }
-                                        alpha = (Color.alpha(fill) * fillAlpha).roundToInt()
-                                        fillType = values.getInt(2, 0)
-                                    } finally {
-                                        values.recycle()
-                                    }
-                                    if (fillType !in 0..1) return@runCatching null
-                                    val path = PathParser.createPathFromPathData(data)
-                                    if (path.isEmpty) return@runCatching null
-                                    path.fillType =
-                                        if (fillType == 1) Path.FillType.EVEN_ODD else Path.FillType.WINDING
-                                    layers.add(Layer(path, alpha))
-                                }
-                                else -> return@runCatching null
+        runCatching { readSource(resources, resourceId) }
+            .onFailure { rethrowRenderFatal(it) }
+            .getOrNull()
+
+    private fun readSource(resources: Resources, resourceId: Int): Source? {
+        resources.getXml(resourceId).use { xml ->
+            var depth = 0
+            var viewportWidth = Float.NaN
+            var viewportHeight = Float.NaN
+            val layers = ArrayList<Layer>(5)
+            while (xml.next() != XmlPullParser.END_DOCUMENT) {
+                when (xml.eventType) {
+                    XmlPullParser.START_TAG -> {
+                        when {
+                            depth == 0 && xml.name == "vector" && onlyKeys(xml, vectorKeys) -> {
+                                viewportWidth = xml.getAttributeFloatValue(NS, "viewportWidth", Float.NaN)
+                                viewportHeight = xml.getAttributeFloatValue(NS, "viewportHeight", Float.NaN)
+                                if (!viewportWidth.isFinite() || !viewportHeight.isFinite() ||
+                                    viewportWidth <= 0f || viewportHeight <= 0f
+                                ) return null
                             }
-                            depth++
+                            depth == 1 && xml.name == "path" && onlyKeys(xml, pathKeys) -> {
+                                if (layers.size >= 12) return null
+                                layers.add(readLayer(resources, xml) ?: return null)
+                            }
+                            else -> return null
                         }
-                        XmlPullParser.END_TAG -> depth--
+                        depth++
                     }
+                    XmlPullParser.END_TAG -> depth--
                 }
-                if (depth != 0 || layers.isEmpty()) null
-                else Source(viewportWidth, viewportHeight, layers)
             }
-        }.onFailure { rethrowRenderFatal(it) }.getOrNull()
+            return if (depth != 0 || layers.isEmpty()) null
+                else Source(viewportWidth, viewportHeight, layers)
+        }
+    }
+
+    private fun readLayer(
+        resources: Resources,
+        xml: android.content.res.XmlResourceParser,
+    ): Layer? {
+        val data = xml.getAttributeValue(NS, "pathData")
+            ?.takeIf { it.isNotBlank() && it.length <= 4096 }
+            ?: return null
+        val values = resources.obtainAttributes(Xml.asAttributeSet(xml), pathAttrs)
+        val alpha: Int
+        val fillType: Int
+        try {
+            if (!values.hasValue(0)) return null
+            val fill = values.getColor(0, Color.TRANSPARENT)
+            val fillAlpha = values.getFloat(1, 1f)
+            if (!fillAlpha.isFinite() || fillAlpha !in 0f..1f) return null
+            alpha = (Color.alpha(fill) * fillAlpha).roundToInt()
+            fillType = values.getInt(2, 0)
+        } finally {
+            values.recycle()
+        }
+        if (fillType !in 0..1) return null
+        val path = PathParser.createPathFromPathData(data)
+        if (path.isEmpty) return null
+        path.fillType = if (fillType == 1) Path.FillType.EVEN_ODD else Path.FillType.WINDING
+        return Layer(path, alpha)
+    }
 
     fun style(source: Source, weight: Int): Styled? =
         runCatching { styleSource(source, weight) }
