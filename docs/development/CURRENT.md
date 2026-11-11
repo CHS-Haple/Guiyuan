@@ -214,9 +214,9 @@ merely from a historical Build.
 
 For active decisions consult [DECISIONS](DECISIONS.md), the
 [architecture policy](../architecture/README.md), and exact current `dev`
-source/CI. [RELEASE_READINESS](RELEASE_READINESS.md) preserves the first
-stable-release qualification as dated historical evidence; current release
-status comes from GitHub and the live Gradle configuration.
+source/CI. Historical release qualification remains in Git history and
+release/PR records; current release status comes from GitHub and the live
+Gradle configuration.
 
 ## Presentation ownership and lifecycle
 
