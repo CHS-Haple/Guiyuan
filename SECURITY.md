@@ -3,10 +3,11 @@
 Guiyuan's stable release line began at 1.0.0; the currently supported stable
 version is the latest signed stable release published on GitHub Releases. The
 officially supported OS family is Xiaomi HyperOS 4 with a compatible LSPosed /
-Modern Xposed API 102 environment. The current compatibility baseline is Xiaomi 15 Pro on HyperOS
-`4.0.3.0.XOBCNXM.D02` / SystemUI `17.03.260226.r`; the target APK's static
-contracts have been checked, but full device testing is not yet complete.
-Other HyperOS 4 builds have not all been independently tested. Reports may concern the
+Modern Xposed API 102 environment. The current compatibility baseline is
+Xiaomi 15 Pro on HyperOS `4.0.3.0.XOBCNXM.D02` / SystemUI `17.03.260226.r`.
+The target APK's static contracts have been checked; full device testing is
+not yet complete. Other HyperOS 4 builds have not all been independently
+tested. Reports may concern the
 latest published `main` release or the active `dev` line. Unsupported platforms
 can be reported, but are not automatically within the supported
 security-maintenance scope.
