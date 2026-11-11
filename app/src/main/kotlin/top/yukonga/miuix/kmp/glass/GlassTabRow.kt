@@ -46,8 +46,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.glass.internal.drawGlassRim
-import top.yukonga.miuix.kmp.glass.internal.drawGlassStroke
+import top.yukonga.miuix.kmp.material.drawEdgeStroke
+import top.yukonga.miuix.kmp.material.drawGlassRim
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 
@@ -296,9 +296,9 @@ fun GlassTabRow(
                             val restingRim = alpha * (1f - ramp) * rim.value
                             if (restingRim > 0.001f) {
                                 if (stroke != null) {
-                                    drawGlassStroke(shape, layoutDirection, stroke, restingRim)
+                                    drawEdgeStroke(shape, stroke, restingRim)
                                 }
-                                drawGlassRim(shape, layoutDirection, style, containerColor(), restingRim)
+                                drawGlassRim(shape, style, containerColor(), restingRim)
                             }
                         }
                         .selectable(

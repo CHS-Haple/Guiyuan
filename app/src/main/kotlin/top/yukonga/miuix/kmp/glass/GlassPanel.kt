@@ -8,7 +8,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.graphicsLayer
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.glass.internal.drawGlassStroke
+import top.yukonga.miuix.kmp.material.drawEdgeStroke
 
 /**
  * Makes this composable a sheet of glass over [backdrop], with the shadow it casts.
@@ -45,7 +45,7 @@ fun Modifier.glassPanel(
         .then(fallback)
         .drawWithContent {
             drawContent()
-            stroke?.let { drawGlassStroke(shape, layoutDirection, it, 1f) }
+            stroke?.let { drawEdgeStroke(shape, it, 1f) }
         }
 } else {
     this

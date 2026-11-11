@@ -32,8 +32,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
-import top.yukonga.miuix.kmp.glass.internal.drawGlassMask
-import top.yukonga.miuix.kmp.glass.internal.drawGlassStroke
+import top.yukonga.miuix.kmp.material.drawEdgeStroke
+import top.yukonga.miuix.kmp.material.drawGlassMask
 
 /**
  * A round glass button for a bar's leading or trailing controls.
@@ -242,9 +242,9 @@ private fun GlassButtonSurface(
                             .drawWithContent {
                                 drawContent()
                                 if (stroke != null && keepMaterial) {
-                                    drawGlassStroke(shape, layoutDirection, stroke, opacity)
+                                    drawEdgeStroke(shape, stroke, opacity)
                                 }
-                                drawGlassMask(shape, layoutDirection)
+                                drawGlassMask(shape)
                             }
                     },
                 ),

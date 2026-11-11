@@ -58,7 +58,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.glass.internal.drawGlassStroke
+import top.yukonga.miuix.kmp.material.drawEdgeStroke
 import kotlin.math.roundToInt
 
 /**
@@ -360,7 +360,7 @@ internal fun BoxScope.GlassPopupBackground(
             if (backdrop == null) {
                 Modifier.background(visuals.containerColor).drawWithContent {
                     drawContent()
-                    visuals.stroke?.let { drawGlassStroke(shape, layoutDirection, it, visuals.alpha) }
+                    visuals.stroke?.let { drawEdgeStroke(shape, it, visuals.alpha) }
                 }
             } else if (underlayMaterial != null) {
                 Modifier.glassOnActionBar(
