@@ -1309,6 +1309,7 @@ internal object SysUiNetworkSource {
         )
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun wifiIconHooker(
         active: AtomicBoolean,
         wifiImageField: Field,
