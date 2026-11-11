@@ -1120,22 +1120,7 @@ internal class StatusPainter(
     ): TransitionWifiMetrics? {
         val presentationResource = resolveNativeTintVariant(resource) ?: resource
         val asset = nativeCenterAsset(presentationResource) ?: return null
-        val referenceAsset =
-            opticalReferenceResource
-                ?.let { reference ->
-                    val presentationReference =
-                        resolveNativeTintVariant(reference) ?: reference
-                    nativeCenterAsset(presentationReference)
-                }
-                ?.takeIf { reference ->
-                    WifiOpticalReference.canShareReferenceViewport(
-                        currentWidth = asset.intrinsicWidth,
-                        currentHeight = asset.intrinsicHeight,
-                        referenceWidth = reference.intrinsicWidth,
-                        referenceHeight = reference.intrinsicHeight,
-                    )
-                }
-        val fitAsset = referenceAsset ?: asset
+        val fitAsset = nativeOpticalFitAsset(asset, opticalReferenceResource)
         val optical = fitAsset.opticalBounds
         val opticalWidthRatio =
             (optical.right - optical.left).coerceAtLeast(MIN_OPTICAL_RATIO)
@@ -2799,6 +2784,28 @@ internal class StatusPainter(
         return asset
     }
 
+    private fun nativeOpticalFitAsset(
+        asset: NativeCenterAsset,
+        referenceResource: PresentationStore.NativeIconResource?,
+    ): NativeCenterAsset {
+        val referenceAsset =
+            referenceResource
+                ?.let { reference ->
+                    val presentationReference =
+                        resolveNativeTintVariant(reference) ?: reference
+                    nativeCenterAsset(presentationReference)
+                }
+                ?.takeIf { reference ->
+                    WifiOpticalReference.canShareReferenceViewport(
+                        currentWidth = asset.intrinsicWidth,
+                        currentHeight = asset.intrinsicHeight,
+                        referenceWidth = reference.intrinsicWidth,
+                        referenceHeight = reference.intrinsicHeight,
+                    )
+                }
+        return referenceAsset ?: asset
+    }
+
     private fun resolveNativeVisualProbe(
         drawable: Drawable,
         resources: android.content.res.Resources,
@@ -2883,22 +2890,7 @@ internal class StatusPainter(
         val asset = nativeCenterAsset(presentationResource) ?: return null
         if (asset.intrinsicWidth <= 0 || asset.intrinsicHeight <= 0) return null
 
-        val referenceAsset =
-            opticalReferenceResource
-                ?.let { reference ->
-                    val presentationReference =
-                        resolveNativeTintVariant(reference) ?: reference
-                    nativeCenterAsset(presentationReference)
-                }
-                ?.takeIf { reference ->
-                    WifiOpticalReference.canShareReferenceViewport(
-                        currentWidth = asset.intrinsicWidth,
-                        currentHeight = asset.intrinsicHeight,
-                        referenceWidth = reference.intrinsicWidth,
-                        referenceHeight = reference.intrinsicHeight,
-                    )
-                }
-        val fitAsset = referenceAsset ?: asset
+        val fitAsset = nativeOpticalFitAsset(asset, opticalReferenceResource)
         val resolved =
             NativeOpticalGeometry.resolve(
                 currentIntrinsicWidth = asset.intrinsicWidth,
