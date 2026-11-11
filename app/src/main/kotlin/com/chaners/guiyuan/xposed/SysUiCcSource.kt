@@ -49,6 +49,17 @@ internal object SysUiCcSource {
     private var anchorContract: AnchorContract? = null
     private var headerRef = WeakReference<Any>(null)
     private var fakeIslandContractRootRef = WeakReference<ViewGroup>(null)
+    private val FAKE_ISLAND_PROBE_FIELDS =
+        listOf(
+            "slot",
+            "visibleState",
+            "inIslandState",
+            "beforeInIslandState",
+            "islandChanged",
+            "supportAnim",
+            "forceAppear",
+            "layoutTranslationX",
+        )
 
     @Suppress("TooGenericExceptionCaught")
     fun install(
@@ -339,17 +350,6 @@ internal object SysUiCcSource {
         if (fakeIslandContractRootRef.get() === root) return null
         fakeIslandContractRootRef = WeakReference(root)
 
-        val fieldNames =
-            listOf(
-                "slot",
-                "visibleState",
-                "inIslandState",
-                "beforeInIslandState",
-                "islandChanged",
-                "supportAnim",
-                "forceAppear",
-                "layoutTranslationX",
-            )
         val views = ArrayList<View>()
         fun collect(
             view: View,
@@ -390,7 +390,7 @@ internal object SysUiCcSource {
         val contractViews =
             views.mapNotNull { view ->
                 val resolvedFields =
-                    fieldNames.mapNotNull { name ->
+                    FAKE_ISLAND_PROBE_FIELDS.mapNotNull { name ->
                         field(view.javaClass, name)?.let { resolved -> name to resolved }
                     }
                 val methodNames =
