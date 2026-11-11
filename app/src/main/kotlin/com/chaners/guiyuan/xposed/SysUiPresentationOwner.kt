@@ -103,6 +103,21 @@ internal object SysUiPresentationOwner {
     private fun stopCc(session: Session, source: String, requestLayout: Boolean = true): Int =
         ccRetirement.release(session) { session.stop(source, requestLayout) }
 
+    // All scene activations use the same readiness-to-result contract.
+    private fun startResult(session: Session, maskedViews: Int, reused: Boolean): Result =
+        if (session.isLayoutCutoverReady()) {
+            Result.Active(
+                representedSlots = representedSlots.size,
+                maskedViews = maskedViews,
+                reused = reused,
+            )
+        } else {
+            Result.Prepared(
+                representedSlots = representedSlots.size,
+                reused = reused,
+            )
+        }
+
     // Diagnostic sinks must not interrupt native layout or its readiness callbacks.
     internal inline fun emitDiagnostic(block: () -> Unit) {
         SysUiPresentationRuntime.emitPassiveDiagnostic(block)
@@ -631,18 +646,7 @@ internal object SysUiPresentationOwner {
                 "keyguard-deferred-layout-commit-aborted-after-fail-native",
             )
         }
-        return if (session.isLayoutCutoverReady()) {
-            Result.Active(
-                representedSlots = representedSlots.size,
-                maskedViews = masked,
-                reused = true,
-            )
-        } else {
-            Result.Prepared(
-                representedSlots = representedSlots.size,
-                reused = true,
-            )
-        }
+        return startResult(session, masked, reused = true)
     }
 
     @Synchronized
@@ -749,11 +753,7 @@ internal object SysUiPresentationOwner {
                     surface.surfaceName + "-reuse-aborted-after-fail-native",
                 )
             }
-            return if (existing.isLayoutCutoverReady()) {
-                Result.Active(representedSlots.size, masked, true)
-            } else {
-                Result.Prepared(representedSlots.size, true)
-            }
+            return startResult(existing, masked, reused = true)
         }
 
         existing?.let { stopFamily(it, surface.surfaceName + "-host-replaced") }
@@ -800,11 +800,7 @@ internal object SysUiPresentationOwner {
                 surface.surfaceName + "-activation-aborted-after-fail-native",
             )
         }
-        return if (session.isLayoutCutoverReady()) {
-            Result.Active(representedSlots.size, masked, false)
-        } else {
-            Result.Prepared(representedSlots.size, false)
-        }
+        return startResult(session, masked, reused = false)
     }
 
     private fun deactivateKeyguardFamily(
@@ -929,18 +925,7 @@ internal object SysUiPresentationOwner {
                     "control-center-reuse-aborted-after-fail-native",
                 )
             }
-            return if (existing.isLayoutCutoverReady()) {
-                Result.Active(
-                    representedSlots = representedSlots.size,
-                    maskedViews = masked,
-                    reused = true,
-                )
-            } else {
-                Result.Prepared(
-                    representedSlots = representedSlots.size,
-                    reused = true,
-                )
-            }
+            return startResult(existing, masked, reused = true)
         }
 
         existing?.let { stopCc(it, "host-replaced") }
@@ -982,18 +967,7 @@ internal object SysUiPresentationOwner {
                 "control-center-activation-aborted-after-fail-native",
             )
         }
-        return if (session.isLayoutCutoverReady()) {
-            Result.Active(
-                representedSlots = representedSlots.size,
-                maskedViews = masked,
-                reused = false,
-            )
-        } else {
-            Result.Prepared(
-                representedSlots = representedSlots.size,
-                reused = false,
-            )
-        }
+        return startResult(session, masked, reused = false)
     }
 
     @Synchronized
