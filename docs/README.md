@@ -17,7 +17,7 @@ grouped here by ownership, not by build number.
 
 User-facing policies: [CHANGELOG](../CHANGELOG.md), [TERMS](../TERMS.md),
 [PRIVACY](../PRIVACY.md), [SECURITY](../SECURITY.md),
-[THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES.md), [Support](SUPPORT.md).
+[Third-party notices](../third_party/NOTICE.md), [Support](SUPPORT.md).
 
 ## Reading order
 
