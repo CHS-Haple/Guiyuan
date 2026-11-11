@@ -288,16 +288,6 @@ status comes from GitHub and the live Gradle configuration.
 
 ## Compatibility limits and retained evidence
 
-- **LSPosed 7930 normal-path evidence:** B1181/B1186/B1187 (2026-10-21) prove
-  successful V10 Hot Reload handoffs on the target LSPosed 2.2.1/7930; two B1232
-  diagnostic reports (2026-10-23, 15:35:14 and 15:35:25 +08) additionally record
-  consecutive same-Build reloads in one SystemUI PID with preserved host
-  identity, retired-before-reload handoff, `staleHooks=32`, `restartScope=false`
-  and restored Home combined presentation. Settings B1136 records a 7930 module
-  load. These establish **observed normal-path** behavior only; full/soft
-  reboot, injected-wrapper internals, failure paths and longer-term
-  listener-leak checks remain unverified.
-  [7930 evidence](../reference/lsposed-7930-compatibility.md).
 - Other HyperOS/SystemUI fonts, dual-SIM aggregation variants and
   third-party-modified view trees still need their own verification. B1229
   positions split 5GA using cached floating-point ink bounds from its current

@@ -203,10 +203,10 @@ before accepting generation retirement. Reuse the verified host Hook only after
 the old owner has left; never transfer an old module callback to fake continuous
 rendering.
 
-**Why:** LSPosed 7927 loads the replacement ClassLoader *after* old
-`onHotReloading`, and provides no frame-atomic UI transaction. Keeping old
-listeners inside a V9 Array breaks lifetime ownership even if the UI appears
-seamless.
+**Why:** An old-generation callback cannot safely outlive its ClassLoader
+or substitute for a framework-owned frame-atomic visual handoff. Carrying old
+listeners through the V9 transfer payload breaks lifetime ownership even if
+the UI appears seamless.
 
 **Consequence:** new owners revalidate live host identity before acquiring
 runtime resources; native battery/network may briefly display between
