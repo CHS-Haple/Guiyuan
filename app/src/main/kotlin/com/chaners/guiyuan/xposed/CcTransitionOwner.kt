@@ -1575,11 +1575,7 @@ internal object CcTransitionOwner {
                         (hasTarget || clippedGlyph)
                 val layerOpacity =
                     opacity * (if (clipExit) 1f else componentVisibleFraction)
-                val save =
-                    canvas.saveLayerAlpha(
-                        null,
-                        (255f * layerOpacity.coerceIn(0f, 1f)).roundToInt(),
-                    )
+                val save = saveRevealLayer(canvas, layerOpacity)
                 canvas.concat(matrix)
                 if (componentVisibleFraction < 1f && clipExit) {
                     val clipAnchorRight =
@@ -1748,6 +1744,24 @@ internal object CcTransitionOwner {
             )
         }
 
+        private fun saveRevealLayer(canvas: Canvas, opacity: Float): Int =
+            canvas.saveLayerAlpha(null, (255f * opacity.coerceIn(0f, 1f)).roundToInt())
+
+        private fun revealClipBounds(
+            bounds: StatusPainter.TransitionBounds,
+            visibleFraction: Float,
+        ): FloatArray? =
+            CcTransitionPolicy.horizontalClipBounds(
+                left = bounds.left,
+                top = bounds.top,
+                right = bounds.right,
+                bottom = bounds.bottom,
+                visibleFraction = visibleFraction,
+                anchorRight =
+                    (sourceViewRef.get()?.layoutDirection
+                        ?: View.LAYOUT_DIRECTION_LTR) != View.LAYOUT_DIRECTION_RTL,
+            )
+
         private fun drawAdditionalMobileLatent(
             canvas: Canvas,
             rootView: View,
@@ -1849,24 +1863,10 @@ internal object CcTransitionOwner {
                         witness = witness,
                     )
                 if (revealVisibleFraction <= 0f || opacity <= 0f) return@forEach
-                val save =
-                    canvas.saveLayerAlpha(
-                        null,
-                        (255f * opacity.coerceIn(0f, 1f)).roundToInt(),
-                    )
+                val save = saveRevealLayer(canvas, opacity)
                 canvas.concat(matrix)
                 val clip =
-                    CcTransitionPolicy.horizontalClipBounds(
-                        left = clipBounds.left,
-                        top = clipBounds.top,
-                        right = clipBounds.right,
-                        bottom = clipBounds.bottom,
-                        visibleFraction = revealVisibleFraction,
-                        anchorRight =
-                            (sourceViewRef.get()?.layoutDirection
-                                ?: View.LAYOUT_DIRECTION_LTR) !=
-                                View.LAYOUT_DIRECTION_RTL,
-                    ) ?: run {
+                    revealClipBounds(clipBounds, revealVisibleFraction) ?: run {
                         canvas.restoreToCount(save)
                         return@forEach
                     }
@@ -1955,24 +1955,10 @@ internal object CcTransitionOwner {
                     geometry = geometry,
                     bounds = bounds,
                 ) ?: return
-            val save =
-                canvas.saveLayerAlpha(
-                    null,
-                    (255f * opacity.coerceIn(0f, 1f)).roundToInt(),
-                )
+            val save = saveRevealLayer(canvas, opacity)
             canvas.concat(matrix)
             val clip =
-                CcTransitionPolicy.horizontalClipBounds(
-                    left = bounds.left,
-                    top = bounds.top,
-                    right = bounds.right,
-                    bottom = bounds.bottom,
-                    visibleFraction = revealVisibleFraction,
-                    anchorRight =
-                        (sourceViewRef.get()?.layoutDirection
-                            ?: View.LAYOUT_DIRECTION_LTR) !=
-                            View.LAYOUT_DIRECTION_RTL,
-                ) ?: run {
+                revealClipBounds(bounds, revealVisibleFraction) ?: run {
                     canvas.restoreToCount(save)
                     return
                 }
@@ -2053,24 +2039,10 @@ internal object CcTransitionOwner {
                     geometry = geometry,
                     bounds = bounds,
                 ) ?: return
-            val save =
-                canvas.saveLayerAlpha(
-                    null,
-                    (255f * opacity.coerceIn(0f, 1f)).roundToInt(),
-                )
+            val save = saveRevealLayer(canvas, opacity)
             canvas.concat(matrix)
             val clip =
-                CcTransitionPolicy.horizontalClipBounds(
-                    left = bounds.left,
-                    top = bounds.top,
-                    right = bounds.right,
-                    bottom = bounds.bottom,
-                    visibleFraction = revealVisibleFraction,
-                    anchorRight =
-                        (sourceViewRef.get()?.layoutDirection
-                            ?: View.LAYOUT_DIRECTION_LTR) !=
-                            View.LAYOUT_DIRECTION_RTL,
-                ) ?: run {
+                revealClipBounds(bounds, revealVisibleFraction) ?: run {
                     canvas.restoreToCount(save)
                     return
                 }
