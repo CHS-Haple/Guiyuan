@@ -27,21 +27,17 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 - MIUIX background effects are separately sourced; see
   [miuix-effect](../miuix-effect/README.md).
 
-## Why the source variants exist
+## Single published-API source
 
-`app/build.gradle.kts` selects **exactly one** Kotlin source directory using
-`-Pgy.os4.dialogSurfaces`:
-
-| Compiled source | Dependency contract | Actual implementation |
-| --- | --- | --- |
-| `src/os4Upstream/kotlin` (true) | Exact-revision MIUIX source checkout supporting `DialogSurfaceScope` and `BottomSheetSurfaceScope` | OS4 `GlassDialog` / `GlassBottomSheet`, `BlurTopAppBar`; OS3 UI style retains native Overlay hosts |
-| `src/os4Published/kotlin` (false) | Published MIUIX Maven API, without those source-only surface slots | Native `OverlayDialog` / `OverlayBottomSheet`, `TopAppBar` fallback |
-
-Normal source-matched `dev` CI and Release compilation select `true`;
-separate compatibility checks exercise `false` and the published artifacts.
-These directories are **compile-time alternatives**, not two copies packaged
-into the same APK, two installable channels or separate HyperOS 3/4 runtime
-support. The `OS3` selector is a visual style only.
+The pinned MIUIX `96d613aa` Maven artifacts expose `DialogSurfaceScope`,
+`BottomSheetSurfaceScope` and `BlurTopAppBar`. Both former source choices
+compiled against published Maven without composite-source substitution in
+[PR #1521](https://github.com/CHS-Haple/Guiyuan/pull/1521). The obsolete
+source forks and `gy.os4.dialogSurfaces` property are retired. The one
+`app/src/main/kotlin` implementation keeps Glass Dialog/Sheet in OS4 UI
+style and MIUIX-native Overlay hosts in OS3 UI style. Exact-source checkout
+and independent published-Maven compilation remain separate verification
+paths, not separate compiled source trees.
 
 ## Material model ownership
 
@@ -59,9 +55,9 @@ rim drawing pass. Do not introduce another app-owned copy of Material models.
   single-owner backdrop/scrim and any necessary host/Sheet separation.
   `GlassIconButton` has Guiyuan-used long-press, hold-down and enabled APIs;
   upstream source equivalence alone cannot replace them.
-- `UiNativeTitleBar` protects the compact title, title-layer clipping and
-  unclipped measured navigation/action controls. The published `TopAppBar`
-  and source `BlurTopAppBar` have different clipping/API contracts.
+- `UiNativeTitleBar` retains the accepted `BlurTopAppBar` (now available
+  through pinned published MIUIX), title-local clipping and measured unclipped
+  navigation/action controls. The old `TopAppBar` fallback is retired.
 - Navigation retains noninteractive preview behavior, touch-safe bottom
   extension and exact native icon/material semantics. Do not replace a
   caller-owned touch or animation boundary with a similar-looking upstream
@@ -75,24 +71,17 @@ rim drawing pass. Do not introduce another app-owned copy of Material models.
 
 ## Migration and verification
 
-The long-term target is **one** stable public-API implementation when the
-published MIUIX graph fully covers the accepted OS4 Glass behavior.
+Dialog, BottomSheet and title now use one source tree backed by published
+MIUIX APIs. Future consolidation concerns local Glass shaders and strokes.
 A whole-module `miuix-glass-android` swap must atomically remove conflicting
 same-package local declarations; linking it alongside the local bridge causes
 duplicate classes and can expose `internal` visibility/ABI failures. Do not
 modify the upstream checkout during CI to bypass these issues.
 
-Before removing the compile-time fallback or app-local bridge:
-
-1. Verify official published artifacts, full pinned revision and public APIs;
-   confirm the exact `GlassDialog`/`GlassBottomSheet` surface and title
-   contracts, dependency graph, source attribution and licensing.
-2. Run matched-source and ordinary published-Maven CI; review popup Back,
-   scrim, dialog/Sheet dismissal, keyboard, native fallback, navigation hit
-   zones, title clipping, light/dark, OS3/OS4 **UI styles**, RTL and font scale.
-3. For behavior-visible changes, obtain a single grouped signed candidate and
-   maintainer device feedback before merging. An upstream PR or successful
-   source build alone is not acceptance.
+For later Glass renderer consolidation, preserve the owned shader, popup,
+Back/scrim and navigation contracts. Verify both source-matched and published
+Maven builds, OS3/OS4 UI styles, RTL, font scale, title clipping and dismissal
+before grouped signed-device acceptance. CI alone is not device acceptance.
 
 Dated integration evidence is in
 [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440),

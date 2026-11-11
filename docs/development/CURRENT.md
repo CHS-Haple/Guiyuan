@@ -85,8 +85,8 @@ reference, not this public repository.
   uses app-local Glass adapters. Do not adopt upstream changes or
   `miuix-glass-android` wholesale based on commit similarity alone. The
   [MIUIX Glass source boundary](../../third_party/miuix-glass/README.md)
-  explains why the published-ABI and source-matched dialog/sheet/top-bar
-  compile variants remain.
+  documents the single published-API Dialog/Sheet/TopBar implementation.
+  Source-matched and published-Maven builds are independent CI checks.
 - Upstream #479's fused rim/stroke pass is not in the app-local Glass renderer;
   app-local Glass rendering still uses separate passes and a local stroke type.
   Material models/presets are now canonical upstream aliases; a later renderer

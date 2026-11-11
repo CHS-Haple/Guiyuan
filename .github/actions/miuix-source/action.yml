@@ -24,8 +24,8 @@ runs:
         test -f miuix-upstream/miuix-preference/build.gradle.kts
         test -f miuix-upstream/miuix-glass/build.gradle.kts
         test -f miuix-upstream/miuix-glass-icons/build.gradle.kts
-        test -f app/src/os4Upstream/kotlin/top/yukonga/miuix/kmp/glass/GlassDialog.kt
-        test -f app/src/os4Upstream/kotlin/top/yukonga/miuix/kmp/glass/internal/ScrimBackdrop.kt
+        test -f app/src/main/kotlin/top/yukonga/miuix/kmp/glass/GlassDialog.kt
+        test -f app/src/main/kotlin/top/yukonga/miuix/kmp/glass/internal/ScrimBackdrop.kt
         echo "MIUIX_SOURCE_REVISION=$expected" >> "$GITHUB_ENV"
         echo "MIUIX_SOURCE_DIR=miuix-upstream" >> "$GITHUB_ENV"
 
