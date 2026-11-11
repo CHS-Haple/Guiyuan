@@ -378,7 +378,11 @@ internal object SysUiBatterySource {
     // Verified against the exact SystemUI fingerprint: both native number
     // routes must use the known file-backed faces, not mipro family fallbacks.
     fun readHostNumberFont(host: View): Pair<Typeface, String>? = readOrNull {
-        val battery = nativeBatteryMeter(host) ?: return@readOrNull null
+        val root = host as? ViewGroup ?: return@readOrNull null
+        val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
+            ?: return@readOrNull null
+        val battery = container.directChild(BATTERY_METER_VIEW_CLASS_NAME)
+            ?: return@readOrNull null
         val loader = battery.javaClass.classLoader ?: return@readOrNull null
         val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
         val percentFace = config.getField("sMiproTypefaceWght500").get(null) as? Typeface
