@@ -298,6 +298,14 @@ internal object SysUiTintSource {
                 .distinct()
                 .sorted()
 
+        val clipFieldsText =
+            clipStates.joinToString(",") { state ->
+                state.fieldName + ":" +
+                    (state.filterClass ?: "no-filter") + ":" +
+                    (state.color?.let(::colorHex) ?: "color-unavailable")
+            }.ifEmpty { "none" }
+        val semanticTintsText =
+            semanticTints.joinToString(",") { colorHex(it) }.ifEmpty { "none" }
         val imageTint =
             (iconView as? ImageView)
                 ?.imageTintList
@@ -306,27 +314,9 @@ internal object SysUiTintSource {
             "batteryIconProbe source=" + source +
                 " iconClass=" + iconView.javaClass.name +
                 " imageView=" + (iconView is ImageView) +
-                " clipFields=" +
-                (
-                    if (clipStates.isEmpty()) {
-                        "none"
-                    } else {
-                        clipStates.joinToString(",") { state ->
-                            state.fieldName + ":" +
-                                (state.filterClass ?: "no-filter") + ":" +
-                                (state.color?.let(::colorHex) ?: "color-unavailable")
-                        }
-                    }
-                ) +
+                " clipFields=" + clipFieldsText +
                 " imageTint=" + (imageTint?.let(::colorHex) ?: "none") +
-                " semanticTints=" +
-                (
-                    if (semanticTints.isEmpty()) {
-                        "none"
-                    } else {
-                        semanticTints.joinToString(",") { colorHex(it) }
-                    }
-                ),
+                " semanticTints=" + semanticTintsText,
         )
         synchronized(this) { batteryIconStructureLogged[iconView] = Unit }
     }
