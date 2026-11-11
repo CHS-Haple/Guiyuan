@@ -2569,6 +2569,23 @@ internal object CcTransitionOwner {
                     ?.presentationRootSubscriptionId
 
             val result = ArrayList<CcReservationPolicy.ReservationSpan>(specs.size)
+            val targetLocation = IntArray(2)
+            fun appendSpan(
+                sourceA: Float,
+                sourceB: Float,
+                slot: View,
+                targetWindowX: Int,
+            ) {
+                val targetA = logicalTargetX(targetWindowX.toFloat())
+                val targetB = logicalTargetX((targetWindowX + slot.width).toFloat())
+                result +=
+                    CcReservationPolicy.ReservationSpan(
+                        sourceLeft = min(sourceA, sourceB),
+                        sourceRight = maxOf(sourceA, sourceB),
+                        targetLeft = min(targetA, targetB),
+                        targetRight = maxOf(targetA, targetB),
+                    )
+            }
             specs.forEach { spec ->
                 val witness =
                     resolveSpecTarget(
@@ -2578,23 +2595,10 @@ internal object CcTransitionOwner {
                     ) ?: return@forEach
                 val slot = witness.slotView
                 if (!isUsableSlotView(slot)) return@forEach
-                val targetLocation = IntArray(2)
                 slot.getLocationInWindow(targetLocation)
-
                 val sourceA = logicalSourceX(spec.sourceBounds.left)
                 val sourceB = logicalSourceX(spec.sourceBounds.right)
-                val targetA = logicalTargetX(targetLocation[0].toFloat())
-                val targetB =
-                    logicalTargetX(
-                        (targetLocation[0] + slot.width).toFloat(),
-                    )
-                result +=
-                    CcReservationPolicy.ReservationSpan(
-                        sourceLeft = min(sourceA, sourceB),
-                        sourceRight = maxOf(sourceA, sourceB),
-                        targetLeft = min(targetA, targetB),
-                        targetRight = maxOf(targetA, targetB),
-                    )
+                appendSpan(sourceA, sourceB, slot, targetLocation[0])
             }
             val mobileSpec =
                 specs.firstOrNull { spec ->
@@ -2631,22 +2635,10 @@ internal object CcTransitionOwner {
                     )
                 resolveFrozenAdditionalMobileTargets(primary).forEach { witness ->
                     val slot = witness.slotView
-                    val targetLocation = IntArray(2)
                     slot.getLocationInWindow(targetLocation)
                     val sourceA = logicalSourceX(mobileSpec.sourceBounds.left)
                     val sourceB = logicalSourceX(mobileSpec.sourceBounds.right)
-                    val targetA = logicalTargetX(targetLocation[0].toFloat())
-                    val targetB =
-                        logicalTargetX(
-                            (targetLocation[0] + slot.width).toFloat(),
-                        )
-                    result +=
-                        CcReservationPolicy.ReservationSpan(
-                            sourceLeft = min(sourceA, sourceB),
-                            sourceRight = maxOf(sourceA, sourceB),
-                            targetLeft = min(targetA, targetB),
-                            targetRight = maxOf(targetA, targetB),
-                        )
+                    appendSpan(sourceA, sourceB, slot, targetLocation[0])
                 }
             }
 
@@ -2657,21 +2649,9 @@ internal object CcTransitionOwner {
             ) {
                 resolveFrozenAirplaneTarget()?.let { witness ->
                     val slot = witness.slotView
-                    val targetLocation = IntArray(2)
                     slot.getLocationInWindow(targetLocation)
                     val collapsedEnd = logicalSourceX(source.width.toFloat())
-                    val targetA = logicalTargetX(targetLocation[0].toFloat())
-                    val targetB =
-                        logicalTargetX(
-                            (targetLocation[0] + slot.width).toFloat(),
-                        )
-                    result +=
-                        CcReservationPolicy.ReservationSpan(
-                            sourceLeft = collapsedEnd,
-                            sourceRight = collapsedEnd,
-                            targetLeft = min(targetA, targetB),
-                            targetRight = maxOf(targetA, targetB),
-                        )
+                    appendSpan(collapsedEnd, collapsedEnd, slot, targetLocation[0])
                 }
             }
 
@@ -2684,21 +2664,9 @@ internal object CcTransitionOwner {
             ) {
                 resolveFrozenNoSimTarget()?.let { witness ->
                     val slot = witness.slotView
-                    val targetLocation = IntArray(2)
                     slot.getLocationInWindow(targetLocation)
                     val collapsedEnd = logicalSourceX(source.width.toFloat())
-                    val targetA = logicalTargetX(targetLocation[0].toFloat())
-                    val targetB =
-                        logicalTargetX(
-                            (targetLocation[0] + slot.width).toFloat(),
-                        )
-                    result +=
-                        CcReservationPolicy.ReservationSpan(
-                            sourceLeft = collapsedEnd,
-                            sourceRight = collapsedEnd,
-                            targetLeft = min(targetA, targetB),
-                            targetRight = maxOf(targetA, targetB),
-                        )
+                    appendSpan(collapsedEnd, collapsedEnd, slot, targetLocation[0])
                 }
             }
 
