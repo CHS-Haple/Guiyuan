@@ -88,28 +88,44 @@ internal object FullAodTransitionSource {
                         }
                         try {
                             if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                                val rawArg0 = chain.getArg(0) as? Boolean
-                                val rawArg1 = chain.getArg(1) as? Boolean
                                 onEvent(
-                                    "keyguardFullAod source=animateFullAod" +
-                                        " arg0=" + (rawArg0 ?: "unavailable") +
-                                        " arg1=" + (rawArg1 ?: "unavailable"),
+                                    diagnosticMessage(
+                                        chain.getArg(0) as? Boolean,
+                                        chain.getArg(1) as? Boolean,
+                                    ),
                                 )
                             }
                         } catch (error: Throwable) {
-                            SysUiPresentationRuntime.throwIfFatal(error)
-                            if (warned.compareAndSet(false, true)) {
-                                try {
-                                    Log.w("Guiyuan[FullAod]", "Diagnostic failed", error)
-                                } catch (failure: Throwable) {
-                                    SysUiPresentationRuntime.throwIfFatal(failure)
-                                }
-                            }
+                            reportDiagnosticFailureOnce(warned, error)
                         }
                         result
                     },
                 )
         return listOf(handle)
+    }
+
+    // Preserve native callback priority even if optional diagnostics fail.
+    private fun diagnosticMessage(
+        rawArg0: Boolean?,
+        rawArg1: Boolean?,
+    ): String =
+        "keyguardFullAod source=animateFullAod" +
+            " arg0=" + (rawArg0 ?: "unavailable") +
+            " arg1=" + (rawArg1 ?: "unavailable")
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun reportDiagnosticFailureOnce(
+        warned: AtomicBoolean,
+        error: Throwable,
+    ) {
+        SysUiPresentationRuntime.throwIfFatal(error)
+        if (warned.compareAndSet(false, true)) {
+            try {
+                Log.w("Guiyuan[FullAod]", "Diagnostic failed", error)
+            } catch (failure: Throwable) {
+                SysUiPresentationRuntime.throwIfFatal(failure)
+            }
+        }
     }
 
     internal fun matchesSignature(
