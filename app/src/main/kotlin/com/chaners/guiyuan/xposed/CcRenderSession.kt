@@ -747,8 +747,7 @@ internal object CcRenderSession {
                 carrier.get()
                     ?: return AttachFailure("battery-core-carrier-released")
 
-            return when (
-                val result =
+            val result =
                     SysUiPresentationOwner.activateCc(
                         host = statusArea,
                         statusIcons = statusIconGroup,
@@ -772,7 +771,14 @@ internal object CcRenderSession {
                             )
                         },
                     )
-            ) {
+            return handleActivationResult(result, reused)
+        }
+
+        private fun handleActivationResult(
+            result: SysUiPresentationOwner.Result,
+            reused: Boolean,
+        ): AttachFailure? =
+            when (result) {
                 is SysUiPresentationOwner.Result.Active -> {
                     setNativePresentationReady(
                         ready = true,
@@ -812,7 +818,7 @@ internal object CcRenderSession {
                     AttachFailure("compact-presentation-inactive")
                 }
             }
-        }
+
 
         fun setNativePresentationReady(
             ready: Boolean,
