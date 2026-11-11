@@ -17,10 +17,11 @@ class FullAodTransitionSourceTest {
 
     @Test
     fun strictDeclaredHookSelectionDoesNotGuessOverloads() {
+        val contract = "fixture-hook-contract-"
         val method = SysUiPresentationRuntime.requireUniqueHookMethod(
             NativeHookMethods::class.java,
             "animate",
-            "fixture-hook-contract-",
+            contract,
         ) { candidate ->
             candidate.parameterCount == 1 &&
                 candidate.parameterTypes[0] == Boolean::class.javaPrimitiveType &&
@@ -33,7 +34,7 @@ class FullAodTransitionSourceTest {
             SysUiPresentationRuntime.requireUniqueHookMethod(
                 NativeHookMethods::class.java,
                 "notPresent",
-                "fixture-hook-contract-",
+                contract,
             ) { true }
         }
         assertEquals("fixture-hook-contract-missing", missing.message)
@@ -42,7 +43,7 @@ class FullAodTransitionSourceTest {
             SysUiPresentationRuntime.requireUniqueHookMethod(
                 NativeHookMethods::class.java,
                 "animate",
-                "fixture-hook-contract-",
+                contract,
             ) { true }
         }
         assertEquals("fixture-hook-contract-ambiguous", ambiguous.message)
