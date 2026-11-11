@@ -7,16 +7,17 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- Guiyuan's `dev` uses MIUIX `0.9.4-ca674992-SNAPSHOT` at full revision
-  `ca674992c9645395cdb0d5109d66504ff53d018c`
-  ([integration PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440)).
+- Guiyuan's `dev` uses MIUIX `0.9.4-96d613aa-SNAPSHOT` at full revision
+  `96d613aa42c485463c596886a2433a61c1bd7d6f`.
+  The prior Material integration is documented in
+  [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
   The stable `main` line must be checked separately; do not treat a `dev`
   pin as a stable-release upgrade.
 - `app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` contains an adapted,
   app-compiled subset of the upstream
   [MIUIX Glass implementation](https://github.com/compose-miuix-ui/miuix/pull/423).
   Its earlier source was reconciled at `45645854cd46c32275c5666e3aafa9980d8f104e`;
-  the dependency graph later advanced to `ca674992`. Some declarations are
+  the dependency graph later advanced to `96d613aa`. Some declarations are
   intentionally app-specific or from intermediate upstream commits.
   **This is not a byte-for-byte copy of the complete upstream module.**
 - Reused and adapted MIUIX source is Apache-2.0. Preserve upstream SPDX and
