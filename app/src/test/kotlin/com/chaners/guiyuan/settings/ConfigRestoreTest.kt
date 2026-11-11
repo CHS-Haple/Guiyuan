@@ -8,6 +8,11 @@ import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private const val TEST_NEW_VALUE = "new"
+private const val TEST_PRESET_KEY = "preset"
+private const val TEST_VISUAL_WRITE_STEP = "visual write"
+private const val TEST_VISUAL_ROLLBACK_STEP = "visual rollback"
+private const val TEST_VISUAL_FAILURE_LABEL = "visual"
 private const val TEST_LAYOUT_KEY = "layout"
 private const val TEST_OLD_VALUE = "old"
 private const val TEST_FEATURE_ROLLBACK = "feature rollback"
@@ -36,7 +41,7 @@ class ConfigRestoreTest {
         assertFalse(
             restoreBackupStores(
                 restoreVisual = {
-                    visuals[TEST_LAYOUT_KEY] = "new"
+                    visuals[TEST_LAYOUT_KEY] = TEST_NEW_VALUE
                     false
                 },
                 restoreFeature = { featureCalls++; true },
@@ -65,7 +70,7 @@ class ConfigRestoreTest {
         val thrown =
             assertThrows(IOException::class.java) {
                 restoreBackupStores(
-                    restoreVisual = { visual[TEST_LAYOUT_KEY] = "new"; true },
+                    restoreVisual = { visual[TEST_LAYOUT_KEY] = TEST_NEW_VALUE; true },
                     restoreFeature = {
                         feature[FEATURE_AOD_KEY] = true
                         feature[FEATURE_CHANGED_AT_NS_KEY] = 999L
@@ -83,7 +88,7 @@ class ConfigRestoreTest {
 
     @Test
     fun visualCommitThrowDoesNotAttemptFeatureButCompensatesVisual() {
-        val entries = mutableMapOf<String, Any>("preset" to 3)
+        val entries = mutableMapOf<String, Any>(TEST_PRESET_KEY to 3)
         val before = entries.toMap()
         var featuresTouched = false
         val cause = IOException("visual commit failed")
@@ -91,7 +96,7 @@ class ConfigRestoreTest {
             assertThrows(IOException::class.java) {
                 restoreBackupStores(
                     restoreVisual = {
-                        entries["preset"] = 7
+                        entries[TEST_PRESET_KEY] = 7
                         throw cause
                     },
                     restoreFeature = { featuresTouched = true; true },
@@ -109,14 +114,14 @@ class ConfigRestoreTest {
         val order = mutableListOf<String>()
         assertFalse(
             restoreBackupStores(
-                restoreVisual = { order.add("visual write"); true },
+                restoreVisual = { order.add(TEST_VISUAL_WRITE_STEP); true },
                 restoreFeature = { order.add(TEST_FEATURE_WRITE); false },
-                rollbackVisual = { order.add("visual rollback"); true },
+                rollbackVisual = { order.add(TEST_VISUAL_ROLLBACK_STEP); true },
                 rollbackFeature = { order.add(TEST_FEATURE_ROLLBACK); true },
             ),
         )
         assertEquals(
-            listOf("visual write", TEST_FEATURE_WRITE, TEST_FEATURE_ROLLBACK, "visual rollback"),
+            listOf(TEST_VISUAL_WRITE_STEP, TEST_FEATURE_WRITE, TEST_FEATURE_ROLLBACK, TEST_VISUAL_ROLLBACK_STEP),
             order,
         )
     }
@@ -151,7 +156,7 @@ class ConfigRestoreTest {
                     rollbackFeature = { true },
                 )
             }
-        assertTrue(failure.message!!.contains("visual"))
+        assertTrue(failure.message!!.contains(TEST_VISUAL_FAILURE_LABEL))
     }
 
     @Test
@@ -171,7 +176,7 @@ class ConfigRestoreTest {
         val rollbackFailure = thrown.suppressed[0]
         assertTrue(rollbackFailure.message!!.contains(TEST_FEATURE_ROLLBACK))
         assertEquals(1, rollbackFailure.suppressed.size)
-        assertTrue(rollbackFailure.suppressed[0].message!!.contains("visual"))
+        assertTrue(rollbackFailure.suppressed[0].message!!.contains(TEST_VISUAL_FAILURE_LABEL))
     }
 
     @Test

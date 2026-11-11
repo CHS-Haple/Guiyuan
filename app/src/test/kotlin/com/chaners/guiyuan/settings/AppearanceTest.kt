@@ -10,6 +10,11 @@ import org.junit.Test
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
+private const val TEST_LEGACY_BLUR_TOKEN = "Blur"
+private const val TEST_STORED_BLUR8_TOKEN = "Blur8"
+private const val TEST_STORED_BALANCED_TOKEN = "Balanced"
+private const val TEST_STORED_CLEAR_TOKEN = "Clear"
+private const val TEST_STORED_DYNAMIC_TOKEN = "Dynamic"
 private const val TEST_UI_STYLE_KEY = "ui_style"
 private const val TEST_NAV_CONTENT_KEY = "floating_navigation_content"
 private const val TEST_UNKNOWN_INPUT = "Unknown"
@@ -207,7 +212,7 @@ class AppearanceNavigationTest {
     fun storedFloatingStyleWinsOverLegacyFlags() {
         val result =
             decodeNavStyle(
-                storedStyle = "Blur",
+                storedStyle = TEST_LEGACY_BLUR_TOKEN,
                 storedFloatingBlurEnabled = false,
                 legacyBlurEnabled = false,
                 legacyGlassEnabled = false,
@@ -331,14 +336,14 @@ class AppearanceNavigationTest {
         assertEquals(LiquidMode.Balanced, Appearance().liquidMode)
         assertEquals(LiquidMode.Balanced, decodeLiquidMode(null))
         assertEquals(LiquidMode.Balanced, decodeLiquidMode(TEST_UNKNOWN_INPUT))
-        assertEquals(LiquidMode.Balanced, decodeLiquidMode("Blur"))
-        assertEquals(LiquidMode.Blur, decodeLiquidMode("Blur8"))
+        assertEquals(LiquidMode.Balanced, decodeLiquidMode(TEST_LEGACY_BLUR_TOKEN))
+        assertEquals(LiquidMode.Blur, decodeLiquidMode(TEST_STORED_BLUR8_TOKEN))
         assertEquals(LiquidMode.Balanced, decodeLiquidMode("Default"))
-        assertEquals(LiquidMode.Balanced, decodeLiquidMode("Balanced"))
-        assertEquals(LiquidMode.Clear, decodeLiquidMode("Clear"))
-        assertEquals("Blur8", LiquidMode.Blur.stored)
-        assertEquals("Balanced", LiquidMode.Balanced.stored)
-        assertEquals("Clear", LiquidMode.Clear.stored)
+        assertEquals(LiquidMode.Balanced, decodeLiquidMode(TEST_STORED_BALANCED_TOKEN))
+        assertEquals(LiquidMode.Clear, decodeLiquidMode(TEST_STORED_CLEAR_TOKEN))
+        assertEquals(TEST_STORED_BLUR8_TOKEN, LiquidMode.Blur.stored)
+        assertEquals(TEST_STORED_BALANCED_TOKEN, LiquidMode.Balanced.stored)
+        assertEquals(TEST_STORED_CLEAR_TOKEN, LiquidMode.Clear.stored)
         LiquidMode.entries.forEach { mode ->
             assertEquals(mode, decodeLiquidMode(mode.stored))
         }
@@ -351,7 +356,7 @@ class AppearanceThemeModeTest {
     fun legacyDynamicModeMigratesToSystemWithDynamicColor() {
         val result =
             decodeTheme(
-                storedMode = "Dynamic",
+                storedMode = TEST_STORED_DYNAMIC_TOKEN,
                 storedDynamicColorEnabled = null,
             )
 
@@ -363,7 +368,7 @@ class AppearanceThemeModeTest {
     fun explicitDynamicPreferenceOverridesLegacyFallback() {
         val result =
             decodeTheme(
-                storedMode = "Dynamic",
+                storedMode = TEST_STORED_DYNAMIC_TOKEN,
                 storedDynamicColorEnabled = false,
             )
 
