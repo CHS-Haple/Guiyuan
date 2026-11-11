@@ -1114,23 +1114,9 @@ internal object SysUiPresentationOwner {
             keyguard?.let { stopFamily(it, HOT_RELOAD_OLD_GENERATION, requestLayout) } ?: 0
         }
 
-        controlCenterEventSink = null
-        controlCenterFailNativeSink = null
-        controlCenterReadySink = null
-        eventSink = null
-        failNativeSink = null
-        keyguardFamilyEventSink = null
-        keyguardFamilyFailNativeSink = null
-        keyguardFamilyReadySink = null
-        controlCenterSourceScene = SourceScene.UNKNOWN
-        steadyPeerMirrorActive = false
-        steadyPeerMirrorHiddenSlots = emptySet()
+        clearPresentationCallbacksAndPeerState()
 
-        if (failures.isNotEmpty()) {
-            val error = IllegalStateException("hotReload-release-incomplete", failures.first())
-            failures.drop(1).forEach(error::addSuppressed)
-            throw error
-        }
+        throwIfCleanupFailed("hotReload-release-incomplete", failures)
         return homeRestored + keyguardFamilyRestored + controlCenterRestored
     }
 
@@ -1181,11 +1167,7 @@ internal object SysUiPresentationOwner {
         batteryHideHook = failedBatteryHide
         islandShowingHook = failedIsland
         privacyStateHook = failedPrivacyState
-        if (failures.isNotEmpty()) {
-            val error = IllegalStateException("presentation-reset-incomplete", failures.first())
-            failures.drop(1).forEach(error::addSuppressed)
-            throw error
-        }
+        throwIfCleanupFailed("presentation-reset-incomplete", failures)
     }
 
     @Synchronized
@@ -1537,6 +1519,30 @@ internal object SysUiPresentationOwner {
         return if (remaining.isEmpty()) reason else reason + "-hook-cleanup-failed"
     }
 
+    private fun clearPresentationCallbacksAndPeerState() {
+        controlCenterEventSink = null
+        controlCenterFailNativeSink = null
+        controlCenterReadySink = null
+        eventSink = null
+        failNativeSink = null
+        keyguardFamilyEventSink = null
+        keyguardFamilyFailNativeSink = null
+        keyguardFamilyReadySink = null
+        controlCenterSourceScene = SourceScene.UNKNOWN
+        steadyPeerMirrorActive = false
+        steadyPeerMirrorHiddenSlots = emptySet()
+    }
+
+    private fun throwIfCleanupFailed(
+        reason: String,
+        failures: List<Throwable>,
+    ) {
+        if (failures.isEmpty()) return
+        val error = IllegalStateException(reason, failures.first())
+        failures.drop(1).forEach(error::addSuppressed)
+        throw error
+    }
+
     private fun clearInstallState() {
         measureHook = null
         layoutHook = null
@@ -1551,17 +1557,7 @@ internal object SysUiPresentationOwner {
         controlCenterCurrent = null
         keyguardFamilyCurrent = null
         keyguardFamilySurface = null
-        controlCenterEventSink = null
-        controlCenterFailNativeSink = null
-        controlCenterReadySink = null
-        eventSink = null
-        failNativeSink = null
-        keyguardFamilyEventSink = null
-        keyguardFamilyFailNativeSink = null
-        keyguardFamilyReadySink = null
-        controlCenterSourceScene = SourceScene.UNKNOWN
-        steadyPeerMirrorActive = false
-        steadyPeerMirrorHiddenSlots = emptySet()
+        clearPresentationCallbacksAndPeerState()
     }
 
     private class Session(
