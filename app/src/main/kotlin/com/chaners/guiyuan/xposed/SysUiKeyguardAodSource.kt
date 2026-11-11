@@ -91,30 +91,8 @@ internal object SysUiKeyguardAodSource {
         storedStyleField = resolveIntField(batteryClass, STORED_STYLE_FIELD)
 
         val warned = AtomicBoolean(false)
-        val onDiagnostic: ((AodUpdate) -> Unit)? =
-            onEvent?.let { sink ->
-                { update ->
-                    try {
-                        if (isDetailedDiagnosticsEnabled()) {
-                            sink(
-                                "keyguardAod source=" + update.source +
-                                    " toAod=" + update.toAod +
-                                    " isAodAnimate=" + update.isAodAnimate +
-                                    " animToAod=" + (update.animToAod ?: "unavailable") +
-                                    " blocked=" + update.blocksProjection,
-                            )
-                        }
-                    } catch (error: Throwable) {
-                        rethrowFatal(error)
-                        if (warned.compareAndSet(false, true)) {
-                            SysUiPresentationRuntime.emitPassiveDiagnostic {
-                                Log.w("Guiyuan[Aod]", "Diagnostic failed", error)
-                            }
-                        }
-                    }
-                }
-            }
-
+        val onDiagnostic =
+            diagnosticCallback(onEvent, isDetailedDiagnosticsEnabled, warned)
         val handles = ArrayList<HookHandle>(HOOK_COUNT)
         try {
             handles +=
@@ -138,6 +116,37 @@ internal object SysUiKeyguardAodSource {
             throw error
         }
     }
+
+    // Optional AOD diagnostics are separate from native transition ownership.
+    @Suppress("TooGenericExceptionCaught")
+    private fun diagnosticCallback(
+        onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
+        warned: AtomicBoolean,
+    ): ((AodUpdate) -> Unit)? =
+        onEvent?.let { sink ->
+            { update ->
+                try {
+                    if (isDetailedDiagnosticsEnabled()) {
+                        sink(
+                            "keyguardAod source=" + update.source +
+                                " toAod=" + update.toAod +
+                                " isAodAnimate=" + update.isAodAnimate +
+                                " animToAod=" + (update.animToAod ?: "unavailable") +
+                                " blocked=" + update.blocksProjection,
+                        )
+                    }
+                } catch (error: Throwable) {
+                    rethrowFatal(error)
+                    if (warned.compareAndSet(false, true)) {
+                        SysUiPresentationRuntime.emitPassiveDiagnostic {
+                            Log.w("Guiyuan[Aod]", "Diagnostic failed", error)
+                        }
+                    }
+                }
+            }
+        }
+
 
     val failedInstallHookCount: Int
         get() = failedInstallHandles.size
