@@ -46,11 +46,7 @@ internal class StatusPainter(
         Build.VERSION.SDK_INT >= 36 &&
             Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1
     private var mobileTextSource: Typeface? = null
-    private val mobileTextSamples =
-        object : LinkedHashMap<Int, Paint>(128, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Paint>?): Boolean =
-                size > 128
-        }
+    private val mobileTextSamples = BoundedAccessCache<Int, Paint>(128)
     private var airplaneDrawableResolved = false
     private var cachedAirplaneResourceId: Int = 0
     private val activityResourceIds = HashMap<String, Int>()
@@ -70,11 +66,7 @@ internal class StatusPainter(
     private var nativeConfigHash = context.resources.configuration.hashCode()
 
     private val batteryTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val batteryTextSamples =
-        object : LinkedHashMap<Int, Paint>(128, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Paint>?): Boolean =
-                size > 128
-        }
+    private val batteryTextSamples = BoundedAccessCache<Int, Paint>(128)
     private var batteryTextSource: Typeface = Typeface.DEFAULT
     private val batteryTopTextBounds = Rect()
     private val mobileTypeMainBounds = Rect()
@@ -90,12 +82,7 @@ internal class StatusPainter(
         val fakeBold: Boolean,
     )
 
-    private val mobileInkSamples =
-        object : LinkedHashMap<MobileInkKey, MobileTypeSpacing.Ink>(48, 0.75f, true) {
-            override fun removeEldestEntry(
-                eldest: MutableMap.MutableEntry<MobileInkKey, MobileTypeSpacing.Ink>?,
-            ): Boolean = size > 48
-        }
+    private val mobileInkSamples = BoundedAccessCache<MobileInkKey, MobileTypeSpacing.Ink>(48)
     private val batteryRing = RectF(10f, 8f, 110f, 108f)
     private var cachedCenterVisual: VisualCfg? = null
     private var cachedCenterGeometry: CenterGeometry.Resolved? = null

@@ -595,11 +595,9 @@ internal object SysUiNetworkSource {
                                         if (onEvent != null && isDetailedDiagnosticsEnabled()) {
                                             readOrNull { nativeActivityObservation(image, result) }
                                         } else null
-                                    val rootVisible = readOrNull {
-                                        nativeBindingField.get(binding.root)?.let { nativeBinding ->
-                                            nativeShouldVisibleMethod.invoke(nativeBinding) as? Boolean
-                                        }
-                                    }
+                                    val rootVisible = nativeMobileRootVisible(
+                                        binding.root, nativeBindingField, nativeShouldVisibleMethod,
+                                    )
                                     // A hidden Home scene or CombinedStatus's native
                                     // visual mask can make isShown=false even when
                                     // the OEM binding and child both allow the icon.
@@ -666,11 +664,9 @@ internal object SysUiNetworkSource {
                             val image = readOrNull { imageField.get(chain.thisObject) as? ImageView }
                             val binding = image?.let(::findNativeHomeMobileBinding)
                             val rootVisible = binding?.let { owner ->
-                                readOrNull {
-                                    nativeBindingField.get(owner.root)?.let { nativeBinding ->
-                                        nativeShouldVisibleMethod.invoke(nativeBinding) as? Boolean
-                                    }
-                                }
+                                nativeMobileRootVisible(
+                                    owner.root, nativeBindingField, nativeShouldVisibleMethod,
+                                )
                             }
                             val childVisible = image?.visibility == View.VISIBLE
                             val effectiveVisible = nativeMobileActivityShown(
@@ -719,6 +715,18 @@ internal object SysUiNetworkSource {
             failedBranch("mobile", error, created)
         }
     }
+
+    // Read the exact OEM visibility value from the current root after native proceed.
+    private fun nativeMobileRootVisible(
+        root: ViewGroup,
+        bindingField: Field,
+        visibilityMethod: Method,
+    ): Boolean? =
+        readOrNull {
+            bindingField.get(root)?.let { binding ->
+                visibilityMethod.invoke(binding) as? Boolean
+            }
+        }
 
     private fun nativeMobileActivityResourceId(image: ImageView): Int? =
         (image.tag as? Number)?.toInt()?.takeIf { id ->
