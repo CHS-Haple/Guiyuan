@@ -78,7 +78,7 @@ for security concerns.
 
 [Changelog](CHANGELOG.md) · [Terms](TERMS.md) · [Privacy](PRIVACY.md) ·
 [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) ·
-[Developer docs](docs/README.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
+[Developer docs](docs/README.md) · [Third-party notices](third_party/NOTICE.md)
 
 ---
 
