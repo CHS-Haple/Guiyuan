@@ -1944,6 +1944,8 @@ internal object SysUiPresentationOwner {
             return true
         }
 
+        // Native release attempts must continue after non-fatal host failures.
+        @Suppress("TooGenericExceptionCaught")
         fun stop(
             source: String,
             requestLayout: Boolean = true,

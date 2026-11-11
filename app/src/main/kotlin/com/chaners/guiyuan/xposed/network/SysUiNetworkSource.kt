@@ -951,6 +951,8 @@ internal object SysUiNetworkSource {
 
     fun matches(handle: HookHandle): Boolean = handle.id in hookIds
 
+    // Hook failures can be arbitrary Throwables; fatal causes are rethrown.
+    @Suppress("TooGenericExceptionCaught")
     private fun wifiBindHooker(
         active: AtomicBoolean,
         seedContract: WifiSeedContract,
