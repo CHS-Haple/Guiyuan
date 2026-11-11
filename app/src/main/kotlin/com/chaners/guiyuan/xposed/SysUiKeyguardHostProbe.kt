@@ -11,8 +11,6 @@ import java.lang.ref.WeakReference
  * CC `realSystemIcons` is context only; it doesn't decide Keyguard readiness.
  */
 internal object SysUiKeyguardHostProbe {
-    private const val KEYGUARD_HOST_CLASS =
-        "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"
 
     private var confirmedHost = WeakReference<ViewGroup>(null)
 
@@ -23,7 +21,7 @@ internal object SysUiKeyguardHostProbe {
         val host =
             SysUiKeyguardHostResolver.findAncestor(
                 update.sourceView,
-                KEYGUARD_HOST_CLASS,
+                SysUiKeyguardHostResolver.KEYGUARD_HOST_CLASS,
             ) as? ViewGroup
                 ?: return null
         if (confirmedHost.get() === host) return null
