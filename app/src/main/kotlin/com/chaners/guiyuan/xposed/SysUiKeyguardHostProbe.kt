@@ -21,7 +21,10 @@ internal object SysUiKeyguardHostProbe {
         if (update.surface != SysUiSceneSource.Surface.KEYGUARD) return null
 
         val host =
-            SysUiKeyguardHostResolver.findAncestor(update.sourceView, KEYGUARD_HOST_CLASS) as? ViewGroup
+            SysUiKeyguardHostResolver.findAncestor(
+                update.sourceView,
+                KEYGUARD_HOST_CLASS,
+            ) as? ViewGroup
                 ?: return null
         if (confirmedHost.get() === host) return null
 
@@ -191,6 +194,4 @@ internal object SysUiKeyguardHostProbe {
     ): Any? =
         SysUiKeyguardHostResolver.findField(owner.javaClass, fieldName)
             ?.let { field -> SysUiPresentationRuntime.optionalNativeRead { field.get(owner) } }
-
-
 }
