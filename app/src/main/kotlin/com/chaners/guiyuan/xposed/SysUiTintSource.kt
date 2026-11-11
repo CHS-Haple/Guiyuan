@@ -10,16 +10,12 @@ import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
-import java.lang.reflect.InvocationTargetException
 import java.util.ArrayList
 import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiTintSource {
-    private fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
+    private fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     private inline fun <T> readOrNull(block: () -> T): T? =
         SysUiPresentationRuntime.optionalNativeRead(block)

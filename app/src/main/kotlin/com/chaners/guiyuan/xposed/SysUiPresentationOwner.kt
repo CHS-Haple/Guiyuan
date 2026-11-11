@@ -12,7 +12,6 @@ import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
-import java.lang.reflect.InvocationTargetException
 
 // Owns mutable native presentation; SysUiPresentationRuntime only wires source hooks.
 internal object SysUiPresentationOwner {
@@ -109,10 +108,7 @@ internal object SysUiPresentationOwner {
         SysUiPresentationRuntime.emitPassiveDiagnostic(block)
     }
 
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
+    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     @Suppress("TooGenericExceptionCaught")
     private inline fun <T> readOrNull(block: () -> T): T? =

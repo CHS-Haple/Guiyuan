@@ -8,14 +8,11 @@ import android.os.Handler
 import android.os.Looper
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
+import com.chaners.guiyuan.xposed.SysUiFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
-import java.lang.reflect.InvocationTargetException
 
 internal object SysUiConnectivitySource {
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
+    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     private inline fun <T> readOrNull(block: () -> T): T? =
         SysUiPresentationRuntime.optionalNativeRead(block)
