@@ -285,7 +285,7 @@ internal data class VisualCfg(
 internal fun Float.finiteIn(min: Float, max: Float, fallback: Float): Float =
     takeIf(Float::isFinite)?.coerceIn(min, max) ?: fallback
 
-private fun Float.normalizedNetworkOffset(): Float =
+internal fun Float.normalizedNetworkOffset(): Float =
     finiteIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX, NETWORK_TOP_OFFSET_DEFAULT)
 
 internal fun VisualCfg.normalized(): VisualCfg =

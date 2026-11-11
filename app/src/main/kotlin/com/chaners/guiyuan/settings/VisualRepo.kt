@@ -82,14 +82,14 @@ internal class VisualRepo(context: Context) {
     fun setBothSidesActivityOffsetY(offset: Float) {
         preferences.edit().putFloat(
             activeProfileKey(BOTH_SIDES_ACTIVITY_OFFSET_Y_KEY),
-            offset.finiteIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX, NETWORK_TOP_OFFSET_DEFAULT),
+            offset.normalizedNetworkOffset(),
         ).apply()
     }
 
     fun setBothSidesChargingOffsetY(offset: Float) {
         preferences.edit().putFloat(
             activeProfileKey(BOTH_SIDES_CHARGING_OFFSET_Y_KEY),
-            offset.finiteIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX, NETWORK_TOP_OFFSET_DEFAULT),
+            offset.normalizedNetworkOffset(),
         ).apply()
     }
 
@@ -240,11 +240,7 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(WIFI_VERTICAL_OFFSET_KEY),
-                offset.finiteIn(
-                    NETWORK_TOP_OFFSET_MIN,
-                    NETWORK_TOP_OFFSET_MAX,
-                    NETWORK_TOP_OFFSET_DEFAULT,
-                ),
+                offset.normalizedNetworkOffset(),
             ).apply()
     }
 
@@ -252,11 +248,7 @@ internal class VisualRepo(context: Context) {
         preferences.edit()
             .putFloat(
                 activeProfileKey(MOBILE_TYPE_VERTICAL_OFFSET_KEY),
-                offset.finiteIn(
-                    NETWORK_TOP_OFFSET_MIN,
-                    NETWORK_TOP_OFFSET_MAX,
-                    NETWORK_TOP_OFFSET_DEFAULT,
-                ),
+                offset.normalizedNetworkOffset(),
             ).apply()
     }
 
