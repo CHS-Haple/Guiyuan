@@ -8,13 +8,12 @@ evidence remain in PRs, issues, commits and the reference documents.
 ## Current release scope and accepted runtime
 
 - **Operating-system support:** Guiyuan targets **Xiaomi HyperOS 4 only**
-  with compatible LSPosed / Modern Xposed API 102. The current compatibility
-  target is Xiaomi 15 Pro, HyperOS `4.0.3.0.XOBCNXM.D02`, SystemUI
-  `17.03.260226.r` (exact APK target verified statically). The previous
-  `4.0.0.19.XOBCNXM` build remains the separately device-tested baseline;
-  no comprehensive ROM403 device acceptance is implied. Other HyperOS 4
-  devices/builds are not all verified. The “OS3” selector changes only the
-  **UI style**, not HyperOS 3 runtime support.
+  with compatible LSPosed / Modern Xposed API 102. The single current
+  compatibility baseline is Xiaomi 15 Pro, HyperOS
+  `4.0.3.0.XOBCNXM.D02`, SystemUI `17.03.260226.r`. Exact APK static
+  contracts have been verified, while comprehensive device acceptance remains
+  unverified. Other HyperOS 4 devices/builds are not all verified. The “OS3”
+  selector changes only the **UI style**, not HyperOS 3 runtime support.
 - **B1827 MIUIX Material acceptance (2026-11-10):** The maintainer reported
   signed B1827 (`1.1.0`, `versionCode=261110827`,
   `buildId=20261110-1827`) normal on the target device.
@@ -331,10 +330,8 @@ without a reproducible new need.
   unverified release, and [#928](https://github.com/CHS-Haple/Guiyuan/pull/928)
   retains their Session after failed release with per-surface admission gates.
   Native Padding **acquisition** still writes before a new receipt can be
-  recorded. Official `haotian` ROM `OS4.0.0.19.XOBCNXM` was fingerprint-verified
-  to contain byte-identical core SystemUI APK and `framework.jar` to the
-  previously inspected files. Exact OEM `View`/`ViewGroup` setter order and the
-  separately verified ROM19 Xiaomi stub provider now establish the
+  recorded. Historical private-reference analysis of the OEM
+  `View`/`ViewGroup` setter order and Xiaomi stub provider established the
   write-before-return opportunity, **not** a demonstrated exception, reentrant
   callback or foreign same-View writer. Any future change to post-return
   receipts or guarded native restoration requires a bounded
