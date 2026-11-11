@@ -43,20 +43,20 @@ internal object FeaturePrefsOwner {
 
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
-                if (!isFeatureKey(key)) return@OnSharedPreferenceChangeListener
-                val before = state.get()
-                if (before.source !== changed || before.token !== token) {
-                    return@OnSharedPreferenceChangeListener
-                }
-                val next = resolve(changed)
-                var latest = state.get()
-                while (latest.source === changed && latest.token === token && latest.cfg != next) {
-                    val pending = latest.copy(cfg = next)
-                    if (state.compareAndSet(latest, pending)) {
-                        deliverCommittedChange(latest, pending, changed, next, onChanged)
-                        break
+                if (isFeatureKey(key)) {
+                    val before = state.get()
+                    if (before.source === changed && before.token === token) {
+                        val next = resolve(changed)
+                        var latest = state.get()
+                        while (latest.source === changed && latest.token === token && latest.cfg != next) {
+                            val pending = latest.copy(cfg = next)
+                            if (state.compareAndSet(latest, pending)) {
+                                deliverCommittedChange(latest, pending, changed, next, onChanged)
+                                break
+                            }
+                            latest = state.get()
+                        }
                     }
-                    latest = state.get()
                 }
             }
 
