@@ -1964,8 +1964,12 @@ internal object SysUiPresentationOwner {
 
             val failures = ArrayList<Throwable>(1)
             releaseAttempt(failures) { host.get()?.removeOnAttachStateChangeListener(this) }
-            releaseAttempt(failures) { battery.get()?.removeOnLayoutChangeListener(reservationWidthListener) }
-            releaseAttempt(failures) { batteryCarrier.get()?.removeOnLayoutChangeListener(reservationWidthListener) }
+            releaseAttempt(failures) {
+                battery.get()?.removeOnLayoutChangeListener(reservationWidthListener)
+            }
+            releaseAttempt(failures) {
+                batteryCarrier.get()?.removeOnLayoutChangeListener(reservationWidthListener)
+            }
 
             var reservationRestored = false
             var ignoredSlotsRestored = false
@@ -1977,12 +1981,16 @@ internal object SysUiPresentationOwner {
             if (appliedFakeCarrierWidthPx != null) {
                 failures += IllegalStateException("native-capacity-restore-incomplete")
             }
-            releaseAttempt(failures) { ignoredSlotsRestored = restorePersistentIgnoredSlots(requestLayout) }
+            releaseAttempt(failures) {
+                ignoredSlotsRestored = restorePersistentIgnoredSlots(requestLayout)
+            }
             if (persistentIgnoredSlotsApplied) {
                 failures += IllegalStateException("native-ignored-slots-restore-incomplete")
             }
             releaseAttempt(failures) { restored += restoreClipMasks(clipStates, failures) }
-            releaseAttempt(failures) { restored += restoreClipMasks(mirroredPeerClipStates, failures) }
+            releaseAttempt(failures) {
+                restored += restoreClipMasks(mirroredPeerClipStates, failures)
+            }
 
             val explicitLayoutRequest =
                 requestLayout && ignoreScope == IgnoreScope.CALL
