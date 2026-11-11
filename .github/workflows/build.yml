@@ -492,7 +492,7 @@ jobs:
         run: |
           set -euo pipefail
           base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
-          if git diff --quiet "$base" "$HEAD_SHA" -- gradle.properties app/src/os4Published/kotlin app/src/os4Upstream/kotlin; then
+          if git diff --quiet "$base" "$HEAD_SHA" -- gradle.properties app/src/os4Published/kotlin app/src/os4Upstream/kotlin app/src/main/kotlin/top/yukonga/miuix/kmp/glass/GlassMaterialBridge.kt app/build.gradle.kts; then
             echo "MIUIX version and OS4 source variants unchanged; skip published dependency preflight."
             exit 0
           fi
@@ -500,6 +500,12 @@ jobs:
           ./gradlew \
             -Pgy.os4.dialogSurfaces=false \
             :app:compileDebugKotlin :app:testDebugUnitTest --refresh-dependencies \
+            --no-daemon --max-workers=3 --stacktrace
+          # The same pinned published artifact must also expose the Glass dialog and
+          # bottom-sheet surface contracts used by the source-matched production build.
+          ./gradlew \
+            -Pgy.os4.dialogSurfaces=true \
+            :app:compileDebugKotlin :app:testDebugUnitTest \
             --no-daemon --max-workers=3 --stacktrace
 
       - name: Record exact source Build identity
