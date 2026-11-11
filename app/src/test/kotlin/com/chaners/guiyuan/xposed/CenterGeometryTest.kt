@@ -157,6 +157,29 @@ class CenterGeometryTest {
     }
 
     @Test
+    fun allOpticalScalesUseFiniteFallbacks() {
+        val resolved =
+            CenterGeometry.resolve(
+                wifiScale = Float.POSITIVE_INFINITY,
+                mobileTypeScale = Float.NEGATIVE_INFINITY,
+                mobileTypeWeight = 800,
+                airplaneScale = Float.NaN,
+                noSimScale = Float.POSITIVE_INFINITY,
+                combinedScale = Float.NaN,
+            )
+        assertEquals(CenterGeometry.DEFAULT_WIFI_SIZE_SCALE, resolved.wifiScale, 0f)
+        assertEquals(CenterGeometry.DEFAULT_MOBILE_TYPE_SIZE_SCALE, resolved.mobileTypeScale, 0f)
+        assertEquals(CenterGeometry.DEFAULT_AIRPLANE_SIZE_SCALE, resolved.airplaneScale, 0f)
+        assertEquals(CenterGeometry.DEFAULT_NO_SIM_SIZE_SCALE, resolved.noSimScale, 0f)
+        assertEquals(com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT, resolved.combinedScale, 0f)
+        assertEquals(
+            OuterGeometry.DEFAULT_WEIGHT_SCALE,
+            OuterGeometry.normalizeWeightScale(Float.POSITIVE_INFINITY),
+            0f,
+        )
+    }
+
+    @Test
     fun rendererRangeClampsMatchPersistedVisualRanges() {
         assertEquals(com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_MIN, CenterGeometry.MIN_MOBILE_TYPE_WEIGHT)
         assertEquals(com.chaners.guiyuan.settings.MOBILE_TYPE_WEIGHT_MAX, CenterGeometry.MAX_MOBILE_TYPE_WEIGHT)
