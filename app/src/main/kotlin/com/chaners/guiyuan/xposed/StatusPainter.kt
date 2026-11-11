@@ -17,6 +17,7 @@ import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.settings.finiteIn
 import com.chaners.guiyuan.settings.topChargingIconUiScale
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import com.chaners.guiyuan.xposed.battery.BatteryTopArcPolicy
@@ -51,15 +52,16 @@ internal class StatusPainter(
     private var cachedAirplaneResourceId: Int = 0
     private val activityResourceIds = HashMap<String, Int>()
     private val nativeCenterAssets =
-        LinkedHashMap<PresentationStore.NativeIconResource, NativeCenterAsset>(
+        BoundedAccessCache<PresentationStore.NativeIconResource, NativeCenterAsset>(
             NATIVE_CENTER_CACHE_SIZE,
-            0.75f,
-            true,
         )
     private val nativeStrokeSources =
-        LinkedHashMap<PresentationStore.NativeIconResource, NativeVectorStroke.Source?>(8, 0.75f, true)
+        BoundedAccessCache<PresentationStore.NativeIconResource, NativeVectorStroke.Source?>(8)
+    // Initial allocation stays at 24, while the native animated-weight cache retains 64.
     private val strokeAssets =
-        LinkedHashMap<Pair<PresentationStore.NativeIconResource, Int>, NativeVectorStroke.Styled>(24, 0.75f, true)
+        BoundedAccessCache<Pair<PresentationStore.NativeIconResource, Int>, NativeVectorStroke.Styled>(
+            capacity = 64, initialCapacity = 24,
+        )
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val nativeTintVariantIds = HashMap<Int, Int>()
     private val nativeWifiReferenceIds = HashMap<Int, Int>()
@@ -1197,10 +1199,9 @@ internal class StatusPainter(
     ): NativeRenderTransform? {
         if (width <= 0 || height <= 0) return null
         val combinedScale =
-            visual.combinedScale
-                .takeIf(Float::isFinite)
-                ?.coerceIn(COMBINED_SCALE_MIN, COMBINED_SCALE_MAX)
-                ?: COMBINED_SCALE_DEFAULT
+            visual.combinedScale.finiteIn(
+                COMBINED_SCALE_MIN, COMBINED_SCALE_MAX, COMBINED_SCALE_DEFAULT,
+            )
         val scale =
             min(width / CANONICAL_SIZE, height / CANONICAL_SIZE) *
                 combinedScale
@@ -2797,10 +2798,6 @@ internal class StatusPainter(
                 ?: return null
 
         nativeCenterAssets[resource] = asset
-        if (nativeCenterAssets.size > NATIVE_CENTER_CACHE_SIZE) {
-            val eldest = nativeCenterAssets.entries.iterator().next()
-            nativeCenterAssets.remove(eldest.key)
-        }
         return asset
     }
 
@@ -3111,18 +3108,11 @@ internal class StatusPainter(
                     }.onFailure { rethrowRenderFatal(it) }.getOrNull()
                 val loaded = resources?.let { NativeVectorStroke.load(it, actual.resourceId) }
                 nativeStrokeSources[actual] = loaded
-                if (nativeStrokeSources.size > 8) {
-                    nativeStrokeSources.remove(nativeStrokeSources.keys.first())
-                }
                 loaded
             } ?: return null
 
         val styled = NativeVectorStroke.style(source, weight) ?: return null
         strokeAssets[key] = styled
-        // 60..100 alone spans 41 animated integer weights; cache a full gesture.
-        if (strokeAssets.size > 64) {
-            strokeAssets.remove(strokeAssets.keys.first())
-        }
         return styled
     }
 
@@ -3891,11 +3881,7 @@ internal class StatusPainter(
                         diameter = diameter,
                         barProgress = barProgress,
                     )
-            fill(
-                color = tint,
-                alpha = if (level != null && level > index) 255 else 48,
-                opacity = opacity,
-            )
+            fillMobileDot(tint, level, index, opacity)
             canvas.drawRoundRect(
                 centerX - dotRadius,
                 bottom - barHeight,
@@ -4035,11 +4021,7 @@ internal class StatusPainter(
                     (bottom - top).coerceAtLeast(0f) / 2f,
                 )
 
-            fill(
-                color = tint,
-                alpha = if (level != null && level > index) 255 else 48,
-                opacity = opacity,
-            )
+            fillMobileDot(tint, level, index, opacity)
             canvas.drawRoundRect(
                 left,
                 top,
@@ -4100,11 +4082,7 @@ internal class StatusPainter(
                             visual.dualRowDotOffsetY,
                         )
                     }
-                    fill(
-                        color = tint,
-                        alpha = if (level != null && level > index) 255 else 48,
-                        opacity = opacity,
-                    )
+                    fillMobileDot(tint, level, index, opacity)
                     canvas.drawCircle(
                         MobileDotRelocationPolicy.coordinate(if (centeredBefore) innerX else outerX,
                             if (centeredNow) innerX else outerX, fraction),
@@ -4130,6 +4108,15 @@ internal class StatusPainter(
         }
     }
 
+    private fun fillMobileDot(
+        tint: Int,
+        level: Int?,
+        index: Int,
+        opacity: Float,
+    ) {
+        fill(color = tint, alpha = if (level != null && level > index) 255 else 48, opacity = opacity)
+    }
+
     private fun drawCenteredMobile(
         canvas: Canvas,
         model: RenderModel,
@@ -4146,11 +4133,7 @@ internal class StatusPainter(
             val y = centeredMobileRowY(geometry, if (dual == null) null else row)
             val radius = (if (dual == null) geometry.mobileDotRadius else geometry.dualMobileDotRadius) * centerScale
             for (index in 0 until MOBILE_DOT_COUNT) {
-                fill(
-                    color = tint,
-                    alpha = if (level != null && level > index) 255 else 48,
-                    opacity = opacity,
-                )
+                fillMobileDot(tint, level, index, opacity)
                 canvas.drawCircle(
                     CENTER_TRANSITION_PIVOT_X + geometry.horizontalDotX(index) * centerScale,
                     y,
@@ -4363,11 +4346,7 @@ internal class StatusPainter(
             for (row in 0..1) {
                 val level = if (row == 0) dualLevels.sim1 else dualLevels.sim2
                 for (index in 0 until MOBILE_DOT_COUNT) {
-                    fill(
-                        color = tint,
-                        alpha = if (level != null && level > index) 255 else 48,
-                        opacity = opacity,
-                    )
+                    fillMobileDot(tint, level, index, opacity)
                     val x = geometry.dualDotX(index, row, style)
                     val y = geometry.dualDotY(index, row, style, mobileOffsetY)
                     canvas.drawCircle(
@@ -4383,11 +4362,7 @@ internal class StatusPainter(
         val level = model.mobileLevel
 
         for (index in 0 until MOBILE_DOT_COUNT) {
-            fill(
-                color = tint,
-                alpha = if (level != null && level > index) 255 else 48,
-                opacity = opacity,
-            )
+            fillMobileDot(tint, level, index, opacity)
             canvas.drawCircle(
                 MOBILE_CENTER_X + geometry.singleDotX(index, style),
                 MOBILE_CENTER_Y + geometry.singleDotY(index, style, mobileOffsetY),
