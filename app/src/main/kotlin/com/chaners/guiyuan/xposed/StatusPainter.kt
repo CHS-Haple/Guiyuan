@@ -615,20 +615,13 @@ internal class StatusPainter(
                 visual = visual,
             ) ?: return emptyList()
         val scale = nativeTransform.scale
-        val offsetX = nativeTransform.offsetX
-        val offsetY = nativeTransform.offsetY
         val outerGeometry =
             resolveOuterGeometry(visual.outerWeightScale, reservesBothSidesBottomSlot(model, visual))
         val centerGeometry =
             resolveCenterGeometry(visual)
 
         fun toViewBounds(bounds: TransitionBounds): TransitionBounds =
-            TransitionBounds(
-                left = offsetX + bounds.left * scale,
-                top = offsetY + bounds.top * scale,
-                right = offsetX + bounds.right * scale,
-                bottom = offsetY + bounds.bottom * scale,
-            )
+            mapTransitionBounds(bounds, nativeTransform)
 
         val specs = ArrayList<TransitionComponentSpec>(6)
         val batteryHalfStroke = outerGeometry.ringStroke / 2f
@@ -926,9 +919,6 @@ internal class StatusPainter(
                 height = height,
                 visual = visual,
             ) ?: return null
-        val scale = nativeTransform.scale
-        val offsetX = nativeTransform.offsetX
-        val offsetY = nativeTransform.offsetY
         val geometry =
             resolveCenterGeometry(visual)
         val metrics =
@@ -946,12 +936,7 @@ internal class StatusPainter(
             } else {
                 baseLocal
             }
-        return TransitionBounds(
-            left = offsetX + local.left * scale,
-            top = offsetY + local.top * scale,
-            right = offsetX + local.right * scale,
-            bottom = offsetY + local.bottom * scale,
-        )
+        return mapTransitionBounds(local, nativeTransform)
     }
 
     fun drawTransitionAirplane(
@@ -1005,9 +990,6 @@ internal class StatusPainter(
                 height = height,
                 visual = visual,
             ) ?: return null
-        val scale = nativeTransform.scale
-        val offsetX = nativeTransform.offsetX
-        val offsetY = nativeTransform.offsetY
         val geometry =
             resolveCenterGeometry(visual)
         val metrics =
@@ -1029,12 +1011,7 @@ internal class StatusPainter(
             } else {
                 baseLocal
             }
-        return TransitionBounds(
-            left = offsetX + local.left * scale,
-            top = offsetY + local.top * scale,
-            right = offsetX + local.right * scale,
-            bottom = offsetY + local.bottom * scale,
-        )
+        return mapTransitionBounds(local, nativeTransform)
     }
 
     fun drawTransitionNoSim(
@@ -1181,6 +1158,17 @@ internal class StatusPainter(
                 ),
         )
     }
+
+    private fun mapTransitionBounds(
+        local: TransitionBounds,
+        nativeTransform: NativeRenderTransform,
+    ): TransitionBounds =
+        TransitionBounds(
+            left = nativeTransform.offsetX + local.left * nativeTransform.scale,
+            top = nativeTransform.offsetY + local.top * nativeTransform.scale,
+            right = nativeTransform.offsetX + local.right * nativeTransform.scale,
+            bottom = nativeTransform.offsetY + local.bottom * nativeTransform.scale,
+        )
 
     private fun centeredBounds(
         centerX: Float,
@@ -2323,12 +2311,7 @@ internal class StatusPainter(
             } else {
                 baseLocal
             }
-        return TransitionBounds(
-            left = nativeTransform.offsetX + local.left * scale,
-            top = nativeTransform.offsetY + local.top * scale,
-            right = nativeTransform.offsetX + local.right * scale,
-            bottom = nativeTransform.offsetY + local.bottom * scale,
-        )
+        return mapTransitionBounds(local, nativeTransform)
     }
 
     fun transitionBatteryNumberCurrentBounds(
@@ -2347,7 +2330,6 @@ internal class StatusPainter(
                 height = height,
                 visual = visual,
             ) ?: return null
-        val scale = nativeTransform.scale
         val layout =
             resolveBatteryTopReadoutLayout(
                 model = model,
@@ -2379,12 +2361,7 @@ internal class StatusPainter(
             } else {
                 layout.groupOpticalBounds
             }
-        return TransitionBounds(
-            left = nativeTransform.offsetX + local.left * scale,
-            top = nativeTransform.offsetY + local.top * scale,
-            right = nativeTransform.offsetX + local.right * scale,
-            bottom = nativeTransform.offsetY + local.bottom * scale,
-        )
+        return mapTransitionBounds(local, nativeTransform)
     }
 
     private fun batteryTopTextOpticalBounds(
