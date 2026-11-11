@@ -5,12 +5,12 @@
   "artifacts": {
     "systemUi": {
       "displayName": "系统界面_17.03.260226.r.apk",
-      "sizeBytes": 52416189,
-      "md5": "9816bf95c85a69710e675293ec1c3e2b",
-      "sha1": "db007ef07f8f99f39d0599f785a37dcceb4992ce",
-      "sha256": "2405ce3044dd5539ad423b418ce2468e1f699022a2d1efb1efd1bcde4304627c",
+      "sizeBytes": 52321431,
+      "md5": "4279c0ef0ae97022c7ac969d44dac1a4",
+      "sha1": "ee49b63fedb88293393989174853d81b6f2cc74f",
+      "sha256": "a0e738e41fe599b97950cbf52a9e2ddc6ae2ceff986efbacb1c9840bea78768d",
       "dexCount": 3,
-      "classCount": 44237
+      "classCount": 44182
     }
   },
   "runtimeMarkers": {
@@ -46,7 +46,7 @@
     "com.miui.systemui.controlcenter.container.ControlCenterExpandControllerDelegate",
     "com.android.systemui.controlcenter.shade.NotificationHeaderExpandController",
     "com.android.systemui.controlcenter.shade.NotificationHeaderExpandController$notificationCallback$1",
-    "com.miui.systemui.shade.NotificationShadeWrapper",
+    "com.android.systemui.controlcenter.shade.NotificationShadeWrapper",
     "com.android.systemui.statusbar.phone.KeyguardStatusBarViewControllerInject",
     "com.android.systemui.controlcenter.shade.ControlCenterHeaderExpandController$controlCenterCallback$1",
     "com.android.systemui.statusbar.phone.ui.DarkIconManager",
@@ -213,7 +213,7 @@
       "onChargeStateChanged(ZZ)V",
       "onPowerSaveChanged(Z)V",
       "onPerformanceModeChanged(Z)V",
-      "getProgressStatus()Lcom/android/systemui/statusbar/util/MiuiBatteryUtils$BatteryStatus;",
+      "getProgressStatus()Lcom/android/systemui/statusbar/views/MiuiBatteryUtils$BatteryStatus;",
       "setMiuiOptimizationEnabled(Z)V"
     ],
     "com.android.systemui.shade.ShadeExpansionStateManager": [
@@ -281,7 +281,7 @@
     "className": "com.android.systemui.statusbar.views.MiuiBatteryMeterIconView",
     "progressStatusMethod": {
       "methodName": "getProgressStatus",
-      "descriptor": "()Lcom/android/systemui/statusbar/util/MiuiBatteryUtils$BatteryStatus;"
+      "descriptor": "()Lcom/android/systemui/statusbar/views/MiuiBatteryUtils$BatteryStatus;"
     },
     "fields": [
       "mLevel",
