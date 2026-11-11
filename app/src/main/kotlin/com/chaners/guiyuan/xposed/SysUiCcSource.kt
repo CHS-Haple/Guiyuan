@@ -309,15 +309,7 @@ internal object SysUiCcSource {
 
             return handles
         } catch (error: Throwable) {
-            val remaining = handles.asReversed().filter { handle ->
-                try {
-                    handle.unhook()
-                    false
-                } catch (failure: Throwable) {
-                    rethrowFatal(failure)
-                    true
-                }
-            }
+            val remaining = handles.asReversed().filter { it.unhookFailed() }
             failedInstallHandles = remaining
             homeEligible = false
             rethrowFatal(error)

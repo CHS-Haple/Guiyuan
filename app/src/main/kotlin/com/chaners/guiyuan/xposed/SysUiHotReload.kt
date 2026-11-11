@@ -121,15 +121,7 @@ internal object SysUiHotReload {
 
     @Suppress("TooGenericExceptionCaught")
     fun releaseOldHooks(param: HotReloadedParam): Int =
-        param.oldHookHandles.count { handle ->
-            try {
-                handle.unhook()
-                false
-            } catch (error: Throwable) {
-                rethrowFatal(error)
-                true
-            }
-        }
+        param.oldHookHandles.count { it.unhookFailed() }
 
     @Suppress("TooGenericExceptionCaught")
     fun takeOverHooks(
