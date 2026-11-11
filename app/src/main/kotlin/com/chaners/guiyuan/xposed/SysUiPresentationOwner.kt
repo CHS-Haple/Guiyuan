@@ -277,6 +277,20 @@ internal object SysUiPresentationOwner {
         controlCenterCurrent?.syncEndReservation()
     }
 
+    // Both native ignored-slot mutations require the same unique List contract.
+    private fun findIgnoredSlotsMethod(
+        containerClass: Class<*>,
+        name: String,
+    ): java.lang.reflect.Method? =
+        containerClass.declaredMethods
+            .filter { method ->
+                method.name == name &&
+                    method.parameterTypes.contentEquals(arrayOf(List::class.java)) &&
+                    method.returnType == Void.TYPE
+            }
+            .singleOrNull()
+            ?.apply { isAccessible = true }
+
     @Synchronized
     fun install(
         module: XposedModule,
@@ -311,29 +325,11 @@ internal object SysUiPresentationOwner {
             } ?: return "ignored-slots-field-missing"
         val addIgnoredSlots =
             readOrNull {
-                containerClass.declaredMethods
-                    .filter { method ->
-                        method.name == "addIgnoredSlots" &&
-                            method.parameterTypes.contentEquals(
-                                arrayOf(List::class.java),
-                            ) &&
-                            method.returnType == Void.TYPE
-                    }
-                    .singleOrNull()
-                    ?.apply { isAccessible = true }
+                findIgnoredSlotsMethod(containerClass, "addIgnoredSlots")
             } ?: return "add-ignored-slots-contract-missing"
         val setIgnoredSlots =
             readOrNull {
-                containerClass.declaredMethods
-                    .filter { method ->
-                        method.name == "setIgnoredSlots" &&
-                            method.parameterTypes.contentEquals(
-                                arrayOf(List::class.java),
-                            ) &&
-                            method.returnType == Void.TYPE
-                    }
-                    .singleOrNull()
-                    ?.apply { isAccessible = true }
+                findIgnoredSlotsMethod(containerClass, "setIgnoredSlots")
             } ?: return "set-ignored-slots-contract-missing"
         val batteryContainerClass =
             readOrNull {
