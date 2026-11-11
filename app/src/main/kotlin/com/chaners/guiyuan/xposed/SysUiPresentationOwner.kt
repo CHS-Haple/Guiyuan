@@ -1826,15 +1826,7 @@ internal object SysUiPresentationOwner {
             if (!syncEndReservation()) return 0
 
             if (
-                VisualMaskPolicy.shouldAdoptExistingNativeLayout(
-                    deferVisualMaskUntilLayout = deferVisualMaskUntilLayout,
-                    laidOut = group.isLaidOut,
-                    layoutRequested = group.isLayoutRequested,
-                    capacityLeaseAwaitingLayout =
-                        capacityLeaseAwaitingLayout,
-                    width = group.width,
-                    height = group.height,
-                )
+                shouldAdoptNativeLayout(group)
             ) {
                 val masked = refreshClipMasks()
                 compactLayoutReady = true
@@ -1893,15 +1885,7 @@ internal object SysUiPresentationOwner {
 
             val masked = refreshClipMasks()
             if (
-                VisualMaskPolicy.shouldAdoptExistingNativeLayout(
-                    deferVisualMaskUntilLayout = deferVisualMaskUntilLayout,
-                    laidOut = group.isLaidOut,
-                    layoutRequested = group.isLayoutRequested,
-                    capacityLeaseAwaitingLayout =
-                        capacityLeaseAwaitingLayout,
-                    width = group.width,
-                    height = group.height,
-                )
+                shouldAdoptNativeLayout(group)
             ) {
                 compactLayoutReady = true
                 layoutReadyCallback = null
@@ -2068,6 +2052,31 @@ internal object SysUiPresentationOwner {
             return restored
         }
 
+        private fun shouldAdoptNativeLayout(group: ViewGroup): Boolean =
+            VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+                deferVisualMaskUntilLayout = deferVisualMaskUntilLayout,
+                laidOut = group.isLaidOut,
+                layoutRequested = group.isLayoutRequested,
+                capacityLeaseAwaitingLayout = capacityLeaseAwaitingLayout,
+                width = group.width,
+                height = group.height,
+            )
+
+        // Notify native fallback without allowing callback errors to replace the cause.
+        @Suppress("TooGenericExceptionCaught")
+        private fun reportIgnoredSlotsFailure(operation: String, error: Throwable) {
+            rethrowFatal(error)
+            try {
+                onFailNative(
+                    "ignored-slots-" + operation + "-" +
+                        (error.message ?: error.javaClass.simpleName),
+                )
+            } catch (failure: Throwable) {
+                rethrowFatal(failure)
+                if (failure !== error) error.addSuppressed(failure)
+            }
+        }
+
         @Suppress("TooGenericExceptionCaught")
         fun <T> withRepresentedSlotsIgnored(block: () -> T): T {
             if (!active || ignoreScope == IgnoreScope.SESSION) {
@@ -2103,16 +2112,7 @@ internal object SysUiPresentationOwner {
                 try {
                     OwnedEntries.add(list, representedSlots)
                 } catch (error: Throwable) {
-                    rethrowFatal(error)
-                    try {
-                        onFailNative(
-                            "ignored-slots-add-" +
-                                (error.message ?: error.javaClass.simpleName),
-                        )
-                    } catch (failure: Throwable) {
-                        rethrowFatal(failure)
-                        if (failure !== error) error.addSuppressed(failure)
-                    }
+                    reportIgnoredSlotsFailure("add", error)
                     return block()
                 }
 
@@ -2126,16 +2126,7 @@ internal object SysUiPresentationOwner {
                 try {
                     OwnedEntries.restore(list, owned)
                 } catch (error: Throwable) {
-                    rethrowFatal(error)
-                    try {
-                        onFailNative(
-                            "ignored-slots-restore-" +
-                                (error.message ?: error.javaClass.simpleName),
-                        )
-                    } catch (failure: Throwable) {
-                        rethrowFatal(failure)
-                        if (failure !== error) error.addSuppressed(failure)
-                    }
+                    reportIgnoredSlotsFailure("restore", error)
                     // A failed cleanup must not replace the native method's exception.
                     if (nativeFailure !== error) nativeFailure?.addSuppressed(error)
                 }
