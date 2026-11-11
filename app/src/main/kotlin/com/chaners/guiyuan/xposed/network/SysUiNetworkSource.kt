@@ -921,6 +921,8 @@ internal object SysUiNetworkSource {
         )
     }
 
+    // Unhook may fail inside framework code; retain the handle for lifecycle cleanup.
+    @Suppress("TooGenericExceptionCaught")
     private fun failedBranch(
         component: String,
         error: InstallStageException,

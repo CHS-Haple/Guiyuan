@@ -101,8 +101,107 @@ internal object NativeStatusObserver {
     val installedHookCount: Int
         @Synchronized get() = installedHandles.size
 
+    private fun bindSinks(
+        onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
+        onObservationAttached: ((String) -> Unit)?,
+        onStatusPresentationChanged: ((PresentationStore.StatusIconPresentation) -> Unit)?,
+    ) {
+        eventSink = onEvent
+        diagnosticsEnabled = isDetailedDiagnosticsEnabled
+        observationAttachedSink = onObservationAttached
+        statusPresentationSink = onStatusPresentationChanged
+    }
+
+    private fun resolveStatusIconVisibility(classLoader: ClassLoader): Method {
+        val statusBarIconView =
+            Class.forName(
+                STATUS_BAR_ICON_VIEW_CLASS,
+                false,
+                classLoader,
+            )
+        val airplaneVisibility =
+            statusBarIconView
+                .getDeclaredMethod("isIconVisible")
+                .apply {
+                    check(returnType == java.lang.Boolean.TYPE) {
+                        "airplane-visibility-return-type-mismatch"
+                    }
+                    isAccessible = true
+                }
+        statusIconVisibleAccessor = airplaneVisibility
+        statusIconSourceAccessor =
+            statusBarIconView.methods
+                .firstOrNull { method ->
+                    method.name == "getSourceIcon" &&
+                        method.parameterCount == 0 &&
+                        method.returnType == Icon::class.java
+                }
+                ?.apply { isAccessible = true }
+        statusIconStaticColorAccessor =
+            statusBarIconView.methods
+                .firstOrNull { method ->
+                    method.name == "getStaticDrawableColor" &&
+                        method.parameterCount == 0 &&
+                        (
+                            method.returnType == Int::class.javaPrimitiveType ||
+                                method.returnType == Int::class.java
+                        )
+                }
+                ?.apply { isAccessible = true }
+        airplaneSlotAccessor =
+            generateSequence(statusBarIconView) { clazz -> clazz.superclass }
+                .flatMap { clazz -> clazz.declaredMethods.asSequence() }
+                .firstOrNull { method ->
+                    method.name == "getSlot" &&
+                        method.parameterCount == 0 &&
+                        method.returnType == String::class.java
+                }
+                ?.apply { isAccessible = true }
+                ?: error("airplane-slot-accessor-missing")
+        return airplaneVisibility
+    }
+
+    private fun resolveHomeHookMethods(classLoader: ClassLoader): Pair<Method, Method> {
+        val darkIconManager =
+            Class.forName(
+                HOME_MANAGER_CLASS,
+                false,
+                classLoader,
+            )
+        val statusBarIconController =
+            Class.forName(
+                STATUS_BAR_ICON_CONTROLLER_IMPL_CLASS,
+                false,
+                classLoader,
+            )
+        val addIconGroup =
+            statusBarIconController.declaredMethods
+                .filter { method ->
+                    method.name == "addIconGroup" &&
+                        method.parameterCount == 1 &&
+                        method.parameterTypes[0].name.contains("IconManager")
+                }
+                .sortedBy { method -> method.parameterTypes[0].name }
+                .firstOrNull()
+                ?: error("home-icon-manager-registration-method-missing")
+        addIconGroup.isAccessible = true
+
+        val onIconAdded =
+            darkIconManager.declaredMethods
+                .firstOrNull { method ->
+                    method.name == "onIconAdded" &&
+                        method.parameterCount == 4 &&
+                        method.parameterTypes[0] == Integer.TYPE &&
+                        method.parameterTypes[1] == String::class.java &&
+                        method.parameterTypes[2] == java.lang.Boolean.TYPE
+                }
+                ?: error("home-icon-manager-onIconAdded-missing")
+        onIconAdded.isAccessible = true
+        return onIconAdded to addIconGroup
+    }
+
     @Synchronized
-    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
@@ -114,96 +213,14 @@ internal object NativeStatusObserver {
     ): String? {
         if (installIncomplete) return "partial-hook-state"
         if (installedHandles.isNotEmpty()) {
-            eventSink = onEvent
-            diagnosticsEnabled = isDetailedDiagnosticsEnabled
-            observationAttachedSink = onObservationAttached
-            statusPresentationSink = onStatusPresentationChanged
+            bindSinks(onEvent, isDetailedDiagnosticsEnabled, onObservationAttached, onStatusPresentationChanged)
             return null
         }
 
         val created = mutableListOf<HookHandle>()
         return runCatching {
-            val statusBarIconView =
-                Class.forName(
-                    STATUS_BAR_ICON_VIEW_CLASS,
-                    false,
-                    classLoader,
-                )
-            val airplaneVisibility =
-                statusBarIconView
-                    .getDeclaredMethod("isIconVisible")
-                    .apply {
-                        check(returnType == java.lang.Boolean.TYPE) {
-                            "airplane-visibility-return-type-mismatch"
-                        }
-                        isAccessible = true
-                    }
-            statusIconVisibleAccessor = airplaneVisibility
-            statusIconSourceAccessor =
-                statusBarIconView.methods
-                    .firstOrNull { method ->
-                        method.name == "getSourceIcon" &&
-                            method.parameterCount == 0 &&
-                            method.returnType == Icon::class.java
-                    }
-                    ?.apply { isAccessible = true }
-            statusIconStaticColorAccessor =
-                statusBarIconView.methods
-                    .firstOrNull { method ->
-                        method.name == "getStaticDrawableColor" &&
-                            method.parameterCount == 0 &&
-                            (
-                                method.returnType == Int::class.javaPrimitiveType ||
-                                    method.returnType == Int::class.java
-                            )
-                    }
-                    ?.apply { isAccessible = true }
-            airplaneSlotAccessor =
-                generateSequence(statusBarIconView) { clazz -> clazz.superclass }
-                    .flatMap { clazz -> clazz.declaredMethods.asSequence() }
-                    .firstOrNull { method ->
-                        method.name == "getSlot" &&
-                            method.parameterCount == 0 &&
-                            method.returnType == String::class.java
-                    }
-                    ?.apply { isAccessible = true }
-                    ?: error("airplane-slot-accessor-missing")
-
-            val darkIconManager =
-                Class.forName(
-                    HOME_MANAGER_CLASS,
-                    false,
-                    classLoader,
-                )
-            val statusBarIconController =
-                Class.forName(
-                    STATUS_BAR_ICON_CONTROLLER_IMPL_CLASS,
-                    false,
-                    classLoader,
-                )
-            val addIconGroup =
-                statusBarIconController.declaredMethods
-                    .filter { method ->
-                        method.name == "addIconGroup" &&
-                            method.parameterCount == 1 &&
-                            method.parameterTypes[0].name.contains("IconManager")
-                    }
-                    .sortedBy { method -> method.parameterTypes[0].name }
-                    .firstOrNull()
-                    ?: error("home-icon-manager-registration-method-missing")
-            addIconGroup.isAccessible = true
-
-            val onIconAdded =
-                darkIconManager.declaredMethods
-                    .firstOrNull { method ->
-                        method.name == "onIconAdded" &&
-                            method.parameterCount == 4 &&
-                            method.parameterTypes[0] == Integer.TYPE &&
-                            method.parameterTypes[1] == String::class.java &&
-                            method.parameterTypes[2] == java.lang.Boolean.TYPE
-                    }
-                    ?: error("home-icon-manager-onIconAdded-missing")
-            onIconAdded.isAccessible = true
+            val airplaneVisibility = resolveStatusIconVisibility(classLoader)
+            val (onIconAdded, addIconGroup) = resolveHomeHookMethods(classLoader)
 
             created +=
                 module
@@ -224,40 +241,40 @@ internal object NativeStatusObserver {
             installedHandles.clear()
             installedHandles.addAll(created)
             installIncomplete = false
-            eventSink = onEvent
-            diagnosticsEnabled = isDetailedDiagnosticsEnabled
-            observationAttachedSink = onObservationAttached
-            statusPresentationSink = onStatusPresentationChanged
+            bindSinks(onEvent, isDetailedDiagnosticsEnabled, onObservationAttached, onStatusPresentationChanged)
             null
         }.getOrElse { error ->
-            val remaining = created.filter { handle ->
-                try {
-                    handle.unhook()
-                    false
-                } catch (failure: Throwable) {
-                    rethrowFatal(failure)
-                    true
-                }
-            }
-            installedHandles.clear()
-            installedHandles.addAll(remaining)
-            installIncomplete = remaining.isNotEmpty()
-            airplaneSlotAccessor = null
-            statusIconVisibleAccessor = null
-            statusIconSourceAccessor = null
-            statusIconStaticColorAccessor = null
-            activeManager = null
-            activeGroup = null
-            pendingObservationHost = null
-            pendingObservationSource = null
-            eventSink = onEvent
-            diagnosticsEnabled = isDetailedDiagnosticsEnabled
-            observationAttachedSink = onObservationAttached
-            statusPresentationSink = onStatusPresentationChanged
+            rollbackInstall(created)
+            bindSinks(onEvent, isDetailedDiagnosticsEnabled, onObservationAttached, onStatusPresentationChanged)
             rethrowFatal(error)
             val reason = error.message ?: error.javaClass.simpleName
             if (installIncomplete) "$reason-hook-cleanup-failed" else reason
         }
+    }
+
+    // Preserve any hook whose unhook failed; a partial install must not be retried.
+    @Suppress("TooGenericExceptionCaught")
+    private fun rollbackInstall(created: List<HookHandle>) {
+        val remaining = created.filter { handle ->
+            try {
+                handle.unhook()
+                false
+            } catch (failure: Throwable) {
+                rethrowFatal(failure)
+                true
+            }
+        }
+        installedHandles.clear()
+        installedHandles.addAll(remaining)
+        installIncomplete = remaining.isNotEmpty()
+        airplaneSlotAccessor = null
+        statusIconVisibleAccessor = null
+        statusIconSourceAccessor = null
+        statusIconStaticColorAccessor = null
+        activeManager = null
+        activeGroup = null
+        pendingObservationHost = null
+        pendingObservationSource = null
     }
 
     @Synchronized

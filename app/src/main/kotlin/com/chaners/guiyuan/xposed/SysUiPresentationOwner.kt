@@ -1410,6 +1410,7 @@ internal object SysUiPresentationOwner {
         }
 
     // Ordinary restore failures must not block other owners' native fallback.
+    @Suppress("TooGenericExceptionCaught")
     private fun finishFailure(vararg actions: () -> Unit) {
         val failures = ArrayList<Throwable>(1)
         actions.forEach { action ->
