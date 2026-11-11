@@ -17,6 +17,7 @@ class VisualPreferenceKeysTest {
     @Test
     fun acceptsThreeLayoutsGlobalAndProfileKeys() {
         assertTrue(isVisualPreferenceKey(null)) // SharedPreferences.clear()
+        assertFalse(isVisualPreferenceKey(NativeFontAxis.REQUEST_KEY))
         assertTrue(isVisualPreferenceKey(CONTENT_LAYOUT_KEY))
         assertTrue(isVisualPreferenceKey(DUAL_SIGNAL_ENABLED_KEY))
         assertTrue(isVisualPreferenceKey(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY))
