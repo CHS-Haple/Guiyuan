@@ -10,9 +10,16 @@ an app/build dependency.
 
 ## Evidence and compatibility
 
-- The accepted target evidence concerns Xiaomi HyperOS SystemUI
-  `17.03.260226.r`. These conclusions are **not universal** across SystemUI
-  versions, devices, other LSPosed modules or ROM updates.
+- The maintainer-designated current target is Xiaomi 15 Pro HyperOS
+  `4.0.3.0.XOBCNXM.D02`, with a supplied SystemUI APK displaying
+  `17.03.260226.r` and SHA-256
+  `2405ce3044dd5539ad423b418ce2468e1f699022a2d1efb1efd1bcde4304627c`.
+  Static DEX review confirms 21/21 recorded Hook method descriptors and
+  14/14 recorded fields. This is **not** full method-body or runtime acceptance.
+- Earlier ROM14/ROM19 SystemUI `17.03.260226.r` evidence used a different
+  exact APK SHA-256 (`a0e738e4…78768d`). The display version is
+  **not** a binary-compatibility identity. Previous device/OTA evidence remains
+  valid only for its historical fingerprint, not automatically for ROM403.
 - Separate **observed binary contracts**, **device-observed runtime behavior**,
   **derived inferences**, **Guiyuan implementation rules** and **unknowns**.
   Static call sites do not prove runtime order, callback reentry, competing
