@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import android.util.Log
+import io.github.libxposed.api.XposedInterface.Chain
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -86,44 +87,41 @@ internal object FullAodTransitionSource {
                                 fallback("full-aod-commit", error)
                             }
                         }
-                        try {
-                            if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                                onEvent(
-                                    diagnosticMessage(
-                                        chain.getArg(0) as? Boolean,
-                                        chain.getArg(1) as? Boolean,
-                                    ),
-                                )
-                            }
-                        } catch (error: Throwable) {
-                            reportDiagnosticFailureOnce(warned, error)
-                        }
+                        reportOptionalDiagnostic(
+                            chain, onEvent, isDetailedDiagnosticsEnabled, warned,
+                        )
                         result
                     },
                 )
         return listOf(handle)
     }
 
-    // Preserve native callback priority even if optional diagnostics fail.
-    private fun diagnosticMessage(
-        rawArg0: Boolean?,
-        rawArg1: Boolean?,
-    ): String =
-        "keyguardFullAod source=animateFullAod" +
-            " arg0=" + (rawArg0 ?: "unavailable") +
-            " arg1=" + (rawArg1 ?: "unavailable")
-
+    // A Chain is used synchronously within the current hook callback, never retained.
     @Suppress("TooGenericExceptionCaught")
-    private fun reportDiagnosticFailureOnce(
+    private fun reportOptionalDiagnostic(
+        chain: Chain,
+        onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
         warned: AtomicBoolean,
-        error: Throwable,
     ) {
-        SysUiPresentationRuntime.throwIfFatal(error)
-        if (warned.compareAndSet(false, true)) {
-            try {
-                Log.w("Guiyuan[FullAod]", "Diagnostic failed", error)
-            } catch (failure: Throwable) {
-                SysUiPresentationRuntime.throwIfFatal(failure)
+        try {
+            if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                val rawArg0 = chain.getArg(0) as? Boolean
+                val rawArg1 = chain.getArg(1) as? Boolean
+                onEvent(
+                    "keyguardFullAod source=animateFullAod" +
+                        " arg0=" + (rawArg0 ?: "unavailable") +
+                        " arg1=" + (rawArg1 ?: "unavailable"),
+                )
+            }
+        } catch (error: Throwable) {
+            SysUiPresentationRuntime.throwIfFatal(error)
+            if (warned.compareAndSet(false, true)) {
+                try {
+                    Log.w("Guiyuan[FullAod]", "Diagnostic failed", error)
+                } catch (failure: Throwable) {
+                    SysUiPresentationRuntime.throwIfFatal(failure)
+                }
             }
         }
     }
