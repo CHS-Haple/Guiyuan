@@ -285,6 +285,9 @@ internal data class VisualCfg(
 internal fun Float.finiteIn(min: Float, max: Float, fallback: Float): Float =
     takeIf(Float::isFinite)?.coerceIn(min, max) ?: fallback
 
+private fun Float.normalizedNetworkOffset(): Float =
+    finiteIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX, NETWORK_TOP_OFFSET_DEFAULT)
+
 internal fun VisualCfg.normalized(): VisualCfg =
     copy(
         singleRowDotArrangement = singleRowDotArrangement.takeUnless {
@@ -307,60 +310,25 @@ internal fun VisualCfg.normalized(): VisualCfg =
                 BATTERY_TOP_VERTICAL_OFFSET_MAX,
                 topOffsetYDefault(layout),
             ),
-        wifiOffsetY =
-            wifiOffsetY.finiteIn(
-                NETWORK_TOP_OFFSET_MIN,
-                NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
-            ),
-        mobileTypeOffsetY =
-            mobileTypeOffsetY.finiteIn(
-                NETWORK_TOP_OFFSET_MIN,
-                NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
-            ),
-        curvedSignalDotOffsetY =
-            curvedSignalDotOffsetY.finiteIn(
-                NETWORK_TOP_OFFSET_MIN,
-                NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
-            ),
+        wifiOffsetY = wifiOffsetY.normalizedNetworkOffset(),
+        mobileTypeOffsetY = mobileTypeOffsetY.normalizedNetworkOffset(),
+        curvedSignalDotOffsetY = curvedSignalDotOffsetY.normalizedNetworkOffset(),
         mobileTypeBottomOffsetY =
             mobileTypeBottomOffsetY.finiteIn(
                 NETWORK_TOP_OFFSET_MIN,
                 NETWORK_TOP_OFFSET_MAX,
                 mobileTypeBottomOffsetDefault(layout),
             ),
-        horizontalSignalDotOffsetY =
-            horizontalSignalDotOffsetY.finiteIn(
-                NETWORK_TOP_OFFSET_MIN,
-                NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
-            ),
-        bothSidesSignalDotOffsetY =
-            bothSidesSignalDotOffsetY.finiteIn(
-                NETWORK_TOP_OFFSET_MIN,
-                NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
-            ),
+        horizontalSignalDotOffsetY = horizontalSignalDotOffsetY.normalizedNetworkOffset(),
+        bothSidesSignalDotOffsetY = bothSidesSignalDotOffsetY.normalizedNetworkOffset(),
         bothSidesActivityScale =
             bothSidesActivityScale.finiteIn(
                 BOTH_SIDES_BOTTOM_INFO_SCALE_MIN,
                 BOTH_SIDES_BOTTOM_INFO_SCALE_MAX,
                 BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT,
             ),
-        bothSidesActivityOffsetY =
-            bothSidesActivityOffsetY.finiteIn(
-                NETWORK_TOP_OFFSET_MIN,
-                NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
-            ),
-        bothSidesChargingOffsetY =
-            bothSidesChargingOffsetY.finiteIn(
-                NETWORK_TOP_OFFSET_MIN,
-                NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
-            ),
+        bothSidesActivityOffsetY = bothSidesActivityOffsetY.normalizedNetworkOffset(),
+        bothSidesChargingOffsetY = bothSidesChargingOffsetY.normalizedNetworkOffset(),
         topChargingIconScale =
             topChargingIconScale.finiteIn(
                 BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
