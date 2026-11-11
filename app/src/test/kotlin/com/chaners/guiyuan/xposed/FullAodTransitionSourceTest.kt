@@ -9,10 +9,10 @@ import org.junit.Test
 class FullAodTransitionSourceTest {
     private class NativeHookMethods {
         @Suppress("UNUSED_PARAMETER")
-        private fun animate(enabled: Boolean) = Unit
+        private fun animate(enabled: Boolean) {}
 
         @Suppress("UNUSED_PARAMETER")
-        private fun animate(level: Int) = Unit
+        private fun animate(level: Int) {}
     }
 
     @Test
@@ -22,9 +22,9 @@ class FullAodTransitionSourceTest {
             "animate",
             "fixture-hook-contract-",
         ) { candidate ->
-            candidate.parameterTypes.contentEquals(
-                arrayOf(Boolean::class.javaPrimitiveType!!),
-            ) && candidate.returnType == Void.TYPE
+            candidate.parameterCount == 1 &&
+                candidate.parameterTypes[0] == Boolean::class.javaPrimitiveType &&
+                candidate.returnType == Void.TYPE
         }
         assertTrue(method.isAccessible)
         assertEquals(Boolean::class.javaPrimitiveType, method.parameterTypes.single())
