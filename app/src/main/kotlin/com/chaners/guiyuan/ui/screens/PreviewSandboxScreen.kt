@@ -184,6 +184,7 @@ internal fun PreviewSandboxScreen(
             PreviewMobileNetwork.FIVE_G to stringResource(R.string.home_preview_network_5g),
             PreviewMobileNetwork.FIVE_GA to stringResource(R.string.home_preview_network_5ga),
         )
+    val mobileNetworkOptions = mobileNetworkChoices.map { it.second }
     val wifiOptions =
         listOf(
             stringResource(R.string.home_preview_wifi_connected),
@@ -588,7 +589,7 @@ internal fun PreviewSandboxScreen(
                                         detailRes = R.drawable.ic_material_symbol_category_w500,
                                     )
                                 },
-                                items = mobileNetworkChoices.map { it.second },
+                                items = mobileNetworkOptions,
                                 selectedIndex =
                                     mobileNetworkChoices.indexOfFirst {
                                         it.first == state.mobileNetwork
@@ -643,7 +644,7 @@ internal fun PreviewSandboxScreen(
                                             detailRes = R.drawable.ic_material_symbol_category_w500,
                                         )
                                     },
-                                    items = mobileNetworkChoices.map { it.second },
+                                    items = mobileNetworkOptions,
                                     selectedIndex =
                                         mobileNetworkChoices.indexOfFirst {
                                             it.first == state.sim2MobileNetwork
