@@ -486,7 +486,7 @@ internal object HomeRenderSession {
                 emitEvent {
                     "homeRenderTint deferred source=" + source +
                         " applied=#" +
-                        state.appliedTint.toUInt().toString(16).padStart(8, '0') +
+                        tintHexDigits(state.appliedTint) +
                         " reason=transparent retainStable=true"
                 }
             }

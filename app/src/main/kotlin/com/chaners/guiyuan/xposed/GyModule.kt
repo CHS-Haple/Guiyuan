@@ -2020,10 +2020,7 @@ class GyModule : XposedModule() {
                     state = "ready",
                     "tint" to
                         (
-                            state.appliedTint
-                                ?.toUInt()
-                                ?.toString(16)
-                                ?.padStart(8, '0')
+                            state.appliedTint?.let(::tintHexDigits)
                                 ?: "none"
                         ),
                     "noSimVisible" to state.noSimVisible,

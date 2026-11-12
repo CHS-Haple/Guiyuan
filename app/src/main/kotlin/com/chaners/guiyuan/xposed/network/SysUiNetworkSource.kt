@@ -12,6 +12,7 @@ import com.chaners.guiyuan.xposed.StatusStateStore
 import com.chaners.guiyuan.xposed.SysUiFatal
 import com.chaners.guiyuan.xposed.unhookFailed
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
+import com.chaners.guiyuan.xposed.tintHexDigits
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -1890,8 +1891,8 @@ internal object SysUiNetworkSource {
     ): String {
         if (tint == null) return "none"
         val resolved = tint.getColorForState(state, tint.defaultColor)
-        return "0x" + resolved.toUInt().toString(16).padStart(8, '0') +
-            "/default=0x" + tint.defaultColor.toUInt().toString(16).padStart(8, '0')
+        return "0x" + tintHexDigits(resolved) +
+            "/default=0x" + tintHexDigits(tint.defaultColor)
     }
 
     private fun resourceName(

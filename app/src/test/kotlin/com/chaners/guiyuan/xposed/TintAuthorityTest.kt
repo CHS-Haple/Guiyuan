@@ -74,4 +74,13 @@ class TintAuthorityTest {
             ),
         )
     }
+
+    @Test
+    fun diagnosticTintHexRetainsUnsignedArgbAndStablePrefixes() {
+        val tint = 0xf01234ab.toInt()
+        assertEquals("f01234ab", tintHexDigits(tint))
+        assertEquals("#f01234ab", colorHex(tint))
+        assertEquals("00000000", tintHexDigits(0))
+        assertEquals("00112233", tintHexDigits(0x00112233))
+    }
 }
