@@ -598,11 +598,7 @@ internal object NativeStatusObserver {
             observedNoSimVisible
                 ?: (noSimView?.let(::isNativeStatusIconVisible) == true)
         val noSimIcon =
-            if (noSimVisible) {
-                noSimView?.let(::resolveNativeIconResource)
-            } else {
-                null
-            }
+            noSimView?.takeIf { noSimVisible }?.let(::resolveNativeIconResource)
         val peerTint = resolveAppliedStatusIconTint(group)
         val tintAnchor = resolveTintAnchorView(group)
         val locationAwareTint =
@@ -628,33 +624,19 @@ internal object NativeStatusObserver {
         val sink = statusPresentationSink
         if (sink != null && deliverPresentation(presentation, sink)) {
             reportEvent {
-                "statusIconPresentation source=" + source +
-                    " tint=" +
-                    tintText(presentation.appliedTint) +
-                    " tintAuthority=" +
-                    when {
-                        locationAwareTint != null -> "dispatcher-location-aware"
-                        peerTint != null -> "peer-static-applied"
-                        managerFallbackTint != null -> "manager-global-fallback"
-                        else -> "cached-fallback"
-                    } +
-                    " locationAwareTint=" +
-                    tintText(locationAwareTint) +
-                    " peerTint=" +
-                    tintText(peerTint) +
-                    " managerFallbackTint=" +
-                    tintText(managerFallbackTint) +
-                    " tintAnchorSlot=" +
-                    (tintAnchor?.let(NativeParticipantAccess::slotOf) ?: "none") +
-                    " tintAnchorClass=" +
-                    (tintAnchor?.javaClass?.simpleName ?: "none") +
-                    " noSimVisible=" + presentation.noSimVisible +
-                    " noSimResource=" +
-                    (
-                        presentation.noSimIcon?.packageName +
-                            ":" +
-                            presentation.noSimIcon?.resourceId
-                    )
+                val authority = when {
+                    locationAwareTint != null -> "dispatcher-location-aware"
+                    peerTint != null -> "peer-static-applied"
+                    managerFallbackTint != null -> "manager-global-fallback"
+                    else -> "cached-fallback"
+                }
+                "statusIconPresentation source=$source tint=${tintText(presentation.appliedTint)}" +
+                    " tintAuthority=$authority locationAwareTint=${tintText(locationAwareTint)}" +
+                    " peerTint=${tintText(peerTint)} managerFallbackTint=${tintText(managerFallbackTint)}" +
+                    " tintAnchorSlot=${tintAnchor?.let(NativeParticipantAccess::slotOf) ?: "none"}" +
+                    " tintAnchorClass=${tintAnchor?.javaClass?.simpleName ?: "none"}" +
+                    " noSimVisible=${presentation.noSimVisible}" +
+                    " noSimResource=${presentation.noSimIcon?.packageName}:${presentation.noSimIcon?.resourceId}"
             }
         }
 
