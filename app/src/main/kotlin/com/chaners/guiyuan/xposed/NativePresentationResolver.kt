@@ -88,8 +88,7 @@ internal object NativePresentationResolver {
             NativeSubscriptionPolicy.selectNetworkTypeSubscriptionId(
                 effectiveDataSubscriptionId = effectiveDataSubscriptionId,
                 presentationRootSubscriptionId = target?.subscriptionId,
-                boundSubscriptionIds =
-                    activeBindings.map { binding -> binding.subscriptionId },
+                boundSubscriptionIds = activeBindingSubIds,
             )
         val networkTypeTarget =
             networkTypeSubscriptionId?.let { subscriptionId ->

@@ -14,6 +14,22 @@ class NativePresentationResolverTest {
             )
         assertEquals(listOf(4, 7), resolved.subscriptionIds.toList())
         assertEquals(false, resolved.authoritative)
+
+        val ordered =
+            NativeSubscriptionPolicy.resolveActiveSubIds(
+                boundSubscriptionIds = listOf(9, 7, 9, 4),
+                semanticActiveSubscriptionIds = setOf(7, 4),
+                authoritativeActiveSubscriptionIds = null,
+            ).subscriptionIds
+        assertEquals(listOf(7, 4), ordered.toList())
+        assertEquals(
+            7,
+            NativeSubscriptionPolicy.selectNetworkTypeSubscriptionId(
+                effectiveDataSubscriptionId = null,
+                presentationRootSubscriptionId = null,
+                boundSubscriptionIds = ordered,
+            ),
+        )
     }
 
     @Test
