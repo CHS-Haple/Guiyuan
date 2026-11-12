@@ -851,14 +851,28 @@ private fun LogFilterMenu(
         }
     }
 
+    DiagToolbarMenu(title = title, entries = entries, collapseOnSelection = false, content = icon)
+}
+
+@Composable
+private fun DiagToolbarMenu(
+    title: String,
+    entries: List<DropdownEntry>,
+    collapseOnSelection: Boolean = true,
+    content: @Composable () -> Unit,
+) {
     TooltipBox(text = title) {
         if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
-            Os4CascadingMenu(entries = entries, collapseOnSelection = false, content = icon)
+            Os4CascadingMenu(
+                entries = entries,
+                collapseOnSelection = collapseOnSelection,
+                content = content,
+            )
         } else {
             WindowIconCascadingDropdownMenu(
                 entries = entries,
-                collapseOnSelection = false,
-                content = icon,
+                collapseOnSelection = collapseOnSelection,
+                content = content,
             )
         }
     }
@@ -957,13 +971,7 @@ private fun DiagMenu(
             modifier = Modifier.size(if (LocalUiStyle.current == UiStyle.OS4) 28.dp else 24.dp),
         )
     }
-    TooltipBox(text = title) {
-        if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
-            Os4CascadingMenu(entries = entries, content = icon)
-        } else {
-            WindowIconCascadingDropdownMenu(entries = entries, content = icon)
-        }
-    }
+    DiagToolbarMenu(title = title, entries = entries, content = icon)
 }
 
 @Composable
