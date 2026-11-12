@@ -423,28 +423,23 @@ internal object CcTransitionPolicy {
         )
     }
 
-    fun relativeGeometryWidth(
-        target: FloatArray,
-        current: FloatArray,
-    ): Float? {
-        require(target.size == 6)
-        require(current.size == 6)
-        val targetWidth = vectorLength(target[2], target[3])
-        val currentWidth = vectorLength(current[2], current[3])
-        if (targetWidth <= 0f || currentWidth <= 0f) return null
-        return targetWidth / currentWidth
-    }
+    fun relativeGeometryWidth(target: FloatArray, current: FloatArray): Float? =
+        relativeAxisRatio(target, current, firstIndex = 2)
 
-    fun relativeGeometryHeight(
+    fun relativeGeometryHeight(target: FloatArray, current: FloatArray): Float? =
+        relativeAxisRatio(target, current, firstIndex = 4)
+
+    private fun relativeAxisRatio(
         target: FloatArray,
         current: FloatArray,
+        firstIndex: Int,
     ): Float? {
         require(target.size == 6)
         require(current.size == 6)
-        val targetHeight = vectorLength(target[4], target[5])
-        val currentHeight = vectorLength(current[4], current[5])
-        if (targetHeight <= 0f || currentHeight <= 0f) return null
-        return targetHeight / currentHeight
+        val targetLength = vectorLength(target[firstIndex], target[firstIndex + 1])
+        val currentLength = vectorLength(current[firstIndex], current[firstIndex + 1])
+        if (targetLength <= 0f || currentLength <= 0f) return null
+        return targetLength / currentLength
     }
 
     private fun vectorLength(
