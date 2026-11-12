@@ -1591,10 +1591,7 @@ internal object CcTransitionOwner {
                         }
                     val clip =
                         CcTransitionPolicy.horizontalClipBounds(
-                            left = matrixBounds.left,
-                            top = matrixBounds.top,
-                            right = matrixBounds.right,
-                            bottom = matrixBounds.bottom,
+                            bounds = matrixBounds,
                             visibleFraction = componentVisibleFraction,
                             anchorRight = clipAnchorRight,
                         ) ?: run {
@@ -1752,10 +1749,7 @@ internal object CcTransitionOwner {
             visibleFraction: Float,
         ): FloatArray? =
             CcTransitionPolicy.horizontalClipBounds(
-                left = bounds.left,
-                top = bounds.top,
-                right = bounds.right,
-                bottom = bounds.bottom,
+                bounds = bounds,
                 visibleFraction = visibleFraction,
                 anchorRight =
                     (sourceViewRef.get()?.layoutDirection

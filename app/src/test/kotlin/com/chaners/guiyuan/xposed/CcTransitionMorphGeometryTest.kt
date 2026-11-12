@@ -193,10 +193,7 @@ class CcTransitionMorphGeometryTest {
         val bounds = StatusPainter.TransitionBounds(0f, 0f, 80f, 70f)
         val anchors = CcTransitionPolicy.aggregateAnchors(
             bounds = bounds,
-            top = rows.top.first(),
-            bottom = rows.bottom.first(),
-            topShape = rows.topShape,
-            bottomShape = rows.bottomShape,
+            rows = rows,
             widthCompensation = 1f,
             heightCompensation = 1f,
             dotDiameter = 6f,

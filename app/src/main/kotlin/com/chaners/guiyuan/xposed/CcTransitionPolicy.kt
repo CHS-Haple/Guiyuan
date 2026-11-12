@@ -83,14 +83,15 @@ internal object CcTransitionPolicy {
 
     fun aggregateAnchors(
         bounds: StatusPainter.TransitionBounds,
-        top: ParticipantVisualSnapshot.NormalizedRect,
-        bottom: ParticipantVisualSnapshot.NormalizedRect,
-        topShape: ParticipantVisualSnapshot.RowShape,
-        bottomShape: ParticipantVisualSnapshot.RowShape,
+        rows: ParticipantVisualSnapshot.DualMobileRows,
         widthCompensation: Float,
         heightCompensation: Float,
         dotDiameter: Float,
     ): FloatArray {
+        val top = rows.top.first()
+        val bottom = rows.bottom.first()
+        val topShape = rows.topShape
+        val bottomShape = rows.bottomShape
         fun y(
             rect: ParticipantVisualSnapshot.NormalizedRect,
             shape: ParticipantVisualSnapshot.RowShape,
@@ -167,13 +168,11 @@ internal object CcTransitionPolicy {
     }
 
     fun horizontalClipBounds(
-        left: Float,
-        top: Float,
-        right: Float,
-        bottom: Float,
+        bounds: StatusPainter.TransitionBounds,
         visibleFraction: Float,
         anchorRight: Boolean,
     ): FloatArray? {
+        val (left, top, right, bottom) = bounds
         if (
             !left.isFinite() ||
             !top.isFinite() ||
