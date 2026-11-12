@@ -3842,7 +3842,7 @@ internal class StatusPainter(
                 }
             val centerY =
                 if (!centered && style == SignalDotArrangement.BOTH_SIDES) {
-                    MobileSignalMorphPolicy.bothSidesDotY(
+                    MobileSignalMorphPolicy.dotCoordinate(
                         source.y, anchor.y, first.y, target.y, dotTrim, move, barProgress,
                     )
                 } else {
@@ -3982,7 +3982,7 @@ internal class StatusPainter(
                 }
             val rowCenterY =
                 if (bothSidesStagedMotion) {
-                    MobileSignalMorphPolicy.bothSidesDotY(
+                    MobileSignalMorphPolicy.dotCoordinate(
                         source.y, anchor.y, firstY, targetBottomCenterY, dotTrim, move, barProgress,
                     )
                 } else {

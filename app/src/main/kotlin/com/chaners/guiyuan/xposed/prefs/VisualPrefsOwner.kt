@@ -51,26 +51,27 @@ internal object VisualPrefsOwner {
 
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
-                if (key != NativeFontAxis.REQUEST_KEY && !isVisualPreferenceKey(key)) {
-                    return@OnSharedPreferenceChangeListener
-                }
-                val before = state.get()
-                if (before.source !== changed || before.token !== token) {
-                    return@OnSharedPreferenceChangeListener
-                }
-                if (key == NativeFontAxis.REQUEST_KEY || key == null) {
-                    deliverAxisRequest(changed.getLong(NativeFontAxis.REQUEST_KEY, 0L))
-                }
-                if (!isVisualPreferenceKey(key)) return@OnSharedPreferenceChangeListener
-                val next = resolve(changed)
-                var latest = state.get()
-                while (latest.source === changed && latest.token === token && latest.cfg != next) {
-                    val pending = latest.copy(cfg = next)
-                    if (state.compareAndSet(latest, pending)) {
-                        deliverCommittedChange(latest, pending, next, onChanged)
-                        break
+                val axisRequest = key == NativeFontAxis.REQUEST_KEY
+                val visualKey = !axisRequest && isVisualPreferenceKey(key)
+                if (axisRequest || visualKey) {
+                    val before = state.get()
+                    if (before.source === changed && before.token === token) {
+                        if (axisRequest || key == null) {
+                            deliverAxisRequest(changed.getLong(NativeFontAxis.REQUEST_KEY, 0L))
+                        }
+                        if (visualKey) {
+                            val next = resolve(changed)
+                            var latest = state.get()
+                            while (latest.source === changed && latest.token === token && latest.cfg != next) {
+                                val pending = latest.copy(cfg = next)
+                                if (state.compareAndSet(latest, pending)) {
+                                    deliverCommittedChange(latest, pending, next, onChanged)
+                                    break
+                                }
+                                latest = state.get()
+                            }
+                        }
                     }
-                    latest = state.get()
                 }
             }
 

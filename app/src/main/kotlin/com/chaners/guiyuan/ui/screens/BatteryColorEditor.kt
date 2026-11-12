@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -398,65 +397,6 @@ private fun BatteryHsvAdjustmentRow(
         },
         bottomAction = slider,
     )
-}
-
-@Composable
-internal fun BatteryCreateSchemeDialog(
-    show: Boolean,
-    nextId: Int?,
-    onDismiss: () -> Unit,
-    onDismissFinished: () -> Unit,
-    onCreate: (String) -> Unit,
-) {
-    val defaultName =
-        nextId?.let {
-            stringResource(R.string.battery_custom_scheme_default_name, it)
-        }.orEmpty()
-    var name by remember(nextId) { mutableStateOf(defaultName) }
-
-    UiOverlayDialog(
-        title = stringResource(R.string.battery_custom_scheme_new),
-        show = show && nextId != null,
-        onDismissRequest = onDismiss,
-        onDismissFinished = onDismissFinished,
-    ) {
-        Column {
-            TextField(
-                value = name,
-                onValueChange = { name = limitCustomSchemeName(it) },
-                label = stringResource(R.string.battery_custom_scheme_name),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = {
-                    val next = name.trim()
-                    if (show && next.isNotEmpty()) onCreate(next)
-                }),
-            )
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                UiDialogButton(
-                    text = stringResource(R.string.cancel),
-                    modifier = Modifier.weight(1f),
-                    onClick = onDismiss,
-                )
-                Spacer(Modifier.width(dialogActionGap()))
-                UiDialogButton(
-                    text = stringResource(R.string.battery_custom_scheme_create),
-                    modifier = Modifier.weight(1f),
-                    enabled = show && name.trim().isNotEmpty(),
-                    role = GlassDialogButtonRole.Primary,
-                    onClick = {
-                        if (show) onCreate(name.trim())
-                    },
-                )
-            }
-        }
-    }
 }
 
 @Composable

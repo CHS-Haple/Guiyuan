@@ -8,6 +8,7 @@ so voluntarily through the payment methods below.
 
 ## Payment methods / 支持方式
 
+<!-- markdownlint-disable MD033 MD013 -->
 <table>
   <tr>
     <th>WeChat Pay / 微信支付</th>
@@ -18,6 +19,7 @@ so voluntarily through the payment methods below.
     <td align="center"><img src="./assets/donate/alipay.svg" width="240" alt="Alipay QR code"></td>
   </tr>
 </table>
+<!-- markdownlint-enable MD033 MD013 -->
 
 Please verify the recipient information shown by your payment app before
 confirming a payment.

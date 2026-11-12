@@ -13,7 +13,10 @@ assistant-specific dialogue and tool instructions.
 - Treat current GitHub/source, corresponding MIUIX/SystemUI versions and actual
   device evidence as authoritative. Do not silently reuse old conversation
   summaries, dated build reports or superseded workflows.
-- Never claim to have opened a reference repository, private SystemUI binary, APK, decompilation, device trace, CI log or source that the available tools did not read. Record missing evidence and ask for the specific authorized file, log or device observation needed.
+- Ground claims about inspected reference repositories, SystemUI binaries, APKs,
+  decompilation, device traces, CI logs and source in material actually read
+  through available tools. When evidence is missing, identify the gap and the
+  specific authorized file, log or observation needed.
 
 ## Investigate and communicate
 
@@ -46,7 +49,10 @@ assistant-specific dialogue and tool instructions.
   not infer exact Xiaomi contracts from generic Android code or publish ROM
   binaries, raw traces, local reverse-engineering tools/configuration or signing
   secrets.
-- Apply CONTRIBUTING branch and CI boundaries. Do not infer permission for stable release or privileged signing from an ordinary development request. Historical IT was retired after v1.0.0; never start IT synchronization, new IT work or IT signing.
+- Follow CONTRIBUTING branch and CI boundaries. Stable releases and privileged
+  signing require explicit maintainer authorization beyond ordinary development.
+  Historical IT was retired after v1.0.0; normal development does not authorize
+  IT synchronization, new IT work or IT signing.
 - First check supplied attachments and authorized sources. If a proposed
   operation requires a specific artifact, device observation, or permission that
   remains unavailable, stop only that dependent operation; state the missing
@@ -64,4 +70,6 @@ assistant-specific dialogue and tool instructions.
 - Do not apply ordinary UI copy-shortening or semicolon-avoidance preferences to
   formal privacy and terms documents. Preserve necessary legal precision;
   compare the actual in-app and public policy text when editing.
-- AI instructions never relax the common root-cause, lifecycle, single-writer, fail-native, review, signing and security rules.
+- Assistant-specific instructions supplement, rather than override, the
+  root-cause, lifecycle, single-writer, fail-native, review, signing and
+  security rules in CONTRIBUTING.
