@@ -170,16 +170,12 @@ internal object StatusBarStableSession {
 
             SysUiPresentationRuntime.emitPassiveDiagnostic {
                 onEvent(
-                    Anchor(
-                        source = source,
-                        hostIdentity = System.identityHashCode(hostView),
-                        batteryContainerIndex = hostView.indexOfChild(container),
-                        batteryIndex = container.indexOfChild(view),
-                        batteryWidth = view.width,
-                        batteryHeight = view.height,
-                        batteryMeasuredWidth = view.measuredWidth,
-                        batteryMeasuredHeight = view.measuredHeight,
-                    ).logLine,
+                    "stableStatus anchor source=$source " +
+                        "hostId=${System.identityHashCode(hostView)} " +
+                        "containerIndex=${hostView.indexOfChild(container)} " +
+                        "batteryIndex=${container.indexOfChild(view)} " +
+                        "batterySize=${view.width}x${view.height} " +
+                        "batteryMeasured=${view.measuredWidth}x${view.measuredHeight} ",
                 )
             }
 
@@ -193,30 +189,23 @@ internal object StatusBarStableSession {
             val statusIcons = container.directChild(STATUS_ICON_CONTAINER_CLASS_NAME)
             val layoutParams = view.layoutParams
             val margins = layoutParams as? ViewGroup.MarginLayoutParams
-            val slotMetrics =
-                SlotMetrics(
-                    batteryPaddingStart = view.paddingStart,
-                    batteryPaddingEnd = view.paddingEnd,
-                    batteryPaddingTop = view.paddingTop,
-                    batteryPaddingBottom = view.paddingBottom,
-                    batteryMinimumWidth = view.minimumWidth,
-                    batteryLayoutWidth = layoutParams?.width ?: Int.MIN_VALUE,
-                    batteryLayoutHeight = layoutParams?.height ?: Int.MIN_VALUE,
-                    batteryMarginStart = margins?.marginStart ?: 0,
-                    batteryMarginEnd = margins?.marginEnd ?: 0,
-                    containerPaddingStart = container.paddingStart,
-                    containerPaddingEnd = container.paddingEnd,
-                    statusIconsWidth = statusIcons?.width ?: -1,
-                    statusIconsRight = statusIcons?.right ?: -1,
-                    batteryLeft = view.left,
-                    batteryRight = view.right,
-                    adjacentGap = statusIcons?.let { icons -> view.left - icons.right } ?: -1,
-                    batteryClipChildren = view.clipChildren,
-                    containerClipChildren = container.clipChildren,
-                    layoutRtl = view.layoutDirection == View.LAYOUT_DIRECTION_RTL,
-                    batteryTranslationX = view.translationX,
-                )
-            onEvent(slotMetrics.logLine)
+            val adjacentGap = statusIcons?.let { icons -> view.left - icons.right } ?: -1
+            onEvent(
+                "stableStatus slotMetrics " +
+                    "batteryPadding=${view.paddingStart},${view.paddingEnd}," +
+                    "${view.paddingTop},${view.paddingBottom} " +
+                    "batteryMinWidth=${view.minimumWidth} " +
+                    "layout=${layoutParams?.width ?: Int.MIN_VALUE}x" +
+                    "${layoutParams?.height ?: Int.MIN_VALUE} " +
+                    "margins=${margins?.marginStart ?: 0},${margins?.marginEnd ?: 0} " +
+                    "containerPadding=${container.paddingStart},${container.paddingEnd} " +
+                    "statusIconsWidth=${statusIcons?.width ?: -1} " +
+                    "statusIconsRight=${statusIcons?.right ?: -1} " +
+                    "batteryBounds=${view.left}-${view.right} adjacentGap=$adjacentGap " +
+                    "clipChildren=${view.clipChildren},${container.clipChildren} " +
+                    "rtl=${view.layoutDirection == View.LAYOUT_DIRECTION_RTL} " +
+                    "translationX=${view.translationX} ",
+            )
         }
 
         private fun clearAnchorLayoutListener() {
@@ -225,61 +214,6 @@ internal object StatusBarStableSession {
             anchorLayoutListener = null
         }
 
-    }
-
-    internal data class Anchor(
-        val source: String,
-        val hostIdentity: Int,
-        val batteryContainerIndex: Int,
-        val batteryIndex: Int,
-        val batteryWidth: Int,
-        val batteryHeight: Int,
-        val batteryMeasuredWidth: Int,
-        val batteryMeasuredHeight: Int,
-    ) {
-        val logLine: String
-            get() =
-                "stableStatus anchor source=$source hostId=$hostIdentity " +
-                    "containerIndex=$batteryContainerIndex batteryIndex=$batteryIndex " +
-                    "batterySize=${batteryWidth}x$batteryHeight " +
-                    "batteryMeasured=${batteryMeasuredWidth}x$batteryMeasuredHeight "
-    }
-
-    internal data class SlotMetrics(
-        val batteryPaddingStart: Int,
-        val batteryPaddingEnd: Int,
-        val batteryPaddingTop: Int,
-        val batteryPaddingBottom: Int,
-        val batteryMinimumWidth: Int,
-        val batteryLayoutWidth: Int,
-        val batteryLayoutHeight: Int,
-        val batteryMarginStart: Int,
-        val batteryMarginEnd: Int,
-        val containerPaddingStart: Int,
-        val containerPaddingEnd: Int,
-        val statusIconsWidth: Int,
-        val statusIconsRight: Int,
-        val batteryLeft: Int,
-        val batteryRight: Int,
-        val adjacentGap: Int,
-        val batteryClipChildren: Boolean,
-        val containerClipChildren: Boolean,
-        val layoutRtl: Boolean,
-        val batteryTranslationX: Float,
-    ) {
-        val logLine: String
-            get() =
-                "stableStatus slotMetrics " +
-                    "batteryPadding=$batteryPaddingStart,$batteryPaddingEnd," +
-                    "$batteryPaddingTop,$batteryPaddingBottom " +
-                    "batteryMinWidth=$batteryMinimumWidth " +
-                    "layout=${batteryLayoutWidth}x$batteryLayoutHeight " +
-                    "margins=$batteryMarginStart,$batteryMarginEnd " +
-                    "containerPadding=$containerPaddingStart,$containerPaddingEnd " +
-                    "statusIconsWidth=$statusIconsWidth statusIconsRight=$statusIconsRight " +
-                    "batteryBounds=$batteryLeft-$batteryRight adjacentGap=$adjacentGap " +
-                    "clipChildren=$batteryClipChildren,$containerClipChildren " +
-                    "rtl=$layoutRtl translationX=$batteryTranslationX "
     }
 
 }
