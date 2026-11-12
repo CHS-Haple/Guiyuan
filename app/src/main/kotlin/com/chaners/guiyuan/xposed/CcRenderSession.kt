@@ -382,31 +382,42 @@ internal object CcRenderSession {
             return
         }
 
-        val retry = failure.retryAfterLayout && attempt < MAX_PREARM_LAYOUT_ATTEMPTS
-        if (retry) {
-            pending.emit(
-                "controlCenterProjection prearm state=deferred " +
-                    FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt +
-                    " reason=" + failure.reason +
-                    " next=native-root-layout",
-            )
-            try {
-                host.requestLayout()
-            } catch (error: Throwable) {
-                abortPrearm(pending, error)
-                pending.emit(
-                    "controlCenterProjection prearm state=failed " +
-                        FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt +
-                        " reason=layout-request-failed type=" + error.javaClass.simpleName +
-                        " fallback=native-qs-fake",
-                )
-            }
-        } else {
-            cancelPendingPrearm(pending)
+        if (failure.retryAfterLayout && attempt < MAX_PREARM_LAYOUT_ATTEMPTS) {
+            requestPendingPrearmRetry(pending, host, attempt, failure.reason)
+            return
+        }
+        cancelPendingPrearm(pending)
+        pending.emit(
+            "controlCenterProjection prearm state=failed " +
+                FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt +
+                " reason=" + failure.reason +
+                " fallback=native-qs-fake",
+        )
+    }
+
+    // A prearmed CC fake root gets another native layout only while its
+    // original listener receipt remains owned by this session.
+    @Suppress("TooGenericExceptionCaught")
+    private fun requestPendingPrearmRetry(
+        pending: PendingPrearm,
+        host: ViewGroup,
+        attempt: Int,
+        reason: String,
+    ) {
+        pending.emit(
+            "controlCenterProjection prearm state=deferred " +
+                FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt +
+                " reason=" + reason +
+                " next=native-root-layout",
+        )
+        try {
+            host.requestLayout()
+        } catch (error: Throwable) {
+            abortPrearm(pending, error)
             pending.emit(
                 "controlCenterProjection prearm state=failed " +
                     FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt +
-                    " reason=" + failure.reason +
+                    " reason=layout-request-failed type=" + error.javaClass.simpleName +
                     " fallback=native-qs-fake",
             )
         }
