@@ -22,7 +22,7 @@ execution ownership is in [architecture](../architecture/README.md).
 - **Current `dev` build identity:** read `combinedStatus.versionName`,
   `combinedStatus.versionCode` and `combinedStatus.buildId` directly from
   `gradle.properties`. The accepted MIUIX source/dependency pin is
-  `96d613aa` via [#1517](https://github.com/CHS-Haple/Guiyuan/pull/1517);
+  `9d4b9c85` via [#1528](https://github.com/CHS-Haple/Guiyuan/pull/1528);
   CI and the upstream checkout must use that exact revision.
 - **Branches:** work enters `dev` through reviewed PRs, then `main` through
   stable promotion. Retired `it` is historical only. A source-only change does
