@@ -407,20 +407,20 @@ internal class RenderView(
         tint: TintState,
         currentVisual: VisualCfg,
     ): RenderColors =
-            colorCache
-                ?.takeIf { cache ->
-                    cache.model === current &&
-                        cache.tint === tint &&
-                        cache.visual === currentVisual
-                }?.colors
-                ?: ColorPolicy.resolve(
-                    model = current,
-                    tintState = tint,
-                    visualSettings = currentVisual,
-                    batteryColorPreferences = colorPrefs,
-                ).also { resolved ->
-                    colorCache = ColorCache(current, tint, currentVisual, resolved)
-                }
+        colorCache
+            ?.takeIf { cache ->
+                cache.model === current &&
+                    cache.tint === tint &&
+                    cache.visual === currentVisual
+            }?.colors
+            ?: ColorPolicy.resolve(
+                model = current,
+                tintState = tint,
+                visualSettings = currentVisual,
+                batteryColorPreferences = colorPrefs,
+            ).also { resolved ->
+                colorCache = ColorCache(current, tint, currentVisual, resolved)
+            }
 
     private fun reportDrawLatency() {
         val report = onStateRendered ?: return
