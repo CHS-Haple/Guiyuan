@@ -248,14 +248,15 @@ internal fun GuiyuanAnimatedIdentityMark(
     val currentSpeed by rememberUpdatedState(speed)
 
     LaunchedEffect(active) {
-        if (!active) return@LaunchedEffect
-        var previous = withFrameNanos { it }
-        while (true) {
-            val now = withFrameNanos { it }
-            // Do not turn a resumed frame after a pause into an angular jump.
-            val delta = (now - previous).coerceIn(0L, 50_000_000L) / 1_000_000_000f
-            previous = now
-            orbitRotation = (orbitRotation - 18f * currentSpeed * delta) % 360f
+        if (active) {
+            var previous = withFrameNanos { it }
+            while (true) {
+                val now = withFrameNanos { it }
+                // Do not turn a resumed frame after a pause into an angular jump.
+                val delta = (now - previous).coerceIn(0L, 50_000_000L) / 1_000_000_000f
+                previous = now
+                orbitRotation = (orbitRotation - 18f * currentSpeed * delta) % 360f
+            }
         }
     }
     val pressModifier =
@@ -371,10 +372,11 @@ internal fun Modifier.waveGlint(
     accent: Color,
 ): Modifier = drawWithContent {
     drawContent()
-    if (!wave.isRunning || distance <= 0f) return@drawWithContent
-    val progress = wave.value
-    drawGlint(progress, distance, diameter, phase, glint, accent, 0.95f)
-    drawGlint((progress - 0.2f) / 0.8f, distance, diameter, phase, glint, accent, 0.50f)
+    if (wave.isRunning && distance > 0f) {
+        val progress = wave.value
+        drawGlint(progress, distance, diameter, phase, glint, accent, 0.95f)
+        drawGlint((progress - 0.2f) / 0.8f, distance, diameter, phase, glint, accent, 0.50f)
+    }
 }
 
 private fun DrawScope.drawGlint(
