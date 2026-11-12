@@ -76,6 +76,16 @@ class NativeParticipantAccessTest {
         )
     }
 
+    @Test
+    fun rejectsReorderedRemovalArguments() {
+        val method = Fixture::class.java.getDeclaredMethod(
+            "removeIcon",
+            requireNotNull(Int::class.javaPrimitiveType),
+            String::class.java,
+        )
+        assertNull(NativeParticipantAccess.classifyRemoval(method))
+    }
+
     @Suppress("UNUSED_PARAMETER")
     private class Fixture {
         fun removeAllIconsForSlot(
@@ -91,6 +101,8 @@ class NativeParticipantAccessTest {
         ) = Unit
 
         fun removeIcon(slot: String) = Unit
+
+        fun removeIcon(tag: Int, slot: String) = Unit
 
         fun other(slot: String) = Unit
     }

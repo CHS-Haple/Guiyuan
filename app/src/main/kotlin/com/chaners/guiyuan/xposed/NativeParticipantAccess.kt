@@ -114,17 +114,14 @@ internal object NativeParticipantAccess {
 
     fun removal(controllerClass: Class<*>): Removal? =
         optionalNativeRead {
-            val candidates =
-                controllerClass
-                    .allMethods()
-                    .mapNotNull { method ->
-                        classifyRemoval(method)?.let { mode ->
-                            Removal(method = method, mode = mode)
-                        }
+            controllerClass
+                .allMethods()
+                .mapNotNull { method ->
+                    classifyRemoval(method)?.let { mode ->
+                        Removal(method = method, mode = mode)
                     }
-                    .toList()
-
-            candidates.minByOrNull { candidate ->
+                }
+                .minByOrNull { candidate ->
                 when (candidate.mode) {
                     RemovalMode.REMOVE_ALL_SLOT_PIPELINE_FLAG -> 0
                     RemovalMode.REMOVE_ALL_SLOT -> 1
@@ -135,22 +132,28 @@ internal object NativeParticipantAccess {
         }
 
     fun classifyRemoval(method: Method): RemovalMode? {
-        val params = method.parameterTypes.map { type -> type.name }
+        val params = method.parameterTypes
         return when {
             method.name == "removeAllIconsForSlot" &&
-                params == listOf(REFLECTED_STRING_TYPE, "boolean") ->
+                params.size == 2 &&
+                params[0].name == REFLECTED_STRING_TYPE &&
+                params[1].name == "boolean" ->
                 RemovalMode.REMOVE_ALL_SLOT_PIPELINE_FLAG
 
             method.name == "removeAllIconsForSlot" &&
-                params == listOf(REFLECTED_STRING_TYPE) ->
+                params.size == 1 &&
+                params[0].name == REFLECTED_STRING_TYPE ->
                 RemovalMode.REMOVE_ALL_SLOT
 
             method.name == "removeIcon" &&
-                params == listOf(REFLECTED_STRING_TYPE, "int") ->
+                params.size == 2 &&
+                params[0].name == REFLECTED_STRING_TYPE &&
+                params[1].name == "int" ->
                 RemovalMode.REMOVE_TAGGED
 
             method.name == "removeIcon" &&
-                params == listOf(REFLECTED_STRING_TYPE) ->
+                params.size == 1 &&
+                params[0].name == REFLECTED_STRING_TYPE ->
                 RemovalMode.REMOVE_SLOT
 
             else -> null
