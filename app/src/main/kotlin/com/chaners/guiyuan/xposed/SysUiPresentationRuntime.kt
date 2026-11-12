@@ -32,6 +32,11 @@ internal object SysUiPresentationRuntime {
             null
         }
 
+    // Hook installation may fall back to native only for nonfatal failures.
+    // Centralize the fatal gate; each owner retains its own fallback receipt.
+    internal inline fun <T> attemptHookInstall(block: () -> T): Result<T> =
+        runCatching(block).onFailure(::throwIfFatal)
+
     // Preserve exact native signature selection; never guess among overloads.
     internal inline fun requireUniqueHookMethod(
         type: Class<*>,
@@ -132,7 +137,7 @@ internal object SysUiPresentationRuntime {
         }
         var tintFailure: String? = null
         val tintHooks =
-            runCatching {
+            attemptHookInstall {
                 SysUiTintSource.install(
                     module = module,
                     classLoader = classLoader,
@@ -142,12 +147,11 @@ internal object SysUiPresentationRuntime {
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
-                throwIfFatal(error)
                 tintFailure = error.message ?: error.javaClass.simpleName
                 SysUiTintSource.failedInstallHookCount
             }
         val keyguardAodHooks =
-            runCatching {
+            attemptHookInstall {
                 SysUiKeyguardAodSource.install(
                     module = module,
                     classLoader = classLoader,
@@ -159,7 +163,6 @@ internal object SysUiPresentationRuntime {
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
-                throwIfFatal(error)
                 reportAodFailure(
                     "keyguardAod install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
@@ -168,7 +171,7 @@ internal object SysUiPresentationRuntime {
                 SysUiKeyguardAodSource.failedInstallHookCount
             }
         val keyguardFullAodHooks =
-            runCatching {
+            attemptHookInstall {
                 FullAodTransitionSource.install(
                     module = module,
                     classLoader = classLoader,
@@ -179,7 +182,6 @@ internal object SysUiPresentationRuntime {
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
-                throwIfFatal(error)
                 reportAodFailure(
                     "keyguardFullAod install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
@@ -188,7 +190,7 @@ internal object SysUiPresentationRuntime {
                 0
             }
         val keyguardStatusIconHooks =
-            runCatching {
+            attemptHookInstall {
                 KeyguardIconTransitionSource.install(
                     module = module,
                     classLoader = classLoader,
@@ -200,7 +202,6 @@ internal object SysUiPresentationRuntime {
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
-                throwIfFatal(error)
                 reportAodFailure(
                     "keyguardStatusIconTransition install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
@@ -210,7 +211,7 @@ internal object SysUiPresentationRuntime {
             }
         var sceneFailure: String? = null
         val sceneHooks =
-            runCatching {
+            attemptHookInstall {
                 SysUiSceneSource.install(
                     module = module,
                     classLoader = classLoader,
@@ -220,20 +221,18 @@ internal object SysUiPresentationRuntime {
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
-                throwIfFatal(error)
                 sceneFailure = error.message ?: error.javaClass.simpleName
                 0
             }
         var mobileTypeFailure: String? = null
         val mobileTypeHooks =
-            runCatching {
+            attemptHookInstall {
                 SysUiMobileTypeSource.install(
                     module = module,
                     classLoader = classLoader,
                     onChanged = onMobileTypeChanged,
                 ).size
             }.getOrElse { error ->
-                throwIfFatal(error)
                 mobileTypeFailure = error.message ?: error.javaClass.simpleName
                 0
             }
