@@ -5,6 +5,88 @@ import org.junit.Test
 
 class NativePresentationResolverTest {
     @Test
+    fun activeBindingsDeduplicateAndRejectNegativeSubscriptionIds() {
+        val resolved =
+            NativeSubscriptionPolicy.resolveActiveSubIds(
+                boundSubscriptionIds = listOf(4, 4, -1, 9, 7, 4),
+                semanticActiveSubscriptionIds = setOf(-1, 4, 7),
+                authoritativeActiveSubscriptionIds = null,
+            )
+        assertEquals(listOf(4, 7), resolved.subscriptionIds.toList())
+        assertEquals(false, resolved.authoritative)
+    }
+
+    @Test
+    fun availablePlatformSourceOverridesSemanticFallbackEvenWhenEmpty() {
+        val authoritative =
+            NativeSubscriptionPolicy.resolveActiveSubIds(
+                boundSubscriptionIds = listOf(4, 9, 7),
+                semanticActiveSubscriptionIds = setOf(4, 7),
+                authoritativeActiveSubscriptionIds = setOf(9, 7),
+            )
+        assertEquals(listOf(9, 7), authoritative.subscriptionIds.toList())
+        assertEquals(true, authoritative.authoritative)
+
+        val empty =
+            NativeSubscriptionPolicy.resolveActiveSubIds(
+                boundSubscriptionIds = listOf(4),
+                semanticActiveSubscriptionIds = setOf(4),
+                authoritativeActiveSubscriptionIds = emptySet(),
+            )
+        assertEquals(emptySet<Int>(), empty.subscriptionIds)
+        assertEquals(true, empty.authoritative)
+    }
+
+    @Test
+    fun dualSimSlotMappingUsesNativePhysicalOrder() {
+        assertEquals(
+            mapOf(1 to 4, 0 to 9),
+            NativeSubscriptionPolicy.resolveSlotSubscriptions(
+                activeSubscriptionIds = setOf(4, 9),
+                platformSubscriptions = listOf(4 to 1, 9 to 0),
+            ),
+        )
+        assertEquals(
+            mapOf(0 to 4, 1 to 9),
+            NativeSubscriptionPolicy.resolveSlotSubscriptions(
+                activeSubscriptionIds = setOf(4, 9),
+                platformSubscriptions = listOf(4 to 0, 9 to 1),
+            ),
+        )
+    }
+
+    @Test
+    fun ambiguousOrIncompletePlatformSlotsNeverAuthorizeDualSim() {
+        val active = setOf(4, 9)
+        val invalid =
+            listOf(
+                null,
+                emptyList(),
+                listOf(4 to 0),
+                listOf(4 to 0, 9 to 1, 11 to 2),
+                listOf(4 to 0, 4 to 1),
+                listOf(4 to 0, 9 to 0),
+                listOf(4 to -1, 9 to 1),
+                listOf(4 to 0, 9 to 2),
+                listOf(4 to 0, 11 to 1),
+            )
+        invalid.forEach { platform ->
+            assertEquals(
+                "Ambiguous native slots must not enable a dual-card layout: $platform",
+                emptyMap<Int, Int>(),
+                NativeSubscriptionPolicy.resolveSlotSubscriptions(active, platform),
+            )
+        }
+        assertEquals(
+            emptyMap<Int, Int>(),
+            NativeSubscriptionPolicy.resolveSlotSubscriptions(
+                activeSubscriptionIds = setOf(4),
+                platformSubscriptions = listOf(4 to 0, 9 to 1),
+            ),
+        )
+    }
+
+    @Test
     fun aggregatedNetworkTypeFollowsDefaultDataSubscription() {
         assertEquals(
             4,

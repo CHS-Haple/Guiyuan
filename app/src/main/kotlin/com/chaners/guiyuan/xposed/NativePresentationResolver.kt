@@ -22,15 +22,14 @@ internal object NativePresentationResolver {
                 .filter { binding -> binding.root.isAttachedToWindow }
         val boundSubscriptionIds = bindings.map { binding -> binding.subscriptionId }
         val semanticActiveSubIds =
-            boundSubscriptionIds
-                .distinct()
-                .filter { subscriptionId ->
-                    state.mobile[subscriptionId]
-                        ?.signal
-                        ?.let { signal -> signal !is SignalStrength.Unknown }
-                        ?: false
+            linkedSetOf<Int>().apply {
+                for (subscriptionId in boundSubscriptionIds) {
+                    val signal = state.mobile[subscriptionId]?.signal
+                    if (signal != null && signal !is SignalStrength.Unknown) {
+                        add(subscriptionId)
+                    }
                 }
-                .toSet()
+            }
         val platformSubscriptions =
             bindings
                 .firstOrNull()

@@ -20,13 +20,16 @@ internal object NativeSubscriptionPolicy {
         semanticActiveSubscriptionIds: Set<Int>,
         authoritativeActiveSubscriptionIds: Set<Int>?,
     ): ActiveBindingResolution {
-        val bound = boundSubscriptionIds.filter { it >= 0 }.toSet()
         val authoritative = authoritativeActiveSubscriptionIds != null
-        val source =
-            authoritativeActiveSubscriptionIds
-                ?: semanticActiveSubscriptionIds
+        val source = authoritativeActiveSubscriptionIds ?: semanticActiveSubscriptionIds
+        val resolved = linkedSetOf<Int>()
+        for (subscriptionId in boundSubscriptionIds) {
+            if (subscriptionId >= 0 && subscriptionId in source) {
+                resolved.add(subscriptionId)
+            }
+        }
         return ActiveBindingResolution(
-            subscriptionIds = bound.intersect(source),
+            subscriptionIds = resolved,
             authoritative = authoritative,
         )
     }
@@ -50,18 +53,21 @@ internal object NativeSubscriptionPolicy {
         platformSubscriptions: List<Pair<Int, Int>>?,
     ): Map<Int, Int> {
         val platform = platformSubscriptions ?: return emptyMap()
-        // Bound roots can lag behind an additional active platform subscription.
-        if (platform.size != 2) return emptyMap()
-        val pairs =
-            platform.filter { (id, slot) -> id in activeSubscriptionIds && slot in 0..1 }
+        // Both authoritative SIM slots must be present with distinct active IDs.
+        // A partially bound or duplicated native witness stays unclassified.
+        if (platform.size != 2 || activeSubscriptionIds.size != 2) return emptyMap()
+        val first = platform[0]
+        val second = platform[1]
         if (
-            activeSubscriptionIds.size != 2 ||
-            pairs.size != 2 ||
-            pairs.map { it.first }.toSet() != activeSubscriptionIds ||
-            pairs.map { it.second }.toSet() != setOf(0, 1)
+            first.first == second.first ||
+            first.first !in activeSubscriptionIds ||
+            second.first !in activeSubscriptionIds ||
+            first.second !in 0..1 ||
+            second.second !in 0..1 ||
+            first.second == second.second
         ) {
             return emptyMap()
         }
-        return pairs.associate { (id, slot) -> slot to id }
+        return mapOf(first.second to first.first, second.second to second.first)
     }
 }
