@@ -119,21 +119,21 @@ internal object StatusStateStore {
     ): Snapshot? {
         if (subscriptionId < 0) return null
         val before = current
+        val wasShown = subscriptionId in before.mobileActivityShownIds
+        val wasObserved = subscriptionId in before.mobileActivityVisibilityObservedIds
+        if (wasShown == visible && wasObserved) return null
+
         // Only the native resource collector may change drawable identity.
-        val nextShown = current.mobileActivityShownIds.toMutableSet().apply {
-            if (visible) add(subscriptionId) else remove(subscriptionId)
-        }
-        if (
-            current.mobileActivityShownIds != nextShown ||
-            subscriptionId !in current.mobileActivityVisibilityObservedIds
-        ) {
-            current = current.copy(
-                mobileActivityShownIds = nextShown,
-                mobileActivityVisibilityObservedIds =
-                    current.mobileActivityVisibilityObservedIds + subscriptionId,
-            )
-        }
-        return current.takeIf { it != before }
+        current = before.copy(
+            mobileActivityShownIds =
+                if (wasShown == visible) before.mobileActivityShownIds
+                else if (visible) before.mobileActivityShownIds + subscriptionId
+                else before.mobileActivityShownIds - subscriptionId,
+            mobileActivityVisibilityObservedIds =
+                if (wasObserved) before.mobileActivityVisibilityObservedIds
+                else before.mobileActivityVisibilityObservedIds + subscriptionId,
+        )
+        return current
     }
 
     @Synchronized
