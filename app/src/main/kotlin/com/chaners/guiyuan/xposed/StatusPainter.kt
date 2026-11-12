@@ -3742,10 +3742,7 @@ internal class StatusPainter(
             )
             val anchors = CcTransitionPolicy.aggregateAnchors(
                 bounds = bounds,
-                top = top.first(),
-                bottom = bottom.first(),
-                topShape = aggregateRows.topShape,
-                bottomShape = aggregateRows.bottomShape,
+                rows = aggregateRows,
                 widthCompensation = widthCompensation,
                 heightCompensation =
                     MobileSignalTargetGeometry.exactTargetAxisCompensation(
