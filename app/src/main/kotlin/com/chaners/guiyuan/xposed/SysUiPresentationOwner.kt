@@ -2328,9 +2328,8 @@ internal object SysUiPresentationOwner {
 
         // The fake carrier lease and the actual native peer row are distinct
         // capacity witnesses; reject only when neither can fit the reservation.
-        private fun checkedFakeCarrierCapacityDelta(
+        private fun ViewGroup.checkedFakeCarrierCapacityDelta(
             hostView: ViewGroup,
-            group: ViewGroup,
             baseline: PaddingState,
             nativeHide: Boolean,
             compactSlotWidthPx: Int,
@@ -2351,14 +2350,14 @@ internal object SysUiPresentationOwner {
                     // A fake carrier's width lease does not bound the icon row's
                     // end padding when the native measured peers still fit.
                     val contentWidth =
-                        measuredNativePeerWidth(group)
+                        measuredNativePeerWidth(this)
                             ?: run {
                                 onFailNative("fake-native-peer-measure-unavailable")
                                 return null
                             }
                     if (
                         !EndReservationPolicy.fitsFakeNativePeerRow(
-                            rowWidthPx = group.width,
+                            rowWidthPx = width,
                             contentWidthPx = contentWidth,
                             targetPaddingEndPx = baseline.end + requestedReservationDelta,
                         )
@@ -2464,9 +2463,8 @@ internal object SysUiPresentationOwner {
                     requestedSlotWidthPx = requestedSlotWidthPx,
                 )
             val capacityDeltaPx =
-                checkedFakeCarrierCapacityDelta(
+                group.checkedFakeCarrierCapacityDelta(
                     hostView = hostView,
-                    group = group,
                     baseline = baseline,
                     nativeHide = nativeHide,
                     compactSlotWidthPx = compactSlotWidthPx,
