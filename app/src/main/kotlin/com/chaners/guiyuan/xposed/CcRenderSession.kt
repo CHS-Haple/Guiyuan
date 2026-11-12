@@ -320,8 +320,7 @@ internal object CcRenderSession {
         val session = current
         releaseAll(
             {
-                pending?.cancel()
-                if (pendingPrearm === pending) pendingPrearm = null
+                if (pending != null) cancelPendingPrearm(pending)
             },
             { if (releaseNativePresentation) SysUiPresentationOwner.deactivateCc(source) },
             { session?.stop(source) },
@@ -330,13 +329,17 @@ internal object CcRenderSession {
     }
 
     // Keep the old listener receipt if cancellation cannot complete.
+    private fun cancelPendingPrearm(pending: PendingPrearm) {
+        pending.cancel()
+        if (pendingPrearm === pending) pendingPrearm = null
+    }
+
     @Synchronized
     @Suppress("TooGenericExceptionCaught")
     private fun abortPrearm(pending: PendingPrearm, error: Throwable) {
         SysUiPresentationRuntime.throwIfFatal(error)
         try {
-            pending.cancel()
-            if (pendingPrearm === pending) pendingPrearm = null
+            cancelPendingPrearm(pending)
         } catch (cleanup: Throwable) {
             SysUiPresentationRuntime.throwIfFatal(cleanup)
             if (cleanup !== error) error.addSuppressed(cleanup)
@@ -350,8 +353,7 @@ internal object CcRenderSession {
         if (pendingPrearm !== pending) return
         val host = pending.host()
         if (host == null || !host.isAttachedToWindow) {
-            pending.cancel()
-            if (pendingPrearm === pending) pendingPrearm = null
+            cancelPendingPrearm(pending)
             return
         }
 
@@ -372,8 +374,7 @@ internal object CcRenderSession {
             }
         if (pendingPrearm !== pending) return
         if (failure == null) {
-            pending.cancel()
-            if (pendingPrearm === pending) pendingPrearm = null
+            cancelPendingPrearm(pending)
             pending.emit(
                 "controlCenterProjection prearm state=armed " +
                     FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt,
@@ -381,9 +382,7 @@ internal object CcRenderSession {
             return
         }
 
-        val retry =
-            failure.retryAfterLayout &&
-                attempt < MAX_PREARM_LAYOUT_ATTEMPTS
+        val retry = failure.retryAfterLayout && attempt < MAX_PREARM_LAYOUT_ATTEMPTS
         if (retry) {
             pending.emit(
                 "controlCenterProjection prearm state=deferred " +
@@ -403,8 +402,7 @@ internal object CcRenderSession {
                 )
             }
         } else {
-            pending.cancel()
-            if (pendingPrearm === pending) pendingPrearm = null
+            cancelPendingPrearm(pending)
             pending.emit(
                 "controlCenterProjection prearm state=failed " +
                     FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt +
@@ -417,8 +415,7 @@ internal object CcRenderSession {
     @Synchronized
     private fun onPendingPrearmDetached(pending: PendingPrearm) {
         if (pendingPrearm !== pending) return
-        pending.cancel()
-        if (pendingPrearm === pending) pendingPrearm = null
+        cancelPendingPrearm(pending)
     }
 
     private class PendingPrearm(
