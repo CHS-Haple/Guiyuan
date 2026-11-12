@@ -273,11 +273,11 @@ internal object SysUiBatterySource {
                 .intercept(
                     Hooker { chain ->
                         val result = chain.proceed()
-                        if (!hooksReady) return@Hooker result
-                        val targetView = readOrNull { chain.thisObject as? View }
-                            ?: return@Hooker result
+                        val targetView =
+                            if (hooksReady) readOrNull { chain.thisObject as? View } else null
                         val iconView =
                             when {
+                                targetView == null -> null
                                 iconClass.isInstance(targetView) -> targetView
                                 meterClass.isInstance(targetView) ->
                                     readOrNull { meterIconField.get(targetView) as? View }
