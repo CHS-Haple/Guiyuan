@@ -97,6 +97,25 @@ class DiagReportTest {
     }
 
     @Test
+    fun newestSnapshotWithoutLevelSupersedesStaleLevelEvidence() {
+        val exported = report(
+            DiagProtocol.format(
+                event = EVENT_DIAGNOSTICS_BIND,
+                component = COMPONENT_DIAGNOSTICS,
+                state = STATE_READY,
+                fields = mapOf(FIELD_LEVEL to LEVEL_GENERAL, FIELD_SESSION_ID to SESSION_CURRENT),
+            ),
+            DiagProtocol.format(
+                event = EVENT_DIAGNOSTICS_SNAPSHOT,
+                component = COMPONENT_DIAGNOSTICS,
+                state = STATE_UNAVAILABLE,
+                fields = mapOf(FIELD_SESSION_ID to SESSION_CURRENT),
+            ),
+        )
+        assertTrue(exported.contains("runtimeLevel=not-observed\nruntimeBinding=unavailable"))
+    }
+
+    @Test
     fun levelChangeRetainsObservedBinding() {
         val report = report(
             DiagProtocol.format(

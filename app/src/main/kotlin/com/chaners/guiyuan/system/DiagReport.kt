@@ -36,9 +36,7 @@ internal object DiagReport {
             appendLine("source=structured-runtime-events")
             snapshot.runtimeEvents.reportLines().forEach(::appendLine)
             appendLine()
-            if (level == DiagLevel.Detailed &&
-                (BuildConfig.RUNTIME_DIAGNOSTICS || BuildConfig.DEVELOPMENT_PROBES)
-            ) {
+            if (limit == DETAILED_LINES) {
                 appendLine("[Diagnostic evidence]")
                 DiagEvidenceSummary.reportLines(snapshot).forEach(::appendLine)
                 appendLine()
@@ -75,23 +73,26 @@ internal object DiagReport {
         val requested = level.name.lowercase()
         // The newest bind/snapshot supersedes older level evidence even when its level is absent.
         // A level-only event does not supersede the last observed binding.
-        val diagnostics =
-            snapshot.entries.asReversed().filter { entry ->
-                entry.structured &&
-                    entry.component == "diagnostics" &&
-                    (runtimeEvents.sessionId == null ||
-                        entry.fields["sessionId"] == runtimeEvents.sessionId)
+        var levelEvent: LogEntry? = null
+        var bindingEvent: LogEntry? = null
+        for (entry in snapshot.entries.asReversed()) {
+            if (!entry.structured ||
+                entry.component != "diagnostics" ||
+                (runtimeEvents.sessionId != null &&
+                    entry.fields["sessionId"] != runtimeEvents.sessionId)
+            ) continue
+
+            when (entry.event) {
+                "diagnostics.bind", "diagnostics.snapshot" -> {
+                    if (levelEvent == null) levelEvent = entry
+                    if (bindingEvent == null) bindingEvent = entry
+                }
+                "diagnostics.level" -> if (levelEvent == null) levelEvent = entry
             }
-        val runtimeLevel =
-            diagnostics.firstOrNull { entry ->
-                entry.event == "diagnostics.bind" ||
-                    entry.event == "diagnostics.snapshot" ||
-                    entry.event == "diagnostics.level"
-            }?.fields?.get("level") ?: "not-observed"
-        val runtimeBinding =
-            diagnostics.firstOrNull { entry ->
-                entry.event == "diagnostics.bind" || entry.event == "diagnostics.snapshot"
-            }?.state ?: "not-observed"
+            if (levelEvent != null && bindingEvent != null) break
+        }
+        val runtimeLevel = levelEvent?.fields?.get("level") ?: "not-observed"
+        val runtimeBinding = bindingEvent?.state ?: "not-observed"
         appendLine("[Diagnostics state]")
         appendLine("requestedLevel=" + requested)
         appendLine("runtimeLevel=" + runtimeLevel)
