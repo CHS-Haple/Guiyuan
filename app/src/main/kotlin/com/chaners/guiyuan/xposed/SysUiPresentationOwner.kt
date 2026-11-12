@@ -4,6 +4,7 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
+import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
 import com.chaners.guiyuan.xposed.network.NativeStatusObserver
@@ -63,7 +64,6 @@ internal object SysUiPresentationOwner {
 
     private val representedSlots =
         linkedSetOf("wifi", "mobile", "stacked_mobile", "airplane", "no_sim")
-
 
     private var measureHook: HookHandle? = null
     private var layoutHook: HookHandle? = null
@@ -134,8 +134,6 @@ internal object SysUiPresentationOwner {
     internal inline fun emitDiagnostic(block: () -> Unit) {
         SysUiPresentationRuntime.emitPassiveDiagnostic(block)
     }
-
-    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     private fun guardedDiagnostic(
         sink: ((String) -> Unit)?,

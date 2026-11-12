@@ -6,13 +6,11 @@ import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import com.chaners.guiyuan.xposed.SysUiFatal
+import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 
 internal object SysUiAirplaneSource {
-    private fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
-
 
     private var resolver: ContentResolver? = null
     private var observer: ContentObserver? = null

@@ -5,11 +5,11 @@ import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
 import com.chaners.guiyuan.xposed.NativeStatusIdentity
 import com.chaners.guiyuan.xposed.SysUiHostRegistry
 import com.chaners.guiyuan.xposed.StatusStateStore
-import com.chaners.guiyuan.xposed.SysUiFatal
 import com.chaners.guiyuan.xposed.unhookFailed
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
@@ -102,9 +102,6 @@ internal object SysUiNetworkSource {
         MOBILE_ACTIVITY_HOOK_ID,
         MOBILE_ACTIVITY_VISIBILITY_HOOK_ID,
     )
-
-    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
-
 
     private fun callbackFailed(
         source: String,

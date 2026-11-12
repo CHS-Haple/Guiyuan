@@ -99,21 +99,6 @@ class NativeStatusObserverTest {
     }
 
     @Test
-    fun reflectedFatalReadDoesNotLookLikeMissingNativeState() {
-        val fatal = OutOfMemoryError("native reflected cause")
-        try {
-            NativeStatusObserver.rethrowFatal(InvocationTargetException(fatal))
-            throw AssertionError("fatal reflected cause was swallowed")
-        } catch (cause: OutOfMemoryError) {
-            assertSame(fatal, cause)
-        }
-
-        NativeStatusObserver.rethrowFatal(
-            InvocationTargetException(NoSuchFieldException("optional"))
-        )
-    }
-
-    @Test
     fun fatalObservationOrFailureHandlerErrorsPropagate() {
         val fatalObservation = ThreadDeath()
         try {

@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.view.View
 import android.view.ViewGroup
+import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -12,8 +13,6 @@ import java.lang.reflect.Method
 
 internal object SysUiCcSource {
     const val HOOK_COUNT = 4
-
-    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     private const val CONTROL_CENTER_CLASS =
         "com.miui.systemui.controlcenter.container.ControlCenterExpandControllerDelegate"
