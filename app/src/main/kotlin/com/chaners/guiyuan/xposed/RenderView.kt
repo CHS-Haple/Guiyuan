@@ -376,21 +376,7 @@ internal class RenderView(
         if (logicalTopInset > 0) {
             canvas.translate(0f, logicalTopInset.toFloat())
         }
-        val colors =
-            colorCache
-                ?.takeIf { cache ->
-                    cache.model === current &&
-                        cache.tint === tint &&
-                        cache.visual === currentVisual
-                }?.colors
-                ?: ColorPolicy.resolve(
-                    model = current,
-                    tintState = tint,
-                    visualSettings = currentVisual,
-                    batteryColorPreferences = colorPrefs,
-                ).also { resolved ->
-                    colorCache = ColorCache(current, tint, currentVisual, resolved)
-                }
+        val colors = resolveRenderColors(current, tint, currentVisual)
 
         painter.draw(
             canvas = canvas,
@@ -413,6 +399,30 @@ internal class RenderView(
         canvas.restoreToCount(viewportSave)
         onDrawn?.invoke(this)
 
+        reportDrawLatency()
+    }
+
+    private fun resolveRenderColors(
+        current: RenderModel,
+        tint: TintState,
+        currentVisual: VisualCfg,
+    ): RenderColors =
+            colorCache
+                ?.takeIf { cache ->
+                    cache.model === current &&
+                        cache.tint === tint &&
+                        cache.visual === currentVisual
+                }?.colors
+                ?: ColorPolicy.resolve(
+                    model = current,
+                    tintState = tint,
+                    visualSettings = currentVisual,
+                    batteryColorPreferences = colorPrefs,
+                ).also { resolved ->
+                    colorCache = ColorCache(current, tint, currentVisual, resolved)
+                }
+
+    private fun reportDrawLatency() {
         val report = onStateRendered ?: return
         val committedAt = pendingStateUptimeMs
         if (committedAt != 0L) {
