@@ -42,10 +42,10 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
     fun current(): BatteryColorSchemeLibrary =
         BatterySchemePersistence.readLibrary(preferences)
 
-    fun nextAvailableCustomId(library: BatteryColorSchemeLibrary = current()): Int? {
-        val used = library.customSchemes.mapTo(mutableSetOf()) { it.id }
-        return (1..BATTERY_COLOR_SCHEME_CUSTOM_MAX).firstOrNull { it !in used }
-    }
+    fun nextAvailableCustomId(library: BatteryColorSchemeLibrary = current()): Int? =
+        (1..BATTERY_COLOR_SCHEME_CUSTOM_MAX).firstOrNull { id ->
+            library.customSchemes.none { it.id == id }
+        }
 
     fun activateScheme(key: String) {
         val library = current()
@@ -114,8 +114,9 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
                 customSchemes = remaining,
             )
         val editor = preferences.edit()
+        val prefix = customPrefix(id)
         preferences.all.keys
-            .filter { it.startsWith(customPrefix(id)) }
+            .filter { it.startsWith(prefix) }
             .forEach(editor::remove)
         writeBatterySchemeLibrary(editor, updated)
         if (active != library.activeSchemeKey) {
@@ -277,21 +278,22 @@ private object BatterySchemePersistence {
 
     private fun readCustom(preferences: SharedPreferences, id: Int): BatteryCustomColorScheme? {
         val prefix = customPrefix(id)
-        if (!preferences.contains(prefix + "base")) return null
+        val baseKey = prefix + "base"
+        if (!preferences.contains(baseKey)) return null
+        val storedBase = preferences.getString(baseKey, null)
         val base =
-            BatteryBuiltInColorScheme.entries.firstOrNull {
-                it.key == preferences.getString(prefix + "base", null)
-            } ?: BatteryBuiltInColorScheme.HYPEROS
+            BatteryBuiltInColorScheme.entries.firstOrNull { it.key == storedBase }
+                ?: BatteryBuiltInColorScheme.HYPEROS
         var entries = entriesFromBuiltIn(base)
         BatteryColorSlot.entries.forEach { slot ->
             val source =
                 BatteryColorSchemeSource.fromPersisted(
                     preferences.getString(customSourceKey(id, slot), null),
                 )
+            val colorKey = customColorKey(id, slot)
             val color =
-                if (preferences.contains(customColorKey(id, slot))) {
-                    preferences.getInt(customColorKey(id, slot), 0)
-                        .or(0xFF000000.toInt())
+                if (preferences.contains(colorKey)) {
+                    preferences.getInt(colorKey, 0).or(0xFF000000.toInt())
                 } else {
                     entries.entryFor(slot).customColor
                 }
@@ -361,10 +363,8 @@ private object BatterySchemePersistence {
     private fun entriesFromLegacyVisual(
         visual: VisualCfg,
     ): BatteryColorSchemeEntries {
-        val preset =
-            BatteryColorSchemeSource.fromBuiltIn(
-                BatteryBuiltInColorScheme.fromPreset(visual.batteryColorPreset),
-            )
+        val builtIn = BatteryBuiltInColorScheme.fromPreset(visual.batteryColorPreset)
+        val preset = BatteryColorSchemeSource.fromBuiltIn(builtIn)
         var entries = BatteryColorSchemeEntries()
         BatteryColorSlot.entries.forEach { slot ->
             val storedCustom = visual.batteryColorOverrides.colorFor(slot)
@@ -375,11 +375,7 @@ private object BatterySchemePersistence {
                     presetSource = preset,
                 )
             val color =
-                storedCustom
-                    ?: batteryBuiltInColor(
-                        BatteryBuiltInColorScheme.fromPreset(visual.batteryColorPreset),
-                        slot,
-                    )
+                storedCustom ?: batteryBuiltInColor(builtIn, slot)
             entries =
                 entries.withEntry(
                     slot,
