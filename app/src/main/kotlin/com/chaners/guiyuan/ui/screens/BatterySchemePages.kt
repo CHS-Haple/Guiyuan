@@ -166,23 +166,26 @@ internal fun BatterySchemeOverview(
         )
 
     LaunchedEffect(requestedSchemeKey, pages.map { it.key }) {
-        val requested = requestedSchemeKey ?: return@LaunchedEffect
-        val target = pages.indexOfFirst { it.key == requested }
-        if (target >= 0) {
-            if (target != pagerState.currentPage) {
-                pagerState.springAnimateToPage(target)
+        val requested = requestedSchemeKey
+        if (requested != null) {
+            val target = pages.indexOfFirst { it.key == requested }
+            if (target >= 0) {
+                if (target != pagerState.currentPage) {
+                    pagerState.springAnimateToPage(target)
+                }
+                onRequestedSchemeHandled()
             }
-            onRequestedSchemeHandled()
         }
     }
 
     LaunchedEffect(dotTarget) {
         val target = dotTarget
-        if (target < 0) return@LaunchedEffect
-        try {
-            pagerState.springAnimateToPage(target)
-        } finally {
-            if (dotTarget == target) dotTarget = -1
+        if (target >= 0) {
+            try {
+                pagerState.springAnimateToPage(target)
+            } finally {
+                if (dotTarget == target) dotTarget = -1
+            }
         }
     }
 
@@ -557,30 +560,31 @@ private fun BatteryPagerIndicator(
                     pass = PointerEventPass.Initial,
                 )
                 var selected = nearest(down.position.x)
-                if (selected < 0) return@awaitEachGesture
-                pressedPage = selected
-                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                down.consume()
-                navigate(selected)
-                try {
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Initial)
-                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                        val next = nearest(change.position.x)
-                        if (next >= 0 && next != selected &&
-                            abs(change.position.x - centers[next]) + switchMargin <
-                            abs(change.position.x - centers[selected])
-                        ) {
-                            selected = next
-                            pressedPage = next
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            navigate(next)
+                if (selected >= 0) {
+                    pressedPage = selected
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    down.consume()
+                    navigate(selected)
+                    try {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            val next = nearest(change.position.x)
+                            if (next >= 0 && next != selected &&
+                                abs(change.position.x - centers[next]) + switchMargin <
+                                abs(change.position.x - centers[selected])
+                            ) {
+                                selected = next
+                                pressedPage = next
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                navigate(next)
+                            }
+                            event.changes.forEach { it.consume() }
+                            if (!change.pressed) break
                         }
-                        event.changes.forEach { it.consume() }
-                        if (!change.pressed) break
+                    } finally {
+                        pressedPage = -1
                     }
-                } finally {
-                    pressedPage = -1
                 }
             }
         },
