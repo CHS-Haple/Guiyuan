@@ -7,7 +7,7 @@ internal object NativeSubscriptionPolicy {
     internal fun selectNetworkTypeSubscriptionId(
         effectiveDataSubscriptionId: Int?,
         presentationRootSubscriptionId: Int?,
-        boundSubscriptionIds: List<Int>,
+        boundSubscriptionIds: Collection<Int>,
     ): Int? =
         effectiveDataSubscriptionId
             ?.takeIf { subscriptionId -> subscriptionId in boundSubscriptionIds }
