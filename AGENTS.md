@@ -71,5 +71,5 @@ assistant-specific dialogue and tool instructions.
   formal privacy and terms documents. Preserve necessary legal precision;
   compare the actual in-app and public policy text when editing.
 - Assistant-specific instructions supplement, rather than override, the
-  root-cause, lifecycle, single-writer, fail-native, review, signing and security
-  rules in CONTRIBUTING.
+  root-cause, lifecycle, single-writer, fail-native, review, signing and
+  security rules in CONTRIBUTING.
