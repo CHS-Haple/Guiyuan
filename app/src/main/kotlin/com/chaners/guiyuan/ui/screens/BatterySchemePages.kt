@@ -140,13 +140,16 @@ internal fun BatterySchemeOverview(
     onDeleteCustom: (Int) -> Unit,
 ) {
     val pages =
-        buildList {
-            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS))
-            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.IOS))
-            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.LOW_SATURATION))
-            library.customSchemes.forEach { add(BatterySchemePage.Custom(it)) }
-            add(BatterySchemePage.Add)
+        remember(library.customSchemes) {
+            buildList {
+                add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS))
+                add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.IOS))
+                add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.LOW_SATURATION))
+                library.customSchemes.forEach { add(BatterySchemePage.Custom(it)) }
+                add(BatterySchemePage.Add)
+            }
         }
+    val pageKeys = remember(pages) { pages.map { it.key } }
     val initial =
         pages.indexOfFirst { it.key == library.activeSchemeKey }
             .takeIf { it >= 0 }
@@ -165,7 +168,7 @@ internal fun BatterySchemeOverview(
             snapAnimationSpec = PagerNavigationSpringSpec,
         )
 
-    LaunchedEffect(requestedSchemeKey, pages.map { it.key }) {
+    LaunchedEffect(requestedSchemeKey, pageKeys) {
         val requested = requestedSchemeKey
         if (requested != null) {
             val target = pages.indexOfFirst { it.key == requested }
