@@ -54,24 +54,28 @@ internal fun Modifier.navTouchExtension(
             val top = size.height - bottomPadding.toPx()
             val bottom = top + extension.toPx()
             val start = down.position
-            if (start.x < left || start.x >= right || start.y < top || start.y >= bottom) {
-                return@awaitEachGesture
+            val up =
+                if (start.x >= left && start.x < right &&
+                    start.y >= top && start.y < bottom
+                ) awaitShortTapUp(down) else null
+            val index =
+                up?.takeIf { change ->
+                    change.position.x >= left && change.position.x < right &&
+                        change.position.y >= top && change.position.y < bottom
+                }?.let { change ->
+                    navTouchIndex(
+                        x = change.position.x,
+                        left = left,
+                        right = right,
+                        contentPadding = contentPadding.toPx(),
+                        count = itemCount,
+                        rtl = rtl,
+                    )
+                }
+            if (up != null && index != null) {
+                up.consume()
+                select.value(index)
             }
-
-            val up = awaitShortTapUp(down) ?: return@awaitEachGesture
-            if (up.position.x < left || up.position.x >= right ||
-                up.position.y < top || up.position.y >= bottom
-            ) return@awaitEachGesture
-            val index = navTouchIndex(
-                x = up.position.x,
-                left = left,
-                right = right,
-                contentPadding = contentPadding.toPx(),
-                count = itemCount,
-                rtl = rtl,
-            ) ?: return@awaitEachGesture
-            up.consume()
-            select.value(index)
         }
     }
 }
@@ -122,18 +126,19 @@ internal fun Modifier.measuredNavTouchExtension(
             val index = measuredNavTouchTarget(
                 start.x, start.y, hostBounds, barBounds, measuredItems,
                 gesturePx, extensionPx, safetyPx,
-            ) ?: return@awaitEachGesture
-
-            val up = awaitShortTapUp(down) ?: return@awaitEachGesture
-            val end = up.position + hostBounds.topLeft
-            if (measuredNavTouchTarget(
-                    end.x, end.y, hostBounds, barBounds, measuredItems,
-                    gesturePx, extensionPx, safetyPx,
-                ) != index
-            ) return@awaitEachGesture
-
-            up.consume()
-            select.value(index)
+            )
+            val up = if (index != null) awaitShortTapUp(down) else null
+            if (up != null && index != null) {
+                val end = up.position + hostBounds.topLeft
+                if (measuredNavTouchTarget(
+                        end.x, end.y, hostBounds, barBounds, measuredItems,
+                        gesturePx, extensionPx, safetyPx,
+                    ) == index
+                ) {
+                    up.consume()
+                    select.value(index)
+                }
+            }
         }
     }
 }
@@ -161,12 +166,11 @@ private suspend fun AwaitPointerEventScope.awaitShortTapUp(down: PointerInputCha
         var up: PointerInputChange? = null
         while (up == null) {
             val event = awaitPointerEvent()
-            if (event.changes.any { it.id != down.id && it.pressed }) return@withTimeoutOrNull null
-            val change = event.changes.firstOrNull { it.id == down.id }
-                ?: return@withTimeoutOrNull null
+            if (event.changes.any { it.id != down.id && it.pressed }) break
+            val change = event.changes.firstOrNull { it.id == down.id } ?: break
             if (change.isConsumed ||
                 (change.position - down.position).getDistance() > viewConfiguration.touchSlop
-            ) return@withTimeoutOrNull null
+            ) break
             if (!change.pressed) up = change
         }
         up
