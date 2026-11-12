@@ -4,6 +4,7 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
 import com.chaners.guiyuan.xposed.network.NativeStatusObserver
 import com.chaners.guiyuan.xposed.network.SysUiCarrierMetrics
@@ -135,15 +136,6 @@ internal object SysUiPresentationOwner {
     }
 
     internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
-
-    @Suppress("TooGenericExceptionCaught")
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        try {
-            block()
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            null
-        }
 
     private fun guardedDiagnostic(
         sink: ((String) -> Unit)?,
@@ -308,11 +300,11 @@ internal object SysUiPresentationOwner {
         }
 
         val containerClass =
-            readOrNull {
+            optionalNativeRead {
                 Class.forName(STATUS_ICON_CONTAINER, false, classLoader)
             } ?: return "status-icon-container-class-missing"
         val field =
-            readOrNull {
+            optionalNativeRead {
                 generateSequence(containerClass) { clazz -> clazz.superclass }
                     .mapNotNull { clazz ->
                         clazz.declaredFields.firstOrNull { candidate ->
@@ -324,19 +316,19 @@ internal object SysUiPresentationOwner {
                     ?.apply { isAccessible = true }
             } ?: return "ignored-slots-field-missing"
         val addIgnoredSlots =
-            readOrNull {
+            optionalNativeRead {
                 findIgnoredSlotsMethod(containerClass, "addIgnoredSlots")
             } ?: return "add-ignored-slots-contract-missing"
         val setIgnoredSlots =
-            readOrNull {
+            optionalNativeRead {
                 findIgnoredSlotsMethod(containerClass, "setIgnoredSlots")
             } ?: return "set-ignored-slots-contract-missing"
         val batteryContainerClass =
-            readOrNull {
+            optionalNativeRead {
                 Class.forName(BATTERY_CONTAINER, false, classLoader)
             } ?: return "battery-container-class-missing"
         val hideField =
-            readOrNull {
+            optionalNativeRead {
                 generateSequence(batteryContainerClass) { clazz -> clazz.superclass }
                     .mapNotNull { clazz ->
                         clazz.declaredFields.firstOrNull { candidate ->
@@ -348,7 +340,7 @@ internal object SysUiPresentationOwner {
                     ?.apply { isAccessible = true }
             } ?: return "battery-hide-field-missing"
         val batterySetIsHide =
-            readOrNull {
+            optionalNativeRead {
                 batteryContainerClass.declaredMethods
                     .firstOrNull { method ->
                         method.name == "setIsHideBattery" &&
@@ -362,7 +354,7 @@ internal object SysUiPresentationOwner {
 
         // Exact-ROM privacy layout state is independent of native battery hiding.
         val nativePrivacyField =
-            readOrNull {
+            optionalNativeRead {
                 batteryContainerClass.declaredFields.singleOrNull { candidate ->
                     candidate.name == "mPrivacyState" &&
                         candidate.type.name ==
@@ -370,7 +362,7 @@ internal object SysUiPresentationOwner {
                 }?.apply { isAccessible = true }
             } ?: return "native-privacy-state-field-missing"
         val nativePrivacyMethod =
-            readOrNull {
+            optionalNativeRead {
                 batteryContainerClass.declaredMethods.singleOrNull { method ->
                     method.name == "setPrivacyState" &&
                         method.parameterTypes.contentEquals(arrayOf(nativePrivacyField.type)) &&
@@ -379,7 +371,7 @@ internal object SysUiPresentationOwner {
             } ?: return "native-privacy-state-method-missing"
 
         val onMeasure =
-            readOrNull {
+            optionalNativeRead {
                 containerClass.declaredMethods
                     .firstOrNull { method ->
                         method.name == "onMeasure" &&
@@ -394,7 +386,7 @@ internal object SysUiPresentationOwner {
                     ?.apply { isAccessible = true }
             } ?: return "on-measure-contract-missing"
         val onLayout =
-            readOrNull {
+            optionalNativeRead {
                 containerClass.declaredMethods
                     .firstOrNull { method ->
                         method.name == "onLayout" &&
@@ -413,7 +405,7 @@ internal object SysUiPresentationOwner {
             } ?: return "on-layout-contract-missing"
 
         val getIslandShowing =
-            readOrNull {
+            optionalNativeRead {
                 generateSequence(containerClass) { clazz -> clazz.superclass }
                     .mapNotNull { clazz ->
                         clazz.declaredMethods.firstOrNull { method ->
@@ -550,7 +542,7 @@ internal object SysUiPresentationOwner {
         SysUiCarrierMetrics.resolveWidthPx(batteryCarrier)
             ?: return Result.Failure(REASON_BATTERY_CORE_WIDTH_UNAVAILABLE)
 
-        readOrNull { field.get(statusIcons) as? MutableList<*> }
+        optionalNativeRead { field.get(statusIcons) as? MutableList<*> }
             ?: return Result.Failure(REASON_IGNORED_SLOTS_LIST_UNAVAILABLE)
 
         val existing = current
@@ -713,7 +705,7 @@ internal object SysUiPresentationOwner {
         SysUiCarrierMetrics.resolveWidthPx(resolved.batteryCarrier)
             ?: return Result.Failure(surface.surfaceName + "-battery-core-width-unavailable")
 
-        readOrNull { field.get(resolved.statusIcons) as? MutableList<*> }
+        optionalNativeRead { field.get(resolved.statusIcons) as? MutableList<*> }
             ?: return Result.Failure(
                 surface.surfaceName + "-ignored-slots-list-unavailable",
             )
@@ -890,7 +882,7 @@ internal object SysUiPresentationOwner {
                 retryAfterLayout = true,
             )
 
-        readOrNull { field.get(statusIcons) as? MutableList<*> }
+        optionalNativeRead { field.get(statusIcons) as? MutableList<*> }
             ?: return Result.Failure(
                 REASON_IGNORED_SLOTS_LIST_UNAVAILABLE,
                 retryAfterLayout = true,
@@ -1214,7 +1206,7 @@ internal object SysUiPresentationOwner {
 
     private fun layoutHooker(refreshMasksAfter: Boolean): Hooker =
         Hooker { chain ->
-            val target = readOrNull { chain.thisObject as? ViewGroup }
+            val target = optionalNativeRead { chain.thisObject as? ViewGroup }
                 ?: return@Hooker chain.proceed()
             val session =
                 synchronized(this) {
@@ -1259,7 +1251,7 @@ internal object SysUiPresentationOwner {
                 nativeResult as? Boolean
                     ?: return@Hooker nativeResult
             val target =
-                readOrNull { chain.thisObject as? ViewGroup }
+                optionalNativeRead { chain.thisObject as? ViewGroup }
                     ?: return@Hooker nativeResult
             val session =
                 synchronized(this) {
@@ -1343,7 +1335,7 @@ internal object SysUiPresentationOwner {
     }
     private fun batteryLayoutStateHooker(source: String): Hooker =
         Hooker { chain ->
-            val target = readOrNull { chain.thisObject as? ViewGroup }
+            val target = optionalNativeRead { chain.thisObject as? ViewGroup }
                 ?: return@Hooker chain.proceed()
             val result = chain.proceed()
             val session =
@@ -1595,7 +1587,7 @@ internal object SysUiPresentationOwner {
                 statusIcons.javaClass.name ==
                     "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
             ) {
-                readOrNull {
+                optionalNativeRead {
                     val cls = statusIcons.javaClass
                     cls.getDeclaredField("measureViews").apply { isAccessible = true } to
                         cls.getDeclaredField("iconSpacing").apply { isAccessible = true }
@@ -1679,7 +1671,7 @@ internal object SysUiPresentationOwner {
             if (!active || surfaceName != HOME_SURFACE) return null
             val container = batteryContainer.get() ?: return null
             val field = privacyStateField ?: return null
-            val state = readOrNull { (field.get(container) as? Enum<*>)?.name }
+            val state = optionalNativeRead { (field.get(container) as? Enum<*>)?.name }
                 ?: return null
             return HomePrivacyLayoutPolicy.occupiesEnd(state)
         }
@@ -2057,7 +2049,7 @@ internal object SysUiPresentationOwner {
                 return failAndProceed(REASON_STATUS_ICON_GROUP_RELEASED)
             }
             val list =
-                readOrNull {
+                optionalNativeRead {
                     nativeIgnoredSlotsList(container)
                 }
             if (list == null) {
@@ -2108,7 +2100,7 @@ internal object SysUiPresentationOwner {
                         return false
                     }
             val live =
-                readOrNull {
+                optionalNativeRead {
                     nativeIgnoredSlotsList(group)
                 }
                     ?: run {
@@ -2191,7 +2183,7 @@ internal object SysUiPresentationOwner {
             }
             val group = statusIcons.get() ?: return false
             val live =
-                readOrNull {
+                optionalNativeRead {
                     nativeIgnoredSlotsList(group)
                 } ?: return false
             val target =
@@ -2309,8 +2301,8 @@ internal object SysUiPresentationOwner {
 
         private fun measuredNativePeerWidth(group: ViewGroup): Int? {
             val (viewsField, spacingField) = fakePeerMetrics ?: return null
-            val views = readOrNull { viewsField.get(group) as? List<*> } ?: return null
-            val spacing = readOrNull { spacingField.getInt(group) }
+            val views = optionalNativeRead { viewsField.get(group) as? List<*> } ?: return null
+            val spacing = optionalNativeRead { spacingField.getInt(group) }
                 ?: return null
             if (spacing < 0 || views.size > group.childCount) return null
 
@@ -2355,7 +2347,7 @@ internal object SysUiPresentationOwner {
                 return false
             }
             val nativeHide =
-                readOrNull { batteryHideField.getBoolean(container) }
+                optionalNativeRead { batteryHideField.getBoolean(container) }
                     ?: run { onFailNative("battery-hide-state-unavailable"); return false }
             val homePrivacyOccupiesEnd =
                 if (surfaceName == HOME_SURFACE) {
