@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.view.View
 import android.view.ViewGroup
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -13,9 +14,6 @@ internal object SysUiCcSource {
     const val HOOK_COUNT = 4
 
     internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
-
-    internal inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private const val CONTROL_CENTER_CLASS =
         "com.miui.systemui.controlcenter.container.ControlCenterExpandControllerDelegate"
@@ -382,7 +380,7 @@ internal object SysUiCcSource {
         ): Field? =
             hierarchy(type)
                 .firstNotNullOfOrNull { owner ->
-                    readOrNull {
+                    optionalNativeRead {
                         owner.getDeclaredField(name).apply { isAccessible = true }
                     }
                 }
@@ -414,7 +412,7 @@ internal object SysUiCcSource {
                     val values =
                         resolvedFields.joinToString(",") { (name, resolved) ->
                             val value =
-                                readOrNull { resolved.get(view) }
+                                optionalNativeRead { resolved.get(view) }
                                     ?.toString()
                                     ?: "unavailable"
                             name + "=" + value
@@ -657,17 +655,17 @@ internal object SysUiCcSource {
     ) {
         fun resolveHeader(delegate: Any): Any? {
             val callbacks =
-                readOrNull { callbacksField.get(delegate) as? Iterable<*> }
+                optionalNativeRead { callbacksField.get(delegate) as? Iterable<*> }
                     ?: return null
             val callback =
                 callbacks.firstOrNull { candidate ->
                     candidate != null && callbackClass.isInstance(candidate)
                 } ?: return null
-            return readOrNull { callbackOuterField.get(callback) }
+            return optionalNativeRead { callbackOuterField.get(callback) }
         }
 
         fun realSystemIcons(header: Any): ViewGroup? =
-            readOrNull { realSystemIconsField.get(header) as? ViewGroup }
+            optionalNativeRead { realSystemIconsField.get(header) as? ViewGroup }
 
         fun fakePresentationRoot(header: Any): ViewGroup? =
             fakeStatusBar(header)
@@ -701,39 +699,39 @@ internal object SysUiCcSource {
         private fun headerFromCallback(callback: Any?): Any? =
             callback
                 ?.let { candidate ->
-                    readOrNull { callbackOuterField.get(candidate) }
+                    optionalNativeRead { callbackOuterField.get(candidate) }
                 }
 
         private fun combinedHeader(header: Any): Any? {
             val lazy =
-                readOrNull { headerControllerField.get(header) }
+                optionalNativeRead { headerControllerField.get(header) }
                     ?: return null
-            return readOrNull { lazyGetMethod.invoke(lazy) }
+            return optionalNativeRead { lazyGetMethod.invoke(lazy) }
         }
 
         private fun fakeStatusBar(header: Any): ViewGroup? {
             val combinedHeader = combinedHeader(header) ?: return null
-            return readOrNull {
+            return optionalNativeRead {
                 fakeStatusBarField.get(combinedHeader) as? ViewGroup
             }
         }
 
         private fun finalStatusBar(header: Any): ViewGroup? {
             val combinedHeader = combinedHeader(header) ?: return null
-            return readOrNull {
+            return optionalNativeRead {
                 statusBarField.get(combinedHeader) as? ViewGroup
             }
         }
 
         private fun readBoolean(field: Field, target: Any): Boolean? =
-            readOrNull { field.getBoolean(target) }
+            optionalNativeRead { field.getBoolean(target) }
 
         companion object {
             fun resolve(
                 classLoader: ClassLoader,
                 delegateClass: Class<*>,
             ): AnchorContract? =
-                readOrNull {
+                optionalNativeRead {
                     val callbackClass =
                         Class.forName(
                             CONTROL_CENTER_HEADER_CALLBACK_CLASS,

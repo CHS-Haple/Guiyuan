@@ -60,27 +60,6 @@ class SysUiCcSourceTest {
     }
 
     @Test
-    fun optionalAnchorReadDoesNotSwallowNativeFatal() {
-        val fatal = ThreadDeath()
-        assertSame(
-            fatal,
-            runCatching {
-                SysUiCcSource.readOrNull<Any> { throw InvocationTargetException(fatal) }
-            }.exceptionOrNull(),
-        )
-        val direct = OutOfMemoryError("direct-fatal")
-        assertSame(
-            direct,
-            runCatching { SysUiCcSource.readOrNull<Any> { throw direct } }.exceptionOrNull(),
-        )
-        assertNull(
-            SysUiCcSource.readOrNull<Any> {
-                throw InvocationTargetException(IllegalStateException("missing native field"))
-            },
-        )
-    }
-
-    @Test
     fun nativeFractionPreservesFiniteHyperOsPayload() {
         assertEquals(-0.2f, SysUiCcSource.nativeFraction(-0.2f))
         assertEquals(0.5f, SysUiCcSource.nativeFraction(0.5f))
