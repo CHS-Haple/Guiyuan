@@ -113,6 +113,20 @@ class StatusStateStoreActivityTest {
     }
 
     @Test
+    fun firstNativeHiddenReceiptIsRetainedWithoutPublishingRepeatSnapshots() {
+        StatusStateStore.restoreHotReloadState(null)
+        val first = StatusStateStore.updateMobileActivityVisibility(3, false)
+            ?: error("first native hidden receipt must be committed")
+        assertTrue(3 in first.mobileActivityVisibilityObservedIds)
+        assertTrue(3 !in first.mobileActivityShownIds)
+        assertNull(StatusStateStore.updateMobileActivityVisibility(3, false))
+        assertTrue(first === StatusStateStore.snapshot())
+        assertNull(StatusStateStore.updateMobileActivityVisibility(-1, true))
+        assertTrue(first === StatusStateStore.snapshot())
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
+    @Test
     fun nativeVisibilityNoOpRetainsTheAppliedChildDrawable() {
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateMobileActivity(1, 220)
