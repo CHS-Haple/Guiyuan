@@ -22,19 +22,30 @@ internal object BatteryTopArcPolicy {
         val inactive: List<Arc>,
     )
 
+    // Two physical geometries: an ink envelope and the ring to clear.
+    internal data class ContentBounds(
+        val left: Float,
+        val top: Float,
+        val right: Float,
+        val bottom: Float,
+    )
+
+    internal data class RingCircle(
+        val centerX: Float,
+        val centerY: Float,
+        val radius: Float,
+    )
+
     fun resolveGap(
-        contentLeft: Float,
-        contentTop: Float,
-        contentRight: Float,
-        contentBottom: Float,
-        ringCenterX: Float,
-        ringCenterY: Float,
-        ringRadius: Float,
+        content: ContentBounds,
+        ring: RingCircle,
         ringStroke: Float,
         visualClearance: Float,
         startDegrees: Float,
         maxSweep: Float,
     ): Gap {
+        val (contentLeft, contentTop, contentRight, contentBottom) = content
+        val (ringCenterX, ringCenterY, ringRadius) = ring
         if (
             !contentLeft.isFinite() ||
             !contentTop.isFinite() ||
@@ -74,31 +85,23 @@ internal object BatteryTopArcPolicy {
         }
 
         return resolveRoundedRectangleGap(
-            left = contentLeft,
-            top = contentTop,
-            right = contentRight,
-            bottom = contentBottom,
+            content = content,
+            ring = ring,
             clearance = clearance,
-            ringCenterX = ringCenterX,
-            ringCenterY = ringCenterY,
-            ringRadius = ringRadius,
             startDegrees = startDegrees,
             maxSweep = maxSweep,
         )
     }
 
     private fun resolveRoundedRectangleGap(
-        left: Float,
-        top: Float,
-        right: Float,
-        bottom: Float,
+        content: ContentBounds,
+        ring: RingCircle,
         clearance: Float,
-        ringCenterX: Float,
-        ringCenterY: Float,
-        ringRadius: Float,
         startDegrees: Float,
         maxSweep: Float,
     ): Gap {
+        val (left, top, right, bottom) = content
+        val (ringCenterX, ringCenterY, ringRadius) = ring
         val arcEnd = startDegrees + maxSweep
         val radiusSquared = ringRadius * ringRadius
         val boundaries = ArrayList<Float>(32)

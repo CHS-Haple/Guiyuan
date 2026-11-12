@@ -1546,13 +1546,12 @@ internal class StatusPainter(
                 .ifEmpty { listOf(avoidance.bounds) }
                 .map { component ->
                     BatteryTopArcPolicy.resolveGap(
-                        contentLeft = component.left,
-                        contentTop = component.top,
-                        contentRight = component.right,
-                        contentBottom = component.bottom,
-                        ringCenterX = batteryRing.centerX(),
-                        ringCenterY = batteryRing.centerY(),
-                        ringRadius = batteryRing.width() / 2f,
+                        content = BatteryTopArcPolicy.ContentBounds(
+                            component.left, component.top, component.right, component.bottom,
+                        ),
+                        ring = BatteryTopArcPolicy.RingCircle(
+                            batteryRing.centerX(), batteryRing.centerY(), batteryRing.width() / 2f,
+                        ),
                         ringStroke = ringStroke,
                         visualClearance = visualClearance,
                         startDegrees = startDegrees,
@@ -4248,13 +4247,12 @@ internal class StatusPainter(
         val bottom = resolveBothSidesBottomInformation(model, visual) ?: return 0f
         val bounds = bothSidesBottomOpticalBounds(bottom, visual) ?: return 0f
         val gap = BatteryTopArcPolicy.resolveGap(
-            contentLeft = bounds.left,
-            contentTop = bounds.top,
-            contentRight = bounds.right,
-            contentBottom = bounds.bottom,
-            ringCenterX = batteryRing.centerX(),
-            ringCenterY = batteryRing.centerY(),
-            ringRadius = batteryRing.width() / 2f,
+            content = BatteryTopArcPolicy.ContentBounds(
+                bounds.left, bounds.top, bounds.right, bounds.bottom,
+            ),
+            ring = BatteryTopArcPolicy.RingCircle(
+                batteryRing.centerX(), batteryRing.centerY(), batteryRing.width() / 2f,
+            ),
             ringStroke = outerGeometry.ringStroke,
             visualClearance = BATTERY_BOTTOM_RING_VISUAL_CLEARANCE,
             startDegrees = 0f,
