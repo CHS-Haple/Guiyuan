@@ -940,7 +940,9 @@ internal object CcRenderSession {
                 return markLayoutUnavailable()
             }
 
-            if (renderView.measuredWidth != anchorWidth || renderView.measuredHeight != anchorHeight) {
+            if (renderView.measuredWidth != anchorWidth ||
+                renderView.measuredHeight != anchorHeight
+            ) {
                 renderView.measure(
                     View.MeasureSpec.makeMeasureSpec(anchorWidth, View.MeasureSpec.EXACTLY),
                     View.MeasureSpec.makeMeasureSpec(anchorHeight, View.MeasureSpec.EXACTLY),
