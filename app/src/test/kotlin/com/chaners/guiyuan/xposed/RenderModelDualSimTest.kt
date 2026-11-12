@@ -158,6 +158,15 @@ class RenderModelDualSimTest {
         val verified = native.mobilePresentation ?: error("missing native dual presentation")
         assertEquals(DualMobileLevels(4, 2), render(verified)?.dualMobileLevels)
         assertNull(render(verified.copy(activeSubsAuthoritative = false))?.dualMobileLevels)
+        assertNull(render(verified.copy(platformActiveSubscriptionIds = null))?.dualMobileLevels)
+        assertNull(
+            render(
+                verified.copy(
+                    activeSubscriptionIds = listOf(14, 14),
+                    platformActiveSubscriptionIds = setOf(14),
+                ),
+            )?.dualMobileLevels,
+        )
         assertNull(
             render(
                 verified.copy(platformActiveSubscriptionIds = setOf(3, 14, 27)),

@@ -284,6 +284,7 @@ internal data class RenderModel(
                     !mobileRecoveryPending && !nativeNoSimVisible
                 ) {
                     val native = presentation.mobilePresentation
+                    val platformActive = native?.platformActiveSubscriptionIds
                     val slots = native?.slotSubscriptionIds
                     val sim1Id = slots?.get(0)
                     val sim2Id = slots?.get(1)
@@ -292,8 +293,11 @@ internal data class RenderModel(
                         (native.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED ||
                             native.mode == NativePresentationResolver.Mode.DUAL_SEPARATE) &&
                         native.activeSubscriptionIds.size == 2 &&
-                        native.platformActiveSubscriptionIds ==
-                            native.activeSubscriptionIds.toSet() &&
+                        platformActive != null &&
+                        platformActive.size == 2 &&
+                        native.activeSubscriptionIds.all { subscriptionId ->
+                            subscriptionId in platformActive
+                        } &&
                         slots?.size == 2 &&
                         sim1Id != null && sim2Id != null && sim1Id != sim2Id &&
                         sim1Id in native.activeSubscriptionIds &&
