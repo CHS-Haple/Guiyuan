@@ -58,19 +58,21 @@ internal object SysUiSceneSource {
                     Hooker { chain ->
                         val result = chain.proceed()
                         val sourceView = readOrNull { chain.thisObject as? View }
-                            ?: return@Hooker result
-                        val rawState = readOrNull { (chain.getArg(0) as? Number)?.toInt() }
-                            ?: return@Hooker result
-                        publish(
-                            sourceView = sourceView,
-                            rawState = rawState,
-                            source = "updateState",
-                            onSceneState = onSceneState,
-                            onRuntimeFailure = onRuntimeFailure,
-                            onEvent = onEvent,
-                            isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                            warned = warned,
-                        )
+                        if (sourceView != null) {
+                            val rawState = readOrNull { (chain.getArg(0) as? Number)?.toInt() }
+                            if (rawState != null) {
+                                publish(
+                                    sourceView = sourceView,
+                                    rawState = rawState,
+                                    source = "updateState",
+                                    onSceneState = onSceneState,
+                                    onRuntimeFailure = onRuntimeFailure,
+                                    onEvent = onEvent,
+                                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                                    warned = warned,
+                                )
+                            }
+                        }
                         result
                     },
                 )
