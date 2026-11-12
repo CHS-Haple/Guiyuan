@@ -100,6 +100,62 @@ class SysUiPresentationRuntimeTest {
     }
 
     @Test
+    fun hookInstallRunsOnceOnSuccessWithoutFallback() {
+        var installCalls = 0
+        var fallbackCalls = 0
+        val count =
+            SysUiPresentationRuntime.attemptHookInstall {
+                installCalls++
+                3
+            }.getOrElse {
+                fallbackCalls++
+                0
+            }
+        assertEquals(3, count)
+        assertEquals(1, installCalls)
+        assertEquals(0, fallbackCalls)
+    }
+
+    @Test
+    fun hookInstallFailureUsesOnlyItsNonfatalNativeFallback() {
+        val missing = IllegalStateException("missing-hook")
+        var installCalls = 0
+        var fallbackCalls = 0
+        val count =
+            SysUiPresentationRuntime.attemptHookInstall<Int> {
+                installCalls++
+                throw missing
+            }.getOrElse { error ->
+                assertSame(missing, error)
+                fallbackCalls++
+                -1
+            }
+        assertEquals(-1, count)
+        assertEquals(1, installCalls)
+        assertEquals(1, fallbackCalls)
+    }
+
+    @Test
+    fun hookInstallDirectAndReflectedFatalsNeverReachFallback() {
+        for (fatal in listOf<Throwable>(ThreadDeath(), OutOfMemoryError("hook-install"))) {
+            for (error in listOf(fatal, InvocationTargetException(fatal))) {
+                var fallbackCalls = 0
+                val thrown =
+                    runCatching {
+                        SysUiPresentationRuntime.attemptHookInstall<Int> {
+                            throw error
+                        }.getOrElse {
+                            fallbackCalls++
+                            0
+                        }
+                    }.exceptionOrNull()
+                assertSame(fatal, thrown)
+                assertEquals(0, fallbackCalls)
+            }
+        }
+    }
+
+    @Test
     fun ordinaryInstallFailureAllowsFeatureNativeFallback() {
         SysUiPresentationRuntime.throwIfFatal(IllegalStateException("missing-contract"))
     }
