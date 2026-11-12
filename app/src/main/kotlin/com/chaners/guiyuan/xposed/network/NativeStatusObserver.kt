@@ -5,9 +5,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.graphics.drawable.Icon
+import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
 import com.chaners.guiyuan.xposed.PresentationStore
-import com.chaners.guiyuan.xposed.SysUiFatal
 import com.chaners.guiyuan.xposed.unhookFailed
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
@@ -21,8 +21,6 @@ import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
 internal object NativeStatusObserver {
-    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
-
 
     private inline fun reportEvent(message: () -> String) {
         SysUiPresentationRuntime.emitPassiveDiagnostic {

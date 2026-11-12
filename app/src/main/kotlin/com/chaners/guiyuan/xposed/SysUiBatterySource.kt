@@ -7,6 +7,7 @@ import android.view.View
 import android.widget.TextView
 import com.chaners.guiyuan.settings.FontWeightAxis
 import android.view.ViewGroup
+import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import io.github.libxposed.api.XposedInterface.HookHandle
@@ -49,9 +50,6 @@ internal object SysUiBatterySource {
     private var nativeStateReader: ((View) -> StatusStateStore.BatteryState?)? = null
     @Volatile
     private var lastChargingIconResId: Int? = null
-
-    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
-
 
     internal data class VerifiedFont(
         val host: View,

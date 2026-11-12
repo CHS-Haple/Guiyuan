@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.util.Log
 import android.view.View
+import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -26,9 +27,6 @@ internal object SysUiKeyguardAodSource {
         "combinedstatus.keyguardAod.setIsAodAnimate"
     private const val TOGGLE_AOD_HOOK_ID =
         "combinedstatus.keyguardAod.toggleAodMode"
-
-    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
-
 
     // Stored values must not keep their weak View keys alive.
     private val states = WeakHashMap<View, AodState>()

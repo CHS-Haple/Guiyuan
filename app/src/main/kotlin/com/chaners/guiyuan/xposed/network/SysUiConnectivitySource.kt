@@ -8,15 +8,12 @@ import android.os.Handler
 import android.os.Looper
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
-import com.chaners.guiyuan.xposed.SysUiFatal
+import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import com.chaners.guiyuan.xposed.throwIfCleanupIncomplete
 
 internal object SysUiConnectivitySource {
-    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
-
-
 
     private var manager: ConnectivityManager? = null
     @Volatile

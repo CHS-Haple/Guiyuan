@@ -83,6 +83,23 @@ class SysUiPresentationRuntimeTest {
     }
 
     @Test
+    fun sharedFatalRethrowPreservesDirectAndReflectedOriginalErrors() {
+        for (fatal in listOf<Throwable>(ThreadDeath(), OutOfMemoryError("source-fatal"))) {
+            assertSame(
+                fatal,
+                runCatching { SysUiFatal.rethrow(fatal) }.exceptionOrNull(),
+            )
+            assertSame(
+                fatal,
+                runCatching {
+                    SysUiFatal.rethrow(InvocationTargetException(fatal))
+                }.exceptionOrNull(),
+            )
+        }
+        SysUiFatal.rethrow(InvocationTargetException(NoSuchMethodException("optional")))
+    }
+
+    @Test
     fun ordinaryInstallFailureAllowsFeatureNativeFallback() {
         SysUiPresentationRuntime.throwIfFatal(IllegalStateException("missing-contract"))
     }
