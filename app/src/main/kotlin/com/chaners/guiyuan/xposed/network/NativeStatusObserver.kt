@@ -10,6 +10,7 @@ import com.chaners.guiyuan.xposed.PresentationStore
 import com.chaners.guiyuan.xposed.SysUiFatal
 import com.chaners.guiyuan.xposed.unhookFailed
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import com.chaners.guiyuan.xposed.tintHexDigits
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -22,8 +23,6 @@ import java.util.concurrent.ConcurrentHashMap
 internal object NativeStatusObserver {
     internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private inline fun reportEvent(message: () -> String) {
         SysUiPresentationRuntime.emitPassiveDiagnostic {
@@ -380,7 +379,7 @@ internal object NativeStatusObserver {
             observeAfterNative(result, { reportObservationFailure("noSimVisibility", it) }) {
                 val view = chain.thisObject as? View
                 val slot =
-                    readOrNull {
+                    optionalNativeRead {
                         airplaneSlotAccessor?.invoke(chain.thisObject) as? String
                     }
                 val homeGroup = activeGroup?.get()
@@ -494,7 +493,7 @@ internal object NativeStatusObserver {
                         return null
                     }
                     val companionClass =
-                        readOrNull {
+                        optionalNativeRead {
                             Class.forName(
                                 groupClass.name + "\$Companion",
                                 false,
@@ -502,7 +501,7 @@ internal object NativeStatusObserver {
                             )
                         }
                     val resolved =
-                        readOrNull {
+                        optionalNativeRead {
                             companionClass
                                 ?.declaredMethods
                                 ?.firstOrNull { method ->
@@ -516,7 +515,7 @@ internal object NativeStatusObserver {
                     }
                     transitionStateAccessorCache.putIfAbsent(groupClass, resolved) ?: resolved
                 }
-        return readOrNull {
+        return optionalNativeRead {
             accessor.invoke(null, view)
         }
     }
@@ -534,7 +533,7 @@ internal object NativeStatusObserver {
         clazz: Class<*>,
         name: String,
     ): Field? =
-        readOrNull {
+        optionalNativeRead {
             generateSequence(clazz) { candidate -> candidate.superclass }
                 .mapNotNull { candidate ->
                     candidate.declaredFields.firstOrNull { field -> field.name == name }
@@ -548,7 +547,7 @@ internal object NativeStatusObserver {
         target: Any,
     ): Any? =
         field?.let { resolved ->
-            readOrNull { resolved.get(target) }
+            optionalNativeRead { resolved.get(target) }
         }
 
     internal data class IslandVisibilityState(
@@ -688,7 +687,7 @@ internal object NativeStatusObserver {
             return false
         }
         val accessor = statusIconVisibleAccessor ?: return true
-        return readOrNull {
+        return optionalNativeRead {
             accessor.invoke(view) as? Boolean
         } ?: true
     }
@@ -698,7 +697,7 @@ internal object NativeStatusObserver {
     ): PresentationStore.NativeIconResource? {
         val accessor = statusIconSourceAccessor ?: return null
         val icon =
-            readOrNull {
+            optionalNativeRead {
                 accessor.invoke(view) as? Icon
             } ?: return null
         if (icon.type != Icon.TYPE_RESOURCE) {
@@ -737,7 +736,7 @@ internal object NativeStatusObserver {
                 as? Collection<*>
                 ?: return null
 
-        return readOrNull {
+        return optionalNativeRead {
             val managerClass = manager.javaClass
             val getTint =
                 tintMethodByManagerClass[managerClass]
@@ -814,7 +813,7 @@ internal object NativeStatusObserver {
 
     private fun tintFields(clazz: Class<*>): List<Field> =
         tintFieldsByClass.computeIfAbsent(clazz) {
-            readOrNull {
+            optionalNativeRead {
                 generateSequence(clazz) { it.superclass }
                     .flatMap { it.declaredFields.asSequence() }
                     .filter { it.name in tintFieldNames }
@@ -830,7 +829,7 @@ internal object NativeStatusObserver {
             tintFields(target.javaClass)
                 .firstOrNull { it.name == name }
                 ?: return null
-        return readOrNull {
+        return optionalNativeRead {
             field.isAccessible = true
             field.get(target)
         }
@@ -848,7 +847,7 @@ internal object NativeStatusObserver {
                             it.type == Int::class.javaObjectType)
                 }
                 ?: return null
-        return readOrNull {
+        return optionalNativeRead {
             field.isAccessible = true
             (field.get(target) as? Number)?.toInt()
         }
@@ -859,7 +858,7 @@ internal object NativeStatusObserver {
         if (!accessor.declaringClass.isInstance(view)) {
             return null
         }
-        return readOrNull {
+        return optionalNativeRead {
             (accessor.invoke(view) as? Number)?.toInt()
         }?.takeIf { color -> (color ushr 24) != 0 }
     }

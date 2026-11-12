@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.util.Log
 import android.view.View
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -10,8 +11,6 @@ import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiSceneSource {
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
     const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
@@ -57,9 +56,9 @@ internal object SysUiSceneSource {
                 .intercept(
                     Hooker { chain ->
                         val result = chain.proceed()
-                        val sourceView = readOrNull { chain.thisObject as? View }
+                        val sourceView = optionalNativeRead { chain.thisObject as? View }
                         if (sourceView != null) {
-                            val rawState = readOrNull { (chain.getArg(0) as? Number)?.toInt() }
+                            val rawState = optionalNativeRead { (chain.getArg(0) as? Number)?.toInt() }
                             if (rawState != null) {
                                 publish(
                                     sourceView = sourceView,
@@ -130,7 +129,7 @@ internal object SysUiSceneSource {
             states[sourceView]
                 ?: run {
                     val field = statusBarStateField ?: return null
-                    readOrNull { field.getInt(sourceView) }
+                    optionalNativeRead { field.getInt(sourceView) }
                         ?.also { states[sourceView] = it }
                         ?: return null
                 }

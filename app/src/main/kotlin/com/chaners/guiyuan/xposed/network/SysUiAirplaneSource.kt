@@ -8,12 +8,11 @@ import android.os.Looper
 import android.provider.Settings
 import com.chaners.guiyuan.xposed.SysUiFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 
 internal object SysUiAirplaneSource {
     private fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private var resolver: ContentResolver? = null
     private var observer: ContentObserver? = null
@@ -106,7 +105,7 @@ internal object SysUiAirplaneSource {
     private fun publish(source: String, force: Boolean = false) {
         val currentResolver = resolver ?: return
         val enabled =
-            readOrNull {
+            optionalNativeRead {
                 Settings.Global.getInt(
                     currentResolver,
                     Settings.Global.AIRPLANE_MODE_ON,

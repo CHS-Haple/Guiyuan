@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.telephony.SubscriptionManager
 import com.chaners.guiyuan.xposed.SysUiFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 
 internal object SysUiDefaultDataSubSource {
     private const val DEFAULT_DATA_SUBSCRIPTION_CHANGED_ACTION =
@@ -14,8 +15,6 @@ internal object SysUiDefaultDataSubSource {
 
     internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private var registeredContext: Context? = null
     private var receiver: BroadcastReceiver? = null
@@ -132,7 +131,7 @@ internal object SysUiDefaultDataSubSource {
         force: Boolean,
     ) {
         val next =
-            readOrNull { SubscriptionManager.getDefaultDataSubscriptionId() }
+            optionalNativeRead { SubscriptionManager.getDefaultDataSubscriptionId() }
                 ?: return
 
         val deliver = onChanged

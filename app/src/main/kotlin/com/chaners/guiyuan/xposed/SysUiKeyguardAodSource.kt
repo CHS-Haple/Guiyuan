@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.util.Log
 import android.view.View
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -28,8 +29,6 @@ internal object SysUiKeyguardAodSource {
 
     internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
     // Stored values must not keep their weak View keys alive.
     private val states = WeakHashMap<View, AodState>()
@@ -172,7 +171,7 @@ internal object SysUiKeyguardAodSource {
         Hooker { chain ->
             val result = chain.proceed()
             val sourceView =
-                if (hooksReady) readOrNull { chain.thisObject as? View } else null
+                if (hooksReady) optionalNativeRead { chain.thisObject as? View } else null
             if (sourceView != null) {
                 try {
                     publish(sourceView, source, onAodState, onDiagnostic)
@@ -200,7 +199,7 @@ internal object SysUiKeyguardAodSource {
     // Style 3 does not use the native battery alpha/mode handoff.
     fun usesAnimatedBatteryMode(sourceView: View): Boolean =
         storedStyleField
-            ?.let { field -> readOrNull { field.getInt(sourceView) } }
+            ?.let { field -> optionalNativeRead { field.getInt(sourceView) } }
             ?.let { it != 3 } == true
 
     @Synchronized
@@ -292,7 +291,7 @@ internal object SysUiKeyguardAodSource {
             ?.apply { isAccessible = true }
 
     private fun readBoolean(owner: Any, field: Field): Boolean? =
-        readOrNull { field.get(owner) as? Boolean }
+        optionalNativeRead { field.get(owner) as? Boolean }
 
     internal fun matchesToggleAodSignature(
         parameterTypes: Array<Class<*>>,
