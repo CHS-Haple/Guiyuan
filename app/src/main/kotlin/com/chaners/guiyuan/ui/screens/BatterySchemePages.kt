@@ -228,46 +228,36 @@ internal fun BatterySchemeOverview(
             verticalAlignment = Alignment.Top,
         ) { index ->
             when (val page = pages[index]) {
-                is BatterySchemePage.BuiltIn ->
+                is BatterySchemePage.BuiltIn,
+                is BatterySchemePage.Custom,
+                -> {
+                    val custom = (page as? BatterySchemePage.Custom)?.scheme
                     BatterySchemePageContent(
-                        name = batteryBuiltInName(page.scheme),
                         page = page,
                         isActive = library.activeSchemeKey == page.key,
                         canCreateCustom = canCreateCustom,
                         onApply = { onApplyScheme(page.key) },
                         onSlotClick = { slot ->
-                            scope.launch {
-                                val addPage = pages.lastIndex
-                                if (pagerState.currentPage != addPage) {
-                                    pagerState.springAnimateToPage(addPage)
+                            if (page is BatterySchemePage.BuiltIn) {
+                                scope.launch {
+                                    val addPage = pages.lastIndex
+                                    if (pagerState.currentPage != addPage) {
+                                        pagerState.springAnimateToPage(addPage)
+                                    }
+                                    onOpenBuiltInSlot(page.scheme, slot)
                                 }
-                                onOpenBuiltInSlot(page.scheme, slot)
+                            } else if (custom != null) {
+                                onOpenCustomSlot(custom.id, slot)
                             }
                         },
                         onSettingsCardMeasured = { height ->
                             if (height > 0) settingsCardHeightPx = height
                         },
-                        onRename = null,
-                        onCopy = null,
-                        onDelete = null,
+                        onRename = custom?.let { scheme -> { onRenameCustom(scheme.id) } },
+                        onCopy = custom?.let { scheme -> { onCopyCustom(scheme) } },
+                        onDelete = custom?.let { scheme -> { onDeleteCustom(scheme.id) } },
                     )
-                is BatterySchemePage.Custom ->
-                    BatterySchemePageContent(
-                        name = customSchemeName(page.scheme),
-                        page = page,
-                        isActive = library.activeSchemeKey == page.key,
-                        canCreateCustom = canCreateCustom,
-                        onApply = { onApplyScheme(page.key) },
-                        onSlotClick = { slot ->
-                            onOpenCustomSlot(page.scheme.id, slot)
-                        },
-                        onSettingsCardMeasured = { height ->
-                            if (height > 0) settingsCardHeightPx = height
-                        },
-                        onRename = { onRenameCustom(page.scheme.id) },
-                        onCopy = { onCopyCustom(page.scheme) },
-                        onDelete = { onDeleteCustom(page.scheme.id) },
-                    )
+                }
                 BatterySchemePage.Add ->
                     BatteryAddSchemePage(
                         count = library.customSchemes.size,
@@ -285,7 +275,6 @@ internal fun BatterySchemeOverview(
 
 @Composable
 private fun BatterySchemePageContent(
-    name: String,
     page: BatterySchemePage,
     isActive: Boolean,
     canCreateCustom: Boolean,
@@ -298,6 +287,12 @@ private fun BatterySchemePageContent(
 ) {
     val builtIn = (page as? BatterySchemePage.BuiltIn)?.scheme
     val custom = (page as? BatterySchemePage.Custom)?.scheme
+    val name =
+        when (page) {
+            is BatterySchemePage.BuiltIn -> batteryBuiltInName(page.scheme)
+            is BatterySchemePage.Custom -> customSchemeName(page.scheme)
+            BatterySchemePage.Add -> stringResource(R.string.battery_custom_scheme_add_page_title)
+        }
     val scrollState = rememberScrollState()
     val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
     Column(
