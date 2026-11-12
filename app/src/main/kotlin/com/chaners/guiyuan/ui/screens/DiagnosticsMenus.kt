@@ -352,4 +352,3 @@ internal fun DiagMenu(
     }
     DiagToolbarMenu(title = title, entries = entries, content = icon)
 }
-
