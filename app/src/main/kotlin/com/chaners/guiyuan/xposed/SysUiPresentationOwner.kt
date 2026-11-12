@@ -1278,13 +1278,7 @@ internal object SysUiPresentationOwner {
             } ?: return false
 
         if (role == HOME_SURFACE) {
-            val homeMirrorAllowed =
-                synchronized(this) {
-                    controlCenterSourceScene == SourceScene.HOME
-                }
-            if (!homeMirrorAllowed) {
-                return false
-            }
+            if (synchronized(this) { controlCenterSourceScene != SourceScene.HOME }) return false
 
             val snapshot = session.captureSteadyPeerMirror()
             var changed = false
