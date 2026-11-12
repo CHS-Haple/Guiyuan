@@ -13,6 +13,7 @@ import org.junit.Test
 private const val LOGCAT_TEST_PREFIX = "10-29 09:20:12.456 1200 1200 "
 private const val EVENT_BATTERY_RECONCILE = "battery.reconcile"
 private const val INPUT_TRANSPORT_CELLULAR = "CELLULAR"
+private const val SOURCE_CAPABILITIES = "capabilities"
 private const val INPUT_REASON_KEY = "reason"
 private const val INPUT_TRACE_ID_KEY = "traceId"
 private const val INPUT_OWNER_KEY = "owner"
@@ -58,7 +59,7 @@ class DiagnosticsLogPresentationTest {
         assertNull(sourceRes("NONE"))
         assertNull(sourceRes("OTHER"))
         assertEquals(R.string.diagnostics_log_source_mobile, sourceRes("mobile"))
-        assertEquals(R.string.diagnostics_log_source_capabilities, sourceRes("capabilities"))
+        assertEquals(R.string.diagnostics_log_source_capabilities, sourceRes(SOURCE_CAPABILITIES))
         assertEquals(R.string.diagnostics_log_source_lost, sourceRes("lost"))
         assertEquals(R.string.diagnostics_log_source_mobile_data, sourceRes("mobile-data"))
         assertEquals(R.string.diagnostics_log_source_hot_reload_native_icon, sourceRes("hotReloadNativeIcon"))
@@ -70,8 +71,8 @@ class DiagnosticsLogPresentationTest {
         assertEquals(R.string.diagnostics_log_charging_off, chargingStateRes("FALSE"))
         assertNull(chargingStateRes("null"))
         val raw = legacy("connectivity source=capabilities transport=CELLULAR validated=true")
-        assertEquals("CELLULAR", raw.fields["transport"])
-        assertEquals("capabilities", raw.fields["source"])
+        assertEquals(INPUT_TRANSPORT_CELLULAR, raw.fields["transport"])
+        assertEquals(SOURCE_CAPABILITIES, raw.fields["source"])
     }
 
     @Test
@@ -102,7 +103,7 @@ class DiagnosticsLogPresentationTest {
         val details = logDetailFields(entry)
         assertEquals(5, details.size)
         assertEquals(
-            listOf("transferredCharging", "nativeCharging", "nativePercent", "source", "reason"),
+            listOf("transferredCharging", "nativeCharging", "nativePercent", "source", INPUT_REASON_KEY),
             details.map { it.first },
         )
         assertEquals(listOf("true", "false", "82"), details.take(3).map { it.second })
@@ -122,7 +123,7 @@ class DiagnosticsLogPresentationTest {
         )
         val fields = logDetailFields(entry)
         assertEquals(5, fields.size)
-        assertEquals(listOf("reason", "source", "traceId", "owner", "alpha"), fields.map { it.first })
+        assertEquals(listOf(INPUT_REASON_KEY, "source", INPUT_TRACE_ID_KEY, INPUT_OWNER_KEY, "alpha"), fields.map { it.first })
         assertFalse(fields.any { it.first == "sessionId" || it.first == "healthSnapshot" })
         assertTrue(entry.raw.contains("sessionId=build-session"))
         assertTrue(entry.raw.contains("gamma=3"))
