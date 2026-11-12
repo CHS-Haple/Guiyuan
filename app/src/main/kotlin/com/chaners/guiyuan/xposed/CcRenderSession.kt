@@ -934,23 +934,16 @@ internal object CcRenderSession {
             val top = offsetY
             val bottom = offsetY + statusArea.height
             anchorRect.set(left, top, right, bottom)
-            if (anchorRect.width() <= 0 || anchorRect.height() <= 0) {
+            val anchorWidth = anchorRect.width()
+            val anchorHeight = anchorRect.height()
+            if (anchorWidth <= 0 || anchorHeight <= 0) {
                 return markLayoutUnavailable()
             }
 
-            if (
-                renderView.measuredWidth != anchorRect.width() ||
-                renderView.measuredHeight != anchorRect.height()
-            ) {
+            if (renderView.measuredWidth != anchorWidth || renderView.measuredHeight != anchorHeight) {
                 renderView.measure(
-                    View.MeasureSpec.makeMeasureSpec(
-                        anchorRect.width(),
-                        View.MeasureSpec.EXACTLY,
-                    ),
-                    View.MeasureSpec.makeMeasureSpec(
-                        anchorRect.height(),
-                        View.MeasureSpec.EXACTLY,
-                    ),
+                    View.MeasureSpec.makeMeasureSpec(anchorWidth, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(anchorHeight, View.MeasureSpec.EXACTLY),
                 )
             }
             renderView.layout(
