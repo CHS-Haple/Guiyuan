@@ -6,6 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 private const val FIXTURE_WIFI_SIZE_EN = "Wi-Fi size"
+private const val QUERY_RESTORE_EN = "Restore"
 private const val FIXTURE_BATTERY_COLORS_EN = "Battery colors"
 private const val FIXTURE_BATTERY_COLORS_PINYIN = "dian liang yan se"
 private const val FIXTURE_RESTORE_CONFIGURATION_EN = "Restore configuration"
@@ -215,7 +216,7 @@ class SearchAliasesTest {
             SearchTerm(FIXTURE_RESTORE_CONFIGURATION_EN, FIXTURE_RESTORE_CONFIGURATION_EN),
         )
         assertTrue(restore.any { it.matches("恢复") })
-        assertTrue(restore.any { it.matches("Restore") })
+        assertTrue(restore.any { it.matches(QUERY_RESTORE_EN) })
         assertTrue(restore.any { it.matches("configuration") })
         assertFalse(restore.any { it.matches("Backup") })
     }
@@ -228,7 +229,7 @@ class SearchAliasesTest {
         assertTrue(restore.any { SearchTerm(it, it).matches("Import") })
         assertTrue(backup.any { SearchTerm(it, it).matches("Export") })
         assertTrue(defaults.any { SearchTerm(it, it).matches("Reset") })
-        assertFalse(backup.any { SearchTerm(it, it).matches("Restore") })
+        assertFalse(backup.any { SearchTerm(it, it).matches(QUERY_RESTORE_EN) })
         assertFalse(restore.any { SearchTerm(it, it).matches("Export") })
         assertFalse(defaults.any { SearchTerm(it, it).matches("Import") })
     }
@@ -350,7 +351,7 @@ class SearchBilingualTest {
             assertTrue(batteryEn.matches(word))
         }
         assertTrue(restoreZh.matches("恢复"))
-        assertTrue(restoreEn.matches("Restore"))
+        assertTrue(restoreEn.matches(QUERY_RESTORE_EN))
         assertTrue(restoreEn.matches("configuration"))
         assertFalse(batteryEn.matches("wifi"))
         assertFalse(restoreEn.matches("Backup"))

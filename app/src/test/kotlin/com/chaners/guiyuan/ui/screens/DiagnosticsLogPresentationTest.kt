@@ -11,6 +11,11 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 private const val LOGCAT_TEST_PREFIX = "10-29 09:20:12.456 1200 1200 "
+private const val EVENT_BATTERY_RECONCILE = "battery.reconcile"
+private const val INPUT_TRANSPORT_CELLULAR = "CELLULAR"
+private const val INPUT_REASON_KEY = "reason"
+private const val INPUT_TRACE_ID_KEY = "traceId"
+private const val INPUT_OWNER_KEY = "owner"
 
 class DiagnosticsLogPresentationTest {
     private fun structured(event: String, fields: Map<String, String> = emptyMap()) =
@@ -25,7 +30,7 @@ class DiagnosticsLogPresentationTest {
     @Test
     fun essentialHealthAndLegacyNetworkEventsRemainVisible() {
         assertTrue(isRuntimeLog(structured("diagnostics.snapshot")))
-        assertTrue(isRuntimeLog(structured("battery.reconcile", mapOf("nativeCharging" to "false"))))
+        assertTrue(isRuntimeLog(structured(EVENT_BATTERY_RECONCILE, mapOf("nativeCharging" to "false"))))
         assertTrue(isRuntimeLog(legacy("connectivity source=capabilities transport=WIFI validated=true")))
         assertTrue(isRuntimeLog(legacy("connectivity delivery-failed source=callback type=IllegalStateException")))
         assertFalse(isRuntimeLog(legacy("unrelated traceInfo=value")))
@@ -46,10 +51,10 @@ class DiagnosticsLogPresentationTest {
 
     @Test
     fun userFacingNetworkValuesMapWithoutChangingRawEvidence() {
-        assertEquals(R.string.diagnostics_log_source_mobile, transportRes("CELLULAR"))
+        assertEquals(R.string.diagnostics_log_source_mobile, transportRes(INPUT_TRANSPORT_CELLULAR))
         assertEquals(R.string.diagnostics_log_source_none, transportRes("NONE"))
         assertEquals(R.string.diagnostics_log_source_other, transportRes("OTHER"))
-        assertNull(sourceRes("CELLULAR"))
+        assertNull(sourceRes(INPUT_TRANSPORT_CELLULAR))
         assertNull(sourceRes("NONE"))
         assertNull(sourceRes("OTHER"))
         assertEquals(R.string.diagnostics_log_source_mobile, sourceRes("mobile"))
@@ -82,12 +87,12 @@ class DiagnosticsLogPresentationTest {
     @Test
     fun batteryReconcileDetailsPreferOriginalChargingFields() {
         val entry = structured(
-            "battery.reconcile",
+            EVENT_BATTERY_RECONCILE,
             linkedMapOf(
                 "source" to "hotReloadNativeIcon",
-                "reason" to "native-read",
-                "traceId" to "a7",
-                "owner" to "SystemUI",
+                INPUT_REASON_KEY to "native-read",
+                INPUT_TRACE_ID_KEY to "a7",
+                INPUT_OWNER_KEY to "SystemUI",
                 "extra" to "extra",
                 "transferredCharging" to "true",
                 "nativeCharging" to "false",
@@ -110,8 +115,8 @@ class DiagnosticsLogPresentationTest {
             "hotReload.complete",
             mapOf(
                 "alpha" to "1", "beta" to "2", "gamma" to "3",
-                "delta" to "4", "owner" to "sysui", "source" to "reload",
-                "reason" to "native-transition", "traceId" to "trace-7",
+                "delta" to "4", INPUT_OWNER_KEY to "sysui", "source" to "reload",
+                INPUT_REASON_KEY to "native-transition", INPUT_TRACE_ID_KEY to "trace-7",
                 "sequence" to "45", "sessionId" to "build-session", "healthSnapshot" to "false",
             ),
         )
