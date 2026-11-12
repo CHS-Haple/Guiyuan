@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.ui.components
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
@@ -25,8 +26,9 @@ class NavTouchExtensionPolicyTest {
             Rect(120f, 20f, 235f, 76f),
             Rect(256f, 20f, 340f, 76f),
         )
+        val safeBottom = minOf(bar.bottom + 12f, host.bottom - 24f - 4f)
         val choice = { x: Float, y: Float ->
-            measuredNavTouchTarget(x, y, host, bar, items, 24f, 12f, 4f)
+            measuredNavTouchTarget(Offset(x, y), bar, items, safeBottom)
         }
         assertEquals(0, choice(80f, 82f))
         assertEquals(1, choice(160f, 82f))
@@ -45,7 +47,8 @@ class NavTouchExtensionPolicyTest {
         val host = Rect(0f, 0f, 400f, 102f)
         val bar = Rect(40f, 0f, 360f, 76f)
         val items = listOf(Rect(50f, 0f, 350f, 76f))
-        assertNull(measuredNavTouchTarget(200f, 80f, host, bar, items, 24f, 12f, 4f))
+        val safeBottom = minOf(bar.bottom + 12f, host.bottom - 24f - 4f)
+        assertNull(measuredNavTouchTarget(Offset(200f, 80f), bar, items, safeBottom))
     }
 
     @Test
