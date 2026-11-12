@@ -295,34 +295,14 @@ internal object ScenePolicy {
         fullAodTargetPending: Boolean = false,
         fullAodVisualBoundary: Boolean = false,
     ): KeyguardAodProjection {
-        if (steadySourceScene == SourceScene.HOME) {
-            return if (
-                lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN &&
-                homePresentationOwned &&
-                aodEnabled
-            ) {
-                // Home -> AOD is the only transition without a prior stable
-                // Keyguard/AOD child. A latched AOD/Keyguard origin instead
-                // means we are leaving that family for Home and must not
-                // reverse-prearm AOD during the outgoing animation.
-                KeyguardAodProjection.AOD
-            } else {
-                KeyguardAodProjection.NATIVE
-            }
-        }
-
-        if (
-            steadySourceScene == SourceScene.KEYGUARD &&
-            lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN &&
-            homePresentationOwned &&
-            aodEnabled
-        ) {
-            // Home -> AOD can briefly expose KEYGUARD ancestry before the AOD
-            // callback catches up. Only an UNKNOWN family origin may use Home
-            // ownership as prearm evidence. A latched AOD/Keyguard origin is
-            // stronger and must not be overridden by stale Home ownership.
-            return KeyguardAodProjection.AOD
-        }
+        val homeOrigin =
+            SceneAodBoundaryPolicy.resolveAnimatingHomeOrigin(
+                steadySourceScene = steadySourceScene,
+                lastStableFamilyScene = lastStableFamilyScene,
+                homePresentationOwned = homePresentationOwned,
+                aodEnabled = aodEnabled,
+            )
+        if (homeOrigin != null) return homeOrigin
 
         // mToLockScreen tells us the direction, not that the visible handoff is done.
         // While the target is pending, keep the enabled outgoing child (otherwise Native);
@@ -352,75 +332,22 @@ internal object ScenePolicy {
             }
         }
 
-        // Single-child handoff follows the native Keyguard status-icons
-        // layer in both directions. Alpha 1 belongs to the Keyguard endpoint;
-        // alpha 0 belongs to the AOD endpoint. Battery AOD alpha is a separate
-        // native animation and is not a whole-combined-scene lifetime signal.
-        val alpha = keyguardStatusIconsAlpha
-        if (
-            keyguardEnabled &&
-            !aodEnabled &&
-            steadySourceScene == SourceScene.KEYGUARD &&
-            alpha != null &&
-            lastStableFamilyScene != StableKeyguardAodScene.UNKNOWN
-        ) {
-            return if (alpha > 0f) {
-                KeyguardAodProjection.KEYGUARD
-            } else {
-                KeyguardAodProjection.NATIVE
-            }
-        }
-        if (
-            !keyguardEnabled &&
-            aodEnabled &&
-            steadySourceScene == SourceScene.KEYGUARD &&
-            alpha != null
-        ) {
-            when (lastStableFamilyScene) {
-                StableKeyguardAodScene.AOD ->
-                    if (alpha > 0f) return KeyguardAodProjection.NATIVE
+        val alphaDecision =
+            SceneAodBoundaryPolicy.resolveAnimatingNativeAlpha(
+                steadySourceScene = steadySourceScene,
+                lastStableFamilyScene = lastStableFamilyScene,
+                keyguardEnabled = keyguardEnabled,
+                aodEnabled = aodEnabled,
+                keyguardStatusIconsAlpha = keyguardStatusIconsAlpha,
+            )
+        if (alphaDecision != null) return alphaDecision
 
-                StableKeyguardAodScene.KEYGUARD ->
-                    return if (alpha < 1f) {
-                        KeyguardAodProjection.AOD
-                    } else {
-                        KeyguardAodProjection.NATIVE
-                    }
-
-                StableKeyguardAodScene.UNKNOWN -> Unit
-            }
-        }
-        // Don't infer AOD direction from presentation ownership; attach/cleanup changes
-        // that ownership and can bounce KEYGUARD -> NATIVE -> KEYGUARD. Freeze the
-        // direction from the last stable family scene for the whole animation.
-        return when (lastStableFamilyScene) {
-            StableKeyguardAodScene.KEYGUARD ->
-                when {
-                    aodEnabled -> KeyguardAodProjection.AOD
-                    keyguardEnabled -> KeyguardAodProjection.KEYGUARD
-                    else -> KeyguardAodProjection.NATIVE
-                }
-
-            StableKeyguardAodScene.AOD ->
-                when {
-                    keyguardEnabled -> KeyguardAodProjection.KEYGUARD
-                    aodEnabled -> KeyguardAodProjection.AOD
-                    else -> KeyguardAodProjection.NATIVE
-                }
-
-            StableKeyguardAodScene.UNKNOWN ->
-                if (
-                    steadySourceScene == SourceScene.KEYGUARD &&
-                    keyguardEnabled
-                ) {
-                    // Cold-start / late-install fallback: an authoritative
-                    // Keyguard source may acquire only the enabled Keyguard
-                    // child. No cross-child inference is made.
-                    KeyguardAodProjection.KEYGUARD
-                } else {
-                    KeyguardAodProjection.NATIVE
-                }
-        }
+        return SceneAodBoundaryPolicy.resolveAnimatingStableFamily(
+            steadySourceScene = steadySourceScene,
+            lastStableFamilyScene = lastStableFamilyScene,
+            keyguardEnabled = keyguardEnabled,
+            aodEnabled = aodEnabled,
+        )
     }
 
 }
