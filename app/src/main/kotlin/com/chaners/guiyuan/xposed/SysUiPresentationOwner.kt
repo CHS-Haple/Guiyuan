@@ -2126,31 +2126,12 @@ internal object SysUiPresentationOwner {
                     }
                 }
             if (applied.isFailure) {
-                applied.exceptionOrNull()?.let(::rethrowFatal)
-                val rollback =
-                    setIgnoredSlotsMethod?.let { setMethod ->
-                        runCatching {
-                            val current =
-                                nativeIgnoredSlotsList(group)
-                                    ?: error("ignored-slots-list-unavailable-during-rollback")
-                            // Native callbacks may add unrelated slots before the failed add returns.
-                            val target = OwnedEntries.restoreTarget(current, owned)
-                            if (target != current) {
-                                setMethod.invoke(group, ArrayList(target))
-                            }
-                            val restored =
-                                nativeIgnoredSlotsList(group)
-                                    ?: error("ignored-slots-list-unavailable-after-rollback")
-                            restored == target
-                        }.onFailure(::rethrowFatal).getOrDefault(false)
-                    } ?: false
+                val failure = applied.exceptionOrNull()
+                failure?.let(::rethrowFatal)
+                val rollback = rollbackFailedPersistentIgnoredSlots(group, owned)
                 onFailNative(
                     "ignored-slots-session-add-" +
-                        (
-                            applied.exceptionOrNull()?.message
-                                ?: applied.exceptionOrNull()?.javaClass?.simpleName
-                                ?: "unknown"
-                        ) +
+                        (failure?.message ?: failure?.javaClass?.simpleName ?: "unknown") +
                         "-rollback=" + rollback,
                 )
                 return false
@@ -2165,6 +2146,29 @@ internal object SysUiPresentationOwner {
             )
             return true
         }
+
+        // Restore only Guiyuan-owned slots after a failed native add. Keep
+        // unrelated native additions, and retain failure if verification fails.
+        private fun rollbackFailedPersistentIgnoredSlots(
+            group: ViewGroup,
+            owned: List<String>,
+        ): Boolean =
+            setIgnoredSlotsMethod?.let { setMethod ->
+                runCatching {
+                    val current =
+                        nativeIgnoredSlotsList(group)
+                            ?: error("ignored-slots-list-unavailable-during-rollback")
+                    // Native callbacks may add unrelated slots before the failed add returns.
+                    val target = OwnedEntries.restoreTarget(current, owned)
+                    if (target != current) {
+                        setMethod.invoke(group, ArrayList(target))
+                    }
+                    val restored =
+                        nativeIgnoredSlotsList(group)
+                            ?: error("ignored-slots-list-unavailable-after-rollback")
+                    restored == target
+                }.onFailure(::rethrowFatal).getOrDefault(false)
+            } ?: false
 
         private fun restorePersistentIgnoredSlots(
             requestLayout: Boolean,
