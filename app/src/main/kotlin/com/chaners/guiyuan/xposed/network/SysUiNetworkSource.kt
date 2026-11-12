@@ -1120,10 +1120,7 @@ internal object SysUiNetworkSource {
         val getter =
             contract.wifiIconGetter
                 ?: run {
-                    reportSeed(onEvent,
-                        WIFI_SEED_LOG_PREFIX + source +
-                            " state=unavailable reason=getWifiIcon-missing",
-                    )
+                    reportUnavailableWifiSeed(onEvent, source, "getWifiIcon-missing")
                     return null
                 }
 
@@ -1132,17 +1129,10 @@ internal object SysUiNetworkSource {
                 getter.invoke(viewModel)
             }.getOrElse { error ->
                 rethrowFatal(error)
-                reportSeed(onEvent,
-                    WIFI_SEED_LOG_PREFIX + source +
-                        " state=unavailable reason=wifiIcon-read-" +
-                        error.javaClass.simpleName,
-                )
+                reportUnavailableWifiSeed(onEvent, source, "wifiIcon-read-" + error.javaClass.simpleName)
                 return null
             } ?: run {
-                reportSeed(onEvent,
-                    WIFI_SEED_LOG_PREFIX + source +
-                        " state=unavailable reason=wifiIcon-null",
-                )
+                reportUnavailableWifiSeed(onEvent, source, "wifiIcon-null")
                 return null
             }
 
@@ -1155,11 +1145,7 @@ internal object SysUiNetworkSource {
                     }
                     ?.apply { isAccessible = true }
             } ?: run {
-                    reportSeed(onEvent,
-                        WIFI_SEED_LOG_PREFIX + source +
-                            " state=unavailable reason=stateFlow-value-missing " +
-                            "flow=" + flow.javaClass.name,
-                    )
+                    reportUnavailableWifiSeed(onEvent, source, "stateFlow-value-missing flow=" + flow.javaClass.name)
                     return null
                 }
 
@@ -1168,11 +1154,7 @@ internal object SysUiNetworkSource {
                 valueGetter.invoke(flow)
             }.getOrElse { error ->
                 rethrowFatal(error)
-                reportSeed(onEvent,
-                    WIFI_SEED_LOG_PREFIX + source +
-                        " state=unavailable reason=stateFlow-value-" +
-                        error.javaClass.simpleName,
-                )
+                reportUnavailableWifiSeed(onEvent, source, "stateFlow-value-" + error.javaClass.simpleName)
                 return null
             }
 
@@ -1195,6 +1177,14 @@ internal object SysUiNetworkSource {
                 " resourceAccessor=" + contract.iconResourceIdAccessor.description,
         )
         return semantic.state
+    }
+
+    private fun reportUnavailableWifiSeed(
+        onEvent: ((String) -> Unit)?,
+        source: String,
+        reason: String,
+    ) {
+        reportSeed(onEvent, WIFI_SEED_LOG_PREFIX + source + " state=unavailable reason=" + reason)
     }
 
     private fun reportSeed(onEvent: ((String) -> Unit)?, message: String) {
