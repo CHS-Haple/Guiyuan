@@ -63,30 +63,7 @@ internal object NativeVectorStroke {
                                 }
                                 depth == 1 && xml.name == "path" && onlyKeys(xml, pathKeys) -> {
                                     if (layers.size >= 12) return@runCatching null
-                                    val data = xml.getAttributeValue(NS, "pathData")
-                                        ?.takeIf { it.isNotBlank() && it.length <= 4096 }
-                                        ?: return@runCatching null
-                                    val values = resources.obtainAttributes(Xml.asAttributeSet(xml), pathAttrs)
-                                    val alpha: Int
-                                    val fillType: Int
-                                    try {
-                                        if (!values.hasValue(0)) return@runCatching null
-                                        val fill = values.getColor(0, Color.TRANSPARENT)
-                                        val fillAlpha = values.getFloat(1, 1f)
-                                        if (!fillAlpha.isFinite() || fillAlpha !in 0f..1f) {
-                                            return@runCatching null
-                                        }
-                                        alpha = (Color.alpha(fill) * fillAlpha).roundToInt()
-                                        fillType = values.getInt(2, 0)
-                                    } finally {
-                                        values.recycle()
-                                    }
-                                    if (fillType !in 0..1) return@runCatching null
-                                    val path = PathParser.createPathFromPathData(data)
-                                    if (path.isEmpty) return@runCatching null
-                                    path.fillType =
-                                        if (fillType == 1) Path.FillType.EVEN_ODD else Path.FillType.WINDING
-                                    layers.add(Layer(path, alpha))
+                                    layers.add(readLayer(resources, xml) ?: return@runCatching null)
                                 }
                                 else -> return@runCatching null
                             }
@@ -99,6 +76,34 @@ internal object NativeVectorStroke {
                 else Source(viewportWidth, viewportHeight, layers)
             }
         }.onFailure { rethrowRenderFatal(it) }.getOrNull()
+
+    private fun readLayer(
+        resources: Resources,
+        xml: android.content.res.XmlResourceParser,
+    ): Layer? {
+        val data = xml.getAttributeValue(NS, "pathData")
+            ?.takeIf { it.isNotBlank() && it.length <= 4096 }
+            ?: return null
+        val values = resources.obtainAttributes(Xml.asAttributeSet(xml), pathAttrs)
+        val alpha: Int
+        val fillType: Int
+        try {
+            if (!values.hasValue(0)) return null
+            val fill = values.getColor(0, Color.TRANSPARENT)
+            val fillAlpha = values.getFloat(1, 1f)
+            if (!fillAlpha.isFinite() || fillAlpha !in 0f..1f) return null
+            alpha = (Color.alpha(fill) * fillAlpha).roundToInt()
+            fillType = values.getInt(2, 0)
+        } finally {
+            values.recycle()
+        }
+        if (fillType !in 0..1) return null
+        val path = PathParser.createPathFromPathData(data)
+        if (path.isEmpty) return null
+        path.fillType =
+            if (fillType == 1) Path.FillType.EVEN_ODD else Path.FillType.WINDING
+        return Layer(path, alpha)
+    }
 
     fun style(source: Source, weight: Int): Styled? =
         runCatching { styleSource(source, weight) }
