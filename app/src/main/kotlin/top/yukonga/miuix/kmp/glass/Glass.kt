@@ -15,10 +15,11 @@ import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.blur.noiseDither
 import top.yukonga.miuix.kmp.glass.internal.GLASS_COLOR_BLEND_SHADER_KEY
 import top.yukonga.miuix.kmp.glass.internal.colorBlendEffect
-import top.yukonga.miuix.kmp.glass.internal.drawGlassMask
-import top.yukonga.miuix.kmp.glass.internal.drawGlassRim
-import top.yukonga.miuix.kmp.glass.internal.drawGlassShadow
-import top.yukonga.miuix.kmp.glass.internal.drawGlassStroke
+import top.yukonga.miuix.kmp.material.drawEdgeStroke
+import top.yukonga.miuix.kmp.material.drawGlassEdge
+import top.yukonga.miuix.kmp.material.drawGlassMask
+import top.yukonga.miuix.kmp.material.drawGlassRim
+import top.yukonga.miuix.kmp.material.drawGlassShadow
 import top.yukonga.miuix.kmp.glass.internal.glassEffect
 
 /**
@@ -120,10 +121,23 @@ private fun Modifier.glassImpl(
         if (shading) glassEffect(style, shape, alpha, tint)
     },
     onDrawFront = {
-        if (stroke != null) drawGlassStroke(shape, layoutDirection, stroke, alpha)
-        drawGlassMask(shape, layoutDirection)
-        if (shading) {
-            drawGlassRim(shape, layoutDirection, style, if (tint.isSpecified) tint else style.inner.tint, alpha)
+        val fused = stroke != null && shading &&
+            stroke.width.value > 0f && stroke.blendMode == BlendMode.Plus
+        if (fused) {
+            drawGlassEdge(
+                shape = shape,
+                stroke = stroke,
+                style = style,
+                surface = if (tint.isSpecified) tint else style.inner.tint,
+                alpha = alpha,
+            )
+            drawGlassMask(shape)
+        } else {
+            if (stroke != null) drawEdgeStroke(shape, stroke, alpha)
+            drawGlassMask(shape)
+            if (shading) {
+                drawGlassRim(shape, style, if (tint.isSpecified) tint else style.inner.tint, alpha)
+            }
         }
     },
     contentBlendMode = contentBlendMode,
@@ -150,5 +164,5 @@ internal fun Modifier.glassShadow(
 ): Modifier = if (shadow == null) {
     this
 } else {
-    this.drawBehind { drawGlassShadow(shape, layoutDirection, shadow, alpha()) }
+    this.drawBehind { drawGlassShadow(shape, shadow, alpha()) }
 }

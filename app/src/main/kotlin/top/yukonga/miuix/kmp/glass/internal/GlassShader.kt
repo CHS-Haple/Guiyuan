@@ -6,9 +6,6 @@ package top.yukonga.miuix.kmp.glass.internal
 /** Cache key for the compiled glass shader. */
 internal const val GLASS_SHADER_KEY = "MiuixGlass"
 
-/** Cache key for the compiled silhouette mask shader. */
-internal const val GLASS_MASK_SHADER_KEY = "MiuixGlassMask"
-
 /**
  * The silhouette, shared by the material shader and the mask shader so the two can never disagree
  * about where the surface ends.
@@ -159,50 +156,6 @@ float rimLighten(float3 normal, float4 lightDir, float2 amounts, float3 color) {
 // The closed-form slope runs to the thousands at the silhouette, which stands the normal on end and
 // hands both lights everything they can take. The cap keeps the highlight a hairline.
 const float kMaxBevelSlope = 1.7;
-"""
-
-/** The rim light, at full resolution. */
-internal val GLASS_RIM_SHADER: String = """
-$GLASS_SDF_SOURCE
-$GLASS_RIM_SOURCE
-uniform float4 in_rimEdge;      // edge width, edge pow, surface opacity, unused
-uniform float4 in_lightDir;     // direction xyz, angle range * pi
-uniform float4 in_lightAmt;     // intensity, opposite intensity, unused, unused
-uniform float4 in_surface;      // the material's own colour, standing in for what is underneath
-
-half4 main(float2 coord) {
-    float d = silhouetteSdf(coord);
-    // The light rides the outer third of the rim, not all of it. The whole band is what bends the
-    // refraction ray, but a light spread over it reads as a bevel rather than an edge.
-    float edge = max(in_rimEdge.x * kRimBandFraction, 1.0);
-    // Past 85% of the band the surface is flat and faces away from both lights.
-    if (d > 0.5 || -d >= edge * 0.85) return half4(0.0);
-
-    float2 gradient = sdfGradient(coord);
-    if (length(gradient) < 0.5) return half4(0.0);
-
-    float depth = clamp(-d / edge, 0.0, 1.0);
-    float slope = min(edgeCurveSlope(depth, in_rimEdge.y), kMaxBevelSlope);
-    float3 normal = normalize(float3(gradient * slope, 1.0));
-    float lighten = rimLighten(normal, in_lightDir, in_lightAmt.xy, in_surface.rgb);
-    float3 added = max(liftToward(in_surface.rgb, lighten) - in_surface.rgb, float3(0.0));
-
-    float coverage = clamp(0.5 - d, 0.0, 1.0);
-    float3 light = added * (in_rimEdge.z * coverage);
-    // Carry an alpha equal to the light, not zero. A shader returns a *premultiplied* colour, and
-    // one whose channels sit above its own alpha is clamped away — which is what silently drew
-    // nothing for this pass and for the bloom stroke.
-    return half4(half3(light), half(clamp(max(max(light.r, light.g), light.b), 0.0, 1.0)));
-}
-"""
-
-/** Cuts the surface to its silhouette, at full resolution. */
-internal val GLASS_MASK_SHADER: String = """
-$GLASS_SDF_SOURCE
-half4 main(float2 coord) {
-    // One pixel of coverage either side of the boundary is all the anti-aliasing an edge needs.
-    return half4(half(clamp(0.5 - silhouetteSdf(coord), 0.0, 1.0)));
-}
 """
 
 /** The glass material, as one AGSL/SkSL pass over the blurred backdrop. */
@@ -408,103 +361,6 @@ half4 main(float2 coord) {
 
     float alpha = material.a * in_alphaEdge.x;
     return half4(half3(material.rgb * alpha), half(alpha));
-}
-"""
-
-/** Cache key for the compiled bloom stroke shader. */
-internal const val GLASS_STROKE_SHADER_KEY = "MiuixGlassStroke"
-
-/** The bloom stroke: the lit edge that traces the silhouette. */
-internal val GLASS_STROKE_SHADER: String = """
-$GLASS_SDF_SOURCE
-uniform float2 in_halfViewFloor; // half size, floored, so the fold lands on a pixel boundary
-uniform float2 in_strokeBand;    // stroke width, inner blur radius
-uniform float4 in_strokeColor;   // stroke rgb, stroke opacity
-uniform float in_strokeAlpha;    // surface opacity
-uniform float4 in_light1;        // direction xyz, intensity
-uniform float4 in_light1Color;   // colour rgb, unused
-uniform float4 in_light2;        // direction xyz, intensity
-uniform float4 in_light2Color;   // colour rgb, unused
-
-// The bevel normal. Folded into one quadrant, built there, then unfolded by the sign of the
-// offset — the rim is symmetric, so only a quarter of it has to be reasoned about.
-float3 rimNormal(float2 coord, float2 half2d, float sdf, float radius, float inner) {
-    float2 offset = coord - in_halfViewFloor;
-    float2 folded = abs(offset);
-    // Lift the point off the surface. Depth is measured in the rim band, height in pixels.
-    float depth = smoothstep(-inner, 0.0, sdf);
-    float3 point = float3(folded, -sqrt(max(inner * inner - depth * depth, 0.0)));
-
-    float bevel = max(radius, inner);
-    float2 reference = half2d - bevel;
-    reference.x = min(reference.x, folded.x);
-    reference.y = min(reference.y, folded.y);
-    float2 toPoint = point.xy - reference;
-    float len = length(toPoint);
-    reference += ((len > 0.0001) ? toPoint / len : float2(0.0, 1.0)) * (bevel - inner);
-
-    // Inside the reference the surface is flat and faces straight away from the lights.
-    if (folded.x < reference.x || folded.y < reference.y) return float3(0.0, 0.0, -1.0);
-
-    float3 normal = normalize(point - float3(reference, 0.0));
-    normal.xy *= sign(offset);
-    return normal;
-}
-
-// MiBloomStrokeFilter uses fixed vertical falloff axes, independent of the light positions.
-// Keep the falloff signed: the native shader clamps the product, not either dot separately.
-float3 rimLight(float3 normal, float axisY, float4 light, float3 color) {
-    float falloff = axisY * normal.y;
-    float lit = clamp(dot(normal, light.xyz) * falloff, 0.0, 1.0);
-    return color * (lit * lit * light.w);
-}
-
-half4 main(float2 coord) {
-    float2 half2d = in_size * 0.5;
-    float2 folded = abs(coord - half2d);
-    float radius = pickRadius(coord, half2d);
-    float inner = max(in_strokeBand.y, 0.5);
-    float bevel = max(radius, inner);
-
-    // The interior has no rim to light, and it is most of the surface.
-    if (folded.x < half2d.x - bevel && folded.y < half2d.y - bevel) return half4(0.0);
-
-    float sdf = silhouetteSdf(coord);
-    // A near-step band hugging the outer edge, squared by compositing it twice.
-    float width = max(in_strokeBand.x, 0.75);
-    float band = smoothstep(-width, -width + 1.0, sdf);
-    float3 rgb = in_strokeColor.rgb * (in_strokeColor.a * band * band);
-
-    float3 normal = rimNormal(coord, half2d, sdf, radius, inner);
-    rgb += rimLight(normal, -1.0, in_light1, in_light1Color.rgb);
-    rgb += rimLight(normal, 1.0, in_light2, in_light2Color.rgb);
-
-    // Light only: alpha stays at zero so a transparent surface never gains opacity from the rim.
-    float coverage = clamp(0.5 - sdf, 0.0, 1.0);
-    float3 light = rgb * (in_strokeAlpha * coverage);
-    // Premultiplied, so the alpha has to match the light — see the rim pass for why zero loses it.
-    return half4(half3(light), half(clamp(max(max(light.r, light.g), light.b), 0.0, 1.0)));
-}
-"""
-
-/** Cache key for the compiled shadow shader. */
-internal const val GLASS_SHADOW_SHADER_KEY = "MiuixGlassShadow"
-
-/** The shadow a surface casts, drawn from the same distance field as the surface itself. */
-internal val GLASS_SHADOW_SHADER: String = """
-$GLASS_SDF_SOURCE
-uniform float2 in_shadowOffset;  // displacement in pixels
-uniform float2 in_shadowShape;   // reach, dispersion
-uniform float4 in_shadowColor;   // rgb, strength
-
-half4 main(float2 coord) {
-    float d = silhouetteSdf(coord - in_shadowOffset);
-    float reach = max(in_shadowShape.x, 0.5);
-    float t = clamp(1.0 - d / reach, 0.0, 1.0);
-    // Dispersion reshapes the falloff: below a half it hugs the edge, above it spreads and thins.
-    float falloff = pow(t, 1.0 / max(in_shadowShape.y, 0.05));
-    float a = falloff * in_shadowColor.a;
-    return half4(half3(in_shadowColor.rgb * a), half(a));
 }
 """
 

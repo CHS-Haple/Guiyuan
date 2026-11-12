@@ -85,19 +85,21 @@ reference, not this public repository.
   uses app-local Glass adapters. Do not adopt upstream changes or
   `miuix-glass-android` wholesale based on commit similarity alone. The
   [MIUIX Glass source boundary](../../third_party/miuix-glass/README.md)
-  explains why the published-ABI and source-matched dialog/sheet/top-bar
-  compile variants remain.
-- Upstream #479's fused rim/stroke pass is not in the app-local Glass renderer;
-  its local shape/stroke types still use separate passes. Any migration must
-  reconcile the Material type and drawing boundary without speculative shaders.
+  documents the unified Dialog/Sheet/TopBar implementation using published
+  MIUIX APIs. Source-matched and published-Maven builds remain independent.
+- Glass shape, material, style, shadow and stroke presets reuse the pinned
+  upstream Material API. The #479 fused rim/stroke pass is enabled only under
+  its upstream shading, width and additive-blend conditions; Guiyuan retains
+  the adapted backdrop/refraction and its own popup, button and Back lifecycle
+  boundaries.
 - OS4 progressive top-bar material, navigation preview and menu/popup owners
   follow their upstream-aligned implementations. OS3 UI style uses its
   appropriate native MIUIX fallback. Original Battery Colors outer/inner
   `Card` hierarchy and colors, and consistent default `Regular` Glass
   button/popup shadows, are accepted. Avoid speculative changes to the
   native animation, shader or backdrop ownership.
-- Signed B1828 Canary was reported visually normal for the exercised MIUIX
-  UI scope. This does not establish exhaustive RTL, extreme font scale,
+- Signed B1829 Canary was reported visually normal for the exercised MIUIX
+  Glass UI scope. This does not establish exhaustive RTL, extreme font scale,
   GPU resume, keyboard/cutout geometry, predictive Back, OS3 dark-mode
   overscroll seam or every Framework/ROM combination.
 
