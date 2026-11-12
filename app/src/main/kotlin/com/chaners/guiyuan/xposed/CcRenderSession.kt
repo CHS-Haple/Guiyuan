@@ -397,6 +397,7 @@ internal object CcRenderSession {
 
     // A prearmed CC fake root gets another native layout only while its
     // original listener receipt remains owned by this session.
+    @Suppress("TooGenericExceptionCaught")
     private fun requestPendingPrearmRetry(
         pending: PendingPrearm,
         host: ViewGroup,
