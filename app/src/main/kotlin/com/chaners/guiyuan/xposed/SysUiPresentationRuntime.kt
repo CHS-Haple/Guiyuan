@@ -12,6 +12,14 @@ internal object SysUiPresentationRuntime {
 
     internal fun throwIfFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
+    // Hook installation may fall back to native only after rejecting VM-fatal errors.
+    internal inline fun Result<Int>.hookCountOrNativeFallback(
+        onFailure: (Throwable) -> Int,
+    ): Int = getOrElse { error ->
+        throwIfFatal(error)
+        onFailure(error)
+    }
+
     // Passive evidence must never become a SystemUI callback failure.
     @Suppress("TooGenericExceptionCaught")
     internal inline fun emitPassiveDiagnostic(block: () -> Unit) {
@@ -141,8 +149,7 @@ internal object SysUiPresentationRuntime {
                     onEvent = onTintEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
-            }.getOrElse { error ->
-                throwIfFatal(error)
+            }.hookCountOrNativeFallback { error ->
                 tintFailure = error.message ?: error.javaClass.simpleName
                 SysUiTintSource.failedInstallHookCount
             }
@@ -158,8 +165,7 @@ internal object SysUiPresentationRuntime {
                     onEvent = onKeyguardAodEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
-            }.getOrElse { error ->
-                throwIfFatal(error)
+            }.hookCountOrNativeFallback { error ->
                 reportAodFailure(
                     "keyguardAod install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
@@ -178,8 +184,7 @@ internal object SysUiPresentationRuntime {
                     onEvent = onKeyguardAodEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
-            }.getOrElse { error ->
-                throwIfFatal(error)
+            }.hookCountOrNativeFallback { error ->
                 reportAodFailure(
                     "keyguardFullAod install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
@@ -199,8 +204,7 @@ internal object SysUiPresentationRuntime {
                     onEvent = onKeyguardAodEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
-            }.getOrElse { error ->
-                throwIfFatal(error)
+            }.hookCountOrNativeFallback { error ->
                 reportAodFailure(
                     "keyguardStatusIconTransition install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
@@ -219,8 +223,7 @@ internal object SysUiPresentationRuntime {
                     onEvent = onSceneEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
-            }.getOrElse { error ->
-                throwIfFatal(error)
+            }.hookCountOrNativeFallback { error ->
                 sceneFailure = error.message ?: error.javaClass.simpleName
                 0
             }
@@ -232,8 +235,7 @@ internal object SysUiPresentationRuntime {
                     classLoader = classLoader,
                     onChanged = onMobileTypeChanged,
                 ).size
-            }.getOrElse { error ->
-                throwIfFatal(error)
+            }.hookCountOrNativeFallback { error ->
                 mobileTypeFailure = error.message ?: error.javaClass.simpleName
                 0
             }

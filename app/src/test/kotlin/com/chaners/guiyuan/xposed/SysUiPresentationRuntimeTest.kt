@@ -100,25 +100,29 @@ class SysUiPresentationRuntimeTest {
     }
 
     @Test
-    fun ordinaryInstallFailureAllowsFeatureNativeFallback() {
-        SysUiPresentationRuntime.throwIfFatal(IllegalStateException("missing-contract"))
-    }
+    fun hookInstallFallbackRunsOnceAndNeverSwallowsFatalErrors() {
+        var fallbackCalls = 0
+        fun resolve(result: Result<Int>): Int =
+            with(SysUiPresentationRuntime) {
+                result.hookCountOrNativeFallback {
+                    fallbackCalls++
+                    0
+                }
+            }
 
-    @Test
-    fun fatalInstallErrorsKeepTheirIdentity() {
-        val errors = listOf<Throwable>(ThreadDeath(), OutOfMemoryError("fatal-install"))
-        errors.forEach { error ->
-            val direct =
-                runCatching { SysUiPresentationRuntime.throwIfFatal(error) }.exceptionOrNull()
-            val wrapped =
-                runCatching {
-                    SysUiPresentationRuntime.throwIfFatal(InvocationTargetException(error))
-                }.exceptionOrNull()
-            assertSame(error, direct)
-            assertSame(error, wrapped)
+        assertEquals(3, resolve(runCatching { 3 }))
+        assertEquals(0, fallbackCalls)
+        assertEquals(0, resolve(runCatching<Int> { error("missing-contract") }))
+        assertEquals(1, fallbackCalls)
+
+        for (fatal in listOf<Throwable>(ThreadDeath(), OutOfMemoryError("fatal-install"))) {
+            for (error in listOf(fatal, InvocationTargetException(fatal))) {
+                assertSame(
+                    fatal,
+                    runCatching { resolve(Result.failure(error)) }.exceptionOrNull(),
+                )
+            }
         }
-        SysUiPresentationRuntime.throwIfFatal(
-            InvocationTargetException(IllegalStateException("ordinary-install")),
-        )
+        assertEquals(1, fallbackCalls)
     }
 }
