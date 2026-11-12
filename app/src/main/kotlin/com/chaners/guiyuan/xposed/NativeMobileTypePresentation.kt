@@ -43,7 +43,7 @@ internal object NativeMobileTypePresentation {
                         drawable
                             .takeIf { it.javaClass.name == SysUiMobileTypeSource.CLASS_NAME }
                             ?.let { native ->
-                                NativePresentationResolver.readOrNull {
+                                SysUiPresentationRuntime.optionalNativeRead {
                                     (drawableFields[native.javaClass]?.textPaint?.get(native) as? Paint)
                                         ?.typeface
                                 }
@@ -74,7 +74,7 @@ internal object NativeMobileTypePresentation {
 
     // The static native glyph face is available even when Wi-Fi hides the mobile type.
     // Follow SystemUI's own fallback selection; never substitute a guessed app font.
-    fun sandboxMobileTypeface(context: Context): Typeface? = NativePresentationResolver.readOrNull {
+    fun sandboxMobileTypeface(context: Context): Typeface? = SysUiPresentationRuntime.optionalNativeRead {
         val verified = verifiedMobileFont(context)
         if (verified == null) {
             null
@@ -93,7 +93,7 @@ internal object NativeMobileTypePresentation {
     }
 
     // This static SystemUI face remains authoritative when no mobile type is visible.
-    fun verifiedMobileFont(context: Context): Pair<Typeface, String>? = NativePresentationResolver.readOrNull {
+    fun verifiedMobileFont(context: Context): Pair<Typeface, String>? = SysUiPresentationRuntime.optionalNativeRead {
         val loader = context.classLoader
         val clazz = loader.loadClass(SysUiMobileTypeSource.CLASS_NAME)
         val face = clazz.getField("sMiproTypeface").get(null) as? Typeface
@@ -114,7 +114,7 @@ internal object NativeMobileTypePresentation {
 
     // Only the exact Typeface built from MiuiConfigs.FONT_MIPRO_PATH proves file identity.
     private fun nativeFontPath(drawable: Drawable, face: Typeface): String? =
-        NativePresentationResolver.readOrNull {
+        SysUiPresentationRuntime.optionalNativeRead {
             val clazz = drawable.javaClass
             val original = clazz.getField("sMiproTypeface").get(null) as? Typeface
             if (original === face) {
@@ -130,7 +130,7 @@ internal object NativeMobileTypePresentation {
         val drawable = (view as? ImageView)?.drawable ?: return null
         if (drawable.javaClass.name != SysUiMobileTypeSource.CLASS_NAME) return null
         val fields = drawableFields[drawable.javaClass] ?: return null
-        return NativePresentationResolver.readOrNull {
+        return SysUiPresentationRuntime.optionalNativeRead {
             (fields.textPaint?.get(drawable) as? Paint)?.let { Paint(it) }
         }
     }
@@ -150,7 +150,9 @@ internal object NativeMobileTypePresentation {
         val fields =
             drawableFields.computeIfAbsent(drawable.javaClass) { clazz ->
                 fun field(name: String): Field? =
-                    NativePresentationResolver.readOrNull { clazz.getDeclaredField(name).apply { isAccessible = true } }
+                    SysUiPresentationRuntime.optionalNativeRead {
+                        clazz.getDeclaredField(name).apply { isAccessible = true }
+                    }
                 DrawableFields(
                     type = field(MOBILE_TYPE_FIELD),
                     enhanced = field(MOBILE_TYPE_ENHANCED_FIELD),
@@ -158,9 +160,9 @@ internal object NativeMobileTypePresentation {
                 )
             }
         // Drawables can change text without replacing their ImageView.
-        val label = NativePresentationResolver.readOrNull { fields.type?.get(drawable) as? String }
+        val label = SysUiPresentationRuntime.optionalNativeRead { fields.type?.get(drawable) as? String }
         val enhanced =
-            NativePresentationResolver.readOrNull { fields.enhanced?.getBoolean(drawable) } == true
+            SysUiPresentationRuntime.optionalNativeRead { fields.enhanced?.getBoolean(drawable) } == true
         return normalizeDrawableNetworkType(label.orEmpty(), enhanced, beforeMeasure)
     }
 

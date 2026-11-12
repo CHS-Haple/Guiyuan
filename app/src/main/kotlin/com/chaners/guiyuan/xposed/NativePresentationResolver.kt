@@ -11,9 +11,6 @@ import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import com.chaners.guiyuan.xposed.network.SignalStrength
 
 internal object NativePresentationResolver {
-    internal inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
-
     fun resolve(
         state: StatusStateStore.Snapshot,
         defaultDataSubscriptionId: Int =
@@ -187,7 +184,7 @@ internal object NativePresentationResolver {
                 ?: return null
 
         // null means the platform source is unavailable; an empty list is authoritative.
-        return readOrNull {
+        return SysUiPresentationRuntime.optionalNativeRead {
             manager.activeSubscriptionInfoList
                 ?.filter { info -> info.subscriptionId >= 0 }
                 ?.map { info -> info.subscriptionId to info.simSlotIndex }
