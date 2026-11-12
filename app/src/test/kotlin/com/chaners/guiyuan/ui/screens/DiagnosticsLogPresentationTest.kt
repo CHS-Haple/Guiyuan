@@ -10,15 +10,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
+private const val LOGCAT_TEST_PREFIX = "10-29 09:20:12.456 1200 1200 "
+
 class DiagnosticsLogPresentationTest {
     private fun structured(event: String, fields: Map<String, String> = emptyMap()) =
         DiagLogParser.parse(
-            "10-29 09:20:12.456 1200 1200 I CombinedStatus: " +
+            LOGCAT_TEST_PREFIX + "I CombinedStatus: " +
                 DiagProtocol.format(event, "diagnostics", fields = fields),
         )
 
     private fun legacy(message: String, level: String = "I") =
-        DiagLogParser.parse("10-29 09:20:12.456 1200 1200 $level CombinedStatus: $message")
+        DiagLogParser.parse("${LOGCAT_TEST_PREFIX}$level CombinedStatus: $message")
 
     @Test
     fun essentialHealthAndLegacyNetworkEventsRemainVisible() {
@@ -69,8 +71,9 @@ class DiagnosticsLogPresentationTest {
 
     @Test
     fun duplicateLogLinesHaveDistinctStableRowKeys() {
-        val a = legacy("connectivity source=capabilities transport=WIFI")
-        val b = legacy("connectivity source=capabilities transport=WIFI")
+        val line = "connectivity source=capabilities transport=WIFI"
+        val a = legacy(line)
+        val b = legacy(line)
         assertEquals(a.key, b.key)
         assertEquals(logRowKey(a, 0), logRowKey(b, 0))
         assertFalse(logRowKey(a, 0) == logRowKey(b, 1))
@@ -123,7 +126,7 @@ class DiagnosticsLogPresentationTest {
     @Test
     fun compactLogSummaryElidesOnlyUnqualifiedRepeatedLifecycleStates() {
         fun entry(event: String, state: String) = DiagLogParser.parse(
-            "10-29 09:20:12.456 1200 1200 I CombinedStatus: " +
+            LOGCAT_TEST_PREFIX + "I CombinedStatus: " +
                 DiagProtocol.format(event = event, component = "runtime", state = state),
         )
         val ready = entry("module.loaded", "ready")
