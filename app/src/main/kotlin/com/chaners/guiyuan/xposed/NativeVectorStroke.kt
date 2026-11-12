@@ -62,8 +62,10 @@ internal object NativeVectorStroke {
                                     ) return@runCatching null
                                 }
                                 depth == 1 && xml.name == "path" && onlyKeys(xml, pathKeys) -> {
-                                    if (layers.size >= 12) return@runCatching null
-                                    layers.add(readLayer(resources, xml) ?: return@runCatching null)
+                                    // Exiting at depth 1 fails the document completeness check.
+                                    if (layers.size >= 12) break
+                                    val layer = readLayer(resources, xml) ?: break
+                                    layers.add(layer)
                                 }
                                 else -> return@runCatching null
                             }
