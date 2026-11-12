@@ -20,15 +20,15 @@ internal object NativePresentationResolver {
         val bindings =
             SysUiNetworkSource.mobilePresentationBindings()
                 .filter { binding -> binding.root.isAttachedToWindow }
-        val boundSubscriptionIds = bindings.map { binding -> binding.subscriptionId }
-        val semanticActiveSubIds =
-            linkedSetOf<Int>().apply {
-                for (subscriptionId in boundSubscriptionIds) {
-                    val signal = state.mobile[subscriptionId]?.signal
-                    if (signal != null && signal !is SignalStrength.Unknown) {
-                        add(subscriptionId)
-                    }
+        val semanticActiveSubIds = linkedSetOf<Int>()
+        val boundSubscriptionIds =
+            bindings.map { binding ->
+                val subscriptionId = binding.subscriptionId
+                val signal = state.mobile[subscriptionId]?.signal
+                if (signal != null && signal !is SignalStrength.Unknown) {
+                    semanticActiveSubIds.add(subscriptionId)
                 }
+                subscriptionId
             }
         val platformSubscriptions =
             bindings
@@ -36,7 +36,7 @@ internal object NativePresentationResolver {
                 ?.root
                 ?.context
                 ?.let(::activeSubscriptions)
-        val platformActive = platformSubscriptions?.map { it.first }?.toSet()
+        val platformActive = platformSubscriptions?.mapTo(linkedSetOf<Int>()) { it.first }
         val resolvedActive =
             NativeSubscriptionPolicy.resolveActiveSubIds(
                 boundSubscriptionIds = boundSubscriptionIds,
@@ -50,14 +50,13 @@ internal object NativePresentationResolver {
                 activeBindingSubIds,
                 platformSubscriptions,
             )
-        val activeBindings =
-            bindings.filter { binding ->
-                binding.subscriptionId in activeBindingSubIds
-            }
-        val visible =
-            activeBindings.filter { binding ->
-                binding.root.visibility == View.VISIBLE
-            }
+        val activeBindings = ArrayList<SysUiNetworkSource.MobilePresentationBinding>()
+        val visible = ArrayList<SysUiNetworkSource.MobilePresentationBinding>()
+        for (binding in bindings) {
+            if (binding.subscriptionId !in activeBindingSubIds) continue
+            activeBindings.add(binding)
+            if (binding.root.visibility == View.VISIBLE) visible.add(binding)
+        }
 
         val mode =
             NativeSubscriptionPolicy.classify(
@@ -185,8 +184,10 @@ internal object NativePresentationResolver {
         // null means the platform source is unavailable; an empty list is authoritative.
         return SysUiPresentationRuntime.optionalNativeRead {
             manager.activeSubscriptionInfoList
-                ?.filter { info -> info.subscriptionId >= 0 }
-                ?.map { info -> info.subscriptionId to info.simSlotIndex }
+                ?.mapNotNull { info ->
+                    info.takeIf { it.subscriptionId >= 0 }
+                        ?.let { it.subscriptionId to it.simSlotIndex }
+                }
         }
     }
 
