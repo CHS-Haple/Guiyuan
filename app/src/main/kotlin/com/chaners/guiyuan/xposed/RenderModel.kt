@@ -71,7 +71,7 @@ internal data class RenderModel(
             val dualTypeMismatch =
                 dualSignalEnabled &&
                     (nativeMobile?.platformActiveSubscriptionIds?.size ?: 0) > 1 &&
-                    nativeMobile.networkTypeSubscriptionId != selectedSubscriptionId
+                    nativeMobile?.networkTypeSubscriptionId != selectedSubscriptionId
 
             val mobileLevel =
                 resolveMobileLevel(
