@@ -2187,18 +2187,14 @@ internal object SysUiPresentationOwner {
                     live = live,
                     ownedEntries = owned,
                 )
-            val useNativeSetter = requestLayout
             val setMethod =
-                if (useNativeSetter) {
-                    setIgnoredSlotsMethod ?: return false
-                } else {
-                    null
-                }
+                if (requestLayout) setIgnoredSlotsMethod ?: return false
+                else null
             val restored =
                 runCatching {
                     if (target != live) {
-                        if (useNativeSetter) {
-                            setMethod!!.invoke(group, ArrayList(target))
+                        if (setMethod != null) {
+                            setMethod.invoke(group, ArrayList(target))
                         } else {
                             live.clear()
                             live.addAll(target)
@@ -2215,7 +2211,7 @@ internal object SysUiPresentationOwner {
             if (restored) {
                 persistentIgnoredSlotsApplied = false
                 ownedPersistentIgnoredSlots = emptyList()
-                if (!useNativeSetter) {
+                if (!requestLayout) {
                     onEvent(
                         eventPrefix +
                             " ignoredSlots restore=handoff-no-layout owned=" +
