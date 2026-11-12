@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import android.view.View
 import android.view.ViewGroup
 import java.lang.reflect.Method
@@ -23,8 +24,6 @@ internal object NativeParticipantAccess {
     private val slotAccessorCache = ConcurrentHashMap<Class<*>, Method>()
     private val slotAccessorMissing = ConcurrentHashMap.newKeySet<Class<*>>()
 
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private fun phoneStatusBarViewFor(host: View): View? =
         generateSequence(host) { view -> view.parent as? View }
@@ -77,7 +76,7 @@ internal object NativeParticipantAccess {
             handles.controller.readField("mStatusBarIconList")
                 ?: return null
         val getter =
-            readOrNull {
+            optionalNativeRead {
                 iconList.javaClass
                     .allMethods()
                     .firstOrNull { method ->
@@ -86,7 +85,7 @@ internal object NativeParticipantAccess {
                                 listOf("int", REFLECTED_STRING_TYPE)
                     }?.apply { isAccessible = true }
             } ?: return null
-        return readOrNull { getter.invoke(iconList, tag, slot) }
+        return optionalNativeRead { getter.invoke(iconList, tag, slot) }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -114,7 +113,7 @@ internal object NativeParticipantAccess {
     }
 
     fun removal(controllerClass: Class<*>): Removal? =
-        readOrNull {
+        optionalNativeRead {
             val candidates =
                 controllerClass
                     .allMethods()
@@ -213,7 +212,7 @@ internal object NativeParticipantAccess {
                 ?: run {
                     if (viewClass in slotAccessorMissing) return null
                     val resolved =
-                        readOrNull {
+                        optionalNativeRead {
                             viewClass
                                 .allMethods()
                                 .firstOrNull { method ->
@@ -229,12 +228,12 @@ internal object NativeParticipantAccess {
                     slotAccessorCache.putIfAbsent(viewClass, resolved) ?: resolved
                 }
 
-        return readOrNull { getSlot.invoke(view) as? String }
+        return optionalNativeRead { getSlot.invoke(view) as? String }
     }
 
     fun resourceEntryName(view: View): String? {
         if (view.id == View.NO_ID) return null
-        return readOrNull { view.resources.getResourceEntryName(view.id) }
+        return optionalNativeRead { view.resources.getResourceEntryName(view.id) }
     }
 
     fun findResourceView(root: View, entryName: String): View? {
@@ -251,7 +250,7 @@ internal object NativeParticipantAccess {
             .flatMap { clazz -> clazz.declaredMethods.asSequence() }
 
     private fun Any.readField(name: String): Any? =
-        readOrNull {
+        optionalNativeRead {
             generateSequence(javaClass) { clazz -> clazz.superclass }
                 .mapNotNull { clazz -> clazz.declaredFields.firstOrNull { it.name == name } }
                 .firstOrNull()
@@ -269,7 +268,7 @@ internal object NativeParticipantAccess {
     private fun dependencyStatusBarIconController(classLoader: ClassLoader): Any? {
         val dependencyClass = classOrNull(DEPENDENCY, classLoader) ?: return null
         val getMethod =
-            readOrNull {
+            optionalNativeRead {
                 dependencyClass
                     .allMethods()
                     .firstOrNull { method ->
@@ -283,7 +282,7 @@ internal object NativeParticipantAccess {
 
         for (className in STATUS_BAR_ICON_CONTROLLER_CANDIDATES) {
             val controllerType = classOrNull(className, classLoader) ?: continue
-            val controller = readOrNull { getMethod.invoke(null, controllerType) }
+            val controller = optionalNativeRead { getMethod.invoke(null, controllerType) }
             if (controller != null) return controller
         }
         return null
@@ -293,7 +292,7 @@ internal object NativeParticipantAccess {
         name: String,
         classLoader: ClassLoader,
     ): Class<*>? =
-        readOrNull { Class.forName(name, false, classLoader) }
+        optionalNativeRead { Class.forName(name, false, classLoader) }
 
     internal data class Handles(
         val manager: Any,

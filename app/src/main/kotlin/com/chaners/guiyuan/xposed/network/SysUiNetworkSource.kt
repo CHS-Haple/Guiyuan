@@ -12,6 +12,7 @@ import com.chaners.guiyuan.xposed.StatusStateStore
 import com.chaners.guiyuan.xposed.SysUiFatal
 import com.chaners.guiyuan.xposed.unhookFailed
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import com.chaners.guiyuan.xposed.tintHexDigits
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -104,8 +105,6 @@ internal object SysUiNetworkSource {
 
     internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private fun callbackFailed(
         source: String,
@@ -406,7 +405,7 @@ internal object SysUiNetworkSource {
                     .intercept(Hooker { chain ->
                         val result = chain.proceed()
                         if (active.get()) {
-                            val image = readOrNull { activityField.get(chain.thisObject) as? ImageView }
+                            val image = optionalNativeRead { activityField.get(chain.thisObject) as? ImageView }
                             if (image != null && findWifiBinding(image)) {
                                 try {
                                     val visible = image.visibility == View.VISIBLE &&
@@ -417,11 +416,11 @@ internal object SysUiNetworkSource {
                                     // update may change presentation or masking.
                                     val nativeWitness =
                                         if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                                            readOrNull { nativeActivityObservation(image, result) }
+                                            optionalNativeRead { nativeActivityObservation(image, result) }
                                         } else null
                                     onWifiActivity(taggedResId)
                                     nativeWitness?.let { witness ->
-                                        readOrNull {
+                                        optionalNativeRead {
                                             onEvent?.invoke(
                                                 "networkPipeline wifi activityEvent " +
                                                     "phase=afterNativeProceed/beforeModuleCommit " +
@@ -588,14 +587,14 @@ internal object SysUiNetworkSource {
                     .intercept(Hooker { chain ->
                         val result = chain.proceed()
                         if (active.get()) {
-                            val image = readOrNull { activityField.get(chain.thisObject) as? ImageView }
+                            val image = optionalNativeRead { activityField.get(chain.thisObject) as? ImageView }
                             val binding = image?.let(::findNativeHomeMobileBinding)
                             if (image != null && binding != null) {
                                 try {
                                     val taggedResId = nativeMobileActivityResourceId(image)
                                     val nativeWitness =
                                         if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                                            readOrNull { nativeActivityObservation(image, result) }
+                                            optionalNativeRead { nativeActivityObservation(image, result) }
                                         } else null
                                     val rootVisible = nativeMobileRootVisible(
                                         binding.root, nativeBindingField, nativeShouldVisibleMethod,
@@ -621,7 +620,7 @@ internal object SysUiNetworkSource {
                                         )
                                     }
                                     nativeWitness?.let { witness ->
-                                        readOrNull {
+                                        optionalNativeRead {
                                             onEvent?.invoke(
                                                 "networkPipeline mobile activityEvent " +
                                                     "phase=afterNativeProceed/beforeModuleCommit " +
@@ -656,14 +655,14 @@ internal object SysUiNetworkSource {
                         val result = chain.proceed()
                         if (
                             active.get() &&
-                            readOrNull { classIdField.getInt(chain.thisObject) } ==
+                            optionalNativeRead { classIdField.getInt(chain.thisObject) } ==
                             MOBILE_ACTIVITY_VISIBILITY_CLASS_ID
                         ) {
                             // The OEM has already applied the Flow's Pair to its
                             // View. Read its authoritative Home binding and child
                             // visibility instead of casting a host Kotlin Pair
                             // through the module's ClassLoader.
-                            val image = readOrNull { imageField.get(chain.thisObject) as? ImageView }
+                            val image = optionalNativeRead { imageField.get(chain.thisObject) as? ImageView }
                             val binding = image?.let(::findNativeHomeMobileBinding)
                             val rootVisible = binding?.let { owner ->
                                 nativeMobileRootVisible(
@@ -689,7 +688,7 @@ internal object SysUiNetworkSource {
                             }
                             if (onEvent != null && isDetailedDiagnosticsEnabled()) {
                                 val taggedResId = image?.let(::nativeMobileActivityResourceId)
-                                readOrNull {
+                                optionalNativeRead {
                                     onEvent.invoke(
                                         "networkPipeline mobile activityVisibility " +
                                             SUB_ID_LOG_FIELD + (binding?.subscriptionId ?: UNKNOWN_LOG_VALUE) +
@@ -724,7 +723,7 @@ internal object SysUiNetworkSource {
         bindingField: Field,
         visibilityMethod: Method,
     ): Boolean? =
-        readOrNull {
+        optionalNativeRead {
             bindingField.get(root)?.let { binding ->
                 visibilityMethod.invoke(binding) as? Boolean
             }
@@ -987,7 +986,7 @@ internal object SysUiNetworkSource {
         if (boundRoot != null && previous?.viewModel !== viewModel) {
             try {
                 val diagnosticEvent = onEvent?.takeIf { isDetailedDiagnosticsEnabled() }
-                readOrNull {
+                optionalNativeRead {
                     diagnosticEvent?.invoke(
                         "networkPipeline wifi bound " +
                         "stage=beforeProceed " +
@@ -1034,7 +1033,7 @@ internal object SysUiNetworkSource {
 
     // SystemUI keeps its binding on the native View even when bind() is not replayed.
     private fun nativeWifiViewModel(root: ViewGroup): Any? =
-        readOrNull {
+        optionalNativeRead {
             val parentClass = root.javaClass.superclass
             if (parentClass.name == MODERN_STATUS_BAR_VIEW_CLASS_NAME) {
                 parentClass.getDeclaredField("binding")
@@ -1138,7 +1137,7 @@ internal object SysUiNetworkSource {
             }
 
         val valueGetter =
-            readOrNull {
+            optionalNativeRead {
                 flow.javaClass.methods
                     .firstOrNull { method ->
                         method.name == "getValue" &&
@@ -1217,7 +1216,7 @@ internal object SysUiNetworkSource {
 
         listOf("resId", "res").forEach { name ->
             val field =
-                readOrNull {
+                optionalNativeRead {
                     iconResourceClass.getDeclaredField(name)
                 }
             if (
@@ -1273,7 +1272,7 @@ internal object SysUiNetworkSource {
         }
 
         val modelResId =
-            readOrNull {
+            optionalNativeRead {
                 val icon = wifiVisibleIconField.get(value)
                 if (icon?.javaClass?.name == ICON_RESOURCE_CLASS_NAME) {
                     iconResourceIdAccessor.read(icon)
@@ -1332,7 +1331,7 @@ internal object SysUiNetworkSource {
                 return@Hooker result
             }
         val classId =
-            readOrNull {
+            optionalNativeRead {
                 wifiClassIdField.getInt(emitter)
             } ?: -1
 
@@ -1341,7 +1340,7 @@ internal object SysUiNetworkSource {
         }
 
         val image =
-            readOrNull {
+            optionalNativeRead {
                 wifiImageField.get(emitter) as? ImageView
             }
         val semantic =
@@ -1409,7 +1408,7 @@ internal object SysUiNetworkSource {
                     deliveredKey = eventKey
                     effective.state?.let(onWifiState)
                     if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                        readOrNull {
+                        optionalNativeRead {
                             onEvent(
                                 "networkPipeline wifi iconEvent " +
                                 "phase=semanticBeforeProceed/viewAfterProceed " +
@@ -1496,7 +1495,7 @@ internal object SysUiNetworkSource {
 
         try {
             if (boundRoot != null) {
-                val subscriptionId = readOrNull {
+                val subscriptionId = optionalNativeRead {
                     (subscriptionIdMethod.invoke(locationViewModel) as Number).toInt()
                 } ?: -1
                 val nextId = subscriptionId.takeIf { it >= 0 }
@@ -1506,7 +1505,7 @@ internal object SysUiNetworkSource {
                 previous = synchronized(this) { mobileRoots.put(boundRoot, candidate) }
                 bindingChanged = previous?.subscriptionId != nextId
                 if (bindingChanged && onEvent != null && isDetailedDiagnosticsEnabled()) {
-                    bindingLog = readOrNull {
+                    bindingLog = optionalNativeRead {
                         "networkPipeline mobile bound " +
                             "stage=beforeProceed " +
                             "root=" + boundRoot.javaClass.simpleName +
@@ -1542,7 +1541,7 @@ internal object SysUiNetworkSource {
                 throw error
             }
         if (bindingChanged) {
-            readOrNull { bindingLog?.let { onEvent?.invoke(it) } }
+            optionalNativeRead { bindingLog?.let { onEvent?.invoke(it) } }
         }
         // A native binder can replace a child even if the SIM ID stays the same.
         if (boundRoot != null) {
@@ -1579,10 +1578,10 @@ internal object SysUiNetworkSource {
                 callbackFailed("mobile-signal-receiver", error, onRuntimeFailure)
                 return@Hooker result
             }
-        val image = readOrNull {
+        val image = optionalNativeRead {
             mobileImageField.get(emitter) as? ImageView
         }
-        val classId = readOrNull {
+        val classId = optionalNativeRead {
             mobileClassIdField.getInt(emitter)
         } ?: -1
         val value =
@@ -1631,7 +1630,7 @@ internal object SysUiNetworkSource {
                         }
 
                         if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                            eventLog = readOrNull {
+                            eventLog = optionalNativeRead {
                                 "networkPipeline mobile iconEvent " +
                                     "phase=beforeProceed " +
                                     SUB_ID_LOG_FIELD + subscriptionId +
@@ -1675,7 +1674,7 @@ internal object SysUiNetworkSource {
                 }
             }
         }
-        readOrNull { eventLog?.let { onEvent?.invoke(it) } }
+        optionalNativeRead { eventLog?.let { onEvent?.invoke(it) } }
         result
     }
 
@@ -1801,7 +1800,7 @@ internal object SysUiNetworkSource {
                 directHomeChild = root.parent === homeGroup,
             )
         ) return null
-        return readOrNull {
+        return optionalNativeRead {
             val getter =
                 nativeMobileSubIdMethod
                     ?.takeIf { it.declaringClass.isInstance(root) }
@@ -1903,7 +1902,7 @@ internal object SysUiNetworkSource {
             return "none"
         }
 
-        return readOrNull {
+        return optionalNativeRead {
             view.resources.getResourceName(resId)
         } ?: resId.toString()
     }

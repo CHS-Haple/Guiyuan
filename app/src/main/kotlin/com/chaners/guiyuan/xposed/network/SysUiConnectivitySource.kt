@@ -10,13 +10,12 @@ import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
 import com.chaners.guiyuan.xposed.SysUiFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import com.chaners.guiyuan.xposed.throwIfCleanupIncomplete
 
 internal object SysUiConnectivitySource {
     internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
 
     private var manager: ConnectivityManager? = null
@@ -129,7 +128,7 @@ internal object SysUiConnectivitySource {
         onDataChanged = {
             if (callback === networkCallback) {
                 val capabilities =
-                    readOrNull {
+                    optionalNativeRead {
                         connectivityManager.activeNetwork?.let(
                             connectivityManager::getNetworkCapabilities,
                         )
@@ -269,7 +268,7 @@ internal object SysUiConnectivitySource {
         val telephony =
             context.getSystemService(TelephonyManager::class.java)
                 ?: return null
-        return readOrNull {
+        return optionalNativeRead {
             telephony
                 .createForSubscriptionId(subscriptionId)
                 .isDataEnabled

@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -17,8 +18,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal object SysUiTintSource {
     private fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
     const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
@@ -106,7 +105,7 @@ internal object SysUiTintSource {
                         Hooker { chain ->
                             val result = chain.proceed()
                             val sourceView =
-                                if (hooksReady) readOrNull { chain.thisObject as? View } else null
+                                if (hooksReady) optionalNativeRead { chain.thisObject as? View } else null
                             if (sourceView != null) {
                                 val state =
                                     dispatchAppliedState(
@@ -169,7 +168,7 @@ internal object SysUiTintSource {
                         Hooker { chain ->
                             val result = chain.proceed()
                             val sourceView =
-                                if (hooksReady) readOrNull { chain.thisObject as? View } else null
+                                if (hooksReady) optionalNativeRead { chain.thisObject as? View } else null
                             if (sourceView != null) {
                                 dispatchAppliedState(
                                     sourceView = sourceView,
@@ -270,7 +269,7 @@ internal object SysUiTintSource {
         onEvent: (String) -> Unit,
     ) {
         val iconView =
-            readOrNull {
+            optionalNativeRead {
                 iconField.get(sourceView) as? View
             } ?: return
 
@@ -282,7 +281,7 @@ internal object SysUiTintSource {
         val clipStates: List<BatteryClipTintState> =
             clipFields.map { field ->
                 val clip =
-                    readOrNull {
+                    optionalNativeRead {
                         field.get(iconView) as? ClipDrawable
                     }
                 val filter = clip?.colorFilter
@@ -352,7 +351,7 @@ internal object SysUiTintSource {
                     }
             }
                 ?: return null
-        return readOrNull {
+        return optionalNativeRead {
             (getter.invoke(filter) as? Number)?.toInt()
         }
     }
@@ -457,7 +456,7 @@ internal object SysUiTintSource {
         percentField: Field,
     ): TintState? {
         val percentView =
-            readOrNull {
+            optionalNativeRead {
                 percentField.get(sourceView) as? TextView
             } ?: return null
         return TintState(
