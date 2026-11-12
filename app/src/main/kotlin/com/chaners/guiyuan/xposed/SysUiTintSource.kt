@@ -276,35 +276,19 @@ internal object SysUiTintSource {
             return
         }
 
-        val clipFields = collectClipDrawableFields(iconView)
-        val clipStates: List<BatteryClipTintState> =
-            clipFields.map { field ->
-                val clip =
-                    optionalNativeRead {
-                        field.get(iconView) as? ClipDrawable
-                    }
-                val filter = clip?.colorFilter
-                BatteryClipTintState(
-                    fieldName = field.name,
-                    filterClass = filter?.javaClass?.name,
-                    color = readColorFilterColor(filter),
-                )
-            }
-        val semanticTints =
-            clipStates
-                .mapNotNull { state -> state.color }
-                .filter(::isChromaticTint)
-                .distinct()
-                .sorted()
-
+        val semanticTints = mutableSetOf<Int>()
         val clipFieldsText =
-            clipStates.joinToString(",") { state ->
-                state.fieldName + ":" +
-                    (state.filterClass ?: "no-filter") + ":" +
-                    (state.color?.let(::colorHex) ?: "color-unavailable")
+            collectClipDrawableFields(iconView).joinToString(",") { field ->
+                val clip = optionalNativeRead { field.get(iconView) as? ClipDrawable }
+                val filter = clip?.colorFilter
+                val color = readColorFilterColor(filter)
+                if (color != null && isChromaticTint(color)) semanticTints += color
+                field.name + ":" +
+                    (filter?.javaClass?.name ?: "no-filter") + ":" +
+                    (color?.let(::colorHex) ?: "color-unavailable")
             }.ifEmpty { "none" }
         val semanticTintsText =
-            semanticTints.joinToString(",") { colorHex(it) }.ifEmpty { "none" }
+            semanticTints.sorted().joinToString(",") { colorHex(it) }.ifEmpty { "none" }
         val imageTint =
             (iconView as? ImageView)
                 ?.imageTintList
@@ -368,14 +352,11 @@ internal object SysUiTintSource {
             current != null &&
             View::class.java.isAssignableFrom(current)
         ) {
-            current.declaredFields
-                .filter { field ->
-                    ClipDrawable::class.java.isAssignableFrom(field.type)
-                }
-                .forEach { field ->
-                    field.isAccessible = true
-                    fields += field
-                }
+            for (field in current.declaredFields) {
+                if (!ClipDrawable::class.java.isAssignableFrom(field.type)) continue
+                field.isAccessible = true
+                fields += field
+            }
             current = current.superclass
         }
         val resolved =
@@ -462,12 +443,6 @@ internal object SysUiTintSource {
             appliedTint = percentView.currentTextColor,
         )
     }
-
-    private data class BatteryClipTintState(
-        val fieldName: String,
-        val filterClass: String?,
-        val color: Int?,
-    )
 
     internal data class TintUpdate(
         val sourceView: View,
