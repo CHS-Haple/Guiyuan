@@ -152,7 +152,6 @@ internal object SysUiTintSource {
                                         }
                                     }
                                 }
-
                             }
                             result
                         },
