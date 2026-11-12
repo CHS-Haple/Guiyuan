@@ -163,7 +163,7 @@ class RenderModelDualSimTest {
             render(
                 verified.copy(
                     activeSubscriptionIds = listOf(14, 14),
-                    platformActiveSubscriptionIds = setOf(14),
+                    platformActiveSubscriptionIds = setOf(14, 3),
                 ),
             )?.dualMobileLevels,
         )

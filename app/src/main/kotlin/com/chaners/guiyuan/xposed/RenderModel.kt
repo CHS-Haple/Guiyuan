@@ -293,6 +293,7 @@ internal data class RenderModel(
                         (native.mode == NativePresentationResolver.Mode.DUAL_AGGREGATED ||
                             native.mode == NativePresentationResolver.Mode.DUAL_SEPARATE) &&
                         native.activeSubscriptionIds.size == 2 &&
+                        native.activeSubscriptionIds[0] != native.activeSubscriptionIds[1] &&
                         platformActive != null &&
                         platformActive.size == 2 &&
                         native.activeSubscriptionIds.all { subscriptionId ->
