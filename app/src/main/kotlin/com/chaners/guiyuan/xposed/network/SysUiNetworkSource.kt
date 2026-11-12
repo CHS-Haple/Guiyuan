@@ -1457,7 +1457,7 @@ internal object SysUiNetworkSource {
             taggedResId != previousTaggedResId &&
             SysUiSignalParser.isHotspotWifiResource(taggedResource)
 
-    // An OEM argument-read failure must not bypass the native binder.
+    // Recoverable OEM argument-read failures proceed natively; VM fatals rethrow.
     @Suppress("TooGenericExceptionCaught")
     private fun mobileBindHooker(
         active: AtomicBoolean,
