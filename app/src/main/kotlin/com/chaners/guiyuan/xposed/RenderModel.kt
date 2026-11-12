@@ -64,13 +64,14 @@ internal data class RenderModel(
 
             val airplaneMode = snapshot.airplaneMode == true
             val mobileRecoveryPending = snapshot.mobileRecoveryPending
+            val nativeMobileWithheld = mobileRecoveryPending || nativeNoSimVisible
             val selectedSignal = selectedMobile?.second?.signal
+            val nativeMobile = presentation.mobilePresentation
             // The native aggregate root may belong to a different SIM.
             val dualTypeMismatch =
                 dualSignalEnabled &&
-                    (presentation.mobilePresentation?.platformActiveSubscriptionIds?.size ?: 0) > 1 &&
-                    presentation.mobilePresentation?.networkTypeSubscriptionId !=
-                        selectedSubscriptionId
+                    (nativeMobile?.platformActiveSubscriptionIds?.size ?: 0) > 1 &&
+                    nativeMobile.networkTypeSubscriptionId != selectedSubscriptionId
 
             val mobileLevel =
                 resolveMobileLevel(
@@ -83,15 +84,15 @@ internal data class RenderModel(
                     airplaneMode = airplaneMode,
                     connectivity = presentation.connectivity,
                     mobileType =
-                        if (mobileRecoveryPending || nativeNoSimVisible || dualTypeMismatch) {
+                        if (nativeMobileWithheld || dualTypeMismatch) {
                             null
                         } else {
-                            presentation.mobilePresentation?.networkType
+                            nativeMobile?.networkType
                         },
                     noSimIcon = noSimIcon,
                 )
                     ?: if (
-                        mobileRecoveryPending || nativeNoSimVisible ||
+                        nativeMobileWithheld ||
                         (dualTypeMismatch && !presentation.connectivity.known)
                     ) {
                         CenterIndicator.Empty
@@ -144,8 +145,8 @@ internal data class RenderModel(
                         wifiActivityResId = snapshot.wifiActivityResId,
                         nativeMobileActivityId = nativeMobileActivityId,
                         keepMobileActivityInEmpty =
-                            !airplaneMode && !mobileRecoveryPending &&
-                                !nativeNoSimVisible && !mobileUnavailableMark,
+                            !airplaneMode && !nativeMobileWithheld &&
+                                !mobileUnavailableMark,
                     ),
                 mobileLevel = mobileLevel,
                 mobileUnavailableMark = mobileUnavailableMark,
@@ -230,10 +231,8 @@ internal data class RenderModel(
             null
         } else {
             when (selectedSignal) {
-                null -> null
-                SignalStrength.Unknown -> null
-                SignalStrength.Unavailable -> null
                 is SignalStrength.Level -> selectedSignal.value.coerceIn(0, 4)
+                else -> null
             }
         }
 
