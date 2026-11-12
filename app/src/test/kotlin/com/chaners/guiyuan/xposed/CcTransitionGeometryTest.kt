@@ -329,14 +329,26 @@ class CcTransitionCarrierMotionTest {
     }
 
     @Test
-    fun nativeTargetHeightCanBoundLocalShapeWithoutOwningItsExactScale() {
-        val ratio =
-            CcTransitionPolicy.relativeGeometryHeight(
-                target = transitionGeometry(width = 20f, height = 50f),
-                current = transitionGeometry(width = 10f, height = 20f),
-            )
-
-        assertEquals(2.5f, ratio ?: -1f, 0.0001f)
+    fun nativeTargetAxisRatiosPreserveIndependentWidthAndHeightScales() {
+        val target = transitionGeometry(width = 20f, height = 50f)
+        val current = transitionGeometry(width = 10f, height = 20f)
+        assertEquals(
+            2f,
+            CcTransitionPolicy.relativeGeometryWidth(target, current) ?: -1f,
+            0.0001f,
+        )
+        assertEquals(
+            2.5f,
+            CcTransitionPolicy.relativeGeometryHeight(target, current) ?: -1f,
+            0.0001f,
+        )
+        val zeroWidth = transitionGeometry(width = 0f, height = 20f)
+        assertNull(CcTransitionPolicy.relativeGeometryWidth(target, zeroWidth))
+        assertEquals(
+            2.5f,
+            CcTransitionPolicy.relativeGeometryHeight(target, zeroWidth) ?: -1f,
+            0.0001f,
+        )
     }
 
 

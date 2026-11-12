@@ -236,6 +236,51 @@ class RenderModelUnavailableTest {
     }
 
     @Test
+    fun nativeActivityIsWithdrawnDuringRecoveryOrNoSimEvenWhenPreviouslyVisible() {
+        val observed =
+            snapshot(
+                wifi = StatusStateStore.WifiState.Hidden,
+                mobile = mapOf(
+                    1 to StatusStateStore.MobileState(signal = SignalStrength.Level(3)),
+                ),
+            ).copy(
+                mobileActivityResIds = mapOf(1 to 220),
+                mobileActivityShownIds = setOf(1),
+                mobileActivityVisibilityObservedIds = setOf(1),
+            )
+        val native =
+            presentation(
+                connectivity = connectivity(SysUiConnectivitySource.Transport.NONE, false),
+                networkType = mobileType("5G"),
+            )
+
+        val normal = RenderModel.from(observed, native, 1)
+        assertTrue(normal?.centerIndicator is CenterIndicator.Empty)
+        assertEquals(220, normal?.networkActivityResId)
+
+        val pending = RenderModel.from(observed.copy(mobileRecoveryPending = true), native, 1)
+        assertTrue(pending?.centerIndicator is CenterIndicator.Empty)
+        assertNull(pending?.networkActivityResId)
+
+        val noSim =
+            RenderModel.from(
+                observed,
+                native.copy(
+                    statusIcons = PresentationStore.StatusIconPresentation(
+                        noSimVisible = true,
+                        noSimIcon = PresentationStore.NativeIconResource(
+                            packageName = NATIVE_SYSTEMUI_PACKAGE,
+                            resourceId = 42,
+                        ),
+                    ),
+                ),
+                1,
+            )
+        assertTrue(noSim?.centerIndicator is CenterIndicator.NoSim)
+        assertNull(noSim?.networkActivityResId)
+    }
+
+    @Test
     fun airplaneExitRecoveryShowsEmptyCenterAndDimDotsWithoutCross() {
         val model =
             RenderModel.from(
