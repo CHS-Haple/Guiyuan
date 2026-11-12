@@ -42,10 +42,10 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
     fun current(): BatteryColorSchemeLibrary =
         BatterySchemePersistence.readLibrary(preferences)
 
-    fun nextAvailableCustomId(library: BatteryColorSchemeLibrary = current()): Int? {
-        val used = library.customSchemes.mapTo(mutableSetOf()) { it.id }
-        return (1..BATTERY_COLOR_SCHEME_CUSTOM_MAX).firstOrNull { it !in used }
-    }
+    fun nextAvailableCustomId(library: BatteryColorSchemeLibrary = current()): Int? =
+        (1..BATTERY_COLOR_SCHEME_CUSTOM_MAX).firstOrNull { id ->
+            library.customSchemes.none { it.id == id }
+        }
 
     fun activateScheme(key: String) {
         val library = current()
