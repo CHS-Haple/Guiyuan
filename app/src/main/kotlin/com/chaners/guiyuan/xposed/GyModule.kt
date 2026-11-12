@@ -1919,7 +1919,7 @@ class GyModule : XposedModule() {
             if (face != null) {
                 networkType?.fontPath?.let { face to it }
             } else {
-                NativePresentationResolver.verifiedMobileFont(host.context)
+                NativeMobileTypePresentation.verifiedMobileFont(host.context)
             }
 
         fun weightAxis(path: String?): FontWeightAxis? =

@@ -95,7 +95,7 @@ class NativePresentationResolverTest {
     @Test
     fun preMeasureDoublePlusMatchesNativeNormalization() {
         val networkType =
-            NativePresentationResolver.normalizeDrawableNetworkType(
+            NativeMobileTypePresentation.normalizeDrawableNetworkType(
                 rawLabel = "5G++",
                 enhanced = false,
                 beforeMeasure = true,
@@ -108,7 +108,7 @@ class NativePresentationResolverTest {
     @Test
     fun preMeasureRegularTypeDoesNotReuseStaleDoublePlusFlag() {
         val networkType =
-            NativePresentationResolver.normalizeDrawableNetworkType(
+            NativeMobileTypePresentation.normalizeDrawableNetworkType(
                 rawLabel = "4G",
                 enhanced = true,
                 beforeMeasure = true,
@@ -122,7 +122,7 @@ class NativePresentationResolverTest {
     fun commonLegacyAndLteLabelsPassThroughNativeNormalization() {
         listOf("2G", "E", "3G", "H+", "4G", "LTE").forEach { label ->
             val networkType =
-                NativePresentationResolver.normalizeDrawableNetworkType(
+                NativeMobileTypePresentation.normalizeDrawableNetworkType(
                     rawLabel = label,
                     enhanced = false,
                     beforeMeasure = false,
@@ -136,7 +136,7 @@ class NativePresentationResolverTest {
     @Test
     fun postMeasureKeepsNativeDoublePlusFlag() {
         val networkType =
-            NativePresentationResolver.normalizeDrawableNetworkType(
+            NativeMobileTypePresentation.normalizeDrawableNetworkType(
                 rawLabel = "5G",
                 enhanced = true,
                 beforeMeasure = false,

@@ -1345,7 +1345,7 @@ internal object CcTransitionOwner {
                         CcDualMobilePolicy.mobileTypeMatches(
                             sourceLabel = model.centerIndicator.label,
                             sourceEnhanced = model.centerIndicator.enhanced,
-                            target = NativePresentationResolver.nativeTargetType(witness?.opticalView),
+                            target = NativeMobileTypePresentation.nativeTargetType(witness?.opticalView),
                         ) == true && (
                             model.centerIndicator.typeface == null ||
                                 witness?.textStyle?.typeface == null ||
@@ -2788,7 +2788,7 @@ internal object CcTransitionOwner {
                     dataSubId = model.effectiveDataSubscriptionId,
                     targetSubId = witness.subscriptionId,
                     source = centerType,
-                    target = NativePresentationResolver.nativeTargetType(witness.opticalView),
+                    target = NativeMobileTypePresentation.nativeTargetType(witness.opticalView),
                     verifiedAggregateRoot = aggregateRootVerified,
                 )
             ) return null
@@ -3581,7 +3581,7 @@ internal object CcTransitionOwner {
             if (view is TextView) {
                 return captureTextStyle(view.paint)
             }
-            NativePresentationResolver.nativeMobileTextPaint(view)
+            NativeMobileTypePresentation.nativeMobileTextPaint(view)
                 ?.let { return captureTextStyle(it) }
             val descendant =
                 if (view is ViewGroup) {
@@ -3953,7 +3953,7 @@ internal object CcTransitionOwner {
         }
 
         private fun hasVisibleMobileType(view: View, slot: View): Boolean {
-            if (view.alpha <= 0f || NativePresentationResolver.nativeTargetType(view) == null) {
+            if (view.alpha <= 0f || NativeMobileTypePresentation.nativeTargetType(view) == null) {
                 return false
             }
             if (view is ImageView && view.drawable?.alpha == 0) return false
