@@ -36,7 +36,7 @@ internal object NativePresentationResolver {
                 ?.root
                 ?.context
                 ?.let(::activeSubscriptions)
-        val platformActive = platformSubscriptions?.mapTo(linkedSetOf()) { it.first }
+        val platformActive = platformSubscriptions?.mapTo(linkedSetOf<Int>()) { it.first }
         val resolvedActive =
             NativeSubscriptionPolicy.resolveActiveSubIds(
                 boundSubscriptionIds = boundSubscriptionIds,
