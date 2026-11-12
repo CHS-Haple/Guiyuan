@@ -589,11 +589,11 @@ internal object NativeStatusObserver {
         val group = activeGroup?.get() ?: return
         val noSimView =
             observedNoSimView
-                ?: (0 until group.childCount)
-                    .map(group::getChildAt)
-                    .firstOrNull { child ->
+                ?: (0 until group.childCount).firstNotNullOfOrNull { index ->
+                    group.getChildAt(index).takeIf { child ->
                         NativeParticipantAccess.slotOf(child) == NO_SIM_SLOT
                     }
+                }
         val noSimVisible =
             observedNoSimVisible
                 ?: (noSimView?.let(::isNativeStatusIconVisible) == true)
