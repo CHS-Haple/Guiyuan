@@ -1567,11 +1567,10 @@ internal object SysUiPresentationOwner {
         private var leasePhase = LeasePhase.PREARM
         private var pendingNativeCarrierWidth: Int? = null
         private var batteryWidthUnavailable = false
-        private var persistentIgnoredSlotsApplied = false
         private var aodPeersReleased = false
         private var aodBatteryReleased = false
         private var nativeLayoutOwnershipDeferred = false
-        private var ownedPersistentIgnoredSlots: List<String> = emptyList()
+        private var ownedPersistentIgnoredSlots: List<String>? = null
         private var transitionRequestedSlotWidthPx: Int? = null
         private val fakePeerMetrics =
             if (
@@ -1653,7 +1652,7 @@ internal object SysUiPresentationOwner {
         fun hasPresentationClaim(): Boolean =
             active &&
                 (
-                    persistentIgnoredSlotsApplied ||
+                    ownedPersistentIgnoredSlots != null ||
                         aodBatteryReleased ||
                         clipStates.isNotEmpty() ||
                         appliedPadding != null
@@ -1720,7 +1719,7 @@ internal object SysUiPresentationOwner {
                 }
                 if (
                     deferNativeLayoutOwnershipUntilCommit &&
-                    !persistentIgnoredSlotsApplied &&
+                    ownedPersistentIgnoredSlots == null &&
                     appliedPadding == null
                 ) {
                     nativeLayoutOwnershipDeferred = true
@@ -1964,7 +1963,7 @@ internal object SysUiPresentationOwner {
             releaseAttempt(failures) {
                 ignoredSlotsRestored = restorePersistentIgnoredSlots(requestLayout)
             }
-            if (persistentIgnoredSlotsApplied) {
+            if (ownedPersistentIgnoredSlots != null) {
                 failures += IllegalStateException("native-ignored-slots-restore-incomplete")
             }
             releaseAttempt(failures) { restored += restoreClipMasks(clipStates, failures) }
@@ -2081,7 +2080,7 @@ internal object SysUiPresentationOwner {
         private fun applyPersistentIgnoredSlots(group: ViewGroup): Boolean {
             if (
                 ignoreScope != IgnoreScope.SESSION ||
-                persistentIgnoredSlotsApplied
+                ownedPersistentIgnoredSlots != null
             ) {
                 return true
             }
@@ -2129,7 +2128,6 @@ internal object SysUiPresentationOwner {
                 return false
             }
             ownedPersistentIgnoredSlots = owned
-            persistentIgnoredSlotsApplied = true
             onEvent(
                 eventPrefix + " ignoredSlots active lifetime=presentation-session" +
                     " owned=" + owned.joinToString(",") +
@@ -2165,16 +2163,10 @@ internal object SysUiPresentationOwner {
         private fun restorePersistentIgnoredSlots(
             requestLayout: Boolean,
         ): Boolean {
-            if (
-                ignoreScope != IgnoreScope.SESSION ||
-                !persistentIgnoredSlotsApplied
-            ) {
-                return true
-            }
-            val owned = ownedPersistentIgnoredSlots
+            if (ignoreScope != IgnoreScope.SESSION) return true
+            val owned = ownedPersistentIgnoredSlots ?: return true
             if (owned.isEmpty()) {
-                persistentIgnoredSlotsApplied = false
-                ownedPersistentIgnoredSlots = emptyList()
+                ownedPersistentIgnoredSlots = null
                 return true
             }
             val group = statusIcons.get() ?: return false
@@ -2204,13 +2196,9 @@ internal object SysUiPresentationOwner {
                         nativeIgnoredSlotsList(group)
                             ?: return@runCatching false
                     after == target
-                }.getOrElse { error ->
-                    rethrowFatal(error)
-                    false
-                }
+                }.onFailure(::rethrowFatal).getOrDefault(false)
             if (restored) {
-                persistentIgnoredSlotsApplied = false
-                ownedPersistentIgnoredSlots = emptyList()
+                ownedPersistentIgnoredSlots = null
                 if (!requestLayout) {
                     onEvent(
                         eventPrefix +
