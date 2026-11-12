@@ -465,9 +465,6 @@ internal object SysUiTintSource {
         )
     }
 
-    private fun colorHex(color: Int): String =
-        "#" + color.toUInt().toString(16).padStart(8, '0')
-
     private data class BatteryClipTintState(
         val fieldName: String,
         val filterClass: String?,

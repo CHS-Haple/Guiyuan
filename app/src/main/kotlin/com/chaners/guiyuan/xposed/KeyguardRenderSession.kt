@@ -667,7 +667,7 @@ internal object KeyguardRenderSession {
                     emitEvent {
                         scene.logPrefix + "Tint source=" + source +
                             " applied=#" +
-                            resolved.appliedTint.toUInt().toString(16).padStart(8, '0') +
+                            tintHexDigits(resolved.appliedTint) +
                             " authority=keyguard-battery"
                     }
                 }

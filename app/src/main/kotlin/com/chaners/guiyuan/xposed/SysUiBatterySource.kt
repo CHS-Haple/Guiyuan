@@ -516,9 +516,6 @@ internal object SysUiBatterySource {
             }
         }
 
-    private fun colorHex(color: Int): String =
-        "#" + color.toUInt().toString(16).padStart(8, '0')
-
     fun matches(handle: HookHandle): Boolean =
         handle.id == LEVEL_HOOK_ID ||
             handle.id == CHARGE_HOOK_ID ||

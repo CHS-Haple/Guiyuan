@@ -10,6 +10,7 @@ import com.chaners.guiyuan.xposed.PresentationStore
 import com.chaners.guiyuan.xposed.SysUiFatal
 import com.chaners.guiyuan.xposed.unhookFailed
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
+import com.chaners.guiyuan.xposed.tintHexDigits
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -31,7 +32,7 @@ internal object NativeStatusObserver {
     }
 
     private fun tintText(color: Int?): String =
-        color?.toUInt()?.toString(16)?.padStart(8, '0') ?: "none"
+        color?.let(::tintHexDigits) ?: "none"
 
     private const val HOME_MANAGER_CLASS =
         "com.android.systemui.statusbar.phone.ui.DarkIconManager"
