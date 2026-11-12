@@ -2326,6 +2326,51 @@ internal object SysUiPresentationOwner {
             }?.toInt()
         }
 
+        // The fake carrier lease and the actual native peer row are distinct
+        // capacity witnesses; reject only when neither can fit the reservation.
+        private fun checkedFakeCarrierCapacityDelta(
+            hostView: ViewGroup,
+            group: ViewGroup,
+            baseline: PaddingState,
+            nativeHide: Boolean,
+            compactSlotWidthPx: Int,
+            requestedReservationDelta: Int,
+        ): Int? {
+            val capacityDeltaPx =
+                ensureFakeCarrierCapacityLease(hostView)
+                    ?: return null
+            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
+                val capacityBound =
+                    EndReservationPolicy.resolveCapacityBoundedReservationDelta(
+                        nativeHide = nativeHide,
+                        compactSlotWidthPx = compactSlotWidthPx,
+                        requestedReservationDeltaPx = requestedReservationDelta,
+                        capacityDeltaPx = capacityDeltaPx,
+                    )
+                if (requestedReservationDelta > capacityBound) {
+                    // A fake carrier's width lease does not bound the icon row's
+                    // end padding when the native measured peers still fit.
+                    val contentWidth =
+                        measuredNativePeerWidth(group)
+                            ?: run {
+                                onFailNative("fake-native-peer-measure-unavailable")
+                                return null
+                            }
+                    if (
+                        !EndReservationPolicy.fitsFakeNativePeerRow(
+                            rowWidthPx = group.width,
+                            contentWidthPx = contentWidth,
+                            targetPaddingEndPx = baseline.end + requestedReservationDelta,
+                        )
+                    ) {
+                        onFailNative("fake-native-peer-row-overflow")
+                        return null
+                    }
+                }
+            }
+            return capacityDeltaPx
+        }
+
         fun syncEndReservation(): Boolean {
             if (!active || aodPeersReleased) return true
             if (nativeLayoutOwnershipDeferred) {
@@ -2419,37 +2464,14 @@ internal object SysUiPresentationOwner {
                     requestedSlotWidthPx = requestedSlotWidthPx,
                 )
             val capacityDeltaPx =
-                ensureFakeCarrierCapacityLease(hostView)
-                    ?: return false
-            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
-                val capacityBound =
-                    EndReservationPolicy.resolveCapacityBoundedReservationDelta(
-                        nativeHide = nativeHide,
-                        compactSlotWidthPx = compactSlotWidthPx,
-                        requestedReservationDeltaPx = requestedReservationDelta,
-                        capacityDeltaPx = capacityDeltaPx,
-                    )
-                if (requestedReservationDelta > capacityBound) {
-                    // A fake carrier's width lease does not bound the icon row's
-                    // end padding when the native measured peers still fit.
-                    val contentWidth =
-                        measuredNativePeerWidth(group)
-                            ?: run {
-                                onFailNative("fake-native-peer-measure-unavailable")
-                                return false
-                            }
-                    if (
-                        !EndReservationPolicy.fitsFakeNativePeerRow(
-                            rowWidthPx = group.width,
-                            contentWidthPx = contentWidth,
-                            targetPaddingEndPx = baseline.end + requestedReservationDelta,
-                        )
-                    ) {
-                        onFailNative("fake-native-peer-row-overflow")
-                        return false
-                    }
-                }
-            }
+                checkedFakeCarrierCapacityDelta(
+                    hostView = hostView,
+                    group = group,
+                    baseline = baseline,
+                    nativeHide = nativeHide,
+                    compactSlotWidthPx = compactSlotWidthPx,
+                    requestedReservationDelta = requestedReservationDelta,
+                ) ?: return false
             val reservationDelta = requestedReservationDelta
             val capacityReservationDeltaPx =
                 EndReservationPolicy.resolveFakeCarrierCapacityRequirement(
