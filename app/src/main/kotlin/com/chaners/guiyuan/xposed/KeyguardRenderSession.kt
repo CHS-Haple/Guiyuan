@@ -237,25 +237,14 @@ internal object KeyguardRenderSession {
             ",chain=" + chain.joinToString(">")
     }
 
-    private fun resolveSceneOverlayVisible(
+    internal fun resolveOverlayVisible(
         featureEnabled: Boolean,
         nativeHandoffActive: Boolean,
         sceneEligible: Boolean,
     ): Boolean =
         featureEnabled && !nativeHandoffActive && sceneEligible
 
-    internal fun resolveOverlayVisible(
-        featureEnabled: Boolean,
-        nativeHandoffActive: Boolean,
-        aodBlocked: Boolean,
-    ): Boolean =
-        resolveSceneOverlayVisible(
-            featureEnabled = featureEnabled,
-            nativeHandoffActive = nativeHandoffActive,
-            sceneEligible = !aodBlocked,
-        )
-
-    private fun resolveSceneOwnerReady(
+    internal fun resolveOwnerReady(
         featureEnabled: Boolean,
         modelReady: Boolean,
         tintReady: Boolean,
@@ -269,23 +258,6 @@ internal object KeyguardRenderSession {
             layoutReady &&
             hostAttached &&
             sceneEligible
-
-    internal fun resolveOwnerReady(
-        featureEnabled: Boolean,
-        modelReady: Boolean,
-        tintReady: Boolean,
-        layoutReady: Boolean,
-        hostAttached: Boolean,
-        aodBlocked: Boolean,
-    ): Boolean =
-        resolveSceneOwnerReady(
-            featureEnabled = featureEnabled,
-            modelReady = modelReady,
-            tintReady = tintReady,
-            layoutReady = layoutReady,
-            hostAttached = hostAttached,
-            sceneEligible = !aodBlocked,
-        )
 
     private enum class Scene(
         val logPrefix: String,
@@ -774,7 +746,7 @@ internal object KeyguardRenderSession {
 
         private fun applyResolvedVisibility(): Boolean {
             val visible =
-                resolveSceneOverlayVisible(
+                resolveOverlayVisible(
                     featureEnabled = featureEnabled,
                     nativeHandoffActive = nativeHandoffActive,
                     sceneEligible = sceneEligible,
@@ -792,7 +764,7 @@ internal object KeyguardRenderSession {
             force: Boolean = false,
         ) {
             val ready =
-                resolveSceneOwnerReady(
+                resolveOwnerReady(
                     featureEnabled = featureEnabled,
                     modelReady = modelReady,
                     tintReady = tintReady,
