@@ -186,20 +186,24 @@ internal fun HomeScreen(
                     ),
             ) {
                 item {
-                    HomeRuntimeStatusCard(
-                        featureSettings = featureSettings,
-                        runtimeStatus = xposedStatus,
-                        hotReloadInProgress = hotReloadInProgress,
-                        restartInProgress = restartInProgress,
-                        scopeRequestInProgress = scopeRequestInProgress,
-                        onRestart = onRestart,
-                        onRequestScope = onRequestScope,
-                        onEnabledChange = featureRepository::setEnabled,
-                        modifier =
-                            Modifier
-                                .padding(horizontal = 12.dp)
-                                .padding(top = 8.dp, bottom = 24.dp),
-                    )
+                    // Keep native Tilt on the Card, independent of runtime content.
+                    Card(
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp)
+                            .padding(top = 8.dp, bottom = 24.dp),
+                        pressFeedbackType = PressFeedbackType.Tilt,
+                    ) {
+                        HomeRuntimeCardBody(
+                            featureSettings = featureSettings,
+                            runtimeStatus = xposedStatus,
+                            hotReloadInProgress = hotReloadInProgress,
+                            restartInProgress = restartInProgress,
+                            scopeRequestInProgress = scopeRequestInProgress,
+                            onRestart = onRestart,
+                            onRequestScope = onRequestScope,
+                            onEnabledChange = featureRepository::setEnabled,
+                        )
+                    }
                 }
 
                 item {
@@ -218,36 +222,6 @@ internal fun HomeScreen(
             }
         }
     }
-    }
-}
-
-@Composable
-private fun HomeRuntimeStatusCard(
-    featureSettings: State<FeatureCfg>,
-    runtimeStatus: State<XposedStatus>,
-    hotReloadInProgress: Boolean,
-    restartInProgress: Boolean,
-    scopeRequestInProgress: Boolean,
-    onRestart: () -> Unit,
-    onRequestScope: () -> Unit,
-    onEnabledChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    // The native Tilt node belongs to the Card, not the changing runtime content.
-    Card(
-        modifier = modifier,
-        pressFeedbackType = PressFeedbackType.Tilt,
-    ) {
-        HomeRuntimeCardBody(
-            featureSettings = featureSettings,
-            runtimeStatus = runtimeStatus,
-            hotReloadInProgress = hotReloadInProgress,
-            restartInProgress = restartInProgress,
-            scopeRequestInProgress = scopeRequestInProgress,
-            onRestart = onRestart,
-            onRequestScope = onRequestScope,
-            onEnabledChange = onEnabledChange,
-        )
     }
 }
 

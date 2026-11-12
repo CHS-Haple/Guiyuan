@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.systemGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerInputChange
@@ -123,17 +124,16 @@ internal fun Modifier.measuredNavTouchExtension(
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false)
             val start = down.position + hostBounds.topLeft
-            val index = measuredNavTouchTarget(
-                start.x, start.y, hostBounds, barBounds, measuredItems,
-                gesturePx, extensionPx, safetyPx,
+            val safeBottom = minOf(
+                barBounds.bottom + extensionPx,
+                hostBounds.bottom - gesturePx - safetyPx,
             )
+            val index = measuredNavTouchTarget(start, barBounds, measuredItems, safeBottom)
             val up = if (index != null) awaitShortTapUp(down) else null
             if (up != null && index != null) {
                 val end = up.position + hostBounds.topLeft
-                if (measuredNavTouchTarget(
-                        end.x, end.y, hostBounds, barBounds, measuredItems,
-                        gesturePx, extensionPx, safetyPx,
-                    ) == index
+                if (
+                    measuredNavTouchTarget(end, barBounds, measuredItems, safeBottom) == index
                 ) {
                     up.consume()
                     select.value(index)
@@ -144,20 +144,17 @@ internal fun Modifier.measuredNavTouchExtension(
 }
 
 internal fun measuredNavTouchTarget(
-    x: Float,
-    y: Float,
-    host: Rect,
+    position: Offset,
     bar: Rect,
     items: List<Rect>,
-    gestureInset: Float,
-    extension: Float,
-    safety: Float,
+    safeBottom: Float,
 ): Int? {
-    val bottom = minOf(bar.bottom + extension, host.bottom - gestureInset - safety)
-    if (items.isEmpty() || x < bar.left || x >= bar.right ||
-        y < bar.bottom || y >= bottom
+    if (items.isEmpty() || position.x < bar.left || position.x >= bar.right ||
+        position.y < bar.bottom || position.y >= safeBottom
     ) return null
-    return items.indices.firstOrNull { x >= items[it].left && x < items[it].right }
+    return items.indices.firstOrNull {
+        position.x >= items[it].left && position.x < items[it].right
+    }
 }
 
 /** Accept one short stationary tap. A long hold, drag excursion or second finger cancels. */
