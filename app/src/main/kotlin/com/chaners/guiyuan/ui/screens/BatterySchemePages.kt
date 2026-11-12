@@ -231,8 +231,7 @@ internal fun BatterySchemeOverview(
                 is BatterySchemePage.BuiltIn ->
                     BatterySchemePageContent(
                         name = batteryBuiltInName(page.scheme),
-                        builtIn = page.scheme,
-                        custom = null,
+                        page = page,
                         isActive = library.activeSchemeKey == page.key,
                         canCreateCustom = canCreateCustom,
                         onApply = { onApplyScheme(page.key) },
@@ -255,8 +254,7 @@ internal fun BatterySchemeOverview(
                 is BatterySchemePage.Custom ->
                     BatterySchemePageContent(
                         name = customSchemeName(page.scheme),
-                        builtIn = null,
-                        custom = page.scheme,
+                        page = page,
                         isActive = library.activeSchemeKey == page.key,
                         canCreateCustom = canCreateCustom,
                         onApply = { onApplyScheme(page.key) },
@@ -288,8 +286,7 @@ internal fun BatterySchemeOverview(
 @Composable
 private fun BatterySchemePageContent(
     name: String,
-    builtIn: BatteryBuiltInColorScheme?,
-    custom: BatteryCustomColorScheme?,
+    page: BatterySchemePage,
     isActive: Boolean,
     canCreateCustom: Boolean,
     onApply: () -> Unit,
@@ -299,6 +296,8 @@ private fun BatterySchemePageContent(
     onCopy: (() -> Unit)?,
     onDelete: (() -> Unit)?,
 ) {
+    val builtIn = (page as? BatterySchemePage.BuiltIn)?.scheme
+    val custom = (page as? BatterySchemePage.Custom)?.scheme
     val scrollState = rememberScrollState()
     val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
     Column(
@@ -319,12 +318,7 @@ private fun BatterySchemePageContent(
         ) {
             BatterySchemeHeader(
                 name = name,
-                previewPage =
-                    if (builtIn != null) {
-                        BatterySchemePage.BuiltIn(builtIn)
-                    } else {
-                        custom?.let(BatterySchemePage::Custom)
-                    },
+                previewPage = page,
                 endAction =
                     if (custom != null && onRename != null && onCopy != null && onDelete != null) {
                         {
