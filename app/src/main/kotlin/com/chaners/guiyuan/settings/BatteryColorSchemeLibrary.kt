@@ -362,7 +362,8 @@ private object BatterySchemePersistence {
     ): BatteryColorSchemeEntries {
         val builtIn = BatteryBuiltInColorScheme.fromPreset(visual.batteryColorPreset)
         val preset = BatteryColorSchemeSource.fromBuiltIn(builtIn)
-        fun legacyEntry(slot: BatteryColorSlot): BatteryColorSchemeEntry {
+        var entries = BatteryColorSchemeEntries()
+        BatteryColorSlot.entries.forEach { slot ->
             val storedCustom = visual.batteryColorOverrides.colorFor(slot)
             val source =
                 schemeSourceFromLegacy(
@@ -370,17 +371,15 @@ private object BatterySchemePersistence {
                     hasStoredCustom = storedCustom != null,
                     presetSource = preset,
                 )
-            val color = storedCustom ?: batteryBuiltInColor(builtIn, slot)
-            return BatteryColorSchemeEntry(source, color).normalized()
+            val color =
+                storedCustom ?: batteryBuiltInColor(builtIn, slot)
+            entries =
+                entries.withEntry(
+                    slot,
+                    BatteryColorSchemeEntry(source, color),
+                )
         }
-        return BatteryColorSchemeEntries(
-            normal = legacyEntry(BatteryColorSlot.NORMAL),
-            powerSave = legacyEntry(BatteryColorSlot.POWER_SAVE),
-            performance = legacyEntry(BatteryColorSlot.PERFORMANCE),
-            superPowerSave = legacyEntry(BatteryColorSlot.SUPER_POWER_SAVE),
-            charging = legacyEntry(BatteryColorSlot.CHARGING),
-            low = legacyEntry(BatteryColorSlot.LOW),
-        )
+        return entries
     }
 }
 
