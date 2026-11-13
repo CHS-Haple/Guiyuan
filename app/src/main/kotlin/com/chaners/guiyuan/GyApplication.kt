@@ -23,6 +23,7 @@ import com.chaners.guiyuan.settings.SETTINGS_ENTRY_ICON_KEY
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_KEY
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_PREFS
 import com.chaners.guiyuan.settings.isFeatureKey
+import com.chaners.guiyuan.settings.isSettingsEntryKey
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateVisualPrefsIfNeeded
 import com.chaners.guiyuan.settings.putVisualCfg
@@ -130,7 +131,7 @@ class GyApplication :
 
     private val settingsListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == SETTINGS_ENTRY_KEY || key == SETTINGS_ENTRY_ICON_KEY) {
+            if (isSettingsEntryKey(key)) {
                 xposedService?.let(::syncRuntime)
             }
         }
