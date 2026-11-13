@@ -4,6 +4,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.system.DiagLogParser
 import com.chaners.guiyuan.system.DiagProtocol
 import com.chaners.guiyuan.system.LogCategory
+import com.chaners.guiyuan.system.LogLevel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -30,6 +31,22 @@ class DiagnosticsLogPresentationTest {
         assertTrue(isRuntimeLog(legacy("connectivity delivery-failed source=callback type=IllegalStateException")))
         assertFalse(isRuntimeLog(legacy("unrelated traceInfo=value")))
         assertTrue(isRuntimeLog(legacy("unrelated traceInfo=value", level = "W")))
+    }
+
+    @Test
+    fun allFilterMasksPreserveEveryCategoryAndLevel() {
+        val allLevels = LEVEL_INFO or LEVEL_WARN or LEVEL_ERROR
+        val allCategories =
+            CAT_MODULE or CAT_NETWORK or CAT_DISPLAY or CAT_PERF or CAT_SETTINGS or CAT_OTHER
+        val example = structured("diagnostics.snapshot")
+        LogLevel.entries.forEach { level ->
+            LogCategory.entries.forEach { category ->
+                assertTrue(
+                    "$level / $category",
+                    matchesFilter(example.copy(level = level, category = category), allLevels, allCategories),
+                )
+            }
+        }
     }
 
     @Test
