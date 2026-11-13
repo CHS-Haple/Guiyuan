@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -348,7 +349,7 @@ internal fun BatteryCustomModeEditor(
 
 
 @Composable
-private fun androidx.compose.foundation.layout.RowScope.BatteryRgbChannelField(
+private fun RowScope.BatteryRgbChannelField(
     value: String,
     label: String,
     onValueChange: (String) -> Unit,
