@@ -79,6 +79,32 @@ class BatteryColorSchemeLibraryTest {
     }
 
     @Test
+    fun customSchemeReadUsesTemplateColorOnlyWhenStoredColorIsAbsent() {
+        val preferences = VisualTestPreferences()
+        val repo = BatterySchemeRepo(preferences)
+        val id = repo.createCustom("My scheme", BATTERY_COLOR_SCHEME_IOS_KEY)
+            ?: error("expected a free custom scheme ID")
+        repo.setCustomColor(id, BatteryColorSlot.CHARGING, 0x002468AC)
+
+        // Missing per-slot color must fall back to the selected built-in base
+        // without overriding the independently stored source selection.
+        preferences.edit()
+            .remove("battery_color_scheme_library.custom.$id.color.power_save")
+            .apply()
+        val loaded = requireNotNull(BatterySchemeRepo(preferences).current().customById(id))
+
+        assertEquals(BatteryBuiltInColorScheme.IOS, loaded.baseTemplate)
+        assertEquals(
+            batteryBuiltInColor(BatteryBuiltInColorScheme.IOS, BatteryColorSlot.POWER_SAVE),
+            loaded.entries.powerSave.customColor,
+        )
+        assertEquals(BatteryColorSchemeSource.IOS, loaded.entries.powerSave.source)
+        assertEquals(0xFF2468AC.toInt(), loaded.entries.charging.customColor)
+        assertEquals(BatteryColorSchemeSource.CUSTOM, loaded.entries.charging.source)
+        assertNull(loaded.entries.normal.customColor)
+    }
+
+    @Test
     fun legacyCustomWithoutStoredValueFallsBackToItsPresetSource() {
         assertEquals(
             BatteryColorSchemeSource.IOS,
