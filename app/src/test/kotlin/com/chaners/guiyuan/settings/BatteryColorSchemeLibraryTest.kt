@@ -40,6 +40,25 @@ class BatteryColorSchemeLibraryTest {
     }
 
     @Test
+    fun slotBuilderMatchesIndependentPerSlotUpdatesIncludingAlphaNormalization() {
+        val sources = BatteryColorSchemeSource.entries
+        val bySlot = BatteryColorSlot.entries.withIndex().associate { (index, slot) ->
+            slot to BatteryColorSchemeEntry(
+                source = sources[index % sources.size],
+                customColor = if (index == 1) null else index * 0x00123456,
+            )
+        }
+        val historical = BatteryColorSlot.entries.fold(BatteryColorSchemeEntries()) { entries, slot ->
+            entries.withEntry(slot, requireNotNull(bySlot[slot]))
+        }
+        val assembled = batterySchemeEntriesFromSlots { slot -> requireNotNull(bySlot[slot]) }
+        assertEquals(historical, assembled)
+        assertEquals(bySlot[BatteryColorSlot.NORMAL]?.source, assembled.normal.source)
+        assertEquals(null, assembled.powerSave.customColor)
+        assertEquals(0xFF2468AC.toInt(), 0x002468AC.or(0xFF000000.toInt()))
+    }
+
+    @Test
     fun builtInEntriesKeepTemplateReferencesInsteadOfFlatteningColors() {
         val entries = entriesFromBuiltIn(BatteryBuiltInColorScheme.IOS)
         assertEquals(
