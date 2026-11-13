@@ -26,8 +26,8 @@ import com.chaners.guiyuan.settings.isFeatureKey
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateVisualPrefsIfNeeded
 import com.chaners.guiyuan.settings.putVisualCfg
-import com.chaners.guiyuan.settings.readVisualCfg
 import com.chaners.guiyuan.settings.readFeatureCfg
+import com.chaners.guiyuan.settings.readVisualCfg
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.NativeFontAxis
