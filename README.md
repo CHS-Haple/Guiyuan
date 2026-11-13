@@ -45,7 +45,7 @@ configurable companion app.
 | --- | --- |
 | **Supported OS family** | **Xiaomi HyperOS 4 only** |
 | Module framework | LSPosed with Modern Xposed API 102; alternative frameworks are not verified |
-| **Current compatibility baseline** | Xiaomi 15 Pro, HyperOS `4.0.3.0.XOBCNXM.D02`, SystemUI `17.03.260226.r` (static APK contracts verified; full device validation pending) |
+| **Current compatibility baseline** | Xiaomi 15 Pro, HyperOS `4.0.3.0.XOBCNXM.D02`, SystemUI `17.03.260226.r` |
 | Module scope | SystemUI; Settings is optional for its integration shortcut |
 | Root | Not mandatory for ordinary companion-app settings; some diagnostics and process-maintenance actions require Root |
 
@@ -102,7 +102,7 @@ for security concerns.
 | --- | --- |
 | **对外支持的系统** | **Xiaomi HyperOS 4**；不支持将 HyperOS 3 或其他 Android 系统视为正式适配目标 |
 | 模块框架 | 兼容 Modern Xposed API 102 的 LSPosed 环境；其他框架未经验证 |
-| **当前兼容基线** | Xiaomi 15 Pro，HyperOS `4.0.3.0.XOBCNXM.D02`，SystemUI `17.03.260226.r`（APK 静态契约已核验，完整实机验证待完成） |
+| **当前兼容基线** | Xiaomi 15 Pro，HyperOS `4.0.3.0.XOBCNXM.D02`，SystemUI `17.03.260226.r` |
 | 作用域 | SystemUI；如需在系统设置中启用快捷入口，按需授权设置作用域 |
 | Root | 配套应用的常规设置不强制 Root；部分诊断与系统进程维护需要 Root |
 
