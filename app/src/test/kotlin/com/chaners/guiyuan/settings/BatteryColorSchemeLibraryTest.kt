@@ -55,7 +55,35 @@ class BatteryColorSchemeLibraryTest {
         assertEquals(historical, assembled)
         assertEquals(bySlot[BatteryColorSlot.NORMAL]?.source, assembled.normal.source)
         assertEquals(null, assembled.powerSave.customColor)
-        assertEquals(0xFF2468AC.toInt(), 0x002468AC.or(0xFF000000.toInt()))
+    }
+
+    @Test
+    fun builtInEntriesCoverEverySlotWithTheirTemplateColors() {
+        for (scheme in BatteryBuiltInColorScheme.entries) {
+            val entries = entriesFromBuiltIn(scheme)
+            for (slot in BatteryColorSlot.entries) {
+                assertEquals(BatteryColorSchemeSource.fromBuiltIn(scheme), entries.entryFor(slot).source)
+                assertEquals(batteryBuiltInColor(scheme, slot), entries.entryFor(slot).customColor)
+            }
+        }
+    }
+
+    @Test
+    fun persistedCustomEntriesReloadWithOriginalFallbackAndOverrides() {
+        val preferences = VisualTestPreferences()
+        val repo = BatterySchemeRepo(preferences)
+        val id = repo.createCustom("Scheme", BATTERY_COLOR_SCHEME_IOS_KEY)
+            ?: error("expected custom slot")
+        repo.setCustomSource(id, BatteryColorSlot.NORMAL, BatteryColorSchemeSource.FOLLOW_SYSTEM)
+        repo.setCustomColor(id, BatteryColorSlot.CHARGING, 0x002468AC)
+        val beforeReload = requireNotNull(repo.current().customById(id))
+
+        val afterReload = requireNotNull(BatterySchemeRepo(preferences).current().customById(id))
+        assertEquals(beforeReload, afterReload)
+        assertEquals(BatteryBuiltInColorScheme.IOS, afterReload.baseTemplate)
+        assertEquals(BatteryColorSchemeSource.FOLLOW_SYSTEM, afterReload.entries.normal.source)
+        assertEquals(0xFF2468AC.toInt(), afterReload.entries.charging.customColor)
+        assertEquals(batteryBuiltInColor(BatteryBuiltInColorScheme.IOS, BatteryColorSlot.LOW), afterReload.entries.low.customColor)
     }
 
     @Test
