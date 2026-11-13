@@ -213,23 +213,16 @@ internal fun MainHub(
             null
         }
 
-    val items = listOf(
-        WeightedNavigationItem(
-            label = stringResource(R.string.nav_home),
-            icon = MiuixIcons.Normal.Home,
-            selectedIcon = MiuixIcons.Medium.Home,
-        ),
-        WeightedNavigationItem(
-            label = stringResource(R.string.nav_features),
-            icon = MiuixIcons.Normal.Tune,
-            selectedIcon = MiuixIcons.Medium.Tune,
-        ),
-        WeightedNavigationItem(
-            label = stringResource(R.string.nav_settings),
-            icon = MiuixIcons.Normal.Settings,
-            selectedIcon = MiuixIcons.Medium.Settings,
-        ),
-    )
+    val homeLabel = stringResource(R.string.nav_home)
+    val featuresLabel = stringResource(R.string.nav_features)
+    val settingsLabel = stringResource(R.string.nav_settings)
+    val items = remember(homeLabel, featuresLabel, settingsLabel) {
+        listOf(
+            WeightedNavigationItem(homeLabel, MiuixIcons.Normal.Home, MiuixIcons.Medium.Home),
+            WeightedNavigationItem(featuresLabel, MiuixIcons.Normal.Tune, MiuixIcons.Medium.Tune),
+            WeightedNavigationItem(settingsLabel, MiuixIcons.Normal.Settings, MiuixIcons.Medium.Settings),
+        )
+    }
 
     fun selectPage(index: Int) {
         if (pagerState.currentPage != index) {
@@ -261,15 +254,20 @@ internal fun MainHub(
         bottomBar = {
             when {
                 os4Glass && navBackdrop != null -> {
-                    GlassNavigationBar(
-                        items = items.mapIndexed { index, item ->
+                    val selectedPage = pagerState.currentPage
+                    val includeLabels = appearance.activeNavContent == NavContent.IconAndText
+                    val glassItems = remember(items, selectedPage, includeLabels) {
+                        items.mapIndexed { index, item ->
                             GlassNavigationItem(
-                                icon = if (pagerState.currentPage == index) item.selectedIcon else item.icon,
-                                label = item.label.takeIf { appearance.activeNavContent == NavContent.IconAndText },
+                                icon = if (selectedPage == index) item.selectedIcon else item.icon,
+                                label = item.label.takeIf { includeLabels },
                                 contentDescription = item.label,
                             )
-                        },
-                        selectedIndex = pagerState.currentPage,
+                        }
+                    }
+                    GlassNavigationBar(
+                        items = glassItems,
+                        selectedIndex = selectedPage,
                         onSelect = ::selectPage,
                         backdrop = navBackdrop,
                         touchExtension = appearance.navTouchExtension,
