@@ -329,56 +329,43 @@ internal fun BatteryCustomModeEditor(
                         .padding(top = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                TextField(
-                    value = redText,
-                    onValueChange = { raw ->
-                        if (raw.length <= 3 && raw.all(Char::isDigit)) {
-                            redText = raw
-                            batteryColorFromRgb(redText, greenText, blueText)?.let(::applyColor)
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                    label = "R",
-                    singleLine = true,
-                    colors = TextFieldDefaults.textFieldColors(),
-                    textStyle = MiuixTheme.textStyles.main,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                )
-                TextField(
-                    value = greenText,
-                    onValueChange = { raw ->
-                        if (raw.length <= 3 && raw.all(Char::isDigit)) {
-                            greenText = raw
-                            batteryColorFromRgb(redText, greenText, blueText)?.let(::applyColor)
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                    label = "G",
-                    singleLine = true,
-                    colors = TextFieldDefaults.textFieldColors(),
-                    textStyle = MiuixTheme.textStyles.main,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                )
-                TextField(
-                    value = blueText,
-                    onValueChange = { raw ->
-                        if (raw.length <= 3 && raw.all(Char::isDigit)) {
-                            blueText = raw
-                            batteryColorFromRgb(redText, greenText, blueText)?.let(::applyColor)
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                    label = "B",
-                    singleLine = true,
-                    colors = TextFieldDefaults.textFieldColors(),
-                    textStyle = MiuixTheme.textStyles.main,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                )
+                BatteryRgbChannelField(value = redText, label = "R") { text ->
+                    redText = text
+                    batteryColorFromRgb(redText, greenText, blueText)?.let(::applyColor)
+                }
+                BatteryRgbChannelField(value = greenText, label = "G") { text ->
+                    greenText = text
+                    batteryColorFromRgb(redText, greenText, blueText)?.let(::applyColor)
+                }
+                BatteryRgbChannelField(value = blueText, label = "B") { text ->
+                    blueText = text
+                    batteryColorFromRgb(redText, greenText, blueText)?.let(::applyColor)
+                }
             }
         }
     }
 }
 
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.BatteryRgbChannelField(
+    value: String,
+    label: String,
+    onValueChange: (String) -> Unit,
+) {
+    TextField(
+        value = value,
+        onValueChange = { raw ->
+            if (raw.length <= 3 && raw.all(Char::isDigit)) onValueChange(raw)
+        },
+        modifier = Modifier.weight(1f),
+        label = label,
+        singleLine = true,
+        colors = TextFieldDefaults.textFieldColors(),
+        textStyle = MiuixTheme.textStyles.main,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+    )
+}
 
 @Composable
 private fun BatteryHsvAdjustmentRow(
