@@ -62,6 +62,7 @@ internal fun BatteryCustomModeEditor(
     val entry = custom.entries.entryFor(slot)
     val resolved = batterySchemeEntryColor(entry, slot)
     val sourceOptions = BatteryColorSchemeSource.entries
+    val commonColorRows = remember { COMMON_BATTERY_COLORS.chunked(5) }
     val sourceLabels =
         listOf(
             batterySourceLabel(BatteryColorSchemeSource.HYPEROS),
@@ -191,7 +192,7 @@ internal fun BatteryCustomModeEditor(
             modifier = Modifier.fillMaxWidth(),
             insideMargin = PaddingValues(16.dp),
         ) {
-            COMMON_BATTERY_COLORS.chunked(5).forEachIndexed { index, colors ->
+            commonColorRows.forEachIndexed { index, colors ->
                 Row(
                     modifier =
                         Modifier

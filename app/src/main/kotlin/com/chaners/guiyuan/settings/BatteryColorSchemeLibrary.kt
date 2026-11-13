@@ -115,9 +115,9 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
             )
         val editor = preferences.edit()
         val prefix = customPrefix(id)
-        preferences.all.keys
-            .filter { it.startsWith(prefix) }
-            .forEach(editor::remove)
+        preferences.all.keys.forEach { key ->
+            if (key.startsWith(prefix)) editor.remove(key)
+        }
         writeBatterySchemeLibrary(editor, updated)
         if (active != library.activeSchemeKey) {
             BatterySchemePersistence.applyProjection(editor, updated, active)

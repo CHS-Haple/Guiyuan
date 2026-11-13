@@ -392,22 +392,16 @@ private fun BatterySchemeSettingsCard(
                 },
     ) {
         BatteryColorSlot.entries.forEach { slot ->
+            val entry = custom?.entries?.entryFor(slot)
             val color =
                 when {
                     builtIn != null -> batteryBuiltInColor(builtIn, slot)
-                    custom != null ->
-                        batterySchemeEntryColor(custom.entries.entryFor(slot), slot)
+                    entry != null -> batterySchemeEntryColor(entry, slot)
                     else -> null
                 }
             val followsSystem =
-                when {
-                    builtIn != null -> color == null
-                    custom != null ->
-                        custom.entries.entryFor(slot).source ==
-                            BatteryColorSchemeSource.FOLLOW_SYSTEM ||
-                            color == null
-                    else -> true
-                }
+                color == null ||
+                    (builtIn == null && entry?.source == BatteryColorSchemeSource.FOLLOW_SYSTEM)
             BatteryModeSettingItem(
                 slot = slot,
                 color = color,
