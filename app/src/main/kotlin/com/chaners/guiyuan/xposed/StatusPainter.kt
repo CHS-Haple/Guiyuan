@@ -161,11 +161,7 @@ internal class StatusPainter(
                 visual = visual,
             ) ?: return
         val scale = nativeTransform.scale
-        val offsetX = nativeTransform.offsetX
-        val offsetY = nativeTransform.offsetY
-        val save = canvas.save()
-        canvas.translate(offsetX, offsetY)
-        canvas.scale(scale, scale)
+        val save = canvas.beginNativeTransform(nativeTransform)
 
         val outerGeometry = resolveOuterGeometry(outerWeightScale, reservesBothSidesBottomSlot(model, visual))
         val centerGeometry = resolveCenterGeometry(visual)
@@ -359,11 +355,7 @@ internal class StatusPainter(
                 visual = visual,
             ) ?: return
         val scale = nativeTransform.scale
-        val offsetX = nativeTransform.offsetX
-        val offsetY = nativeTransform.offsetY
-        val save = canvas.save()
-        canvas.translate(offsetX, offsetY)
-        canvas.scale(scale, scale)
+        val save = canvas.beginNativeTransform(nativeTransform)
 
         val motion = motionProgress.coerceIn(0f, 1f)
         val shape = shapeProgress.coerceIn(0f, 1f)
@@ -956,14 +948,9 @@ internal class StatusPainter(
                 height = height,
                 visual = visual,
             ) ?: return
-        val scale = nativeTransform.scale
-        val offsetX = nativeTransform.offsetX
-        val offsetY = nativeTransform.offsetY
         val geometry =
             resolveCenterGeometry(visual)
-        val save = canvas.save()
-        canvas.translate(offsetX, offsetY)
-        canvas.scale(scale, scale)
+        val save = canvas.beginNativeTransform(nativeTransform)
         if (visual.layout == ContentLayout.BATTERY_CENTER) {
             canvas.translate(0f, networkTopTranslationY(visual))
         }
@@ -1032,14 +1019,9 @@ internal class StatusPainter(
                 height = height,
                 visual = visual,
             ) ?: return
-        val scale = nativeTransform.scale
-        val offsetX = nativeTransform.offsetX
-        val offsetY = nativeTransform.offsetY
         val geometry =
             resolveCenterGeometry(visual)
-        val save = canvas.save()
-        canvas.translate(offsetX, offsetY)
-        canvas.scale(scale, scale)
+        val save = canvas.beginNativeTransform(nativeTransform)
         if (visual.layout == ContentLayout.BATTERY_CENTER) {
             canvas.translate(0f, networkTopTranslationY(visual))
         }
@@ -1176,6 +1158,14 @@ internal class StatusPainter(
         progress: Float,
     ): Float =
         start + (end - start) * progress.coerceIn(0f, 1f)
+
+    // Save/translate/scale are one draw-scope contract; callers restore this count.
+    private fun Canvas.beginNativeTransform(transform: NativeRenderTransform): Int {
+        val save = save()
+        translate(transform.offsetX, transform.offsetY)
+        scale(transform.scale, transform.scale)
+        return save
+    }
 
     private fun resolveCanvasTransform(
         width: Int,
