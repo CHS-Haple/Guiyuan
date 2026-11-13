@@ -590,7 +590,9 @@ internal object CcRenderSession {
         private var lastProjectionReady: Boolean? = null
         private var retired = false
 
-        private val hostLayoutListener =
+        // Host and carrier share the same stateless projection callback;
+        // status area keeps its extra native-readiness behavior.
+        private val nativeLayoutListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                 layoutProjection()
             }
@@ -601,10 +603,6 @@ internal object CcRenderSession {
                     // A Keyguard scene may become ready before the fake carrier's own layout.
                     prepareNativePresentation(reused = true)
                 }
-            }
-        private val carrierLayoutListener =
-            View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                layoutProjection()
             }
 
         fun matches(
@@ -667,9 +665,9 @@ internal object CcRenderSession {
         fun start() {
             val hostView = host.get() ?: return
             hostView.addOnAttachStateChangeListener(this)
-            hostView.addOnLayoutChangeListener(hostLayoutListener)
+            hostView.addOnLayoutChangeListener(nativeLayoutListener)
             statusBarArea.get()?.addOnLayoutChangeListener(statusAreaLayoutListener)
-            carrier.get()?.addOnLayoutChangeListener(carrierLayoutListener)
+            carrier.get()?.addOnLayoutChangeListener(nativeLayoutListener)
             renderView.visibility = View.GONE
             hostView.overlay.add(renderView)
             renderController.updateVisualCfg(visual)
@@ -691,9 +689,9 @@ internal object CcRenderSession {
             releaseAll(
                 { renderView.visibility = View.GONE },
                 { hostView?.removeOnAttachStateChangeListener(this) },
-                { hostView?.removeOnLayoutChangeListener(hostLayoutListener) },
+                { hostView?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { statusBarArea.get()?.removeOnLayoutChangeListener(statusAreaLayoutListener) },
-                { carrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) },
+                { carrier.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { hostView?.overlay?.remove(renderView) },
                 { if (notify) onProjectionReadinessChanged(false) },
             )
