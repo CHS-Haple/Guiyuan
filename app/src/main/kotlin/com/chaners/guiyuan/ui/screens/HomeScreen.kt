@@ -238,7 +238,7 @@ private fun HomeRuntimeCardBody(
     onRestart: () -> Unit,
     onRequestScope: () -> Unit,
     onEnabledChange: (Boolean) -> Unit,
-)
+) {
     val (accentColor, cardGradient) = runtimeCardPaint(state, enabled)
     val onCardClick = when (state.action) {
         HomeRuntimeAction.Restart -> onRestart
