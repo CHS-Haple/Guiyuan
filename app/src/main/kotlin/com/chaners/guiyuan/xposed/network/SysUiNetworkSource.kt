@@ -23,6 +23,22 @@ import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiNetworkSource {
+    // Callbacks are bound to one installing runtime generation, not native Views.
+    internal data class Sinks(
+        val onWifiState: (StatusStateStore.WifiState) -> Unit,
+        val onWifiActivity: (Int?) -> Unit,
+        val onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
+        val onMobileActivityResource: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
+        val onMobileActivityVisibility: (subscriptionId: Int, visible: Boolean) -> Unit,
+        val onPresentationChanged: (() -> Unit)?,
+    )
+
+    internal data class Diagnostics(
+        val onRuntimeFailure: (String, Throwable) -> Unit,
+        val onEvent: ((String) -> Unit)?,
+        val isDetailedDiagnosticsEnabled: () -> Boolean,
+    )
+
     const val WIFI_BINDER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder"
     const val WIFI_BIND_METHOD_NAME = "bind"
@@ -202,16 +218,10 @@ internal object SysUiNetworkSource {
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
-        onWifiState: (StatusStateStore.WifiState) -> Unit,
-        onWifiActivity: (Int?) -> Unit,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
-        onMobileActivityResource: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
-        onMobileActivityVisibility: (subscriptionId: Int, visible: Boolean) -> Unit,
-        onPresentationChanged: (() -> Unit)?,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
     ): InstallResult {
+        val (_, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val warned = AtomicBoolean(false)
         fun warn(error: Throwable) {
             rethrowFatal(error)
@@ -239,28 +249,13 @@ internal object SysUiNetworkSource {
                 false
             }
         }
-        val wifi =
-            installWifi(
-                module = module,
-                classLoader = classLoader,
-                onWifiState = onWifiState,
-                onWifiActivity = onWifiActivity,
-                onRuntimeFailure = onRuntimeFailure,
+        val guardedDiagnostics =
+            diagnostics.copy(
                 onEvent = diagnosticEvent,
                 isDetailedDiagnosticsEnabled = diagnosticEnabled,
             )
-        val mobile =
-            installMobile(
-                module = module,
-                classLoader = classLoader,
-                onMobileSignal = onMobileSignal,
-                onMobileActivityResource = onMobileActivityResource,
-                onMobileActivityVisibility = onMobileActivityVisibility,
-                onPresentationChanged = onPresentationChanged,
-                onRuntimeFailure = onRuntimeFailure,
-                onEvent = diagnosticEvent,
-                isDetailedDiagnosticsEnabled = diagnosticEnabled,
-            )
+        val wifi = installWifi(module, classLoader, sinks, guardedDiagnostics)
+        val mobile = installMobile(module, classLoader, sinks, guardedDiagnostics)
 
         return InstallResult(
             handles = wifi.handles + mobile.handles,
@@ -274,12 +269,11 @@ internal object SysUiNetworkSource {
     private fun installWifi(
         module: XposedModule,
         classLoader: ClassLoader,
-        onWifiState: (StatusStateStore.WifiState) -> Unit,
-        onWifiActivity: (Int?) -> Unit,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
     ): BranchInstallResult {
+        val (onWifiState, onWifiActivity) = sinks
+        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val created = mutableListOf<HookHandle>()
         val active = AtomicBoolean(false)
 
@@ -453,14 +447,11 @@ internal object SysUiNetworkSource {
     private fun installMobile(
         module: XposedModule,
         classLoader: ClassLoader,
-        onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
-        onMobileActivityResource: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
-        onMobileActivityVisibility: (subscriptionId: Int, visible: Boolean) -> Unit,
-        onPresentationChanged: (() -> Unit)?,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
     ): BranchInstallResult {
+        val (_, _, onMobileSignal, onMobileActivityResource, onMobileActivityVisibility, onPresentationChanged) = sinks
+        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val created = mutableListOf<HookHandle>()
         val active = AtomicBoolean(false)
 

@@ -808,76 +808,80 @@ class GyModule : XposedModule() {
             SysUiNetworkRuntime.attach(
                 module = this,
                 classLoader = classLoader,
-                onRuntimeFailure = { source, error ->
-                    onPresentationCallbackFailure("network-" + source, error)
-                },
-                onWifiState = { state ->
-                    val trace = beginRenderTrace("wifi")
-                    val changed = StatusStateStore.updateWifi(state)
-                    if (changed != null) {
-                        val stateTrace = markStateCommitted(trace)
-                        refreshStatusIconObservation("wifi-semantic")
-                        onCombinedStateChanged(
-                            snapshot = changed,
-                            trace = stateTrace,
-                        )
-                    }
-                },
-                onWifiActivity = { resourceId ->
-                    StatusStateStore.updateWifiActivity(resourceId)?.let { snapshot ->
-                        onCombinedStateChanged(
-                            snapshot = snapshot,
-                            trace = markStateCommitted(beginRenderTrace("wifiActivity")),
-                        )
-                    }
-                },
-                onMobileSignal = { subscriptionId, signal ->
-                    val trace = beginRenderTrace("mobile")
-                    val changed =
-                        StatusStateStore.updateMobileSignal(
-                            subscriptionId = subscriptionId,
-                            signal = signal,
-                        )
-                    val stateTrace =
+                sinks = SysUiNetworkSource.Sinks(
+                    onWifiState = { state ->
+                        val trace = beginRenderTrace("wifi")
+                        val changed = StatusStateStore.updateWifi(state)
                         if (changed != null) {
-                            markStateCommitted(trace)
-                        } else {
-                            trace
+                            val stateTrace = markStateCommitted(trace)
+                            refreshStatusIconObservation("wifi-semantic")
+                            onCombinedStateChanged(
+                                snapshot = changed,
+                                trace = stateTrace,
+                            )
                         }
-                    refreshMobilePresentation(stateTrace)
-                    if (changed != null) {
-                        onCombinedStateChanged(
-                            snapshot = StatusStateStore.snapshot(),
-                            trace = stateTrace,
-                        )
-                    }
-                },
-                onMobileActivityResource = { subscriptionId, resourceId, visible ->
-                    StatusStateStore.updateMobileActivityResource(
-                        subscriptionId, resourceId, visible,
-                    )?.let { snapshot ->
-                        onCombinedStateChanged(
-                            snapshot = snapshot,
-                            trace = markStateCommitted(beginRenderTrace("mobileActivityResource")),
-                        )
-                    }
-                },
-                onMobileActivityVisibility = { subscriptionId, visible ->
-                    StatusStateStore.updateMobileActivityVisibility(
-                        subscriptionId, visible,
-                    )?.let { snapshot ->
-                        onCombinedStateChanged(
-                            snapshot = snapshot,
-                            trace = markStateCommitted(beginRenderTrace("mobileActivityVisibility")),
-                        )
-                    }
-                },
-                onPresentationChanged = {
-                    CcTransitionOwner.onNativeMobileRefresh()
-                    refreshMobilePresentation(beginRenderTrace("networkPresentation"))
-                },
-                onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
-                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                    },
+                    onWifiActivity = { resourceId ->
+                        StatusStateStore.updateWifiActivity(resourceId)?.let { snapshot ->
+                            onCombinedStateChanged(
+                                snapshot = snapshot,
+                                trace = markStateCommitted(beginRenderTrace("wifiActivity")),
+                            )
+                        }
+                    },
+                    onMobileSignal = { subscriptionId, signal ->
+                        val trace = beginRenderTrace("mobile")
+                        val changed =
+                            StatusStateStore.updateMobileSignal(
+                                subscriptionId = subscriptionId,
+                                signal = signal,
+                            )
+                        val stateTrace =
+                            if (changed != null) {
+                                markStateCommitted(trace)
+                            } else {
+                                trace
+                            }
+                        refreshMobilePresentation(stateTrace)
+                        if (changed != null) {
+                            onCombinedStateChanged(
+                                snapshot = StatusStateStore.snapshot(),
+                                trace = stateTrace,
+                            )
+                        }
+                    },
+                    onMobileActivityResource = { subscriptionId, resourceId, visible ->
+                        StatusStateStore.updateMobileActivityResource(
+                            subscriptionId, resourceId, visible,
+                        )?.let { snapshot ->
+                            onCombinedStateChanged(
+                                snapshot = snapshot,
+                                trace = markStateCommitted(beginRenderTrace("mobileActivityResource")),
+                            )
+                        }
+                    },
+                    onMobileActivityVisibility = { subscriptionId, visible ->
+                        StatusStateStore.updateMobileActivityVisibility(
+                            subscriptionId, visible,
+                        )?.let { snapshot ->
+                            onCombinedStateChanged(
+                                snapshot = snapshot,
+                                trace = markStateCommitted(beginRenderTrace("mobileActivityVisibility")),
+                            )
+                        }
+                    },
+                    onPresentationChanged = {
+                        CcTransitionOwner.onNativeMobileRefresh()
+                        refreshMobilePresentation(beginRenderTrace("networkPresentation"))
+                    },
+                ),
+                diagnostics = SysUiNetworkSource.Diagnostics(
+                    onRuntimeFailure = { source, error ->
+                        onPresentationCallbackFailure("network-" + source, error)
+                    },
+                    onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
+                    isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                ),
             )
         }.onSuccess { result ->
             refreshStatusIconObservation("network-source:" + source)
