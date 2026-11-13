@@ -284,7 +284,7 @@ private object BatterySchemePersistence {
         val base =
             BatteryBuiltInColorScheme.entries.firstOrNull { it.key == storedBase }
                 ?: BatteryBuiltInColorScheme.HYPEROS
-        var entries = entriesFromBuiltIn(base)
+        var entries = BatteryColorSchemeEntries()
         BatteryColorSlot.entries.forEach { slot ->
             val source =
                 BatteryColorSchemeSource.fromPersisted(
@@ -295,7 +295,7 @@ private object BatterySchemePersistence {
                 if (preferences.contains(colorKey)) {
                     preferences.getInt(colorKey, 0).or(0xFF000000.toInt())
                 } else {
-                    entries.entryFor(slot).customColor
+                    batteryBuiltInColor(base, slot)
                 }
             entries =
                 entries.withEntry(
