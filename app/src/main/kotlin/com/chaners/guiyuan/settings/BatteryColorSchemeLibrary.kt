@@ -419,18 +419,17 @@ internal fun entriesFromBuiltIn(
     scheme: BatteryBuiltInColorScheme,
 ): BatteryColorSchemeEntries {
     val source = BatteryColorSchemeSource.fromBuiltIn(scheme)
-    var entries = BatteryColorSchemeEntries()
-    BatteryColorSlot.entries.forEach { slot ->
-        entries =
-            entries.withEntry(
-                slot,
-                BatteryColorSchemeEntry(
-                    source = source,
-                    customColor = batteryBuiltInColor(scheme, slot),
-                ),
-            )
-    }
-    return entries
+    fun entry(slot: BatteryColorSlot) =
+        BatteryColorSchemeEntry(source, batteryBuiltInColor(scheme, slot)).normalized()
+
+    return BatteryColorSchemeEntries(
+        normal = entry(BatteryColorSlot.NORMAL),
+        powerSave = entry(BatteryColorSlot.POWER_SAVE),
+        performance = entry(BatteryColorSlot.PERFORMANCE),
+        superPowerSave = entry(BatteryColorSlot.SUPER_POWER_SAVE),
+        charging = entry(BatteryColorSlot.CHARGING),
+        low = entry(BatteryColorSlot.LOW),
+    )
 }
 
 internal fun customSchemeKey(id: Int): String =
