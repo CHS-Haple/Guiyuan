@@ -62,17 +62,24 @@ android {
         versionCode = appVersionCode
         versionName = appVersionName
 
-        buildConfigField("String", "BUILD_ID", "\"$buildId\"")
-        buildConfigField("String", "MIUIX_VERSION", "\"$miuixDisplayVersion\"")
-        buildConfigField("String", "MIUIX_REVISION", "\"$miuixDisplayRevision\"")
-        buildConfigField("String", "LIBXPOSED_VERSION", "\"$libxposedVersion\"")
-        buildConfigField("String", "ANDROIDX_CORE_VERSION", "\"$coreVersion\"")
-        buildConfigField("String", "ACTIVITY_COMPOSE_VERSION", "\"$activityComposeVersion\"")
-        buildConfigField("String", "NAVIGATION_EVENT_COMPOSE_VERSION", "\"$navigationEventComposeVersion\"")
-        buildConfigField("String", "DATASTORE_PREFERENCES_VERSION", "\"$dataStorePreferencesVersion\"")
-        buildConfigField("String", "KOTLINX_SERIALIZATION_CORE_VERSION", "\"$kotlinxSerializationCoreVersion\"")
-        buildConfigField("String", "JUNIT_VERSION", "\"$junitVersion\"")
-        buildConfigField("String", "GRADLE_VERSION", "\"$gradleVersion\"")
+        // Keep the BuildConfig string quoting contract in one place.
+        fun buildStringField(name: String, value: String) {
+            buildConfigField("String", name, "\"$value\"")
+        }
+
+        buildStringField("BUILD_ID", buildId)
+        buildStringField("MIUIX_VERSION", miuixDisplayVersion)
+        buildStringField("MIUIX_REVISION", miuixDisplayRevision)
+        buildStringField("LIBXPOSED_VERSION", libxposedVersion)
+        buildStringField("ANDROIDX_CORE_VERSION", coreVersion)
+        buildStringField("ACTIVITY_COMPOSE_VERSION", activityComposeVersion)
+        buildStringField("NAVIGATION_EVENT_COMPOSE_VERSION", navigationEventComposeVersion)
+        buildStringField("DATASTORE_PREFERENCES_VERSION", dataStorePreferencesVersion)
+        buildStringField("KOTLINX_SERIALIZATION_CORE_VERSION", kotlinxSerializationCoreVersion)
+        buildStringField("JUNIT_VERSION", junitVersion)
+        buildStringField("GRADLE_VERSION", gradleVersion)
+        buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+        buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
     }
 
     signingConfigs {
@@ -106,9 +113,7 @@ android {
             }
             buildConfigField("String", "BUILD_CHANNEL", "\"debug\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "true")
-            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
             buildConfigField("boolean", deepDiagnosticsBuildField, "true")
-            buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
             if (hapleSigningEnabled) {
                 signingConfig = signingConfigs.getByName("haple")
             }
@@ -116,9 +121,7 @@ android {
         release {
             buildConfigField("String", "BUILD_CHANNEL", "\"release\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
-            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
             buildConfigField("boolean", deepDiagnosticsBuildField, "false")
-            buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
             isMinifyEnabled = true
             isShrinkResources = true
             if (hapleSigningEnabled) {
