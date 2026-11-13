@@ -228,47 +228,43 @@ internal fun BatterySchemeOverview(
             verticalAlignment = Alignment.Top,
         ) { index ->
             when (val page = pages[index]) {
-                is BatterySchemePage.BuiltIn ->
+                is BatterySchemePage.BuiltIn, is BatterySchemePage.Custom ->
                     BatterySchemePageContent(
-                        name = batteryBuiltInName(page.scheme),
-                        builtIn = page.scheme,
-                        custom = null,
+                        page = page,
                         isActive = library.activeSchemeKey == page.key,
                         canCreateCustom = canCreateCustom,
                         onApply = { onApplyScheme(page.key) },
                         onSlotClick = { slot ->
-                            scope.launch {
-                                val addPage = pages.lastIndex
-                                if (pagerState.currentPage != addPage) {
-                                    pagerState.springAnimateToPage(addPage)
-                                }
-                                onOpenBuiltInSlot(page.scheme, slot)
+                            when (page) {
+                                is BatterySchemePage.BuiltIn ->
+                                    scope.launch {
+                                        val addPage = pages.lastIndex
+                                        if (pagerState.currentPage != addPage) {
+                                            pagerState.springAnimateToPage(addPage)
+                                        }
+                                        onOpenBuiltInSlot(page.scheme, slot)
+                                    }
+                                is BatterySchemePage.Custom ->
+                                    onOpenCustomSlot(page.scheme.id, slot)
+                                BatterySchemePage.Add -> Unit
                             }
                         },
                         onSettingsCardMeasured = { height ->
                             if (height > 0) settingsCardHeightPx = height
                         },
-                        onRename = null,
-                        onCopy = null,
-                        onDelete = null,
-                    )
-                is BatterySchemePage.Custom ->
-                    BatterySchemePageContent(
-                        name = customSchemeName(page.scheme),
-                        builtIn = null,
-                        custom = page.scheme,
-                        isActive = library.activeSchemeKey == page.key,
-                        canCreateCustom = canCreateCustom,
-                        onApply = { onApplyScheme(page.key) },
-                        onSlotClick = { slot ->
-                            onOpenCustomSlot(page.scheme.id, slot)
-                        },
-                        onSettingsCardMeasured = { height ->
-                            if (height > 0) settingsCardHeightPx = height
-                        },
-                        onRename = { onRenameCustom(page.scheme.id) },
-                        onCopy = { onCopyCustom(page.scheme) },
-                        onDelete = { onDeleteCustom(page.scheme.id) },
+                        manageMenu =
+                            if (page is BatterySchemePage.Custom) {
+                                {
+                                    BatterySchemeManageMenu(
+                                        canCopy = canCreateCustom,
+                                        onRename = { onRenameCustom(page.scheme.id) },
+                                        onCopy = { onCopyCustom(page.scheme) },
+                                        onDelete = { onDeleteCustom(page.scheme.id) },
+                                    )
+                                }
+                            } else {
+                                null
+                            },
                     )
                 BatterySchemePage.Add ->
                     BatteryAddSchemePage(
@@ -287,18 +283,21 @@ internal fun BatterySchemeOverview(
 
 @Composable
 private fun BatterySchemePageContent(
-    name: String,
-    builtIn: BatteryBuiltInColorScheme?,
-    custom: BatteryCustomColorScheme?,
+    page: BatterySchemePage,
     isActive: Boolean,
     canCreateCustom: Boolean,
     onApply: () -> Unit,
     onSlotClick: (BatteryColorSlot) -> Unit,
     onSettingsCardMeasured: (Int) -> Unit,
-    onRename: (() -> Unit)?,
-    onCopy: (() -> Unit)?,
-    onDelete: (() -> Unit)?,
+    manageMenu: (@Composable () -> Unit)?,
 ) {
+    val builtIn = (page as? BatterySchemePage.BuiltIn)?.scheme
+    val custom = (page as? BatterySchemePage.Custom)?.scheme
+    val name = when (page) {
+        is BatterySchemePage.BuiltIn -> batteryBuiltInName(page.scheme)
+        is BatterySchemePage.Custom -> customSchemeName(page.scheme)
+        BatterySchemePage.Add -> return
+    }
     val scrollState = rememberScrollState()
     val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
     Column(
@@ -319,25 +318,8 @@ private fun BatterySchemePageContent(
         ) {
             BatterySchemeHeader(
                 name = name,
-                previewPage =
-                    if (builtIn != null) {
-                        BatterySchemePage.BuiltIn(builtIn)
-                    } else {
-                        custom?.let(BatterySchemePage::Custom)
-                    },
-                endAction =
-                    if (custom != null && onRename != null && onCopy != null && onDelete != null) {
-                        {
-                            BatterySchemeManageMenu(
-                                canCopy = canCreateCustom,
-                                onRename = onRename,
-                                onCopy = onCopy,
-                                onDelete = onDelete,
-                            )
-                        }
-                    } else {
-                        null
-                    },
+                previewPage = page,
+                endAction = manageMenu,
             )
             BatterySchemeApplyAction(isActive, onApply)
             BatterySchemeSettingsCard(
