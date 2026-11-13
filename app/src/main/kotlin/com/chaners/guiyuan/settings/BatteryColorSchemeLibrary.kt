@@ -284,7 +284,8 @@ private object BatterySchemePersistence {
         val base =
             BatteryBuiltInColorScheme.entries.firstOrNull { it.key == storedBase }
                 ?: BatteryBuiltInColorScheme.HYPEROS
-        val entries = batterySchemeEntriesFromSlots { slot ->
+        var entries = entriesFromBuiltIn(base)
+        BatteryColorSlot.entries.forEach { slot ->
             val source =
                 BatteryColorSchemeSource.fromPersisted(
                     preferences.getString(customSourceKey(id, slot), null),
@@ -294,9 +295,13 @@ private object BatterySchemePersistence {
                 if (preferences.contains(colorKey)) {
                     preferences.getInt(colorKey, 0).or(0xFF000000.toInt())
                 } else {
-                    batteryBuiltInColor(base, slot)
+                    entries.entryFor(slot).customColor
                 }
-            BatteryColorSchemeEntry(source, color)
+            entries =
+                entries.withEntry(
+                    slot,
+                    BatteryColorSchemeEntry(source, color),
+                )
         }
         return BatteryCustomColorScheme(
             id = id,
@@ -360,7 +365,8 @@ private object BatterySchemePersistence {
     ): BatteryColorSchemeEntries {
         val builtIn = BatteryBuiltInColorScheme.fromPreset(visual.batteryColorPreset)
         val preset = BatteryColorSchemeSource.fromBuiltIn(builtIn)
-        return batterySchemeEntriesFromSlots { slot ->
+        var entries = BatteryColorSchemeEntries()
+        BatteryColorSlot.entries.forEach { slot ->
             val storedCustom = visual.batteryColorOverrides.colorFor(slot)
             val source =
                 schemeSourceFromLegacy(
@@ -370,8 +376,13 @@ private object BatterySchemePersistence {
                 )
             val color =
                 storedCustom ?: batteryBuiltInColor(builtIn, slot)
-            BatteryColorSchemeEntry(source, color)
+            entries =
+                entries.withEntry(
+                    slot,
+                    BatteryColorSchemeEntry(source, color),
+                )
         }
+        return entries
     }
 }
 
@@ -408,12 +419,18 @@ internal fun entriesFromBuiltIn(
     scheme: BatteryBuiltInColorScheme,
 ): BatteryColorSchemeEntries {
     val source = BatteryColorSchemeSource.fromBuiltIn(scheme)
-    return batterySchemeEntriesFromSlots { slot ->
-        BatteryColorSchemeEntry(
-            source = source,
-            customColor = batteryBuiltInColor(scheme, slot),
-        )
+    var entries = BatteryColorSchemeEntries()
+    BatteryColorSlot.entries.forEach { slot ->
+        entries =
+            entries.withEntry(
+                slot,
+                BatteryColorSchemeEntry(
+                    source = source,
+                    customColor = batteryBuiltInColor(scheme, slot),
+                ),
+            )
     }
+    return entries
 }
 
 internal fun customSchemeKey(id: Int): String =
