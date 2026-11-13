@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -889,119 +891,68 @@ internal fun FeaturesScreen(
         if (networkMatches) {
             Section(R.string.section_network) {
                 if (search.matches(R.string.wifi_size)) {
-                    SliderPreference(
+                    NetworkSizeSlider(
                         value = visual.wifiScale,
                         onValueChange = visualRepo::setWifiScale,
-                        title = stringResource(R.string.wifi_size),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
-                        valueText =
-                            stringResource(
-                                R.string.percent_value,
-                                (visual.wifiScale * 100f).roundToInt(),
-                            ),
+                        titleRes = R.string.wifi_size,
+                        iconRes = R.drawable.ic_material_symbol_wifi,
                         valueRange = WIFI_SIZE_SCALE_MIN..WIFI_SIZE_SCALE_MAX,
-                        steps = 16,
-                        showKeyPoints = true,
-                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                        keyPoints = listOf(WIFI_SIZE_SCALE_DEFAULT),
-                        magnetThreshold = 0.035f,
+                        defaultValue = WIFI_SIZE_SCALE_DEFAULT,
                         enabled = featureCfg.enabled,
                     )
                 }
                 if (search.matches(R.string.wifi_weight)) {
-                    SliderPreference(
-                        value = visual.wifiWeight.toFloat(),
-                        onValueChange = { visualRepo.setWifiWeight(it.roundToInt()) },
-                        title = stringResource(R.string.wifi_weight),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
-                        valueText = stringResource(R.string.percent_value, visual.wifiWeight),
-                        valueRange = WIFI_WEIGHT_MIN.toFloat()..WIFI_WEIGHT_MAX.toFloat(),
-                        steps = 13,
-                        showKeyPoints = true,
-                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                        keyPoints = listOf(WIFI_WEIGHT_DEFAULT.toFloat()),
-                        magnetThreshold = 0.035f,
+                    NetworkWeightSlider(
+                        value = visual.wifiWeight,
+                        onValueChange = visualRepo::setWifiWeight,
+                        titleRes = R.string.wifi_weight,
+                        iconRes = R.drawable.ic_material_symbol_wifi,
+                        valueRange = WIFI_WEIGHT_MIN..WIFI_WEIGHT_MAX,
+                        defaultValue = WIFI_WEIGHT_DEFAULT,
                         enabled = featureCfg.enabled,
                     )
                 }
                 if (search.matches(R.string.airplane_size)) {
-                    SliderPreference(
+                    NetworkSizeSlider(
                         value = visual.airplaneScale,
                         onValueChange = visualRepo::setAirplaneScale,
-                        title = stringResource(R.string.airplane_size),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
-                        valueText =
-                            stringResource(
-                                R.string.percent_value,
-                                (visual.airplaneScale * 100f).roundToInt(),
-                            ),
+                        titleRes = R.string.airplane_size,
+                        iconRes = R.drawable.ic_material_symbol_airplanemode_active,
                         valueRange = AIRPLANE_SIZE_SCALE_MIN..AIRPLANE_SIZE_SCALE_MAX,
-                        steps = 16,
-                        showKeyPoints = true,
-                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                        keyPoints = listOf(AIRPLANE_SIZE_SCALE_DEFAULT),
-                        magnetThreshold = 0.035f,
+                        defaultValue = AIRPLANE_SIZE_SCALE_DEFAULT,
                         enabled = featureCfg.enabled,
                     )
                 }
                 if (search.matches(R.string.airplane_weight)) {
-                    SliderPreference(
-                        value = visual.airplaneWeight.toFloat(),
-                        onValueChange = { visualRepo.setAirplaneWeight(it.roundToInt()) },
-                        title = stringResource(R.string.airplane_weight),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_airplanemode_active, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
-                        valueText = stringResource(R.string.percent_value, visual.airplaneWeight),
-                        valueRange = AIRPLANE_WEIGHT_MIN.toFloat()..AIRPLANE_WEIGHT_MAX.toFloat(),
-                        steps = 13,
-                        showKeyPoints = true,
-                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                        keyPoints = listOf(AIRPLANE_WEIGHT_DEFAULT.toFloat()),
-                        magnetThreshold = 0.035f,
+                    NetworkWeightSlider(
+                        value = visual.airplaneWeight,
+                        onValueChange = visualRepo::setAirplaneWeight,
+                        titleRes = R.string.airplane_weight,
+                        iconRes = R.drawable.ic_material_symbol_airplanemode_active,
+                        valueRange = AIRPLANE_WEIGHT_MIN..AIRPLANE_WEIGHT_MAX,
+                        defaultValue = AIRPLANE_WEIGHT_DEFAULT,
                         enabled = featureCfg.enabled,
                     )
                 }
                 if (search.matches(R.string.no_sim_size)) {
-                    SliderPreference(
+                    NetworkSizeSlider(
                         value = visual.noSimScale,
                         onValueChange = visualRepo::setNoSimScale,
-                        title = stringResource(R.string.no_sim_size),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_sim_card, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
-                        valueText =
-                            stringResource(
-                                R.string.percent_value,
-                                (visual.noSimScale * 100f).roundToInt(),
-                            ),
+                        titleRes = R.string.no_sim_size,
+                        iconRes = R.drawable.ic_material_symbol_sim_card,
                         valueRange = NO_SIM_SIZE_SCALE_MIN..NO_SIM_SIZE_SCALE_MAX,
-                        steps = 16,
-                        showKeyPoints = true,
-                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                        keyPoints = listOf(NO_SIM_SIZE_SCALE_DEFAULT),
-                        magnetThreshold = 0.035f,
+                        defaultValue = NO_SIM_SIZE_SCALE_DEFAULT,
                         enabled = featureCfg.enabled,
                     )
                 }
                 if (search.matches(R.string.mobile_type_size)) {
-                    SliderPreference(
+                    NetworkSizeSlider(
                         value = visual.mobileTypeScale,
                         onValueChange = visualRepo::setMobileTypeScale,
-                        title = stringResource(R.string.mobile_type_size),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
-                        valueText =
-                            stringResource(
-                                R.string.percent_value,
-                                (visual.mobileTypeScale * 100f).roundToInt(),
-                            ),
+                        titleRes = R.string.mobile_type_size,
+                        iconRes = R.drawable.ic_material_symbol_5g,
                         valueRange = MOBILE_TYPE_SIZE_SCALE_MIN..MOBILE_TYPE_SIZE_SCALE_MAX,
-                        steps = 16,
-                        showKeyPoints = true,
-                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                        keyPoints =
-                            listOf(
-                                mobileTypeScaleDefault(
-                                    visual.layout,
-                                ),
-                            ),
-                        magnetThreshold = 0.035f,
+                        defaultValue = mobileTypeScaleDefault(visual.layout),
                         enabled = featureCfg.enabled,
                     )
                 }
@@ -1287,6 +1238,62 @@ internal fun FeaturesScreen(
             }
         }
     }
+}
+
+@Composable
+private fun NetworkSizeSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    @StringRes titleRes: Int,
+    @DrawableRes iconRes: Int,
+    valueRange: ClosedFloatingPointRange<Float>,
+    defaultValue: Float,
+    enabled: Boolean,
+) {
+    SliderPreference(
+        value = value,
+        onValueChange = onValueChange,
+        title = stringResource(titleRes),
+        startAction = {
+            SemanticLeadingIcon(iconRes, enabled, R.drawable.ic_material_symbol_open_in_full)
+        },
+        valueText = stringResource(R.string.percent_value, (value * 100f).roundToInt()),
+        valueRange = valueRange,
+        steps = 16,
+        showKeyPoints = true,
+        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+        keyPoints = listOf(defaultValue),
+        magnetThreshold = 0.035f,
+        enabled = enabled,
+    )
+}
+
+@Composable
+private fun NetworkWeightSlider(
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    @StringRes titleRes: Int,
+    @DrawableRes iconRes: Int,
+    valueRange: IntRange,
+    defaultValue: Int,
+    enabled: Boolean,
+) {
+    SliderPreference(
+        value = value.toFloat(),
+        onValueChange = { onValueChange(it.roundToInt()) },
+        title = stringResource(titleRes),
+        startAction = {
+            SemanticLeadingIcon(iconRes, enabled, R.drawable.ic_material_symbol_line_weight)
+        },
+        valueText = stringResource(R.string.percent_value, value),
+        valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
+        steps = 13,
+        showKeyPoints = true,
+        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+        keyPoints = listOf(defaultValue.toFloat()),
+        magnetThreshold = 0.035f,
+        enabled = enabled,
+    )
 }
 
 @Composable
