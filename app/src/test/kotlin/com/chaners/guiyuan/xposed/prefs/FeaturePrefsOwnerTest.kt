@@ -6,7 +6,12 @@ import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
 import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_KEY
 import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_MIN
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_MAX
+import com.chaners.guiyuan.settings.FeatureCfg
+import com.chaners.guiyuan.settings.VisualTestPreferences
 import com.chaners.guiyuan.settings.isFeatureKey
+import com.chaners.guiyuan.settings.readFeatureCfg
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -27,11 +32,40 @@ class FeaturePrefsOwnerTest {
 
     @Test
     fun defaultScenesAreEnabled() {
-        val cfg = com.chaners.guiyuan.settings.FeatureCfg()
+        val cfg = FeatureCfg()
         assertEquals(true, cfg.enabled)
         assertEquals(true, cfg.keyguard)
         assertEquals(true, cfg.aod)
         assertEquals(LOW_BATTERY_THRESHOLD_DEFAULT, cfg.lowBatteryThreshold)
+    }
+
+    @Test
+    fun missingFeaturePreferencesDecodeToPublishedDefaults() {
+        val prefs = VisualTestPreferences()
+        assertEquals(FeatureCfg(), prefs.readFeatureCfg())
+    }
+
+    @Test
+    fun featureDecoderKeepsFlagsIndependentAndValidatesLowBatteryThreshold() {
+        val prefs = VisualTestPreferences()
+        val cases = listOf(
+            FeatureCfg(enabled = false, lowBatteryThreshold = LOW_BATTERY_THRESHOLD_MIN) to
+                LOW_BATTERY_THRESHOLD_MIN,
+            FeatureCfg(keyguard = false, lowBatteryThreshold = LOW_BATTERY_THRESHOLD_MAX) to
+                LOW_BATTERY_THRESHOLD_MAX,
+            FeatureCfg(aod = false) to (LOW_BATTERY_THRESHOLD_MAX + 1),
+            FeatureCfg(enabled = false, keyguard = false, aod = false) to
+                (LOW_BATTERY_THRESHOLD_MIN - 1),
+        )
+        for ((expected, storedThreshold) in cases) {
+            prefs.edit()
+                .putBoolean(FEATURE_ENABLED_KEY, expected.enabled)
+                .putBoolean(FEATURE_KEYGUARD_KEY, expected.keyguard)
+                .putBoolean(FEATURE_AOD_KEY, expected.aod)
+                .putInt(LOW_BATTERY_THRESHOLD_KEY, storedThreshold)
+                .apply()
+            assertEquals("storedThreshold=$storedThreshold", expected, prefs.readFeatureCfg())
+        }
     }
 
     @Test
