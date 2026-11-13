@@ -400,7 +400,8 @@ private fun BatterySchemeSettingsCard(
                     else -> null
                 }
             val followsSystem =
-                color == null || entry?.source == BatteryColorSchemeSource.FOLLOW_SYSTEM
+                color == null ||
+                    (builtIn == null && entry?.source == BatteryColorSchemeSource.FOLLOW_SYSTEM)
             BatteryModeSettingItem(
                 slot = slot,
                 color = color,
