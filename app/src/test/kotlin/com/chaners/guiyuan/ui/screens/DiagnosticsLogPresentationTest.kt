@@ -63,21 +63,30 @@ class DiagnosticsLogPresentationTest {
 
     @Test
     fun userFacingNetworkValuesMapWithoutChangingRawEvidence() {
-        assertEquals(R.string.diagnostics_log_source_mobile, transportRes("CELLULAR"))
-        assertEquals(R.string.diagnostics_log_source_none, transportRes("NONE"))
-        assertEquals(R.string.diagnostics_log_source_other, transportRes("OTHER"))
-        assertNull(sourceRes("CELLULAR"))
-        assertNull(sourceRes("NONE"))
-        assertNull(sourceRes("OTHER"))
-        assertEquals(R.string.diagnostics_log_source_mobile, sourceRes("mobile"))
-        assertEquals(R.string.diagnostics_log_source_capabilities, sourceRes("capabilities"))
-        assertEquals(R.string.diagnostics_log_source_lost, sourceRes("lost"))
-        assertEquals(R.string.diagnostics_log_source_mobile_data, sourceRes("mobile-data"))
-        assertEquals(R.string.diagnostics_log_source_hot_reload_native_icon, sourceRes("hotReloadNativeIcon"))
-        assertNull(transportRes("WIFI"))
-        assertNull(transportRes("VPN"))
-        assertNull(sourceRes("WIFI"))
-        assertNull(sourceRes("VPN"))
+        val transportLabels = listOf(
+            "CELLULAR" to R.string.diagnostics_log_source_mobile,
+            "NONE" to R.string.diagnostics_log_source_none,
+            "OTHER" to R.string.diagnostics_log_source_other,
+        )
+        transportLabels.forEach { (transport, label) ->
+            assertEquals("transport=$transport", label, transportRes(transport))
+            assertNull("source=$transport", sourceRes(transport))
+        }
+
+        val sourceLabels = listOf(
+            "mobile" to R.string.diagnostics_log_source_mobile,
+            "capabilities" to R.string.diagnostics_log_source_capabilities,
+            "lost" to R.string.diagnostics_log_source_lost,
+            "mobile-data" to R.string.diagnostics_log_source_mobile_data,
+            "hotReloadNativeIcon" to R.string.diagnostics_log_source_hot_reload_native_icon,
+        )
+        sourceLabels.forEach { (source, label) ->
+            assertEquals("source=$source", label, sourceRes(source))
+        }
+        listOf("WIFI", "VPN").forEach { value ->
+            assertNull("transport=$value", transportRes(value))
+            assertNull("source=$value", sourceRes(value))
+        }
         assertEquals(R.string.diagnostics_log_charging_on, chargingStateRes("true"))
         assertEquals(R.string.diagnostics_log_charging_off, chargingStateRes("FALSE"))
         assertNull(chargingStateRes("null"))
