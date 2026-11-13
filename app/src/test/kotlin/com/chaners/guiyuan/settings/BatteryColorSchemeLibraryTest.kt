@@ -95,6 +95,33 @@ class BatteryColorSchemeLibraryTest {
     }
 
     @Test
+    fun persistedCustomSchemeRetainsAllSixSlotsForEveryBaseTemplate() {
+        for (base in BatteryBuiltInColorScheme.entries) {
+            val preferences = VisualTestPreferences()
+            val repo = BatterySchemeRepo(preferences)
+            val id = repo.createCustom("Six slots", base.key)
+                ?: error("expected custom scheme")
+            val initial = requireNotNull(BatterySchemeRepo(preferences).current().customById(id))
+            for (slot in BatteryColorSlot.entries) {
+                assertEquals(BatteryColorSchemeSource.fromBuiltIn(base), initial.entries.entryFor(slot).source)
+                assertEquals(batteryBuiltInColor(base, slot), initial.entries.entryFor(slot).customColor)
+            }
+
+            repo.setCustomSource(id, BatteryColorSlot.NORMAL, BatteryColorSchemeSource.FOLLOW_SYSTEM)
+            repo.setCustomSource(id, BatteryColorSlot.POWER_SAVE, BatteryColorSchemeSource.IOS)
+            repo.setCustomColor(id, BatteryColorSlot.CHARGING, 0x002468AC)
+            val reloaded = requireNotNull(BatterySchemeRepo(preferences).current().customById(id))
+            assertEquals(BatteryColorSchemeSource.FOLLOW_SYSTEM, reloaded.entries.normal.source)
+            assertEquals(BatteryColorSchemeSource.IOS, reloaded.entries.powerSave.source)
+            assertEquals(BatteryColorSchemeSource.CUSTOM, reloaded.entries.charging.source)
+            assertEquals(0xFF2468AC.toInt(), reloaded.entries.charging.customColor)
+            for (slot in listOf(BatteryColorSlot.PERFORMANCE, BatteryColorSlot.SUPER_POWER_SAVE, BatteryColorSlot.LOW)) {
+                assertEquals(batteryBuiltInColor(base, slot), reloaded.entries.entryFor(slot).customColor)
+            }
+        }
+    }
+
+    @Test
     fun customSchemeReadUsesTemplateColorOnlyWhenStoredColorIsAbsent() {
         val preferences = VisualTestPreferences()
         val repo = BatterySchemeRepo(preferences)
