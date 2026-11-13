@@ -375,9 +375,12 @@ internal fun VisualCfg.normalized(): VisualCfg =
         mobileTypeWeight =
             mobileTypeWeight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX),
         batteryColorOverrides =
-            BatteryColorSlot.entries.fold(
-                BatteryColorOverrides(),
-            ) { overrides, slot ->
-                overrides.withColor(slot, batteryColorOverrides.colorFor(slot))
-            },
+            batteryColorOverrides.copy(
+                normal = batteryColorOverrides.normal?.or(0xFF000000.toInt()),
+                powerSave = batteryColorOverrides.powerSave?.or(0xFF000000.toInt()),
+                performance = batteryColorOverrides.performance?.or(0xFF000000.toInt()),
+                superPowerSave = batteryColorOverrides.superPowerSave?.or(0xFF000000.toInt()),
+                charging = batteryColorOverrides.charging?.or(0xFF000000.toInt()),
+                low = batteryColorOverrides.low?.or(0xFF000000.toInt()),
+            ),
     )
