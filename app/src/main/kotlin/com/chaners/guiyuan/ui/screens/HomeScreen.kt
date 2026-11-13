@@ -59,7 +59,6 @@ import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.VisualRepo
-import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.PreviewSummary
 import com.chaners.guiyuan.ui.components.HotReloadAction
@@ -186,6 +185,16 @@ internal fun HomeScreen(
                     ),
             ) {
                 item {
+                    // Observe runtime readiness inside this LazyColumn item, not the full page.
+                    val enabled = featureSettings.value.enabled
+                    val runtimeCardState =
+                        resolveHomeRuntimeCardState(
+                            enabled = enabled,
+                            runtimeStatus = xposedStatus.value,
+                            hotReloadInProgress = hotReloadInProgress,
+                            restartInProgress = restartInProgress,
+                            scopeRequestInProgress = scopeRequestInProgress,
+                        )
                     // Keep native Tilt on the Card, independent of runtime content.
                     Card(
                         modifier = Modifier
@@ -194,11 +203,8 @@ internal fun HomeScreen(
                         pressFeedbackType = PressFeedbackType.Tilt,
                     ) {
                         HomeRuntimeCardBody(
-                            featureSettings = featureSettings,
-                            runtimeStatus = xposedStatus,
-                            hotReloadInProgress = hotReloadInProgress,
-                            restartInProgress = restartInProgress,
-                            scopeRequestInProgress = scopeRequestInProgress,
+                            state = runtimeCardState,
+                            enabled = enabled,
                             onRestart = onRestart,
                             onRequestScope = onRequestScope,
                             onEnabledChange = featureRepository::setEnabled,
@@ -227,23 +233,12 @@ internal fun HomeScreen(
 
 @Composable
 private fun HomeRuntimeCardBody(
-    featureSettings: State<FeatureCfg>,
-    runtimeStatus: State<XposedStatus>,
-    hotReloadInProgress: Boolean,
-    restartInProgress: Boolean,
-    scopeRequestInProgress: Boolean,
+    state: HomeRuntimeCardState,
+    enabled: Boolean,
     onRestart: () -> Unit,
     onRequestScope: () -> Unit,
     onEnabledChange: (Boolean) -> Unit,
-) {
-    val enabled = featureSettings.value.enabled
-    val state = resolveHomeRuntimeCardState(
-        enabled = enabled,
-        runtimeStatus = runtimeStatus.value,
-        hotReloadInProgress = hotReloadInProgress,
-        restartInProgress = restartInProgress,
-        scopeRequestInProgress = scopeRequestInProgress,
-    )
+)
     val (accentColor, cardGradient) = runtimeCardPaint(state, enabled)
     val onCardClick = when (state.action) {
         HomeRuntimeAction.Restart -> onRestart
