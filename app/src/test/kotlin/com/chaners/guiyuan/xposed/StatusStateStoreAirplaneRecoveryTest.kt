@@ -104,13 +104,22 @@ class StatusStateStoreAirplaneRecoveryTest {
             subscriptionId = 4,
             signal = SignalStrength.Level(4),
         )
+        StatusStateStore.updateMobileSignal(
+            subscriptionId = 2,
+            signal = SignalStrength.Level(2),
+        )
+        val beforeExit = StatusStateStore.snapshot()
 
         val snapshot =
             StatusStateStore.updateAirplaneMode(false)
                 ?: error("expected airplane transition")
 
         assertTrue(snapshot.mobileRecoveryPending)
+        assertEquals(listOf(2, 4), snapshot.mobile.keys.toList())
         assertTrue(snapshot.mobile[4]?.signal is SignalStrength.Unknown)
+        assertTrue(snapshot.mobile[2]?.signal is SignalStrength.Unknown)
+        assertTrue(beforeExit.mobile[4]?.signal is SignalStrength.Level)
+        assertTrue(beforeExit.mobile[2]?.signal is SignalStrength.Level)
     }
 
     @Test
