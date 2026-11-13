@@ -335,11 +335,8 @@ internal object KeyguardRenderSession {
         private var rejectedTintLogged = false
         private var lastPresentationReady = false
 
-        private val overlayHostLayoutListener =
-            View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                layoutProbe()
-            }
-        private val carrierLayoutListener =
+        // Each native View owns its registration and independent removal.
+        private val nativeLayoutListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                 layoutProbe()
             }
@@ -396,8 +393,8 @@ internal object KeyguardRenderSession {
             val carrier = batteryCarrier.get() ?: return
 
             overlayHost.addOnAttachStateChangeListener(this)
-            overlayHost.addOnLayoutChangeListener(overlayHostLayoutListener)
-            carrier.addOnLayoutChangeListener(carrierLayoutListener)
+            overlayHost.addOnLayoutChangeListener(nativeLayoutListener)
+            carrier.addOnLayoutChangeListener(nativeLayoutListener)
             renderView.visibility = View.GONE
             (renderView.parent as? ViewGroup)?.removeView(renderView)
             overlayHost.addView(
@@ -432,8 +429,8 @@ internal object KeyguardRenderSession {
                 },
                 { dispatchPresentationReadiness("stop") },
                 { systemIcons.get()?.removeOnAttachStateChangeListener(this) },
-                { systemIcons.get()?.removeOnLayoutChangeListener(overlayHostLayoutListener) },
-                { batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) },
+                { systemIcons.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
+                { batteryCarrier.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { (renderView.parent as? ViewGroup)?.removeView(renderView) },
             )
         }

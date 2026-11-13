@@ -270,41 +270,10 @@ internal object HomeRenderSession {
         private var lastPresentationReady = false
         private val anchorRect = Rect()
 
-        private val overlayHostLayoutListener =
-            View.OnLayoutChangeListener {
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                ->
-                layoutProbe()
-            }
-
-        // Native privacy-state transitions may change this child while the
-        // battery container itself retains its exact bounds. Follow its
-        // layout callback, not a timer or an estimated privacy width.
-        private val statusIconsLayoutListener =
+        // The privacy-sensitive icons group can relayout without its parent.
+        // Listen on all three native Views, with a separate receipt for each View.
+        private val nativeLayoutListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                layoutProbe()
-            }
-
-        private val carrierLayoutListener =
-            View.OnLayoutChangeListener {
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                ->
                 layoutProbe()
             }
 
@@ -328,9 +297,9 @@ internal object HomeRenderSession {
             val carrier = batteryCarrier.get() ?: return
 
             overlayHost.addOnAttachStateChangeListener(this)
-            overlayHost.addOnLayoutChangeListener(overlayHostLayoutListener)
-            carrier.addOnLayoutChangeListener(carrierLayoutListener)
-            statusIcons.get()?.addOnLayoutChangeListener(statusIconsLayoutListener)
+            overlayHost.addOnLayoutChangeListener(nativeLayoutListener)
+            carrier.addOnLayoutChangeListener(nativeLayoutListener)
+            statusIcons.get()?.addOnLayoutChangeListener(nativeLayoutListener)
             probeView.visibility = View.GONE
             (probeView.parent as? ViewGroup)?.removeView(probeView)
             overlayHost.addView(
@@ -369,9 +338,9 @@ internal object HomeRenderSession {
             releaseAll(
                 { dispatchPresentationReadiness("stop") },
                 { batteryContainer.get()?.removeOnAttachStateChangeListener(this) },
-                { batteryContainer.get()?.removeOnLayoutChangeListener(overlayHostLayoutListener) },
-                { batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) },
-                { statusIcons.get()?.removeOnLayoutChangeListener(statusIconsLayoutListener) },
+                { batteryContainer.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
+                { batteryCarrier.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
+                { statusIcons.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { if (removeVisual) (probeView.parent as? ViewGroup)?.removeView(probeView) },
             )
         }
