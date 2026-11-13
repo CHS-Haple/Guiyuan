@@ -894,8 +894,7 @@ internal fun FeaturesScreen(
                     NetworkSizeSlider(
                         value = visual.wifiScale,
                         onValueChange = visualRepo::setWifiScale,
-                        titleRes = R.string.wifi_size,
-                        iconRes = R.drawable.ic_material_symbol_wifi,
+                        row = NetworkSliderRow.WIFI_SIZE,
                         valueRange = WIFI_SIZE_SCALE_MIN..WIFI_SIZE_SCALE_MAX,
                         defaultValue = WIFI_SIZE_SCALE_DEFAULT,
                         enabled = featureCfg.enabled,
@@ -905,8 +904,7 @@ internal fun FeaturesScreen(
                     NetworkWeightSlider(
                         value = visual.wifiWeight,
                         onValueChange = visualRepo::setWifiWeight,
-                        titleRes = R.string.wifi_weight,
-                        iconRes = R.drawable.ic_material_symbol_wifi,
+                        row = NetworkSliderRow.WIFI_WEIGHT,
                         valueRange = WIFI_WEIGHT_MIN..WIFI_WEIGHT_MAX,
                         defaultValue = WIFI_WEIGHT_DEFAULT,
                         enabled = featureCfg.enabled,
@@ -916,8 +914,7 @@ internal fun FeaturesScreen(
                     NetworkSizeSlider(
                         value = visual.airplaneScale,
                         onValueChange = visualRepo::setAirplaneScale,
-                        titleRes = R.string.airplane_size,
-                        iconRes = R.drawable.ic_material_symbol_airplanemode_active,
+                        row = NetworkSliderRow.AIRPLANE_SIZE,
                         valueRange = AIRPLANE_SIZE_SCALE_MIN..AIRPLANE_SIZE_SCALE_MAX,
                         defaultValue = AIRPLANE_SIZE_SCALE_DEFAULT,
                         enabled = featureCfg.enabled,
@@ -927,8 +924,7 @@ internal fun FeaturesScreen(
                     NetworkWeightSlider(
                         value = visual.airplaneWeight,
                         onValueChange = visualRepo::setAirplaneWeight,
-                        titleRes = R.string.airplane_weight,
-                        iconRes = R.drawable.ic_material_symbol_airplanemode_active,
+                        row = NetworkSliderRow.AIRPLANE_WEIGHT,
                         valueRange = AIRPLANE_WEIGHT_MIN..AIRPLANE_WEIGHT_MAX,
                         defaultValue = AIRPLANE_WEIGHT_DEFAULT,
                         enabled = featureCfg.enabled,
@@ -938,8 +934,7 @@ internal fun FeaturesScreen(
                     NetworkSizeSlider(
                         value = visual.noSimScale,
                         onValueChange = visualRepo::setNoSimScale,
-                        titleRes = R.string.no_sim_size,
-                        iconRes = R.drawable.ic_material_symbol_sim_card,
+                        row = NetworkSliderRow.NO_SIM_SIZE,
                         valueRange = NO_SIM_SIZE_SCALE_MIN..NO_SIM_SIZE_SCALE_MAX,
                         defaultValue = NO_SIM_SIZE_SCALE_DEFAULT,
                         enabled = featureCfg.enabled,
@@ -949,8 +944,7 @@ internal fun FeaturesScreen(
                     NetworkSizeSlider(
                         value = visual.mobileTypeScale,
                         onValueChange = visualRepo::setMobileTypeScale,
-                        titleRes = R.string.mobile_type_size,
-                        iconRes = R.drawable.ic_material_symbol_5g,
+                        row = NetworkSliderRow.MOBILE_TYPE_SIZE,
                         valueRange = MOBILE_TYPE_SIZE_SCALE_MIN..MOBILE_TYPE_SIZE_SCALE_MAX,
                         defaultValue = mobileTypeScaleDefault(visual.layout),
                         enabled = featureCfg.enabled,
@@ -1240,12 +1234,23 @@ internal fun FeaturesScreen(
     }
 }
 
+private enum class NetworkSliderRow(
+    @StringRes val titleRes: Int,
+    @DrawableRes val iconRes: Int,
+) {
+    WIFI_SIZE(R.string.wifi_size, R.drawable.ic_material_symbol_wifi),
+    WIFI_WEIGHT(R.string.wifi_weight, R.drawable.ic_material_symbol_wifi),
+    AIRPLANE_SIZE(R.string.airplane_size, R.drawable.ic_material_symbol_airplanemode_active),
+    AIRPLANE_WEIGHT(R.string.airplane_weight, R.drawable.ic_material_symbol_airplanemode_active),
+    NO_SIM_SIZE(R.string.no_sim_size, R.drawable.ic_material_symbol_sim_card),
+    MOBILE_TYPE_SIZE(R.string.mobile_type_size, R.drawable.ic_material_symbol_5g),
+}
+
 @Composable
 private fun NetworkSizeSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
-    @StringRes titleRes: Int,
-    @DrawableRes iconRes: Int,
+    row: NetworkSliderRow,
     valueRange: ClosedFloatingPointRange<Float>,
     defaultValue: Float,
     enabled: Boolean,
@@ -1253,9 +1258,9 @@ private fun NetworkSizeSlider(
     SliderPreference(
         value = value,
         onValueChange = onValueChange,
-        title = stringResource(titleRes),
+        title = stringResource(row.titleRes),
         startAction = {
-            SemanticLeadingIcon(iconRes, enabled, R.drawable.ic_material_symbol_open_in_full)
+            SemanticLeadingIcon(row.iconRes, enabled, R.drawable.ic_material_symbol_open_in_full)
         },
         valueText = stringResource(R.string.percent_value, (value * 100f).roundToInt()),
         valueRange = valueRange,
@@ -1272,8 +1277,7 @@ private fun NetworkSizeSlider(
 private fun NetworkWeightSlider(
     value: Int,
     onValueChange: (Int) -> Unit,
-    @StringRes titleRes: Int,
-    @DrawableRes iconRes: Int,
+    row: NetworkSliderRow,
     valueRange: IntRange,
     defaultValue: Int,
     enabled: Boolean,
@@ -1281,9 +1285,9 @@ private fun NetworkWeightSlider(
     SliderPreference(
         value = value.toFloat(),
         onValueChange = { onValueChange(it.roundToInt()) },
-        title = stringResource(titleRes),
+        title = stringResource(row.titleRes),
         startAction = {
-            SemanticLeadingIcon(iconRes, enabled, R.drawable.ic_material_symbol_line_weight)
+            SemanticLeadingIcon(row.iconRes, enabled, R.drawable.ic_material_symbol_line_weight)
         },
         valueText = stringResource(R.string.percent_value, value),
         valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
