@@ -83,10 +83,8 @@ internal class VisualTestPreferences : SharedPreferences {
         override fun commit(): Boolean {
             writeCount++
             val changedKeys = linkedSetOf<String>()
-            if (clearFirst) {
-                changedKeys += values.keys
-                values.clear()
-            }
+            val cleared = clearFirst && values.isNotEmpty()
+            if (clearFirst) values.clear()
             changes.forEach { (key, value) ->
                 if (value == null) {
                     if (values.remove(key) != null) changedKeys += key
@@ -95,6 +93,7 @@ internal class VisualTestPreferences : SharedPreferences {
                     changedKeys += key
                 }
             }
+            if (cleared) notifyPreferenceChanged(null)
             changedKeys.forEach(::notifyPreferenceChanged)
             // SharedPreferences may update memory even when durable commit fails.
             val durable = !failNextCommit
