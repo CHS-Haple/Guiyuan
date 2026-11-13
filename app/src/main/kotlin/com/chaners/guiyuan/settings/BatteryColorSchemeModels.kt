@@ -99,6 +99,19 @@ internal data class BatteryColorSchemeEntries(
         }
 }
 
+// Builds all six slot entries once; withEntry is for single-slot edits.
+internal fun batterySchemeEntriesFromSlots(
+    entryFor: (BatteryColorSlot) -> BatteryColorSchemeEntry,
+): BatteryColorSchemeEntries =
+    BatteryColorSchemeEntries(
+        normal = entryFor(BatteryColorSlot.NORMAL).normalized(),
+        powerSave = entryFor(BatteryColorSlot.POWER_SAVE).normalized(),
+        performance = entryFor(BatteryColorSlot.PERFORMANCE).normalized(),
+        superPowerSave = entryFor(BatteryColorSlot.SUPER_POWER_SAVE).normalized(),
+        charging = entryFor(BatteryColorSlot.CHARGING).normalized(),
+        low = entryFor(BatteryColorSlot.LOW).normalized(),
+    )
+
 @Serializable
 internal data class BatteryCustomColorScheme(
     val id: Int,
