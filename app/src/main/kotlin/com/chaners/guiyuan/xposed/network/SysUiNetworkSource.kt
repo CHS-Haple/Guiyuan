@@ -221,7 +221,7 @@ internal object SysUiNetworkSource {
         sinks: Sinks,
         diagnostics: Diagnostics,
     ): InstallResult {
-        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
+        val (_, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val warned = AtomicBoolean(false)
         fun warn(error: Throwable) {
             rethrowFatal(error)
