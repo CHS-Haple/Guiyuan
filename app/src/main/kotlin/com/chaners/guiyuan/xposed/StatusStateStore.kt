@@ -147,11 +147,9 @@ internal object StatusStateStore {
                 !enabled
         val mobile =
             if (recoveryPending) {
-                current.mobile
-                    .mapValues { (_, state) ->
-                        state.copy(signal = SignalStrength.Unknown)
-                    }
-                    .toSortedMap()
+                current.mobile.mapValuesTo(sortedMapOf<Int, MobileState>()) { (_, state) ->
+                    state.copy(signal = SignalStrength.Unknown)
+                }
             } else {
                 current.mobile
             }
