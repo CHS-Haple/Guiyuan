@@ -268,12 +268,13 @@ internal fun DiagnosticsScreen(
     val entries = remember(snapshot, focusedCategory) {
         snapshot?.entries.orEmpty().asReversed().filter { isRuntimeLog(it, focusedCategory) }
     }
-    val filteredEntries = remember(entries, levelFilter, categoryFilter) {
-        entries.filter { matchesFilter(it, levelFilter, categoryFilter) }
-    }
     val filterActive =
         levelFilter != LEVEL_ALL ||
             categoryFilter != CAT_ALL
+    val filteredEntries = remember(entries, levelFilter, categoryFilter) {
+        if (filterActive) entries.filter { matchesFilter(it, levelFilter, categoryFilter) }
+        else entries
+    }
     // The preference write is synchronous; do not wait for the observer flow while switching.
     val selectedLevel = if (loading) diagRepo.current() else diagSettings.level
     val collectionFailed = snapshot?.log?.result?.isSuccess == false
