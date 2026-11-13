@@ -157,6 +157,11 @@ import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.launch
 
+private fun NativeFontAxis.State.verifiedWeightRange(): IntRange? =
+    (this as? NativeFontAxis.State.Variable)?.axis?.let { axis ->
+        ceil(axis.min.toDouble()).toInt()..floor(axis.max.toDouble()).toInt()
+    }?.takeIf { it.last > it.first }
+
 @Composable
 internal fun FeaturesScreen(
     bottomContentPadding: Dp,
@@ -189,9 +194,7 @@ internal fun FeaturesScreen(
         remember(context.applicationContext) {
             NativeFontAxis.observeBattery(context.applicationContext)
         }.collectAsState(initial = NativeFontAxis.State.Pending)
-    val verifiedWeightRange = (fontAxis as? NativeFontAxis.State.Variable)?.axis?.let { axis ->
-        ceil(axis.min.toDouble()).toInt()..floor(axis.max.toDouble()).toInt()
-    }?.takeIf { it.last > it.first }
+    val verifiedWeightRange = fontAxis.verifiedWeightRange()
     val mobileWeightRange =
         (verifiedWeightRange?.first ?: 200).toFloat()..
             (verifiedWeightRange?.last ?: 1000).toFloat()
@@ -201,9 +204,7 @@ internal fun FeaturesScreen(
     val mobileWeightRangeText = verifiedWeightRange?.let { range ->
         stringResource(R.string.font_weight_range, range.first, range.last)
     }
-    val verifiedBatteryRange = (batteryAxis as? NativeFontAxis.State.Variable)?.axis?.let { axis ->
-        ceil(axis.min.toDouble()).toInt()..floor(axis.max.toDouble()).toInt()
-    }?.takeIf { it.last > it.first }
+    val verifiedBatteryRange = batteryAxis.verifiedWeightRange()
     val batteryWeightRange =
         (verifiedBatteryRange?.first ?: BATTERY_TOP_TEXT_WEIGHT_MIN).toFloat()..
             (verifiedBatteryRange?.last ?: BATTERY_TOP_TEXT_WEIGHT_MAX).toFloat()
