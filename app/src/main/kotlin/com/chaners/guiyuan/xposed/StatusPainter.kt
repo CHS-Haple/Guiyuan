@@ -1270,9 +1270,11 @@ internal class StatusPainter(
             }
         }
 
-        val previousAvoidance =
+        // Both animated sides use identical source geometry and pivot rules;
+        // only the indicator and its independent transition amount differ.
+        fun scaledAvoidance(indicator: CenterIndicator, amount: Float): TopSlotAvoidance? =
             resolveCenterIndicatorAvoidance(
-                indicator = previous,
+                indicator = indicator,
                 scale = scale,
                 geometry = geometry,
                 scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
@@ -1283,30 +1285,16 @@ internal class StatusPainter(
                     avoidance = avoidance,
                     pivotX = CENTER_TRANSITION_PIVOT_X,
                     pivotY = CENTER_TRANSITION_PIVOT_Y,
-                    amount = exitAmount,
+                    amount = amount,
                 )
             }?.let { avoidance ->
-                shiftAvoidanceY(avoidance, networkTopTranslationY(visual, previous))
+                shiftAvoidanceY(avoidance, networkTopTranslationY(visual, indicator))
             }
-        val currentAvoidance =
-            resolveCenterIndicatorAvoidance(
-                indicator = current,
-                scale = scale,
-                geometry = geometry,
-                scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
-                wifiWeight = visual.wifiWeight,
-                airplaneWeight = visual.airplaneWeight,
-            )?.let { avoidance ->
-                scaleAvoidanceAroundPivot(
-                    avoidance = avoidance,
-                    pivotX = CENTER_TRANSITION_PIVOT_X,
-                    pivotY = CENTER_TRANSITION_PIVOT_Y,
-                    amount = enterAmount,
-                )
-            }?.let { avoidance ->
-                shiftAvoidanceY(avoidance, networkTopTranslationY(visual, current))
-            }
-        return unionAvoidance(previousAvoidance, currentAvoidance)
+
+        return unionAvoidance(
+            scaledAvoidance(previous, exitAmount),
+            scaledAvoidance(current, enterAmount),
+        )
     }
 
     private fun shiftAvoidanceY(
