@@ -3,9 +3,40 @@ package com.chaners.guiyuan.xposed
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import com.chaners.guiyuan.xposed.network.SignalStrength
 import org.junit.Test
 
 class StatusStateStoreActivityTest {
+    @Test
+    fun sortedMobileUpdatesRetainEarlierSnapshots() {
+        StatusStateStore.restoreHotReloadState(null)
+        val signal = SignalStrength.Level(3)
+        StatusStateStore.updateMobileSignal(9, signal)
+        StatusStateStore.updateMobileActivity(9, 209)
+        val first = StatusStateStore.snapshot()
+
+        StatusStateStore.updateMobileSignal(2, signal)
+        StatusStateStore.updateMobileSignal(5, signal)
+        StatusStateStore.updateMobileActivity(2, 202)
+        StatusStateStore.updateMobileActivity(5, 205)
+        val current = StatusStateStore.snapshot()
+
+        assertEquals(listOf(2, 5, 9), current.mobile.keys.toList())
+        assertEquals(listOf(2, 5, 9), current.mobileActivityResIds.keys.toList())
+        assertEquals(listOf(9), first.mobile.keys.toList())
+        assertEquals(mapOf(9 to 209), first.mobileActivityResIds)
+
+        assertNull(StatusStateStore.updateMobileSignal(9, signal))
+        assertNull(StatusStateStore.updateMobileActivity(9, 209))
+        assertTrue(current === StatusStateStore.snapshot())
+
+        val removed = StatusStateStore.updateMobileActivity(5, null)
+            ?: error("resource removal must publish")
+        assertEquals(listOf(2, 9), removed.mobileActivityResIds.keys.toList())
+        assertEquals(205, current.mobileActivityResIds[5])
+        StatusStateStore.restoreHotReloadState(null)
+    }
+
     @Test
     fun nativeActivityStateFollowsItsTransport() {
         StatusStateStore.restoreHotReloadState(null)
