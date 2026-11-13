@@ -924,13 +924,7 @@ internal class StatusPainter(
                 width = metrics?.sourceOpticalWidth ?: geometry.airplaneMaxSize,
                 height = metrics?.sourceOpticalHeight ?: geometry.airplaneMaxSize,
             )
-        val local =
-            if (visual.layout == ContentLayout.BATTERY_CENTER) {
-                shiftBoundsY(baseLocal, networkTopTranslationY(visual))
-            } else {
-                baseLocal
-            }
-        return mapTransitionBounds(local, nativeTransform)
+        return mapNetworkTopTransitionBounds(baseLocal, nativeTransform, visual)
     }
 
     fun drawTransitionAirplane(
@@ -994,13 +988,7 @@ internal class StatusPainter(
                 width = metrics?.sourceOpticalWidth ?: geometry.noSimMaxSize,
                 height = metrics?.sourceOpticalHeight ?: geometry.noSimMaxSize,
             )
-        val local =
-            if (visual.layout == ContentLayout.BATTERY_CENTER) {
-                shiftBoundsY(baseLocal, networkTopTranslationY(visual))
-            } else {
-                baseLocal
-            }
-        return mapTransitionBounds(local, nativeTransform)
+        return mapNetworkTopTransitionBounds(baseLocal, nativeTransform, visual)
     }
 
     fun drawTransitionNoSim(
@@ -1237,6 +1225,23 @@ internal class StatusPainter(
                 wifiOffset = visual.wifiOffsetY,
                 mobileTypeOffset = visual.mobileTypeOffsetY,
             )
+
+    // Airplane, no-SIM and mobile-type share the same top-slot projection;
+    // only mobile-type supplies its indicator-specific vertical translation.
+    private fun mapNetworkTopTransitionBounds(
+        bounds: TransitionBounds,
+        transform: NativeRenderTransform,
+        visual: VisualCfg,
+        indicator: CenterIndicator? = null,
+    ): TransitionBounds {
+        val local =
+            if (visual.layout == ContentLayout.BATTERY_CENTER) {
+                shiftBoundsY(bounds, networkTopTranslationY(visual, indicator))
+            } else {
+                bounds
+            }
+        return mapTransitionBounds(local, transform)
+    }
 
     private fun shiftBoundsY(
         bounds: TransitionBounds,
@@ -2268,13 +2273,7 @@ internal class StatusPainter(
             } else {
                 textLayout.bounds
             }
-        val local =
-            if (visual.layout == ContentLayout.BATTERY_CENTER) {
-                shiftBoundsY(baseLocal, networkTopTranslationY(visual, indicator))
-            } else {
-                baseLocal
-            }
-        return mapTransitionBounds(local, nativeTransform)
+        return mapNetworkTopTransitionBounds(baseLocal, nativeTransform, visual, indicator)
     }
 
     fun transitionBatteryNumberCurrentBounds(
