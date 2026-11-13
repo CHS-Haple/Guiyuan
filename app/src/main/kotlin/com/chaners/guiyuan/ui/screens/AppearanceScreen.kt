@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -85,47 +86,6 @@ internal fun AppearanceScreen(
     onUiScaleChange: (Int) -> Unit,
     onBack: () -> Unit,
 ) {
-    val themeOptions =
-        listOf(
-            stringResource(R.string.theme_system),
-            stringResource(R.string.theme_light),
-            stringResource(R.string.theme_dark),
-        )
-    val colorSpecOptions = listOf(
-        stringResource(R.string.theme_color_spec_system),
-        "Spec2021",
-        "Spec2025",
-    )
-    val paletteStyles = appearance.colorSpec?.let(::palettesFor).orEmpty()
-    val paletteNames = mapOf(
-        ThemePaletteStyle.TonalSpot to stringResource(R.string.theme_palette_tonal_spot),
-        ThemePaletteStyle.Neutral to stringResource(R.string.theme_palette_neutral),
-        ThemePaletteStyle.Vibrant to stringResource(R.string.theme_palette_vibrant),
-        ThemePaletteStyle.Expressive to stringResource(R.string.theme_palette_expressive),
-        ThemePaletteStyle.Rainbow to stringResource(R.string.theme_palette_rainbow),
-        ThemePaletteStyle.FruitSalad to stringResource(R.string.theme_palette_fruit_salad),
-        ThemePaletteStyle.Monochrome to stringResource(R.string.theme_palette_monochrome),
-        ThemePaletteStyle.Fidelity to stringResource(R.string.theme_palette_fidelity),
-        ThemePaletteStyle.Content to stringResource(R.string.theme_palette_content),
-        ThemePaletteStyle.Cmf to stringResource(R.string.theme_palette_cmf),
-    )
-    val floatingStyleOptions =
-        listOf(
-            stringResource(R.string.floating_navigation_style_standard),
-            stringResource(R.string.floating_navigation_style_blur),
-            stringResource(
-                if (appearance.uiStyle == UiStyle.OS4) R.string.floating_navigation_style_soft_glass
-                else R.string.floating_navigation_style_glass,
-            ),
-            stringResource(R.string.floating_navigation_style_liquid),
-        )
-    val liquidModeOptions =
-        listOf(
-            stringResource(R.string.floating_navigation_liquid_mode_blur),
-            stringResource(R.string.floating_navigation_liquid_mode_balanced),
-            stringResource(R.string.floating_navigation_liquid_mode_clear),
-        )
-
     var sliderPercent by remember(appearance.uiScalePercent) {
         mutableFloatStateOf(appearance.uiScalePercent.toFloat())
     }
@@ -157,75 +117,13 @@ internal fun AppearanceScreen(
             )
         }
 
-        Section(R.string.section_theme) {
-            UiDropdownPreference(
-                items = themeOptions,
-                selectedIndex = appearance.theme.ordinal,
-                title = stringResource(R.string.theme_mode),
-                summary = stringResource(R.string.theme_mode_summary),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_contrast,
-                    )
-                },
-                showValue = true,
-                onSelectedIndexChange = { index ->
-                    ThemeMode.entries.getOrNull(index)?.let { mode ->
-                        if (mode != appearance.theme) {
-                            onThemeChange(mode)
-                        }
-                    }
-                },
-            )
-            SwitchPreference(
-                title = stringResource(R.string.dynamic_color),
-                summary = stringResource(R.string.dynamic_color_summary),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_palette,
-                    )
-                },
-                checked = appearance.dynamicColor,
-                onCheckedChange = onDynamicChange,
-            )
-            AnimatedPreferenceGroup(visible = appearance.dynamicColor) {
-                UiDropdownPreference(
-                    items = colorSpecOptions,
-                    selectedIndex = appearance.colorSpec?.ordinal?.plus(1) ?: 0,
-                    title = stringResource(R.string.theme_color_spec),
-                    summary = stringResource(R.string.theme_color_spec_summary),
-                    startAction = {
-                        SemanticLeadingIcon(R.drawable.ic_material_symbol_category)
-                    },
-                    showValue = true,
-                    onSelectedIndexChange = { index ->
-                        if (index in colorSpecOptions.indices) {
-                            val spec = if (index == 0) null else ThemeColorSpec.entries[index - 1]
-                            if (spec != appearance.colorSpec) onColorSpecChange(spec)
-                        }
-                    },
-                )
-                AnimatedPreferenceGroup(visible = appearance.colorSpec != null) {
-                    if (paletteStyles.isNotEmpty()) {
-                        UiDropdownPreference(
-                            items = paletteStyles.map { paletteNames.getValue(it) },
-                            selectedIndex = paletteStyles.indexOf(appearance.paletteStyle).coerceAtLeast(0),
-                            title = stringResource(R.string.theme_palette_style),
-                            summary = stringResource(R.string.theme_palette_style_summary),
-                            startAction = {
-                                SemanticLeadingIcon(R.drawable.ic_material_symbol_style)
-                            },
-                            showValue = true,
-                            onSelectedIndexChange = { index ->
-                                paletteStyles.getOrNull(index)?.let { style ->
-                                    if (style != appearance.paletteStyle) onPaletteStyleChange(style)
-                                }
-                            },
-                        )
-                    }
-                }
-            }
-        }
+        appearanceThemeSection(
+            appearance = appearance,
+            onThemeChange = onThemeChange,
+            onDynamicChange = onDynamicChange,
+            onColorSpecChange = onColorSpecChange,
+            onPaletteStyleChange = onPaletteStyleChange,
+        )
 
         Section(R.string.section_visual_effects) {
             UiDropdownPreference(
@@ -273,85 +171,223 @@ internal fun AppearanceScreen(
                 holdDownState = inputOpen,
                 onClick = { inputOpen = true },
             )
-            SwitchPreference(
-                title = stringResource(R.string.floating_navigation_bar),
-                summary = stringResource(R.string.floating_navigation_bar_summary),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_bottom_navigation,
-                    )
-                },
-                checked = appearance.navEnabled,
-                onCheckedChange = onNavEnabledChange,
+            AppearanceNavigationControls(
+                appearance = appearance,
+                onNavEnabledChange = onNavEnabledChange,
+                onNavStyleChange = onNavStyleChange,
+                onNavTouchExtensionChange = onNavTouchExtensionChange,
+                onNavContentChange = onNavContentChange,
+                onLiquidModeChange = onLiquidModeChange,
             )
-            AnimatedPreferenceGroup(visible = appearance.navEnabled) {
-                UiDropdownPreference(
-                    items = floatingStyleOptions,
-                    selectedIndex = appearance.navStyle.ordinal,
-                    title = stringResource(R.string.floating_navigation_style),
-                    summary = stringResource(R.string.floating_navigation_style_summary),
-                    startAction = {
-                        SemanticLeadingIcon(
-                            iconRes = R.drawable.ic_material_symbol_style,
-                        )
-                    },
-                    showValue = true,
-                    onSelectedIndexChange = { index ->
-                        NavStyle.entries.getOrNull(index)?.let { style ->
-                            if (style != appearance.navStyle) {
-                                onNavStyleChange(style)
-                            }
-                        }
-                    },
+        }
+    }
+}
+
+private fun LazyListScope.appearanceThemeSection(
+    appearance: Appearance,
+    onThemeChange: (ThemeMode) -> Unit,
+    onDynamicChange: (Boolean) -> Unit,
+    onColorSpecChange: (ThemeColorSpec?) -> Unit,
+    onPaletteStyleChange: (ThemePaletteStyle) -> Unit,
+) {
+    Section(R.string.section_theme) {
+        val themeOptions =
+            listOf(
+                stringResource(R.string.theme_system),
+                stringResource(R.string.theme_light),
+                stringResource(R.string.theme_dark),
+            )
+        val colorSpecOptions = listOf(
+            stringResource(R.string.theme_color_spec_system),
+            "Spec2021",
+            "Spec2025",
+        )
+        val paletteStyles = appearance.colorSpec?.let(::palettesFor).orEmpty()
+        val paletteNames = mapOf(
+            ThemePaletteStyle.TonalSpot to stringResource(R.string.theme_palette_tonal_spot),
+            ThemePaletteStyle.Neutral to stringResource(R.string.theme_palette_neutral),
+            ThemePaletteStyle.Vibrant to stringResource(R.string.theme_palette_vibrant),
+            ThemePaletteStyle.Expressive to stringResource(R.string.theme_palette_expressive),
+            ThemePaletteStyle.Rainbow to stringResource(R.string.theme_palette_rainbow),
+            ThemePaletteStyle.FruitSalad to stringResource(R.string.theme_palette_fruit_salad),
+            ThemePaletteStyle.Monochrome to stringResource(R.string.theme_palette_monochrome),
+            ThemePaletteStyle.Fidelity to stringResource(R.string.theme_palette_fidelity),
+            ThemePaletteStyle.Content to stringResource(R.string.theme_palette_content),
+            ThemePaletteStyle.Cmf to stringResource(R.string.theme_palette_cmf),
+        )
+
+        UiDropdownPreference(
+            items = themeOptions,
+            selectedIndex = appearance.theme.ordinal,
+            title = stringResource(R.string.theme_mode),
+            summary = stringResource(R.string.theme_mode_summary),
+            startAction = {
+                SemanticLeadingIcon(
+                    iconRes = R.drawable.ic_material_symbol_contrast,
                 )
-                AnimatedPreferenceGroup(visible = appearance.navStyle == NavStyle.Liquid) {
+            },
+            showValue = true,
+            onSelectedIndexChange = { index ->
+                ThemeMode.entries.getOrNull(index)?.let { mode ->
+                    if (mode != appearance.theme) {
+                        onThemeChange(mode)
+                    }
+                }
+            },
+        )
+        SwitchPreference(
+            title = stringResource(R.string.dynamic_color),
+            summary = stringResource(R.string.dynamic_color_summary),
+            startAction = {
+                SemanticLeadingIcon(
+                    iconRes = R.drawable.ic_material_symbol_palette,
+                )
+            },
+            checked = appearance.dynamicColor,
+            onCheckedChange = onDynamicChange,
+        )
+        AnimatedPreferenceGroup(visible = appearance.dynamicColor) {
+            UiDropdownPreference(
+                items = colorSpecOptions,
+                selectedIndex = appearance.colorSpec?.ordinal?.plus(1) ?: 0,
+                title = stringResource(R.string.theme_color_spec),
+                summary = stringResource(R.string.theme_color_spec_summary),
+                startAction = {
+                    SemanticLeadingIcon(R.drawable.ic_material_symbol_category)
+                },
+                showValue = true,
+                onSelectedIndexChange = { index ->
+                    if (index in colorSpecOptions.indices) {
+                        val spec = if (index == 0) null else ThemeColorSpec.entries[index - 1]
+                        if (spec != appearance.colorSpec) onColorSpecChange(spec)
+                    }
+                },
+            )
+            AnimatedPreferenceGroup(visible = appearance.colorSpec != null) {
+                if (paletteStyles.isNotEmpty()) {
                     UiDropdownPreference(
-                        items = liquidModeOptions,
-                        selectedIndex = appearance.liquidMode.ordinal,
-                        title = stringResource(R.string.floating_navigation_liquid_mode),
-                        summary = stringResource(R.string.floating_navigation_liquid_mode_summary),
+                        items = paletteStyles.map { paletteNames.getValue(it) },
+                        selectedIndex = paletteStyles.indexOf(appearance.paletteStyle).coerceAtLeast(0),
+                        title = stringResource(R.string.theme_palette_style),
+                        summary = stringResource(R.string.theme_palette_style_summary),
                         startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_blur_circular,
-                            )
+                            SemanticLeadingIcon(R.drawable.ic_material_symbol_style)
                         },
                         showValue = true,
                         onSelectedIndexChange = { index ->
-                            LiquidMode.entries.getOrNull(index)?.let { mode ->
-                                if (mode != appearance.liquidMode) {
-                                    onLiquidModeChange(mode)
-                                }
+                            paletteStyles.getOrNull(index)?.let { style ->
+                                if (style != appearance.paletteStyle) onPaletteStyleChange(style)
                             }
                         },
                     )
                 }
-                SwitchPreference(
-                    title = stringResource(R.string.floating_navigation_content),
-                    summary = stringResource(R.string.floating_navigation_content_summary),
-                    startAction = {
-                        SemanticLeadingIcon(
-                            iconRes = R.drawable.ic_material_symbol_text_fields,
-                        )
-                    },
-                    checked = appearance.activeNavContent == NavContent.IconAndText,
-                    onCheckedChange = { showLabels ->
-                        val content = if (showLabels) NavContent.IconAndText else NavContent.IconOnly
-                        if (content != appearance.activeNavContent) onNavContentChange(content)
-                    },
-                )
-                SwitchPreference(
-                    title = stringResource(R.string.floating_navigation_touch_extension),
-                    summary = stringResource(R.string.floating_navigation_touch_extension_summary),
-                    startAction = {
-                        SemanticLeadingIcon(
-                            iconRes = R.drawable.ic_material_symbol_fit_screen,
-                        )
-                    },
-                    checked = appearance.navTouchExtension,
-                    onCheckedChange = onNavTouchExtensionChange,
-                )
             }
         }
+    }
+}
+
+@Composable
+private fun AppearanceNavigationControls(
+    appearance: Appearance,
+    onNavEnabledChange: (Boolean) -> Unit,
+    onNavStyleChange: (NavStyle) -> Unit,
+    onNavTouchExtensionChange: (Boolean) -> Unit,
+    onNavContentChange: (NavContent) -> Unit,
+    onLiquidModeChange: (LiquidMode) -> Unit,
+) {
+    val floatingStyleOptions =
+        listOf(
+            stringResource(R.string.floating_navigation_style_standard),
+            stringResource(R.string.floating_navigation_style_blur),
+            stringResource(
+                if (appearance.uiStyle == UiStyle.OS4) R.string.floating_navigation_style_soft_glass
+                else R.string.floating_navigation_style_glass,
+            ),
+            stringResource(R.string.floating_navigation_style_liquid),
+        )
+    val liquidModeOptions =
+        listOf(
+            stringResource(R.string.floating_navigation_liquid_mode_blur),
+            stringResource(R.string.floating_navigation_liquid_mode_balanced),
+            stringResource(R.string.floating_navigation_liquid_mode_clear),
+        )
+    SwitchPreference(
+        title = stringResource(R.string.floating_navigation_bar),
+        summary = stringResource(R.string.floating_navigation_bar_summary),
+        startAction = {
+            SemanticLeadingIcon(
+                iconRes = R.drawable.ic_material_symbol_bottom_navigation,
+            )
+        },
+        checked = appearance.navEnabled,
+        onCheckedChange = onNavEnabledChange,
+    )
+    AnimatedPreferenceGroup(visible = appearance.navEnabled) {
+        UiDropdownPreference(
+            items = floatingStyleOptions,
+            selectedIndex = appearance.navStyle.ordinal,
+            title = stringResource(R.string.floating_navigation_style),
+            summary = stringResource(R.string.floating_navigation_style_summary),
+            startAction = {
+                SemanticLeadingIcon(
+                    iconRes = R.drawable.ic_material_symbol_style,
+                )
+            },
+            showValue = true,
+            onSelectedIndexChange = { index ->
+                NavStyle.entries.getOrNull(index)?.let { style ->
+                    if (style != appearance.navStyle) {
+                        onNavStyleChange(style)
+                    }
+                }
+            },
+        )
+        AnimatedPreferenceGroup(visible = appearance.navStyle == NavStyle.Liquid) {
+            UiDropdownPreference(
+                items = liquidModeOptions,
+                selectedIndex = appearance.liquidMode.ordinal,
+                title = stringResource(R.string.floating_navigation_liquid_mode),
+                summary = stringResource(R.string.floating_navigation_liquid_mode_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        iconRes = R.drawable.ic_material_symbol_blur_circular,
+                    )
+                },
+                showValue = true,
+                onSelectedIndexChange = { index ->
+                    LiquidMode.entries.getOrNull(index)?.let { mode ->
+                        if (mode != appearance.liquidMode) {
+                            onLiquidModeChange(mode)
+                        }
+                    }
+                },
+            )
+        }
+        SwitchPreference(
+            title = stringResource(R.string.floating_navigation_content),
+            summary = stringResource(R.string.floating_navigation_content_summary),
+            startAction = {
+                SemanticLeadingIcon(
+                    iconRes = R.drawable.ic_material_symbol_text_fields,
+                )
+            },
+            checked = appearance.activeNavContent == NavContent.IconAndText,
+            onCheckedChange = { showLabels ->
+                val content = if (showLabels) NavContent.IconAndText else NavContent.IconOnly
+                if (content != appearance.activeNavContent) onNavContentChange(content)
+            },
+        )
+        SwitchPreference(
+            title = stringResource(R.string.floating_navigation_touch_extension),
+            summary = stringResource(R.string.floating_navigation_touch_extension_summary),
+            startAction = {
+                SemanticLeadingIcon(
+                    iconRes = R.drawable.ic_material_symbol_fit_screen,
+                )
+            },
+            checked = appearance.navTouchExtension,
+            onCheckedChange = onNavTouchExtensionChange,
+        )
     }
 }
 
