@@ -1540,6 +1540,17 @@ internal object SysUiNetworkSource {
         result
     }
 
+    // Only clear the failed delivery if a newer native emission has not replaced it.
+    private fun rollbackPendingMobileEvent(image: ImageView?, pendingKey: String?) {
+        if (image == null) return
+        synchronized(this) {
+            if (lastMobileEvents[image] === pendingKey) {
+                lastMobileEvents.remove(image)
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
     private fun mobileSignalHooker(
         active: AtomicBoolean,
         mobileImageField: Field,
@@ -1637,24 +1648,12 @@ internal object SysUiNetworkSource {
             try {
                 chain.proceed()
             } catch (error: Throwable) {
-                if (image != null) {
-                    synchronized(this) {
-                        if (lastMobileEvents[image] === pendingKey) {
-                            lastMobileEvents.remove(image)
-                        }
-                    }
-                }
+                rollbackPendingMobileEvent(image, pendingKey)
                 throw error
             }
         callbackError?.let { error ->
             callbackFailed("mobile-signal", error, onRuntimeFailure)
-            if (image != null) {
-                synchronized(this) {
-                    if (lastMobileEvents[image] === pendingKey) {
-                        lastMobileEvents.remove(image)
-                    }
-                }
-            }
+            rollbackPendingMobileEvent(image, pendingKey)
         }
         optionalNativeRead { eventLog?.let { onEvent?.invoke(it) } }
         result
