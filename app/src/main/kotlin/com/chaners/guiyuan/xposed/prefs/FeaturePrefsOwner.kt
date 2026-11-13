@@ -133,6 +133,4 @@ internal object FeaturePrefsOwner {
             receivedAtNs - changedAtNs
         } else {
             null
-        }
-
-}
+        }}
