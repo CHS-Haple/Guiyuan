@@ -272,7 +272,7 @@ internal object SysUiNetworkSource {
         sinks: Sinks,
         diagnostics: Diagnostics,
     ): BranchInstallResult {
-        val (onWifiState, onWifiActivity) = sinks
+        val onWifiActivity = sinks.onWifiActivity
         val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val created = mutableListOf<HookHandle>()
         val active = AtomicBoolean(false)
@@ -359,10 +359,8 @@ internal object SysUiNetworkSource {
                             wifiBindHooker(
                                 active = active,
                                 seedContract = seedContract,
-                                onWifiState = onWifiState,
-                                onRuntimeFailure = onRuntimeFailure,
-                                onEvent = onEvent,
-                                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                                sinks = sinks,
+                                diagnostics = diagnostics,
                             ),
                         )
                 }
@@ -376,12 +374,9 @@ internal object SysUiNetworkSource {
                                 active = active,
                                 wifiImageField = wifiIconImageField,
                                 wifiClassIdField = wifiIconClassIdField,
-                                wifiVisibleIconField = wifiVisibleIconField,
-                                iconResourceIdAccessor = iconResourceIdAccessor,
-                                onWifiState = onWifiState,
-                                onRuntimeFailure = onRuntimeFailure,
-                                onEvent = onEvent,
-                                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                                seedContract = seedContract,
+                                sinks = sinks,
+                                diagnostics = diagnostics,
                             ),
                         )
                 }
@@ -450,7 +445,8 @@ internal object SysUiNetworkSource {
         sinks: Sinks,
         diagnostics: Diagnostics,
     ): BranchInstallResult {
-        val (_, _, onMobileSignal, onMobileActivityResource, onMobileActivityVisibility, onPresentationChanged) = sinks
+        val onMobileActivityResource = sinks.onMobileActivityResource
+        val onMobileActivityVisibility = sinks.onMobileActivityVisibility
         val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val created = mutableListOf<HookHandle>()
         val active = AtomicBoolean(false)
@@ -521,10 +517,8 @@ internal object SysUiNetworkSource {
                                 active = active,
                                 subscriptionIdMethod = subscriptionIdMethod,
                                 classLoader = classLoader,
-                                onPresentationChanged = onPresentationChanged,
-                                onRuntimeFailure = onRuntimeFailure,
-                                onEvent = onEvent,
-                                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                                sinks = sinks,
+                                diagnostics = diagnostics,
                             ),
                         )
                 }
@@ -538,11 +532,8 @@ internal object SysUiNetworkSource {
                                 active = active,
                                 mobileImageField = mobileImageField,
                                 mobileClassIdField = mobileClassIdField,
-                                onMobileSignal = onMobileSignal,
-                                onPresentationChanged = onPresentationChanged,
-                                onRuntimeFailure = onRuntimeFailure,
-                                onEvent = onEvent,
-                                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                                sinks = sinks,
+                                diagnostics = diagnostics,
                             ),
                         )
                 }
@@ -944,12 +935,12 @@ internal object SysUiNetworkSource {
     private fun wifiBindHooker(
         active: AtomicBoolean,
         seedContract: WifiSeedContract,
-        onWifiState: (StatusStateStore.WifiState) -> Unit,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
+        val onWifiState = sinks.onWifiState
+        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val root: ViewGroup?
         val viewModel: Any?
         try {
@@ -1292,14 +1283,15 @@ internal object SysUiNetworkSource {
         active: AtomicBoolean,
         wifiImageField: Field,
         wifiClassIdField: Field,
-        wifiVisibleIconField: Field,
-        iconResourceIdAccessor: IconResourceIdAccessor,
-        onWifiState: (StatusStateStore.WifiState) -> Unit,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        seedContract: WifiSeedContract,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
+        val wifiVisibleIconField = seedContract.wifiVisibleIconField
+        val iconResourceIdAccessor = seedContract.iconResourceIdAccessor
+        val onWifiState = sinks.onWifiState
+        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val value =
             try {
                 chain.getArg(0)
@@ -1454,12 +1446,12 @@ internal object SysUiNetworkSource {
         active: AtomicBoolean,
         subscriptionIdMethod: Method,
         classLoader: ClassLoader,
-        onPresentationChanged: (() -> Unit)?,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
+        val onPresentationChanged = sinks.onPresentationChanged
+        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val root: ViewGroup?
         val locationViewModel: Any?
         val iconViewModel: Any?
@@ -1552,13 +1544,13 @@ internal object SysUiNetworkSource {
         active: AtomicBoolean,
         mobileImageField: Field,
         mobileClassIdField: Field,
-        onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
-        onPresentationChanged: (() -> Unit)?,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
+        val onMobileSignal = sinks.onMobileSignal
+        val onPresentationChanged = sinks.onPresentationChanged
+        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val emitter =
             try {
                 chain.thisObject
