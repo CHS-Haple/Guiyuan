@@ -49,11 +49,12 @@ class FeaturePrefsOwnerTest {
     fun featureDecoderKeepsFlagsIndependentAndValidatesLowBatteryThreshold() {
         val prefs = VisualTestPreferences()
         val cases = listOf(
-            FeatureCfg(false, true, true, LOW_BATTERY_THRESHOLD_MIN) to LOW_BATTERY_THRESHOLD_MIN,
-            FeatureCfg(true, false, true, LOW_BATTERY_THRESHOLD_MAX) to LOW_BATTERY_THRESHOLD_MAX,
-            FeatureCfg(true, true, false, LOW_BATTERY_THRESHOLD_DEFAULT) to
-                (LOW_BATTERY_THRESHOLD_MAX + 1),
-            FeatureCfg(false, false, false, LOW_BATTERY_THRESHOLD_DEFAULT) to
+            FeatureCfg(enabled = false, lowBatteryThreshold = LOW_BATTERY_THRESHOLD_MIN) to
+                LOW_BATTERY_THRESHOLD_MIN,
+            FeatureCfg(keyguard = false, lowBatteryThreshold = LOW_BATTERY_THRESHOLD_MAX) to
+                LOW_BATTERY_THRESHOLD_MAX,
+            FeatureCfg(aod = false) to (LOW_BATTERY_THRESHOLD_MAX + 1),
+            FeatureCfg(enabled = false, keyguard = false, aod = false) to
                 (LOW_BATTERY_THRESHOLD_MIN - 1),
         )
         for ((expected, storedThreshold) in cases) {
