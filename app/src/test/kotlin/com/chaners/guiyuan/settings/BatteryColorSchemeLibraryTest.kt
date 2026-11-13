@@ -121,73 +121,49 @@ class BatteryColorSchemeLibraryTest {
     }
 
     @Test
-    fun legacyMigrationMatchesIndependentSixSlotAlgorithmForAllPresets() {
-        for (preset in BatteryColorPreset.entries) {
-            val preferences = VisualTestPreferences()
-            val legacy = VisualCfg(
-                batteryColorPreset = preset,
-                batteryColorModes = BatteryColorModes(
-                    normal = BatteryColorMode.FOLLOW_SYSTEM,
-                    performance = BatteryColorMode.CUSTOM,
-                    superPowerSave = BatteryColorMode.FOLLOW_SYSTEM,
-                    charging = BatteryColorMode.CUSTOM,
-                ),
-                batteryColorOverrides = BatteryColorOverrides(
-                    performance = 0x00556677,
-                    charging = 0x7F123456,
-                ),
-            )
-            preferences.edit().putBatteryColors(legacy).apply()
-            val stored = preferences.readVisualCfg()
-            val template = BatteryBuiltInColorScheme.fromPreset(stored.batteryColorPreset)
-            val source = BatteryColorSchemeSource.fromBuiltIn(template)
-            val historical = BatteryColorSlot.entries.fold(BatteryColorSchemeEntries()) { entries, slot ->
-                val custom = stored.batteryColorOverrides.colorFor(slot)
-                entries.withEntry(
-                    slot,
-                    BatteryColorSchemeEntry(
-                        schemeSourceFromLegacy(stored.batteryColorModes.modeFor(slot), custom != null, source),
-                        custom ?: batteryBuiltInColor(template, slot),
-                    ),
-                )
-            }
+    fun legacyPresetWithoutOverridesKeepsBuiltInSelection() {
+        val preferences = VisualTestPreferences()
+        preferences.edit()
+            .putBatteryColors(VisualCfg(batteryColorPreset = BatteryColorPreset.IOS_STYLE))
+            .apply()
 
-            val migrated = BatterySchemeRepo(preferences).current()
-            assertEquals(customSchemeKey(1), migrated.activeSchemeKey)
-            assertEquals(historical, requireNotNull(migrated.customById(1)).entries)
-            assertEquals(migrated, BatterySchemeRepo(preferences).current())
-        }
+        val migrated = BatterySchemeRepo(preferences).current()
+        assertEquals(BATTERY_COLOR_SCHEME_IOS_KEY, migrated.activeSchemeKey)
+        assertEquals(0, migrated.customSchemes.size)
     }
 
     @Test
-    fun allPresetModesWithStoredOverrideStillMigrateToCustom() {
-        for (base in BatteryBuiltInColorScheme.entries) {
-            val preferences = VisualTestPreferences()
-            preferences.edit().putBatteryColors(
+    fun legacyModeChangeAloneCreatesCustomScheme() {
+        val preferences = VisualTestPreferences()
+        preferences.edit()
+            .putBatteryColors(
+                VisualCfg(batteryColorModes = BatteryColorModes(normal = BatteryColorMode.FOLLOW_SYSTEM)),
+            ).apply()
+
+        val migrated = BatterySchemeRepo(preferences).current()
+        assertEquals(customSchemeKey(1), migrated.activeSchemeKey)
+        assertEquals(
+            BatteryColorSchemeSource.FOLLOW_SYSTEM,
+            requireNotNull(migrated.customById(1)).entries.normal.source,
+        )
+    }
+
+    @Test
+    fun legacyStoredOverrideWithoutModeChangeCreatesCustomScheme() {
+        val preferences = VisualTestPreferences()
+        preferences.edit()
+            .putBatteryColors(
                 VisualCfg(
-                    batteryColorPreset = base.preset,
+                    batteryColorPreset = BatteryColorPreset.IOS_STYLE,
                     batteryColorOverrides = BatteryColorOverrides(charging = 0x002468AC),
                 ),
             ).apply()
 
-            val migrated = BatterySchemeRepo(preferences).current()
-            assertEquals(customSchemeKey(1), migrated.activeSchemeKey)
-            val charging = requireNotNull(migrated.customById(1)).entries.charging
-            assertEquals(BatteryColorSchemeSource.fromBuiltIn(base), charging.source)
-            assertEquals(0xFF2468AC.toInt(), charging.customColor)
-        }
-    }
-
-    @Test
-    fun pureLegacyPresetsDoNotCreateSpuriousCustomSchemes() {
-        for (base in BatteryBuiltInColorScheme.entries) {
-            val preferences = VisualTestPreferences()
-            preferences.edit().putBatteryColors(VisualCfg(batteryColorPreset = base.preset)).apply()
-
-            val migrated = BatterySchemeRepo(preferences).current()
-            assertEquals(base.key, migrated.activeSchemeKey)
-            assertEquals(0, migrated.customSchemes.size)
-        }
+        val migrated = BatterySchemeRepo(preferences).current()
+        assertEquals(customSchemeKey(1), migrated.activeSchemeKey)
+        val charging = requireNotNull(migrated.customById(1)).entries.charging
+        assertEquals(BatteryColorSchemeSource.IOS, charging.source)
+        assertEquals(0xFF2468AC.toInt(), charging.customColor)
     }
 
     @Test
