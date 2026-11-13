@@ -53,7 +53,7 @@ object GlassDropdownDefaults {
  *   configured bloom stroke and Compose shadow.
  * @param modifier The modifier applied to the panel.
  * @param anchor Optional handle for the row. Given one, the panel stands the row's displayed value
- *   down while it is open and aligns horizontally to the value reported by
+ *   down while it is open and aligns on both axes to the value reported by
  *   [glassPopupAnchorValue]. Without a reported value, placement uses [anchorBounds].
  * @param sizing How wide and tall the panel may be.
  * @param visuals What its surface is made of.
@@ -269,7 +269,7 @@ internal fun placeGlassDropdownPopup(
     direction: LayoutDirection = LayoutDirection.Ltr,
 ): GlassPopupPlacement {
     if (valueAnchor == null) return placeGlassPopup(row, size, margin, window, direction)
-    // Align to the value's nearest horizontal edge of the window.
+    // Anchor both axes to the displayed value, preserving the row fallback.
     val wantedLeft = if (valueAnchor.center.x <= window.center.x) {
         valueAnchor.left
     } else {
@@ -277,7 +277,7 @@ internal fun placeGlassDropdownPopup(
     }
     val minLeft = window.left + margin
     val left = wantedLeft.coerceIn(minLeft, (window.right - size.width - margin).coerceAtLeast(minLeft))
-    val verticalPlacement = placeGlassPopup(row, size, margin, window, LayoutDirection.Ltr)
+    val verticalPlacement = placeGlassPopup(valueAnchor, size, margin, window, LayoutDirection.Ltr)
     return GlassPopupPlacement(
         rect = Rect(left, verticalPlacement.rect.top, left + size.width, verticalPlacement.rect.bottom),
         alignTop = verticalPlacement.alignTop,
