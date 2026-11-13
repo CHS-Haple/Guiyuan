@@ -894,8 +894,7 @@ internal fun FeaturesScreen(
                     NetworkSizeSlider(
                         value = visual.wifiScale,
                         onValueChange = visualRepo::setWifiScale,
-                        row = NetworkSliderRow.WIFI_SIZE,
-                        valueRange = WIFI_SIZE_SCALE_MIN..WIFI_SIZE_SCALE_MAX,
+                        row = NetworkSizeRow.WIFI,
                         defaultValue = WIFI_SIZE_SCALE_DEFAULT,
                         enabled = featureCfg.enabled,
                     )
@@ -904,9 +903,7 @@ internal fun FeaturesScreen(
                     NetworkWeightSlider(
                         value = visual.wifiWeight,
                         onValueChange = visualRepo::setWifiWeight,
-                        row = NetworkSliderRow.WIFI_WEIGHT,
-                        valueRange = WIFI_WEIGHT_MIN..WIFI_WEIGHT_MAX,
-                        defaultValue = WIFI_WEIGHT_DEFAULT,
+                        row = NetworkWeightRow.WIFI,
                         enabled = featureCfg.enabled,
                     )
                 }
@@ -914,8 +911,7 @@ internal fun FeaturesScreen(
                     NetworkSizeSlider(
                         value = visual.airplaneScale,
                         onValueChange = visualRepo::setAirplaneScale,
-                        row = NetworkSliderRow.AIRPLANE_SIZE,
-                        valueRange = AIRPLANE_SIZE_SCALE_MIN..AIRPLANE_SIZE_SCALE_MAX,
+                        row = NetworkSizeRow.AIRPLANE,
                         defaultValue = AIRPLANE_SIZE_SCALE_DEFAULT,
                         enabled = featureCfg.enabled,
                     )
@@ -924,9 +920,7 @@ internal fun FeaturesScreen(
                     NetworkWeightSlider(
                         value = visual.airplaneWeight,
                         onValueChange = visualRepo::setAirplaneWeight,
-                        row = NetworkSliderRow.AIRPLANE_WEIGHT,
-                        valueRange = AIRPLANE_WEIGHT_MIN..AIRPLANE_WEIGHT_MAX,
-                        defaultValue = AIRPLANE_WEIGHT_DEFAULT,
+                        row = NetworkWeightRow.AIRPLANE,
                         enabled = featureCfg.enabled,
                     )
                 }
@@ -934,8 +928,7 @@ internal fun FeaturesScreen(
                     NetworkSizeSlider(
                         value = visual.noSimScale,
                         onValueChange = visualRepo::setNoSimScale,
-                        row = NetworkSliderRow.NO_SIM_SIZE,
-                        valueRange = NO_SIM_SIZE_SCALE_MIN..NO_SIM_SIZE_SCALE_MAX,
+                        row = NetworkSizeRow.NO_SIM,
                         defaultValue = NO_SIM_SIZE_SCALE_DEFAULT,
                         enabled = featureCfg.enabled,
                     )
@@ -944,8 +937,7 @@ internal fun FeaturesScreen(
                     NetworkSizeSlider(
                         value = visual.mobileTypeScale,
                         onValueChange = visualRepo::setMobileTypeScale,
-                        row = NetworkSliderRow.MOBILE_TYPE_SIZE,
-                        valueRange = MOBILE_TYPE_SIZE_SCALE_MIN..MOBILE_TYPE_SIZE_SCALE_MAX,
+                        row = NetworkSizeRow.MOBILE_TYPE,
                         defaultValue = mobileTypeScaleDefault(visual.layout),
                         enabled = featureCfg.enabled,
                     )
@@ -1234,24 +1226,32 @@ internal fun FeaturesScreen(
     }
 }
 
-private enum class NetworkSliderRow(
+private enum class NetworkSizeRow(
     @StringRes val titleRes: Int,
     @DrawableRes val iconRes: Int,
+    val range: ClosedFloatingPointRange<Float>,
 ) {
-    WIFI_SIZE(R.string.wifi_size, R.drawable.ic_material_symbol_wifi),
-    WIFI_WEIGHT(R.string.wifi_weight, R.drawable.ic_material_symbol_wifi),
-    AIRPLANE_SIZE(R.string.airplane_size, R.drawable.ic_material_symbol_airplanemode_active),
-    AIRPLANE_WEIGHT(R.string.airplane_weight, R.drawable.ic_material_symbol_airplanemode_active),
-    NO_SIM_SIZE(R.string.no_sim_size, R.drawable.ic_material_symbol_sim_card),
-    MOBILE_TYPE_SIZE(R.string.mobile_type_size, R.drawable.ic_material_symbol_5g),
+    WIFI(R.string.wifi_size, R.drawable.ic_material_symbol_wifi, WIFI_SIZE_SCALE_MIN..WIFI_SIZE_SCALE_MAX),
+    AIRPLANE(R.string.airplane_size, R.drawable.ic_material_symbol_airplanemode_active, AIRPLANE_SIZE_SCALE_MIN..AIRPLANE_SIZE_SCALE_MAX),
+    NO_SIM(R.string.no_sim_size, R.drawable.ic_material_symbol_sim_card, NO_SIM_SIZE_SCALE_MIN..NO_SIM_SIZE_SCALE_MAX),
+    MOBILE_TYPE(R.string.mobile_type_size, R.drawable.ic_material_symbol_5g, MOBILE_TYPE_SIZE_SCALE_MIN..MOBILE_TYPE_SIZE_SCALE_MAX),
+}
+
+private enum class NetworkWeightRow(
+    @StringRes val titleRes: Int,
+    @DrawableRes val iconRes: Int,
+    val range: IntRange,
+    val defaultValue: Int,
+) {
+    WIFI(R.string.wifi_weight, R.drawable.ic_material_symbol_wifi, WIFI_WEIGHT_MIN..WIFI_WEIGHT_MAX, WIFI_WEIGHT_DEFAULT),
+    AIRPLANE(R.string.airplane_weight, R.drawable.ic_material_symbol_airplanemode_active, AIRPLANE_WEIGHT_MIN..AIRPLANE_WEIGHT_MAX, AIRPLANE_WEIGHT_DEFAULT),
 }
 
 @Composable
 private fun NetworkSizeSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
-    row: NetworkSliderRow,
-    valueRange: ClosedFloatingPointRange<Float>,
+    row: NetworkSizeRow,
     defaultValue: Float,
     enabled: Boolean,
 ) {
@@ -1263,7 +1263,7 @@ private fun NetworkSizeSlider(
             SemanticLeadingIcon(row.iconRes, enabled, R.drawable.ic_material_symbol_open_in_full)
         },
         valueText = stringResource(R.string.percent_value, (value * 100f).roundToInt()),
-        valueRange = valueRange,
+        valueRange = row.range,
         steps = 16,
         showKeyPoints = true,
         hapticEffect = SliderDefaults.SliderHapticEffect.Step,
@@ -1277,9 +1277,7 @@ private fun NetworkSizeSlider(
 private fun NetworkWeightSlider(
     value: Int,
     onValueChange: (Int) -> Unit,
-    row: NetworkSliderRow,
-    valueRange: IntRange,
-    defaultValue: Int,
+    row: NetworkWeightRow,
     enabled: Boolean,
 ) {
     SliderPreference(
@@ -1290,11 +1288,11 @@ private fun NetworkWeightSlider(
             SemanticLeadingIcon(row.iconRes, enabled, R.drawable.ic_material_symbol_line_weight)
         },
         valueText = stringResource(R.string.percent_value, value),
-        valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
+        valueRange = row.range.first.toFloat()..row.range.last.toFloat(),
         steps = 13,
         showKeyPoints = true,
         hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-        keyPoints = listOf(defaultValue.toFloat()),
+        keyPoints = listOf(row.defaultValue.toFloat()),
         magnetThreshold = 0.035f,
         enabled = enabled,
     )
