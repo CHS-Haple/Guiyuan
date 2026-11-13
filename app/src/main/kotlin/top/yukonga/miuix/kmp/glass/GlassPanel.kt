@@ -9,12 +9,12 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.graphicsLayer
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.material.drawEdgeStroke
+import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 
 /**
  * Makes this composable a sheet of glass over [backdrop], with the shadow it casts.
  *
- * A device without runtime shaders has no backdrop to sample, so [fallback] says what the surface
- * is instead.
+ * A device without runtime shaders has no backdrop to sample, so [fallback] defines the surface.
  *
  * @param backdrop The [Backdrop] behind the glass. `null` uses [fallback].
  * @param shape The silhouette. It drives the shadow, the clip and the shader alike.
@@ -37,12 +37,12 @@ fun Modifier.glassPanel(
     stroke: GlassStroke? = null,
     shadow: GlassShadow? = GlassShadows.Regular,
     shading: Boolean = true,
-    fallback: Modifier = Modifier.clip(shape),
-): Modifier = if (backdrop == null) {
+    fallback: Modifier? = null,
+): Modifier = if (backdrop == null || !isRuntimeShaderSupported()) {
     this
         .graphicsLayer { this.alpha = alpha }
         .glassShadow(shape, shadow)
-        .then(fallback)
+        .then(fallback ?: Modifier.clip(shape))
         .drawWithContent {
             drawContent()
             stroke?.let { drawEdgeStroke(shape, it, 1f) }

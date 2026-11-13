@@ -132,11 +132,11 @@ internal fun placeGlassPopup(
     val minLeft = window.left + margin
     val left = endAlignedLeft
         .coerceIn(minLeft, (window.right - size.width - margin).coerceAtLeast(minLeft))
+    val minTop = minOf(window.top + margin, anchor.top).coerceAtLeast(window.top)
     val below = window.bottom - margin - anchor.top
-    val above = anchor.bottom - window.top - margin
+    val above = anchor.bottom - minTop
     val alignTop = size.height <= below || below >= above
     val wanted = if (alignTop) anchor.top else anchor.bottom - size.height
-    val minTop = window.top + margin
     val top = wanted.coerceIn(minTop, (window.bottom - size.height - margin).coerceAtLeast(minTop))
     return GlassPopupPlacement(Rect(left, top, left + size.width, top + size.height), alignTop)
 }

@@ -70,4 +70,12 @@ class GlassPopupWindowPlacementTest {
             assertEquals(original.alignTop, actual.alignTop)
         }
     }
+
+    @Test
+    fun popupNearTopEdgeUsesItsActualAnchorPosition() {
+        val anchor = Rect(100f, 44f, 180f, 64f)
+        val result = placeGlassPopup(anchor, Size(180f, 100f), margin, window, LayoutDirection.Ltr)
+        assertEquals(44f, result.rect.top)
+        assertEquals(true, result.alignTop)
+    }
 }
