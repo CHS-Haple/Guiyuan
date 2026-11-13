@@ -51,20 +51,23 @@ internal object SysUiKeyguardAodSource {
 
         val batteryClass = Class.forName(BATTERY_VIEW_CLASS, false, classLoader)
         val resolvedToAod =
-            resolveBooleanField(batteryClass, TO_AOD_FIELD)
+            resolveField(batteryClass, TO_AOD_FIELD, ::isBooleanType)
                 ?: error("aod-to-field-contract-missing")
         val resolvedIsAnimate =
-            resolveBooleanField(batteryClass, IS_AOD_ANIMATE_FIELD)
+            resolveField(batteryClass, IS_AOD_ANIMATE_FIELD, ::isBooleanType)
                 ?: error("aod-animate-field-contract-missing")
         val resolvedAnimToAod =
-            resolveBooleanField(batteryClass, ANIM_TO_AOD_FIELD)
+            resolveField(batteryClass, ANIM_TO_AOD_FIELD, ::isBooleanType)
 
         val hookMethods = resolveHookMethods(batteryClass)
 
         toAodField = resolvedToAod
         isAodAnimateField = resolvedIsAnimate
         animToAodField = resolvedAnimToAod
-        storedStyleField = resolveIntField(batteryClass, STORED_STYLE_FIELD)
+        storedStyleField =
+            resolveField(batteryClass, STORED_STYLE_FIELD) {
+                it == Int::class.javaPrimitiveType
+            }
 
         val warned = AtomicBoolean(false)
         val onDiagnostic =
@@ -268,21 +271,16 @@ internal object SysUiKeyguardAodSource {
         )
     }
 
-    private fun resolveIntField(type: Class<*>, name: String): Field? =
+    // Both native field contracts use the same subclass-first lookup.
+    private fun resolveField(
+        type: Class<*>,
+        name: String,
+        acceptsType: (Class<*>) -> Boolean,
+    ): Field? =
         generateSequence(type) { current -> current.superclass }
             .mapNotNull { current ->
                 current.declaredFields.firstOrNull { field ->
-                    field.name == name && field.type == Int::class.javaPrimitiveType
-                }
-            }
-            .firstOrNull()
-            ?.apply { isAccessible = true }
-
-    private fun resolveBooleanField(type: Class<*>, name: String): Field? =
-        generateSequence(type) { current -> current.superclass }
-            .mapNotNull { current ->
-                current.declaredFields.firstOrNull { field ->
-                    field.name == name && isBooleanType(field.type)
+                    field.name == name && acceptsType(field.type)
                 }
             }
             .firstOrNull()
