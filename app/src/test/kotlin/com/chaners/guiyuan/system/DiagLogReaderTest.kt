@@ -130,6 +130,21 @@ class DiagLogReaderTest {
 
 }
 
+private fun logcatSessionEvent(
+    minute: String,
+    second: Int,
+    kind: String,
+    state: String?,
+    session: String,
+): String =
+    "10-11 ${minute}:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
+        DiagProtocol.format(
+            event = kind,
+            component = if (kind.startsWith(EVENT_MODULE_PREFIX)) COMPONENT_MODULE else COMPONENT_HOT_RELOAD,
+            state = state,
+            fields = mapOf(FIELD_SESSION_ID to session),
+        )
+
 class DiagLogReaderSessionTest {
     @Test
     fun logcatSessionKeepsOnlyCurrentProcessAfterInterleavedRestart() {
@@ -267,13 +282,7 @@ class DiagLogReaderSessionTest {
     @Test
     fun unavailableHotReloadBeforeModuleReloadedSelectsNewGeneration() {
         fun event(second: Int, kind: String, state: String?, session: String): String =
-            "10-11 20:17:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
-                DiagProtocol.format(
-                    event = kind,
-                    component = if (kind.startsWith(EVENT_MODULE_PREFIX)) COMPONENT_MODULE else COMPONENT_HOT_RELOAD,
-                    state = state,
-                    fields = mapOf(FIELD_SESSION_ID to session),
-                )
+            logcatSessionEvent("20:17", second, kind, state, session)
 
         val oldStart = event(30, EVENT_MODULE_LOADED, STATE_READY, SESSION_OLD)
         val unavailable = event(31, EVENT_HOT_RELOAD_COMPLETE, STATE_UNAVAILABLE, SESSION_NEW)
@@ -288,13 +297,7 @@ class DiagLogReaderSessionTest {
     @Test
     fun delayedOldUnavailableReloadCannotOverrideNewSuccessfulStart() {
         fun event(second: Int, kind: String, state: String?, session: String): String =
-            "10-11 20:18:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
-                DiagProtocol.format(
-                    event = kind,
-                    component = if (kind.startsWith(EVENT_MODULE_PREFIX)) COMPONENT_MODULE else COMPONENT_HOT_RELOAD,
-                    state = state,
-                    fields = mapOf(FIELD_SESSION_ID to session),
-                )
+            logcatSessionEvent("20:18", second, kind, state, session)
 
         val oldStart = event(30, EVENT_MODULE_LOADED, STATE_READY, SESSION_OLD)
         val oldUnavailable = event(31, EVENT_HOT_RELOAD_COMPLETE, STATE_UNAVAILABLE, SESSION_OLD)
@@ -313,13 +316,7 @@ class DiagLogReaderSessionTest {
     @Test
     fun lateOldGenerationFailureCannotOverrideNewSuccessfulStart() {
         fun event(second: Int, kind: String, state: String?, session: String): String =
-            "10-11 20:16:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
-                DiagProtocol.format(
-                    event = kind,
-                    component = if (kind.startsWith(EVENT_MODULE_PREFIX)) COMPONENT_MODULE else COMPONENT_HOT_RELOAD,
-                    state = state,
-                    fields = mapOf(FIELD_SESSION_ID to session),
-                )
+            logcatSessionEvent("20:16", second, kind, state, session)
 
         val oldStart = event(30, EVENT_MODULE_LOADED, STATE_READY, SESSION_OLD)
         val oldError = event(31, EVENT_HOT_RELOAD_COMPLETE, STATE_ERROR, SESSION_OLD)
