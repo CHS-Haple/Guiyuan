@@ -160,6 +160,25 @@ class BatteryColorSchemeLibraryTest {
     }
 
     @Test
+    fun allPresetModesWithStoredOverrideStillMigrateToCustom() {
+        for (base in BatteryBuiltInColorScheme.entries) {
+            val preferences = VisualTestPreferences()
+            preferences.edit().putBatteryColors(
+                VisualCfg(
+                    batteryColorPreset = base.preset,
+                    batteryColorOverrides = BatteryColorOverrides(charging = 0x002468AC),
+                ),
+            ).apply()
+
+            val migrated = BatterySchemeRepo(preferences).current()
+            assertEquals(customSchemeKey(1), migrated.activeSchemeKey)
+            val charging = requireNotNull(migrated.customById(1)).entries.charging
+            assertEquals(BatteryColorSchemeSource.fromBuiltIn(base), charging.source)
+            assertEquals(0xFF2468AC.toInt(), charging.customColor)
+        }
+    }
+
+    @Test
     fun pureLegacyPresetsDoNotCreateSpuriousCustomSchemes() {
         for (base in BatteryBuiltInColorScheme.entries) {
             val preferences = VisualTestPreferences()
