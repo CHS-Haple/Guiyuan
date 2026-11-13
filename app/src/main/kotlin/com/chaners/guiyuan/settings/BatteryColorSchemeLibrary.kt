@@ -284,8 +284,7 @@ private object BatterySchemePersistence {
         val base =
             BatteryBuiltInColorScheme.entries.firstOrNull { it.key == storedBase }
                 ?: BatteryBuiltInColorScheme.HYPEROS
-        var entries = BatteryColorSchemeEntries()
-        BatteryColorSlot.entries.forEach { slot ->
+        fun readEntry(slot: BatteryColorSlot): BatteryColorSchemeEntry {
             val source =
                 BatteryColorSchemeSource.fromPersisted(
                     preferences.getString(customSourceKey(id, slot), null),
@@ -297,12 +296,16 @@ private object BatterySchemePersistence {
                 } else {
                     batteryBuiltInColor(base, slot)
                 }
-            entries =
-                entries.withEntry(
-                    slot,
-                    BatteryColorSchemeEntry(source, color),
-                )
+            return BatteryColorSchemeEntry(source, color).normalized()
         }
+        val entries = BatteryColorSchemeEntries(
+            normal = readEntry(BatteryColorSlot.NORMAL),
+            powerSave = readEntry(BatteryColorSlot.POWER_SAVE),
+            performance = readEntry(BatteryColorSlot.PERFORMANCE),
+            superPowerSave = readEntry(BatteryColorSlot.SUPER_POWER_SAVE),
+            charging = readEntry(BatteryColorSlot.CHARGING),
+            low = readEntry(BatteryColorSlot.LOW),
+        )
         return BatteryCustomColorScheme(
             id = id,
             // Old names may contain control characters that backup files reject.
