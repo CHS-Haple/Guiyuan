@@ -212,17 +212,14 @@ private object BatterySchemePersistence {
         ) return
 
         val visual = preferences.readVisualCfg()
-        val allPreset =
-            BatteryColorSlot.entries.all { slot ->
-                visual.batteryColorModes.modeFor(slot) == BatteryColorMode.PRESET
-            }
-        val hasStoredCustomMemory =
+        val needsCustom =
             BatteryColorSlot.entries.any { slot ->
-                visual.batteryColorOverrides.colorFor(slot) != null
+                visual.batteryColorModes.modeFor(slot) != BatteryColorMode.PRESET ||
+                    visual.batteryColorOverrides.colorFor(slot) != null
             }
         val base = BatteryBuiltInColorScheme.fromPreset(visual.batteryColorPreset)
         val legacyCustom =
-            if (!allPreset || hasStoredCustomMemory) {
+            if (needsCustom) {
                 BatteryCustomColorScheme(
                     id = 1,
                     name = "",
@@ -235,7 +232,7 @@ private object BatterySchemePersistence {
         val initial =
             BatteryColorSchemeLibrary(
                 activeSchemeKey =
-                    if (allPreset && !hasStoredCustomMemory) {
+                    if (!needsCustom) {
                         base.key
                     } else {
                         requireNotNull(legacyCustom).key

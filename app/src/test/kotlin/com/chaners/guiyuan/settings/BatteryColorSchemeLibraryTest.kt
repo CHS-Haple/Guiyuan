@@ -121,6 +121,52 @@ class BatteryColorSchemeLibraryTest {
     }
 
     @Test
+    fun legacyPresetWithoutOverridesKeepsBuiltInSelection() {
+        val preferences = VisualTestPreferences()
+        preferences.edit()
+            .putBatteryColors(VisualCfg(batteryColorPreset = BatteryColorPreset.IOS_STYLE))
+            .apply()
+
+        val migrated = BatterySchemeRepo(preferences).current()
+        assertEquals(BATTERY_COLOR_SCHEME_IOS_KEY, migrated.activeSchemeKey)
+        assertEquals(0, migrated.customSchemes.size)
+    }
+
+    @Test
+    fun legacyModeChangeAloneCreatesCustomScheme() {
+        val preferences = VisualTestPreferences()
+        preferences.edit()
+            .putBatteryColors(
+                VisualCfg(batteryColorModes = BatteryColorModes(normal = BatteryColorMode.FOLLOW_SYSTEM)),
+            ).apply()
+
+        val migrated = BatterySchemeRepo(preferences).current()
+        assertEquals(customSchemeKey(1), migrated.activeSchemeKey)
+        assertEquals(
+            BatteryColorSchemeSource.FOLLOW_SYSTEM,
+            requireNotNull(migrated.customById(1)).entries.normal.source,
+        )
+    }
+
+    @Test
+    fun legacyStoredOverrideWithoutModeChangeCreatesCustomScheme() {
+        val preferences = VisualTestPreferences()
+        preferences.edit()
+            .putBatteryColors(
+                VisualCfg(
+                    batteryColorPreset = BatteryColorPreset.IOS_STYLE,
+                    batteryColorOverrides = BatteryColorOverrides(charging = 0x002468AC),
+                ),
+            ).apply()
+
+        val migrated = BatterySchemeRepo(preferences).current()
+        assertEquals(customSchemeKey(1), migrated.activeSchemeKey)
+        val charging = requireNotNull(migrated.customById(1)).entries.charging
+        assertEquals(BatteryColorSchemeSource.IOS, charging.source)
+        assertEquals(0xFF2468AC.toInt(), charging.customColor)
+    }
+
+    @Test
     fun legacyCustomWithoutStoredValueFallsBackToItsPresetSource() {
         assertEquals(
             BatteryColorSchemeSource.IOS,
