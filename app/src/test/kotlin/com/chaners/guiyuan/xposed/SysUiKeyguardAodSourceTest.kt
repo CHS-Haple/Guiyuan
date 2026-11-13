@@ -13,6 +13,18 @@ class SysUiKeyguardAodSourceTest {
                 returnType = Void.TYPE,
             ),
         )
+        assertTrue(
+            SysUiKeyguardAodSource.matchesToggleAodSignature(
+                parameterTypes = arrayOf<Class<*>>(Boolean::class.javaObjectType),
+                returnType = Void.TYPE,
+            ),
+        )
+        assertFalse(
+            SysUiKeyguardAodSource.matchesToggleAodSignature(
+                parameterTypes = arrayOf<Class<*>>(Boolean::class.javaPrimitiveType!!),
+                returnType = Boolean::class.javaPrimitiveType!!,
+            ),
+        )
         assertFalse(
             SysUiKeyguardAodSource.matchesToggleAodSignature(
                 parameterTypes = emptyArray(),
