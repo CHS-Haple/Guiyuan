@@ -175,7 +175,7 @@ object GlassNavigationBarDefaults {
  *
  * @param items The destinations, in order.
  * @param selectedIndex The index of the current destination.
- * @param onSelect Called with the index under the finger, on press and while dragging.
+ * @param onSelect Commits on normal pointer release; keyboard/accessibility activates immediately.
  * @param backdrop The [Backdrop] supplying the content behind the glass.
  * @param modifier The modifier applied to the bar.
  * @param defaultWindowInsetsPadding Whether to apply the bottom floating margin and Android
@@ -195,7 +195,6 @@ object GlassNavigationBarDefaults {
  * @param selectedColor Tint of the selected icon and label.
  * @param unselectedColor Tint of the others. They are not dimmed; the indicator alone says which
  *   one is current.
- * @param onSelect Commits a destination on release; keyboard/accessibility activation selects immediately.
  * @param touchExtension Whether safe bottom whitespace also accepts destination taps.
  * @param interactive Whether destination gestures, keyboard actions and accessibility actions are enabled.
  *   Noninteractive is for a visual preview, not for the real bottom navigation.
@@ -276,12 +275,13 @@ fun GlassNavigationBar(
     val targetRight = targetLeft + chipWidth
 
     LaunchedEffect(index, settleGeneration, targetLeft, targetRight) {
-        if (dragging.value || slot <= 0f) return@LaunchedEffect
-        if (right.value <= left.value) {
-            left.snapTo(targetLeft)
-            right.snapTo(targetRight)
-        } else {
-            animateIndicator(targetLeft, targetRight)
+        if (!dragging.value && slot > 0f) {
+            if (right.value <= left.value) {
+                left.snapTo(targetLeft)
+                right.snapTo(targetRight)
+            } else {
+                animateIndicator(targetLeft, targetRight)
+            }
         }
     }
 
