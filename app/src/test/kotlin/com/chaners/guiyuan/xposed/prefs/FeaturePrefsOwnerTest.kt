@@ -32,7 +32,7 @@ class FeaturePrefsOwnerTest {
 
     @Test
     fun defaultScenesAreEnabled() {
-        val cfg = com.chaners.guiyuan.settings.FeatureCfg()
+        val cfg = FeatureCfg()
         assertEquals(true, cfg.enabled)
         assertEquals(true, cfg.keyguard)
         assertEquals(true, cfg.aod)
@@ -69,6 +69,9 @@ class FeaturePrefsOwnerTest {
         assertEquals(LOW_BATTERY_THRESHOLD_MAX, prefs.readFeatureCfg().lowBatteryThreshold)
 
         prefs.edit().putInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_MAX + 1).apply()
+        assertEquals(LOW_BATTERY_THRESHOLD_DEFAULT, prefs.readFeatureCfg().lowBatteryThreshold)
+
+        prefs.edit().putInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_MIN - 1).apply()
         assertEquals(LOW_BATTERY_THRESHOLD_DEFAULT, prefs.readFeatureCfg().lowBatteryThreshold)
     }
 
