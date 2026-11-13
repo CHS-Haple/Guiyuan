@@ -36,6 +36,10 @@ internal class VisualRepo(context: Context) {
         preferences.edit().putInt(activeProfileKey(key), value).apply()
     }
 
+    private fun writeProfileString(key: String, value: String) {
+        preferences.edit().putString(activeProfileKey(key), value).apply()
+    }
+
     fun setDualSignal(enabled: Boolean) {
         preferences.edit()
             .putBoolean(DUAL_SIGNAL_ENABLED_KEY, enabled)
@@ -44,7 +48,7 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setDualRowDotArrangement(style: SignalDotArrangement) {
-        preferences.edit().putString(activeProfileKey(DUAL_ROW_DOT_ARRANGEMENT_KEY), style.persistedValue).apply()
+        writeProfileString(DUAL_ROW_DOT_ARRANGEMENT_KEY, style.persistedValue)
     }
 
     fun setBothSidesShowActivity(enabled: Boolean) {
@@ -79,10 +83,7 @@ internal class VisualRepo(context: Context) {
         require(style != SignalDotArrangement.BOTH_SIDES) {
             "Two-sided signal dots require dual-row mode"
         }
-        preferences.edit().putString(
-            activeProfileKey(SINGLE_ROW_DOT_STYLE_KEY),
-            style.persistedValue,
-        ).apply()
+        writeProfileString(SINGLE_ROW_DOT_STYLE_KEY, style.persistedValue)
     }
 
     fun setFixedLowerOpening(enabled: Boolean) {
@@ -167,14 +168,11 @@ internal class VisualRepo(context: Context) {
                 BATTERY_TOP_TEXT_UI_SCALE_MAX,
                 topTextUiScaleDefault(preferences.readLayout()),
             )
-        preferences
-            .edit()
-            .putFloat(
-                activeProfileKey(BATTERY_TOP_TEXT_SCALE_KEY),
-                (uiScale * BATTERY_TOP_TEXT_UI_SCALE_REFERENCE)
-                    .coerceIn(BATTERY_TOP_TEXT_SCALE_MIN, BATTERY_TOP_TEXT_SCALE_MAX),
-            )
-            .apply()
+        writeProfileFloat(
+            BATTERY_TOP_TEXT_SCALE_KEY,
+            (uiScale * BATTERY_TOP_TEXT_UI_SCALE_REFERENCE)
+                .coerceIn(BATTERY_TOP_TEXT_SCALE_MIN, BATTERY_TOP_TEXT_SCALE_MAX),
+        )
     }
 
     fun setTopTextWeight(weight: Int) {
@@ -191,13 +189,7 @@ internal class VisualRepo(context: Context) {
                 BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
                 0f,
             )
-        preferences
-            .edit()
-            .putFloat(
-                activeProfileKey(BATTERY_TOP_VERTICAL_OFFSET_KEY),
-                topOffsetYRaw(uiOffset),
-            )
-            .apply()
+        writeProfileFloat(BATTERY_TOP_VERTICAL_OFFSET_KEY, topOffsetYRaw(uiOffset))
     }
 
     fun setWifiOffsetY(offset: Float) {
@@ -324,16 +316,13 @@ internal class VisualRepo(context: Context) {
                 BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX,
                 topChargingIconUiScaleDefault(preferences.readLayout()),
             )
-        preferences
-            .edit()
-            .putFloat(
-                activeProfileKey(BATTERY_TOP_CHARGING_ICON_SCALE_KEY),
-                (uiScale * BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE)
-                    .coerceIn(
-                        BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
-                        BATTERY_TOP_CHARGING_ICON_SCALE_MAX,
-                    ),
-            )
-            .apply()
+        writeProfileFloat(
+            BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
+            (uiScale * BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE)
+                .coerceIn(
+                    BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
+                    BATTERY_TOP_CHARGING_ICON_SCALE_MAX,
+                ),
+        )
     }
 }
