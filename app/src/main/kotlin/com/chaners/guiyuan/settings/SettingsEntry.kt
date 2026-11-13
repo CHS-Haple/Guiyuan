@@ -7,6 +7,10 @@ internal const val SETTINGS_ENTRY_PREFS = "settings_entry"
 internal const val SETTINGS_ENTRY_KEY = "settings_entry_position"
 internal const val SETTINGS_ENTRY_ICON_KEY = "settings_entry_icon"
 
+// Android R+ emits a null key for Editor.clear(); both app observers need it.
+internal fun isSettingsEntryKey(key: String?): Boolean =
+    key == null || key == SETTINGS_ENTRY_KEY || key == SETTINGS_ENTRY_ICON_KEY
+
 internal enum class SettingsEntry {
     Disabled, Top, Middle, Bottom;
 
@@ -35,9 +39,7 @@ internal object SettingsEntryPrefs {
         )
         return observePreferenceChanges(
             preferences = prefs,
-            matchesKey = { key ->
-                key == null || key == SETTINGS_ENTRY_KEY || key == SETTINGS_ENTRY_ICON_KEY
-            },
+            matchesKey = ::isSettingsEntryKey,
             snapshot = {
                 SettingsEntryCfg(
                     entry = SettingsEntry.from(prefs.getInt(SETTINGS_ENTRY_KEY, 0)),
