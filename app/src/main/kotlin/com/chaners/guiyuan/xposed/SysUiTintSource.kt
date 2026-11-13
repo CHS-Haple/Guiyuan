@@ -95,65 +95,69 @@ internal object SysUiTintSource {
             }
         }
 
+        // Both native tint callbacks have one post-native state delivery owner;
+        // only updateLightDarkTint carries first-event diagnostic arguments.
+        fun tintHooker(source: String, reportNativeArguments: Boolean): Hooker =
+            Hooker { chain ->
+                val result = chain.proceed()
+                val sourceView =
+                    if (hooksReady) optionalNativeRead { chain.thisObject as? View } else null
+                if (sourceView != null) {
+                    val state =
+                        dispatchAppliedState(
+                            sourceView = sourceView,
+                            percentField = percentField,
+                            onTintState = onTintState,
+                            onRuntimeFailure = onRuntimeFailure,
+                        )
+                    diagnose {
+                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                            probeBatteryIconAuthority(
+                                sourceView = sourceView,
+                                iconField = iconField,
+                                source = source,
+                                onEvent = onEvent,
+                            )
+                            if (
+                                reportNativeArguments &&
+                                state != null &&
+                                synchronized(this) {
+                                    !firstEventLogged.containsKey(sourceView)
+                                }
+                            ) {
+                                val darkIntensity =
+                                    (chain.getArg(1) as? Number)?.toFloat()
+                                        ?: Float.NaN
+                                val lightColor =
+                                    (chain.getArg(3) as? Number)?.toInt() ?: 0
+                                val darkColor =
+                                    (chain.getArg(4) as? Number)?.toInt() ?: 0
+                                val useTint =
+                                    chain.getArg(5) as? Boolean ?: false
+                                onEvent(
+                                    "tintSource receiver=" +
+                                        sourceView.javaClass.simpleName +
+                                        " batteryApplied=" + colorHex(state.appliedTint) +
+                                        " authority=battery-anchor-fallback" +
+                                        " intensity=" + darkIntensity +
+                                        " light=" + colorHex(lightColor) +
+                                        " dark=" + colorHex(darkColor) +
+                                        " useTint=" + useTint,
+                                )
+                                synchronized(this) { firstEventLogged[sourceView] = Unit }
+                            }
+                        }
+                    }
+                }
+                result
+            }
+
         val updateHandle =
             runCatching {
                 module
                     .hook(updateMethod)
                     .setId(UPDATE_HOOK_ID)
-                    .intercept(
-                        Hooker { chain ->
-                            val result = chain.proceed()
-                            val sourceView =
-                                if (hooksReady) optionalNativeRead { chain.thisObject as? View } else null
-                            if (sourceView != null) {
-                                val state =
-                                    dispatchAppliedState(
-                                        sourceView = sourceView,
-                                        percentField = percentField,
-                                        onTintState = onTintState,
-                                        onRuntimeFailure = onRuntimeFailure,
-                                    )
-                                diagnose {
-                                    if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                                        probeBatteryIconAuthority(
-                                            sourceView = sourceView,
-                                            iconField = iconField,
-                                            source = UPDATE_TINT_METHOD_NAME,
-                                            onEvent = onEvent,
-                                        )
-                                        if (
-                                            state != null &&
-                                            synchronized(this) {
-                                                !firstEventLogged.containsKey(sourceView)
-                                            }
-                                        ) {
-                                            val darkIntensity =
-                                                (chain.getArg(1) as? Number)?.toFloat()
-                                                    ?: Float.NaN
-                                            val lightColor =
-                                                (chain.getArg(3) as? Number)?.toInt() ?: 0
-                                            val darkColor =
-                                                (chain.getArg(4) as? Number)?.toInt() ?: 0
-                                            val useTint =
-                                                chain.getArg(5) as? Boolean ?: false
-                                            onEvent(
-                                                "tintSource receiver=" +
-                                                    sourceView.javaClass.simpleName +
-                                                    " batteryApplied=" + colorHex(state.appliedTint) +
-                                                    " authority=battery-anchor-fallback" +
-                                                    " intensity=" + darkIntensity +
-                                                    " light=" + colorHex(lightColor) +
-                                                    " dark=" + colorHex(darkColor) +
-                                                    " useTint=" + useTint,
-                                            )
-                                            synchronized(this) { firstEventLogged[sourceView] = Unit }
-                                        }
-                                    }
-                                }
-                            }
-                            result
-                        },
-                    )
+                    .intercept(tintHooker(UPDATE_TINT_METHOD_NAME, reportNativeArguments = true))
             }.getOrElse { error ->
                 clearSourceState()
                 throw error
@@ -163,32 +167,7 @@ internal object SysUiTintSource {
                 module
                     .hook(internalMethod)
                     .setId(INTERNAL_HOOK_ID)
-                    .intercept(
-                        Hooker { chain ->
-                            val result = chain.proceed()
-                            val sourceView =
-                                if (hooksReady) optionalNativeRead { chain.thisObject as? View } else null
-                            if (sourceView != null) {
-                                dispatchAppliedState(
-                                    sourceView = sourceView,
-                                    percentField = percentField,
-                                    onTintState = onTintState,
-                                    onRuntimeFailure = onRuntimeFailure,
-                                )
-                                diagnose {
-                                    if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                                        probeBatteryIconAuthority(
-                                            sourceView = sourceView,
-                                            iconField = iconField,
-                                            source = ON_DARK_CHANGED_INTERNAL_METHOD_NAME,
-                                            onEvent = onEvent,
-                                        )
-                                    }
-                                }
-                            }
-                            result
-                        },
-                    )
+                    .intercept(tintHooker(ON_DARK_CHANGED_INTERNAL_METHOD_NAME, reportNativeArguments = false))
             }.getOrElse { error ->
                 val cleanupFailed =
                     try {
