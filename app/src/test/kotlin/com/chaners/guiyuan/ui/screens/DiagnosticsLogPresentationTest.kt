@@ -38,7 +38,7 @@ class DiagnosticsLogPresentationTest {
         val allLevels = LEVEL_INFO or LEVEL_WARN or LEVEL_ERROR
         val allCategories =
             CAT_MODULE or CAT_NETWORK or CAT_DISPLAY or CAT_PERF or CAT_SETTINGS or CAT_OTHER
-        val example = structured("diagnostics.snapshot")
+        val example = structured("filter.mask.coverage")
         LogLevel.entries.forEach { level ->
             LogCategory.entries.forEach { category ->
                 assertTrue(
