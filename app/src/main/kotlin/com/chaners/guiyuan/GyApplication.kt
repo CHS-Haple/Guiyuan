@@ -7,16 +7,12 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
-import com.chaners.guiyuan.settings.FEATURE_AOD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
 import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
 import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
 import com.chaners.guiyuan.settings.FEATURE_PREFS
-import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
 import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_KEY
-import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
-import com.chaners.guiyuan.settings.validLowBatteryThreshold
 import com.chaners.guiyuan.settings.COMBINED_STATUS_VISUAL_PREFS_NAME
 import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
 import com.chaners.guiyuan.settings.DIAG_PREFS
@@ -30,6 +26,7 @@ import com.chaners.guiyuan.settings.isFeatureKey
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateVisualPrefsIfNeeded
 import com.chaners.guiyuan.settings.putVisualCfg
+import com.chaners.guiyuan.settings.readFeatureCfg
 import com.chaners.guiyuan.settings.readVisualCfg
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
@@ -345,16 +342,7 @@ class GyApplication :
                         DIAG_LEVEL_KEY,
                         DiagLevel.General.name,
                     ) ?: DiagLevel.General.name,
-                feature =
-                    FeatureCfg(
-                        enabled = featurePrefs.getBoolean(FEATURE_ENABLED_KEY, true),
-                        keyguard =
-                            featurePrefs.getBoolean(FEATURE_KEYGUARD_KEY, FEATURE_KEYGUARD_DEFAULT),
-                        aod = featurePrefs.getBoolean(FEATURE_AOD_KEY, FEATURE_AOD_DEFAULT),
-                        lowBatteryThreshold = validLowBatteryThreshold(
-                            featurePrefs.getInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_DEFAULT),
-                        ),
-                    ),
+                feature = featurePrefs.readFeatureCfg(),
                 changedAtNs = featurePrefs.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L),
                 visual = visualPrefs.readVisualCfg(),
             )

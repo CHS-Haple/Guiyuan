@@ -2,17 +2,10 @@ package com.chaners.guiyuan.xposed.prefs
 
 import android.content.SharedPreferences
 import android.os.SystemClock
-import com.chaners.guiyuan.settings.FEATURE_AOD_DEFAULT
-import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
 import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
-import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
-import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_DEFAULT
-import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
-import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_KEY
-import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
-import com.chaners.guiyuan.settings.validLowBatteryThreshold
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.isFeatureKey
+import com.chaners.guiyuan.settings.readFeatureCfg
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import java.util.concurrent.atomic.AtomicReference
 
@@ -39,14 +32,14 @@ internal object FeaturePrefsOwner {
         unbindLocked()
 
         val token = Any()
-        val initial = resolve(source)
+        val initial = source.readFeatureCfg()
 
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
                 if (isFeatureKey(key)) {
                     val before = state.get()
                     if (before.source === changed && before.token === token) {
-                        val next = resolve(changed)
+                        val next = changed.readFeatureCfg()
                         var latest = state.get()
                         while (latest.source === changed && latest.token === token && latest.cfg != next) {
                             val pending = latest.copy(cfg = next)
@@ -141,14 +134,4 @@ internal object FeaturePrefsOwner {
         } else {
             null
         }
-
-    private fun resolve(source: SharedPreferences): FeatureCfg =
-        FeatureCfg(
-            enabled = source.getBoolean(FEATURE_ENABLED_KEY, true),
-            keyguard = source.getBoolean(FEATURE_KEYGUARD_KEY, FEATURE_KEYGUARD_DEFAULT),
-            aod = source.getBoolean(FEATURE_AOD_KEY, FEATURE_AOD_DEFAULT),
-            lowBatteryThreshold = validLowBatteryThreshold(
-                source.getInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_DEFAULT),
-            ),
-        )
 }
