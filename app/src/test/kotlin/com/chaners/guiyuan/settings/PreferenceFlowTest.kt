@@ -10,14 +10,16 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private const val SELECTED_KEY = "selected"
+
 class PreferenceFlowTest {
     @Test
     fun eachCollectorReceivesInitialSnapshotAfterRegistrationAndUnregisters() = runBlocking {
         val prefs = VisualTestPreferences()
         val events = Channel<Int>(Channel.UNLIMITED)
-        val flow = observePreferenceChanges(prefs, { it == "selected" }) {
+        val flow = observePreferenceChanges(prefs, { it == SELECTED_KEY }) {
             assertTrue(prefs.listenerCount > 0)
-            prefs.getInt("selected", 0)
+            prefs.getInt(SELECTED_KEY, 0)
         }
         val first = launch { flow.collect { events.send(it) } }
         val second = launch { flow.collect { events.send(it) } }
@@ -41,10 +43,10 @@ class PreferenceFlowTest {
         val collector = launch {
             observePreferenceChanges(
                 preferences = prefs,
-                matchesKey = { it == "selected" },
+                matchesKey = { it == SELECTED_KEY },
                 snapshot = {
                     reads++
-                    prefs.getInt("selected", 0)
+                    prefs.getInt(SELECTED_KEY, 0)
                 },
             ).collect { events.send(it) }
         }
@@ -56,15 +58,15 @@ class PreferenceFlowTest {
             prefs.notifyPreferenceChanged(null)
             assertEquals(1, reads)
 
-            prefs.edit().putInt("selected", 0).commit()
+            prefs.edit().putInt(SELECTED_KEY, 0).commit()
             assertEquals(2, reads)
-            prefs.edit().putInt("selected", 1).commit()
+            prefs.edit().putInt(SELECTED_KEY, 1).commit()
             assertEquals(1, withTimeout(2_000) { events.receive() })
             assertEquals(3, reads)
 
-            prefs.notifyPreferenceChanged("selected")
+            prefs.notifyPreferenceChanged(SELECTED_KEY)
             assertEquals(4, reads)
-            prefs.edit().putInt("selected", 2).commit()
+            prefs.edit().putInt(SELECTED_KEY, 2).commit()
             assertEquals(2, withTimeout(2_000) { events.receive() })
             assertEquals(5, reads)
             assertTrue(events.tryReceive().isFailure)
@@ -72,7 +74,7 @@ class PreferenceFlowTest {
             collector.cancelAndJoin()
             assertEquals(0, prefs.listenerCount)
         }
-        prefs.edit().putInt("selected", 3).commit()
+        prefs.edit().putInt(SELECTED_KEY, 3).commit()
         assertEquals(5, reads)
     }
 }
