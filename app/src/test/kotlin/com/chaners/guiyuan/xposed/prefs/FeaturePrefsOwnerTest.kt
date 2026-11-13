@@ -46,33 +46,25 @@ class FeaturePrefsOwnerTest {
     }
 
     @Test
-    fun featureDecoderPreservesStoredFlagsAndValidatesLowBatteryThreshold() {
+    fun featureDecoderKeepsFlagsIndependentAndValidatesLowBatteryThreshold() {
         val prefs = VisualTestPreferences()
-        prefs.edit()
-            .putBoolean(FEATURE_ENABLED_KEY, false)
-            .putBoolean(FEATURE_KEYGUARD_KEY, false)
-            .putBoolean(FEATURE_AOD_KEY, false)
-            .putInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_MIN)
-            .apply()
-
-        assertEquals(
-            FeatureCfg(
-                enabled = false,
-                keyguard = false,
-                aod = false,
-                lowBatteryThreshold = LOW_BATTERY_THRESHOLD_MIN,
-            ),
-            prefs.readFeatureCfg(),
+        val cases = listOf(
+            FeatureCfg(false, true, true, LOW_BATTERY_THRESHOLD_MIN) to LOW_BATTERY_THRESHOLD_MIN,
+            FeatureCfg(true, false, true, LOW_BATTERY_THRESHOLD_MAX) to LOW_BATTERY_THRESHOLD_MAX,
+            FeatureCfg(true, true, false, LOW_BATTERY_THRESHOLD_DEFAULT) to
+                (LOW_BATTERY_THRESHOLD_MAX + 1),
+            FeatureCfg(false, false, false, LOW_BATTERY_THRESHOLD_DEFAULT) to
+                (LOW_BATTERY_THRESHOLD_MIN - 1),
         )
-
-        prefs.edit().putInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_MAX).apply()
-        assertEquals(LOW_BATTERY_THRESHOLD_MAX, prefs.readFeatureCfg().lowBatteryThreshold)
-
-        prefs.edit().putInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_MAX + 1).apply()
-        assertEquals(LOW_BATTERY_THRESHOLD_DEFAULT, prefs.readFeatureCfg().lowBatteryThreshold)
-
-        prefs.edit().putInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_MIN - 1).apply()
-        assertEquals(LOW_BATTERY_THRESHOLD_DEFAULT, prefs.readFeatureCfg().lowBatteryThreshold)
+        for ((expected, storedThreshold) in cases) {
+            prefs.edit()
+                .putBoolean(FEATURE_ENABLED_KEY, expected.enabled)
+                .putBoolean(FEATURE_KEYGUARD_KEY, expected.keyguard)
+                .putBoolean(FEATURE_AOD_KEY, expected.aod)
+                .putInt(LOW_BATTERY_THRESHOLD_KEY, storedThreshold)
+                .apply()
+            assertEquals("storedThreshold=$storedThreshold", expected, prefs.readFeatureCfg())
+        }
     }
 
     @Test
