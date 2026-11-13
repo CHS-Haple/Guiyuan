@@ -40,6 +40,22 @@ class BatteryColorSchemeLibraryTest {
     }
 
     @Test
+    fun builtInEntriesMatchIndependentSlotUpdatesForEveryTemplate() {
+        for (scheme in BatteryBuiltInColorScheme.entries) {
+            val source = BatteryColorSchemeSource.fromBuiltIn(scheme)
+            val oldResult = BatteryColorSlot.entries.fold(BatteryColorSchemeEntries()) { entries, slot ->
+                entries.withEntry(slot, BatteryColorSchemeEntry(source, batteryBuiltInColor(scheme, slot)))
+            }
+            val current = entriesFromBuiltIn(scheme)
+            assertEquals(oldResult, current)
+            for (slot in BatteryColorSlot.entries) {
+                assertEquals(source, current.entryFor(slot).source)
+                assertEquals(batteryBuiltInColor(scheme, slot), current.entryFor(slot).customColor)
+            }
+        }
+    }
+
+    @Test
     fun builtInEntriesKeepTemplateReferencesInsteadOfFlatteningColors() {
         val entries = entriesFromBuiltIn(BatteryBuiltInColorScheme.IOS)
         assertEquals(
