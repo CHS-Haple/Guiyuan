@@ -136,24 +136,18 @@ internal object SysUiCcSource {
                                 callback = {
                                     val visible = chain.getArg(0) as? Boolean
                                     homeEligible = allowsHome(visible)
+                                    // One native header witness for this visibility event.
+                                    val contract = if (visible == true) anchorContract else null
+                                    val header =
+                                        if (visible == true) resolveHeader(chain.thisObject, contract)
+                                        else null
                                     val presentationHost =
-                                        if (visible == true) {
-                                            resolveFakePresentationHost(chain.thisObject)
-                                        } else {
-                                            null
-                                        }
+                                        header?.let { contract?.fakePresentationRoot(it) }
                                     val sourceScene =
-                                        if (visible == true) {
-                                            resolveSourceScene(chain.thisObject)
-                                        } else {
-                                            null
-                                        }
+                                        if (visible == true) resolveSourceScene(contract, header)
+                                        else null
                                     val transitionEndpoints =
-                                        if (visible == true) {
-                                            resolveTransitionEndpoints(chain.thisObject)
-                                        } else {
-                                            null
-                                        }
+                                        header?.let { contract?.transitionEndpoints(it) }
                                     val update =
                                         Update(
                                             source = Source.CONTROL_CENTER,
@@ -165,11 +159,7 @@ internal object SysUiCcSource {
                                             sourceScene = sourceScene,
                                             transitionEndpoints = transitionEndpoints,
                                             batteryIslandActive =
-                                                if (visible == true) {
-                                                    resolveBatteryIslandActive(chain.thisObject)
-                                                } else {
-                                                    null
-                                                },
+                                                header?.let { contract?.batteryIslandActive(it) },
                                         )
                                     onUpdate?.invoke(update)
                                     dispatchRuntimeCallback(
@@ -245,12 +235,12 @@ internal object SysUiCcSource {
                                         nativeFraction(
                                             (chain.getArg(0) as? Number)?.toFloat(),
                                         )
+                                    val contract = anchorContract
+                                    val header = contract?.headerFromCallback(chain.thisObject)
                                     val transitionEndpoints =
-                                        anchorContract
-                                            ?.transitionEndpointsFromCallback(chain.thisObject)
+                                        header?.let { contract?.transitionEndpoints(it) }
                                     val batteryIslandActive =
-                                        anchorContract
-                                            ?.batteryIslandFromCallback(chain.thisObject)
+                                        header?.let { contract?.batteryIslandActive(it) }
                                     val update =
                                         Update(
                                             source = Source.CONTROL_CENTER,
@@ -291,6 +281,8 @@ internal object SysUiCcSource {
                                 callback = {
                                     val first = chain.getArg(0) as? Boolean
                                     val second = chain.getArg(1) as? Boolean
+                                    val contract = anchorContract
+                                    val header = contract?.headerFromCallback(chain.thisObject)
                                     val update =
                                         Update(
                                             source = Source.CONTROL_CENTER,
@@ -301,11 +293,9 @@ internal object SysUiCcSource {
                                             appearance = first,
                                             appearanceAnimated = second,
                                             transitionEndpoints =
-                                                anchorContract
-                                                    ?.transitionEndpointsFromCallback(chain.thisObject),
+                                                header?.let { contract?.transitionEndpoints(it) },
                                             batteryIslandActive =
-                                                anchorContract
-                                                    ?.batteryIslandFromCallback(chain.thisObject),
+                                                header?.let { contract?.batteryIslandActive(it) },
                                         )
                                     onUpdate?.invoke(update)
                                 },
@@ -488,48 +478,21 @@ internal object SysUiCcSource {
     internal fun allowsHome(visible: Boolean?): Boolean =
         visible == false
 
-    private fun resolveHeader(delegate: Any?): Any? {
+    private fun resolveHeader(delegate: Any?, contract: AnchorContract?): Any? {
         delegate ?: return null
-        val contract = anchorContract ?: return null
+        contract ?: return null
         return headerRef.get()
             ?: contract.resolveHeader(delegate)?.also { resolved ->
                 headerRef = WeakReference(resolved)
             }
     }
 
-    private fun resolveFakePresentationHost(
-        delegate: Any?,
-    ): ViewGroup? {
-        val contract = anchorContract ?: return null
-        val header = resolveHeader(delegate) ?: return null
-        return contract.fakePresentationRoot(header)
-    }
-
-    private fun resolveTransitionEndpoints(
-        delegate: Any?,
-    ): TransitionEndpoints? {
-        val contract = anchorContract ?: return null
-        val header =
-            resolveHeader(delegate)
-                ?: return null
-        return contract.transitionEndpoints(header)
-    }
-
-    private fun resolveBatteryIslandActive(
-        delegate: Any?,
-    ): Boolean? {
-        val contract = anchorContract ?: return null
-        val header =
-            resolveHeader(delegate)
-                ?: return null
-        return contract.batteryIslandActive(header)
-    }
-
-    private fun resolveSourceScene(delegate: Any?): SourceScene {
-        val contract = anchorContract ?: return SourceScene.UNKNOWN
-        val header =
-            resolveHeader(delegate)
-                ?: return SourceScene.UNKNOWN
+    private fun resolveSourceScene(
+        contract: AnchorContract?,
+        header: Any?,
+    ): SourceScene {
+        contract ?: return SourceScene.UNKNOWN
+        header ?: return SourceScene.UNKNOWN
         val realSystemIcons =
             contract.realSystemIcons(header)
                 ?: return SourceScene.UNKNOWN
@@ -672,30 +635,24 @@ internal object SysUiCcSource {
         fun transitionEndpoints(
             header: Any,
         ): TransitionEndpoints? {
-            val fakeRoot = fakeStatusBar(header) ?: return null
-            val finalRoot = finalStatusBar(header) ?: return null
+            // Use the same native combined-header witness for both endpoints.
+            val combined = combinedHeader(header) ?: return null
+            val fakeRoot =
+                optionalNativeRead { fakeStatusBarField.get(combined) as? ViewGroup }
+                    ?: return null
+            val finalRoot =
+                optionalNativeRead { statusBarField.get(combined) as? ViewGroup }
+                    ?: return null
             return TransitionEndpoints(
                 fakeRoot = fakeRoot,
                 finalRoot = finalRoot,
             )
         }
 
-        fun transitionEndpointsFromCallback(
-            callback: Any?,
-        ): TransitionEndpoints? {
-            val header = headerFromCallback(callback) ?: return null
-            return transitionEndpoints(header)
-        }
-
-        fun batteryIslandFromCallback(callback: Any?): Boolean? {
-            val header = headerFromCallback(callback) ?: return null
-            return batteryIslandActive(header)
-        }
-
         fun batteryIslandActive(header: Any): Boolean? =
             readBoolean(addBatteryIslandField, header)
 
-        private fun headerFromCallback(callback: Any?): Any? =
+        fun headerFromCallback(callback: Any?): Any? =
             callback
                 ?.let { candidate ->
                     optionalNativeRead { callbackOuterField.get(candidate) }
@@ -712,13 +669,6 @@ internal object SysUiCcSource {
             val combinedHeader = combinedHeader(header) ?: return null
             return optionalNativeRead {
                 fakeStatusBarField.get(combinedHeader) as? ViewGroup
-            }
-        }
-
-        private fun finalStatusBar(header: Any): ViewGroup? {
-            val combinedHeader = combinedHeader(header) ?: return null
-            return optionalNativeRead {
-                statusBarField.get(combinedHeader) as? ViewGroup
             }
         }
 
