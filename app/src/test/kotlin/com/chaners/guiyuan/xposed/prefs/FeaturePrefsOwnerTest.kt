@@ -6,7 +6,12 @@ import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
 import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_KEY
 import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_MIN
+import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_MAX
+import com.chaners.guiyuan.settings.FeatureCfg
+import com.chaners.guiyuan.settings.VisualTestPreferences
 import com.chaners.guiyuan.settings.isFeatureKey
+import com.chaners.guiyuan.settings.readFeatureCfg
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -32,6 +37,39 @@ class FeaturePrefsOwnerTest {
         assertEquals(true, cfg.keyguard)
         assertEquals(true, cfg.aod)
         assertEquals(LOW_BATTERY_THRESHOLD_DEFAULT, cfg.lowBatteryThreshold)
+    }
+
+    @Test
+    fun missingFeaturePreferencesDecodeToPublishedDefaults() {
+        val prefs = VisualTestPreferences()
+        assertEquals(FeatureCfg(), prefs.readFeatureCfg())
+    }
+
+    @Test
+    fun featureDecoderPreservesStoredFlagsAndValidatesLowBatteryThreshold() {
+        val prefs = VisualTestPreferences()
+        prefs.edit()
+            .putBoolean(FEATURE_ENABLED_KEY, false)
+            .putBoolean(FEATURE_KEYGUARD_KEY, false)
+            .putBoolean(FEATURE_AOD_KEY, false)
+            .putInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_MIN)
+            .apply()
+
+        assertEquals(
+            FeatureCfg(
+                enabled = false,
+                keyguard = false,
+                aod = false,
+                lowBatteryThreshold = LOW_BATTERY_THRESHOLD_MIN,
+            ),
+            prefs.readFeatureCfg(),
+        )
+
+        prefs.edit().putInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_MAX).apply()
+        assertEquals(LOW_BATTERY_THRESHOLD_MAX, prefs.readFeatureCfg().lowBatteryThreshold)
+
+        prefs.edit().putInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_MAX + 1).apply()
+        assertEquals(LOW_BATTERY_THRESHOLD_DEFAULT, prefs.readFeatureCfg().lowBatteryThreshold)
     }
 
     @Test
