@@ -924,13 +924,7 @@ internal class StatusPainter(
                 width = metrics?.sourceOpticalWidth ?: geometry.airplaneMaxSize,
                 height = metrics?.sourceOpticalHeight ?: geometry.airplaneMaxSize,
             )
-        val local =
-            if (visual.layout == ContentLayout.BATTERY_CENTER) {
-                shiftBoundsY(baseLocal, networkTopTranslationY(visual))
-            } else {
-                baseLocal
-            }
-        return mapTransitionBounds(local, nativeTransform)
+        return mapNetworkTopTransitionBounds(baseLocal, nativeTransform, visual)
     }
 
     fun drawTransitionAirplane(
@@ -994,13 +988,7 @@ internal class StatusPainter(
                 width = metrics?.sourceOpticalWidth ?: geometry.noSimMaxSize,
                 height = metrics?.sourceOpticalHeight ?: geometry.noSimMaxSize,
             )
-        val local =
-            if (visual.layout == ContentLayout.BATTERY_CENTER) {
-                shiftBoundsY(baseLocal, networkTopTranslationY(visual))
-            } else {
-                baseLocal
-            }
-        return mapTransitionBounds(local, nativeTransform)
+        return mapNetworkTopTransitionBounds(baseLocal, nativeTransform, visual)
     }
 
     fun drawTransitionNoSim(
@@ -1238,6 +1226,23 @@ internal class StatusPainter(
                 mobileTypeOffset = visual.mobileTypeOffsetY,
             )
 
+    // Airplane, no-SIM and mobile-type share the same top-slot projection;
+    // only mobile-type supplies its indicator-specific vertical translation.
+    private fun mapNetworkTopTransitionBounds(
+        bounds: TransitionBounds,
+        transform: NativeRenderTransform,
+        visual: VisualCfg,
+        indicator: CenterIndicator? = null,
+    ): TransitionBounds {
+        val local =
+            if (visual.layout == ContentLayout.BATTERY_CENTER) {
+                shiftBoundsY(bounds, networkTopTranslationY(visual, indicator))
+            } else {
+                bounds
+            }
+        return mapTransitionBounds(local, transform)
+    }
+
     private fun shiftBoundsY(
         bounds: TransitionBounds,
         deltaY: Float,
@@ -1270,9 +1275,11 @@ internal class StatusPainter(
             }
         }
 
-        val previousAvoidance =
+        // Both animated sides use identical source geometry and pivot rules;
+        // only the indicator and its independent transition amount differ.
+        fun scaledAvoidance(indicator: CenterIndicator, amount: Float): TopSlotAvoidance? =
             resolveCenterIndicatorAvoidance(
-                indicator = previous,
+                indicator = indicator,
                 scale = scale,
                 geometry = geometry,
                 scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
@@ -1283,30 +1290,16 @@ internal class StatusPainter(
                     avoidance = avoidance,
                     pivotX = CENTER_TRANSITION_PIVOT_X,
                     pivotY = CENTER_TRANSITION_PIVOT_Y,
-                    amount = exitAmount,
+                    amount = amount,
                 )
             }?.let { avoidance ->
-                shiftAvoidanceY(avoidance, networkTopTranslationY(visual, previous))
+                shiftAvoidanceY(avoidance, networkTopTranslationY(visual, indicator))
             }
-        val currentAvoidance =
-            resolveCenterIndicatorAvoidance(
-                indicator = current,
-                scale = scale,
-                geometry = geometry,
-                scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
-                wifiWeight = visual.wifiWeight,
-                airplaneWeight = visual.airplaneWeight,
-            )?.let { avoidance ->
-                scaleAvoidanceAroundPivot(
-                    avoidance = avoidance,
-                    pivotX = CENTER_TRANSITION_PIVOT_X,
-                    pivotY = CENTER_TRANSITION_PIVOT_Y,
-                    amount = enterAmount,
-                )
-            }?.let { avoidance ->
-                shiftAvoidanceY(avoidance, networkTopTranslationY(visual, current))
-            }
-        return unionAvoidance(previousAvoidance, currentAvoidance)
+
+        return unionAvoidance(
+            scaledAvoidance(previous, exitAmount),
+            scaledAvoidance(current, enterAmount),
+        )
     }
 
     private fun shiftAvoidanceY(
@@ -2280,13 +2273,7 @@ internal class StatusPainter(
             } else {
                 textLayout.bounds
             }
-        val local =
-            if (visual.layout == ContentLayout.BATTERY_CENTER) {
-                shiftBoundsY(baseLocal, networkTopTranslationY(visual, indicator))
-            } else {
-                baseLocal
-            }
-        return mapTransitionBounds(local, nativeTransform)
+        return mapNetworkTopTransitionBounds(baseLocal, nativeTransform, visual, indicator)
     }
 
     fun transitionBatteryNumberCurrentBounds(
