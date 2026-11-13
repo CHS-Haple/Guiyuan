@@ -15,22 +15,19 @@ private const val LOGCAT_TEST_PREFIX = "10-29 09:20:12.456 1200 1200 "
 
 class DiagnosticsLogPresentationTest {
     private fun structured(event: String, fields: Map<String, String> = emptyMap()) =
-        DiagLogParser.parse(
-            LOGCAT_TEST_PREFIX + "I CombinedStatus: " +
-                DiagProtocol.format(event, "diagnostics", fields = fields),
-        )
+        logcat(DiagProtocol.format(event, "diagnostics", fields = fields))
 
-    private fun legacy(message: String, level: String = "I") =
+    private fun logcat(message: String, level: String = "I") =
         DiagLogParser.parse("${LOGCAT_TEST_PREFIX}$level CombinedStatus: $message")
 
     @Test
     fun essentialHealthAndLegacyNetworkEventsRemainVisible() {
         assertTrue(isRuntimeLog(structured("diagnostics.snapshot")))
         assertTrue(isRuntimeLog(structured("battery.reconcile", mapOf("nativeCharging" to "false"))))
-        assertTrue(isRuntimeLog(legacy("connectivity source=capabilities transport=WIFI validated=true")))
-        assertTrue(isRuntimeLog(legacy("connectivity delivery-failed source=callback type=IllegalStateException")))
-        assertFalse(isRuntimeLog(legacy("unrelated traceInfo=value")))
-        assertTrue(isRuntimeLog(legacy("unrelated traceInfo=value", level = "W")))
+        assertTrue(isRuntimeLog(logcat("connectivity source=capabilities transport=WIFI validated=true")))
+        assertTrue(isRuntimeLog(logcat("connectivity delivery-failed source=callback type=IllegalStateException")))
+        assertFalse(isRuntimeLog(logcat("unrelated traceInfo=value")))
+        assertTrue(isRuntimeLog(logcat("unrelated traceInfo=value", level = "W")))
     }
 
     @Test
@@ -90,7 +87,7 @@ class DiagnosticsLogPresentationTest {
         assertEquals(R.string.diagnostics_log_charging_on, chargingStateRes("true"))
         assertEquals(R.string.diagnostics_log_charging_off, chargingStateRes("FALSE"))
         assertNull(chargingStateRes("null"))
-        val raw = legacy("connectivity source=capabilities transport=CELLULAR validated=true")
+        val raw = logcat("connectivity source=capabilities transport=CELLULAR validated=true")
         assertEquals("CELLULAR", raw.fields["transport"])
         assertEquals("capabilities", raw.fields["source"])
     }
@@ -98,8 +95,8 @@ class DiagnosticsLogPresentationTest {
     @Test
     fun duplicateLogLinesHaveDistinctStableRowKeys() {
         val line = "connectivity source=capabilities transport=WIFI"
-        val a = legacy(line)
-        val b = legacy(line)
+        val a = logcat(line)
+        val b = logcat(line)
         assertEquals(a.key, b.key)
         assertEquals(logRowKey(a, 0), logRowKey(b, 0))
         assertFalse(logRowKey(a, 0) == logRowKey(b, 1))
@@ -151,10 +148,8 @@ class DiagnosticsLogPresentationTest {
 
     @Test
     fun compactLogSummaryElidesOnlyUnqualifiedRepeatedLifecycleStates() {
-        fun entry(event: String, state: String) = DiagLogParser.parse(
-            LOGCAT_TEST_PREFIX + "I CombinedStatus: " +
-                DiagProtocol.format(event = event, component = "runtime", state = state),
-        )
+        fun entry(event: String, state: String) =
+            logcat(DiagProtocol.format(event = event, component = "runtime", state = state))
         val ready = entry("module.loaded", "ready")
         assertTrue(shouldElideLogSummaryState(ready, null, false))
         assertFalse(shouldElideLogSummaryState(ready, "native-read", false))
