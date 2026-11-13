@@ -101,7 +101,11 @@ internal object SysUiTintSource {
             Hooker { chain ->
                 val result = chain.proceed()
                 val sourceView =
-                    if (hooksReady) optionalNativeRead { chain.thisObject as? View } else null
+                    if (hooksReady) {
+                        optionalNativeRead { chain.thisObject as? View }
+                    } else {
+                        null
+                    }
                 if (sourceView != null) {
                     val state =
                         dispatchAppliedState(
@@ -157,7 +161,9 @@ internal object SysUiTintSource {
                 module
                     .hook(updateMethod)
                     .setId(UPDATE_HOOK_ID)
-                    .intercept(tintHooker(UPDATE_TINT_METHOD_NAME, reportNativeArguments = true))
+                    .intercept(
+                        tintHooker(UPDATE_TINT_METHOD_NAME, reportNativeArguments = true),
+                    )
             }.getOrElse { error ->
                 clearSourceState()
                 throw error
@@ -167,7 +173,12 @@ internal object SysUiTintSource {
                 module
                     .hook(internalMethod)
                     .setId(INTERNAL_HOOK_ID)
-                    .intercept(tintHooker(ON_DARK_CHANGED_INTERNAL_METHOD_NAME, reportNativeArguments = false))
+                    .intercept(
+                        tintHooker(
+                            ON_DARK_CHANGED_INTERNAL_METHOD_NAME,
+                            reportNativeArguments = false,
+                        ),
+                    )
             }.getOrElse { error ->
                 val cleanupFailed =
                     try {
