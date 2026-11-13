@@ -604,6 +604,7 @@ internal object CcRenderSession {
                     prepareNativePresentation(reused = true)
                 }
             }
+
         fun matches(
             host: ViewGroup,
             statusBarArea: ViewGroup,
