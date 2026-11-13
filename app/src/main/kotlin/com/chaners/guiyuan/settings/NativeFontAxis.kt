@@ -7,10 +7,7 @@ import android.content.SharedPreferences
 import android.os.Build
 import android.provider.Settings
 import java.lang.reflect.InvocationTargetException
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 // A read-only report from verified SystemUI source, never a control surface.
 internal object NativeFontAxis {
@@ -94,18 +91,18 @@ internal object NativeFontAxis {
         min: String,
         default: String,
         max: String,
-    ): Flow<State> = callbackFlow {
+    ): Flow<State> {
         val app = context.applicationContext
-        val prefs = prefs(app)
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == min || key == default || key == max || key == BOOT || key == REPORTED) {
-                trySend(read(app, prefs, min, default, max))
-            }
-        }
-        prefs.registerOnSharedPreferenceChangeListener(listener)
-        trySend(read(app, prefs, min, default, max))
-        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
-    }.distinctUntilChanged()
+        val source = prefs(app)
+        return observePreferenceChanges(
+            preferences = source,
+            matchesKey = { key ->
+                key == min || key == default || key == max ||
+                    key == BOOT || key == REPORTED
+            },
+            snapshot = { read(app, source, min, default, max) },
+        )
+    }
 
     fun save(context: Context, mobile: FontWeightAxis?, battery: FontWeightAxis?) {
         val boot = bootCount(context)
