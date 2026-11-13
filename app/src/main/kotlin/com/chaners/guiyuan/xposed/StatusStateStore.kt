@@ -80,10 +80,10 @@ internal object StatusStateStore {
         if (!changed && !firstObservation) return null
 
         val nextResources = if (changed) {
-            current.mobileActivityResIds.toMutableMap().apply {
+            current.mobileActivityResIds.toSortedMap().apply {
                 if (nextResourceId == null) remove(subscriptionId)
                 else put(subscriptionId, nextResourceId)
-            }.toSortedMap()
+            }
         } else current.mobileActivityResIds
         current = current.copy(
             mobileActivityResIds = nextResources,
@@ -214,9 +214,9 @@ internal object StatusStateStore {
             return null
         }
 
-        val mobile = current.mobile.toMutableMap()
+        val mobile = current.mobile.toSortedMap()
         mobile[subscriptionId] = next
-        current = current.copy(mobile = mobile.toSortedMap())
+        current = current.copy(mobile = mobile)
         return current
     }
 
