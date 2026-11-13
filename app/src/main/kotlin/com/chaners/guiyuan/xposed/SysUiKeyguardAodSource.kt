@@ -109,9 +109,10 @@ internal object SysUiKeyguardAodSource {
                 SET_AOD_ANIMATE_METHOD,
                 "aod-set-animate-method-contract-",
             ) { method ->
-                method.parameterCount == 1 &&
-                    isBooleanType(method.parameterTypes[0]) &&
-                    method.returnType == Void.TYPE
+                matchesToggleAodSignature(
+                    parameterTypes = method.parameterTypes,
+                    returnType = method.returnType,
+                )
             }
 
         val toggleMethod =
