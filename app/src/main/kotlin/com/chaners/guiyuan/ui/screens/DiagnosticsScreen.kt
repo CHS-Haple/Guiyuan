@@ -272,8 +272,11 @@ internal fun DiagnosticsScreen(
         levelFilter != LEVEL_ALL ||
             categoryFilter != CAT_ALL
     val filteredEntries = remember(entries, levelFilter, categoryFilter) {
-        if (filterActive) entries.filter { matchesFilter(it, levelFilter, categoryFilter) }
-        else entries
+        if (filterActive) {
+            entries.filter { matchesFilter(it, levelFilter, categoryFilter) }
+        } else {
+            entries
+        }
     }
     // The preference write is synchronous; do not wait for the observer flow while switching.
     val selectedLevel = if (loading) diagRepo.current() else diagSettings.level
