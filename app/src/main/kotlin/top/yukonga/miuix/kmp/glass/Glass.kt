@@ -132,7 +132,7 @@ private fun Modifier.glassImpl(
  * Glass pipeline as a value: equal inputs keep the backdrop node, so a recomposition no longer
  * rebuilds the blur, colour and shading passes.
  */
-private class GlassPipeline(
+private data class GlassPipeline(
     private val glassShape: GlassShape,
     private val style: GlassStyle,
     private val alpha: Float,
@@ -185,29 +185,6 @@ private class GlassPipeline(
         }
     }
 
-    override fun equals(other: Any?): Boolean = other is GlassPipeline &&
-        other.glassShape == glassShape &&
-        other.style == style &&
-        other.alpha == alpha &&
-        other.tint == tint &&
-        other.material == material &&
-        other.underlayMaterial == underlayMaterial &&
-        other.noiseCoefficient == noiseCoefficient &&
-        other.stroke == stroke &&
-        other.shading == shading
-
-    override fun hashCode(): Int {
-        var result = glassShape.hashCode()
-        result = 31 * result + style.hashCode()
-        result = 31 * result + alpha.hashCode()
-        result = 31 * result + tint.hashCode()
-        result = 31 * result + material.hashCode()
-        result = 31 * result + underlayMaterial.hashCode()
-        result = 31 * result + noiseCoefficient.hashCode()
-        result = 31 * result + stroke.hashCode()
-        result = 31 * result + shading.hashCode()
-        return result
-    }
 }
 
 /**
