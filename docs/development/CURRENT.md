@@ -100,10 +100,12 @@ reference, not this public repository.
   focused navigation, selection-motion and preview/style regression scope.
 - OS4 progressive top-bar material and menu/popup ownership follow the pinned
   implementation while retaining Guiyuan's native title slots and popup Back
-  lifecycle. Battery Colors retains its original MIUIX `Card` hierarchy,
-  colors and `Regular` Glass shadows. The optional elastic-overscroll callback
-  is not installed separately: current page/refresh/sheet gesture ownership
-  must be preserved absent a demonstrated mismatch.
+  lifecycle. The saved progressive-blur switch is applied to OS4 app bars,
+  including onboarding; OS3 keeps its own native title style. Eligible OS4
+  scrollable lists feed MIUIX's explicit elastic offset into the bar without a
+  second overscroll engine; refresh/Sheet and OS3 paths retain their respective
+  owners. Battery Colors retains its original MIUIX `Card` hierarchy, colors
+  and `Regular` Glass shadows.
 - This focused acceptance does not establish exhaustive RTL, extreme font scale,
   GPU resume, keyboard/cutout geometry, predictive Back, OS3 dark-mode
   overscroll seam or every Framework/ROM combination.

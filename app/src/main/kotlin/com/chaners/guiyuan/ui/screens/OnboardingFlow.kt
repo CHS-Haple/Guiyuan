@@ -87,6 +87,7 @@ import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.OnboardingPrefs
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.icons.Os4GlassRefresh
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
@@ -394,6 +395,7 @@ internal fun OnboardingFlow(
                 topBar = {
                     if (os4) {
                         GlassTopAppBar(
+                            progressiveBlur = LocalTopBarProgressiveBlur.current,
                             title = "",
                             isContentScrolled = step != 2 && scroll.value > 0,
                             backdrop = topBarBackdrop,
