@@ -7,8 +7,8 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- This source graph uses MIUIX `0.9.4-19b5b831-SNAPSHOT` at full revision
-  `19b5b831679a45d3d8a1484fce00ef12b9b494db`.
+- This source graph uses MIUIX `0.9.4-d8efe187-SNAPSHOT` at full revision
+  `d8efe1872c08c863a8b33e7044dd2a8b43038032`.
   The prior Material integration is documented in
   [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
   The stable `main` line must be checked separately; do not treat a `dev`
@@ -29,7 +29,7 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Single published-API source
 
-The pinned MIUIX `19b5b831` Maven artifacts expose `DialogSurfaceScope`,
+The pinned MIUIX `d8efe187` Maven artifacts expose `DialogSurfaceScope`,
 `BottomSheetSurfaceScope` and `BlurTopAppBar`. Both former source choices
 compiled against published Maven without composite-source substitution in
 [PR #1521](https://github.com/CHS-Haple/Guiyuan/pull/1521). The obsolete
