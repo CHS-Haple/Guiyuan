@@ -97,10 +97,8 @@ object GlassTopAppBarDefaults {
     val PressedContentAlpha: Float = 0.6f
 
     /**
-     * How far a bar has collapsed, in `[0, 1]`.
-     *
-     * @param scrollBehavior The behavior driving the bar. `null` reports a fully collapsed bar,
-     *   which is what a bar over content that does not scroll wants.
+     * Visual scroll progress in `[0, 1]`, including elastic displacement.
+     * [visualContentOffset] overrides the behavior's visual offset; without either source it is fully active.
      */
     @Composable
     fun collapseRamp(
@@ -118,9 +116,6 @@ object GlassTopAppBarDefaults {
             }
         }
     }
-
-/** Fallback button fill when backdrop material is unavailable. */
-    @Composable
 
     /** The traditional fill used when backdrop material is unavailable. */
     @Composable
