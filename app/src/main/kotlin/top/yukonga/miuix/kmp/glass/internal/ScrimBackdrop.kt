@@ -23,6 +23,14 @@ internal class ScrimBackdrop(
     private val scale: State<Float>? = null,
 ) : Backdrop by backdrop {
 
+    // The scale-only path reuses the same callback across GPU recordings.
+    private val scaleOnlyLayerBlock: GraphicsLayerScope.() -> Unit = {
+        scale?.let {
+            scaleX *= it.value
+            scaleY *= it.value
+        }
+    }
+
     override fun DrawScope.drawBackdrop(
         density: Density,
         coordinates: LayoutCoordinates?,
@@ -33,12 +41,14 @@ internal class ScrimBackdrop(
             drawBackdrop(
                 density = density,
                 coordinates = coordinates,
-                layerBlock = {
-                    layerBlock?.invoke(this)
-                    // The host already applies this scale. Only invert it during sampling.
-                    scale?.let {
-                        scaleX *= it.value
-                        scaleY *= it.value
+                layerBlock = when {
+                    scale == null -> layerBlock
+                    layerBlock == null -> scaleOnlyLayerBlock
+                    else -> {
+                        {
+                            layerBlock.invoke(this)
+                            scaleOnlyLayerBlock.invoke(this)
+                        }
                     }
                 },
                 downscaleFactor = downscaleFactor,
