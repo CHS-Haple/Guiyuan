@@ -436,7 +436,7 @@ internal fun MiniNavigationPreview(
                     items = listOf(
                         GlassNavigationItem(MiuixIcons.Normal.Home, stringResource(R.string.nav_home).takeIf { content == NavContent.IconAndText }),
                         GlassNavigationItem(MiuixIcons.Normal.Tune, stringResource(R.string.nav_features).takeIf { content == NavContent.IconAndText }),
-                        GlassNavigationItem(MiuixIcons.Medium.Settings, stringResource(R.string.nav_settings).takeIf { content == NavContent.IconAndText }),
+                        GlassNavigationItem(MiuixIcons.Normal.Settings, stringResource(R.string.nav_settings).takeIf { content == NavContent.IconAndText }),
                     ),
                     selectedIndex = 2,
                     onSelect = {},

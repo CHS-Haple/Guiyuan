@@ -172,10 +172,9 @@ private fun RestartAppIcon(pkg: String, fallback: Int) {
     }
 }
 
-private data class WeightedNavigationItem(
+private data class MainNavItem(
     val label: String,
     val icon: ImageVector,
-    val selectedIcon: ImageVector,
 )
 
 @Composable
@@ -262,9 +261,9 @@ internal fun MainHub(
     val settingsLabel = stringResource(R.string.nav_settings)
     val items = remember(homeLabel, featuresLabel, settingsLabel) {
         listOf(
-            WeightedNavigationItem(homeLabel, MiuixIcons.Normal.Home, MiuixIcons.Medium.Home),
-            WeightedNavigationItem(featuresLabel, MiuixIcons.Normal.Tune, MiuixIcons.Medium.Tune),
-            WeightedNavigationItem(settingsLabel, MiuixIcons.Normal.Settings, MiuixIcons.Medium.Settings),
+            MainNavItem(homeLabel, MiuixIcons.Normal.Home),
+            MainNavItem(featuresLabel, MiuixIcons.Normal.Tune),
+            MainNavItem(settingsLabel, MiuixIcons.Normal.Settings),
         )
     }
 
@@ -294,10 +293,10 @@ internal fun MainHub(
                 os4Glass && navBackdrop != null -> {
                     val selectedPage = pageSelection.selectedPage
                     val includeLabels = appearance.activeNavContent == NavContent.IconAndText
-                    val glassItems = remember(items, selectedPage, includeLabels) {
-                        items.mapIndexed { index, item ->
+                    val glassItems = remember(items, includeLabels) {
+                        items.map { item ->
                             GlassNavigationItem(
-                                icon = if (selectedPage == index) item.selectedIcon else item.icon,
+                                icon = item.icon,
                                 label = item.label.takeIf { includeLabels },
                                 contentDescription = item.label,
                             )
@@ -328,7 +327,7 @@ internal fun MainHub(
                             NavigationBarItem(
                                 selected = selected,
                                 onClick = { selectPage(index) },
-                                icon = if (selected) item.selectedIcon else item.icon,
+                                icon = item.icon,
                                 label = item.label,
                             )
                         }
@@ -434,7 +433,7 @@ internal fun MainHub(
                                     content = appearance.activeNavContent,
                                     selected = selected,
                                     onClick = { selectPage(index) },
-                                    icon = if (selected) item.selectedIcon else item.icon,
+                                    icon = item.icon,
                                     label = item.label,
                                     modifier = if (appearance.navTouchExtension) {
                                         Modifier.onGloballyPositioned { coordinates ->
