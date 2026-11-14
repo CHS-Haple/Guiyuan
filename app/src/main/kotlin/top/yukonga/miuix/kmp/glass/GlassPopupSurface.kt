@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.material.drawEdgeStroke
+import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import kotlin.math.roundToInt
 
 /**
@@ -132,11 +133,11 @@ internal fun placeGlassPopup(
     val minLeft = window.left + margin
     val left = endAlignedLeft
         .coerceIn(minLeft, (window.right - size.width - margin).coerceAtLeast(minLeft))
+    val minTop = minOf(window.top + margin, anchor.top).coerceAtLeast(window.top)
     val below = window.bottom - margin - anchor.top
-    val above = anchor.bottom - window.top - margin
+    val above = anchor.bottom - minTop
     val alignTop = size.height <= below || below >= above
     val wanted = if (alignTop) anchor.top else anchor.bottom - size.height
-    val minTop = window.top + margin
     val top = wanted.coerceIn(minTop, (window.bottom - size.height - margin).coerceAtLeast(minTop))
     return GlassPopupPlacement(Rect(left, top, left + size.width, top + size.height), alignTop)
 }
@@ -238,6 +239,9 @@ internal fun GlassPopupSurface(
         with(density) { popupShadowOutsets(visuals.shadow) }
     }
     val measured = remember { MeasuredPanel() }
+    // Intrinsics depend on popup content and constraints, not the current animation frame.
+    val intrinsics = remember { PopupIntrinsicCache() }
+    val contentToken = remember(content) { Any() }
     val shape = remember(measured) {
         val corner = MeasuredCorner(measured)
         GlassShape(corner, corner, corner, corner)
@@ -303,9 +307,13 @@ internal fun GlassPopupSurface(
         val widest = sizing.maxWidth.roundToPx().coerceAtMost((constraints.maxWidth - safeInset).coerceAtLeast(0))
         val narrowest = sizing.minWidth.roundToPx().coerceAtMost(widest)
         val tallest = sizing.maxHeight.roundToPx().coerceAtMost((constraints.maxHeight - safeInset).coerceAtLeast(0))
-        val width = measurables[1].maxIntrinsicWidth(tallest).coerceIn(narrowest, widest)
+        val width = intrinsics.width(contentToken, widest, tallest, measurables.size) {
+            measurables[1].maxIntrinsicWidth(tallest)
+        }.coerceIn(narrowest, widest)
         val viewportHeight = if (scrollable) {
-            measurables[1].minIntrinsicHeight(width).coerceAtMost(tallest)
+            intrinsics.height(contentToken, width, tallest, measurables.size) {
+                measurables[1].minIntrinsicHeight(width)
+            }.coerceAtMost(tallest)
         } else {
             tallest
         }
@@ -357,7 +365,7 @@ internal fun BoxScope.GlassPopupBackground(
 ) {
     Box(
         modifier = Modifier.matchParentSize().then(modifier).then(
-            if (backdrop == null) {
+            if (backdrop == null || !isRuntimeShaderSupported()) {
                 Modifier.background(visuals.containerColor).drawWithContent {
                     drawContent()
                     visuals.stroke?.let { drawEdgeStroke(shape, it, visuals.alpha) }
@@ -400,6 +408,39 @@ internal fun Density.popupShadowOutsets(shadow: GlassShadow?): LayerOutsets {
         right = (reach + x).coerceAtLeast(0f).toDp(),
         bottom = (reach + y).coerceAtLeast(0f).toDp(),
     )
+}
+
+/** Cache only the intrinsic content dimensions; animated panel placement is always remeasured. */
+private class PopupIntrinsicCache {
+    private var token: Any? = null
+    private var widest = -1
+    private var tallest = -1
+    private var children = -1
+    private var intrinsicWidth = 0
+    private var heightWidth = -1
+    private var intrinsicHeight = 0
+
+    fun width(token: Any?, widest: Int, tallest: Int, children: Int, compute: () -> Int): Int {
+        if (token === this.token && widest == this.widest && tallest == this.tallest && children == this.children) {
+            return intrinsicWidth
+        }
+        this.token = token
+        this.widest = widest
+        this.tallest = tallest
+        this.children = children
+        intrinsicWidth = compute()
+        heightWidth = -1
+        return intrinsicWidth
+    }
+
+    fun height(token: Any?, width: Int, tallest: Int, children: Int, compute: () -> Int): Int {
+        if (token === this.token && width == heightWidth && tallest == this.tallest && children == this.children) {
+            return intrinsicHeight
+        }
+        heightWidth = width
+        intrinsicHeight = compute()
+        return intrinsicHeight
+    }
 }
 
 /**

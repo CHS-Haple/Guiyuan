@@ -5,10 +5,16 @@ package top.yukonga.miuix.kmp.glass
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.isSpecified
 import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.BackdropEffectScope
+import top.yukonga.miuix.kmp.blur.BackdropPipeline
 import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.blur
 import top.yukonga.miuix.kmp.blur.drawBackdrop
@@ -20,6 +26,7 @@ import top.yukonga.miuix.kmp.material.drawGlassEdge
 import top.yukonga.miuix.kmp.material.drawGlassMask
 import top.yukonga.miuix.kmp.material.drawGlassRim
 import top.yukonga.miuix.kmp.material.drawGlassShadow
+import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.glass.internal.glassEffect
 
 /**
@@ -107,42 +114,81 @@ private fun Modifier.glassImpl(
     contentBlendMode: BlendMode,
     enabled: Boolean,
     shading: Boolean,
-): Modifier = this.drawBackdrop(
+): Modifier = drawBackdrop(
     backdrop = backdrop,
-    shape = { shape },
-    effects = {
-        noiseDither(noiseCoefficient)
-        val radius = material?.blurRadius?.value ?: (style.blur.small / GlassDefaults.SourceDensity)
-        blur(radius.coerceIn(0f, BlurDefaults.MaxBlurRadius) * density)
-        if (underlayMaterial != null) {
-            colorBlendEffect(underlayMaterial, 1f, "${GLASS_COLOR_BLEND_SHADER_KEY}ActionBar")
-        }
-        if (material != null) colorBlendEffect(material, alpha)
-        if (shading) glassEffect(style, shape, alpha, tint)
-    },
-    onDrawFront = {
-        val fused = stroke != null && shading &&
-            stroke.width.value > 0f && stroke.blendMode == BlendMode.Plus
-        if (fused) {
-            drawGlassEdge(
-                shape = shape,
-                stroke = stroke,
-                style = style,
-                surface = if (tint.isSpecified) tint else style.inner.tint,
-                alpha = alpha,
-            )
-            drawGlassMask(shape)
-        } else {
-            if (stroke != null) drawEdgeStroke(shape, stroke, alpha)
-            drawGlassMask(shape)
-            if (shading) {
-                drawGlassRim(shape, style, if (tint.isSpecified) tint else style.inner.tint, alpha)
-            }
-        }
-    },
+    pipeline = GlassPipeline(
+        glassShape = shape,
+        style = style,
+        alpha = alpha,
+        tint = tint,
+        material = material,
+        underlayMaterial = underlayMaterial,
+        noiseCoefficient = noiseCoefficient,
+        stroke = stroke,
+        shading = shading,
+    ),
     contentBlendMode = contentBlendMode,
     enabled = enabled,
 )
+
+/**
+ * Glass pipeline as a value: equal inputs keep the backdrop node, so a recomposition no longer
+ * rebuilds the blur, colour and shading passes.
+ */
+private data class GlassPipeline(
+    private val glassShape: GlassShape,
+    private val style: GlassStyle,
+    private val alpha: Float,
+    private val tint: Color,
+    private val material: GlassMaterial?,
+    private val underlayMaterial: GlassMaterial?,
+    private val noiseCoefficient: Float,
+    private val stroke: GlassStroke?,
+    private val shading: Boolean,
+) : BackdropPipeline {
+
+    override val shape: Shape get() = glassShape
+
+    override fun configureEffects(scope: BackdropEffectScope) {
+        with(scope) {
+            noiseDither(noiseCoefficient)
+            val radius = material?.blurRadius?.value ?: (style.blur.small / GlassDefaults.SourceDensity)
+            blur(radius.coerceIn(0f, BlurDefaults.MaxBlurRadius) * density)
+            if (underlayMaterial != null) {
+                colorBlendEffect(underlayMaterial, 1f, "${GLASS_COLOR_BLEND_SHADER_KEY}ActionBar")
+            }
+            if (material != null) colorBlendEffect(material, alpha)
+            if (shading) glassEffect(style, glassShape, alpha, tint)
+        }
+    }
+
+    override fun drawFront(scope: DrawScope) {
+        with(scope) {
+            // Stroke and rim share one silhouette pass; the mask trims it afterwards.
+            val current = stroke
+            val fuse = current != null && shading &&
+                current.width.value > 0f &&
+                current.blendMode == BlendMode.Plus
+            if (current != null && fuse) {
+                drawGlassEdge(
+                    shape = glassShape,
+                    stroke = current,
+                    style = style,
+                    surface = if (tint.isSpecified) tint else style.inner.tint,
+                    alpha = alpha,
+                )
+                drawGlassMask(glassShape)
+            } else {
+                if (current != null) drawEdgeStroke(glassShape, current, alpha)
+                drawGlassMask(glassShape)
+                if (shading) {
+                    drawGlassRim(glassShape, style, if (tint.isSpecified) tint else style.inner.tint, alpha)
+                }
+            }
+        }
+    }
+
+}
 
 /**
  * Casts [shadow] under this composable, in the shape of [shape].
@@ -163,6 +209,21 @@ internal fun Modifier.glassShadow(
     alpha: () -> Float,
 ): Modifier = if (shadow == null) {
     this
-} else {
+} else if (isRuntimeShaderSupported()) {
     this.drawBehind { drawGlassShadow(shape, shadow, alpha()) }
+} else {
+    fallbackGlassShadow(shape, shadow, alpha)
+}
+
+/** Draw-based fallback uses a different blur kernel from the runtime shader. */
+internal fun Modifier.fallbackGlassShadow(
+    shape: GlassShape,
+    shadow: GlassShadow,
+    alpha: () -> Float,
+): Modifier = dropShadow(shape) {
+    val sourceScale = density / GlassDefaults.SourceDensity
+    radius = (shadow.radius * sourceScale).coerceAtLeast(1f)
+    offset = Offset(shadow.offsetX * sourceScale, shadow.offsetY * sourceScale)
+    color = shadow.color
+    this.alpha = alpha().coerceIn(0f, 1f)
 }

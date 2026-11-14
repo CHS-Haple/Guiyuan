@@ -20,11 +20,12 @@ import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
@@ -75,7 +76,10 @@ import com.chaners.guiyuan.ui.screens.HomeScreen
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
 import com.chaners.guiyuan.ui.screens.SemanticLeadingIcon
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.job
 import top.yukonga.miuix.kmp.glass.GlassNavigationBar
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
@@ -107,6 +111,44 @@ import top.yukonga.miuix.kmp.utils.springAnimateToPage
 
 private const val TopLevelPageCount = 3
 
+/**
+ * Follows MIUIX's main-pager example: commit a destination before page motion begins.
+ * This owner writes selection, while PagerState owns the actual scroll position.
+ */
+private class HubPagerSelection(
+    private val pagerState: PagerState,
+    private val scope: CoroutineScope,
+) {
+    var selectedPage by mutableIntStateOf(pagerState.currentPage)
+        private set
+
+    private var navigationJob: Job? = null
+
+    fun select(index: Int) {
+        if (index !in 0 until pagerState.pageCount || index == selectedPage) return
+        navigationJob?.cancel()
+        selectedPage = index
+
+        navigationJob = scope.launch {
+            val activeJob = coroutineContext.job
+            try {
+                pagerState.springAnimateToPage(index)
+            } finally {
+                if (navigationJob === activeJob) {
+                    navigationJob = null
+                    selectedPage = pagerState.currentPage
+                }
+            }
+        }
+    }
+
+    fun syncActualPage() {
+        if (navigationJob == null && selectedPage != pagerState.currentPage) {
+            selectedPage = pagerState.currentPage
+        }
+    }
+}
+
 // Use the same installed-package artwork the scope manager displays.
 @Composable
 private fun RestartAppIcon(pkg: String, fallback: Int) {
@@ -130,10 +172,9 @@ private fun RestartAppIcon(pkg: String, fallback: Int) {
     }
 }
 
-private data class WeightedNavigationItem(
+private data class MainNavItem(
     val label: String,
     val icon: ImageVector,
-    val selectedIcon: ImageVector,
 )
 
 @Composable
@@ -152,6 +193,8 @@ internal fun MainHub(
     val pagerState = rememberPagerState(pageCount = { TopLevelPageCount })
     val featureSnackbarState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val pageSelection = remember(pagerState, scope) { HubPagerSelection(pagerState, scope) }
+    LaunchedEffect(pagerState.currentPage) { pageSelection.syncActualPage() }
     val context = LocalContext.current
     var restartPickerOpen by remember { mutableStateOf(false) }
     val restartState by ScopeRestart.state.collectAsState()
@@ -218,22 +261,16 @@ internal fun MainHub(
     val settingsLabel = stringResource(R.string.nav_settings)
     val items = remember(homeLabel, featuresLabel, settingsLabel) {
         listOf(
-            WeightedNavigationItem(homeLabel, MiuixIcons.Normal.Home, MiuixIcons.Medium.Home),
-            WeightedNavigationItem(featuresLabel, MiuixIcons.Normal.Tune, MiuixIcons.Medium.Tune),
-            WeightedNavigationItem(settingsLabel, MiuixIcons.Normal.Settings, MiuixIcons.Medium.Settings),
+            MainNavItem(homeLabel, MiuixIcons.Normal.Home),
+            MainNavItem(featuresLabel, MiuixIcons.Normal.Tune),
+            MainNavItem(settingsLabel, MiuixIcons.Normal.Settings),
         )
     }
 
-    fun selectPage(index: Int) {
-        if (pagerState.currentPage != index) {
-            scope.launch {
-                pagerState.springAnimateToPage(index)
-            }
-        }
-    }
+    fun selectPage(index: Int) = pageSelection.select(index)
 
     TopLevelBackHandler(
-        pagerState = pagerState,
+        selectedPage = pageSelection.selectedPage,
         onBackToHome = { selectPage(0) },
     )
 
@@ -254,12 +291,12 @@ internal fun MainHub(
         bottomBar = {
             when {
                 os4Glass && navBackdrop != null -> {
-                    val selectedPage = pagerState.currentPage
+                    val selectedPage = pageSelection.selectedPage
                     val includeLabels = appearance.activeNavContent == NavContent.IconAndText
-                    val glassItems = remember(items, selectedPage, includeLabels) {
-                        items.mapIndexed { index, item ->
+                    val glassItems = remember(items, includeLabels) {
+                        items.map { item ->
                             GlassNavigationItem(
-                                icon = if (selectedPage == index) item.selectedIcon else item.icon,
+                                icon = item.icon,
                                 label = item.label.takeIf { includeLabels },
                                 contentDescription = item.label,
                             )
@@ -286,11 +323,11 @@ internal fun MainHub(
                         },
                     ) {
                         items.forEachIndexed { index, item ->
-                            val selected = pagerState.currentPage == index
+                            val selected = pageSelection.selectedPage == index
                             NavigationBarItem(
                                 selected = selected,
                                 onClick = { selectPage(index) },
-                                icon = if (selected) item.selectedIcon else item.icon,
+                                icon = item.icon,
                                 label = item.label,
                             )
                         }
@@ -319,7 +356,7 @@ internal fun MainHub(
                                 .padding(bottom = liquidBottomPadding),
                     ) {
                         LiquidNavBar(
-                            selectedIndex = { pagerState.currentPage },
+                            selectedIndex = { pageSelection.selectedPage },
                             onSelected = ::selectPage,
                             backdrop = liquidBackdrop,
                             tabsCount = items.size,
@@ -391,12 +428,12 @@ internal fun MainHub(
                                 },
                         ) {
                             items.forEachIndexed { index, item ->
-                                val selected = pagerState.currentPage == index
+                                val selected = pageSelection.selectedPage == index
                                 NavContentItem(
                                     content = appearance.activeNavContent,
                                     selected = selected,
                                     onClick = { selectPage(index) },
-                                    icon = if (selected) item.selectedIcon else item.icon,
+                                    icon = item.icon,
                                     label = item.label,
                                     modifier = if (appearance.navTouchExtension) {
                                         Modifier.onGloballyPositioned { coordinates ->
@@ -636,12 +673,10 @@ internal fun MainHub(
 
 @Composable
 private fun TopLevelBackHandler(
-    pagerState: PagerState,
+    selectedPage: Int,
     onBackToHome: () -> Unit,
 ) {
-    val isBackEnabled by remember {
-        derivedStateOf { pagerState.currentPage != 0 }
-    }
+    val isBackEnabled = selectedPage != 0
     val navigationEventState = rememberNavigationEventState(NavigationEventInfo.None)
 
     NavigationBackHandler(

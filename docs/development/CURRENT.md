@@ -22,8 +22,8 @@ execution ownership is in [architecture](../architecture/README.md).
 - **Current `dev` build identity:** read `combinedStatus.versionName`,
   `combinedStatus.versionCode` and `combinedStatus.buildId` directly from
   `gradle.properties`. The accepted MIUIX source/dependency pin is
-  `9d4b9c85` via [#1528](https://github.com/CHS-Haple/Guiyuan/pull/1528);
-  CI and the upstream checkout must use that exact revision.
+  `19b5b831` via [#1619](https://github.com/CHS-Haple/Guiyuan/pull/1619);
+  CI and the upstream checkout must use the same full revision.
 - **Branches:** work enters `dev` through reviewed PRs, then `main` through
   stable promotion. Retired `it` is historical only. A source-only change does
   not consume a Build; installable/signing gates are defined in
@@ -92,14 +92,19 @@ reference, not this public repository.
   its upstream shading, width and additive-blend conditions; Guiyuan retains
   the adapted backdrop/refraction and its own popup, button and Back lifecycle
   boundaries.
-- OS4 progressive top-bar material, navigation preview and menu/popup owners
-  follow their upstream-aligned implementations. OS3 UI style uses its
-  appropriate native MIUIX fallback. Original Battery Colors outer/inner
-  `Card` hierarchy and colors, and consistent default `Regular` Glass
-  button/popup shadows, are accepted. Avoid speculative changes to the
-  native animation, shader or backdrop ownership.
-- Signed B1829 Canary was reported visually normal for the exercised MIUIX
-  Glass UI scope. This does not establish exhaustive RTL, extreme font scale,
+- OS4 Glass navigation commits the selected destination before asynchronous
+  Pager motion; the component previews press/drag and commits pointer selection
+  on release. Navigation icons remain fixed as in the pinned MIUIX example,
+  including OS3/OS4 style and preview. OS3 UI style uses its corresponding
+  MIUIX fallback. The signed B1831 Canary was accepted on-device for the
+  focused navigation, selection-motion and preview/style regression scope.
+- OS4 progressive top-bar material and menu/popup ownership follow the pinned
+  implementation while retaining Guiyuan's native title slots and popup Back
+  lifecycle. Battery Colors retains its original MIUIX `Card` hierarchy,
+  colors and `Regular` Glass shadows. The optional elastic-overscroll callback
+  is not installed separately: current page/refresh/sheet gesture ownership
+  must be preserved absent a demonstrated mismatch.
+- This focused acceptance does not establish exhaustive RTL, extreme font scale,
   GPU resume, keyboard/cutout geometry, predictive Back, OS3 dark-mode
   overscroll seam or every Framework/ROM combination.
 
