@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -64,6 +65,7 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
@@ -193,6 +195,9 @@ internal fun SettingsPage(
     val resolvedListState = listState ?: rememberLazyListState()
     val topBarBackdrop = rememberTopBarBackdrop()
     val os4 = LocalUiStyle.current == UiStyle.OS4
+    val onOverscrollChanged: (Float) -> Unit = remember(scrollBehavior) {
+        { offset -> scrollBehavior.state.overscrollOffset = offset }
+    }
     if (os4 && keepCompactTitle) {
         DisposableEffect(scrollBehavior) {
             onDispose { scrollBehavior.state.heightOffset = 0f }
@@ -278,13 +283,16 @@ internal fun SettingsPage(
             @Composable
             fun SettingsList(allowEdgeHaptic: Boolean = true) {
                 val canScroll = resolvedListState.canScrollBackward || resolvedListState.canScrollForward
+                val glassOverscroll = os4 && pullToRefresh == null && userScrollEnabled && canScroll
                 LazyColumn(
                     state = resolvedListState,
                     userScrollEnabled = userScrollEnabled,
+                    overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect(),
                     modifier =
                         Modifier
                             .fillMaxSize()
                             .then(if (allowEdgeHaptic && canScroll) Modifier.scrollEndHaptic() else Modifier)
+                            .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
                             .nestedScroll(scrollBehavior.nestedScrollConnection),
                     contentPadding = contentPadding,
                     content = content,

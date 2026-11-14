@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -43,6 +44,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -244,6 +246,10 @@ internal fun PreviewSandboxScreen(
         }
     }
     val os4 = LocalUiStyle.current == UiStyle.OS4
+    val glassOverscroll = os4 && canScroll
+    val onOverscrollChanged: (Float) -> Unit = remember(scrollBehavior) {
+        { offset -> scrollBehavior.state.overscrollOffset = offset }
+    }
     // Match MIUIX's 52dp compact title center plus its 4dp bottom title clearance.
     val dockPadding = if (os4) {
         val inset = (TopAppBarDefaults.CollapsedHeight - TopAppBarDefaults.SmallTopAppBarCenterHeight) / 2
@@ -438,11 +444,13 @@ internal fun PreviewSandboxScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 state = listState,
+                overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect(),
                 modifier =
                     Modifier
                         .fillMaxSize()
                         .topBarBackdropSource(topBarBackdrop)
                         .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
+                        .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     pageContentPadding(
