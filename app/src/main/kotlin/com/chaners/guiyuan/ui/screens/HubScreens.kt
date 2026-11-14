@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -56,6 +57,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -1426,6 +1428,10 @@ private fun HubPage(
     val browsingScroll = MiuixScrollBehavior()
     val resultsScroll = if (os4) MiuixScrollBehavior() else browsingScroll
     val scrollBehavior = if (filtering) resultsScroll else browsingScroll
+    val glassOverscroll = os4 && canScroll
+    val onOverscrollChanged: (Float) -> Unit = remember(scrollBehavior) {
+        { offset -> scrollBehavior.state.overscrollOffset = offset }
+    }
     val topBarBackdrop = rememberTopBarBackdrop()
     val keyboardController = LocalSoftwareKeyboardController.current
     LaunchedEffect(filtering, search?.query) {
@@ -1604,10 +1610,12 @@ private fun HubPage(
         ) {
             LazyColumn(
                 state = listState,
+                overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect(),
                 modifier =
                     Modifier
                         .fillMaxSize()
                         .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
+                        .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding = pageContentPadding(
                     innerPadding = paddingValues,

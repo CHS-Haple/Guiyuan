@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -38,6 +39,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -128,6 +130,10 @@ internal fun HomeScreen(
     val topBarBackdrop = rememberTopBarBackdrop()
 
     val os4 = LocalUiStyle.current == UiStyle.OS4
+    val glassOverscroll = os4 && canScroll
+    val onOverscrollChanged: (Float) -> Unit = remember(scrollBehavior) {
+        { offset -> scrollBehavior.state.overscrollOffset = offset }
+    }
     val actions: @Composable RowScope.() -> Unit = {
         HotReloadAction(
             inProgress = hotReloadInProgress,
@@ -172,10 +178,12 @@ internal fun HomeScreen(
         ) {
             LazyColumn(
                 state = listState,
+                overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect(),
                 modifier =
                     Modifier
                         .fillMaxSize()
                         .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
+                        .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     pageContentPadding(
