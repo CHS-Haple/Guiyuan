@@ -561,7 +561,7 @@ internal fun MiniNavigationPreview(
                             content = content,
                             selected = true,
                             onClick = {},
-                            icon = MiuixIcons.Medium.Settings,
+                            icon = MiuixIcons.Normal.Settings,
                             label = stringResource(R.string.nav_settings),
                             interactive = previewInteractive,
                         )
@@ -578,7 +578,7 @@ internal fun MiniNavigationPreview(
                 ) {
                     MiniStandardNavigationItem(selected = false, icon = MiuixIcons.Normal.Home, showLabel = showLabel)
                     MiniStandardNavigationItem(selected = false, icon = MiuixIcons.Normal.Tune, showLabel = showLabel)
-                    MiniStandardNavigationItem(selected = true, icon = MiuixIcons.Medium.Settings, showLabel = showLabel)
+                    MiniStandardNavigationItem(selected = true, icon = MiuixIcons.Normal.Settings, showLabel = showLabel)
                 }
             }
         }
