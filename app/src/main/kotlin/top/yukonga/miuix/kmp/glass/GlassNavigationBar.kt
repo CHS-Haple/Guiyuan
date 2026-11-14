@@ -491,7 +491,9 @@ fun GlassNavigationBar(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 items.forEachIndexed { position, item ->
-                    key(item) {
+                    // Guiyuan swaps Normal/Medium artwork on selection. The slot, not its
+                    // changing visual item, owns press and tint animation state.
+                    key(position) {
                         val selected = position == index
                         val tint by animateColorAsState(
                             targetValue = if (selected) selectedColor else unselectedColor,
