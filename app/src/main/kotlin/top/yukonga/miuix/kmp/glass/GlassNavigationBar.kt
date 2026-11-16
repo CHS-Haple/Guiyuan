@@ -446,8 +446,10 @@ fun GlassNavigationBar(
             GlassNavigationIndicator(
                 pressed = chipPressed,
                 height = height - GlassNavigationBarDefaults.IndicatorPaddingVertical * 2,
-                color = indicatorColor,
-                pressedColor = indicatorPressedColor,
+                appearance = GlassIndicatorAppearance(
+                    color = indicatorColor,
+                    pressedColor = indicatorPressedColor,
+                ),
                 modifier = Modifier
                     .matchParentSize()
                     .padding(vertical = GlassNavigationBarDefaults.IndicatorPaddingVertical)

@@ -233,45 +233,51 @@ internal fun NavigationRailRow(
     }
 }
 
-/** The same pressed indicator follows the current slot through the entire morph. */
+/** The same indicator follows the active destination through the entire morph. */
+internal class RailIndicatorSelection(
+    val index: Int,
+    val interaction: NavigationRailInteraction,
+    val pressed: Boolean,
+)
+
+internal class RailIndicatorMotion(
+    val progress: () -> Float,
+    val scrollOffset: () -> Int,
+    val expandedItemWidth: Dp,
+)
+
 @Composable
 internal fun NavigationRailIndicator(
-    selectedIndex: Int,
-    rowProgress: () -> Float,
-    scrollOffset: () -> Int,
-    interaction: NavigationRailInteraction,
-    itemWidth: Dp,
-    color: Color,
-    pressed: Boolean,
-    pressedColor: Color,
+    selection: RailIndicatorSelection,
+    motion: RailIndicatorMotion,
+    appearance: GlassIndicatorAppearance,
 ) {
     GlassNavigationIndicator(
-        pressed = pressed,
+        pressed = selection.pressed,
         height = RailCollapsedRowHeight,
-        color = color,
-        pressedColor = pressedColor,
+        appearance = appearance,
         modifier = Modifier.layout { measurable, constraints ->
-            val fraction = rowProgress().coerceIn(0f, 1f)
+            val fraction = motion.progress().coerceIn(0f, 1f)
             val width: Int
             val x: Float
             val y: Float
-            val expandedY = RailExpandedRowTop.toPx() + RailRowPitch.toPx() * selectedIndex
+            val expandedY = RailExpandedRowTop.toPx() + RailRowPitch.toPx() * selection.index
             if (fraction == 1f) {
                 // Collapsed springs and scroll compensation cannot affect the expanded indicator.
-                width = itemWidth.roundToPx().coerceAtLeast(0)
+                width = motion.expandedItemWidth.roundToPx().coerceAtLeast(0)
                 x = RailItemHorizontalMargin.toPx()
                 y = expandedY
             } else {
                 val bounds = navigationIndicatorBounds(
-                    interaction.left.value,
-                    interaction.right.value,
-                    interaction.width,
-                    interaction.contentStart,
-                    interaction.endPadding,
+                    selection.interaction.left.value,
+                    selection.interaction.right.value,
+                    selection.interaction.width,
+                    selection.interaction.contentStart,
+                    selection.interaction.endPadding,
                 )
-                width = lerp(bounds.y - bounds.x, itemWidth.toPx(), fraction).roundToInt().coerceAtLeast(0)
+                width = lerp(bounds.y - bounds.x, motion.expandedItemWidth.toPx(), fraction).roundToInt().coerceAtLeast(0)
                 x = lerp(bounds.x, RailItemHorizontalMargin.toPx(), fraction)
-                y = lerp(RailRowTop.toPx() + scrollOffset(), expandedY, fraction)
+                y = lerp(RailRowTop.toPx() + motion.scrollOffset(), expandedY, fraction)
             }
             val height = (RailCollapsedRowHeight + RailRowGrowth * fraction).roundToPx()
             val placeable = measurable.measure(Constraints.fixed(width, height))

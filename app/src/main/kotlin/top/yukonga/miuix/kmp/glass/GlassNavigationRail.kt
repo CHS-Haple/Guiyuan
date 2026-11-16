@@ -279,22 +279,17 @@ fun GlassNavigationRail(
 
         GlassNavigationRailPanel(
             context = RailPanelContext(
-                items = items,
-                selectedIndex = index,
+                selection = RailPanelSelection(items, index, onSelect),
                 state = state,
                 showToggle = showToggle,
                 toggleContentDescription = if (expanded) collapseContentDescription else expandContentDescription,
-                onSelect = onSelect,
                 scrollState = scrollState,
             ),
             geometry = RailPanelGeometry(
                 tabWidths = tabWidths,
                 labelWidths = labelWidths,
                 contentStart = contentStart,
-                collapsedWidth = capsuleWidth,
-                expandedWidth = expandedWidth,
-                collapsedTop = collapsedTop,
-                expandedTop = expandedTop,
+                endpoints = RailPanelEndpoints(capsuleWidth, expandedWidth, collapsedTop, expandedTop),
             ),
             motion = RailPanelMotion(
                 rowProgress = rowProgress,

@@ -53,25 +53,33 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 
 /** Single selected-page owner and the interaction contract, independent of surface animation. */
-internal class RailPanelContext(
+internal class RailPanelSelection(
     val items: List<GlassNavigationItem>,
     val selectedIndex: Int,
+    val onSelect: (Int) -> Unit,
+)
+
+internal class RailPanelContext(
+    val selection: RailPanelSelection,
     val state: GlassNavigationRailState,
     val showToggle: Boolean,
     val toggleContentDescription: String,
-    val onSelect: (Int) -> Unit,
     val scrollState: ScrollState,
 )
 
 /** The panel's measured endpoints. */
-internal class RailPanelGeometry(
-    val tabWidths: List<Dp>,
-    val labelWidths: List<Dp>,
-    val contentStart: Dp,
+internal class RailPanelEndpoints(
     val collapsedWidth: Dp,
     val expandedWidth: Dp,
     val collapsedTop: Dp,
     val expandedTop: Dp,
+)
+
+internal class RailPanelGeometry(
+    val tabWidths: List<Dp>,
+    val labelWidths: List<Dp>,
+    val contentStart: Dp,
+    val endpoints: RailPanelEndpoints,
 )
 
 /** Values read during layout and drawing rather than recomposing the rows each frame. */
@@ -110,20 +118,20 @@ internal fun GlassNavigationRailPanel(
     surface: RailPanelSurface,
     colors: RailPanelColors,
 ) {
-    val items = context.items
-    val selectedIndex = context.selectedIndex
+    val items = context.selection.items
+    val selectedIndex = context.selection.selectedIndex
     val state = context.state
     val showToggle = context.showToggle
     val toggleContentDescription = context.toggleContentDescription
-    val onSelect = context.onSelect
+    val onSelect = context.selection.onSelect
     val scrollState = context.scrollState
     val tabWidths = geometry.tabWidths
     val labelWidths = geometry.labelWidths
     val contentStart = geometry.contentStart
-    val collapsedWidth = geometry.collapsedWidth
-    val expandedWidth = geometry.expandedWidth
-    val collapsedTop = geometry.collapsedTop
-    val expandedTop = geometry.expandedTop
+    val collapsedWidth = geometry.endpoints.collapsedWidth
+    val expandedWidth = geometry.endpoints.expandedWidth
+    val collapsedTop = geometry.endpoints.collapsedTop
+    val expandedTop = geometry.endpoints.expandedTop
     val rowProgress = motion.rowProgress
     val iconAlpha = motion.iconAlpha
     val panelStart = motion.panelStart
@@ -230,14 +238,13 @@ internal fun GlassNavigationRailPanel(
                     ),
             ) {
                 NavigationRailIndicator(
-                    selectedIndex = indicatorIndex,
-                    rowProgress = { rowProgress[indicatorIndex].value },
-                    scrollOffset = { scrollState.value },
-                    interaction = interaction,
-                    itemWidth = itemWidth,
-                    color = indicatorColor,
-                    pressed = pressed,
-                    pressedColor = indicatorPressedColor,
+                    selection = RailIndicatorSelection(indicatorIndex, interaction, pressed),
+                    motion = RailIndicatorMotion(
+                        progress = { rowProgress[indicatorIndex].value },
+                        scrollOffset = { scrollState.value },
+                        expandedItemWidth = itemWidth,
+                    ),
+                    appearance = GlassIndicatorAppearance(indicatorColor, indicatorPressedColor),
                 )
                 items.forEachIndexed { position, item ->
                     key(position, item) {

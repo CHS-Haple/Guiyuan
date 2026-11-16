@@ -34,18 +34,26 @@ import androidx.compose.ui.unit.dp
  * @param scaleOnPress Whether a press scales the indicator down. Disable it when the press belongs
  *   to a row the indicator only spans visually, so the press feedback does not move the indicator.
  */
+/** The pill's two colors and press policy have one rendering owner. */
+internal class GlassIndicatorAppearance(
+    val color: Color,
+    val pressedColor: Color,
+    val scaleOnPress: Boolean = true,
+)
+
 @Composable
 internal fun GlassNavigationIndicator(
     pressed: Boolean,
     modifier: Modifier = Modifier,
     height: Dp = GlassNavigationBarDefaults.Height - GlassNavigationBarDefaults.IndicatorPaddingVertical * 2,
-    color: Color = GlassNavigationBarDefaults.indicatorColor(),
-    pressedColor: Color = GlassNavigationBarDefaults.indicatorPressedColor(),
-    scaleOnPress: Boolean = true,
+    appearance: GlassIndicatorAppearance = GlassIndicatorAppearance(
+        color = GlassNavigationBarDefaults.indicatorColor(),
+        pressedColor = GlassNavigationBarDefaults.indicatorPressedColor(),
+    ),
 ) {
     val density = LocalDensity.current
     val scale by animateFloatAsState(
-        targetValue = if (pressed && scaleOnPress) {
+        targetValue = if (pressed && appearance.scaleOnPress) {
             glassPressScale(with(density) { height.toPx() }, density.density)
         } else {
             1f
@@ -54,7 +62,7 @@ internal fun GlassNavigationIndicator(
         label = "glassNavigationIndicatorPress",
     )
     val fill = animateColorAsState(
-        targetValue = if (pressed) pressedColor else color,
+        targetValue = if (pressed) appearance.pressedColor else appearance.color,
         animationSpec = if (pressed) GlassMotion.navPressEnter() else GlassMotion.navPressExit(),
         label = "glassNavigationIndicatorFill",
     )
