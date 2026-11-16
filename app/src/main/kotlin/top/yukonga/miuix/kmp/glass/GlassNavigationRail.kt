@@ -140,94 +140,60 @@ fun rememberGlassNavigationRailState(initialExpanded: Boolean = true): GlassNavi
     GlassNavigationRailState(initialExpanded)
 }
 
+/** Existing top-level pager owns selection; this is only the visual rail's adapter. */
+internal class GlassRailDestinations(
+    val items: List<GlassNavigationItem>,
+    val selectedIndex: Int,
+    val onSelect: (Int) -> Unit,
+)
+
+/** Preserves one native morph and one set of rows during the whole adaptive-window session. */
+private class RailWindowRequest(
+    val destinations: GlassRailDestinations,
+    val state: GlassNavigationRailState,
+    val backdrop: Backdrop?,
+    val showToggle: Boolean,
+)
+
+private class RailSourceWidths(val labels: List<Dp>, val slots: List<Dp>)
+
+private class RailAnimationState(
+    val rows: List<Animatable<Float, AnimationVector1D>>,
+    val iconAlpha: Animatable<Float, AnimationVector1D>,
+)
+
+private class RailPlacement(
+    val geometry: RailPanelGeometry,
+    val motion: RailPanelMotion,
+)
+
 /**
- * A floating sidebar on glass for wide layouts: a panel at the start edge that, collapsing, travels
- * to the top centre and becomes the navigation bar itself.
- *
- * Expanded, the rail lists destinations as icon and label. Collapsed, it shows labels only, with
- * the expand toggle in its leading slot. Its persistent gesture owner and indicator use the same
- * drag physics as [GlassNavigationBar], including presses made during the morph.
- *
- * Between those settled states every row flies from its place in the column into its slot in the
- * bar's row. The morph is read in layout and draw blocks, so its frames do not recompose the rows.
- *
- * The rail is an overlay: it fills the space it is given and draws the surface inside it. Place it
- * over the page, outside the recorded backdrop. Move the page clear of the panel with
- * [GlassNavigationRailState.progress], and hide a top bar's title while the capsule covers it.
- *
- * @param items The destinations, in order.
- * @param selectedIndex The index of the current destination.
- * @param onSelect Called with the destination the user selected.
- * @param backdrop The [Backdrop] supplying the content behind the glass. `null` fills the surface
- *   with the theme's surfaceContainer color instead of sampling.
- * @param modifier The modifier applied to the rail's overlay box.
- * @param state The rail's expanded state and morph progress.
- * @param showToggle Whether to show the built-in expand/collapse toggle. Without it, the caller
- *   drives [GlassNavigationRailState.expanded].
- * @param defaultWindowInsetsPadding Whether to keep the surface inside the system bars, the caption
- *   bar and the display cutout. Disable when the caller insets the rail itself.
- * @param collapsedTop Top of the collapsed capsule, relative to the safe area.
- * @param expandedWidth Panel width while expanded.
- * @param style The glass material style.
- * @param alpha Opacity multiplier for the material.
- * @param material The surface's own body when sampling a backdrop. `null` omits explicit material
- *   layers; it does not disable sampling. Ignored when [backdrop] is `null`.
- * @param stroke Optional bloom stroke along the rim.
- * @param shadow The shadow the floating surface casts. `null` removes it.
- * @param selectedColor Tint of the selected icon and label. Dynamic colour themes use primary;
- *   other themes use onSurface.
- * @param unselectedColor Tint of the unselected icons and labels.
- * @param indicatorColor Fill behind the selected destination.
- * @param indicatorPressedColor Fill behind the destination held down in the collapsed capsule.
- * @param labelStyle The destinations' label style. It also decides the width of a collapsed slot,
- *   so the capsule hugs its labels.
- * @param expandContentDescription The accessible description of the toggle while collapsed.
- * @param collapseContentDescription The accessible description of the toggle while expanded.
- * @param scrollState The [ScrollState] of the expanded destination column.
+ * Upstream rail material and animation, with a smaller app-local API: only options actually used
+ * by Guiyuan are exposed. Other appearance and inset values follow the pinned MIUIX defaults.
  */
 @Composable
 fun GlassNavigationRail(
-    items: List<GlassNavigationItem>,
-    selectedIndex: Int,
-    onSelect: (Int) -> Unit,
+    destinations: GlassRailDestinations,
     backdrop: Backdrop?,
     modifier: Modifier = Modifier,
     state: GlassNavigationRailState = rememberGlassNavigationRailState(),
     showToggle: Boolean = true,
-    defaultWindowInsetsPadding: Boolean = true,
-    collapsedTop: Dp = GlassNavigationRailDefaults.CollapsedTop,
-    expandedWidth: Dp = GlassNavigationRailDefaults.ExpandedWidth,
-    style: GlassStyle = GlassDefaults.Style,
-    alpha: Float = 1f,
-    material: GlassMaterial? = GlassNavigationRailDefaults.material(),
-    stroke: EdgeStroke? = GlassNavigationRailDefaults.stroke(),
-    shadow: GlassShadow? = GlassShadows.Float,
-    selectedColor: Color = if (MiuixTheme.isDynamicColor) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
-    unselectedColor: Color = MiuixTheme.colorScheme.onSurface,
-    indicatorColor: Color = GlassNavigationBarDefaults.indicatorColor(),
-    indicatorPressedColor: Color = GlassNavigationBarDefaults.indicatorPressedColor(),
-    labelStyle: TextStyle = MiuixTheme.textStyles.body1,
-    expandContentDescription: String = GlassNavigationRailDefaults.ExpandContentDescription,
-    collapseContentDescription: String = GlassNavigationRailDefaults.CollapseContentDescription,
-    scrollState: ScrollState = rememberScrollState(),
 ) {
+    val items = destinations.items
     if (items.isEmpty()) return
-    val index = selectedIndex.coerceIn(0, items.lastIndex)
     val expanded = state.expanded
     val density = LocalDensity.current
-
     val textMeasurer = rememberTextMeasurer()
-    // A collapsed slot is as wide as its own label plus the bar's indicator reach, so the capsule
-    // hugs its text.
-    val labelWidths = remember(items, labelStyle, density) {
+    val labelWidths = remember(items, MiuixTheme.textStyles.body1, density) {
         items.map { item ->
-            item.label?.let { with(density) { ceil(textMeasurer.measure(it, labelStyle).size.width.toFloat()).toDp() } } ?: 0.dp
+            item.label?.let {
+                with(density) {
+                    ceil(textMeasurer.measure(it, MiuixTheme.textStyles.body1).size.width.toFloat()).toDp()
+                }
+            } ?: 0.dp
         }
     }
     val sourceWidths = remember(labelWidths) { labelWidths.map { it + RailSlotPadding } }
-
-    // One clock for the surface's width, top and corner; each row and the panel's height and start
-    // edge settle on their own springs, as in the reference motion.
     val rowProgress = remember(items.size) { List(items.size) { Animatable(if (expanded) 1f else 0f) } }
     val iconAlpha = remember { Animatable(if (expanded) 1f else 0f) }
     LaunchedEffect(expanded, rowProgress) {
@@ -238,84 +204,102 @@ fun GlassNavigationRail(
             launch { progress.animateTo(target, railRowMotion(position, expanded)) }
         }
     }
+    RailNavigationWindow(
+        request = RailWindowRequest(destinations, state, backdrop, showToggle),
+        widths = RailSourceWidths(labelWidths, sourceWidths),
+        animation = RailAnimationState(rowProgress, iconAlpha),
+        modifier = modifier,
+    )
+}
 
+@Composable
+private fun RailNavigationWindow(
+    request: RailWindowRequest,
+    widths: RailSourceWidths,
+    animation: RailAnimationState,
+    modifier: Modifier,
+) {
     BoxWithConstraints(
-        modifier = modifier
-            .fillMaxSize()
-            .then(
-                if (defaultWindowInsetsPadding) {
-                    Modifier.windowInsetsPadding(
-                        WindowInsets.systemBars
-                            .union(WindowInsets.captionBar)
-                            .union(WindowInsets.displayCutout),
-                    )
-                } else {
-                    Modifier
-                },
-            ),
+        modifier = modifier.fillMaxSize().windowInsetsPadding(
+            WindowInsets.systemBars.union(WindowInsets.captionBar).union(WindowInsets.displayCutout),
+        ),
     ) {
-        val viewportWidth = maxWidth
-        val viewportHeight = maxHeight
-        val capsuleGeometry = railCapsuleGeometry(viewportWidth, sourceWidths, showToggle)
-        val contentStart = capsuleGeometry.contentStart
-        val capsuleWidth = capsuleGeometry.width
-        val widthRatio = capsuleGeometry.widthRatio
-        val tabWidths = remember(sourceWidths, widthRatio) { sourceWidths.map { it * widthRatio } }
+        val expanded = request.state.expanded
+        val capsule = railCapsuleGeometry(maxWidth, widths.slots, request.showToggle)
+        val tabWidths = remember(widths.slots, capsule.widthRatio) {
+            widths.slots.map { it * capsule.widthRatio }
+        }
         val collapsedHeight = GlassNavigationRailDefaults.CollapsedHeight
-        val collapsedStart = (viewportWidth - capsuleWidth) / 2
-        val expandedStart = GlassNavigationRailDefaults.Margin
+        val collapsedStart = (maxWidth - capsule.width) / 2
         val expandedTop = GlassNavigationRailDefaults.CollapsedTop
-        val expandedHeight = (viewportHeight - expandedTop - GlassNavigationRailDefaults.Margin)
+        val expandedHeight = (maxHeight - expandedTop - GlassNavigationRailDefaults.Margin)
             .coerceAtLeast(collapsedHeight)
-
         val panelHeight = rememberRailMotion(
             target = if (expanded) expandedHeight else collapsedHeight,
             expanded = expanded,
         ) { expanding -> railHeightMotion(expanding, expandedHeight - collapsedHeight) }
         val panelStart = rememberRailMotion(
-            target = if (expanded) expandedStart else collapsedStart,
+            target = if (expanded) GlassNavigationRailDefaults.Margin else collapsedStart,
             expanded = expanded,
         ) { expanding -> if (expanding) RailMorphDpMotion else RailReboundMotion }
-
-        GlassNavigationRailPanel(
-            context = RailPanelContext(
-                selection = RailPanelSelection(items, index, onSelect),
-                state = state,
-                showToggle = showToggle,
-                toggleContentDescription = if (expanded) collapseContentDescription else expandContentDescription,
-                scrollState = scrollState,
-            ),
-            geometry = RailPanelGeometry(
-                tabWidths = tabWidths,
-                labelWidths = labelWidths,
-                contentStart = contentStart,
-                endpoints = RailPanelEndpoints(capsuleWidth, expandedWidth, collapsedTop, expandedTop),
-            ),
-            motion = RailPanelMotion(
-                rowProgress = rowProgress,
-                iconAlpha = { iconAlpha.value },
-                panelStart = { panelStart.value },
-                panelHeight = { panelHeight.value },
-            ),
-            surface = RailPanelSurface(
-                backdrop = backdrop,
-                style = style,
-                alpha = alpha,
-                material = material,
-                stroke = stroke,
-                shadow = shadow,
-            ),
-            colors = RailPanelColors(
-                selectedColor = selectedColor,
-                unselectedColor = unselectedColor,
-                indicatorColor = indicatorColor,
-                indicatorPressedColor = indicatorPressedColor,
-                labelStyle = labelStyle,
+        RailWindowPanel(
+            request = request,
+            placement = RailPlacement(
+                geometry = RailPanelGeometry(
+                    tabWidths = tabWidths,
+                    labelWidths = widths.labels,
+                    contentStart = capsule.contentStart,
+                    endpoints = RailPanelEndpoints(capsule.width, GlassNavigationRailDefaults.ExpandedWidth,
+                        GlassNavigationRailDefaults.CollapsedTop, expandedTop),
+                ),
+                motion = RailPanelMotion(animation.rows, { animation.iconAlpha.value },
+                    { panelStart.value }, { panelHeight.value }),
             ),
         )
     }
 }
 
+@Composable
+private fun RailWindowPanel(
+    request: RailWindowRequest,
+    placement: RailPlacement,
+) {
+    val colorScheme = MiuixTheme.colorScheme
+    GlassNavigationRailPanel(
+        context = RailPanelContext(
+            selection = RailPanelSelection(
+                request.destinations.items,
+                request.destinations.selectedIndex.coerceIn(0, request.destinations.items.lastIndex),
+                request.destinations.onSelect,
+            ),
+            state = request.state,
+            showToggle = request.showToggle,
+            toggleContentDescription = if (request.state.expanded) {
+                GlassNavigationRailDefaults.CollapseContentDescription
+            } else {
+                GlassNavigationRailDefaults.ExpandContentDescription
+            },
+            scrollState = rememberScrollState(),
+        ),
+        geometry = placement.geometry,
+        motion = placement.motion,
+        surface = RailPanelSurface(
+            backdrop = request.backdrop,
+            style = GlassDefaults.Style,
+            alpha = 1f,
+            material = GlassNavigationRailDefaults.material(),
+            stroke = GlassNavigationRailDefaults.stroke(),
+            shadow = GlassShadows.Float,
+        ),
+        colors = RailPanelColors(
+            selectedColor = if (MiuixTheme.isDynamicColor) colorScheme.primary else colorScheme.onSurface,
+            unselectedColor = colorScheme.onSurface,
+            indicatorColor = GlassNavigationBarDefaults.indicatorColor(),
+            indicatorPressedColor = GlassNavigationBarDefaults.indicatorPressedColor(),
+            labelStyle = MiuixTheme.textStyles.body1,
+        ),
+    )
+}
 
 /** Deterministic capsule width and slot compression; does not own motion or touch state. */
 internal class RailCapsuleGeometry(

@@ -90,6 +90,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.job
 import top.yukonga.miuix.kmp.glass.GlassNavigationBar
 import top.yukonga.miuix.kmp.glass.GlassNavigationRail
+import top.yukonga.miuix.kmp.glass.GlassRailDestinations
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
@@ -566,9 +567,11 @@ internal fun MainHub(
                 }
             }
             GlassNavigationRail(
-                items = railItems,
-                selectedIndex = pageSelection.selectedPage,
-                onSelect = ::selectPage,
+                destinations = GlassRailDestinations(
+                    items = railItems,
+                    selectedIndex = pageSelection.selectedPage,
+                    onSelect = ::selectPage,
+                ),
                 backdrop = navBackdrop,
                 showToggle = false,
                 modifier = Modifier.fillMaxSize(),
