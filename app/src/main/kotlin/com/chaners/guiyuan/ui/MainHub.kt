@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
@@ -126,11 +127,12 @@ private const val TopLevelPageCount = 3
 internal fun canPlaceGlassRail(
     windowSize: androidx.compose.ui.unit.DpSize,
     startInset: androidx.compose.ui.unit.Dp,
+    endInset: androidx.compose.ui.unit.Dp,
     verticalInsets: androidx.compose.ui.unit.Dp,
 ): Boolean {
     val occupiedWidth = GlassNavigationRailDefaults.ExpandedWidth +
         GlassNavigationRailDefaults.Margin * 2 + startInset
-    return windowSize.width >= occupiedWidth + 360.dp &&
+    return windowSize.width >= occupiedWidth + endInset + 360.dp &&
         windowSize.height >= verticalInsets + 320.dp
 }
 
@@ -279,11 +281,12 @@ internal fun MainHub(
         .union(WindowInsets.displayCutout)
         .asPaddingValues()
     val railStartInset = railSafePadding.calculateStartPadding(LocalLayoutDirection.current)
+    val railEndInset = railSafePadding.calculateEndPadding(LocalLayoutDirection.current)
     val railVerticalInsets = railSafePadding.calculateTopPadding() + railSafePadding.calculateBottomPadding()
     val railContentWidth = GlassNavigationRailDefaults.ExpandedWidth +
         GlassNavigationRailDefaults.Margin * 2 + railStartInset
     val useGlassRail = os4Glass && navBackdrop != null &&
-        canPlaceGlassRail(LocalWindowInfo.current.containerDpSize, railStartInset, railVerticalInsets)
+        canPlaceGlassRail(LocalWindowInfo.current.containerDpSize, railStartInset, railEndInset, railVerticalInsets)
     val liquidBackdrop =
         if (liquidMaterialActive) {
             rememberLiquidNavBackdrop(surfaceColor)
