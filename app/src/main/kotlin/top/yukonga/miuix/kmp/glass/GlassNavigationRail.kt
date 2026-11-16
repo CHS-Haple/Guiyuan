@@ -256,22 +256,10 @@ fun GlassNavigationRail(
     ) {
         val viewportWidth = maxWidth
         val viewportHeight = maxHeight
-        val totalSlots = sourceWidths.fold(0.dp) { sum, width -> sum + width }
-        // The bar lays out its first destination after its content padding and the toggle's slot.
-        val leadingActionWidth = if (showToggle) RailLeadingActionWidth else 0.dp
-        val contentStart = GlassNavigationBarDefaults.ContentPaddingHorizontal + leadingActionWidth
-        val chrome = contentStart + RailCollapsedEndPadding
-        // The capsule leaves room on both sides for a top bar's navigation icon and actions, and
-        // compresses its slots when the labels need more than that.
-        val neededWidth = chrome + totalSlots
-        val capsuleWidth = neededWidth
-            .coerceAtMost((viewportWidth - RailCollapsedSideReserve * 2).coerceAtLeast(RailMinCollapsedWidth))
-            .coerceAtMost(viewportWidth)
-        val widthRatio = if (totalSlots > 0.dp) {
-            ((capsuleWidth - chrome) / totalSlots).coerceAtLeast(0f)
-        } else {
-            1f
-        }
+        val capsuleGeometry = railCapsuleGeometry(viewportWidth, sourceWidths, showToggle)
+        val contentStart = capsuleGeometry.contentStart
+        val capsuleWidth = capsuleGeometry.width
+        val widthRatio = capsuleGeometry.widthRatio
         val tabWidths = remember(sourceWidths, widthRatio) { sourceWidths.map { it * widthRatio } }
         val collapsedHeight = GlassNavigationRailDefaults.CollapsedHeight
         val collapsedStart = (viewportWidth - capsuleWidth) / 2
@@ -333,6 +321,35 @@ fun GlassNavigationRail(
     }
 }
 
+
+/** Deterministic capsule width and slot compression; does not own motion or touch state. */
+internal class RailCapsuleGeometry(
+    val contentStart: Dp,
+    val width: Dp,
+    val widthRatio: Float,
+)
+
+internal fun railCapsuleGeometry(
+    viewportWidth: Dp,
+    sourceWidths: List<Dp>,
+    showToggle: Boolean,
+): RailCapsuleGeometry {
+    val totalSlots = sourceWidths.fold(0.dp) { sum, width -> sum + width }
+    val leadingActionWidth = if (showToggle) RailLeadingActionWidth else 0.dp
+    val contentStart = GlassNavigationBarDefaults.ContentPaddingHorizontal + leadingActionWidth
+    val chrome = contentStart + RailCollapsedEndPadding
+    // Preserve upstream's side reserve and compression for narrow but nonzero windows.
+    val neededWidth = chrome + totalSlots
+    val capsuleWidth = neededWidth
+        .coerceAtMost((viewportWidth - RailCollapsedSideReserve * 2).coerceAtLeast(RailMinCollapsedWidth))
+        .coerceAtMost(viewportWidth)
+    val widthRatio = if (totalSlots > 0.dp) {
+        ((capsuleWidth - chrome) / totalSlots).coerceAtLeast(0f)
+    } else {
+        1f
+    }
+    return RailCapsuleGeometry(contentStart, capsuleWidth, widthRatio)
+}
 
 /** A corner that eases from the capsule's half-height to the panel's radius as [progress] rises. */
 @Stable
