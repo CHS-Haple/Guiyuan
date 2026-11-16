@@ -109,7 +109,16 @@ internal class RailPanelColors(
     val labelStyle: TextStyle,
 )
 
-/** One permanent surface, gesture owner, set of rows and toggle for both ends of the morph. */
+/** One interaction/scroll owner retained throughout the rail morph. */
+private class RailPanelPointer(
+    val interaction: NavigationRailInteraction,
+    val expanded: androidx.compose.runtime.State<Boolean>,
+    val headerBottom: androidx.compose.runtime.State<() -> Float>,
+    val onSelect: androidx.compose.runtime.State<(Int) -> Unit>,
+    val scrollEnabled: Boolean,
+)
+
+/** One permanent surface; layout and gesture children are composables with distinct ownership. */
 @Composable
 internal fun GlassNavigationRailPanel(
     context: RailPanelContext,
@@ -118,189 +127,212 @@ internal fun GlassNavigationRailPanel(
     surface: RailPanelSurface,
     colors: RailPanelColors,
 ) {
-    val items = context.selection.items
-    val selectedIndex = context.selection.selectedIndex
     val state = context.state
-    val showToggle = context.showToggle
-    val toggleContentDescription = context.toggleContentDescription
-    val onSelect = context.selection.onSelect
-    val scrollState = context.scrollState
-    val tabWidths = geometry.tabWidths
-    val labelWidths = geometry.labelWidths
-    val contentStart = geometry.contentStart
-    val collapsedWidth = geometry.endpoints.collapsedWidth
-    val expandedWidth = geometry.endpoints.expandedWidth
-    val collapsedTop = geometry.endpoints.collapsedTop
-    val expandedTop = geometry.endpoints.expandedTop
-    val rowProgress = motion.rowProgress
-    val iconAlpha = motion.iconAlpha
-    val panelStart = motion.panelStart
-    val panelHeight = motion.panelHeight
-    val backdrop = surface.backdrop
-    val style = surface.style
-    val alpha = surface.alpha
-    val material = surface.material
-    val stroke = surface.stroke
-    val shadow = surface.shadow
-    val selectedColor = colors.selectedColor
-    val unselectedColor = colors.unselectedColor
-    val indicatorColor = colors.indicatorColor
-    val indicatorPressedColor = colors.indicatorPressedColor
-    val labelStyle = colors.labelStyle
-
-    val expanded = state.expanded
-    // The corner eases from the capsule's half-height to the panel's radius on the morph's clock,
-    // read when the outline is built rather than in composition.
     val shape = remember(state) {
         val corner = RailMorphCorner { state.progress }
         GlassShape(corner, corner, corner, corner)
     }
-    val itemWidth = expandedWidth - RailItemHorizontalMargin * 2
-    val contentHeight = RailExpandedRowTop + RailRowPitch * items.lastIndex + RailExpandedRowHeight +
-        GlassNavigationRailDefaults.Margin
-    // The column only scrolls once it has settled into the panel; while rows fly they keep their
-    // own geometry.
+    Box(
+        modifier = Modifier.railPanelSurfaceModifier(state, geometry, motion, surface, shape),
+    ) {
+        RailPanelContents(context, geometry, motion, colors)
+        if (context.showToggle) RailPanelToggle(context, colors)
+    }
+}
+
+/** Keep the material/shadow in the same layout and draw phase as upstream. */
+@Composable
+private fun Modifier.railPanelSurfaceModifier(
+    state: GlassNavigationRailState,
+    geometry: RailPanelGeometry,
+    motion: RailPanelMotion,
+    surface: RailPanelSurface,
+    shape: GlassShape,
+): Modifier = this
+    .layout { measurable, _ ->
+        val fraction = state.progress.coerceIn(0f, 1f)
+        val width = lerp(geometry.endpoints.collapsedWidth.toPx(), geometry.endpoints.expandedWidth.toPx(), fraction).roundToInt()
+        val height = motion.panelHeight().roundToPx().coerceAtLeast(0)
+        val placeable = measurable.measure(Constraints.fixed(width, height))
+        layout(width, height) { placeable.place(0, 0) }
+    }
+    .offset {
+        IntOffset(
+            x = motion.panelStart().roundToPx(),
+            y = lerp(geometry.endpoints.collapsedTop.toPx(), geometry.endpoints.expandedTop.toPx(), state.progress).roundToInt(),
+        )
+    }
+    .glassPanel(
+        backdrop = surface.backdrop,
+        shape = shape,
+        style = surface.style,
+        alpha = surface.alpha,
+        material = surface.material,
+        stroke = surface.stroke,
+        shadow = surface.shadow,
+        shading = false,
+        fallback = Modifier.clip(shape).background(MiuixTheme.colorScheme.surfaceContainer),
+    )
+    .clip(shape)
+
+@Composable
+private fun RailPanelContents(
+    context: RailPanelContext,
+    geometry: RailPanelGeometry,
+    motion: RailPanelMotion,
+    colors: RailPanelColors,
+) {
+    val state = context.state
+    val rowProgress = motion.rowProgress
     val scrollEnabled by remember(state, rowProgress) {
         derivedStateOf { state.expanded && state.morph.value == 1f && rowProgress.all { it.value == 1f } }
     }
     val density = LocalDensity.current
-    val layoutDirection = LocalLayoutDirection.current
     val scope = rememberCoroutineScope()
-    val widths = remember(tabWidths, density) { with(density) { tabWidths.map { it.roundToPx().toFloat() } } }
-    val startPx = with(density) { contentStart.roundToPx().toFloat() }
+    val widths = remember(geometry.tabWidths, density) {
+        with(density) { geometry.tabWidths.map { it.roundToPx().toFloat() } }
+    }
+    val startPx = with(density) { geometry.contentStart.roundToPx().toFloat() }
     val endPx = with(density) { RailCollapsedEndPadding.toPx() }
     val headerHeightPx = with(density) { RailHeaderHeight.toPx() }
     val interaction = remember(widths, startPx, endPx, scope) {
-        NavigationRailInteraction(widths, startPx, endPx, selectedIndex, scope)
+        NavigationRailInteraction(widths, startPx, endPx, context.selection.selectedIndex, scope)
     }
-    val currentOnSelect = rememberUpdatedState(onSelect)
-    val currentExpanded = rememberUpdatedState(expanded)
-    val currentHeaderBottom = rememberUpdatedState { scrollState.value + headerHeightPx * state.progress }
-    val pressedIndex = interaction.pressedIndex
-    val pressed = pressedIndex >= 0
-    val indicatorIndex = if (pressed) pressedIndex else selectedIndex
-    LaunchedEffect(interaction, selectedIndex, pressed, interaction.releaseGeneration) {
-        if (!pressed) interaction.settle(selectedIndex)
+    val pointer = RailPanelPointer(
+        interaction = interaction,
+        expanded = rememberUpdatedState(state.expanded),
+        headerBottom = rememberUpdatedState { context.scrollState.value + headerHeightPx * state.progress },
+        onSelect = rememberUpdatedState(context.selection.onSelect),
+        scrollEnabled = scrollEnabled,
+    )
+    val pressed = interaction.pressedIndex >= 0
+    LaunchedEffect(interaction, context.selection.selectedIndex, pressed, interaction.releaseGeneration) {
+        if (!pressed) interaction.settle(context.selection.selectedIndex)
     }
+    RailPanelScroll(context, geometry, motion, colors, pointer)
+}
 
+@Composable
+private fun RailPanelScroll(
+    context: RailPanelContext,
+    geometry: RailPanelGeometry,
+    motion: RailPanelMotion,
+    colors: RailPanelColors,
+    pointer: RailPanelPointer,
+) {
+    val state = context.state
+    val contentHeight = RailExpandedRowTop + RailRowPitch * context.selection.items.lastIndex +
+        RailExpandedRowHeight + GlassNavigationRailDefaults.Margin
     Box(
         Modifier
-            .layout { measurable, _ ->
-                val fraction = state.progress.coerceIn(0f, 1f)
-                val width = lerp(collapsedWidth.toPx(), expandedWidth.toPx(), fraction).roundToInt()
-                val height = panelHeight().roundToPx().coerceAtLeast(0)
-                val placeable = measurable.measure(Constraints.fixed(width, height))
-                layout(width, height) { placeable.place(0, 0) }
+            .fillMaxSize()
+            .drawWithContent {
+                clipRect(top = RailHeaderHeight.toPx() * state.progress) {
+                    this@drawWithContent.drawContent()
+                }
             }
-            .offset {
-                IntOffset(
-                    x = panelStart().roundToPx(),
-                    y = lerp(collapsedTop.toPx(), expandedTop.toPx(), state.progress).roundToInt(),
-                )
-            }
-            .glassPanel(
-                backdrop = backdrop,
-                shape = shape,
-                style = style,
-                alpha = alpha,
-                material = material,
-                stroke = stroke,
-                shadow = shadow,
-                shading = false,
-                fallback = Modifier
-                    .clip(shape)
-                    .background(MiuixTheme.colorScheme.surfaceContainer),
-            )
-            .clip(shape),
+            .verticalScroll(context.scrollState, enabled = pointer.scrollEnabled),
     ) {
         Box(
             Modifier
-                .fillMaxSize()
-                // Rows scrolled up pass under the toggle's header, not over it.
-                .drawWithContent {
-                    clipRect(top = RailHeaderHeight.toPx() * state.progress) {
-                        this@drawWithContent.drawContent()
-                    }
-                }
-                .verticalScroll(scrollState, enabled = scrollEnabled),
+                .fillMaxWidth()
+                .height(contentHeight)
+                .selectableGroup()
+                .navigationRailGestures(
+                    interaction = pointer.interaction,
+                    layoutDirection = LocalLayoutDirection.current,
+                    expanded = pointer.expanded,
+                    headerBottom = pointer.headerBottom,
+                    onSelect = pointer.onSelect,
+                ),
         ) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(contentHeight)
-                    .selectableGroup()
-                    .navigationRailGestures(
-                        interaction = interaction,
-                        layoutDirection = layoutDirection,
-                        expanded = currentExpanded,
-                        headerBottom = currentHeaderBottom,
-                        onSelect = currentOnSelect,
-                    ),
-            ) {
-                NavigationRailIndicator(
-                    selection = RailIndicatorSelection(indicatorIndex, interaction, pressed),
-                    motion = RailIndicatorMotion(
-                        progress = { rowProgress[indicatorIndex].value },
-                        scrollOffset = { scrollState.value },
-                        expandedItemWidth = itemWidth,
-                    ),
-                    appearance = GlassIndicatorAppearance(indicatorColor, indicatorPressedColor),
-                )
-                items.forEachIndexed { position, item ->
-                    key(position, item) {
-                        NavigationRailRow(
-                            identity = RailRowIdentity(
-                                item = item,
-                                selected = position == selectedIndex,
-                                position = position,
-                                slot = interaction.slots[position],
-                                interactionSource = interaction.rowInteractions[position],
-                                onClick = { onSelect(position) },
-                            ),
-                            motion = RailRowMotion(
-                                expanded = expanded,
-                                pressed = pressedIndex == position,
-                                rowProgress = { rowProgress[position].value },
-                                iconAlpha = iconAlpha,
-                                scrollOffset = { scrollState.value },
-                            ),
-                            layout = RailRowLayoutSpec(
-                                tabWidths = tabWidths,
-                                contentStart = contentStart,
-                                labelWidth = labelWidths[position],
-                                itemWidth = itemWidth,
-                            ),
-                            appearance = RailRowAppearance(
-                                selectedColor = selectedColor,
-                                unselectedColor = unselectedColor,
-                                labelStyle = labelStyle,
-                            ),
-                        )
-                    }
-                }
-            }
+            RailPanelRows(context, geometry, motion, colors, pointer)
         }
-        if (showToggle) {
-            Box(
-                modifier = Modifier
-                    .offset {
-                        val fraction = state.progress
-                        IntOffset(
-                            x = lerp(RailCollapsedToggleBoxStart.toPx(), RailExpandedToggleStart.toPx(), fraction).roundToInt(),
-                            y = lerp(0f, RailExpandedToggleTop.toPx(), fraction).roundToInt(),
-                        )
-                    }
-                    .size(RailToggleBoxSize),
-                contentAlignment = Alignment.Center,
-            ) {
-                RailToggle(
-                    onClick = { state.expanded = !expanded },
-                    expanded = expanded,
-                    size = if (expanded) RailToggleBoxSize else RailCollapsedRowHeight,
-                    tint = unselectedColor,
-                    contentDescription = toggleContentDescription,
+    }
+}
+
+/** Visual destinations and indicator share the one press/selection owner above. */
+@Composable
+private fun RailPanelRows(
+    context: RailPanelContext,
+    geometry: RailPanelGeometry,
+    motion: RailPanelMotion,
+    colors: RailPanelColors,
+    pointer: RailPanelPointer,
+) {
+    val interaction = pointer.interaction
+    val pressedIndex = interaction.pressedIndex
+    val selectedIndex = context.selection.selectedIndex
+    val indicatorIndex = if (pressedIndex >= 0) pressedIndex else selectedIndex
+    val itemWidth = geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2
+    NavigationRailIndicator(
+        selection = RailIndicatorSelection(indicatorIndex, interaction, pressedIndex >= 0),
+        motion = RailIndicatorMotion(
+            progress = { motion.rowProgress[indicatorIndex].value },
+            scrollOffset = { context.scrollState.value },
+            expandedItemWidth = itemWidth,
+        ),
+        appearance = GlassIndicatorAppearance(colors.indicatorColor, colors.indicatorPressedColor),
+    )
+    context.selection.items.forEachIndexed { position, item ->
+        key(position, item) {
+            NavigationRailRow(
+                identity = RailRowIdentity(
+                    item = item,
+                    selected = position == selectedIndex,
+                    position = position,
+                    slot = interaction.slots[position],
+                    interactionSource = interaction.rowInteractions[position],
+                    onClick = { context.selection.onSelect(position) },
+                ),
+                motion = RailRowMotion(
+                    expanded = context.state.expanded,
+                    pressed = pressedIndex == position,
+                    rowProgress = { motion.rowProgress[position].value },
+                    iconAlpha = motion.iconAlpha,
+                    scrollOffset = { context.scrollState.value },
+                ),
+                layout = RailRowLayoutSpec(
+                    tabWidths = geometry.tabWidths,
+                    contentStart = geometry.contentStart,
+                    labelWidth = geometry.labelWidths[position],
+                    itemWidth = itemWidth,
+                ),
+                appearance = RailRowAppearance(
+                    selectedColor = colors.selectedColor,
+                    unselectedColor = colors.unselectedColor,
+                    labelStyle = colors.labelStyle,
+                ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun RailPanelToggle(
+    context: RailPanelContext,
+    colors: RailPanelColors,
+) {
+    val state = context.state
+    val expanded = state.expanded
+    Box(
+        modifier = Modifier
+            .offset {
+                val fraction = state.progress
+                IntOffset(
+                    x = lerp(RailCollapsedToggleBoxStart.toPx(), RailExpandedToggleStart.toPx(), fraction).roundToInt(),
+                    y = lerp(0f, RailExpandedToggleTop.toPx(), fraction).roundToInt(),
                 )
             }
-        }
+            .size(RailToggleBoxSize),
+        contentAlignment = Alignment.Center,
+    ) {
+        RailToggle(
+            onClick = { state.expanded = !expanded },
+            expanded = expanded,
+            size = if (expanded) RailToggleBoxSize else RailCollapsedRowHeight,
+            tint = colors.unselectedColor,
+            contentDescription = context.toggleContentDescription,
+        )
     }
 }
