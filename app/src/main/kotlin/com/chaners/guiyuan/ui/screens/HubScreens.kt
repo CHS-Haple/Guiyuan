@@ -158,6 +158,8 @@ import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassShadows
+import top.yukonga.miuix.kmp.glass.popupShadowOutsets
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -1469,6 +1471,11 @@ private fun HubPage(
         animationSpec = GlassMotion.topBarButtonFloat(),
         label = "os4SearchMaterial",
     )
+    // Match the upstream search transition on the entire action, not only the glyph.
+    // Preserve the native Regular glass shadow's drawing outsets while it fades.
+    val searchActionOutsets = remember(density) {
+        with(density) { popupShadowOutsets(GlassShadows.Regular) }
+    }
     val searchAction: @Composable RowScope.() -> Unit = {
         if (search != null) {
             val label = stringResource(R.string.feature_search)
@@ -1476,18 +1483,17 @@ private fun HubPage(
             TooltipBox(text = label, enabled = ready) {
                 Box(
                     Modifier
-                        .then(if (ready) Modifier else Modifier.clearAndSetSemantics {})
-                        .then(
-                            if (os4) Modifier
-                            else Modifier.graphicsLayer { alpha = os3SearchActionAlpha }
-                        ),
+                        .graphicsLayer {
+                            alpha = if (os4) barAlpha.value else os3SearchActionAlpha
+                            if (os4) outsets = searchActionOutsets
+                        }
+                        .then(if (ready) Modifier else Modifier.clearAndSetSemantics {}),
                 ) {
                     if (os4) {
                         GlassIconButton(onClick = { if (ready) { revealTitleOnExit = false; search.open() } }) {
                             Icon(
                                 Os4GlassSearch,
                                 contentDescription = label,
-                                modifier = Modifier.graphicsLayer { alpha = barAlpha.value },
                             )
                         }
                     } else IconButton(
@@ -1572,7 +1578,6 @@ private fun HubPage(
                         titleAlpha = { titleReveal.value * railProgress() },
                         largeTitle = title,
                         compact = filtering,
-                        alpha = barAlpha.value,
                         isContentScrolled = listState.canScrollBackward,
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
