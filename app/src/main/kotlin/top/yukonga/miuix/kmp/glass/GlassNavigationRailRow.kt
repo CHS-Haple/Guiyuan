@@ -84,6 +84,9 @@ internal class RailRowAppearance(
     val labelStyle: TextStyle,
 )
 
+/** The resolved geometry and tint are shared by the row's frame and its contents. */
+private class RailRowFrame(val geometry: RailRowGeometry, val tint: Color)
+
 @Composable
 internal fun NavigationRailRow(
     identity: RailRowIdentity,
@@ -91,144 +94,158 @@ internal fun NavigationRailRow(
     layout: RailRowLayoutSpec,
     appearance: RailRowAppearance,
 ) {
-    val item = identity.item
-    val selected = identity.selected
-    val position = identity.position
-    val slot = identity.slot
-    val interactionSource = identity.interactionSource
-    val onClick = identity.onClick
-    val expanded = motion.expanded
-    val pressed = motion.pressed
-    val rowProgress = motion.rowProgress
-    val iconAlpha = motion.iconAlpha
-    val scrollOffset = motion.scrollOffset
-    val tabWidths = layout.tabWidths
-    val contentStart = layout.contentStart
-    val labelWidth = layout.labelWidth
-    val itemWidth = layout.itemWidth
-    val selectedColor = appearance.selectedColor
-    val unselectedColor = appearance.unselectedColor
-    val labelStyle = appearance.labelStyle
-
     val tint by animateColorAsState(
-        targetValue = if (selected) selectedColor else unselectedColor,
+        targetValue = if (identity.selected) appearance.selectedColor else appearance.unselectedColor,
         animationSpec = GlassMotion.navContent(),
         label = "glassNavigationRailTint",
     )
     val pressAlpha = animateFloatAsState(
-        targetValue = if (pressed) GlassNavigationBarDefaults.PressedAlpha else 1f,
+        targetValue = if (motion.pressed) GlassNavigationBarDefaults.PressedAlpha else 1f,
         animationSpec = GlassMotion.navContentFloat(),
         label = "glassNavigationRailPress",
     )
+    val frame = RailRowFrame(rememberRailRowGeometry(identity, layout), tint)
+    Box(
+        modifier = Modifier
+            .railRowPlacement(identity, motion, layout, frame.geometry)
+            .railRowInteraction(identity, motion, pressAlpha.value),
+    ) {
+        RailRowContent(identity, motion, layout, appearance, frame)
+    }
+}
+
+@Composable
+private fun rememberRailRowGeometry(
+    identity: RailRowIdentity,
+    layout: RailRowLayoutSpec,
+): RailRowGeometry {
     val density = LocalDensity.current
-    val geometry = remember(density, position, tabWidths, contentStart, labelWidth, itemWidth) {
+    return remember(density, identity.position, layout.tabWidths, layout.contentStart, layout.labelWidth, layout.itemWidth) {
         with(density) {
             val padding = RailItemContentPadding.roundToPx()
             val labelStart = padding + RailIconColumnWidth.roundToPx()
-            var slotStart = contentStart.roundToPx()
-            for (index in 0 until position) slotStart += tabWidths[index].roundToPx()
-            val slotWidth = tabWidths[position].roundToPx()
-            val labelPx = labelWidth.roundToPx().coerceAtMost(slotWidth)
-            val expandedLabelWidth = (itemWidth - RailItemContentPadding * 2 - RailIconColumnWidth).roundToPx()
+            var slotStart = layout.contentStart.roundToPx()
+            for (index in 0 until identity.position) slotStart += layout.tabWidths[index].roundToPx()
+            val slotWidth = layout.tabWidths[identity.position].roundToPx()
+            val labelPx = layout.labelWidth.roundToPx().coerceAtMost(slotWidth)
+            val expandedLabelWidth = (layout.itemWidth - RailItemContentPadding * 2 - RailIconColumnWidth).roundToPx()
             RailRowGeometry(
                 slotStart = slotStart.toFloat(),
                 slotWidth = slotWidth.toFloat(),
                 sourceStart = (slotStart + ((slotWidth - labelPx) / 2f).roundToInt() - labelStart).toFloat(),
                 sourceWidth = (labelStart + labelPx + padding).toFloat(),
-                expandedTop = (RailExpandedRowTop + RailRowPitch * position).toPx(),
-                labelMinWidth = if (labelWidth.roundToPx() > slotWidth) minOf(labelPx, expandedLabelWidth) else expandedLabelWidth,
+                expandedTop = (RailExpandedRowTop + RailRowPitch * identity.position).toPx(),
+                labelMinWidth = if (layout.labelWidth.roundToPx() > slotWidth) minOf(labelPx, expandedLabelWidth) else expandedLabelWidth,
             )
         }
     }
-    // This box is the actual slot, not the wider row retaining its invisible icon column.
-    Box(
+}
+
+/** Updates the same hit rectangle during layout as the upstream flying row. */
+private fun Modifier.railRowPlacement(
+    identity: RailRowIdentity,
+    motion: RailRowMotion,
+    spec: RailRowLayoutSpec,
+    geometry: RailRowGeometry,
+): Modifier = this.layout { measurable, constraints ->
+    val fraction = motion.rowProgress().coerceIn(0f, 1f)
+    val width = lerp(geometry.slotWidth, spec.itemWidth.toPx(), fraction).roundToInt().coerceAtLeast(0)
+    val height = (RailCollapsedRowHeight + RailRowGrowth * fraction).roundToPx()
+    val x = lerp(geometry.slotStart, RailItemHorizontalMargin.toPx(), fraction).roundToInt()
+    val y = if (fraction == 1f) {
+        geometry.expandedTop.roundToInt()
+    } else {
+        lerp(RailRowTop.toPx() + motion.scrollOffset(), geometry.expandedTop, fraction).roundToInt()
+    }
+    identity.slot.left = x.toFloat()
+    identity.slot.top = y.toFloat()
+    identity.slot.width = width.toFloat()
+    identity.slot.height = height.toFloat()
+    val placeable = measurable.measure(Constraints.fixed(width, height))
+    layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(x, y) }
+}
+
+@Composable
+private fun Modifier.railRowInteraction(
+    identity: RailRowIdentity,
+    motion: RailRowMotion,
+    pressAlpha: Float,
+): Modifier = this
+    .clip(RoundedCornerShape(percent = 50))
+    .indication(identity.interactionSource, LocalIndication.current)
+    .hoverable(identity.interactionSource, enabled = motion.expanded)
+    .semantics(mergeDescendants = true) {
+        role = Role.Tab
+        this.selected = identity.selected
+        (identity.item.contentDescription ?: identity.item.label)?.let { contentDescription = it }
+        onClick {
+            identity.onClick()
+            true
+        }
+    }
+    .onKeyEvent { event ->
+        if (event.key == Key.Enter || event.key == Key.NumPadEnter || event.key == Key.Spacebar) {
+            if (event.type == KeyEventType.KeyUp) identity.onClick()
+            true
+        } else {
+            false
+        }
+    }
+    .focusable(interactionSource = identity.interactionSource)
+    .graphicsLayer { alpha = pressAlpha }
+
+/** The label and badge fly as one unit; the press/keyboard owner remains the slot above. */
+@Composable
+private fun RailRowContent(
+    identity: RailRowIdentity,
+    motion: RailRowMotion,
+    spec: RailRowLayoutSpec,
+    appearance: RailRowAppearance,
+    frame: RailRowFrame,
+) {
+    Row(
         modifier = Modifier
             .layout { measurable, constraints ->
-                val fraction = rowProgress().coerceIn(0f, 1f)
-                val width = lerp(geometry.slotWidth, itemWidth.toPx(), fraction).roundToInt().coerceAtLeast(0)
-                val height = (RailCollapsedRowHeight + RailRowGrowth * fraction).roundToPx()
-                val x = lerp(geometry.slotStart, RailItemHorizontalMargin.toPx(), fraction).roundToInt()
-                // The scrolling parent places settled rows; only the morph needs scroll compensation.
-                val y = if (fraction == 1f) {
-                    geometry.expandedTop.roundToInt()
-                } else {
-                    lerp(RailRowTop.toPx() + scrollOffset(), geometry.expandedTop, fraction).roundToInt()
-                }
-                slot.left = x.toFloat()
-                slot.top = y.toFloat()
-                slot.width = width.toFloat()
-                slot.height = height.toFloat()
-                val placeable = measurable.measure(Constraints.fixed(width, height))
-                layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(x, y) }
+                val fraction = motion.rowProgress().coerceIn(0f, 1f)
+                val width = lerp(frame.geometry.sourceWidth, spec.itemWidth.toPx(), fraction).roundToInt().coerceAtLeast(0)
+                val placeable = measurable.measure(Constraints.fixed(width, constraints.maxHeight))
+                val x = lerp(frame.geometry.sourceStart - frame.geometry.slotStart, 0f, fraction).roundToInt()
+                layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(x, 0) }
             }
-            .clip(RoundedCornerShape(percent = 50))
-            .indication(interactionSource, LocalIndication.current)
-            .hoverable(interactionSource, enabled = expanded)
-            .semantics(mergeDescendants = true) {
-                role = Role.Tab
-                this.selected = selected
-                (item.contentDescription ?: item.label)?.let { contentDescription = it }
-                onClick {
-                    onClick()
-                    true
-                }
-            }
-            .onKeyEvent { event ->
-                if (event.key == Key.Enter || event.key == Key.NumPadEnter || event.key == Key.Spacebar) {
-                    if (event.type == KeyEventType.KeyUp) onClick()
-                    true
-                } else {
-                    false
-                }
-            }
-            .focusable(interactionSource = interactionSource)
-            .graphicsLayer { alpha = pressAlpha.value },
+            .padding(horizontal = RailItemContentPadding),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .layout { measurable, constraints ->
-                    val fraction = rowProgress().coerceIn(0f, 1f)
-                    val width = lerp(geometry.sourceWidth, itemWidth.toPx(), fraction).roundToInt().coerceAtLeast(0)
-                    val placeable = measurable.measure(Constraints.fixed(width, constraints.maxHeight))
-                    val x = lerp(geometry.sourceStart - geometry.slotStart, 0f, fraction).roundToInt()
-                    layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(x, 0) }
-                }
-                .padding(horizontal = RailItemContentPadding),
-            verticalAlignment = Alignment.CenterVertically,
+                .width(RailIconColumnWidth)
+                .graphicsLayer { this.alpha = motion.iconAlpha() },
         ) {
-            Box(
-                modifier = Modifier
-                    .width(RailIconColumnWidth)
-                    .graphicsLayer { this.alpha = iconAlpha() },
-            ) {
-                BadgedBox(badge = { item.badge?.invoke() }) {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(RailIconSize),
-                        tint = tint,
-                    )
-                }
-            }
-            if (item.label != null) {
-                Text(
-                    text = item.label,
-                    modifier = Modifier.layout { measurable, constraints ->
-                        val placeable = measurable.measure(
-                            // Keep rounding from truncating a fitting label, without exceeding either endpoint.
-                            constraints.copy(maxWidth = maxOf(constraints.maxWidth, geometry.labelMinWidth)),
-                        )
-                        layout(placeable.width.coerceAtMost(constraints.maxWidth), placeable.height) {
-                            placeable.placeRelative(0, 0)
-                        }
-                    },
-                    color = tint,
-                    style = labelStyle,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
+            BadgedBox(badge = { identity.item.badge?.invoke() }) {
+                Icon(
+                    imageVector = identity.item.icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(RailIconSize),
+                    tint = frame.tint,
                 )
             }
+        }
+        if (identity.item.label != null) {
+            Text(
+                text = identity.item.label,
+                modifier = Modifier.layout { measurable, constraints ->
+                    val placeable = measurable.measure(
+                        constraints.copy(maxWidth = maxOf(constraints.maxWidth, frame.geometry.labelMinWidth)),
+                    )
+                    layout(placeable.width.coerceAtMost(constraints.maxWidth), placeable.height) {
+                        placeable.placeRelative(0, 0)
+                    }
+                },
+                color = frame.tint,
+                style = appearance.labelStyle,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
