@@ -39,8 +39,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
@@ -93,6 +95,7 @@ import top.yukonga.miuix.kmp.glass.GlassNavigationBar
 import top.yukonga.miuix.kmp.glass.GlassNavigationRail
 import top.yukonga.miuix.kmp.glass.GlassRailDestinations
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
+import top.yukonga.miuix.kmp.glass.rememberGlassNavigationRailState
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
@@ -120,8 +123,12 @@ import top.yukonga.miuix.kmp.utils.PagerGestureNestedScrollConnection
 import top.yukonga.miuix.kmp.utils.PagerNavigationSpringSpec
 import top.yukonga.miuix.kmp.utils.pagerGestureOverride
 import top.yukonga.miuix.kmp.utils.springAnimateToPage
+import kotlin.math.roundToInt
 
 private const val TopLevelPageCount = 3
+
+/** Read the shared rail morph in drawing/layout; non-rail routes remain fully visible. */
+internal val LocalGlassRailProgress = staticCompositionLocalOf<() -> Float> { { 1f } }
 
 /** Keep a full-width page beside the upstream expanded rail; insets are relative to logical start. */
 internal fun canPlaceGlassRail(
@@ -287,6 +294,10 @@ internal fun MainHub(
         GlassNavigationRailDefaults.Margin * 2 + railStartInset
     val useGlassRail = os4Glass && navBackdrop != null &&
         canPlaceGlassRail(LocalWindowInfo.current.containerDpSize, railStartInset, railEndInset, railVerticalInsets)
+    val railState = rememberGlassNavigationRailState()
+    val railProgress = remember(useGlassRail, railState) {
+        { if (useGlassRail) railState.progress else 1f }
+    }
     val liquidBackdrop =
         if (liquidMaterialActive) {
             rememberLiquidNavBackdrop(surfaceColor)
@@ -513,9 +524,21 @@ internal fun MainHub(
         ) {
             Box(
                 modifier = Modifier.fillMaxSize().then(
-                    if (useGlassRail) Modifier.padding(start = railContentWidth) else Modifier,
+                    if (useGlassRail) {
+                        Modifier.layout { measurable, constraints ->
+                            val start = (railContentWidth.toPx() * railState.progress)
+                                .roundToInt().coerceIn(0, constraints.maxWidth)
+                            val page = measurable.measure(constraints.offset(horizontal = -start))
+                            layout(constraints.maxWidth, page.height) {
+                                page.placeRelative(start, 0)
+                            }
+                        }
+                    } else {
+                        Modifier
+                    },
                 ),
             ) {
+            CompositionLocalProvider(LocalGlassRailProgress provides railProgress) {
             TopLevelPager(
                 pagerState = pagerState,
                 bottomPadding = innerPadding,
@@ -557,14 +580,15 @@ internal fun MainHub(
                 onNavigate = onNavigate,
             )
             }
+            }
         }
         if (useGlassRail) {
-            val includeLabels = appearance.activeNavContent == NavContent.IconAndText
-            val railItems = remember(items, includeLabels) {
+            // Wide rails use labeled destinations, independent of compact bottom-bar preference.
+            val railItems = remember(items) {
                 items.map { item ->
                     GlassNavigationItem(
                         icon = item.icon,
-                        label = item.label.takeIf { includeLabels },
+                        label = item.label,
                         contentDescription = item.label,
                     )
                 }
@@ -576,7 +600,8 @@ internal fun MainHub(
                     onSelect = ::selectPage,
                 ),
                 backdrop = navBackdrop,
-                showToggle = false,
+                state = railState,
+                showToggle = true,
                 modifier = Modifier.fillMaxSize(),
             )
         }

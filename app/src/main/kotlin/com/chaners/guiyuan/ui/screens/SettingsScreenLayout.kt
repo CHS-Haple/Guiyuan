@@ -46,6 +46,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
+import com.chaners.guiyuan.ui.LocalGlassRailProgress
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.components.UiTopBarNavigationIcon
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
@@ -193,6 +194,7 @@ internal fun SettingsPage(
     val resolvedListState = listState ?: rememberLazyListState()
     val topBarBackdrop = rememberTopBarBackdrop()
     val os4 = LocalUiStyle.current == UiStyle.OS4
+    val railProgress = LocalGlassRailProgress.current
     val onOverscrollChanged: (Float) -> Unit = remember(scrollBehavior) {
         { offset -> scrollBehavior.state.overscrollOffset = offset }
     }
@@ -212,7 +214,7 @@ internal fun SettingsPage(
                     expandable = !keepCompactTitle,
                     backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
-                    titleAlpha = { titleAlpha },
+                    titleAlpha = { titleAlpha * railProgress() },
                     compact = compactTopBar,
                     titlePadding = titlePadding,
                     navigationIcon = navigationIcon,

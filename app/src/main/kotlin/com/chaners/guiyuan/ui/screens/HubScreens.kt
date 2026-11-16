@@ -23,6 +23,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Search
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -69,6 +70,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
+import com.chaners.guiyuan.ui.LocalGlassRailProgress
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.icons.Os4GlassSearch
 import com.chaners.guiyuan.GyApplication
@@ -140,6 +142,8 @@ import com.chaners.guiyuan.ui.navigation.AppRoute
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.platform.LocalDensity
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -152,6 +156,7 @@ import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
+import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
@@ -1425,6 +1430,8 @@ private fun HubPage(
     val listState = if (filtering) resultsState else browsingState
     val canScroll = listState.canScrollBackward || listState.canScrollForward
     val os4 = LocalUiStyle.current == UiStyle.OS4
+    val railProgress = LocalGlassRailProgress.current
+    val density = LocalDensity.current
     val browsingScroll = MiuixScrollBehavior()
     val resultsScroll = if (os4) MiuixScrollBehavior() else browsingScroll
     val scrollBehavior = if (filtering) resultsScroll else browsingScroll
@@ -1562,7 +1569,7 @@ private fun HubPage(
                     GlassTopAppBar(
                         progressiveBlur = LocalTopBarProgressiveBlur.current,
                         title = if (searchMotion.mounted && searchExpanded) "" else title,
-                        titleAlpha = { titleReveal.value },
+                        titleAlpha = { titleReveal.value * railProgress() },
                         largeTitle = title,
                         compact = filtering,
                         alpha = barAlpha.value,
@@ -1580,7 +1587,14 @@ private fun HubPage(
                                 .align(Alignment.TopCenter)
                                 .windowInsetsPadding(WindowInsets.statusBars)
                                 .padding(horizontal = GlassTopAppBarDefaults.HorizontalPadding)
-                                .padding(top = 4.dp),
+                                .padding(top = 4.dp)
+                                .offset {
+                                    val clearance = with(density) {
+                                        (GlassNavigationRailDefaults.CollapsedTop +
+                                            GlassNavigationRailDefaults.CollapsedHeight + 4.dp).toPx()
+                                    }
+                                    IntOffset(0, (clearance * (1f - railProgress())).roundToInt())
+                                },
                         ) {
                             searchContent()
                         }
