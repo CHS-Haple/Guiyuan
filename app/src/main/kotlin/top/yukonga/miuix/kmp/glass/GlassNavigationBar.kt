@@ -269,13 +269,13 @@ fun GlassNavigationBar(
         scope.launch { left.animateTo(newLeft, leftSpring) }
         scope.launch { right.animateTo(newRight, rightSpring) }
     }
-    val slot = if (barWidth <= 0) 0f else (barWidth - contentInset * 2f) / items.size
-    val chipWidth = slot + overhang * 2f
-    val targetLeft = contentInset - overhang + index * slot
-    val targetRight = targetLeft + chipWidth
+    val slotWidth = ((barWidth - contentInset * 2f) / items.size).coerceAtLeast(0f)
+    val targetLeft = contentInset - overhang + index * slotWidth
+    val targetRight = contentInset + overhang + (index + 1) * slotWidth
+    val hasSlots = barWidth > contentInset * 2f
 
-    LaunchedEffect(index, settleGeneration, targetLeft, targetRight) {
-        if (!dragging.value && slot > 0f) {
+    LaunchedEffect(index, settleGeneration, targetLeft, targetRight, hasSlots) {
+        if (!dragging.value && hasSlots) {
             if (right.value <= left.value) {
                 left.snapTo(targetLeft)
                 right.snapTo(targetRight)
@@ -304,7 +304,11 @@ fun GlassNavigationBar(
     val bottomPadding = if (defaultWindowInsetsPadding) {
         val navigationInset = WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)
             .asPaddingValues().calculateBottomPadding()
-        val floatingMargin = if (navigationInset == 0.dp) 32.dp else 16.dp + navigationInset
+        val floatingMargin = when {
+            navigationInset <= 16.dp -> 28.dp
+            navigationInset >= 28.dp -> navigationInset
+            else -> 12.dp + navigationInset
+        }
         val captionInset = WindowInsets.captionBar.only(WindowInsetsSides.Bottom)
             .asPaddingValues().calculateBottomPadding()
         val animatedCaptionInset by animateDpAsState(
