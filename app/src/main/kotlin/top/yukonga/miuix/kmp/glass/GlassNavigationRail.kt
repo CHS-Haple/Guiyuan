@@ -172,7 +172,7 @@ private class RailPlacement(
  * by Guiyuan are exposed. Other appearance and inset values follow the pinned MIUIX defaults.
  */
 @Composable
-fun GlassNavigationRail(
+internal fun GlassNavigationRail(
     destinations: GlassRailDestinations,
     backdrop: Backdrop?,
     modifier: Modifier = Modifier,
