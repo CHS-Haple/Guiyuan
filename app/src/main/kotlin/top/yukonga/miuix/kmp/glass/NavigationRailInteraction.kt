@@ -23,6 +23,31 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
+/** Pure touch-axis classification shared by both rail orientations. */
+internal enum class RailGestureDecision { Pending, Drag, Cancel }
+
+internal fun railGestureDecision(
+    movementX: Float,
+    movementY: Float,
+    touchSlop: Float,
+    horizontal: Boolean,
+): RailGestureDecision {
+    if (abs(movementY) > touchSlop && abs(movementY) > abs(movementX)) {
+        return RailGestureDecision.Cancel
+    }
+    if (abs(movementX) > touchSlop) {
+        return if (horizontal) RailGestureDecision.Drag else RailGestureDecision.Cancel
+    }
+    return RailGestureDecision.Pending
+}
+
+/** Pointer deltas must map through the active slot's logical width, including RTL. */
+internal fun railLogicalDelta(
+    physicalDeltaX: Float,
+    slotScale: Float,
+    direction: LayoutDirection,
+): Float = (if (direction == LayoutDirection.Rtl) -physicalDeltaX else physicalDeltaX) * slotScale
+
 /** Measured in the scrolling content's logical coordinates; updated only by layout. */
 internal class NavigationRailSlot {
     var left = 0f
@@ -155,7 +180,7 @@ internal fun Modifier.navigationRailGestures(
                 val physicalDelta = change.position - change.previousPosition
                 // Keep the position anchored through morphs, but map motion using the current slot geometry.
                 val dragScale = interaction.widths[current] / interaction.slots[current].width.coerceAtLeast(1f)
-                val delta = (if (layoutDirection == LayoutDirection.Rtl) -physicalDelta.x else physicalDelta.x) * dragScale
+                val delta = railLogicalDelta(physicalDelta.x, dragScale, layoutDirection)
                 movementX += physicalDelta.x
                 movementY += physicalDelta.y
                 position += delta
@@ -168,10 +193,10 @@ internal fun Modifier.navigationRailGestures(
                     break
                 }
                 if (!dragging) {
-                    if (abs(movementY) > viewConfiguration.touchSlop && abs(movementY) > abs(movementX)) break
-                    if (abs(movementX) > viewConfiguration.touchSlop) {
-                        if (!horizontal) break
-                        dragging = true
+                    when (railGestureDecision(movementX, movementY, viewConfiguration.touchSlop, horizontal)) {
+                        RailGestureDecision.Cancel -> break
+                        RailGestureDecision.Drag -> dragging = true
+                        RailGestureDecision.Pending -> Unit
                     }
                 }
                 if (dragging) {
