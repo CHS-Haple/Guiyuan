@@ -146,6 +146,31 @@ internal class NavigationRailInteraction(
     }
 }
 
+/** The captured state references are remembered by the caller; no gesture is restarted on a morph. */
+private class RailGestureControl(
+    val interaction: NavigationRailInteraction,
+    val layoutDirection: LayoutDirection,
+    val expanded: State<Boolean>,
+    val headerBottom: State<() -> Float>,
+    val onSelect: State<(Int) -> Unit>,
+)
+
+/** One touch's mutable coordinates; the global indicator still belongs to NavigationRailInteraction. */
+private class RailGestureRun(
+    val initial: Int,
+    var position: Float,
+    val grabOffset: Float,
+    val horizontal: Boolean,
+    val source: MutableInteractionSource,
+) {
+    var current = initial
+    var movementX = 0f
+    var movementY = 0f
+    var dragging = false
+    var committed = false
+    var rowPress: PressInteraction.Press? = null
+}
+
 /** A stable recognizer: morph frames and the expanded target never replace an in-flight press. */
 internal fun Modifier.navigationRailGestures(
     interaction: NavigationRailInteraction,
@@ -154,67 +179,83 @@ internal fun Modifier.navigationRailGestures(
     headerBottom: State<() -> Float>,
     onSelect: State<(Int) -> Unit>,
 ): Modifier = pointerInput(interaction, layoutDirection) {
-    awaitEachGesture {
-        val down = awaitFirstDown()
-        fun logicalX(position: Offset): Float = if (layoutDirection == LayoutDirection.Rtl) size.width - position.x else position.x
-        if (down.position.y < headerBottom.value()) return@awaitEachGesture
-        val initial = interaction.indexAt(logicalX(down.position), down.position.y)
-        if (initial < 0) return@awaitEachGesture
-        // Lock the gesture policy at down, not at the end of an unrelated morph animation.
-        val horizontal = !expanded.value
-        var position = interaction.positionAt(initial, logicalX(down.position))
-        var movementX = 0f
-        var movementY = 0f
-        var dragging = false
-        var current = initial
-        val grabOffset = position - interaction.start(initial)
-        val source = interaction.rowInteractions[initial]
-        val rowPress = if (horizontal) null else PressInteraction.Press(down.position)
-        var committed = false
-        if (horizontal) interaction.press(initial) else source.tryEmit(checkNotNull(rowPress))
-        try {
-            while (true) {
-                val event = awaitPointerEvent()
-                val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                if (change.isConsumed) break
-                val physicalDelta = change.position - change.previousPosition
-                // Keep the position anchored through morphs, but map motion using the current slot geometry.
-                val dragScale = interaction.widths[current] / interaction.slots[current].width.coerceAtLeast(1f)
-                val delta = railLogicalDelta(physicalDelta.x, dragScale, layoutDirection)
-                movementX += physicalDelta.x
-                movementY += physicalDelta.y
-                position += delta
-                if (!change.pressed) {
-                    if (change.changedToUp()) {
-                        onSelect.value(if (horizontal) interaction.indexAt(position) else initial)
-                        change.consume()
-                        committed = true
-                    }
-                    break
-                }
-                if (!dragging) {
-                    when (railGestureDecision(movementX, movementY, viewConfiguration.touchSlop, horizontal)) {
-                        RailGestureDecision.Cancel -> break
-                        RailGestureDecision.Drag -> dragging = true
-                        RailGestureDecision.Pending -> Unit
-                    }
-                }
-                if (dragging) {
-                    interaction.drag(position, grabOffset, delta, current)
-                    current = interaction.indexAt(position)
-                    change.consume()
-                } else {
-                    // Let an ancestor's vertical scroller win without committing a destination.
-                    val final = awaitPointerEvent(PointerEventPass.Final)
-                    if (final.changes.any { it.id == down.id && it.isConsumed }) break
-                }
+    val control = RailGestureControl(interaction, layoutDirection, expanded, headerBottom, onSelect)
+    awaitEachGesture { performRailGesture(control, viewConfiguration.touchSlop) }
+}
+
+private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.performRailGesture(
+    control: RailGestureControl,
+    touchSlop: Float,
+) {
+    val down = awaitFirstDown()
+    fun logicalX(position: Offset): Float =
+        if (control.layoutDirection == LayoutDirection.Rtl) size.width - position.x else position.x
+    if (down.position.y < control.headerBottom.value()) return
+    val initial = control.interaction.indexAt(logicalX(down.position), down.position.y)
+    if (initial < 0) return
+    val horizontal = !control.expanded.value
+    val position = control.interaction.positionAt(initial, logicalX(down.position))
+    val run = RailGestureRun(
+        initial, position, position - control.interaction.start(initial),
+        horizontal, control.interaction.rowInteractions[initial],
+    )
+    run.rowPress = if (horizontal) null else PressInteraction.Press(down.position)
+    if (horizontal) control.interaction.press(initial) else run.source.tryEmit(checkNotNull(run.rowPress))
+    try {
+        trackRailPointer(control, down, run, touchSlop)
+    } finally {
+        if (horizontal) {
+            control.interaction.release()
+        } else {
+            run.rowPress?.let { press ->
+                run.source.tryEmit(if (run.committed) PressInteraction.Release(press) else PressInteraction.Cancel(press))
             }
-        } finally {
-            if (horizontal) {
-                interaction.release()
-            } else if (rowPress != null) {
-                source.tryEmit(if (committed) PressInteraction.Release(rowPress) else PressInteraction.Cancel(rowPress))
+        }
+    }
+}
+
+/** The original upstream pointer policy, isolated from press lifecycle and gesture setup. */
+private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.trackRailPointer(
+    control: RailGestureControl,
+    down: androidx.compose.ui.input.pointer.PointerInputChange,
+    run: RailGestureRun,
+    touchSlop: Float,
+) {
+    while (true) {
+        val event = awaitPointerEvent()
+        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+        if (change.isConsumed) break
+        val physicalDelta = change.position - change.previousPosition
+        val dragScale = control.interaction.widths[run.current] /
+            control.interaction.slots[run.current].width.coerceAtLeast(1f)
+        val delta = railLogicalDelta(physicalDelta.x, dragScale, control.layoutDirection)
+        run.movementX += physicalDelta.x
+        run.movementY += physicalDelta.y
+        run.position += delta
+        if (!change.pressed) {
+            if (change.changedToUp()) {
+                control.onSelect.value(
+                    if (run.horizontal) control.interaction.indexAt(run.position) else run.initial,
+                )
+                change.consume()
+                run.committed = true
             }
+            break
+        }
+        if (!run.dragging) {
+            when (railGestureDecision(run.movementX, run.movementY, touchSlop, run.horizontal)) {
+                RailGestureDecision.Cancel -> break
+                RailGestureDecision.Drag -> run.dragging = true
+                RailGestureDecision.Pending -> Unit
+            }
+        }
+        if (run.dragging) {
+            control.interaction.drag(run.position, run.grabOffset, delta, run.current)
+            run.current = control.interaction.indexAt(run.position)
+            change.consume()
+        } else {
+            val final = awaitPointerEvent(PointerEventPass.Final)
+            if (final.changes.any { it.id == down.id && it.isConsumed }) break
         }
     }
 }
