@@ -9,6 +9,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.captionBar
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -254,11 +260,18 @@ internal fun MainHub(
     val navBackdrop = miuixBackdrop.takeIf { miuixMaterialActive }
     // Reserve the rail's physical panel width and margins plus a usable phone-width page.
     // Use the actual window, not orientation or device classification, for foldable/split-screen.
-    val railContentWidth = GlassNavigationRailDefaults.ExpandedWidth + GlassNavigationRailDefaults.Margin * 2
+    val railSafePadding = WindowInsets.systemBars
+        .union(WindowInsets.captionBar)
+        .union(WindowInsets.displayCutout)
+        .asPaddingValues()
+    val railStartInset = railSafePadding.calculateStartPadding(LocalLayoutDirection.current)
+    val railVerticalInsets = railSafePadding.calculateTopPadding() + railSafePadding.calculateBottomPadding()
+    val railContentWidth = GlassNavigationRailDefaults.ExpandedWidth +
+        GlassNavigationRailDefaults.Margin * 2 + railStartInset
     val windowSize = LocalWindowInfo.current.containerDpSize
     val useGlassRail = os4Glass && navBackdrop != null &&
         windowSize.width >= railContentWidth + 360.dp &&
-        windowSize.height >= 320.dp
+        windowSize.height >= railVerticalInsets + 320.dp
     val liquidBackdrop =
         if (liquidMaterialActive) {
             rememberLiquidNavBackdrop(surfaceColor)
@@ -531,11 +544,12 @@ internal fun MainHub(
             }
         }
         if (useGlassRail) {
-            val railItems = remember(items) {
+            val includeLabels = appearance.activeNavContent == NavContent.IconAndText
+            val railItems = remember(items, includeLabels) {
                 items.map { item ->
                     GlassNavigationItem(
                         icon = item.icon,
-                        label = item.label,
+                        label = item.label.takeIf { includeLabels },
                         contentDescription = item.label,
                     )
                 }
