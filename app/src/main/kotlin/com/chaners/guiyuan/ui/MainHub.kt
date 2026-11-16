@@ -38,6 +38,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.Modifier
@@ -81,6 +82,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.job
 import top.yukonga.miuix.kmp.glass.GlassNavigationBar
+import top.yukonga.miuix.kmp.glass.GlassNavigationRail
+import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
@@ -249,6 +252,13 @@ internal fun MainHub(
             null
         }
     val navBackdrop = miuixBackdrop.takeIf { miuixMaterialActive }
+    // Reserve the rail's physical panel width and margins plus a usable phone-width page.
+    // Use the actual window, not orientation or device classification, for foldable/split-screen.
+    val railContentWidth = GlassNavigationRailDefaults.ExpandedWidth + GlassNavigationRailDefaults.Margin * 2
+    val windowSize = LocalWindowInfo.current.containerDpSize
+    val useGlassRail = os4Glass && navBackdrop != null &&
+        windowSize.width >= railContentWidth + 360.dp &&
+        windowSize.height >= 320.dp
     val liquidBackdrop =
         if (liquidMaterialActive) {
             rememberLiquidNavBackdrop(surfaceColor)
@@ -290,6 +300,7 @@ internal fun MainHub(
         snackbarHost = { SnackbarHost(state = featureSnackbarState) },
         bottomBar = {
             when {
+                useGlassRail -> Unit
                 os4Glass && navBackdrop != null -> {
                     val selectedPage = pageSelection.selectedPage
                     val includeLabels = appearance.activeNavContent == NavContent.IconAndText
@@ -451,6 +462,8 @@ internal fun MainHub(
             }
         },
     ) { innerPadding ->
+        // The native MIUIX rail must be outside the page's recorded blur backdrop.
+        Box(Modifier.fillMaxSize()) {
         Box(
             modifier =
                 Modifier
@@ -470,6 +483,11 @@ internal fun MainHub(
                         },
                     ),
         ) {
+            Box(
+                modifier = Modifier.fillMaxSize().then(
+                    if (useGlassRail) Modifier.padding(start = railContentWidth) else Modifier,
+                ),
+            ) {
             TopLevelPager(
                 pagerState = pagerState,
                 bottomPadding = innerPadding,
@@ -510,6 +528,27 @@ internal fun MainHub(
                 previewState = previewState,
                 onNavigate = onNavigate,
             )
+            }
+        }
+        if (useGlassRail) {
+            val railItems = remember(items) {
+                items.map { item ->
+                    GlassNavigationItem(
+                        icon = item.icon,
+                        label = item.label,
+                        contentDescription = item.label,
+                    )
+                }
+            }
+            GlassNavigationRail(
+                items = railItems,
+                selectedIndex = pageSelection.selectedPage,
+                onSelect = ::selectPage,
+                backdrop = navBackdrop,
+                showToggle = false,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
         }
 
         // Popups are hosted outside this page's backdrop recording.

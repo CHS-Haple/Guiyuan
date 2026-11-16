@@ -8,7 +8,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
@@ -30,7 +29,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CornerSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
@@ -97,6 +94,7 @@ data class GlassNavigationItem(
     val icon: ImageVector,
     val label: String? = null,
     val contentDescription: String? = null,
+    val badge: (@Composable () -> Unit)? = null,
 )
 
 /** Default values for [GlassNavigationBar]. */
@@ -285,20 +283,7 @@ fun GlassNavigationBar(
         }
     }
 
-    val chipHeldPx = with(density) {
-        (height - GlassNavigationBarDefaults.IndicatorPaddingVertical * 2).toPx()
-    }
     val chipPressed = pressedIndex >= 0
-    val chipScale by animateFloatAsState(
-        targetValue = if (chipPressed) glassPressScale(chipHeldPx, density.density) else 1f,
-        animationSpec = if (chipPressed) GlassMotion.pressDown() else GlassMotion.pressUp(),
-        label = "glassNavigationIndicatorPress",
-    )
-    val chipFill = animateColorAsState(
-        targetValue = if (chipPressed) indicatorPressedColor else indicatorColor,
-        animationSpec = if (chipPressed) GlassMotion.navPressEnter() else GlassMotion.navPressExit(),
-        label = "glassNavigationIndicatorFill",
-    )
 
     val onSelectState by rememberUpdatedState(onSelect)
     val bottomPadding = if (defaultWindowInsetsPadding) {
@@ -438,7 +423,7 @@ fun GlassNavigationBar(
                                         }
                                         val chipLeft = (x - grabOffset).coerceIn(0f, maxLeft)
                                         val next = indexAt(selectionX)
-                                        val target = navigationDragTarget(chipLeft, chipW, width, delta, next != current)
+                                        val target = navigationDragTarget(chipLeft, chipW, 0f, width, delta, next != current)
                                         animateIndicator(target.left, target.right, target.leftSpring, target.rightSpring)
                                         current = next
                                         pressedIndex = next
@@ -457,7 +442,11 @@ fun GlassNavigationBar(
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            Box(
+            GlassNavigationIndicator(
+                pressed = chipPressed,
+                height = height - GlassNavigationBarDefaults.IndicatorPaddingVertical * 2,
+                color = indicatorColor,
+                pressedColor = indicatorPressedColor,
                 modifier = Modifier
                     .matchParentSize()
                     .padding(vertical = GlassNavigationBarDefaults.IndicatorPaddingVertical)
@@ -478,13 +467,7 @@ fun GlassNavigationBar(
                         layout(constraints.maxWidth, placeable.height) {
                             placeable.placeRelative(IntOffset(start, 0))
                         }
-                    }
-                    .graphicsLayer {
-                        scaleX = chipScale
-                        scaleY = chipScale
-                    }
-                    .clip(RoundedCornerShape(percent = 50))
-                    .drawBehind { drawRect(chipFill.value) },
+                    },
             )
 
             Row(
