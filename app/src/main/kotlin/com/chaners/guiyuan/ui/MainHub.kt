@@ -121,6 +121,18 @@ import top.yukonga.miuix.kmp.utils.springAnimateToPage
 
 private const val TopLevelPageCount = 3
 
+/** Keep a full-width page beside the upstream expanded rail; insets are relative to logical start. */
+internal fun canPlaceGlassRail(
+    windowSize: androidx.compose.ui.unit.DpSize,
+    startInset: androidx.compose.ui.unit.Dp,
+    verticalInsets: androidx.compose.ui.unit.Dp,
+): Boolean {
+    val occupiedWidth = GlassNavigationRailDefaults.ExpandedWidth +
+        GlassNavigationRailDefaults.Margin * 2 + startInset
+    return windowSize.width >= occupiedWidth + 360.dp &&
+        windowSize.height >= verticalInsets + 320.dp
+}
+
 /**
  * Follows MIUIX's main-pager example: commit a destination before page motion begins.
  * This owner writes selection, while PagerState owns the actual scroll position.
@@ -269,10 +281,8 @@ internal fun MainHub(
     val railVerticalInsets = railSafePadding.calculateTopPadding() + railSafePadding.calculateBottomPadding()
     val railContentWidth = GlassNavigationRailDefaults.ExpandedWidth +
         GlassNavigationRailDefaults.Margin * 2 + railStartInset
-    val windowSize = LocalWindowInfo.current.containerDpSize
     val useGlassRail = os4Glass && navBackdrop != null &&
-        windowSize.width >= railContentWidth + 360.dp &&
-        windowSize.height >= railVerticalInsets + 320.dp
+        canPlaceGlassRail(LocalWindowInfo.current.containerDpSize, railStartInset, railVerticalInsets)
     val liquidBackdrop =
         if (liquidMaterialActive) {
             rememberLiquidNavBackdrop(surfaceColor)
