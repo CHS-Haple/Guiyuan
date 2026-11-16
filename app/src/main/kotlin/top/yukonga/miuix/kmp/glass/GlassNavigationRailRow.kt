@@ -50,27 +50,66 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import kotlin.math.roundToInt
 
+/** A row's selection, press source and click callback, retained by its caller. */
+internal class RailRowIdentity(
+    val item: GlassNavigationItem,
+    val selected: Boolean,
+    val position: Int,
+    val slot: NavigationRailSlot,
+    val interactionSource: MutableInteractionSource,
+    val onClick: () -> Unit,
+)
+
+/** The upstream row's per-frame layout and press animation inputs. */
+internal class RailRowMotion(
+    val expanded: Boolean,
+    val pressed: Boolean,
+    val rowProgress: () -> Float,
+    val iconAlpha: () -> Float,
+    val scrollOffset: () -> Int,
+)
+
+/** The source and destination widths of a flying rail row. */
+internal class RailRowLayoutSpec(
+    val tabWidths: List<Dp>,
+    val contentStart: Dp,
+    val labelWidth: Dp,
+    val itemWidth: Dp,
+)
+
+/** Common row tint and typography. */
+internal class RailRowAppearance(
+    val selectedColor: Color,
+    val unselectedColor: Color,
+    val labelStyle: TextStyle,
+)
+
 @Composable
 internal fun NavigationRailRow(
-    item: GlassNavigationItem,
-    selected: Boolean,
-    position: Int,
-    slot: NavigationRailSlot,
-    interactionSource: MutableInteractionSource,
-    expanded: Boolean,
-    pressed: Boolean,
-    rowProgress: () -> Float,
-    iconAlpha: () -> Float,
-    scrollOffset: () -> Int,
-    tabWidths: List<Dp>,
-    contentStart: Dp,
-    labelWidth: Dp,
-    itemWidth: Dp,
-    selectedColor: Color,
-    unselectedColor: Color,
-    labelStyle: TextStyle,
-    onClick: () -> Unit,
+    identity: RailRowIdentity,
+    motion: RailRowMotion,
+    layout: RailRowLayoutSpec,
+    appearance: RailRowAppearance,
 ) {
+    val item = identity.item
+    val selected = identity.selected
+    val position = identity.position
+    val slot = identity.slot
+    val interactionSource = identity.interactionSource
+    val onClick = identity.onClick
+    val expanded = motion.expanded
+    val pressed = motion.pressed
+    val rowProgress = motion.rowProgress
+    val iconAlpha = motion.iconAlpha
+    val scrollOffset = motion.scrollOffset
+    val tabWidths = layout.tabWidths
+    val contentStart = layout.contentStart
+    val labelWidth = layout.labelWidth
+    val itemWidth = layout.itemWidth
+    val selectedColor = appearance.selectedColor
+    val unselectedColor = appearance.unselectedColor
+    val labelStyle = appearance.labelStyle
+
     val tint by animateColorAsState(
         targetValue = if (selected) selectedColor else unselectedColor,
         animationSpec = GlassMotion.navContent(),

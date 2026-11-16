@@ -242,24 +242,32 @@ internal fun GlassNavigationRailPanel(
                 items.forEachIndexed { position, item ->
                     key(position, item) {
                         NavigationRailRow(
-                            item = item,
-                            selected = position == selectedIndex,
-                            position = position,
-                            slot = interaction.slots[position],
-                            interactionSource = interaction.rowInteractions[position],
-                            expanded = expanded,
-                            pressed = pressedIndex == position,
-                            rowProgress = { rowProgress[position].value },
-                            iconAlpha = iconAlpha,
-                            scrollOffset = { scrollState.value },
-                            tabWidths = tabWidths,
-                            contentStart = contentStart,
-                            labelWidth = labelWidths[position],
-                            itemWidth = itemWidth,
-                            selectedColor = selectedColor,
-                            unselectedColor = unselectedColor,
-                            labelStyle = labelStyle,
-                            onClick = { onSelect(position) },
+                            identity = RailRowIdentity(
+                                item = item,
+                                selected = position == selectedIndex,
+                                position = position,
+                                slot = interaction.slots[position],
+                                interactionSource = interaction.rowInteractions[position],
+                                onClick = { onSelect(position) },
+                            ),
+                            motion = RailRowMotion(
+                                expanded = expanded,
+                                pressed = pressedIndex == position,
+                                rowProgress = { rowProgress[position].value },
+                                iconAlpha = iconAlpha,
+                                scrollOffset = { scrollState.value },
+                            ),
+                            layout = RailRowLayoutSpec(
+                                tabWidths = tabWidths,
+                                contentStart = contentStart,
+                                labelWidth = labelWidths[position],
+                                itemWidth = itemWidth,
+                            ),
+                            appearance = RailRowAppearance(
+                                selectedColor = selectedColor,
+                                unselectedColor = unselectedColor,
+                                labelStyle = labelStyle,
+                            ),
                         )
                     }
                 }
