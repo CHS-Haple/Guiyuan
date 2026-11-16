@@ -612,7 +612,6 @@ internal fun DiagnosticsScreen(
                         description = stringResource(R.string.diagnostics_root_unavailable_message),
                         note = listOfNotNull(
                             stringResource(R.string.diagnostics_root_unavailable_export),
-                            detailStatus,
                             integrityNotice.takeIf(String::isNotEmpty),
                         ).joinToString("\n"),
                         icon = MiuixIcons.Medium.Report,

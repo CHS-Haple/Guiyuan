@@ -27,6 +27,7 @@ internal fun UiNativeTitleBar(
     largeTitleBlurRadius: Dp,
     titleAlpha: () -> Float,
     compact: Boolean,
+    expandable: Boolean,
     navigationIcon: @Composable () -> Unit,
     actions: @Composable RowScope.() -> Unit,
     bottomContent: @Composable () -> Unit,
@@ -50,6 +51,7 @@ internal fun UiNativeTitleBar(
     }
     BlurTopAppBar(
         title = title,
+        expandable = expandable,
         largeTitle = largeTitle,
         subtitle = subtitle,
         modifier = modifier,
