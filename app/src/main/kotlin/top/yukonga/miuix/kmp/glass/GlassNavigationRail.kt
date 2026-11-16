@@ -184,11 +184,12 @@ fun GlassNavigationRail(
     val expanded = state.expanded
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
-    val labelWidths = remember(items, MiuixTheme.textStyles.body1, density) {
+    val labelStyle = MiuixTheme.textStyles.body1
+    val labelWidths = remember(items, labelStyle, density) {
         items.map { item ->
             item.label?.let {
                 with(density) {
-                    ceil(textMeasurer.measure(it, MiuixTheme.textStyles.body1).size.width.toFloat()).toDp()
+                    ceil(textMeasurer.measure(it, labelStyle).size.width.toFloat()).toDp()
                 }
             } ?: 0.dp
         }
