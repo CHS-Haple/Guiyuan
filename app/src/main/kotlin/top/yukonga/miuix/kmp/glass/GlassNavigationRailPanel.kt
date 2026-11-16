@@ -52,39 +52,94 @@ import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 
+/** Single selected-page owner and the interaction contract, independent of surface animation. */
+internal class RailPanelContext(
+    val items: List<GlassNavigationItem>,
+    val selectedIndex: Int,
+    val state: GlassNavigationRailState,
+    val showToggle: Boolean,
+    val toggleContentDescription: String,
+    val onSelect: (Int) -> Unit,
+    val scrollState: ScrollState,
+)
+
+/** The panel's measured endpoints. */
+internal class RailPanelGeometry(
+    val tabWidths: List<Dp>,
+    val labelWidths: List<Dp>,
+    val contentStart: Dp,
+    val collapsedWidth: Dp,
+    val expandedWidth: Dp,
+    val collapsedTop: Dp,
+    val expandedTop: Dp,
+)
+
+/** Values read during layout and drawing rather than recomposing the rows each frame. */
+internal class RailPanelMotion(
+    val rowProgress: List<Animatable<Float, AnimationVector1D>>,
+    val iconAlpha: () -> Float,
+    val panelStart: () -> Dp,
+    val panelHeight: () -> Dp,
+)
+
+/** A single glass surface body and its physical appearance. */
+internal class RailPanelSurface(
+    val backdrop: Backdrop?,
+    val style: GlassStyle,
+    val alpha: Float,
+    val material: GlassMaterial?,
+    val stroke: EdgeStroke?,
+    val shadow: GlassShadow?,
+)
+
+/** Colors and typography shared between rail rows and their indicator. */
+internal class RailPanelColors(
+    val selectedColor: Color,
+    val unselectedColor: Color,
+    val indicatorColor: Color,
+    val indicatorPressedColor: Color,
+    val labelStyle: TextStyle,
+)
+
 /** One permanent surface, gesture owner, set of rows and toggle for both ends of the morph. */
 @Composable
 internal fun GlassNavigationRailPanel(
-    items: List<GlassNavigationItem>,
-    selectedIndex: Int,
-    state: GlassNavigationRailState,
-    rowProgress: List<Animatable<Float, AnimationVector1D>>,
-    iconAlpha: () -> Float,
-    showToggle: Boolean,
-    tabWidths: List<Dp>,
-    labelWidths: List<Dp>,
-    contentStart: Dp,
-    collapsedWidth: Dp,
-    expandedWidth: Dp,
-    panelStart: () -> Dp,
-    collapsedTop: Dp,
-    expandedTop: Dp,
-    panelHeight: () -> Dp,
-    backdrop: Backdrop?,
-    style: GlassStyle,
-    alpha: Float,
-    material: GlassMaterial?,
-    stroke: EdgeStroke?,
-    shadow: GlassShadow?,
-    selectedColor: Color,
-    unselectedColor: Color,
-    indicatorColor: Color,
-    indicatorPressedColor: Color,
-    labelStyle: TextStyle,
-    toggleContentDescription: String,
-    onSelect: (Int) -> Unit,
-    scrollState: ScrollState,
+    context: RailPanelContext,
+    geometry: RailPanelGeometry,
+    motion: RailPanelMotion,
+    surface: RailPanelSurface,
+    colors: RailPanelColors,
 ) {
+    val items = context.items
+    val selectedIndex = context.selectedIndex
+    val state = context.state
+    val showToggle = context.showToggle
+    val toggleContentDescription = context.toggleContentDescription
+    val onSelect = context.onSelect
+    val scrollState = context.scrollState
+    val tabWidths = geometry.tabWidths
+    val labelWidths = geometry.labelWidths
+    val contentStart = geometry.contentStart
+    val collapsedWidth = geometry.collapsedWidth
+    val expandedWidth = geometry.expandedWidth
+    val collapsedTop = geometry.collapsedTop
+    val expandedTop = geometry.expandedTop
+    val rowProgress = motion.rowProgress
+    val iconAlpha = motion.iconAlpha
+    val panelStart = motion.panelStart
+    val panelHeight = motion.panelHeight
+    val backdrop = surface.backdrop
+    val style = surface.style
+    val alpha = surface.alpha
+    val material = surface.material
+    val stroke = surface.stroke
+    val shadow = surface.shadow
+    val selectedColor = colors.selectedColor
+    val unselectedColor = colors.unselectedColor
+    val indicatorColor = colors.indicatorColor
+    val indicatorPressedColor = colors.indicatorPressedColor
+    val labelStyle = colors.labelStyle
+
     val expanded = state.expanded
     // The corner eases from the capsule's half-height to the panel's radius on the morph's clock,
     // read when the outline is built rather than in composition.
