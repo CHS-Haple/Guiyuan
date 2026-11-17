@@ -119,6 +119,17 @@ internal fun canPlaceLiquidRail(
         window.height >= minimumHeight + safe.vertical
 }
 
+/** Map a pointer to the interval between destination centres, retaining partial drags. */
+internal fun liquidRailPointerTarget(
+    y: Float,
+    itemHeight: Float,
+    inset: Float,
+    count: Int,
+): Float {
+    if (count <= 0 || itemHeight <= 0f) return 0f
+    return ((y - inset) / itemHeight - 0.5f).fastCoerceIn(0f, (count - 1).toFloat())
+}
+
 /**
  * Vertical Liquid layout adapted from the accepted horizontal B1842 optics.
  *
@@ -181,8 +192,7 @@ private fun rememberRailGesture(
             pressedScale = 78f / 56f,
             canDrag = { position -> position.y in 0f..railHeightPx },
             onStarted = { position ->
-                updateValue(((position.y - insetPx) / itemHeightPx).toInt()
-                    .coerceIn(0, count - 1).toFloat())
+                updateValue(liquidRailPointerTarget(position.y, itemHeightPx, insetPx, count))
             },
             onStopped = {
                 val target = targetValue.fastRoundToInt().fastCoerceIn(0, count - 1)

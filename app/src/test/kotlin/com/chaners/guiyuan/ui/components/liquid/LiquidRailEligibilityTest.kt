@@ -3,11 +3,27 @@ package com.chaners.guiyuan.ui.components.liquid
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.settings.UiStyle
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LiquidRailEligibilityTest {
+    @Test fun pointerBoundaryUsesItemCentresAndCrossesAtActualDivider() {
+        val inset = 4f
+        val height = 72f
+        assertEquals(0f, liquidRailPointerTarget(inset + height - 0.1f, height, inset, 3).toInt().toFloat(), 0f)
+        assertEquals(0.5f, liquidRailPointerTarget(inset + height, height, inset, 3), 0.0001f)
+        assertEquals(1f, kotlin.math.round(liquidRailPointerTarget(inset + height + 0.1f, height, inset, 3)), 0f)
+        assertEquals(2f, liquidRailPointerTarget(999f, height, inset, 3), 0f)
+    }
+
+    @Test fun asymmetricVerticalInsetsStillConstrainWideRailEligibility() {
+        assertFalse(canPlaceLiquidRail(DpSize(720.dp, 370.dp), UiStyle.OS4, 3,
+            LiquidRailSafeArea(0.dp, 0.dp, 72.dp)))
+        assertTrue(canPlaceLiquidRail(DpSize(720.dp, 440.dp), UiStyle.OS4, 3,
+            LiquidRailSafeArea(0.dp, 0.dp, 72.dp)))
+    }
     @Test fun compactOs3AndSpaciousOs4UseTheSameMaterialWithDifferentWidth() {
         assertTrue(canPlaceLiquidRail(DpSize(500.dp, 400.dp), UiStyle.OS3, 3,
             LiquidRailSafeArea(0.dp, 0.dp, 0.dp)))

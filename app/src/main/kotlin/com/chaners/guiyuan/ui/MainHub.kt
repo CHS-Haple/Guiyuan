@@ -359,7 +359,9 @@ internal fun MainHub(
         .asPaddingValues()
     val railStartInset = railSafePadding.calculateStartPadding(LocalLayoutDirection.current)
     val railEndInset = railSafePadding.calculateEndPadding(LocalLayoutDirection.current)
-    val railVerticalInsets = railSafePadding.calculateTopPadding() + railSafePadding.calculateBottomPadding()
+    val railTopInset = railSafePadding.calculateTopPadding()
+    val railBottomInset = railSafePadding.calculateBottomPadding()
+    val railVerticalInsets = railTopInset + railBottomInset
     val railContentWidth = GlassNavigationRailDefaults.ExpandedWidth +
         GlassNavigationRailDefaults.Margin * 2 + railStartInset
     val useGlassRail = os4Glass && navBackdrop != null &&
@@ -707,6 +709,8 @@ internal fun MainHub(
                 modifier = Modifier.fillMaxSize(),
             )
         }
+            }
+        // The Liquid overlay must stay outside the page's recorded backdrop.
         if (useLiquidRail && liquidBackdrop != null) {
             val liquidItems = remember(items) {
                 items.map { item -> LiquidRailItem(icon = item.icon, label = item.label) }
@@ -723,10 +727,13 @@ internal fun MainHub(
                     contentMode = appearance.activeNavContent,
                 ),
                 modifier = Modifier.align(Alignment.CenterStart)
-                    .padding(start = railStartInset + LiquidRailSpec.Margin),
+                    .padding(
+                        start = railStartInset + LiquidRailSpec.Margin,
+                        top = railTopInset,
+                        bottom = railBottomInset,
+                    ),
             )
         }
-            }
         }
 
         // Popups are hosted outside this page's backdrop recording.
