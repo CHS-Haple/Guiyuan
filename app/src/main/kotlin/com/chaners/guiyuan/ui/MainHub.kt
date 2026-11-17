@@ -166,16 +166,20 @@ internal fun useNativeRailFor(
     appearance: Appearance,
     glassBackdropAvailable: Boolean,
     window: DpSize,
-    startInset: Dp,
-    endInset: Dp,
-    verticalInsets: Dp,
+    safePadding: PaddingValues,
+    direction: LayoutDirection,
 ): Boolean {
     if (!appearance.navEnabled || appearance.navStyle == NavStyle.Liquid) return false
     // OS4 Glass with an actual backdrop keeps its already accepted GlassRail and GlassBar.
     if (appearance.uiStyle == UiStyle.OS4 &&
         appearance.navStyle == NavStyle.Glass && glassBackdropAvailable
     ) return false
-    return canPlaceNativeRail(window, startInset, endInset, verticalInsets)
+    return canPlaceNativeRail(
+        window,
+        safePadding.calculateStartPadding(direction),
+        safePadding.calculateEndPadding(direction),
+        safePadding.calculateTopPadding() + safePadding.calculateBottomPadding(),
+    )
 }
 
 /**
@@ -360,9 +364,8 @@ internal fun MainHub(
         appearance = appearance,
         glassBackdropAvailable = navBackdrop != null,
         window = LocalWindowInfo.current.containerDpSize,
-        startInset = railStartInset,
-        endInset = railEndInset,
-        verticalInsets = railVerticalInsets,
+        safePadding = railSafePadding,
+        direction = LocalLayoutDirection.current,
     )
     val nativeRailState = rememberNavigationRailState()
     val railState = rememberGlassNavigationRailState()

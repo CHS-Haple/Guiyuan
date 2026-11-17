@@ -1,6 +1,8 @@
 package com.chaners.guiyuan.ui
 
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.unit.LayoutDirection
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.settings.NavStyle
@@ -38,7 +40,7 @@ class NativeRailWindowEligibilityTest {
         for (style in listOf(NavStyle.Glass, NavStyle.Blur)) {
             assertTrue(useNativeRailFor(
                 Appearance(uiStyle = UiStyle.OS3, navStyle = style), true,
-                DpSize(750.dp, 420.dp), 0.dp, 0.dp, 0.dp,
+                DpSize(750.dp, 420.dp), PaddingValues(), LayoutDirection.Ltr,
             ))
         }
     }
@@ -47,11 +49,11 @@ class NativeRailWindowEligibilityTest {
     fun os4GlassKeepsExistingGlassRailWhenMaterialAvailable() {
         assertFalse(useNativeRailFor(
             Appearance(uiStyle = UiStyle.OS4, navStyle = NavStyle.Glass),
-            true, DpSize(750.dp, 420.dp), 0.dp, 0.dp, 0.dp,
+            true, DpSize(750.dp, 420.dp), PaddingValues(), LayoutDirection.Ltr,
         ))
         assertTrue(useNativeRailFor(
             Appearance(uiStyle = UiStyle.OS4, navStyle = NavStyle.Glass),
-            false, DpSize(750.dp, 420.dp), 0.dp, 0.dp, 0.dp,
+            false, DpSize(750.dp, 420.dp), PaddingValues(), LayoutDirection.Ltr,
         ))
     }
 
@@ -60,11 +62,11 @@ class NativeRailWindowEligibilityTest {
         val window = DpSize(750.dp, 420.dp)
         assertFalse(useNativeRailFor(
             Appearance(uiStyle = UiStyle.OS3, navStyle = NavStyle.Liquid),
-            true, window, 0.dp, 0.dp, 0.dp,
+            true, window, PaddingValues(), LayoutDirection.Ltr,
         ))
         assertFalse(useNativeRailFor(
             Appearance(uiStyle = UiStyle.OS4, navStyle = NavStyle.Standard, navEnabled = false),
-            false, window, 0.dp, 0.dp, 0.dp,
+            false, window, PaddingValues(), LayoutDirection.Ltr,
         ))
     }
 
