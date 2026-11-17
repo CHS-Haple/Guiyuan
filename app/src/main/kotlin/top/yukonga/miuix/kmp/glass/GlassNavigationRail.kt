@@ -426,7 +426,7 @@ internal val RailIconExitMotion = tween<Float>(durationMillis = 120, easing = Ra
 
 internal val RailIconSize = 24.dp
 internal val RailIconColumnWidth = RailIconSize + 12.dp
-internal val RailItemContentPadding = 14.dp
+internal val RailItemContentPadding = 12.dp
 internal val RailItemHorizontalMargin = 12.dp
 internal val RailCollapsedRowHeight = GlassNavigationRailDefaults.CollapsedHeight -
     GlassNavigationBarDefaults.IndicatorPaddingVertical * 2

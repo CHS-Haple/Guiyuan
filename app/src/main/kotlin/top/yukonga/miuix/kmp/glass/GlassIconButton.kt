@@ -83,11 +83,14 @@ fun GlassIconButton(
     val materialContext = topBarContext.takeIf { inheritTopBarMaterial }
     val resolvedSurfaceAlpha = surfaceAlpha * (if (enabled) 1f else 0.38f) * (topBarContext?.alpha ?: 1f)
     val topBarRamp = topBarContext?.ramp
+    val shadowAlpha = remember(resolvedSurfaceAlpha, topBarRamp) {
+        { resolvedSurfaceAlpha * (topBarRamp?.value ?: 1f) }
+    }
     GlassButtonSurface(
         backdrop = materialContext?.buttonBackdrop ?: backdrop ?: topBarContext?.buttonBackdrop,
         floating = topBarContext?.floating ?: true,
         surfaceAlpha = resolvedSurfaceAlpha,
-        shadowAlpha = { resolvedSurfaceAlpha * (topBarRamp?.value ?: 1f) },
+        shadowAlpha = shadowAlpha,
         style = style,
         material = material?.withUnderlayBlur(materialContext?.buttonUnderlayMaterial)
             ?: materialContext?.material ?: GlassTopAppBarDefaults.buttonMaterial(),
@@ -163,10 +166,9 @@ private fun GlassButtonSurface(
             if (active) 1f else 0f
         }
     }
-    val ownKeepMaterial by remember(floating, progress) {
+    val keepMaterial = sharedKeepMaterial ?: remember(floating, progress) {
         derivedStateOf { floating || progress.value > 0f }
-    }
-    val keepMaterial = sharedKeepMaterial ?: ownKeepMaterial
+    }.value
     val opacity = surfaceAlpha.coerceIn(0f, 1f)
     val effectiveBackdrop = backdrop?.takeIf { isRuntimeShaderSupported() }
     val anchorSurface = remember(effectiveBackdrop, style, material, underlayMaterial, stroke, fill) {
