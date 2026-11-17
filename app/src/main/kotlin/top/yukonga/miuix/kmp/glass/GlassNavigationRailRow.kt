@@ -283,6 +283,7 @@ internal class RailIndicatorMotion(
     val scrollOffset: () -> Int,
     val expandedItemWidth: Dp,
     val rowPosition: () -> Float,
+    val outsideScrollViewport: Boolean = false,
 )
 
 @Composable
@@ -319,9 +320,12 @@ internal fun NavigationRailIndicator(
                 y = lerp(RailRowTop.toPx() + motion.scrollOffset(), expandedY, fraction)
             }
             val height = (RailCollapsedRowHeight + RailRowGrowth * fraction).roundToPx()
+            // The Liquid lens is drawn beside (not inside) the scrolling rows.
+            // Compensate the same scroll displacement without clipping its press growth.
+            val drawY = if (motion.outsideScrollViewport) y - motion.scrollOffset() else y
             val placeable = measurable.measure(Constraints.fixed(width, height))
             layout(constraints.maxWidth, constraints.maxHeight) {
-                placeable.placeRelative(x.roundToInt(), y.roundToInt())
+                placeable.placeRelative(x.roundToInt(), drawY.roundToInt())
             }
         },
     )
