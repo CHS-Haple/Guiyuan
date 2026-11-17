@@ -13,26 +13,40 @@ class LiquidFeedbackSpecTest {
         assertEquals(1.05f, liquidPanelPressScale(200f, 320f, 16f, 1f), 0.0001f)
         assertEquals(1f, liquidPanelPressScale(200f, 320f, 16f, -1f), 0.0001f)
     }
-    @Test fun expandedRailDeformsAlongMotionInBothDirections() {
-        val idle = liquidLensScales(224f, 56f, 22f, 1f, 0f, vertical = true)
-        val down = liquidLensScales(224f, 56f, 22f, 1f, 0.25f, vertical = true)
-        val up = liquidLensScales(224f, 56f, 22f, 1f, -0.25f, vertical = true)
+    @Test fun expandedDirectionMirrorsTheLeadingEdgeWithoutShrinking() {
+        val idle = liquidDirectionalLensTransform(224f, 56f, 22f, 1f, 0f, true)
+        val down = liquidDirectionalLensTransform(224f, 56f, 22f, 1f, 0.3f, true)
+        val up = liquidDirectionalLensTransform(224f, 56f, 22f, 1f, -0.3f, true)
+        assertEquals(down.y, up.y, 0.0001f)
+        assertEquals(down.x, up.x, 0.0001f)
+        assertEquals(down.translationY, -up.translationY, 0.0001f)
+        assertEquals(0f, down.translationX, 0.0001f)
         org.junit.Assert.assertTrue(down.y > idle.y)
-        org.junit.Assert.assertTrue(up.y < idle.y)
-        org.junit.Assert.assertTrue(down.x < idle.x)
-        org.junit.Assert.assertTrue(up.x > idle.x)
+        assertEquals(-56f * idle.y / 2f, down.translationY - 56f * down.y / 2f, 0.0001f)
+        assertEquals(56f * idle.y / 2f, up.translationY + 56f * up.y / 2f, 0.0001f)
     }
 
-    @Test fun collapsedRailRotatesPortraitVelocityRuleAndReleasesToRest() {
-        val idle = liquidLensScales(150f, 56f, 22f, 1f, 0f, vertical = false)
-        val right = liquidLensScales(150f, 56f, 22f, 1f, 0.25f, vertical = false)
-        val left = liquidLensScales(150f, 56f, 22f, 1f, -0.25f, vertical = false)
+    @Test fun compactDirectionMirrorsTheLeadingEdgeAndStopsAtRest() {
+        val idle = liquidDirectionalLensTransform(150f, 56f, 22f, 1f, 0f, false)
+        val right = liquidDirectionalLensTransform(150f, 56f, 22f, 1f, 0.3f, false)
+        val left = liquidDirectionalLensTransform(150f, 56f, 22f, 1f, -0.3f, false)
+        assertEquals(right.x, left.x, 0.0001f)
+        assertEquals(right.y, left.y, 0.0001f)
+        assertEquals(right.translationX, -left.translationX, 0.0001f)
         org.junit.Assert.assertTrue(right.x > idle.x)
-        org.junit.Assert.assertTrue(left.x < idle.x)
-        org.junit.Assert.assertTrue(right.y < idle.y)
-        org.junit.Assert.assertTrue(left.y > idle.y)
-        val released = liquidLensScales(150f, 56f, 22f, 0f, 0f, vertical = false)
-        assertEquals(1f, released.x, 0.0001f)
-        assertEquals(1f, released.y, 0.0001f)
+        assertEquals(-150f * idle.x / 2f, right.translationX - 150f * right.x / 2f, 0.0001f)
+        assertEquals(150f * idle.x / 2f, left.translationX + 150f * left.x / 2f, 0.0001f)
+        val stop = liquidDirectionalLensTransform(150f, 56f, 22f, 1f, 0f, false)
+        val release = liquidDirectionalLensTransform(150f, 56f, 22f, 0f, 0f, false)
+        assertEquals(0f, stop.translationX, 0.0001f)
+        assertEquals(1f, release.x, 0.0001f)
+        assertEquals(1f, release.y, 0.0001f)
+    }
+
+    @Test fun highMotionClampsSymmetrically() {
+        val max = liquidDirectionalLensTransform(220f, 56f, 22f, 1f, 0.5f, true)
+        val over = liquidDirectionalLensTransform(220f, 56f, 22f, 1f, 10f, true)
+        assertEquals(max.y, over.y, 0.0001f)
+        assertEquals(max.translationY, over.translationY, 0.0001f)
     }
 }

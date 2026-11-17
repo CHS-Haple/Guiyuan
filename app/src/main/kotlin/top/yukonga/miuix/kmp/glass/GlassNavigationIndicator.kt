@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.chaners.guiyuan.ui.components.liquid.liquidLensScales
+import com.chaners.guiyuan.ui.components.liquid.liquidDirectionalLensTransform
 import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 
 /**
@@ -43,7 +43,7 @@ internal class GlassIndicatorAppearance(
     val pressedColor: Color,
     val scaleOnPress: Boolean = true,
     val liquidPaint: (@Composable (Boolean) -> Modifier)? = null,
-    val motionVelocity: () -> Float = { 0f },
+    val motionLag: () -> Float = { 0f },
     val verticalMotion: Boolean = false,
 )
 
@@ -84,19 +84,23 @@ internal fun GlassNavigationIndicator(
                     // when the OS4 pill morphs from compact to a full row.
                     val fraction = ((scale - 1f) /
                         (LiquidFeedbackSpec.PressedLensScale - 1f)).coerceIn(0f, 1f)
-                    val scales = liquidLensScales(
+                    val optics = liquidDirectionalLensTransform(
                         widthPx = size.width,
                         heightPx = size.height,
                         growthPx = 22.dp.toPx(),
                         pressProgress = fraction,
-                        signedVelocity = appearance.motionVelocity(),
+                        signedMotion = appearance.motionLag(),
                         vertical = appearance.verticalMotion,
                     )
-                    scaleX = scales.x
-                    scaleY = scales.y
+                    scaleX = optics.x
+                    scaleY = optics.y
+                    translationX = optics.translationX
+                    translationY = optics.translationY
                 } else {
                     scaleX = scale
                     scaleY = scale
+                    translationX = 0f
+                    translationY = 0f
                 }
             }
             .then(appearance.liquidPaint?.invoke(pressed) ?:

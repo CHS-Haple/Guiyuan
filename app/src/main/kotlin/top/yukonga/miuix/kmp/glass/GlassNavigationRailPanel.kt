@@ -322,10 +322,11 @@ private fun RailLiquidIndicator(
     val index = if (pressedIndex >= 0) pressedIndex else selectedIndex
     // A stable animation state retargets smoothly as pointer samples arrive.
     // Restarting a LaunchedEffect per pointer update resets the velocity and stutters.
+    val targetRow = if (context.state.expanded && pressedIndex >= 0) {
+        interaction.previewRow
+    } else index.toFloat()
     val rowPosition by animateFloatAsState(
-        targetValue = if (context.state.expanded && pressedIndex >= 0) {
-            interaction.previewRow
-        } else index.toFloat(),
+        targetValue = targetRow,
         animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
         label = "liquidRailIndicatorRow",
     )
@@ -353,13 +354,18 @@ private fun RailLiquidIndicator(
             settlingPress = false
         }
     }
-    // Visual deformation uses the physical signed pointer delta, not spring edge
-    // velocities: these can reverse during overshoot and disagree with the finger.
-    val stretch by animateFloatAsState(
-        targetValue = interaction.dragStretch,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 300f),
-        label = "liquidRailDragSettle",
-    )
+    // Physical pointer owns the direction; the already displayed indicator
+    // position owns the deformation amount. No extra velocity spring is needed.
+    val motionLag = {
+        val direction = interaction.dragDirection
+        if (context.state.expanded) {
+            railRenderedMotion(direction, targetRow, rowPosition, 1f)
+        } else {
+            val targetCenter = (interaction.left.targetValue + interaction.right.targetValue) / 2f
+            val currentCenter = (interaction.left.value + interaction.right.value) / 2f
+            railRenderedMotion(direction, targetCenter, currentCenter, interaction.widths[index])
+        }
+    }
     NavigationRailIndicator(
         selection = RailIndicatorSelection(index, interaction, pressing || settlingPress),
         motion = RailIndicatorMotion(
@@ -374,7 +380,7 @@ private fun RailLiquidIndicator(
             pressedColor = base.pressedColor,
             scaleOnPress = base.scaleOnPress,
             liquidPaint = base.liquidPaint,
-            motionVelocity = { stretch },
+            motionLag = motionLag,
             verticalMotion = context.state.expanded,
         ),
     )

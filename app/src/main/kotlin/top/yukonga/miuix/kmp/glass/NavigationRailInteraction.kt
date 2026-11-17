@@ -75,9 +75,20 @@ internal fun railLogicalDelta(
     direction: LayoutDirection,
 ): Float = (if (direction == LayoutDirection.Rtl) -physicalDeltaX else physicalDeltaX) * slotScale
 
-/** Normalize a physical pointer delta by the measured pitch on its active axis. */
-internal fun liquidDragFraction(delta: Float, pitch: Float): Float =
-    (delta / pitch.coerceAtLeast(1f)).coerceIn(-0.25f, 0.25f)
+/** A zero-delta pause is not a reversal; the next press resets this sign. */
+internal fun railPhysicalDragDirection(previous: Float, delta: Float): Float = when {
+    delta > 0f -> 1f
+    delta < 0f -> -1f
+    else -> previous
+}
+
+/** Motion magnitude belongs to the displayed lens, not a pointer-event delta. */
+internal fun railRenderedMotion(
+    direction: Float,
+    target: Float,
+    displayed: Float,
+    pitch: Float,
+): Float = direction * (abs(target - displayed) / pitch.coerceAtLeast(1f)).coerceIn(0f, 0.5f)
 
 /** Measured in the scrolling content's logical coordinates; updated only by layout. */
 internal class NavigationRailSlot {
@@ -110,7 +121,7 @@ internal class NavigationRailInteraction(
         private set
     var previewRow by mutableFloatStateOf(selectedIndex.toFloat())
         private set
-    var dragStretch by mutableFloatStateOf(0f)
+    var dragDirection by mutableFloatStateOf(0f)
         private set
 
     fun indexAt(x: Float, y: Float): Int {
@@ -141,19 +152,19 @@ internal class NavigationRailInteraction(
     fun press(index: Int) {
         pressedIndex = index
         previewRow = index.toFloat()
-        dragStretch = 0f
+        dragDirection = 0f
         settle(index)
     }
 
     fun release() {
         pressedIndex = -1
-        dragStretch = 0f
+        // Retain the physical sign until the lens finishes its existing spring.
         releaseGeneration++
     }
 
-    /** A single visual feedback owner for physical X (compact) or Y (expanded). */
-    fun dragLiquid(delta: Float, pitch: Float) {
-        dragStretch = liquidDragFraction(delta, pitch)
+    /** The existing gesture owner records direction, never a second motion state. */
+    fun dragLiquid(delta: Float) {
+        dragDirection = railPhysicalDragDirection(dragDirection, delta)
     }
 
     /** Smooth Y-axis destination preview inside the existing rail pointer state. */
@@ -163,10 +174,7 @@ internal class NavigationRailInteraction(
         val destination = liquidRailPreviewAt(y, centres)
         previewRow = destination
         pressedIndex = destination.roundToInt().coerceIn(slots.indices)
-        val pitch = if (centres.size > 1) {
-            (centres.last() - centres.first()) / (centres.size - 1)
-        } else slots.first().height
-        dragLiquid(deltaY, pitch)
+        dragLiquid(deltaY)
     }
 
     fun settle(index: Int) {
@@ -326,8 +334,7 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.tra
                 if (control.liquid && run.horizontal) {
                     // Physical movement, not RTL logical index or overshooting
                     // indicator spring velocity, determines the visual direction.
-                    val pitch = control.interaction.slots[run.current].width
-                    control.interaction.dragLiquid(physicalDelta.x, pitch)
+                    control.interaction.dragLiquid(physicalDelta.x)
                 }
             }
             change.consume()

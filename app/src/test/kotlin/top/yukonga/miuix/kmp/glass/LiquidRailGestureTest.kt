@@ -12,13 +12,20 @@ class LiquidRailGestureTest {
         assertEquals(RailGestureDecision.Pending, liquidRailGestureDecision(3f, 4f, 8f, false))
     }
 
-    @Test fun physicalDirectionMatchesBothAxesAndReturnsToRest() {
-        assertEquals(0.125f, liquidDragFraction(10f, 80f), 0.0001f)
-        assertEquals(-0.125f, liquidDragFraction(-10f, 80f), 0.0001f)
-        assertEquals(0.25f, liquidDragFraction(500f, 80f), 0.0001f)
-        assertEquals(-0.25f, liquidDragFraction(-500f, 80f), 0.0001f)
-        assertEquals(0f, liquidDragFraction(0f, 80f), 0.0001f)
-        assertEquals(0f, liquidDragFraction(0f, 0f), 0.0001f)
+    @Test fun singleDirectionAndPauseDoNotFlipTheSign() {
+        assertEquals(1f, railPhysicalDragDirection(0f, 10f), 0.0001f)
+        assertEquals(-1f, railPhysicalDragDirection(1f, -10f), 0.0001f)
+        assertEquals(1f, railPhysicalDragDirection(1f, 0f), 0.0001f)
+        assertEquals(-1f, railPhysicalDragDirection(-1f, 0f), 0.0001f)
+    }
+
+    @Test fun renderedGapNaturallyDecaysAndOvershootCannotReversePhysicalSign() {
+        assertEquals(0.25f, railRenderedMotion(1f, 1f, 0.75f, 1f), 0.0001f)
+        assertEquals(-0.25f, railRenderedMotion(-1f, 1f, 0.75f, 1f), 0.0001f)
+        assertEquals(0f, railRenderedMotion(1f, 1f, 1f, 1f), 0.0001f)
+        assertEquals(0.25f, railRenderedMotion(1f, 1f, 1.25f, 1f), 0.0001f)
+        assertEquals(0.5f, railRenderedMotion(1f, 100f, 0f, 80f), 0.0001f)
+        assertEquals(0f, railRenderedMotion(0f, 100f, 0f, 80f), 0.0001f)
     }
 
     @Test fun rowPreviewContinuouslyInterpolatesAndClamps() {
