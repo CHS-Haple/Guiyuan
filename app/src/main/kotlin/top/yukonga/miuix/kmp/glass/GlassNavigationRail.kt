@@ -291,10 +291,12 @@ private fun RailWindowPanel(
             backdrop = request.backdrop,
             style = GlassDefaults.Style,
             alpha = 1f,
-            material = GlassNavigationRailDefaults.material(),
+            material = RailPanelMaterial(
+                glass = GlassNavigationRailDefaults.material(),
+                replacement = request.materialOverride,
+            ),
             stroke = GlassNavigationRailDefaults.stroke(),
             shadow = GlassShadows.Float,
-            materialOverride = request.materialOverride,
         ),
         colors = RailPanelColors(
             selectedColor = if (MiuixTheme.isDynamicColor) colorScheme.primary else colorScheme.onSurface,

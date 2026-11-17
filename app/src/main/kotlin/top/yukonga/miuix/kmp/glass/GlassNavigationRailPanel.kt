@@ -90,15 +90,20 @@ internal class RailPanelMotion(
     val panelHeight: () -> Dp,
 )
 
+/** The native body and optional Liquid substitute are one material choice. */
+internal class RailPanelMaterial(
+    val glass: GlassMaterial?,
+    val replacement: (@Composable (Backdrop?, GlassShape) -> Modifier)?,
+)
+
 /** A single glass surface body and its physical appearance. */
 internal class RailPanelSurface(
     val backdrop: Backdrop?,
     val style: GlassStyle,
     val alpha: Float,
-    val material: GlassMaterial?,
+    val material: RailPanelMaterial,
     val stroke: EdgeStroke?,
     val shadow: GlassShadow?,
-    val materialOverride: (@Composable (Backdrop?, GlassShape) -> Modifier)? = null,
 )
 
 /** Colors and typography shared between rail rows and their indicator. */
@@ -152,7 +157,7 @@ private fun Modifier.railPanelSurfaceModifier(
 ): Modifier {
     // Do not replace the MIUIX rail's layout, morph, input or lifecycle owner.
     // Only the surface paint differs; the default Glass material path is unchanged.
-    val override = surface.materialOverride
+    val override = surface.material.replacement
     val surfacePaint = if (override != null) {
         // Retain the upstream rail's exact silhouette and Float shadow with Liquid optics.
         Modifier.glassShadow(shape, surface.shadow).then(override(surface.backdrop, shape))
@@ -162,7 +167,7 @@ private fun Modifier.railPanelSurfaceModifier(
             shape = shape,
             style = surface.style,
             alpha = surface.alpha,
-            material = surface.material,
+            material = surface.material.glass,
             stroke = surface.stroke,
             shadow = surface.shadow,
             shading = false,
