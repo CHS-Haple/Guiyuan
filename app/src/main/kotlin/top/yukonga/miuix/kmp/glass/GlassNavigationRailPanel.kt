@@ -169,8 +169,12 @@ internal fun GlassNavigationRailPanel(
     }
     val startPx = with(density) { geometry.contentStart.roundToPx().toFloat() }
     val endPx = with(density) { RailCollapsedEndPadding.toPx() }
-    val interaction = remember(widths, startPx, endPx, scope) {
+    val interaction = remember(widths.size, startPx, endPx, scope) {
         NavigationRailInteraction(widths, startPx, endPx, context.selection.selectedIndex, scope)
+    }
+    LaunchedEffect(interaction, widths) {
+        interaction.updateWidths(widths)
+        if (interaction.pressedIndex < 0) interaction.settle(context.selection.selectedIndex)
     }
     val panelPress by animateFloatAsState(
         targetValue = if (liquidPaint != null && interaction.pressedIndex >= 0) 1f else 0f,

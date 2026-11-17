@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.BadgeDefaults
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.material.EdgeStroke
@@ -197,7 +198,12 @@ internal fun GlassNavigationRail(
             } ?: 0.dp
         }
     }
-    val sourceWidths = remember(labelWidths) { labelWidths.map { it + RailSlotPadding } }
+    val sourceWidths = remember(items, labelWidths) {
+        labelWidths.mapIndexed { index, width ->
+            width + RailSlotPadding +
+                if (items[index].badge != null) BadgeDefaults.LargeSize * 2 else 0.dp
+        }
+    }
     val rowProgress = remember(items.size) { List(items.size) { Animatable(if (expanded) 1f else 0f) } }
     val iconAlpha = remember { Animatable(if (expanded) 1f else 0f) }
     LaunchedEffect(expanded, rowProgress) {
