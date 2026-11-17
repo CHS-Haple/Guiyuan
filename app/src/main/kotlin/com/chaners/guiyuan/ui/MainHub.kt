@@ -163,18 +163,18 @@ internal fun canPlaceNativeRail(
 
 /** A style-level policy with no orientation or device-brand assumptions. */
 internal fun useNativeRailFor(
-    uiStyle: UiStyle,
-    navStyle: NavStyle,
-    navEnabled: Boolean,
+    appearance: Appearance,
     glassBackdropAvailable: Boolean,
     window: DpSize,
     startInset: Dp,
     endInset: Dp,
     verticalInsets: Dp,
 ): Boolean {
-    if (!navEnabled || navStyle == NavStyle.Liquid) return false
+    if (!appearance.navEnabled || appearance.navStyle == NavStyle.Liquid) return false
     // OS4 Glass with an actual backdrop keeps its already accepted GlassRail and GlassBar.
-    if (uiStyle == UiStyle.OS4 && navStyle == NavStyle.Glass && glassBackdropAvailable) return false
+    if (appearance.uiStyle == UiStyle.OS4 &&
+        appearance.navStyle == NavStyle.Glass && glassBackdropAvailable
+    ) return false
     return canPlaceNativeRail(window, startInset, endInset, verticalInsets)
 }
 
@@ -357,9 +357,7 @@ internal fun MainHub(
     // OS3 Standard, Blur and Glass use the upstream native Rail at wide widths.
     // Liquid keeps its dedicated bottom material; the upstream has no Liquid rail.
     val useNativeRail = useNativeRailFor(
-        uiStyle = appearance.uiStyle,
-        navStyle = appearance.navStyle,
-        navEnabled = appearance.navEnabled,
+        appearance = appearance,
         glassBackdropAvailable = navBackdrop != null,
         window = LocalWindowInfo.current.containerDpSize,
         startInset = railStartInset,

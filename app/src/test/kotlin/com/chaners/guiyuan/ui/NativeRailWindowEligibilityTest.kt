@@ -1,6 +1,9 @@
 package com.chaners.guiyuan.ui
 
 import androidx.compose.ui.unit.DpSize
+import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.UiStyle
+import com.chaners.guiyuan.settings.NavStyle
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -32,9 +35,9 @@ class NativeRailWindowEligibilityTest {
 
     @Test
     fun os3GlassAndBlurWorkWithoutChangingNavStylePreference() {
-        for (style in listOf(com.chaners.guiyuan.settings.NavStyle.Glass, com.chaners.guiyuan.settings.NavStyle.Blur)) {
+        for (style in listOf(NavStyle.Glass, NavStyle.Blur)) {
             assertTrue(useNativeRailFor(
-                com.chaners.guiyuan.settings.UiStyle.OS3, style, true, true,
+                Appearance(uiStyle = UiStyle.OS3, navStyle = style), true,
                 DpSize(750.dp, 420.dp), 0.dp, 0.dp, 0.dp,
             ))
         }
@@ -43,12 +46,12 @@ class NativeRailWindowEligibilityTest {
     @Test
     fun os4GlassKeepsExistingGlassRailWhenMaterialAvailable() {
         assertFalse(useNativeRailFor(
-            com.chaners.guiyuan.settings.UiStyle.OS4, com.chaners.guiyuan.settings.NavStyle.Glass,
-            true, true, DpSize(750.dp, 420.dp), 0.dp, 0.dp, 0.dp,
+            Appearance(uiStyle = UiStyle.OS4, navStyle = NavStyle.Glass),
+            true, DpSize(750.dp, 420.dp), 0.dp, 0.dp, 0.dp,
         ))
         assertTrue(useNativeRailFor(
-            com.chaners.guiyuan.settings.UiStyle.OS4, com.chaners.guiyuan.settings.NavStyle.Glass,
-            true, false, DpSize(750.dp, 420.dp), 0.dp, 0.dp, 0.dp,
+            Appearance(uiStyle = UiStyle.OS4, navStyle = NavStyle.Glass),
+            false, DpSize(750.dp, 420.dp), 0.dp, 0.dp, 0.dp,
         ))
     }
 
@@ -56,12 +59,12 @@ class NativeRailWindowEligibilityTest {
     fun liquidAndDisabledNavKeepTheirOwnBehavior() {
         val window = DpSize(750.dp, 420.dp)
         assertFalse(useNativeRailFor(
-            com.chaners.guiyuan.settings.UiStyle.OS3, com.chaners.guiyuan.settings.NavStyle.Liquid,
-            true, true, window, 0.dp, 0.dp, 0.dp,
+            Appearance(uiStyle = UiStyle.OS3, navStyle = NavStyle.Liquid),
+            true, window, 0.dp, 0.dp, 0.dp,
         ))
         assertFalse(useNativeRailFor(
-            com.chaners.guiyuan.settings.UiStyle.OS4, com.chaners.guiyuan.settings.NavStyle.Standard,
-            false, false, window, 0.dp, 0.dp, 0.dp,
+            Appearance(uiStyle = UiStyle.OS4, navStyle = NavStyle.Standard, navEnabled = false),
+            false, window, 0.dp, 0.dp, 0.dp,
         ))
     }
 
