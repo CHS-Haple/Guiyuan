@@ -106,8 +106,6 @@ internal class NavigationRailInteraction(
         private set
     var previewRow by mutableFloatStateOf(selectedIndex.toFloat())
         private set
-    var dragStretch by mutableFloatStateOf(0f)
-        private set
 
     fun indexAt(x: Float, y: Float): Int {
         var nearest = -1
@@ -137,27 +135,21 @@ internal class NavigationRailInteraction(
     fun press(index: Int) {
         pressedIndex = index
         previewRow = index.toFloat()
-        dragStretch = 0f
         settle(index)
     }
 
     fun release() {
         pressedIndex = -1
-        dragStretch = 0f
         releaseGeneration++
     }
 
     /** Smooth Y-axis destination preview inside the existing rail pointer state. */
-    fun dragExpanded(y: Float, deltaY: Float) {
+    fun dragExpanded(y: Float) {
         if (slots.any { it.height <= 0f }) return
         val centres = slots.map { it.top + it.height / 2f }
         val destination = liquidRailPreviewAt(y, centres)
         previewRow = destination
         pressedIndex = destination.roundToInt().coerceIn(slots.indices)
-        val pitch = if (centres.size > 1) {
-            (centres.last() - centres.first()) / (centres.size - 1)
-        } else slots.first().height
-        dragStretch = (deltaY / pitch.coerceAtLeast(1f)).coerceIn(-0.25f, 0.25f)
     }
 
     fun settle(index: Int) {
@@ -309,7 +301,7 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.tra
         }
         if (run.dragging) {
             if (control.liquid && !run.horizontal) {
-                control.interaction.dragExpanded(change.position.y, physicalDelta.y)
+                control.interaction.dragExpanded(change.position.y)
                 run.current = control.interaction.pressedIndex
             } else {
                 control.interaction.drag(run.position, run.grabOffset, delta, run.current)

@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlin.math.abs
+import com.chaners.guiyuan.ui.components.liquid.liquidLensScales
 import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 
 /**
@@ -43,7 +43,8 @@ internal class GlassIndicatorAppearance(
     val pressedColor: Color,
     val scaleOnPress: Boolean = true,
     val liquidPaint: (@Composable (Boolean) -> Modifier)? = null,
-    val dragStretch: () -> Float = { 0f },
+    val motionVelocity: () -> Float = { 0f },
+    val verticalMotion: Boolean = false,
 )
 
 @Composable
@@ -83,12 +84,16 @@ internal fun GlassNavigationIndicator(
                     // when the OS4 pill morphs from compact to a full row.
                     val fraction = ((scale - 1f) /
                         (LiquidFeedbackSpec.PressedLensScale - 1f)).coerceIn(0f, 1f)
-                    val growth = 22.dp.toPx() * fraction
-                    val velocity = abs(appearance.dragStretch().coerceIn(-0.25f, 0.25f))
-                    scaleX = (1f + growth / size.width.coerceAtLeast(1f)) *
-                        (1f - velocity * 0.12f)
-                    scaleY = (1f + growth / size.height.coerceAtLeast(1f)) *
-                        (1f + velocity * 0.25f)
+                    val scales = liquidLensScales(
+                        widthPx = size.width,
+                        heightPx = size.height,
+                        growthPx = 22.dp.toPx(),
+                        pressProgress = fraction,
+                        signedVelocity = appearance.motionVelocity(),
+                        vertical = appearance.verticalMotion,
+                    )
+                    scaleX = scales.x
+                    scaleY = scales.y
                 } else {
                     scaleX = scale
                     scaleY = scale

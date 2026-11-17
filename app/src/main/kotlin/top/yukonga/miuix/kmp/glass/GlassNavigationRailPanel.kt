@@ -50,6 +50,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.util.lerp
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -320,13 +321,15 @@ private fun RailLiquidIndicator(
     val pressedIndex = interaction.pressedIndex
     val selectedIndex = context.selection.selectedIndex
     val index = if (pressedIndex >= 0) pressedIndex else selectedIndex
-    val rowPosition by animateFloatAsState(
-        targetValue = if (context.state.expanded && pressedIndex >= 0) {
-            interaction.previewRow
-        } else index.toFloat(),
-        animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
-        label = "liquidRailIndicatorRow",
-    )
+    // The rendered position owns directional velocity as on portrait.
+    // Do not infer lens deformation from one pointer event or a rounded index.
+    val rowPosition = remember(interaction) { Animatable(selectedIndex.toFloat()) }
+    val targetRow = if (context.state.expanded && pressedIndex >= 0) {
+        interaction.previewRow
+    } else index.toFloat()
+    LaunchedEffect(rowPosition, targetRow) {
+        rowPosition.animateTo(targetRow, spring(dampingRatio = 1f, stiffness = 1000f))
+    }
     val base = colors.indicator
     // Keep the same visual lens during release. Portrait Liquid settles the
     // position before springing back the size; the actual page selection is
@@ -339,7 +342,7 @@ private fun RailLiquidIndicator(
         } else {
             if (context.state.expanded) {
                 val tolerance = (context.selection.items.size - 1) * 0.025f
-                snapshotFlow { rowPosition }
+                snapshotFlow { rowPosition.value }
                     .first { abs(it - selectedIndex.toFloat()) <= tolerance }
             } else {
                 val left = interaction.start(selectedIndex)
@@ -351,20 +354,26 @@ private fun RailLiquidIndicator(
             settlingPress = false
         }
     }
-    // Portrait Liquid eases velocity deformation back to rest; do not snap the
-    // lens proportions when pointer state releases or cancels.
-    val stretch by animateFloatAsState(
-        targetValue = interaction.dragStretch,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 300f),
-        label = "liquidRailDragSettle",
-    )
+    // The same springs drive both movement and deformation, so reversing
+    // or releasing a drag naturally reverses/decays the lens deformation.
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val motionVelocity = {
+        if (context.state.expanded) {
+            rowPosition.velocity / context.selection.items.lastIndex.coerceAtLeast(1) / 10f
+        } else {
+            val travel = (interaction.width - interaction.contentStart - interaction.endPadding)
+                .coerceAtLeast(1f)
+            val logicalVelocity = (interaction.left.velocity + interaction.right.velocity) / 2f
+            (if (isRtl) -logicalVelocity else logicalVelocity) / travel / 10f
+        }
+    }
     NavigationRailIndicator(
         selection = RailIndicatorSelection(index, interaction, pressing || settlingPress),
         motion = RailIndicatorMotion(
             progress = { motion.rowProgress[index].value },
             scrollOffset = { context.scrollState.value },
             expandedItemWidth = geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2,
-            rowPosition = { rowPosition },
+            rowPosition = { rowPosition.value },
             outsideScrollViewport = true,
         ),
         appearance = GlassIndicatorAppearance(
@@ -372,7 +381,8 @@ private fun RailLiquidIndicator(
             pressedColor = base.pressedColor,
             scaleOnPress = base.scaleOnPress,
             liquidPaint = base.liquidPaint,
-            dragStretch = { stretch },
+            motionVelocity = motionVelocity,
+            verticalMotion = context.state.expanded,
         ),
     )
 }
