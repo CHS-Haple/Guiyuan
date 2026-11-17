@@ -7,8 +7,13 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- This source graph uses MIUIX `0.9.5-beta01` at full revision
-  `6d2554a850b8960e2616c968263ff64beb5ffb03`.
+- The active source and Maven graph uses the latest fully published MIUIX
+  snapshot `0.9.4-76504ab0-SNAPSHOT` at full revision
+  `76504ab028bdff42dff346577b4e3780069a1969`.
+  Upstream `v0.9.5-beta01` source at `6d2554a850b8960e2616c968263ff64beb5ffb03` is newer,
+  but its 2026-11-17 Maven publication did not complete. Guiyuan backports
+  only reviewed app-local Glass fixes after this source pin until a complete
+  upstream publication is available.
   The prior Material integration is documented in
   [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
   The stable `main` line must be checked separately; do not treat a `dev`
@@ -29,8 +34,8 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Single published-API source
 
-The pinned MIUIX `0.9.5-beta01` Maven artifacts expose `DialogSurfaceScope`,
-`BottomSheetSurfaceScope` and `BlurTopAppBar`. Both former source choices
+The pinned MIUIX snapshot Maven artifacts expose `DialogSurfaceScope`,
+`BottomSheetSurfaceScope` and `TopAppBarLayout`. Both former source choices
 compiled against published Maven without composite-source substitution in
 [PR #1521](https://github.com/CHS-Haple/Guiyuan/pull/1521). The obsolete
 source forks and `gy.os4.dialogSurfaces` property are retired. The one
@@ -57,9 +62,9 @@ back into this package or add a second Material model.
   single-owner backdrop/scrim and any necessary host/Sheet separation.
   `GlassIconButton` has Guiyuan-used long-press, hold-down and enabled APIs;
   upstream source equivalence alone cannot replace them.
-- `UiNativeTitleBar` retains the accepted `BlurTopAppBar` (now available
-  through pinned published MIUIX), title-local clipping and measured unclipped
-  navigation/action controls. The old `TopAppBar` fallback is retired.
+- `UiNativeTitleBar` uses the upstream `TopAppBarLayout` with native title
+  blur, retaining accepted title-local clipping and measured unclipped
+  navigation/action controls. The old parallel fallback is retired.
 - Navigation retains noninteractive preview behavior, touch-safe bottom
   extension and exact native icon/material semantics. Do not replace a
   caller-owned touch or animation boundary with a similar-looking upstream
