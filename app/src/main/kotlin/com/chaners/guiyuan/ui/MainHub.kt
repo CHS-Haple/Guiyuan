@@ -176,7 +176,7 @@ internal fun useNativeRailFor(
     if (!appearance.navEnabled) return false
     // OS4 Glass and Liquid share the original GlassRail layout; OS3 uses native Rail.
     if (appearance.uiStyle == UiStyle.OS4 && glassBackdropAvailable &&
-        appearance.navStyle in setOf(NavStyle.Glass, NavStyle.Liquid)
+        (appearance.navStyle == NavStyle.Glass || appearance.navStyle == NavStyle.Liquid)
     ) return false
     return canPlaceNativeRail(
         window,

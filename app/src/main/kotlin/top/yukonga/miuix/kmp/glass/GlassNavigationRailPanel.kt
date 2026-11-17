@@ -152,8 +152,12 @@ private fun Modifier.railPanelSurfaceModifier(
 ): Modifier {
     // Do not replace the MIUIX rail's layout, morph, input or lifecycle owner.
     // Only the surface paint differs; the default Glass material path is unchanged.
-    val surfacePaint = surface.materialOverride?.invoke(surface.backdrop, shape)
-        ?: Modifier.glassPanel(
+    val override = surface.materialOverride
+    val surfacePaint = if (override != null) {
+        // Retain the upstream rail's exact silhouette and Float shadow with Liquid optics.
+        Modifier.glassShadow(shape, surface.shadow).then(override(surface.backdrop, shape))
+    } else {
+        Modifier.glassPanel(
             backdrop = surface.backdrop,
             shape = shape,
             style = surface.style,
@@ -164,6 +168,7 @@ private fun Modifier.railPanelSurfaceModifier(
             shading = false,
             fallback = Modifier.clip(shape).background(MiuixTheme.colorScheme.surfaceContainer),
         )
+    }
     return this
         .layout { measurable, _ ->
             val fraction = state.progress.coerceIn(0f, 1f)
