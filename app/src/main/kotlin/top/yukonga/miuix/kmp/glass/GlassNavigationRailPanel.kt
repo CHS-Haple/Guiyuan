@@ -4,9 +4,12 @@
 package top.yukonga.miuix.kmp.glass
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -284,14 +287,33 @@ private fun RailPanelRows(
     val interaction = pointer.interaction
     val pressedIndex = interaction.pressedIndex
     val selectedIndex = context.selection.selectedIndex
-    val indicatorIndex = if (pressedIndex >= 0) pressedIndex else selectedIndex
+    // The upstream rail already owns PressInteraction. Observe it rather than installing a
+    // second gesture recognizer; only Liquid previews the pressed expanded destination.
+    val rowPresses = interaction.rowInteractions.map { it.collectIsPressedAsState() }
+    val expandedPress = if (colors.indicator.liquidPaint != null) {
+        rowPresses.indexOfFirst { it.value }
+    } else -1
+    val indicatorIndex = when {
+        pressedIndex >= 0 -> pressedIndex
+        expandedPress >= 0 -> expandedPress
+        else -> selectedIndex
+    }
+    val indicatorPressed = pressedIndex >= 0 || expandedPress >= 0
+    val liquidPosition by animateFloatAsState(
+        targetValue = indicatorIndex.toFloat(),
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 320f),
+        label = "liquidRailIndicatorRow",
+    )
     val itemWidth = geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2
     NavigationRailIndicator(
-        selection = RailIndicatorSelection(indicatorIndex, interaction, pressedIndex >= 0),
+        selection = RailIndicatorSelection(indicatorIndex, interaction, indicatorPressed),
         motion = RailIndicatorMotion(
             progress = { motion.rowProgress[indicatorIndex].value },
             scrollOffset = { context.scrollState.value },
             expandedItemWidth = itemWidth,
+            rowPosition = {
+                if (colors.indicator.liquidPaint != null) liquidPosition else indicatorIndex.toFloat()
+            },
         ),
         appearance = colors.indicator,
     )
@@ -308,7 +330,7 @@ private fun RailPanelRows(
                 ),
                 motion = RailRowMotion(
                     expanded = context.state.expanded,
-                    pressed = pressedIndex == position,
+                    pressed = pressedIndex == position || (expandedPress == position),
                     rowProgress = { motion.rowProgress[position].value },
                     iconAlpha = motion.iconAlpha,
                     scrollOffset = { context.scrollState.value },

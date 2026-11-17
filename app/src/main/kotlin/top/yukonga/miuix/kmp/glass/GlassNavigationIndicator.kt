@@ -5,6 +5,7 @@ package top.yukonga.miuix.kmp.glass
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -54,12 +55,15 @@ internal fun GlassNavigationIndicator(
 ) {
     val density = LocalDensity.current
     val scale by animateFloatAsState(
-        targetValue = if (pressed && appearance.scaleOnPress) {
-            glassPressScale(with(density) { height.toPx() }, density.density)
-        } else {
-            1f
+        targetValue = when {
+            pressed && appearance.liquidPaint != null -> 1.08f
+            pressed && appearance.scaleOnPress ->
+                glassPressScale(with(density) { height.toPx() }, density.density)
+            else -> 1f
         },
-        animationSpec = if (pressed) GlassMotion.pressDown() else GlassMotion.pressUp(),
+        animationSpec = if (appearance.liquidPaint != null) {
+            spring(dampingRatio = 0.7f, stiffness = 300f)
+        } else if (pressed) GlassMotion.pressDown() else GlassMotion.pressUp(),
         label = "glassNavigationIndicatorPress",
     )
     val fill = animateColorAsState(

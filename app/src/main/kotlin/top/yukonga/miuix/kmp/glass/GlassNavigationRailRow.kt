@@ -261,6 +261,7 @@ internal class RailIndicatorMotion(
     val progress: () -> Float,
     val scrollOffset: () -> Int,
     val expandedItemWidth: Dp,
+    val rowPosition: () -> Float,
 )
 
 @Composable
@@ -278,7 +279,7 @@ internal fun NavigationRailIndicator(
             val width: Int
             val x: Float
             val y: Float
-            val expandedY = RailExpandedRowTop.toPx() + RailRowPitch.toPx() * selection.index
+            val expandedY = RailExpandedRowTop.toPx() + RailRowPitch.toPx() * motion.rowPosition()
             if (fraction == 1f) {
                 // Collapsed springs and scroll compensation cannot affect the expanded indicator.
                 width = motion.expandedItemWidth.roundToPx().coerceAtLeast(0)
