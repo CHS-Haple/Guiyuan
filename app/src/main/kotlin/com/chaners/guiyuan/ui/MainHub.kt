@@ -709,6 +709,7 @@ internal fun MainHub(
                 modifier = Modifier.fillMaxSize(),
             )
         }
+            }
         // The Liquid overlay must stay outside the page's recorded backdrop.
         if (useLiquidRail && liquidBackdrop != null) {
             val liquidItems = remember(items) {
@@ -733,7 +734,6 @@ internal fun MainHub(
                     ),
             )
         }
-            }
         }
 
         // Popups are hosted outside this page's backdrop recording.
