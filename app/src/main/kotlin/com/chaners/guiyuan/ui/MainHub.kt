@@ -688,7 +688,6 @@ internal fun MainHub(
                 modifier = Modifier.fillMaxSize(),
             )
         }
-        }
             }
         }
 
