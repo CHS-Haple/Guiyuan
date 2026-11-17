@@ -106,6 +106,7 @@ import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.NavigationBarDisplayMode
 import top.yukonga.miuix.kmp.basic.NavigationRail
+import top.yukonga.miuix.kmp.basic.NavigationRailState
 import top.yukonga.miuix.kmp.basic.NavigationRailDefaults
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
@@ -241,6 +242,31 @@ private data class MainNavItem(
     val label: String,
     val icon: ImageVector,
 )
+
+/**
+ * Keep the page at one stable slot during bottom↔rail transitions. This helper owns only
+ * the upstream NavigationRail subtree, not pager selection or rail motion.
+ */
+@Composable
+private fun HubNativeRail(
+    visible: Boolean,
+    state: NavigationRailState,
+    items: List<MainNavItem>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+) {
+    if (!visible) return
+    NavigationRail(state = state, modifier = Modifier.fillMaxHeight()) {
+        items.forEachIndexed { index, item ->
+            NavigationRailItem(
+                selected = selectedIndex == index,
+                onClick = { onSelect(index) },
+                icon = item.icon,
+                label = item.label,
+            )
+        }
+    }
+}
 
 @Composable
 internal fun MainHub(
@@ -547,9 +573,17 @@ internal fun MainHub(
             }
         },
     ) { innerPadding ->
-        val pageHost: @Composable () -> Unit = {
-        // Keep the rail surface outside the page's recorded blur backdrop.
-        Box(Modifier.fillMaxSize()) {
+        // The weighted page occupies a stable Compose slot even when the rail becomes visible
+        // or disappears during rotation and split-screen resizing.
+        Row(Modifier.fillMaxSize()) {
+            HubNativeRail(
+                visible = useNativeRail,
+                state = nativeRailState,
+                items = items,
+                selectedIndex = pageSelection.selectedPage,
+                onSelect = ::selectPage,
+            )
+            Box(Modifier.weight(1f).fillMaxHeight()) {
         Box(
             modifier =
                 Modifier
@@ -653,30 +687,7 @@ internal fun MainHub(
             )
         }
         }
-        }
-        if (useNativeRail) {
-            // The published MIUIX NavigationRail owns expand/collapse motion; the Row naturally
-            // remeasures its weighted page. HubPagerSelection is still the only selection writer.
-            Row(Modifier.fillMaxSize()) {
-                NavigationRail(
-                    state = nativeRailState,
-                    modifier = Modifier.fillMaxHeight(),
-                ) {
-                    items.forEachIndexed { index, item ->
-                        NavigationRailItem(
-                            selected = pageSelection.selectedPage == index,
-                            onClick = { selectPage(index) },
-                            icon = item.icon,
-                            label = item.label,
-                        )
-                    }
-                }
-                Box(Modifier.weight(1f).fillMaxHeight()) {
-                    pageHost()
-                }
             }
-        } else {
-            pageHost()
         }
 
         // Popups are hosted outside this page's backdrop recording.
