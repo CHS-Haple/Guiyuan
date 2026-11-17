@@ -252,6 +252,12 @@ private data class MainNavItem(
     val icon: ImageVector,
 )
 
+/** Native rail material settings travel together; the native rail still owns layout. */
+private data class LiquidRailMaterial(
+    val backdrop: Backdrop,
+    val mode: LiquidMode,
+)
+
 /**
  * Keep the page at one stable slot during bottom↔rail transitions. This helper owns only
  * the upstream NavigationRail subtree, not pager selection or rail motion.
@@ -263,8 +269,7 @@ private fun HubNativeRail(
     items: List<MainNavItem>,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
-    liquidBackdrop: Backdrop?,
-    liquidMode: LiquidMode,
+    liquidMaterial: LiquidRailMaterial?,
 ) {
     if (!visible) return
     // Preserve the upstream OS3 rail's width, toggle, indicator, scrolling and insets.
@@ -272,11 +277,11 @@ private fun HubNativeRail(
     NavigationRail(
         state = state,
         modifier = Modifier.fillMaxHeight().then(
-            if (liquidBackdrop != null) {
-                Modifier.liquidRailSurface(liquidBackdrop, RoundedCornerShape(0.dp), liquidMode)
+            if (liquidMaterial != null) {
+                Modifier.liquidRailSurface(liquidMaterial.backdrop, RoundedCornerShape(0.dp), liquidMaterial.mode)
             } else Modifier
         ),
-        color = if (liquidBackdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
+        color = if (liquidMaterial != null) Color.Transparent else MiuixTheme.colorScheme.surface,
     ) {
         items.forEachIndexed { index, item ->
             NavigationRailItem(
@@ -600,8 +605,9 @@ internal fun MainHub(
                 items = items,
                 selectedIndex = pageSelection.selectedPage,
                 onSelect = ::selectPage,
-                liquidBackdrop = liquidBackdrop.takeIf { appearance.navStyle == NavStyle.Liquid },
-                liquidMode = appearance.liquidMode,
+                liquidMaterial = liquidBackdrop
+                    .takeIf { appearance.navStyle == NavStyle.Liquid }
+                    ?.let { LiquidRailMaterial(it, appearance.liquidMode) },
             )
             Box(Modifier.weight(1f).fillMaxHeight()) {
         Box(
