@@ -171,11 +171,12 @@ internal fun useNativeRailFor(
     startInset: Dp,
     endInset: Dp,
     verticalInsets: Dp,
-): Boolean = navEnabled &&
-    navStyle != NavStyle.Liquid &&
+): Boolean {
+    if (!navEnabled || navStyle == NavStyle.Liquid) return false
     // OS4 Glass with an actual backdrop keeps its already accepted GlassRail and GlassBar.
-    !(uiStyle == UiStyle.OS4 && navStyle == NavStyle.Glass && glassBackdropAvailable) &&
-    canPlaceNativeRail(window, startInset, endInset, verticalInsets)
+    if (uiStyle == UiStyle.OS4 && navStyle == NavStyle.Glass && glassBackdropAvailable) return false
+    return canPlaceNativeRail(window, startInset, endInset, verticalInsets)
+}
 
 /**
  * Follows MIUIX's main-pager example: commit a destination before page motion begins.
