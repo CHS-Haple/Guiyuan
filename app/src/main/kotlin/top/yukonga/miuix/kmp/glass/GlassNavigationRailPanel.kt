@@ -324,6 +324,13 @@ private fun RailLiquidIndicator(
         label = "liquidRailIndicatorRow",
     )
     val base = colors.indicator
+    // Portrait Liquid eases velocity deformation back to rest; do not snap the
+    // lens proportions when pointer state releases or cancels.
+    val stretch by animateFloatAsState(
+        targetValue = interaction.dragStretch,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 300f),
+        label = "liquidRailDragSettle",
+    )
     NavigationRailIndicator(
         selection = RailIndicatorSelection(index, interaction, pressedIndex >= 0),
         motion = RailIndicatorMotion(
@@ -338,7 +345,7 @@ private fun RailLiquidIndicator(
             pressedColor = base.pressedColor,
             scaleOnPress = base.scaleOnPress,
             liquidPaint = base.liquidPaint,
-            dragStretch = { interaction.dragStretch },
+            dragStretch = { stretch },
         ),
     )
 }
