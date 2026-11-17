@@ -3,7 +3,6 @@ package com.chaners.guiyuan.ui.components.liquid
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,18 +39,8 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -429,25 +418,8 @@ private fun LiquidRailEntry(
 ) {
     val item = tab.item
     val showLabel = tab.showLabel
-    val input = if (tab.interactive) {
-        Modifier
-            .semantics(mergeDescendants = true) {
-                role = Role.Tab
-                this.selected = tab.selected
-                onClick { onClick(); true }
-            }
-            .onKeyEvent { event ->
-                val activate = event.key == Key.Enter ||
-                    event.key == Key.NumPadEnter || event.key == Key.Spacebar
-                if (activate) {
-                    if (event.type == KeyEventType.KeyUp) onClick()
-                    true
-                } else false
-            }
-            .focusable()
-    } else Modifier.clearAndSetSemantics {}
     val modifier = Modifier.fillMaxWidth().height(LiquidRailSpec.ItemHeight)
-        .clip(CircleShape).then(input)
+        .clip(CircleShape).liquidNavTabInput(tab.selected, tab.interactive, onClick)
     if (tab.isOs4) {
         Row(
             modifier = modifier,

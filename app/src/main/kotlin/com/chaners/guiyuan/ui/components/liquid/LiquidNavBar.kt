@@ -3,7 +3,6 @@ package com.chaners.guiyuan.ui.components.liquid
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
@@ -49,17 +48,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.type
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -534,35 +523,7 @@ internal fun RowScope.LiquidNavItem(
         modifier =
             modifier
                 .clip(CircleShape)
-                .then(
-                    if (interactive) {
-                        // The upstream row gesture owns taps. Items expose semantic/keyboard
-                        // activation only, avoiding duplicate callbacks from child clickable.
-                        Modifier
-                            .semantics(mergeDescendants = true) {
-                                role = Role.Tab
-                                this.selected = selected
-                                onClick {
-                                    onClick()
-                                    true
-                                }
-                            }
-                            .onKeyEvent { event ->
-                                val activate = event.key == Key.Enter ||
-                                    event.key == Key.NumPadEnter ||
-                                    event.key == Key.Spacebar
-                                if (activate) {
-                                    if (event.type == KeyEventType.KeyUp) onClick()
-                                    true
-                                } else {
-                                    false
-                                }
-                            }
-                            .focusable()
-                    } else {
-                        Modifier.clearAndSetSemantics {}
-                    },
-                )
+                .liquidNavTabInput(selected, interactive, onClick)
                 .fillMaxHeight()
                 .weight(1f)
                 .graphicsLayer {
