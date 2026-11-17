@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -275,11 +276,11 @@ internal fun LiquidNavBar(
                     visibilityThreshold = 0.001f,
                     initialScale = 1f,
                     pressedScale = 78f / 56f,
-                    canDrag = { position -> position.x in 0f..widthPx.value },
+                    canDrag = { position -> position.x in 0f..widthPx.value.toFloat() },
                     onStarted = { position ->
                         val tabWidth = tabWidthPx.value
                         if (tabWidth > 0f) {
-                            val logicalX = if (currentLtr.value) position.x else widthPx.value - position.x
+                            val logicalX = if (currentLtr.value) position.x else widthPx.value.toFloat() - position.x
                             val paddingPx = with(density) { 4.dp.toPx() }
                             updateValue(
                                 ((logicalX - paddingPx) / tabWidth)
@@ -351,6 +352,7 @@ internal fun LiquidNavBar(
         Row(
             modifier =
                 Modifier
+                    .selectableGroup()
                     .graphicsLayer {
                         translationX = panelOffset
                     }
