@@ -154,7 +154,7 @@ private class RailWindowRequest(
     val state: GlassNavigationRailState,
     val backdrop: Backdrop?,
     val showToggle: Boolean,
-    val materialOverride: (@Composable (Backdrop?, GlassShape) -> Modifier)?,
+    val materialOverride: RailLiquidPaint?,
 )
 
 private class RailSourceWidths(val labels: List<Dp>, val slots: List<Dp>)
@@ -180,7 +180,7 @@ internal fun GlassNavigationRail(
     modifier: Modifier = Modifier,
     state: GlassNavigationRailState = rememberGlassNavigationRailState(),
     showToggle: Boolean = true,
-    materialOverride: (@Composable (Backdrop?, GlassShape) -> Modifier)? = null,
+    materialOverride: RailLiquidPaint? = null,
 ) {
     val items = destinations.items
     if (items.isEmpty()) return
@@ -301,8 +301,11 @@ private fun RailWindowPanel(
         colors = RailPanelColors(
             selectedColor = if (MiuixTheme.isDynamicColor) colorScheme.primary else colorScheme.onSurface,
             unselectedColor = colorScheme.onSurface,
-            indicatorColor = GlassNavigationBarDefaults.indicatorColor(),
-            indicatorPressedColor = GlassNavigationBarDefaults.indicatorPressedColor(),
+            indicator = GlassIndicatorAppearance(
+                color = GlassNavigationBarDefaults.indicatorColor(),
+                pressedColor = GlassNavigationBarDefaults.indicatorPressedColor(),
+                liquidPaint = request.materialOverride?.indicator,
+            ),
             labelStyle = MiuixTheme.textStyles.body1,
         ),
     )

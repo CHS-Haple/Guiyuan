@@ -39,6 +39,7 @@ internal class GlassIndicatorAppearance(
     val color: Color,
     val pressedColor: Color,
     val scaleOnPress: Boolean = true,
+    val liquidPaint: (@Composable (Boolean) -> Modifier)? = null,
 )
 
 @Composable
@@ -72,7 +73,8 @@ internal fun GlassNavigationIndicator(
                 scaleX = scale
                 scaleY = scale
             }
-            .clip(RoundedCornerShape(percent = 50))
-            .drawBehind { drawRect(fill.value) },
+            .then(appearance.liquidPaint?.invoke(pressed) ?:
+                Modifier.clip(RoundedCornerShape(percent = 50))
+                    .drawBehind { drawRect(fill.value) }),
     )
 }

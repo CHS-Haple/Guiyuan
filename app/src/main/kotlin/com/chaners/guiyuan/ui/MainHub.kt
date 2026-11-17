@@ -84,6 +84,8 @@ import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
+import com.chaners.guiyuan.ui.components.liquid.liquidNativeRailSelection
+import com.chaners.guiyuan.ui.components.liquid.liquidRailSelectedSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
 import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
 import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
@@ -101,6 +103,7 @@ import kotlinx.coroutines.job
 import top.yukonga.miuix.kmp.glass.GlassNavigationBar
 import top.yukonga.miuix.kmp.glass.GlassNavigationRail
 import top.yukonga.miuix.kmp.glass.GlassRailDestinations
+import top.yukonga.miuix.kmp.glass.RailLiquidPaint
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import top.yukonga.miuix.kmp.glass.rememberGlassNavigationRailState
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
@@ -264,34 +267,41 @@ private data class LiquidRailMaterial(
  */
 @Composable
 private fun HubNativeRail(
-    visible: Boolean,
     state: NavigationRailState,
     items: List<MainNavItem>,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     liquidMaterial: LiquidRailMaterial?,
 ) {
-    if (!visible) return
-    // Preserve the upstream OS3 rail's width, toggle, indicator, scrolling and insets.
-    // Only the native surface switches to a page-sampled Liquid material.
-    NavigationRail(
-        state = state,
-        modifier = Modifier.fillMaxHeight().then(
-            if (liquidMaterial != null) {
-                Modifier.liquidRailSurface(liquidMaterial.backdrop, RoundedCornerShape(0.dp), liquidMaterial.mode)
-            } else Modifier
-        ),
-        color = if (liquidMaterial != null) Color.Transparent else MiuixTheme.colorScheme.surface,
-    ) {
-        items.forEachIndexed { index, item ->
-            NavigationRailItem(
-                selected = selectedIndex == index,
-                onClick = { onSelect(index) },
-                icon = item.icon,
-                label = item.label,
-            )
+    // The MIUIX OS3 rail retains its layout, morph, semantics and one click owner.
+    val rail: @Composable () -> Unit = {
+        NavigationRail(
+            state = state,
+            modifier = Modifier.fillMaxHeight().then(
+                if (liquidMaterial != null) {
+                    Modifier.liquidRailSurface(liquidMaterial.backdrop, RoundedCornerShape(0.dp), liquidMaterial.mode)
+                } else Modifier
+            ),
+            color = if (liquidMaterial != null) Color.Transparent else MiuixTheme.colorScheme.surface,
+        ) {
+            items.forEachIndexed { index, item ->
+                NavigationRailItem(
+                    selected = selectedIndex == index,
+                    onClick = { onSelect(index) },
+                    icon = item.icon,
+                    label = item.label,
+                    modifier = if (liquidMaterial != null && selectedIndex == index) {
+                        Modifier.liquidNativeRailSelection(liquidMaterial.backdrop, liquidMaterial.mode)
+                    } else Modifier,
+                )
+            }
         }
     }
+    if (liquidMaterial != null) {
+        // Suppress only the stock solid selection fill; lens/press drawing owns that slot.
+        val colors = MiuixTheme.colorScheme.copy(surfaceContainerHigh = Color.Transparent)
+        MiuixTheme(colors = colors) { rail() }
+    } else rail()
 }
 
 @Composable
@@ -599,16 +609,17 @@ internal fun MainHub(
         // The weighted page occupies a stable Compose slot even when the rail becomes visible
         // or disappears during rotation and split-screen resizing.
         Row(Modifier.fillMaxSize()) {
-            HubNativeRail(
-                visible = useNativeRail,
-                state = nativeRailState,
-                items = items,
-                selectedIndex = pageSelection.selectedPage,
-                onSelect = ::selectPage,
-                liquidMaterial = liquidBackdrop
-                    .takeIf { appearance.navStyle == NavStyle.Liquid }
-                    ?.let { LiquidRailMaterial(it, appearance.liquidMode) },
-            )
+            if (useNativeRail) {
+                HubNativeRail(
+                    state = nativeRailState,
+                    items = items,
+                    selectedIndex = pageSelection.selectedPage,
+                    onSelect = ::selectPage,
+                    liquidMaterial = liquidBackdrop
+                        .takeIf { appearance.navStyle == NavStyle.Liquid }
+                        ?.let { LiquidRailMaterial(it, appearance.liquidMode) },
+                )
+            }
             Box(Modifier.weight(1f).fillMaxHeight()) {
         Box(
             modifier =
@@ -689,6 +700,7 @@ internal fun MainHub(
             }
             }
         }
+        }
         if (useGlassRail) {
             // Wide rails use labeled destinations, independent of compact bottom-bar preference.
             val railItems = remember(items) {
@@ -711,14 +723,23 @@ internal fun MainHub(
                 showToggle = true,
                 // Keep upstream OS4 rail motion and indicator; substitute only the panel surface.
                 materialOverride = if (appearance.navStyle == NavStyle.Liquid) {
-                    { backdrop, shape ->
-                        Modifier.liquidRailSurface(backdrop, shape, appearance.liquidMode)
-                    }
+                    RailLiquidPaint(
+                        panel = { backdrop, shape ->
+                            Modifier.liquidRailSurface(backdrop, shape, appearance.liquidMode)
+                        },
+                        indicator = { pressed ->
+                            Modifier.liquidRailSelectedSurface(
+                                backdrop = railBackdrop,
+                                shape = RoundedCornerShape(percent = 50),
+                                mode = appearance.liquidMode,
+                                pressed = pressed,
+                            )
+                        },
+                    )
                 } else null,
                 modifier = Modifier.fillMaxSize(),
             )
         }
-            }
         }
 
         // Popups are hosted outside this page's backdrop recording.
