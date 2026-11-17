@@ -33,6 +33,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.dp
+import com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.layout.layout
@@ -149,6 +152,23 @@ internal fun GlassNavigationRailPanel(
         GlassShape(corner, corner, corner, corner)
     }
     val liquidPaint = surface.material.replacement
+    // One native interaction state serves both the panel's press expansion and
+    // the selected lens. Do not create a second pointer or feedback writer.
+    val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
+    val widths = remember(geometry.tabWidths, density) {
+        with(density) { geometry.tabWidths.map { it.roundToPx().toFloat() } }
+    }
+    val startPx = with(density) { geometry.contentStart.roundToPx().toFloat() }
+    val endPx = with(density) { RailCollapsedEndPadding.toPx() }
+    val interaction = remember(widths, startPx, endPx, scope) {
+        NavigationRailInteraction(widths, startPx, endPx, context.selection.selectedIndex, scope)
+    }
+    val panelPress by animateFloatAsState(
+        targetValue = if (liquidPaint != null && interaction.pressedIndex >= 0) 1f else 0f,
+        animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
+        label = "liquidRailPanelPress",
+    )
     // Record only the physical Liquid panel, never the selected lens itself.
     // The selected indicator samples page + recorded panel, as in portrait LiquidNavBar.
     val materialBackdrop = if (liquidPaint != null && surface.backdrop != null) {
@@ -171,7 +191,16 @@ internal fun GlassNavigationRailPanel(
         )
     } else colors
     Box(
-        modifier = Modifier.railPanelSurfaceModifier(state, geometry, motion, surface, shape),
+        modifier = Modifier.railPanelSurfaceModifier(state, geometry, motion, surface, shape)
+            .then(if (liquidPaint != null) Modifier.graphicsLayer {
+                // Like portrait Liquid, grow the whole glass surface on press.
+                // Graphics scaling never affects native rail measuring or hit slots.
+                val scale = liquidPanelPressScale(
+                    size.width, size.height, 16.dp.toPx(), panelPress,
+                )
+                scaleX = scale
+                scaleY = scale
+            } else Modifier),
     ) {
         if (materialBackdrop != null && liquidPaint != null) {
             // Draw once, visibly, and record this same surface for selected optics.
@@ -182,7 +211,7 @@ internal fun GlassNavigationRailPanel(
                     .then(liquidPaint.panel(surface.backdrop, shape)),
             )
         }
-        RailPanelContents(context, geometry, motion, paintColors)
+        RailPanelContents(context, geometry, motion, paintColors, interaction)
         if (context.showToggle) RailPanelToggle(context, paintColors)
     }
 }
@@ -242,23 +271,14 @@ private fun RailPanelContents(
     geometry: RailPanelGeometry,
     motion: RailPanelMotion,
     colors: RailPanelColors,
+    interaction: NavigationRailInteraction,
 ) {
     val state = context.state
     val rowProgress = motion.rowProgress
     val scrollEnabled by remember(state, rowProgress) {
         derivedStateOf { state.expanded && state.morph.value == 1f && rowProgress.all { it.value == 1f } }
     }
-    val density = LocalDensity.current
-    val scope = rememberCoroutineScope()
-    val widths = remember(geometry.tabWidths, density) {
-        with(density) { geometry.tabWidths.map { it.roundToPx().toFloat() } }
-    }
-    val startPx = with(density) { geometry.contentStart.roundToPx().toFloat() }
-    val endPx = with(density) { RailCollapsedEndPadding.toPx() }
-    val headerHeightPx = with(density) { RailHeaderHeight.toPx() }
-    val interaction = remember(widths, startPx, endPx, scope) {
-        NavigationRailInteraction(widths, startPx, endPx, context.selection.selectedIndex, scope)
-    }
+    val headerHeightPx = with(LocalDensity.current) { RailHeaderHeight.toPx() }
     val pointer = RailPanelPointer(
         interaction = interaction,
         expanded = rememberUpdatedState(state.expanded),
