@@ -211,8 +211,18 @@ internal fun GlassNavigationRailPanel(
                     .then(liquidPaint.panel(surface.backdrop, shape)),
             )
         }
-        RailPanelContents(context, geometry, motion, paintColors, interaction)
-        if (context.showToggle) RailPanelToggle(context, paintColors)
+        if (liquidPaint != null) {
+            // Only the pressed lens may exceed the idle panel silhouette.
+            // Keep native rows, the scroll viewport and toggle shape-clipped.
+            RailLiquidIndicator(context, geometry, motion, paintColors, interaction)
+            Box(Modifier.matchParentSize().clip(shape)) {
+                RailPanelContents(context, geometry, motion, paintColors, interaction)
+                if (context.showToggle) RailPanelToggle(context, paintColors)
+            }
+        } else {
+            RailPanelContents(context, geometry, motion, paintColors, interaction)
+            if (context.showToggle) RailPanelToggle(context, paintColors)
+        }
     }
 }
 
@@ -292,14 +302,7 @@ private fun RailPanelContents(
     LaunchedEffect(interaction, context.selection.selectedIndex, pressed, interaction.releaseGeneration) {
         if (!pressed) interaction.settle(context.selection.selectedIndex)
     }
-    Box(Modifier.fillMaxSize()) {
-        if (colors.indicator.liquidPaint != null) {
-            // Keep the lens out of verticalScroll's main-axis clip. Native rows,
-            // hit rectangles and gesture ownership remain in the scroll viewport.
-            RailLiquidIndicator(context, geometry, motion, colors, interaction)
-        }
-        RailPanelScroll(context, geometry, motion, colors, pointer)
-    }
+    RailPanelScroll(context, geometry, motion, colors, pointer)
 }
 
 @Composable
