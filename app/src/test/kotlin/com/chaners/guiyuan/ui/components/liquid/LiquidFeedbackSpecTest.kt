@@ -13,40 +13,32 @@ class LiquidFeedbackSpecTest {
         assertEquals(1.05f, liquidPanelPressScale(200f, 320f, 16f, 1f), 0.0001f)
         assertEquals(1f, liquidPanelPressScale(200f, 320f, 16f, -1f), 0.0001f)
     }
-    @Test fun expandedDirectionMirrorsTheLeadingEdgeWithoutShrinking() {
-        val idle = liquidDirectionalLensTransform(224f, 56f, 22f, 1f, 0f, true)
-        val down = liquidDirectionalLensTransform(224f, 56f, 22f, 1f, 0.3f, true)
-        val up = liquidDirectionalLensTransform(224f, 56f, 22f, 1f, -0.3f, true)
-        assertEquals(down.y, up.y, 0.0001f)
-        assertEquals(down.x, up.x, 0.0001f)
-        assertEquals(down.translationY, -up.translationY, 0.0001f)
-        assertEquals(0f, down.translationX, 0.0001f)
-        org.junit.Assert.assertTrue(down.y > idle.y)
-        assertEquals(-56f * idle.y / 2f, down.translationY - 56f * down.y / 2f, 0.0001f)
-        assertEquals(56f * idle.y / 2f, up.translationY + 56f * up.y / 2f, 0.0001f)
+    @Test fun horizontalMotionMatchesTheExistingPortraitFormula() {
+        for (velocity in listOf(-20f, -3f, 0f, 3f, 20f)) {
+            val result = liquidVelocityScales(1.32f, 1.28f, velocity, vertical = false)
+            val signed = velocity / 10f
+            val along = (signed * 0.75f).coerceIn(-0.2f, 0.2f)
+            val across = (signed * 0.25f).coerceIn(-0.2f, 0.2f)
+            assertEquals(1.32f / (1f - along), result.x, 0.0001f)
+            assertEquals(1.28f * (1f - across), result.y, 0.0001f)
+        }
     }
 
-    @Test fun compactDirectionMirrorsTheLeadingEdgeAndStopsAtRest() {
-        val idle = liquidDirectionalLensTransform(150f, 56f, 22f, 1f, 0f, false)
-        val right = liquidDirectionalLensTransform(150f, 56f, 22f, 1f, 0.3f, false)
-        val left = liquidDirectionalLensTransform(150f, 56f, 22f, 1f, -0.3f, false)
-        assertEquals(right.x, left.x, 0.0001f)
-        assertEquals(right.y, left.y, 0.0001f)
-        assertEquals(right.translationX, -left.translationX, 0.0001f)
-        org.junit.Assert.assertTrue(right.x > idle.x)
-        assertEquals(-150f * idle.x / 2f, right.translationX - 150f * right.x / 2f, 0.0001f)
-        assertEquals(150f * idle.x / 2f, left.translationX + 150f * left.x / 2f, 0.0001f)
-        val stop = liquidDirectionalLensTransform(150f, 56f, 22f, 1f, 0f, false)
-        val release = liquidDirectionalLensTransform(150f, 56f, 22f, 0f, 0f, false)
-        assertEquals(0f, stop.translationX, 0.0001f)
-        assertEquals(1f, release.x, 0.0001f)
-        assertEquals(1f, release.y, 0.0001f)
+    @Test fun expandedRailRotatesThePortraitMotionAxesWithoutNewGeometry() {
+        for (velocity in listOf(-10f, -2f, 0f, 2f, 10f)) {
+            val portrait = liquidVelocityScales(1f, 1f, velocity, vertical = false)
+            val expanded = liquidVelocityScales(1f, 1f, velocity, vertical = true)
+            assertEquals(portrait.x, expanded.y, 0.0001f)
+            assertEquals(portrait.y, expanded.x, 0.0001f)
+        }
     }
 
-    @Test fun highMotionClampsSymmetrically() {
-        val max = liquidDirectionalLensTransform(220f, 56f, 22f, 1f, 0.5f, true)
-        val over = liquidDirectionalLensTransform(220f, 56f, 22f, 1f, 10f, true)
-        assertEquals(max.y, over.y, 0.0001f)
-        assertEquals(max.translationY, over.translationY, 0.0001f)
+    @Test fun stationaryMotionReturnsTheOriginalPressScale() {
+        val idle = liquidVelocityScales(1.1f, 1.4f, 0f, vertical = false)
+        val vertical = liquidVelocityScales(1.1f, 1.4f, 0f, vertical = true)
+        assertEquals(1.1f, idle.x, 0.0001f)
+        assertEquals(1.4f, idle.y, 0.0001f)
+        assertEquals(1.1f, vertical.x, 0.0001f)
+        assertEquals(1.4f, vertical.y, 0.0001f)
     }
 }

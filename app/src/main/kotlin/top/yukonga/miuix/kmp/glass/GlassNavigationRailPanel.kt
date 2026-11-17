@@ -7,6 +7,10 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -322,14 +326,44 @@ private fun RailLiquidIndicator(
     val index = if (pressedIndex >= 0) pressedIndex else selectedIndex
     // A stable animation state retargets smoothly as pointer samples arrive.
     // Restarting a LaunchedEffect per pointer update resets the velocity and stutters.
-    val targetRow = if (context.state.expanded && pressedIndex >= 0) {
-        interaction.previewRow
-    } else index.toFloat()
-    val rowPosition by animateFloatAsState(
-        targetValue = targetRow,
+    // Keep the accepted continuous position spring; never restart it per event.
+    val rowPosition = animateFloatAsState(
+        targetValue = if (context.state.expanded && pressedIndex >= 0) {
+            interaction.previewRow
+        } else index.toFloat(),
         animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
         label = "liquidRailIndicatorRow",
     )
+    val moving = pressedIndex >= 0
+    val velocityAnim = remember(interaction) { Animatable(0f, 5f) }
+    // Port LiquidDragMotion's displayed-position VelocityTracker and the
+    // same 0.5 / 300 velocity spring, without introducing a second pointer.
+    LaunchedEffect(interaction, context.state.expanded, moving) {
+        val expanded = context.state.expanded
+        val tracker = VelocityTracker()
+        val range = if (expanded) {
+            context.selection.items.lastIndex.toFloat()
+        } else {
+            (interaction.width - interaction.contentStart - interaction.endPadding)
+                .coerceAtLeast(0f)
+        }
+        if (moving) velocityAnim.snapTo(0f)
+        snapshotFlow {
+            if (expanded) rowPosition.value
+            else (interaction.left.value + interaction.right.value) / 2f
+        }.collect { position ->
+            tracker.addPosition(android.os.SystemClock.uptimeMillis(), Offset(position, 0f))
+            val target = if (range > 0f) tracker.calculateVelocity().x / range else 0f
+            if (kotlin.math.abs(velocityAnim.targetValue - target) > 0.001f) {
+                launch {
+                    velocityAnim.animateTo(
+                        target,
+                        spring(dampingRatio = 0.5f, stiffness = 300f, visibilityThreshold = 0.01f),
+                    )
+                }
+            }
+        }
+    }
     val base = colors.indicator
     // Keep the same visual lens during release. Portrait Liquid settles the
     // position before springing back the size; the actual page selection is
@@ -342,7 +376,7 @@ private fun RailLiquidIndicator(
         } else {
             if (context.state.expanded) {
                 val tolerance = (context.selection.items.size - 1) * 0.025f
-                snapshotFlow { rowPosition }
+                snapshotFlow { rowPosition.value }
                     .first { abs(it - selectedIndex.toFloat()) <= tolerance }
             } else {
                 val left = interaction.start(selectedIndex)
@@ -354,25 +388,13 @@ private fun RailLiquidIndicator(
             settlingPress = false
         }
     }
-    // Physical pointer owns the direction; the already displayed indicator
-    // position owns the deformation amount. No extra velocity spring is needed.
-    val motionLag = {
-        val direction = interaction.dragDirection
-        if (context.state.expanded) {
-            railRenderedMotion(direction, targetRow, rowPosition, 1f)
-        } else {
-            val targetCenter = (interaction.left.targetValue + interaction.right.targetValue) / 2f
-            val currentCenter = (interaction.left.value + interaction.right.value) / 2f
-            railRenderedMotion(direction, targetCenter, currentCenter, interaction.widths[index])
-        }
-    }
     NavigationRailIndicator(
         selection = RailIndicatorSelection(index, interaction, pressing || settlingPress),
         motion = RailIndicatorMotion(
             progress = { motion.rowProgress[index].value },
             scrollOffset = { context.scrollState.value },
             expandedItemWidth = geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2,
-            rowPosition = { rowPosition },
+            rowPosition = { rowPosition.value },
             outsideScrollViewport = true,
         ),
         appearance = GlassIndicatorAppearance(
@@ -380,7 +402,7 @@ private fun RailLiquidIndicator(
             pressedColor = base.pressedColor,
             scaleOnPress = base.scaleOnPress,
             liquidPaint = base.liquidPaint,
-            motionLag = motionLag,
+            motionVelocity = { velocityAnim.value },
             verticalMotion = context.state.expanded,
         ),
     )

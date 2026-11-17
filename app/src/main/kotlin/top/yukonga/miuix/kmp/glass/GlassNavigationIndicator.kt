@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.chaners.guiyuan.ui.components.liquid.liquidDirectionalLensTransform
+import com.chaners.guiyuan.ui.components.liquid.liquidVelocityScales
 import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 
 /**
@@ -43,7 +43,7 @@ internal class GlassIndicatorAppearance(
     val pressedColor: Color,
     val scaleOnPress: Boolean = true,
     val liquidPaint: (@Composable (Boolean) -> Modifier)? = null,
-    val motionLag: () -> Float = { 0f },
+    val motionVelocity: () -> Float = { 0f },
     val verticalMotion: Boolean = false,
 )
 
@@ -58,17 +58,25 @@ internal fun GlassNavigationIndicator(
     ),
 ) {
     val density = LocalDensity.current
+    val liquid = appearance.liquidPaint != null
+    // Preserve native Glass timing. Liquid uses portrait's independent X/Y
+    // press springs, with growth normalized to the wide pill's actual size.
     val scale by animateFloatAsState(
-        targetValue = when {
-            pressed && appearance.liquidPaint != null -> LiquidFeedbackSpec.PressedLensScale
-            pressed && appearance.scaleOnPress ->
-                glassPressScale(with(density) { height.toPx() }, density.density)
-            else -> 1f
-        },
-        animationSpec = if (appearance.liquidPaint != null) {
-            spring(dampingRatio = 0.7f, stiffness = 300f)
-        } else if (pressed) GlassMotion.pressDown() else GlassMotion.pressUp(),
+        targetValue = if (!liquid && pressed && appearance.scaleOnPress) {
+            glassPressScale(with(density) { height.toPx() }, density.density)
+        } else 1f,
+        animationSpec = if (pressed) GlassMotion.pressDown() else GlassMotion.pressUp(),
         label = "glassNavigationIndicatorPress",
+    )
+    val liquidX by animateFloatAsState(
+        targetValue = if (liquid && pressed) LiquidFeedbackSpec.PressedLensScale else 1f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 250f),
+        label = "liquidRailPressX",
+    )
+    val liquidY by animateFloatAsState(
+        targetValue = if (liquid && pressed) LiquidFeedbackSpec.PressedLensScale else 1f,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
+        label = "liquidRailPressY",
     )
     val fill = animateColorAsState(
         targetValue = if (pressed) appearance.pressedColor else appearance.color,
@@ -82,25 +90,22 @@ internal fun GlassNavigationIndicator(
                     // Portrait: a 56dp selection grows to 78dp on press.
                     // Keep physical growth, not width-proportional scaling,
                     // when the OS4 pill morphs from compact to a full row.
-                    val fraction = ((scale - 1f) /
-                        (LiquidFeedbackSpec.PressedLensScale - 1f)).coerceIn(0f, 1f)
-                    val optics = liquidDirectionalLensTransform(
-                        widthPx = size.width,
-                        heightPx = size.height,
-                        growthPx = 22.dp.toPx(),
-                        pressProgress = fraction,
-                        signedMotion = appearance.motionLag(),
-                        vertical = appearance.verticalMotion,
+                    val pressRange = LiquidFeedbackSpec.PressedLensScale - 1f
+                    val growth = 22.dp.toPx()
+                    val baseX = 1f + growth / size.width.coerceAtLeast(1f) *
+                        ((liquidX - 1f) / pressRange)
+                    val baseY = 1f + growth / size.height.coerceAtLeast(1f) *
+                        ((liquidY - 1f) / pressRange)
+                    val scales = liquidVelocityScales(
+                        baseX, baseY, appearance.motionVelocity(), appearance.verticalMotion,
                     )
-                    scaleX = optics.x
-                    scaleY = optics.y
-                    translationX = optics.translationX
-                    translationY = optics.translationY
+                    scaleX = scales.x
+                    scaleY = scales.y
+                    translationX = 0f
+                    translationY = 0f
                 } else {
                     scaleX = scale
                     scaleY = scale
-                    translationX = 0f
-                    translationY = 0f
                 }
             }
             .then(appearance.liquidPaint?.invoke(pressed) ?:

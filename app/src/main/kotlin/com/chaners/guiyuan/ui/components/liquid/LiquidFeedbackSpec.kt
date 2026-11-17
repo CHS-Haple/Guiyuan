@@ -15,51 +15,22 @@ internal fun liquidPanelPressScale(
 ): Float = 1f + growthPx * progress.coerceIn(0f, 1f) /
     maxOf(widthPx, heightPx).coerceAtLeast(1f)
 
-/** Symmetric press growth with directionally mirrored leading-edge extension. */
-internal data class LiquidLensTransform(
-    val x: Float,
-    val y: Float,
-    val translationX: Float,
-    val translationY: Float,
-)
+/** The portrait Liquid lens deformation law, rotated only for vertical rails. */
+internal data class LiquidLensScales(val x: Float, val y: Float)
 
-internal fun liquidDirectionalLensTransform(
-    widthPx: Float,
-    heightPx: Float,
-    growthPx: Float,
-    pressProgress: Float,
-    signedMotion: Float,
+internal fun liquidVelocityScales(
+    baseX: Float,
+    baseY: Float,
+    signedVelocity: Float,
     vertical: Boolean,
-): LiquidLensTransform {
-    val width = widthPx.coerceAtLeast(1f)
-    val height = heightPx.coerceAtLeast(1f)
-    val growth = growthPx.coerceAtLeast(0f) * pressProgress.coerceIn(0f, 1f)
-    val baseX = 1f + growth / width
-    val baseY = 1f + growth / height
-    // Both physical directions extend equally. Only the leading edge changes.
-    val motion = kotlin.math.abs(signedMotion.coerceIn(-0.5f, 0.5f))
-    val stretch = 1f + 0.65f * motion
-    val squeeze = 1f - 0.18f * motion
-    val direction = when {
-        signedMotion > 0f -> 1f
-        signedMotion < 0f -> -1f
-        else -> 0f
-    }
-    // With centered transforms, half the added length offsets the layer so
-    // the rear edge stays anchored in the pressed lens's original position.
+): LiquidLensScales {
+    // Exactly the coefficients used by LiquidNavBar's original layerBlock.
+    val velocity = signedVelocity / 10f
+    val along = (velocity * 0.75f).coerceIn(-0.2f, 0.2f)
+    val across = (velocity * 0.25f).coerceIn(-0.2f, 0.2f)
     return if (vertical) {
-        LiquidLensTransform(
-            x = baseX * squeeze,
-            y = baseY * stretch,
-            translationX = 0f,
-            translationY = direction * height * baseY * (stretch - 1f) / 2f,
-        )
+        LiquidLensScales(baseX * (1f - across), baseY / (1f - along))
     } else {
-        LiquidLensTransform(
-            x = baseX * stretch,
-            y = baseY * squeeze,
-            translationX = direction * width * baseX * (stretch - 1f) / 2f,
-            translationY = 0f,
-        )
+        LiquidLensScales(baseX / (1f - along), baseY * (1f - across))
     }
 }
