@@ -242,10 +242,16 @@ private fun RailNavigationWindow(
             target = if (expanded) expandedHeight else collapsedHeight,
             expanded = expanded,
         ) { expanding -> railHeightMotion(expanding, expandedHeight - collapsedHeight) }
-        val panelStart = rememberRailMotion(
-            target = if (expanded) GlassNavigationRailDefaults.Margin else collapsedStart,
-            expanded = expanded,
-        ) { expanding -> if (expanding) RailMorphDpMotion else RailReboundMotion }
+        // Liquid's surface width is already driven by state.progress. Moving its
+        // whole capsule on a separate rebound spring makes a collapsing panel
+        // shrink at the left before it arrives at the centred bar destination.
+        // Keep the upstream Glass spring; Liquid shares the single morph clock.
+        val nativePanelStart = if (request.materialOverride == null) {
+            rememberRailMotion(
+                target = if (expanded) GlassNavigationRailDefaults.Margin else collapsedStart,
+                expanded = expanded,
+            ) { expanding -> if (expanding) RailMorphDpMotion else RailReboundMotion }
+        } else null
         RailWindowPanel(
             request = request,
             placement = RailPlacement(
@@ -257,7 +263,13 @@ private fun RailNavigationWindow(
                         GlassNavigationRailDefaults.CollapsedTop, expandedTop),
                 ),
                 motion = RailPanelMotion(animation.rows, { animation.iconAlpha.value },
-                    { panelStart.value }, { panelHeight.value }),
+                    {
+                        nativePanelStart?.value ?: railLiquidPanelStart(
+                            collapsedStart,
+                            GlassNavigationRailDefaults.Margin,
+                            request.state.progress,
+                        )
+                    }, { panelHeight.value }),
             ),
         )
     }
@@ -345,6 +357,10 @@ internal fun railCapsuleGeometry(
     }
     return RailCapsuleGeometry(contentStart, capsuleWidth, widthRatio)
 }
+
+/** The Liquid panel's physical X follows its width's morph clock in both directions. */
+internal fun railLiquidPanelStart(collapsed: Dp, expanded: Dp, progress: Float): Dp =
+    lerp(collapsed, expanded, progress.coerceIn(0f, 1f))
 
 /** A corner that eases from the capsule's half-height to the panel's radius as [progress] rises. */
 @Stable

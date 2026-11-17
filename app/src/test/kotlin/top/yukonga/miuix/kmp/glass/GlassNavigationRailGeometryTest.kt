@@ -30,6 +30,28 @@ class GlassNavigationRailGeometryTest {
         assertEquals(1f, railCapsuleGeometry(600.dp, emptyList(), false).widthRatio, 0.001f)
     }
 
+    @Test fun liquidPanelMovesMonotonicallyAlongTheSameMorphAsItsWidth() {
+        val collapsed = 450.dp
+        val expanded = GlassNavigationRailDefaults.Margin
+        assertEquals(collapsed, railLiquidPanelStart(collapsed, expanded, 0f))
+        assertEquals(expanded, railLiquidPanelStart(collapsed, expanded, 1f))
+        assertEquals(231.dp, railLiquidPanelStart(collapsed, expanded, 0.5f))
+        // Expanded -> collapsed moves toward the screen centre on every frame,
+        // never rebounds toward the left while the width is shrinking.
+        assertTrue(railLiquidPanelStart(collapsed, expanded, 0.75f) <
+            railLiquidPanelStart(collapsed, expanded, 0.5f))
+        assertTrue(railLiquidPanelStart(collapsed, expanded, 0.25f) >
+            railLiquidPanelStart(collapsed, expanded, 0.5f))
+    }
+
+    @Test fun liquidPanelClampsMorphWhenUpdatedDuringResizeOrInterruptedTransition() {
+        val collapsed = 490.dp
+        val expanded = GlassNavigationRailDefaults.Margin
+        assertEquals(collapsed, railLiquidPanelStart(collapsed, expanded, -0.05f))
+        assertEquals(expanded, railLiquidPanelStart(collapsed, expanded, 1.05f))
+        assertEquals(590.dp, railLiquidPanelStart(590.dp, expanded, 0f))
+    }
+
     @Test fun resizingWideWindowKeepsContentOriginAndShrinksSlots() {
         val widths = listOf(100.dp, 100.dp, 100.dp)
         val roomy = railCapsuleGeometry(1200.dp, widths, true)
