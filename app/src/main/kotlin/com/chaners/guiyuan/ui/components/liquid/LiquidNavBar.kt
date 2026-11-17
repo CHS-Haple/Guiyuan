@@ -3,7 +3,7 @@ package com.chaners.guiyuan.ui.components.liquid
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,8 +48,17 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -513,6 +522,7 @@ private val LocalLiquidItemScale =
 @Composable
 internal fun RowScope.LiquidNavItem(
     onClick: () -> Unit,
+    selected: Boolean,
     interactive: Boolean = true,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
@@ -524,12 +534,29 @@ internal fun RowScope.LiquidNavItem(
                 .clip(CircleShape)
                 .then(
                     if (interactive) {
-                        Modifier.clickable(
-                            interactionSource = null,
-                            indication = null,
-                            role = Role.Tab,
-                            onClick = onClick,
-                        )
+                        // The upstream row gesture owns taps. Items expose semantic/keyboard
+                        // activation only, avoiding duplicate callbacks from child clickable.
+                        Modifier
+                            .semantics(mergeDescendants = true) {
+                                role = Role.Tab
+                                this.selected = selected
+                                onClick {
+                                    onClick()
+                                    true
+                                }
+                            }
+                            .onKeyEvent { event ->
+                                val activate = event.key == Key.Enter ||
+                                    event.key == Key.NumPadEnter ||
+                                    event.key == Key.Spacebar
+                                if (activate) {
+                                    if (event.type == KeyEventType.KeyUp) onClick()
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+                            .focusable()
                     } else {
                         Modifier.clearAndSetSemantics {}
                     },
@@ -550,12 +577,13 @@ internal fun RowScope.LiquidNavItem(
 @Composable
 internal fun RowScope.LiquidNavEntry(
     contentMode: NavContent,
+    selected: Boolean,
     onClick: () -> Unit,
     icon: ImageVector,
     label: String,
     interactive: Boolean = true,
 ) {
-    LiquidNavItem(onClick = onClick, interactive = interactive) {
+    LiquidNavItem(onClick = onClick, selected = selected, interactive = interactive) {
         Icon(
             imageVector = icon,
             contentDescription =
