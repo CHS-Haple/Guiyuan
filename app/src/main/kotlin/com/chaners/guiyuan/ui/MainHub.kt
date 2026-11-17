@@ -6,13 +6,22 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.captionBar
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
@@ -38,7 +47,10 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -86,6 +98,10 @@ import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.NavigationBarDisplayMode
+import top.yukonga.miuix.kmp.basic.NavigationRail
+import top.yukonga.miuix.kmp.basic.NavigationRailDefaults
+import top.yukonga.miuix.kmp.basic.NavigationRailItem
+import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
@@ -110,6 +126,15 @@ import top.yukonga.miuix.kmp.utils.pagerGestureOverride
 import top.yukonga.miuix.kmp.utils.springAnimateToPage
 
 private const val TopLevelPageCount = 3
+
+/** Expanded native rail + a usable page, with both system edges reserved. */
+internal fun canPlaceNativeRail(
+    window: DpSize,
+    startInset: Dp,
+    endInset: Dp,
+    verticalInsets: Dp,
+): Boolean = window.width >= NavigationRailDefaults.ExpandedWidth + startInset + endInset + 360.dp &&
+    window.height >= verticalInsets + 320.dp
 
 /**
  * Follows MIUIX's main-pager example: commit a destination before page motion begins.
@@ -249,6 +274,20 @@ internal fun MainHub(
             null
         }
     val navBackdrop = miuixBackdrop.takeIf { miuixMaterialActive }
+    val safeInsets = WindowInsets.systemBars
+        .union(WindowInsets.captionBar)
+        .union(WindowInsets.displayCutout)
+        .asPaddingValues()
+    val direction = LocalLayoutDirection.current
+    val useNativeRail = appearance.navEnabled &&
+        (appearance.navStyle == NavStyle.Standard || (os4Glass && navBackdrop == null)) &&
+        canPlaceNativeRail(
+            window = LocalWindowInfo.current.containerDpSize,
+            startInset = safeInsets.calculateStartPadding(direction),
+            endInset = safeInsets.calculateEndPadding(direction),
+            verticalInsets = safeInsets.calculateTopPadding() + safeInsets.calculateBottomPadding(),
+        )
+    val nativeRailState = rememberNavigationRailState()
     val liquidBackdrop =
         if (liquidMaterialActive) {
             rememberLiquidNavBackdrop(surfaceColor)
@@ -289,7 +328,7 @@ internal fun MainHub(
         // This Scaffold owns the bottom bar, so it must also position the snackbar.
         snackbarHost = { SnackbarHost(state = featureSnackbarState) },
         bottomBar = {
-            when {
+            if (!useNativeRail) when {
                 os4Glass && navBackdrop != null -> {
                     val selectedPage = pageSelection.selectedPage
                     val includeLabels = appearance.activeNavContent == NavContent.IconAndText
@@ -470,7 +509,8 @@ internal fun MainHub(
                         },
                     ),
         ) {
-            TopLevelPager(
+            val pagerContent: @Composable () -> Unit = {
+                TopLevelPager(
                 pagerState = pagerState,
                 bottomPadding = innerPadding,
                 featureSnackbarState = featureSnackbarState,
@@ -509,7 +549,30 @@ internal fun MainHub(
                 onSwipeBackChange = onSwipeBackChange,
                 previewState = previewState,
                 onNavigate = onNavigate,
-            )
+                )
+            }
+            if (useNativeRail) {
+                Row(modifier = Modifier.fillMaxSize()) {
+                    NavigationRail(
+                        state = nativeRailState,
+                        modifier = Modifier.fillMaxHeight(),
+                    ) {
+                        items.forEachIndexed { index, item ->
+                            NavigationRailItem(
+                                selected = pageSelection.selectedPage == index,
+                                onClick = { selectPage(index) },
+                                icon = item.icon,
+                                label = item.label,
+                            )
+                        }
+                    }
+                    Box(Modifier.weight(1f).fillMaxSize()) {
+                        pagerContent()
+                    }
+                }
+            } else {
+                pagerContent()
+            }
         }
 
         // Popups are hosted outside this page's backdrop recording.
