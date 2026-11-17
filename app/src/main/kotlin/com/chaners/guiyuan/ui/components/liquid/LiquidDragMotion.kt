@@ -23,9 +23,12 @@ internal class LiquidDragMotion(
     initialValue: Float,
     private val range: ClosedRange<Float>,
     visibilityThreshold: Float,
-    initialScale: Float,
+    private val initialScale: Float,
     private val pressedScale: Float,
+    private val canDrag: (Offset) -> Boolean,
+    private val onStarted: LiquidDragMotion.(Offset) -> Unit,
     private val onStopped: LiquidDragMotion.() -> Unit,
+    private val onCancelled: LiquidDragMotion.() -> Unit,
     private val onDrag: LiquidDragMotion.(IntSize, Offset) -> Unit,
 ) {
     private val valueSpec = spring(1f, 1000f, visibilityThreshold)
@@ -54,7 +57,8 @@ internal class LiquidDragMotion(
     val modifier: Modifier =
         Modifier.pointerInput(Unit) {
             inspectLiquidDrag(
-                onStart = {
+                onStart = { down ->
+                    onStarted(down.position)
                     press()
                 },
                 onEnd = {
@@ -62,11 +66,13 @@ internal class LiquidDragMotion(
                     release()
                 },
                 onCancel = {
-                    onStopped()
+                    onCancelled()
                     release()
                 },
-            ) { _, dragAmount ->
-                onDrag(size, dragAmount)
+            ) { change, dragAmount ->
+                if (canDrag(change.position) && canDrag(change.previousPosition)) {
+                    onDrag(size, dragAmount)
+                }
             }
         }
 
@@ -92,8 +98,8 @@ internal class LiquidDragMotion(
                     .first()
             }
             launch { pressAnim.animateTo(0f, pressSpec) }
-            launch { scaleXAnim.animateTo(1f, scaleXSpec) }
-            launch { scaleYAnim.animateTo(1f, scaleYSpec) }
+            launch { scaleXAnim.animateTo(initialScale, scaleXSpec) }
+            launch { scaleYAnim.animateTo(initialScale, scaleYSpec) }
         }
     }
 
