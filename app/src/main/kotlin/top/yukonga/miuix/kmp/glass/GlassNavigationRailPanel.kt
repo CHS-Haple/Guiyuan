@@ -21,6 +21,8 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -59,6 +61,8 @@ import top.yukonga.miuix.kmp.material.GlassShadow
 import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlinx.coroutines.flow.first
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /** Single selected-page owner and the interaction contract, independent of surface animation. */
@@ -324,6 +328,29 @@ private fun RailLiquidIndicator(
         label = "liquidRailIndicatorRow",
     )
     val base = colors.indicator
+    // Keep the same visual lens during release. Portrait Liquid settles the
+    // position before springing back the size; the actual page selection is
+    // already committed by HubPagerSelection, not by this optical release.
+    var settlingPress by remember(interaction) { mutableStateOf(false) }
+    val pressing = pressedIndex >= 0
+    LaunchedEffect(interaction, pressing, selectedIndex, context.state.expanded) {
+        if (pressing) {
+            settlingPress = true
+        } else {
+            if (context.state.expanded) {
+                val tolerance = (context.selection.items.size - 1) * 0.025f
+                snapshotFlow { rowPosition }
+                    .first { abs(it - selectedIndex.toFloat()) <= tolerance }
+            } else {
+                val left = interaction.start(selectedIndex)
+                val right = interaction.start(selectedIndex + 1)
+                val tolerance = (interaction.width * 0.025f).coerceAtLeast(1f)
+                snapshotFlow { interaction.left.value to interaction.right.value }
+                    .first { (x, y) -> abs(x - left) <= tolerance && abs(y - right) <= tolerance }
+            }
+            settlingPress = false
+        }
+    }
     // Portrait Liquid eases velocity deformation back to rest; do not snap the
     // lens proportions when pointer state releases or cancels.
     val stretch by animateFloatAsState(
@@ -332,7 +359,7 @@ private fun RailLiquidIndicator(
         label = "liquidRailDragSettle",
     )
     NavigationRailIndicator(
-        selection = RailIndicatorSelection(index, interaction, pressedIndex >= 0),
+        selection = RailIndicatorSelection(index, interaction, pressing || settlingPress),
         motion = RailIndicatorMotion(
             progress = { motion.rowProgress[index].value },
             scrollOffset = { context.scrollState.value },
