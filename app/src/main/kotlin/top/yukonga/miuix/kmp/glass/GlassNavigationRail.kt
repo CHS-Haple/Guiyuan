@@ -360,7 +360,7 @@ internal fun railCapsuleGeometry(
 
 /** The Liquid panel's physical X follows its width's morph clock in both directions. */
 internal fun railLiquidPanelStart(collapsed: Dp, expanded: Dp, progress: Float): Dp =
-    lerp(collapsed, expanded, progress.coerceIn(0f, 1f))
+    collapsed + (expanded - collapsed) * progress.coerceIn(0f, 1f)
 
 /** A corner that eases from the capsule's half-height to the panel's radius as [progress] rises. */
 @Stable
