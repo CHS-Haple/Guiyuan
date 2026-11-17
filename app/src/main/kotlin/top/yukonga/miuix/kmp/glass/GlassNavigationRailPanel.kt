@@ -344,8 +344,11 @@ private fun RailLiquidIndicator(
         val range = if (expanded) {
             context.selection.items.lastIndex.toFloat()
         } else {
-            (interaction.width - interaction.contentStart - interaction.endPadding)
-                .coerceAtLeast(0f)
+            // Portrait normalizes by the full first-to-last destination travel,
+            // not the entire pill including half a tab at each outer edge.
+            val widths = interaction.widths
+            widths.sum() - (widths.firstOrNull() ?: 0f) / 2f -
+                (widths.lastOrNull() ?: 0f) / 2f
         }
         if (moving) velocityAnim.snapTo(0f)
         snapshotFlow {
