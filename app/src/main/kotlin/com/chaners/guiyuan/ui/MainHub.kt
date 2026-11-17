@@ -9,6 +9,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.captionBar
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,13 +39,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.Modifier
@@ -46,6 +57,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
@@ -81,6 +93,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.job
 import top.yukonga.miuix.kmp.glass.GlassNavigationBar
+import top.yukonga.miuix.kmp.glass.GlassNavigationRail
+import top.yukonga.miuix.kmp.glass.GlassRailDestinations
+import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
+import top.yukonga.miuix.kmp.glass.rememberGlassNavigationRailState
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
@@ -108,8 +124,25 @@ import top.yukonga.miuix.kmp.utils.PagerGestureNestedScrollConnection
 import top.yukonga.miuix.kmp.utils.PagerNavigationSpringSpec
 import top.yukonga.miuix.kmp.utils.pagerGestureOverride
 import top.yukonga.miuix.kmp.utils.springAnimateToPage
+import kotlin.math.roundToInt
 
 private const val TopLevelPageCount = 3
+
+/** Read the shared rail morph in drawing/layout; non-rail routes remain fully visible. */
+internal val LocalGlassRailProgress = staticCompositionLocalOf<() -> Float> { { 1f } }
+
+/** Keep a full-width page beside the upstream expanded rail; insets are relative to logical start. */
+internal fun canPlaceGlassRail(
+    windowSize: androidx.compose.ui.unit.DpSize,
+    startInset: androidx.compose.ui.unit.Dp,
+    endInset: androidx.compose.ui.unit.Dp,
+    verticalInsets: androidx.compose.ui.unit.Dp,
+): Boolean {
+    val occupiedWidth = GlassNavigationRailDefaults.ExpandedWidth +
+        GlassNavigationRailDefaults.Margin * 2 + startInset
+    return windowSize.width >= occupiedWidth + endInset + 360.dp &&
+        windowSize.height >= verticalInsets + 320.dp
+}
 
 /**
  * Follows MIUIX's main-pager example: commit a destination before page motion begins.
@@ -249,6 +282,23 @@ internal fun MainHub(
             null
         }
     val navBackdrop = miuixBackdrop.takeIf { miuixMaterialActive }
+    // Reserve the rail's physical panel width and margins plus a usable phone-width page.
+    // Use the actual window, not orientation or device classification, for foldable/split-screen.
+    val railSafePadding = WindowInsets.systemBars
+        .union(WindowInsets.captionBar)
+        .union(WindowInsets.displayCutout)
+        .asPaddingValues()
+    val railStartInset = railSafePadding.calculateStartPadding(LocalLayoutDirection.current)
+    val railEndInset = railSafePadding.calculateEndPadding(LocalLayoutDirection.current)
+    val railVerticalInsets = railSafePadding.calculateTopPadding() + railSafePadding.calculateBottomPadding()
+    val railContentWidth = GlassNavigationRailDefaults.ExpandedWidth +
+        GlassNavigationRailDefaults.Margin * 2 + railStartInset
+    val useGlassRail = os4Glass && navBackdrop != null &&
+        canPlaceGlassRail(LocalWindowInfo.current.containerDpSize, railStartInset, railEndInset, railVerticalInsets)
+    val railState = rememberGlassNavigationRailState()
+    val railProgress = remember(useGlassRail, railState) {
+        { if (useGlassRail) railState.progress else 1f }
+    }
     val liquidBackdrop =
         if (liquidMaterialActive) {
             rememberLiquidNavBackdrop(surfaceColor)
@@ -290,6 +340,7 @@ internal fun MainHub(
         snackbarHost = { SnackbarHost(state = featureSnackbarState) },
         bottomBar = {
             when {
+                useGlassRail -> Unit
                 os4Glass && navBackdrop != null -> {
                     val selectedPage = pageSelection.selectedPage
                     val includeLabels = appearance.activeNavContent == NavContent.IconAndText
@@ -451,6 +502,8 @@ internal fun MainHub(
             }
         },
     ) { innerPadding ->
+        // The native MIUIX rail must be outside the page's recorded blur backdrop.
+        Box(Modifier.fillMaxSize()) {
         Box(
             modifier =
                 Modifier
@@ -470,6 +523,23 @@ internal fun MainHub(
                         },
                     ),
         ) {
+            Box(
+                modifier = Modifier.fillMaxSize().then(
+                    if (useGlassRail) {
+                        Modifier.layout { measurable, constraints ->
+                            val start = (railContentWidth.toPx() * railState.progress)
+                                .roundToInt().coerceIn(0, constraints.maxWidth)
+                            val page = measurable.measure(constraints.offset(horizontal = -start))
+                            layout(constraints.maxWidth, page.height) {
+                                page.placeRelative(start, 0)
+                            }
+                        }
+                    } else {
+                        Modifier
+                    },
+                ),
+            ) {
+            CompositionLocalProvider(LocalGlassRailProgress provides railProgress) {
             TopLevelPager(
                 pagerState = pagerState,
                 bottomPadding = innerPadding,
@@ -510,6 +580,32 @@ internal fun MainHub(
                 previewState = previewState,
                 onNavigate = onNavigate,
             )
+            }
+            }
+        }
+        if (useGlassRail) {
+            // Wide rails use labeled destinations, independent of compact bottom-bar preference.
+            val railItems = remember(items) {
+                items.map { item ->
+                    GlassNavigationItem(
+                        icon = item.icon,
+                        label = item.label,
+                        contentDescription = item.label,
+                    )
+                }
+            }
+            GlassNavigationRail(
+                destinations = GlassRailDestinations(
+                    items = railItems,
+                    selectedIndex = pageSelection.selectedPage,
+                    onSelect = ::selectPage,
+                ),
+                backdrop = navBackdrop,
+                state = railState,
+                showToggle = true,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
         }
 
         // Popups are hosted outside this page's backdrop recording.
