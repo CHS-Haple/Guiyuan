@@ -12,6 +12,15 @@ class LiquidRailGestureTest {
         assertEquals(RailGestureDecision.Pending, liquidRailGestureDecision(3f, 4f, 8f, false))
     }
 
+    @Test fun physicalDirectionMatchesBothAxesAndReturnsToRest() {
+        assertEquals(0.125f, liquidDragFraction(10f, 80f), 0.0001f)
+        assertEquals(-0.125f, liquidDragFraction(-10f, 80f), 0.0001f)
+        assertEquals(0.25f, liquidDragFraction(500f, 80f), 0.0001f)
+        assertEquals(-0.25f, liquidDragFraction(-500f, 80f), 0.0001f)
+        assertEquals(0f, liquidDragFraction(0f, 80f), 0.0001f)
+        assertEquals(0f, liquidDragFraction(0f, 0f), 0.0001f)
+    }
+
     @Test fun rowPreviewContinuouslyInterpolatesAndClamps() {
         val centres = listOf(50f, 130f, 210f)
         assertEquals(0f, liquidRailPreviewAt(10f, centres), 0.001f)
