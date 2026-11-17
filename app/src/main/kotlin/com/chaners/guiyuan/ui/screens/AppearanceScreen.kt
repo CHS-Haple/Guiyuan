@@ -522,6 +522,7 @@ internal fun MiniNavigationPreview(
                         labels.indices.forEach { index ->
                             LiquidNavEntry(
                                 contentMode = content,
+                                selected = index == 2,
                                 onClick = {},
                                 icon = icons[index],
                                 label = labels[index],

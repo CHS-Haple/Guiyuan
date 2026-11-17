@@ -3,7 +3,8 @@ package com.chaners.guiyuan.ui.components.liquid
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,8 +49,17 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -70,7 +80,6 @@ import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.material.drawEdgeStroke
 import top.yukonga.miuix.kmp.material.sensor.rememberDeviceTilt
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -255,12 +264,11 @@ internal fun LiquidNavBar(
         val ltr = LocalLayoutDirection.current == LayoutDirection.Ltr
         val currentLtr = rememberUpdatedState(ltr)
         val scope = rememberCoroutineScope()
-        var currentIndex by remember(selectedIndex) {
-            mutableIntStateOf(selectedIndex())
-        }
+        var currentIndex by remember { mutableIntStateOf(selectedIndex()) }
+        val onSelectedUpdated by rememberUpdatedState(onSelected)
         val motion =
             // The tab count owns the animation range; dimensions remain live.
-            remember(scope, tabsCount) {
+            remember(scope, tabsCount, density) {
                 LiquidDragMotion(
                     scope = scope,
                     initialValue = selectedIndex().toFloat(),
@@ -268,50 +276,56 @@ internal fun LiquidNavBar(
                     visibilityThreshold = 0.001f,
                     initialScale = 1f,
                     pressedScale = 78f / 56f,
-                    onStopped = {
-                        val target =
-                            targetValue
-                                .fastRoundToInt()
-                                .fastCoerceIn(0, tabsCount - 1)
-                        if (currentIndex == target) {
-                            // A drag may stop between tabs without changing the selected index.
-                            animateToValue(target.toFloat())
-                        } else {
-                            currentIndex = target
-                        }
-                        scope.launch {
-                            offsetAnim.animateTo(
-                                0f,
-                                spring(1f, 300f, 0.5f),
+                    canDrag = { position -> position.x in 0f..widthPx.value.toFloat() },
+                    onStarted = { position ->
+                        val tabWidth = tabWidthPx.value
+                        if (tabWidth > 0f) {
+                            val logicalX = if (currentLtr.value) position.x else widthPx.value.toFloat() - position.x
+                            val paddingPx = with(density) { 4.dp.toPx() }
+                            updateValue(
+                                ((logicalX - paddingPx) / tabWidth)
+                                    .toInt().coerceIn(0, tabsCount - 1).toFloat(),
                             )
                         }
                     },
+                    onStopped = {
+                        val target = targetValue.fastRoundToInt().fastCoerceIn(0, tabsCount - 1)
+                        if (currentIndex != target) {
+                            currentIndex = target
+                            onSelectedUpdated(target)
+                        }
+                        updateValue(target.toFloat())
+                        scope.launch { offsetAnim.animateTo(0f, spring(1f, 300f, 0.5f)) }
+                    },
+                    onCancelled = {
+                        // A cancelled pointer sequence must not commit a different page.
+                        updateValue(currentIndex.toFloat())
+                        scope.launch { offsetAnim.animateTo(0f, spring(1f, 300f, 0.5f)) }
+                    },
                     onDrag = { _, dragAmount ->
-                        updateValue(
-                            (
-                                targetValue +
-                                    dragAmount.x / tabWidthPx.value * if (currentLtr.value) 1f else -1f
-                            ).fastCoerceIn(0f, (tabsCount - 1).toFloat()),
-                        )
-                        scope.launch {
-                            offsetAnim.snapTo(offsetAnim.value + dragAmount.x)
+                        val tabWidth = tabWidthPx.value
+                        if (tabWidth > 0f && dragAmount.x != 0f) {
+                            updateValue(
+                                (targetValue + dragAmount.x / tabWidth *
+                                    if (currentLtr.value) 1f else -1f)
+                                    .fastCoerceIn(0f, (tabsCount - 1).toFloat()),
+                            )
+                            scope.launch { offsetAnim.snapTo(offsetAnim.value + dragAmount.x) }
                         }
                     },
                 )
             }
 
-        LaunchedEffect(selectedIndex) {
+        // Pager selection is authoritative. Mirror external page changes into Liquid's motion
+        // without emitting the same selection event back to HubPagerSelection.
+        LaunchedEffect(selectedIndex, motion) {
             snapshotFlow { selectedIndex() }
                 .collectLatest { index ->
-                    currentIndex = index.fastCoerceIn(0, tabsCount - 1)
-                }
-        }
-        LaunchedEffect(motion) {
-            snapshotFlow { currentIndex }
-                .drop(1)
-                .collectLatest { index ->
-                    motion.animateToValue(index.toFloat())
-                    onSelected(index)
+                    val target = index.fastCoerceIn(0, tabsCount - 1)
+                    if (currentIndex != target) {
+                        currentIndex = target
+                        motion.animateToValue(target.toFloat())
+                    }
                 }
         }
 
@@ -338,6 +352,7 @@ internal fun LiquidNavBar(
         Row(
             modifier =
                 Modifier
+                    .selectableGroup()
                     .graphicsLayer {
                         translationX = panelOffset
                     }
@@ -381,6 +396,9 @@ internal fun LiquidNavBar(
                         },
                     )
                     .then(highlight.modifier)
+                    // The upstream gesture surface is the entire bar, not the moving selected pill.
+                    .then(if (interactive) highlight.gestureModifier else Modifier)
+                    .then(if (interactive) motion.modifier else Modifier)
                     .height(LiquidNavSpec.height)
                     .fillMaxWidth()
                     .padding(4.dp),
@@ -440,8 +458,6 @@ internal fun LiquidNavBar(
                                     panelOffset
                             }
                     }
-                    .then(if (interactive) highlight.gestureModifier else Modifier)
-                    .then(if (interactive) motion.modifier else Modifier)
                     .drawBackdrop(
                         backdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop),
                         shape = { pillShape },
@@ -508,6 +524,7 @@ private val LocalLiquidItemScale =
 @Composable
 internal fun RowScope.LiquidNavItem(
     onClick: () -> Unit,
+    selected: Boolean,
     interactive: Boolean = true,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
@@ -519,12 +536,29 @@ internal fun RowScope.LiquidNavItem(
                 .clip(CircleShape)
                 .then(
                     if (interactive) {
-                        Modifier.clickable(
-                            interactionSource = null,
-                            indication = null,
-                            role = Role.Tab,
-                            onClick = onClick,
-                        )
+                        // The upstream row gesture owns taps. Items expose semantic/keyboard
+                        // activation only, avoiding duplicate callbacks from child clickable.
+                        Modifier
+                            .semantics(mergeDescendants = true) {
+                                role = Role.Tab
+                                this.selected = selected
+                                onClick {
+                                    onClick()
+                                    true
+                                }
+                            }
+                            .onKeyEvent { event ->
+                                val activate = event.key == Key.Enter ||
+                                    event.key == Key.NumPadEnter ||
+                                    event.key == Key.Spacebar
+                                if (activate) {
+                                    if (event.type == KeyEventType.KeyUp) onClick()
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+                            .focusable()
                     } else {
                         Modifier.clearAndSetSemantics {}
                     },
@@ -545,12 +579,13 @@ internal fun RowScope.LiquidNavItem(
 @Composable
 internal fun RowScope.LiquidNavEntry(
     contentMode: NavContent,
+    selected: Boolean,
     onClick: () -> Unit,
     icon: ImageVector,
     label: String,
     interactive: Boolean = true,
 ) {
-    LiquidNavItem(onClick = onClick, interactive = interactive) {
+    LiquidNavItem(onClick = onClick, selected = selected, interactive = interactive) {
         Icon(
             imageVector = icon,
             contentDescription =

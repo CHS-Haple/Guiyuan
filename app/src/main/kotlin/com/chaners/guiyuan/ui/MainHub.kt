@@ -491,6 +491,7 @@ internal fun MainHub(
                             items.forEachIndexed { index, item ->
                                 LiquidNavEntry(
                                     contentMode = appearance.activeNavContent,
+                                    selected = pageSelection.selectedPage == index,
                                     onClick = { selectPage(index) },
                                     icon = item.icon,
                                     label = item.label,
