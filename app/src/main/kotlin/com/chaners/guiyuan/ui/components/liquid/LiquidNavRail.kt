@@ -1,8 +1,5 @@
 package com.chaners.guiyuan.ui.components.liquid
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.EaseOut
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,40 +16,29 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastCoerceIn
-import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.lerp
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.UiStyle
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -64,8 +50,6 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.material.drawEdgeStroke
 import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.math.abs
-import kotlin.math.sign
 
 /** One Liquid material/gesture source; only compact vs spacious layout follows the UI style. */
 internal object LiquidRailSpec {
@@ -108,33 +92,6 @@ internal fun canPlaceLiquidRail(
         window.height >= minimumHeight + safe.vertical
 }
 
-/** Map a pointer to the interval between destination centres, retaining partial drags. */
-internal fun liquidRailPointerTarget(
-    y: Float,
-    itemHeight: Float,
-    inset: Float,
-    count: Int,
-): Float {
-    if (count <= 0 || itemHeight <= 0f) return 0f
-    return ((y - inset) / itemHeight - 0.5f).fastCoerceIn(0f, (count - 1).toFloat())
-}
-
-/**
- * Vertical Liquid layout adapted from the accepted horizontal B1842 optics.
- *
- * This is Guiyuan-owned geometry (MIUIX has no published LiquidNavigationRail).
- * It deliberately reuses LiquidDragMotion, LiquidHighlight, theme color, tilt,
- * lens/edge stroke and the recorded background, not OS4 Glass material.
- */
-private data class RailGesture(
-    val motion: LiquidDragMotion,
-    val bounceOffset: State<Float>,
-    val selectedIndex: State<Int>,
-    val highlight: LiquidHighlight,
-    val itemHeightPx: Float,
-    val onSelect: (Int) -> Unit,
-)
-
 private data class RailPaint(
     val backdrop: Backdrop,
     val tabsBackdrop: LayerBackdrop,
@@ -149,79 +106,6 @@ private data class RailPaint(
 )
 
 /** Pointer position, selected-page mirroring and bounce form one gesture owner. */
-@Composable
-private fun rememberRailGesture(
-    selectedIndex: () -> Int,
-    onSelected: (Int) -> Unit,
-    count: Int,
-): RailGesture {
-    val density = LocalDensity.current
-    val itemHeightPx = with(density) { LiquidRailSpec.ItemHeight.toPx() }
-    val railHeightPx = with(density) { LiquidRailSpec.height(count).toPx() }
-    val insetPx = with(density) { 4.dp.toPx() }
-    val scope = rememberCoroutineScope()
-    val currentIndex = remember(count) {
-        mutableIntStateOf(selectedIndex().coerceIn(0, count - 1))
-    }
-    val onSelectedUpdated by rememberUpdatedState(onSelected)
-    val bounce = remember { Animatable(0f) }
-    val bounceOffset = remember(railHeightPx, insetPx) {
-        derivedStateOf {
-            val fraction = (bounce.value / railHeightPx).fastCoerceIn(-1f, 1f)
-            insetPx * fraction.sign * EaseOut.transform(abs(fraction))
-        }
-    }
-    val motion = remember(scope, count, itemHeightPx) {
-        LiquidDragMotion(
-            scope = scope,
-            initialValue = selectedIndex().toFloat(),
-            range = 0f..(count - 1).toFloat(),
-            visibilityThreshold = 0.001f,
-            initialScale = 1f,
-            pressedScale = 78f / 56f,
-            canDrag = { position -> position.y in 0f..railHeightPx },
-            onStarted = { position ->
-                updateValue(liquidRailPointerTarget(position.y, itemHeightPx, insetPx, count))
-            },
-            onStopped = {
-                val target = targetValue.fastRoundToInt().fastCoerceIn(0, count - 1)
-                if (currentIndex.intValue != target) {
-                    currentIndex.intValue = target
-                    onSelectedUpdated(target)
-                }
-                updateValue(target.toFloat())
-                scope.launch { bounce.animateTo(0f, spring(1f, 300f, 0.5f)) }
-            },
-            onCancelled = {
-                updateValue(currentIndex.intValue.toFloat())
-                scope.launch { bounce.animateTo(0f, spring(1f, 300f, 0.5f)) }
-            },
-            onDrag = { _, delta ->
-                if (delta.y != 0f) {
-                    updateValue((targetValue + delta.y / itemHeightPx)
-                        .fastCoerceIn(0f, (count - 1).toFloat()))
-                    scope.launch { bounce.snapTo(bounce.value + delta.y) }
-                }
-            },
-        )
-    }
-    LaunchedEffect(selectedIndex, motion) {
-        snapshotFlow { selectedIndex() }.collectLatest { index ->
-            val target = index.coerceIn(0, count - 1)
-            if (currentIndex.intValue != target) {
-                currentIndex.intValue = target
-                motion.animateToValue(target.toFloat())
-            }
-        }
-    }
-    val highlight = remember(scope, motion, itemHeightPx) {
-        LiquidHighlight(scope) { size, _ ->
-            Offset(size.width / 2f, (motion.value + 0.5f) * itemHeightPx + bounceOffset.value)
-        }
-    }
-    return RailGesture(motion, bounceOffset, currentIndex, highlight, itemHeightPx, onSelectedUpdated)
-}
-
 @Composable
 internal fun LiquidNavRail(
     selectedIndex: () -> Int,
