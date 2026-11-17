@@ -80,6 +80,10 @@ import com.chaners.guiyuan.ui.components.measuredNavTouchExtension
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
+import com.chaners.guiyuan.ui.components.liquid.LiquidNavRail
+import com.chaners.guiyuan.ui.components.liquid.LiquidRailItem
+import com.chaners.guiyuan.ui.components.liquid.LiquidRailSpec
+import com.chaners.guiyuan.ui.components.liquid.canPlaceLiquidRail
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
 import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
@@ -378,6 +382,16 @@ internal fun MainHub(
         } else {
             null
         }
+    val useLiquidRail = liquidBackdrop != null && canPlaceLiquidRail(
+        window = LocalWindowInfo.current.containerDpSize,
+        uiStyle = appearance.uiStyle,
+        count = TopLevelPageCount,
+        startInset = railStartInset,
+        endInset = railEndInset,
+        verticalInsets = railVerticalInsets,
+    )
+    val liquidRailContentWidth = LiquidRailSpec.width(appearance.uiStyle) +
+        LiquidRailSpec.Margin * 2 + railStartInset
 
     val homeLabel = stringResource(R.string.nav_home)
     val featuresLabel = stringResource(R.string.nav_features)
@@ -413,7 +427,7 @@ internal fun MainHub(
         snackbarHost = { SnackbarHost(state = featureSnackbarState) },
         bottomBar = {
             when {
-                useGlassRail || useNativeRail -> Unit
+                useGlassRail || useNativeRail || useLiquidRail -> Unit
                 os4Glass && navBackdrop != null -> {
                     val selectedPage = pageSelection.selectedPage
                     val includeLabels = appearance.activeNavContent == NavContent.IconAndText
@@ -608,10 +622,14 @@ internal fun MainHub(
         ) {
             Box(
                 modifier = Modifier.fillMaxSize().then(
-                    if (useGlassRail) {
+                    if (useGlassRail || useLiquidRail) {
                         Modifier.layout { measurable, constraints ->
-                            val start = (railContentWidth.toPx() * railState.progress)
-                                .roundToInt().coerceIn(0, constraints.maxWidth)
+                            val occupied = if (useGlassRail) {
+                                railContentWidth.toPx() * railState.progress
+                            } else {
+                                liquidRailContentWidth.toPx()
+                            }
+                            val start = occupied.roundToInt().coerceIn(0, constraints.maxWidth)
                             val page = measurable.measure(constraints.offset(horizontal = -start))
                             layout(constraints.maxWidth, page.height) {
                                 page.placeRelative(start, 0)
@@ -687,6 +705,23 @@ internal fun MainHub(
                 state = railState,
                 showToggle = true,
                 modifier = Modifier.fillMaxSize(),
+            )
+        }
+        if (useLiquidRail && liquidBackdrop != null) {
+            val liquidItems = remember(items) {
+                items.map { item -> LiquidRailItem(icon = item.icon, label = item.label) }
+            }
+            LiquidNavRail(
+                selectedIndex = { pageSelection.selectedPage },
+                onSelected = ::selectPage,
+                backdrop = liquidBackdrop,
+                items = liquidItems,
+                dark = dark,
+                mode = appearance.liquidMode,
+                uiStyle = appearance.uiStyle,
+                contentMode = appearance.activeNavContent,
+                modifier = Modifier.align(Alignment.CenterStart)
+                    .padding(start = railStartInset + LiquidRailSpec.Margin),
             )
         }
             }

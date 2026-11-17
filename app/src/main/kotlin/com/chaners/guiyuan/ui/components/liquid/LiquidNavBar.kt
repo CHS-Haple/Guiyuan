@@ -114,7 +114,7 @@ private val PITCH_SWEEP_LIMIT = (30.0 * PI / 180.0).toFloat()
 internal data class GlassTilt(val angle: Float, val pitch: Float, val roll: Float)
 
 @Composable
-private fun rememberGlassTilt(interactive: Boolean): State<GlassTilt> {
+internal fun rememberGlassTilt(interactive: Boolean): State<GlassTilt> {
     if (!interactive) {
         return remember { mutableStateOf(GlassTilt((-PI / 2).toFloat(), PITCH_NEUTRAL, 0f)) }
     }
@@ -166,14 +166,14 @@ internal object LiquidNavSpec {
     val sidePadding = 36.dp
 }
 
-private data class LiquidParams(
+internal data class LiquidParams(
     val blur: Dp,
     val refractionHeight: Dp,
     val refractionAmount: Dp,
     val surfaceAlpha: Float,
 )
 
-private fun LiquidMode.params(): LiquidParams =
+internal fun LiquidMode.params(): LiquidParams =
     when (this) {
         LiquidMode.Blur ->
             LiquidParams(
