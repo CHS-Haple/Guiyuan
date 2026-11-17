@@ -31,6 +31,41 @@ class NativeRailWindowEligibilityTest {
     }
 
     @Test
+    fun os3GlassAndBlurWorkWithoutChangingNavStylePreference() {
+        for (style in listOf(com.chaners.guiyuan.settings.NavStyle.Glass, com.chaners.guiyuan.settings.NavStyle.Blur)) {
+            assertTrue(useNativeRailFor(
+                com.chaners.guiyuan.settings.UiStyle.OS3, style, true, true,
+                DpSize(750.dp, 420.dp), 0.dp, 0.dp, 0.dp,
+            ))
+        }
+    }
+
+    @Test
+    fun os4GlassKeepsExistingGlassRailWhenMaterialAvailable() {
+        assertFalse(useNativeRailFor(
+            com.chaners.guiyuan.settings.UiStyle.OS4, com.chaners.guiyuan.settings.NavStyle.Glass,
+            true, true, DpSize(750.dp, 420.dp), 0.dp, 0.dp, 0.dp,
+        ))
+        assertTrue(useNativeRailFor(
+            com.chaners.guiyuan.settings.UiStyle.OS4, com.chaners.guiyuan.settings.NavStyle.Glass,
+            true, false, DpSize(750.dp, 420.dp), 0.dp, 0.dp, 0.dp,
+        ))
+    }
+
+    @Test
+    fun liquidAndDisabledNavKeepTheirOwnBehavior() {
+        val window = DpSize(750.dp, 420.dp)
+        assertFalse(useNativeRailFor(
+            com.chaners.guiyuan.settings.UiStyle.OS3, com.chaners.guiyuan.settings.NavStyle.Liquid,
+            true, true, window, 0.dp, 0.dp, 0.dp,
+        ))
+        assertFalse(useNativeRailFor(
+            com.chaners.guiyuan.settings.UiStyle.OS4, com.chaners.guiyuan.settings.NavStyle.Standard,
+            false, false, window, 0.dp, 0.dp, 0.dp,
+        ))
+    }
+
+    @Test
     fun thresholdIsInclusive() {
         assertTrue(canPlaceNativeRail(DpSize(600.dp, 320.dp), 0.dp, 0.dp, 0.dp))
         assertFalse(canPlaceNativeRail(DpSize(599.dp, 320.dp), 0.dp, 0.dp, 0.dp))

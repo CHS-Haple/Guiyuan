@@ -56,6 +56,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
+import com.chaners.guiyuan.ui.LocalGlassRailProgress
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.FeatureRepo
@@ -150,6 +151,7 @@ internal fun HomeScreen(
                     progressiveBlur = LocalTopBarProgressiveBlur.current,
                     isContentScrolled = listState.canScrollBackward,
                     title = stringResource(R.string.home_title),
+                    titleAlpha = LocalGlassRailProgress.current,
                     backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
                     actions = actions,
