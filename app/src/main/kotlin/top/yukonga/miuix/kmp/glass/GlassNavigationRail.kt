@@ -308,7 +308,9 @@ private fun RailWindowPanel(
             indicator = GlassIndicatorAppearance(
                 color = GlassNavigationBarDefaults.indicatorColor(),
                 pressedColor = GlassNavigationBarDefaults.indicatorPressedColor(),
-                liquidPaint = request.materialOverride?.indicator,
+                liquidPaint = request.materialOverride?.let { paint ->
+                    { pressed -> paint.indicator(request.backdrop, pressed) }
+                },
             ),
             labelStyle = MiuixTheme.textStyles.body1,
         ),

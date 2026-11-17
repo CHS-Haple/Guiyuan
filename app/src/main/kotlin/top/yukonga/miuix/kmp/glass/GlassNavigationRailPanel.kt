@@ -47,6 +47,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.util.lerp
 import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import com.chaners.guiyuan.ui.components.liquid.rememberCombinedBackdrop
 import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.GlassShadow
@@ -96,7 +99,7 @@ internal class RailPanelMotion(
 /** The native body and optional Liquid substitute are one material choice. */
 internal class RailLiquidPaint(
     val panel: @Composable (Backdrop?, GlassShape) -> Modifier,
-    val indicator: @Composable (Boolean) -> Modifier,
+    val indicator: @Composable (Backdrop?, Boolean) -> Modifier,
 )
 
 internal class RailPanelMaterial(
@@ -145,11 +148,42 @@ internal fun GlassNavigationRailPanel(
         val corner = RailMorphCorner { state.progress }
         GlassShape(corner, corner, corner, corner)
     }
+    val liquidPaint = surface.material.replacement
+    // Record only the physical Liquid panel, never the selected lens itself.
+    // The selected indicator samples page + recorded panel, as in portrait LiquidNavBar.
+    val materialBackdrop = if (liquidPaint != null && surface.backdrop != null) {
+        rememberLayerBackdrop()
+    } else null
+    val selectedBackdrop = if (materialBackdrop != null && surface.backdrop != null) {
+        rememberCombinedBackdrop(surface.backdrop, materialBackdrop)
+    } else null
+    val paintColors = if (selectedBackdrop != null && liquidPaint != null) {
+        RailPanelColors(
+            selectedColor = colors.selectedColor,
+            unselectedColor = colors.unselectedColor,
+            indicator = GlassIndicatorAppearance(
+                color = colors.indicator.color,
+                pressedColor = colors.indicator.pressedColor,
+                scaleOnPress = colors.indicator.scaleOnPress,
+                liquidPaint = { pressed -> liquidPaint.indicator(selectedBackdrop, pressed) },
+            ),
+            labelStyle = colors.labelStyle,
+        )
+    } else colors
     Box(
         modifier = Modifier.railPanelSurfaceModifier(state, geometry, motion, surface, shape),
     ) {
-        RailPanelContents(context, geometry, motion, colors)
-        if (context.showToggle) RailPanelToggle(context, colors)
+        if (materialBackdrop != null && liquidPaint != null) {
+            // Draw once, visibly, and record this same surface for selected optics.
+            // Keep it separate from rows and indicator: no self-referential capture.
+            Box(
+                Modifier.matchParentSize()
+                    .layerBackdrop(materialBackdrop)
+                    .then(liquidPaint.panel(surface.backdrop, shape)),
+            )
+        }
+        RailPanelContents(context, geometry, motion, paintColors)
+        if (context.showToggle) RailPanelToggle(context, paintColors)
     }
 }
 
@@ -165,8 +199,11 @@ private fun Modifier.railPanelSurfaceModifier(
     // Do not replace the MIUIX rail's layout, morph, input or lifecycle owner.
     // Only the surface paint differs; the default Glass material path is unchanged.
     val override = surface.material.replacement?.panel
-    val surfacePaint = if (override != null) {
-        // Retain the upstream rail's exact silhouette and Float shadow with Liquid optics.
+    val surfacePaint = if (override != null && surface.backdrop != null) {
+        // The visible panel material is a sibling child, recorded before the selected lens.
+        // Keep its original MIUIX Float shadow here, without double-painting the surface.
+        Modifier.glassShadow(shape, surface.shadow)
+    } else if (override != null) {
         Modifier.glassShadow(shape, surface.shadow).then(override(surface.backdrop, shape))
     } else {
         Modifier.glassPanel(

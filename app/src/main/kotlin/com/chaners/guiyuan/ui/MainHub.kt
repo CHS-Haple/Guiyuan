@@ -742,9 +742,9 @@ internal fun MainHub(
                         panel = { backdrop, shape ->
                             Modifier.liquidRailSurface(backdrop, shape, appearance.liquidMode)
                         },
-                        indicator = { pressed ->
+                        indicator = { selectedBackdrop, pressed ->
                             Modifier.liquidRailSelectedSurface(
-                                backdrop = railBackdrop,
+                                backdrop = selectedBackdrop,
                                 shape = RoundedCornerShape(percent = 50),
                                 pressed = pressed,
                             )

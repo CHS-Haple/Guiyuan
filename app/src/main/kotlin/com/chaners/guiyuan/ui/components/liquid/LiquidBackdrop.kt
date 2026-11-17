@@ -113,17 +113,14 @@ internal fun Modifier.liquidRailSurface(
             lens(
                 params.refractionHeight.toPx(),
                 params.refractionAmount.toPx(),
-                depthEffect = true,
-                chromaticAberration = 0.25f,
             )
         },
         onDrawFront = {
-            drawEdgeStroke(shape = shape, stroke = rim.value, alpha = 0.9f)
+            // Match portrait Liquid's panel optics; only the OS3/OS4 silhouette differs.
+            drawEdgeStroke(shape = shape, stroke = rim.value, alpha = 0.75f)
         },
         onDrawSurface = {
-            // Page content under expanded OS4 rails may be almost uniformly white.
-            // Avoid burying genuine refracted pixels under the previous opaque-looking tint.
-            drawRect(color.copy(alpha = params.surfaceAlpha * 0.45f))
+            drawRect(color.copy(alpha = params.surfaceAlpha))
         },
     )
 }
