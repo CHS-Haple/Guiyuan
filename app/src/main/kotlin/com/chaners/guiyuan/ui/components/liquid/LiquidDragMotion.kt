@@ -37,6 +37,8 @@ internal class LiquidDragMotion(
     private val scaleXSpec = spring(0.6f, 250f, 0.001f)
     private val scaleYSpec = spring(0.7f, 250f, 0.001f)
 
+    // The UI gesture's requested destination is synchronous; Animatable schedules frames later.
+    private var requestedValue = initialValue.coerceIn(range)
     private val valueAnim = Animatable(initialValue, visibilityThreshold)
     private val velocityAnim = Animatable(0f, 5f)
     private val pressAnim = Animatable(0f, 0.001f)
@@ -48,7 +50,7 @@ internal class LiquidDragMotion(
     private var releaseJob: Job? = null
 
     val value: Float get() = valueAnim.value
-    val targetValue: Float get() = valueAnim.targetValue
+    val targetValue: Float get() = requestedValue
     val pressProgress: Float get() = pressAnim.value
     val scaleX: Float get() = scaleXAnim.value
     val scaleY: Float get() = scaleYAnim.value
@@ -105,6 +107,7 @@ internal class LiquidDragMotion(
 
     fun updateValue(value: Float) {
         val target = value.coerceIn(range)
+        requestedValue = target
         scope.launch {
             valueAnim.animateTo(target, valueSpec) {
                 updateVelocity()
@@ -113,10 +116,11 @@ internal class LiquidDragMotion(
     }
 
     fun animateToValue(value: Float) {
+        val target = value.coerceIn(range)
+        requestedValue = target
         scope.launch {
             mutex.mutate {
                 press()
-                val target = value.coerceIn(range)
                 launch { valueAnim.animateTo(target, valueSpec) }
                 if (velocity != 0f) {
                     launch { velocityAnim.animateTo(0f, velocitySpec) }

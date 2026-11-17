@@ -83,6 +83,8 @@ import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavRail
 import com.chaners.guiyuan.ui.components.liquid.LiquidRailItem
 import com.chaners.guiyuan.ui.components.liquid.LiquidRailSpec
+import com.chaners.guiyuan.ui.components.liquid.LiquidRailAppearance
+import com.chaners.guiyuan.ui.components.liquid.LiquidRailSafeArea
 import com.chaners.guiyuan.ui.components.liquid.canPlaceLiquidRail
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
@@ -386,9 +388,7 @@ internal fun MainHub(
         window = LocalWindowInfo.current.containerDpSize,
         uiStyle = appearance.uiStyle,
         count = TopLevelPageCount,
-        startInset = railStartInset,
-        endInset = railEndInset,
-        verticalInsets = railVerticalInsets,
+        safe = LiquidRailSafeArea(railStartInset, railEndInset, railVerticalInsets),
     )
     val liquidRailContentWidth = LiquidRailSpec.width(appearance.uiStyle) +
         LiquidRailSpec.Margin * 2 + railStartInset
@@ -715,11 +715,13 @@ internal fun MainHub(
                 selectedIndex = { pageSelection.selectedPage },
                 onSelected = ::selectPage,
                 backdrop = liquidBackdrop,
-                items = liquidItems,
-                dark = dark,
-                mode = appearance.liquidMode,
-                uiStyle = appearance.uiStyle,
-                contentMode = appearance.activeNavContent,
+                appearance = LiquidRailAppearance(
+                    items = liquidItems,
+                    dark = dark,
+                    mode = appearance.liquidMode,
+                    uiStyle = appearance.uiStyle,
+                    contentMode = appearance.activeNavContent,
+                ),
                 modifier = Modifier.align(Alignment.CenterStart)
                     .padding(start = railStartInset + LiquidRailSpec.Margin),
             )

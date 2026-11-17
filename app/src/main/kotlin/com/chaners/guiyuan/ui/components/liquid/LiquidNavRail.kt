@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -35,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -65,6 +67,7 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.blur
 import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -85,19 +88,35 @@ internal object LiquidRailSpec {
 
 internal data class LiquidRailItem(val icon: ImageVector, val label: String)
 
+internal data class LiquidRailSafeArea(val start: Dp, val end: Dp, val vertical: Dp)
+
+internal data class LiquidRailAppearance(
+    val items: List<LiquidRailItem>,
+    val mode: LiquidMode,
+    val dark: Boolean,
+    val uiStyle: UiStyle,
+    val contentMode: NavContent,
+)
+
+private data class LiquidRailTab(
+    val item: LiquidRailItem,
+    val selected: Boolean,
+    val isOs4: Boolean,
+    val showLabel: Boolean,
+    val interactive: Boolean,
+)
+
 internal fun canPlaceLiquidRail(
     window: DpSize,
     uiStyle: UiStyle,
     count: Int,
-    startInset: Dp,
-    endInset: Dp,
-    verticalInsets: Dp,
+    safe: LiquidRailSafeArea,
 ): Boolean {
     if (count <= 0) return false
     val occupiedWidth = LiquidRailSpec.width(uiStyle) + LiquidRailSpec.Margin * 2
     val minimumHeight = maxOf(320.dp, LiquidRailSpec.height(count) + LiquidRailSpec.Margin * 2)
-    return window.width >= occupiedWidth + startInset + endInset + 360.dp &&
-        window.height >= minimumHeight + verticalInsets
+    return window.width >= occupiedWidth + safe.start + safe.end + 360.dp &&
+        window.height >= minimumHeight + safe.vertical
 }
 
 /**
@@ -107,76 +126,81 @@ internal fun canPlaceLiquidRail(
  * It deliberately reuses LiquidDragMotion, LiquidHighlight, theme color, tilt,
  * lens/edge stroke and the recorded background, not OS4 Glass material.
  */
+private data class RailGesture(
+    val motion: LiquidDragMotion,
+    val bounceOffset: State<Float>,
+    val selectedIndex: State<Int>,
+    val highlight: LiquidHighlight,
+    val itemHeightPx: Float,
+    val onSelect: (Int) -> Unit,
+)
+
+private data class RailPaint(
+    val backdrop: Backdrop,
+    val tabsBackdrop: LayerBackdrop,
+    val combinedBackdrop: Backdrop,
+    val params: LiquidParams,
+    val surfaceColor: Color,
+    val normalColor: Color,
+    val selectedColor: Color,
+    val panelHighlight: State<top.yukonga.miuix.kmp.material.EdgeStroke>,
+    val pillHighlight: State<top.yukonga.miuix.kmp.material.EdgeStroke>,
+    val dark: Boolean,
+)
+
+/** Pointer position, selected-page mirroring and bounce form one gesture owner. */
 @Composable
-internal fun LiquidNavRail(
+private fun rememberRailGesture(
     selectedIndex: () -> Int,
     onSelected: (Int) -> Unit,
-    backdrop: Backdrop,
-    items: List<LiquidRailItem>,
-    dark: Boolean,
-    mode: LiquidMode,
-    uiStyle: UiStyle,
-    contentMode: NavContent,
-    modifier: Modifier = Modifier,
-) {
-    if (items.isEmpty()) return
-    val isOs4 = uiStyle == UiStyle.OS4
+    count: Int,
+): RailGesture {
     val density = LocalDensity.current
     val itemHeightPx = with(density) { LiquidRailSpec.ItemHeight.toPx() }
-    val railHeightPx = with(density) { LiquidRailSpec.height(items.size).toPx() }
+    val railHeightPx = with(density) { LiquidRailSpec.height(count).toPx() }
     val insetPx = with(density) { 4.dp.toPx() }
-    val params = mode.params()
-    val shape = remember { CircleShape }
-    val surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = params.surfaceAlpha)
-    val selectedColor = MiuixTheme.colorScheme.primary
-    val normalColor = MiuixTheme.colorScheme.onSurface
-    val tabsBackdrop = rememberLayerBackdrop()
-    val combinedBackdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop)
-    val tilt = rememberGlassTilt(interactive = true)
-    val panelHighlight = remember(tilt) { derivedStateOf { litHighlight(tilt.value, -45f) } }
-    val pillHighlight = remember(tilt) { derivedStateOf { litHighlight(tilt.value, 90f) } }
     val scope = rememberCoroutineScope()
-    var currentIndex by remember(items.size) {
-        mutableIntStateOf(selectedIndex().coerceIn(0, items.lastIndex))
+    val currentIndex = remember(count) {
+        mutableIntStateOf(selectedIndex().coerceIn(0, count - 1))
     }
     val onSelectedUpdated by rememberUpdatedState(onSelected)
     val bounce = remember { Animatable(0f) }
-    val bounceOffset by remember(railHeightPx) {
+    val bounceOffset = remember(railHeightPx, insetPx) {
         derivedStateOf {
             val fraction = (bounce.value / railHeightPx).fastCoerceIn(-1f, 1f)
             insetPx * fraction.sign * EaseOut.transform(abs(fraction))
         }
     }
-    val motion = remember(scope, items.size, itemHeightPx) {
+    val motion = remember(scope, count, itemHeightPx) {
         LiquidDragMotion(
             scope = scope,
             initialValue = selectedIndex().toFloat(),
-            range = 0f..items.lastIndex.toFloat(),
+            range = 0f..(count - 1).toFloat(),
             visibilityThreshold = 0.001f,
             initialScale = 1f,
             pressedScale = 78f / 56f,
             canDrag = { position -> position.y in 0f..railHeightPx },
             onStarted = { position ->
                 updateValue(((position.y - insetPx) / itemHeightPx).toInt()
-                    .coerceIn(0, items.lastIndex).toFloat())
+                    .coerceIn(0, count - 1).toFloat())
             },
             onStopped = {
-                val target = targetValue.fastRoundToInt().fastCoerceIn(0, items.lastIndex)
-                if (currentIndex != target) {
-                    currentIndex = target
+                val target = targetValue.fastRoundToInt().fastCoerceIn(0, count - 1)
+                if (currentIndex.intValue != target) {
+                    currentIndex.intValue = target
                     onSelectedUpdated(target)
                 }
                 updateValue(target.toFloat())
                 scope.launch { bounce.animateTo(0f, spring(1f, 300f, 0.5f)) }
             },
             onCancelled = {
-                updateValue(currentIndex.toFloat())
+                updateValue(currentIndex.intValue.toFloat())
                 scope.launch { bounce.animateTo(0f, spring(1f, 300f, 0.5f)) }
             },
             onDrag = { _, delta ->
                 if (delta.y != 0f) {
                     updateValue((targetValue + delta.y / itemHeightPx)
-                        .fastCoerceIn(0f, items.lastIndex.toFloat()))
+                        .fastCoerceIn(0f, (count - 1).toFloat()))
                     scope.launch { bounce.snapTo(bounce.value + delta.y) }
                 }
             },
@@ -184,166 +208,222 @@ internal fun LiquidNavRail(
     }
     LaunchedEffect(selectedIndex, motion) {
         snapshotFlow { selectedIndex() }.collectLatest { index ->
-            val target = index.coerceIn(0, items.lastIndex)
-            if (currentIndex != target) {
-                currentIndex = target
+            val target = index.coerceIn(0, count - 1)
+            if (currentIndex.intValue != target) {
+                currentIndex.intValue = target
                 motion.animateToValue(target.toFloat())
             }
         }
     }
     val highlight = remember(scope, motion, itemHeightPx) {
         LiquidHighlight(scope) { size, _ ->
-            Offset(size.width / 2f, (motion.value + 0.5f) * itemHeightPx + bounceOffset)
+            Offset(size.width / 2f, (motion.value + 0.5f) * itemHeightPx + bounceOffset.value)
         }
     }
-    Box(modifier.width(LiquidRailSpec.width(uiStyle)).height(LiquidRailSpec.height(items.size))) {
+    return RailGesture(motion, bounceOffset, currentIndex, highlight, itemHeightPx, onSelectedUpdated)
+}
+
+@Composable
+internal fun LiquidNavRail(
+    selectedIndex: () -> Int,
+    onSelected: (Int) -> Unit,
+    backdrop: Backdrop,
+    appearance: LiquidRailAppearance,
+    modifier: Modifier = Modifier,
+) {
+    if (appearance.items.isEmpty()) return
+    val gesture = rememberRailGesture(selectedIndex, onSelected, appearance.items.size)
+    val params = appearance.mode.params()
+    val colorScheme = MiuixTheme.colorScheme
+    val tilt = rememberGlassTilt(interactive = true)
+    val tabsBackdrop = rememberLayerBackdrop()
+    val paint = RailPaint(
+        backdrop = backdrop,
+        tabsBackdrop = tabsBackdrop,
+        combinedBackdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop),
+        params = params,
+        surfaceColor = colorScheme.surfaceContainer.copy(alpha = params.surfaceAlpha),
+        normalColor = colorScheme.onSurface,
+        selectedColor = colorScheme.primary,
+        panelHighlight = remember(tilt) { derivedStateOf { litHighlight(tilt.value, -45f) } },
+        pillHighlight = remember(tilt) { derivedStateOf { litHighlight(tilt.value, 90f) } },
+        dark = appearance.dark,
+    )
+    Box(modifier.width(LiquidRailSpec.width(appearance.uiStyle))
+        .height(LiquidRailSpec.height(appearance.items.size))) {
+        LiquidRailBody(appearance, gesture, paint)
+        LiquidRailCapturedTabs(appearance, paint)
+        LiquidRailSelectedLens(gesture, paint)
+    }
+}
+
+@Composable
+private fun LiquidRailBody(
+    appearance: LiquidRailAppearance,
+    gesture: RailGesture,
+    paint: RailPaint,
+) {
+    val motion = gesture.motion
+    Column(
+        modifier = Modifier
+            .selectableGroup()
+            .graphicsLayer { translationY = gesture.bounceOffset.value }
+            .dropShadow(
+                shape = CircleShape,
+                shadow = Shadow(
+                    radius = 10.dp,
+                    color = Color.Black,
+                    alpha = if (paint.dark) 0.20f else 0.10f,
+                ),
+            )
+            .drawBackdrop(
+                backdrop = paint.backdrop,
+                shape = { CircleShape },
+                effects = {
+                    padding = maxOf(padding, 40.dp.toPx())
+                    vibrancy()
+                    blur(paint.params.blur.toPx(), paint.params.blur.toPx())
+                    lens(paint.params.refractionHeight.toPx(), paint.params.refractionAmount.toPx())
+                },
+                onDrawFront = {
+                    drawEdgeStroke(shape = CircleShape, stroke = paint.panelHighlight.value, alpha = 0.75f)
+                },
+                layerBlock = {
+                    val progress = motion.pressProgress
+                    val scale = lerp(1f, 1f + 16.dp.toPx() / size.width, progress)
+                    scaleX = scale
+                    scaleY = scale
+                },
+                onDrawSurface = { drawRect(paint.surfaceColor) },
+            )
+            .then(gesture.highlight.modifier)
+            .then(gesture.highlight.gestureModifier)
+            .then(motion.modifier)
+            .fillMaxSize()
+            .padding(4.dp),
+    ) {
+        CompositionLocalProvider(LocalContentColor provides paint.normalColor) {
+            LiquidRailItems(appearance, gesture.selectedIndex.value, interactive = true, gesture.onSelect)
+        }
+    }
+}
+
+@Composable
+private fun LiquidRailCapturedTabs(
+    appearance: LiquidRailAppearance,
+    paint: RailPaint,
+) {
+    CompositionLocalProvider(LocalContentColor provides paint.selectedColor) {
         Column(
             modifier = Modifier
-                .selectableGroup()
-                .graphicsLayer { translationY = bounceOffset }
-                .dropShadow(
-                    shape = shape,
-                    shadow = Shadow(
-                        radius = 10.dp,
-                        color = Color.Black,
-                        alpha = if (dark) 0.20f else 0.10f,
-                    ),
-                )
+                .clearAndSetSemantics {}
+                .alpha(0f)
+                .layerBackdrop(paint.tabsBackdrop)
                 .drawBackdrop(
-                    backdrop = backdrop,
-                    shape = { shape },
+                    backdrop = paint.backdrop,
+                    shape = { CircleShape },
                     effects = {
-                        padding = maxOf(padding, 40.dp.toPx())
                         vibrancy()
-                        blur(params.blur.toPx(), params.blur.toPx())
-                        lens(params.refractionHeight.toPx(), params.refractionAmount.toPx())
+                        blur(paint.params.blur.toPx(), paint.params.blur.toPx())
+                        lens(paint.params.refractionHeight.toPx(), paint.params.refractionAmount.toPx())
                     },
-                    onDrawFront = {
-                        drawEdgeStroke(shape = shape, stroke = panelHighlight.value, alpha = 0.75f)
-                    },
-                    layerBlock = {
-                        val progress = motion.pressProgress
-                        val scale = lerp(1f, 1f + 16.dp.toPx() / size.width, progress)
-                        scaleX = scale
-                        scaleY = scale
-                    },
-                    onDrawSurface = { drawRect(surfaceColor) },
+                    onDrawSurface = { drawRect(paint.surfaceColor) },
                 )
-                .then(highlight.modifier)
-                .then(highlight.gestureModifier)
-                .then(motion.modifier)
                 .fillMaxSize()
                 .padding(4.dp),
         ) {
-            CompositionLocalProvider(LocalContentColor provides normalColor) {
-                items.forEachIndexed { index, item ->
-                    LiquidRailEntry(
-                        item = item,
-                        selected = index == currentIndex,
-                        uiStyle = uiStyle,
-                        showLabel = isOs4 || contentMode == NavContent.IconAndText,
-                        onClick = { onSelectedUpdated(index) },
-                    )
-                }
-            }
+            LiquidRailItems(appearance, selectedIndex = -1, interactive = false, onSelect = {})
         }
-        CompositionLocalProvider(LocalContentColor provides selectedColor) {
-            Column(
-                modifier = Modifier
-                    .clearAndSetSemantics {}
-                    .alpha(0f)
-                    .layerBackdrop(tabsBackdrop)
-                    .drawBackdrop(
-                        backdrop = backdrop,
-                        shape = { shape },
-                        effects = {
-                            vibrancy()
-                            blur(params.blur.toPx(), params.blur.toPx())
-                            lens(params.refractionHeight.toPx(), params.refractionAmount.toPx())
-                        },
-                        onDrawSurface = { drawRect(surfaceColor) },
-                    )
-                    .then(highlight.modifier)
-                    .fillMaxSize()
-                    .padding(4.dp),
-            ) {
-                items.forEach { item ->
-                    LiquidRailEntry(
-                        item = item,
-                        selected = false,
-                        uiStyle = uiStyle,
-                        showLabel = isOs4 || contentMode == NavContent.IconAndText,
-                        onClick = {},
-                        interactive = false,
-                    )
-                }
-            }
-        }
-        Box(
-            modifier = Modifier
-                .padding(4.dp)
-                .graphicsLayer {
-                    translationY = motion.value * itemHeightPx + bounceOffset
-                }
-                .drawBackdrop(
-                    backdrop = combinedBackdrop,
-                    shape = { shape },
-                    effects = {
-                        val progress = motion.pressProgress
-                        lens(10.dp.toPx() * progress, 14.dp.toPx() * progress,
-                            depthEffect = true, chromaticAberration = 0.5f)
-                    },
-                    onDrawFront = {
-                        drawEdgeStroke(
-                            shape = shape,
-                            stroke = pillHighlight.value,
-                            alpha = motion.pressProgress,
-                        )
-                    },
-                    layerBlock = {
-                        scaleX = motion.scaleX
-                        scaleY = motion.scaleY
-                        val velocity = motion.velocity / 10f
-                        scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
-                        scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
-                    },
-                    onDrawSurface = {
-                        val progress = motion.pressProgress
-                        drawRect(
-                            if (dark) Color.White.copy(alpha = 0.10f)
-                            else Color.Black.copy(alpha = 0.10f),
-                            alpha = 1f - progress,
-                        )
-                        drawRect(Color.Black.copy(alpha = 0.03f * progress))
-                    },
-                )
-                .innerShadow(shape = shape) {
-                    InnerShadow(
-                        radius = 8.dp * motion.pressProgress,
-                        color = Color.Black.copy(alpha = 0.15f),
-                        alpha = motion.pressProgress,
-                    )
-                }
-                .fillMaxWidth()
-                .height(LiquidRailSpec.ItemHeight),
+    }
+}
+
+@Composable
+private fun LiquidRailItems(
+    appearance: LiquidRailAppearance,
+    selectedIndex: Int,
+    interactive: Boolean,
+    onSelect: (Int) -> Unit,
+) {
+    appearance.items.forEachIndexed { index, item ->
+        LiquidRailEntry(
+            tab = LiquidRailTab(
+                item = item,
+                selected = index == selectedIndex,
+                isOs4 = appearance.uiStyle == UiStyle.OS4,
+                showLabel = appearance.uiStyle == UiStyle.OS4 ||
+                    appearance.contentMode == NavContent.IconAndText,
+                interactive = interactive,
+            ),
+            onClick = { onSelect(index) },
         )
     }
 }
 
 @Composable
+private fun LiquidRailSelectedLens(gesture: RailGesture, paint: RailPaint) {
+    val motion = gesture.motion
+    Box(
+        modifier = Modifier
+            .padding(4.dp)
+            .graphicsLayer {
+                translationY = motion.value * gesture.itemHeightPx + gesture.bounceOffset.value
+            }
+            .drawBackdrop(
+                backdrop = paint.combinedBackdrop,
+                shape = { CircleShape },
+                effects = {
+                    val progress = motion.pressProgress
+                    lens(10.dp.toPx() * progress, 14.dp.toPx() * progress,
+                        depthEffect = true, chromaticAberration = 0.5f)
+                },
+                onDrawFront = {
+                    drawEdgeStroke(
+                        shape = CircleShape,
+                        stroke = paint.pillHighlight.value,
+                        alpha = motion.pressProgress,
+                    )
+                },
+                layerBlock = {
+                    scaleX = motion.scaleX
+                    scaleY = motion.scaleY
+                    val velocity = motion.velocity / 10f
+                    scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
+                    scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
+                },
+                onDrawSurface = {
+                    val progress = motion.pressProgress
+                    drawRect(
+                        if (paint.dark) Color.White.copy(alpha = 0.10f)
+                        else Color.Black.copy(alpha = 0.10f),
+                        alpha = 1f - progress,
+                    )
+                    drawRect(Color.Black.copy(alpha = 0.03f * progress))
+                },
+            )
+            .innerShadow(shape = CircleShape) {
+                InnerShadow(
+                    radius = 8.dp * motion.pressProgress,
+                    color = Color.Black.copy(alpha = 0.15f),
+                    alpha = motion.pressProgress,
+                )
+            }
+            .fillMaxWidth()
+            .height(LiquidRailSpec.ItemHeight),
+    )
+}
+
+@Composable
 private fun LiquidRailEntry(
-    item: LiquidRailItem,
-    selected: Boolean,
-    uiStyle: UiStyle,
-    showLabel: Boolean,
+    tab: LiquidRailTab,
     onClick: () -> Unit,
-    interactive: Boolean = true,
 ) {
-    val input = if (interactive) {
+    val item = tab.item
+    val showLabel = tab.showLabel
+    val input = if (tab.interactive) {
         Modifier
             .semantics(mergeDescendants = true) {
                 role = Role.Tab
-                this.selected = selected
+                this.selected = tab.selected
                 onClick { onClick(); true }
             }
             .onKeyEvent { event ->
@@ -358,7 +438,7 @@ private fun LiquidRailEntry(
     } else Modifier.clearAndSetSemantics {}
     val modifier = Modifier.fillMaxWidth().height(LiquidRailSpec.ItemHeight)
         .clip(CircleShape).then(input)
-    if (uiStyle == UiStyle.OS4) {
+    if (tab.isOs4) {
         Row(
             modifier = modifier,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
