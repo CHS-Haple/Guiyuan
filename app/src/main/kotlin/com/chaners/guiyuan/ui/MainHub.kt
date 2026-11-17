@@ -36,6 +36,9 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
@@ -275,6 +278,8 @@ private fun HubNativeRail(
     liquidMaterial: LiquidRailMaterial?,
 ) {
     // The MIUIX OS3 rail retains its layout, morph, semantics and one click owner.
+    // One visual preview index prevents two lenses appearing during a press.
+    var activeLiquidIndex by remember { mutableIntStateOf(-1) }
     val rail: @Composable () -> Unit = {
         NavigationRail(
             state = state,
@@ -287,15 +292,24 @@ private fun HubNativeRail(
         ) {
             items.forEachIndexed { index, item ->
                 val selected = selectedIndex == index
-                var pressed by remember(selected) { mutableStateOf(false) }
+                val pressed = activeLiquidIndex == index
+                val preview = if (activeLiquidIndex >= 0) pressed else selected
+                val pressScale by animateFloatAsState(
+                    targetValue = if (liquidMaterial != null && pressed) 1.06f else 1f,
+                    animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
+                    label = "nativeLiquidRailItemPress",
+                )
                 Box(
                     modifier = Modifier.fillMaxWidth().then(
-                        if (liquidMaterial != null && selected) {
-                            Modifier.liquidRailPressObserver { pressed = it }
+                        if (liquidMaterial != null) {
+                            Modifier.liquidRailPressObserver { down ->
+                                if (down) activeLiquidIndex = index
+                                else if (activeLiquidIndex == index) activeLiquidIndex = -1
+                            }
                         } else Modifier
                     ),
                 ) {
-                    if (liquidMaterial != null && selected) {
+                    if (liquidMaterial != null && preview) {
                         LiquidNativeRailSelection(
                             backdrop = liquidMaterial.backdrop,
                             mode = liquidMaterial.mode,
@@ -307,6 +321,12 @@ private fun HubNativeRail(
                         onClick = { onSelect(index) },
                         icon = item.icon,
                         label = item.label,
+                        modifier = if (liquidMaterial != null) {
+                            Modifier.graphicsLayer {
+                                scaleX = pressScale
+                                scaleY = pressScale
+                            }
+                        } else Modifier,
                     )
                 }
             }

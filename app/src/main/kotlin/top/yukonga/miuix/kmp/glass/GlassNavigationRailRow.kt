@@ -5,6 +5,8 @@ package top.yukonga.miuix.kmp.glass
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.hoverable
@@ -101,7 +103,9 @@ internal fun NavigationRailRow(
         label = "glassNavigationRailTint",
     )
     val pressAlpha = animateFloatAsState(
-        targetValue = if (motion.pressed) GlassNavigationBarDefaults.PressedAlpha else 1f,
+        targetValue = if (motion.pressed && !appearance.liquidIndicator) {
+            GlassNavigationBarDefaults.PressedAlpha
+        } else 1f,
         animationSpec = GlassMotion.navContentFloat(),
         label = "glassNavigationRailPress",
     )
@@ -207,6 +211,13 @@ private fun RailRowContent(
     appearance: RailRowAppearance,
     frame: RailRowFrame,
 ) {
+    val liquidScale by animateFloatAsState(
+        targetValue = if (appearance.liquidIndicator && motion.pressed) {
+            LiquidFeedbackSpec.PressedItemScale
+        } else 1f,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
+        label = "liquidRailItemPress",
+    )
     Row(
         modifier = Modifier
             .layout { measurable, constraints ->
@@ -228,7 +239,10 @@ private fun RailRowContent(
                 Icon(
                     imageVector = identity.item.icon,
                     contentDescription = null,
-                    modifier = Modifier.size(RailIconSize),
+                    modifier = Modifier.size(RailIconSize).graphicsLayer {
+                        scaleX = liquidScale
+                        scaleY = liquidScale
+                    },
                     tint = frame.tint,
                 )
             }
@@ -243,6 +257,9 @@ private fun RailRowContent(
                     layout(placeable.width.coerceAtMost(constraints.maxWidth), placeable.height) {
                         placeable.placeRelative(0, 0)
                     }
+                }.graphicsLayer {
+                    scaleX = liquidScale
+                    scaleY = liquidScale
                 },
                 color = frame.tint,
                 style = appearance.labelStyle,

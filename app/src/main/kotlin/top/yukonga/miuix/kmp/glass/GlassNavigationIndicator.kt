@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlin.math.abs
+import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 
 /**
  * The selected destination's own surface, shared by the glass navigation bar and
@@ -41,6 +43,7 @@ internal class GlassIndicatorAppearance(
     val pressedColor: Color,
     val scaleOnPress: Boolean = true,
     val liquidPaint: (@Composable (Boolean) -> Modifier)? = null,
+    val dragStretch: () -> Float = { 0f },
 )
 
 @Composable
@@ -56,7 +59,7 @@ internal fun GlassNavigationIndicator(
     val density = LocalDensity.current
     val scale by animateFloatAsState(
         targetValue = when {
-            pressed && appearance.liquidPaint != null -> 1.08f
+            pressed && appearance.liquidPaint != null -> LiquidFeedbackSpec.PressedLensScale
             pressed && appearance.scaleOnPress ->
                 glassPressScale(with(density) { height.toPx() }, density.density)
             else -> 1f
@@ -74,8 +77,22 @@ internal fun GlassNavigationIndicator(
     Box(
         modifier = modifier
             .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
+                if (appearance.liquidPaint != null) {
+                    // Portrait: a 56dp selection grows to 78dp on press.
+                    // Keep physical growth, not width-proportional scaling,
+                    // when the OS4 pill morphs from compact to a full row.
+                    val fraction = ((scale - 1f) /
+                        (LiquidFeedbackSpec.PressedLensScale - 1f)).coerceIn(0f, 1f)
+                    val growth = 22.dp.toPx() * fraction
+                    val velocity = abs(appearance.dragStretch().coerceIn(-0.25f, 0.25f))
+                    scaleX = (1f + growth / size.width.coerceAtLeast(1f)) *
+                        (1f - velocity * 0.12f)
+                    scaleY = (1f + growth / size.height.coerceAtLeast(1f)) *
+                        (1f + velocity * 0.25f)
+                } else {
+                    scaleX = scale
+                    scaleY = scale
+                }
             }
             .then(appearance.liquidPaint?.invoke(pressed) ?:
                 Modifier.clip(RoundedCornerShape(percent = 50))

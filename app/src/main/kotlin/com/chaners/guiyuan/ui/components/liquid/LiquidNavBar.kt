@@ -264,7 +264,7 @@ internal fun LiquidNavBar(
                     range = 0f..(tabsCount - 1).toFloat(),
                     visibilityThreshold = 0.001f,
                     initialScale = 1f,
-                    pressedScale = 78f / 56f,
+                    pressedScale = LiquidFeedbackSpec.PressedLensScale,
                     canDrag = { position -> position.x in 0f..widthPx.value.toFloat() },
                     onStarted = { position ->
                         val tabWidth = tabWidthPx.value
@@ -401,7 +401,7 @@ internal fun LiquidNavBar(
 
         CompositionLocalProvider(
             LocalLiquidItemScale provides {
-                lerp(1f, 1.2f, motion.pressProgress)
+                lerp(1f, LiquidFeedbackSpec.PressedItemScale, motion.pressProgress)
             },
             LocalContentColor provides selectedColor,
         ) {
