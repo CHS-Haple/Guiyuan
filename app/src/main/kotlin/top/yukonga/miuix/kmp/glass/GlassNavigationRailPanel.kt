@@ -191,16 +191,16 @@ internal fun GlassNavigationRailPanel(
         )
     } else colors
     Box(
-        modifier = Modifier.railPanelSurfaceModifier(state, geometry, motion, surface, shape)
+        modifier = Modifier
             .then(if (liquidPaint != null) Modifier.graphicsLayer {
-                // Like portrait Liquid, grow the whole glass surface on press.
-                // Graphics scaling never affects native rail measuring or hit slots.
+                // Scale the complete material, not content already clipped to the idle panel.
                 val scale = liquidPanelPressScale(
                     size.width, size.height, 16.dp.toPx(), panelPress,
                 )
                 scaleX = scale
                 scaleY = scale
-            } else Modifier),
+            } else Modifier)
+            .railPanelSurfaceModifier(state, geometry, motion, surface, shape),
     ) {
         if (materialBackdrop != null && liquidPaint != null) {
             // Draw once, visibly, and record this same surface for selected optics.
@@ -262,7 +262,9 @@ private fun Modifier.railPanelSurfaceModifier(
             )
         }
         .then(surfacePaint)
-        .clip(shape)
+        // Liquid's material already uses the panel shape. Its pressed lens must
+        // extend past the idle panel; Glass keeps the original child clip.
+        .then(if (override == null) Modifier.clip(shape) else Modifier)
 }
 
 @Composable
@@ -290,7 +292,52 @@ private fun RailPanelContents(
     LaunchedEffect(interaction, context.selection.selectedIndex, pressed, interaction.releaseGeneration) {
         if (!pressed) interaction.settle(context.selection.selectedIndex)
     }
-    RailPanelScroll(context, geometry, motion, colors, pointer)
+    Box(Modifier.fillMaxSize()) {
+        if (colors.indicator.liquidPaint != null) {
+            // Keep the lens out of verticalScroll's main-axis clip. Native rows,
+            // hit rectangles and gesture ownership remain in the scroll viewport.
+            RailLiquidIndicator(context, geometry, motion, colors, interaction)
+        }
+        RailPanelScroll(context, geometry, motion, colors, pointer)
+    }
+}
+
+@Composable
+private fun RailLiquidIndicator(
+    context: RailPanelContext,
+    geometry: RailPanelGeometry,
+    motion: RailPanelMotion,
+    colors: RailPanelColors,
+    interaction: NavigationRailInteraction,
+) {
+    val pressedIndex = interaction.pressedIndex
+    val selectedIndex = context.selection.selectedIndex
+    val index = if (pressedIndex >= 0) pressedIndex else selectedIndex
+    val rowPosition by animateFloatAsState(
+        targetValue = if (context.state.expanded && pressedIndex >= 0) {
+            interaction.previewRow
+        } else index.toFloat(),
+        animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
+        label = "liquidRailIndicatorRow",
+    )
+    val base = colors.indicator
+    NavigationRailIndicator(
+        selection = RailIndicatorSelection(index, interaction, pressedIndex >= 0),
+        motion = RailIndicatorMotion(
+            progress = { motion.rowProgress[index].value },
+            scrollOffset = { context.scrollState.value },
+            expandedItemWidth = geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2,
+            rowPosition = { rowPosition },
+            outsideScrollViewport = true,
+        ),
+        appearance = GlassIndicatorAppearance(
+            color = base.color,
+            pressedColor = base.pressedColor,
+            scaleOnPress = base.scaleOnPress,
+            liquidPaint = base.liquidPaint,
+            dragStretch = { interaction.dragStretch },
+        ),
+    )
 }
 
 @Composable
@@ -345,48 +392,29 @@ private fun RailPanelRows(
     val interaction = pointer.interaction
     val pressedIndex = interaction.pressedIndex
     val selectedIndex = context.selection.selectedIndex
-    // The upstream rail already owns PressInteraction. Observe it rather than installing a
-    // second gesture recognizer; only Liquid previews the pressed expanded destination.
-    val rowPresses = interaction.rowInteractions.map { it.collectIsPressedAsState() }
+    // The Glass rail retains upstream row press indication. Liquid uses the
+    // single pointer owner and renders its lens outside the scroll viewport.
     val isLiquid = colors.indicator.liquidPaint != null
-    // Liquid uses one press owner across expanded and collapsed rail geometries.
-    // Glass preserves its original row PressInteraction source.
-    val expandedPress = if (!isLiquid) rowPresses.indexOfFirst { it.value } else -1
-    val indicatorIndex = when {
-        pressedIndex >= 0 -> pressedIndex
-        expandedPress >= 0 -> expandedPress
-        else -> selectedIndex
+    val expandedPress = if (isLiquid) -1 else {
+        interaction.rowInteractions.map { it.collectIsPressedAsState() }.indexOfFirst { it.value }
     }
-    val indicatorPressed = pressedIndex >= 0 || expandedPress >= 0
-    val liquidPosition by animateFloatAsState(
-        targetValue = if (isLiquid && context.state.expanded && pressedIndex >= 0) {
-            interaction.previewRow
-        } else indicatorIndex.toFloat(),
-        animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
-        label = "liquidRailIndicatorRow",
-    )
-    val indicatorAppearance = if (isLiquid) {
-        GlassIndicatorAppearance(
-            color = colors.indicator.color,
-            pressedColor = colors.indicator.pressedColor,
-            scaleOnPress = colors.indicator.scaleOnPress,
-            liquidPaint = colors.indicator.liquidPaint,
-            dragStretch = { interaction.dragStretch },
+    if (!isLiquid) {
+        val indicatorIndex = when {
+            pressedIndex >= 0 -> pressedIndex
+            expandedPress >= 0 -> expandedPress
+            else -> selectedIndex
+        }
+        NavigationRailIndicator(
+            selection = RailIndicatorSelection(indicatorIndex, interaction, pressedIndex >= 0 || expandedPress >= 0),
+            motion = RailIndicatorMotion(
+                progress = { motion.rowProgress[indicatorIndex].value },
+                scrollOffset = { context.scrollState.value },
+                expandedItemWidth = geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2,
+                rowPosition = { indicatorIndex.toFloat() },
+            ),
+            appearance = colors.indicator,
         )
-    } else colors.indicator
-    val itemWidth = geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2
-    NavigationRailIndicator(
-        selection = RailIndicatorSelection(indicatorIndex, interaction, indicatorPressed),
-        motion = RailIndicatorMotion(
-            progress = { motion.rowProgress[indicatorIndex].value },
-            scrollOffset = { context.scrollState.value },
-            expandedItemWidth = itemWidth,
-            rowPosition = {
-                if (colors.indicator.liquidPaint != null) liquidPosition else indicatorIndex.toFloat()
-            },
-        ),
-        appearance = indicatorAppearance,
-    )
+    }
     context.selection.items.forEachIndexed { position, item ->
         key(position, item) {
             NavigationRailRow(
