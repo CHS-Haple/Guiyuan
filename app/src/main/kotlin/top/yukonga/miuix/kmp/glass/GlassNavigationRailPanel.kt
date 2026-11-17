@@ -345,6 +345,7 @@ private fun RailPanelRows(
                     selectedColor = colors.selectedColor,
                     unselectedColor = colors.unselectedColor,
                     labelStyle = colors.labelStyle,
+                    liquidIndicator = colors.indicator.liquidPaint != null,
                 ),
             )
         }

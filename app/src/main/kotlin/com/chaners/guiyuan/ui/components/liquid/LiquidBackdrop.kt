@@ -110,13 +110,20 @@ internal fun Modifier.liquidRailSurface(
             padding = maxOf(padding, 40.dp.toPx())
             vibrancy()
             blur(params.blur.toPx(), params.blur.toPx())
-            lens(params.refractionHeight.toPx(), params.refractionAmount.toPx())
+            lens(
+                params.refractionHeight.toPx(),
+                params.refractionAmount.toPx(),
+                depthEffect = true,
+                chromaticAberration = 0.25f,
+            )
         },
         onDrawFront = {
-            drawEdgeStroke(shape = shape, stroke = rim.value, alpha = 0.75f)
+            drawEdgeStroke(shape = shape, stroke = rim.value, alpha = 0.9f)
         },
         onDrawSurface = {
-            drawRect(color.copy(alpha = params.surfaceAlpha))
+            // Page content under expanded OS4 rails may be almost uniformly white.
+            // Avoid burying genuine refracted pixels under the previous opaque-looking tint.
+            drawRect(color.copy(alpha = params.surfaceAlpha * 0.45f))
         },
     )
 }
@@ -237,21 +244,27 @@ internal fun Modifier.liquidRailSelectedSurface(
             vibrancy()
             blur(params.blur.toPx(), params.blur.toPx())
             lens(
-                (6.dp + 8.dp * progress).toPx(),
-                (10.dp + 8.dp * progress).toPx(),
+                (14.dp + 8.dp * progress).toPx(),
+                (18.dp + 8.dp * progress).toPx(),
                 depthEffect = true,
-                chromaticAberration = 0.3f,
+                chromaticAberration = 0.55f,
             )
         },
         onDrawSurface = {
+            // Keep the selection recognisable without a solid Glass-style grey fill.
             drawRect(
-                if (dark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.10f),
-                alpha = 1f - progress * 0.3f,
+                if (dark) Color.White.copy(alpha = 0.065f) else Color.Black.copy(alpha = 0.025f),
             )
-            if (progress > 0f) drawRect(Color.White.copy(alpha = 0.06f * progress))
+            if (progress > 0f) drawRect(Color.White.copy(alpha = 0.075f * progress))
         },
         onDrawFront = {
-            drawEdgeStroke(shape = shape, stroke = rim.value, alpha = 0.65f + progress * 0.3f)
+            drawEdgeStroke(shape = shape, stroke = rim.value, alpha = 0.8f + progress * 0.2f)
         },
-    )
+    ).innerShadow(shape) {
+        InnerShadow(
+            radius = 5.dp + 4.dp * progress,
+            color = Color.Black.copy(alpha = if (dark) 0.22f else 0.14f),
+            alpha = 0.5f + progress * 0.4f,
+        )
+    }
 }

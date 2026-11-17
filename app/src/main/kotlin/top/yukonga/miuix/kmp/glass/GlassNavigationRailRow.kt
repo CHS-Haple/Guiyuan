@@ -82,6 +82,7 @@ internal class RailRowAppearance(
     val selectedColor: Color,
     val unselectedColor: Color,
     val labelStyle: TextStyle,
+    val liquidIndicator: Boolean = false,
 )
 
 /** The resolved geometry and tint are shared by the row's frame and its contents. */
@@ -108,7 +109,7 @@ internal fun NavigationRailRow(
     Box(
         modifier = Modifier
             .railRowPlacement(identity, motion, layout, frame.geometry)
-            .railRowInteraction(identity, motion, pressAlpha.value),
+            .railRowInteraction(identity, motion, pressAlpha.value, appearance.liquidIndicator),
     ) {
         RailRowContent(identity, motion, layout, appearance, frame)
     }
@@ -170,9 +171,12 @@ private fun Modifier.railRowInteraction(
     identity: RailRowIdentity,
     motion: RailRowMotion,
     pressAlpha: Float,
+    liquidIndicator: Boolean,
 ): Modifier = this
     .clip(RoundedCornerShape(percent = 50))
-    .indication(identity.interactionSource, LocalIndication.current)
+    // The selected Liquid lens already tracks this exact interaction source.
+    // Keeping the native row-wide indication would paint a second solid grey pill on press.
+    .then(if (liquidIndicator) Modifier else Modifier.indication(identity.interactionSource, LocalIndication.current))
     .hoverable(identity.interactionSource, enabled = motion.expanded)
     .semantics(mergeDescendants = true) {
         role = Role.Tab
