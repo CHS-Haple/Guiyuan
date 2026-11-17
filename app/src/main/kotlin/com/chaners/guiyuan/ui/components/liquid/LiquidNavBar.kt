@@ -453,8 +453,8 @@ internal fun LiquidNavBar(
                         effects = {
                             val progress = motion.pressProgress
                             lens(
-                                10.dp.toPx() * progress,
-                                14.dp.toPx() * progress,
+                                liquidSelectionOptics(progress).lensHeight.toPx(),
+                                liquidSelectionOptics(progress).lensAmount.toPx(),
                                 depthEffect = true,
                                 chromaticAberration = 0.5f,
                             )
@@ -463,7 +463,7 @@ internal fun LiquidNavBar(
                             drawEdgeStroke(
                                 shape = pillShape,
                                 stroke = pillHighlight.value,
-                                alpha = motion.pressProgress,
+                                alpha = liquidSelectionOptics(motion.pressProgress).rimAlpha,
                             )
                         },
                         layerBlock = {
@@ -487,18 +487,18 @@ internal fun LiquidNavBar(
                                 } else {
                                     Color.Black.copy(alpha = 0.10f)
                                 },
-                                alpha = 1f - progress,
+                                alpha = liquidSelectionOptics(progress).restAlpha,
                             )
                             drawRect(
-                                Color.Black.copy(alpha = 0.03f * progress),
+                                Color.Black.copy(alpha = liquidSelectionOptics(progress).pressedTintAlpha),
                             )
                         },
                     )
                     .innerShadow(shape = pillShape) {
                         InnerShadow(
-                            radius = 8.dp * motion.pressProgress,
+                            radius = liquidSelectionOptics(motion.pressProgress).shadowRadius,
                             color = Color.Black.copy(alpha = 0.15f),
-                            alpha = motion.pressProgress,
+                            alpha = liquidSelectionOptics(motion.pressProgress).shadowAlpha,
                         )
                     }
                     .height(56.dp)

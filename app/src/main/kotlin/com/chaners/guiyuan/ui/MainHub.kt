@@ -746,7 +746,6 @@ internal fun MainHub(
                             Modifier.liquidRailSelectedSurface(
                                 backdrop = railBackdrop,
                                 shape = RoundedCornerShape(percent = 50),
-                                mode = appearance.liquidMode,
                                 pressed = pressed,
                             )
                         },

@@ -208,7 +208,6 @@ internal fun BoxScope.LiquidNativeRailSelection(
                 .liquidRailSelectedSurface(
                     backdrop = backdrop,
                     shape = RoundedCornerShape(NavigationRailDefaults.ExpandedItemCornerRadius),
-                    mode = mode,
                     pressed = pressed,
                 ),
         )
@@ -216,18 +215,40 @@ internal fun BoxScope.LiquidNativeRailSelection(
 }
 
 /**
- * The shared OS3/OS4 selected lens. Its opacity, refraction and rim track the existing
- * selected and pressed state; only the material is new.
+ * Portrait and wide Liquid navigation share these optical coefficients.
+ * Geometry and gesture ownership remain with the corresponding MIUIX navigation style.
  */
+internal data class LiquidSelectionOptics(
+    val lensHeight: Dp,
+    val lensAmount: Dp,
+    val rimAlpha: Float,
+    val shadowRadius: Dp,
+    val shadowAlpha: Float,
+    val restAlpha: Float,
+    val pressedTintAlpha: Float,
+)
+
+internal fun liquidSelectionOptics(progress: Float): LiquidSelectionOptics {
+    val fraction = progress.coerceIn(0f, 1f)
+    return LiquidSelectionOptics(
+        lensHeight = 10.dp * fraction,
+        lensAmount = 14.dp * fraction,
+        rimAlpha = fraction,
+        shadowRadius = 8.dp * fraction,
+        shadowAlpha = fraction,
+        restAlpha = 1f - fraction,
+        pressedTintAlpha = 0.03f * fraction,
+    )
+}
+
+/** Material-only selected lens for OS3/OS4 rails, driven by their existing press state. */
 @Composable
 internal fun Modifier.liquidRailSelectedSurface(
     backdrop: Backdrop?,
     shape: Shape,
-    mode: LiquidMode,
     pressed: Boolean,
 ): Modifier {
     if (backdrop == null) return this
-    val params = mode.params()
     val dark = MiuixTheme.colorScheme.background.luminance() < 0.5f
     val tilt = rememberGlassTilt(interactive = true)
     val rim = remember(tilt) { derivedStateOf { litHighlight(tilt.value, 90f) } }
@@ -240,31 +261,33 @@ internal fun Modifier.liquidRailSelectedSurface(
         backdrop = backdrop,
         shape = { shape },
         effects = {
-            padding = maxOf(padding, 40.dp.toPx())
-            vibrancy()
-            blur(params.blur.toPx(), params.blur.toPx())
+            val optics = liquidSelectionOptics(progress)
+            // As on the portrait bar, idle selection is a calm tint and the
+            // lens refraction builds only while pressed, not permanently.
             lens(
-                (14.dp + 8.dp * progress).toPx(),
-                (18.dp + 8.dp * progress).toPx(),
+                optics.lensHeight.toPx(),
+                optics.lensAmount.toPx(),
                 depthEffect = true,
-                chromaticAberration = 0.55f,
+                chromaticAberration = 0.5f,
             )
         },
         onDrawSurface = {
-            // Keep the selection recognisable without a solid Glass-style grey fill.
+            val optics = liquidSelectionOptics(progress)
             drawRect(
-                if (dark) Color.White.copy(alpha = 0.065f) else Color.Black.copy(alpha = 0.025f),
+                if (dark) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.10f),
+                alpha = optics.restAlpha,
             )
-            if (progress > 0f) drawRect(Color.White.copy(alpha = 0.075f * progress))
+            drawRect(Color.Black.copy(alpha = optics.pressedTintAlpha))
         },
         onDrawFront = {
-            drawEdgeStroke(shape = shape, stroke = rim.value, alpha = 0.8f + progress * 0.2f)
+            drawEdgeStroke(shape = shape, stroke = rim.value, alpha = liquidSelectionOptics(progress).rimAlpha)
         },
     ).innerShadow(shape) {
+        val optics = liquidSelectionOptics(progress)
         InnerShadow(
-            radius = 5.dp + 4.dp * progress,
-            color = Color.Black.copy(alpha = if (dark) 0.22f else 0.14f),
-            alpha = 0.5f + progress * 0.4f,
+            radius = optics.shadowRadius,
+            color = Color.Black.copy(alpha = 0.15f),
+            alpha = optics.shadowAlpha,
         )
     }
 }

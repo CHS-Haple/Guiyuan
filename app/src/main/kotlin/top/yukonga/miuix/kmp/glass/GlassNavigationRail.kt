@@ -299,7 +299,11 @@ private fun RailWindowPanel(
             shadow = GlassShadows.Float,
         ),
         colors = RailPanelColors(
-            selectedColor = if (MiuixTheme.isDynamicColor) colorScheme.primary else colorScheme.onSurface,
+            // Liquid shares the portrait navigation's selected primary tint while
+            // normal Glass keeps its original dynamic/non-dynamic color contract.
+            selectedColor = if (request.materialOverride != null || MiuixTheme.isDynamicColor) {
+                colorScheme.primary
+            } else colorScheme.onSurface,
             unselectedColor = colorScheme.onSurface,
             indicator = GlassIndicatorAppearance(
                 color = GlassNavigationBarDefaults.indicatorColor(),
