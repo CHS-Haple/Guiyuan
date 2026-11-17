@@ -305,6 +305,7 @@ private fun RailPanelScroll(
                     expanded = pointer.expanded,
                     headerBottom = pointer.headerBottom,
                     onSelect = pointer.onSelect,
+                    liquid = colors.indicator.liquidPaint != null,
                 ),
         ) {
             RailPanelRows(context, geometry, motion, colors, pointer)
@@ -327,9 +328,10 @@ private fun RailPanelRows(
     // The upstream rail already owns PressInteraction. Observe it rather than installing a
     // second gesture recognizer; only Liquid previews the pressed expanded destination.
     val rowPresses = interaction.rowInteractions.map { it.collectIsPressedAsState() }
-    val expandedPress = if (colors.indicator.liquidPaint != null) {
-        rowPresses.indexOfFirst { it.value }
-    } else -1
+    val isLiquid = colors.indicator.liquidPaint != null
+    // Liquid uses one press owner across expanded and collapsed rail geometries.
+    // Glass preserves its original row PressInteraction source.
+    val expandedPress = if (!isLiquid) rowPresses.indexOfFirst { it.value } else -1
     val indicatorIndex = when {
         pressedIndex >= 0 -> pressedIndex
         expandedPress >= 0 -> expandedPress
@@ -337,10 +339,21 @@ private fun RailPanelRows(
     }
     val indicatorPressed = pressedIndex >= 0 || expandedPress >= 0
     val liquidPosition by animateFloatAsState(
-        targetValue = indicatorIndex.toFloat(),
-        animationSpec = spring(dampingRatio = 0.85f, stiffness = 320f),
+        targetValue = if (isLiquid && context.state.expanded && pressedIndex >= 0) {
+            interaction.previewRow
+        } else indicatorIndex.toFloat(),
+        animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
         label = "liquidRailIndicatorRow",
     )
+    val indicatorAppearance = if (isLiquid) {
+        GlassIndicatorAppearance(
+            color = colors.indicator.color,
+            pressedColor = colors.indicator.pressedColor,
+            scaleOnPress = colors.indicator.scaleOnPress,
+            liquidPaint = colors.indicator.liquidPaint,
+            dragStretch = { interaction.dragStretch },
+        )
+    } else colors.indicator
     val itemWidth = geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2
     NavigationRailIndicator(
         selection = RailIndicatorSelection(indicatorIndex, interaction, indicatorPressed),
@@ -352,7 +365,7 @@ private fun RailPanelRows(
                 if (colors.indicator.liquidPaint != null) liquidPosition else indicatorIndex.toFloat()
             },
         ),
-        appearance = colors.indicator,
+        appearance = indicatorAppearance,
     )
     context.selection.items.forEachIndexed { position, item ->
         key(position, item) {

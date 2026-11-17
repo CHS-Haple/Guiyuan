@@ -12,6 +12,7 @@ import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /** Pure touch-axis classification shared by both rail orientations. */
 internal enum class RailGestureDecision { Pending, Drag, Cancel }
@@ -39,6 +41,31 @@ internal fun railGestureDecision(
         return if (horizontal) RailGestureDecision.Drag else RailGestureDecision.Cancel
     }
     return RailGestureDecision.Pending
+}
+
+/** Liquid keeps the native pointer owner, but follows X collapsed and Y expanded. */
+internal fun liquidRailGestureDecision(
+    movementX: Float,
+    movementY: Float,
+    touchSlop: Float,
+    horizontal: Boolean,
+): RailGestureDecision {
+    if (horizontal) return railGestureDecision(movementX, movementY, touchSlop, true)
+    if (abs(movementX) > touchSlop && abs(movementX) > abs(movementY)) return RailGestureDecision.Cancel
+    if (abs(movementY) > touchSlop && abs(movementY) > abs(movementX)) return RailGestureDecision.Drag
+    return RailGestureDecision.Pending
+}
+
+/** The indicator travels continuously between the existing measured rows. */
+internal fun liquidRailPreviewAt(y: Float, centres: List<Float>): Float {
+    if (centres.isEmpty() || y <= centres.first()) return 0f
+    for (i in 0 until centres.lastIndex) {
+        if (y <= centres[i + 1]) {
+            val distance = (centres[i + 1] - centres[i]).coerceAtLeast(1f)
+            return i + ((y - centres[i]) / distance).coerceIn(0f, 1f)
+        }
+    }
+    return centres.lastIndex.toFloat()
 }
 
 /** Pointer deltas must map through the active slot's logical width, including RTL. */
@@ -77,6 +104,10 @@ internal class NavigationRailInteraction(
         private set
     var releaseGeneration by mutableIntStateOf(0)
         private set
+    var previewRow by mutableFloatStateOf(selectedIndex.toFloat())
+        private set
+    var dragStretch by mutableFloatStateOf(0f)
+        private set
 
     fun indexAt(x: Float, y: Float): Int {
         var nearest = -1
@@ -105,12 +136,28 @@ internal class NavigationRailInteraction(
 
     fun press(index: Int) {
         pressedIndex = index
+        previewRow = index.toFloat()
+        dragStretch = 0f
         settle(index)
     }
 
     fun release() {
         pressedIndex = -1
+        dragStretch = 0f
         releaseGeneration++
+    }
+
+    /** Smooth Y-axis destination preview inside the existing rail pointer state. */
+    fun dragExpanded(y: Float, deltaY: Float) {
+        if (slots.any { it.height <= 0f }) return
+        val centres = slots.map { it.top + it.height / 2f }
+        val destination = liquidRailPreviewAt(y, centres)
+        previewRow = destination
+        pressedIndex = destination.roundToInt().coerceIn(slots.indices)
+        val pitch = if (centres.size > 1) {
+            (centres.last() - centres.first()) / (centres.size - 1)
+        } else slots.first().height
+        dragStretch = (deltaY / pitch.coerceAtLeast(1f)).coerceIn(-0.25f, 0.25f)
     }
 
     fun settle(index: Int) {
@@ -153,6 +200,7 @@ private class RailGestureControl(
     val expanded: State<Boolean>,
     val headerBottom: State<() -> Float>,
     val onSelect: State<(Int) -> Unit>,
+    val liquid: Boolean,
 )
 
 /** One touch's mutable coordinates; the global indicator still belongs to NavigationRailInteraction. */
@@ -178,8 +226,9 @@ internal fun Modifier.navigationRailGestures(
     expanded: State<Boolean>,
     headerBottom: State<() -> Float>,
     onSelect: State<(Int) -> Unit>,
-): Modifier = pointerInput(interaction, layoutDirection) {
-    val control = RailGestureControl(interaction, layoutDirection, expanded, headerBottom, onSelect)
+    liquid: Boolean = false,
+): Modifier = pointerInput(interaction, layoutDirection, liquid) {
+    val control = RailGestureControl(interaction, layoutDirection, expanded, headerBottom, onSelect, liquid)
     awaitEachGesture { performRailGesture(control, viewConfiguration.touchSlop) }
 }
 
@@ -199,12 +248,14 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.per
         initial, position, position - control.interaction.start(initial),
         horizontal, control.interaction.rowInteractions[initial],
     )
-    run.rowPress = if (horizontal) null else PressInteraction.Press(down.position)
-    if (horizontal) control.interaction.press(initial) else run.source.tryEmit(checkNotNull(run.rowPress))
+    val liquidExpanded = control.liquid && !horizontal
+    run.rowPress = if (horizontal || liquidExpanded) null else PressInteraction.Press(down.position)
+    if (horizontal || liquidExpanded) control.interaction.press(initial)
+    else run.source.tryEmit(checkNotNull(run.rowPress))
     try {
         trackRailPointer(control, down, run, touchSlop)
     } finally {
-        if (horizontal) {
+        if (horizontal || liquidExpanded) {
             control.interaction.release()
         } else {
             run.rowPress?.let { press ->
@@ -235,7 +286,11 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.tra
         if (!change.pressed) {
             if (change.changedToUp()) {
                 control.onSelect.value(
-                    if (run.horizontal) control.interaction.indexAt(run.position) else run.initial,
+                    when {
+                        run.horizontal -> control.interaction.indexAt(run.position)
+                        control.liquid && run.dragging -> run.current
+                        else -> run.initial
+                    },
                 )
                 change.consume()
                 run.committed = true
@@ -243,15 +298,23 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.tra
             break
         }
         if (!run.dragging) {
-            when (railGestureDecision(run.movementX, run.movementY, touchSlop, run.horizontal)) {
+            val decision = if (control.liquid) {
+                liquidRailGestureDecision(run.movementX, run.movementY, touchSlop, run.horizontal)
+            } else railGestureDecision(run.movementX, run.movementY, touchSlop, run.horizontal)
+            when (decision) {
                 RailGestureDecision.Cancel -> break
                 RailGestureDecision.Drag -> run.dragging = true
                 RailGestureDecision.Pending -> Unit
             }
         }
         if (run.dragging) {
-            control.interaction.drag(run.position, run.grabOffset, delta, run.current)
-            run.current = control.interaction.indexAt(run.position)
+            if (control.liquid && !run.horizontal) {
+                control.interaction.dragExpanded(change.position.y, physicalDelta.y)
+                run.current = control.interaction.pressedIndex
+            } else {
+                control.interaction.drag(run.position, run.grabOffset, delta, run.current)
+                run.current = control.interaction.indexAt(run.position)
+            }
             change.consume()
         } else {
             val final = awaitPointerEvent(PointerEventPass.Final)
