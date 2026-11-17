@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -70,6 +71,7 @@ import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.system.RestartTarget
 import com.chaners.guiyuan.system.ScopeRestart
@@ -80,13 +82,8 @@ import com.chaners.guiyuan.ui.components.measuredNavTouchExtension
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
-import com.chaners.guiyuan.ui.components.liquid.LiquidNavRail
-import com.chaners.guiyuan.ui.components.liquid.LiquidRailItem
-import com.chaners.guiyuan.ui.components.liquid.LiquidRailSpec
-import com.chaners.guiyuan.ui.components.liquid.LiquidRailAppearance
-import com.chaners.guiyuan.ui.components.liquid.LiquidRailSafeArea
-import com.chaners.guiyuan.ui.components.liquid.canPlaceLiquidRail
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
+import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
 import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
 import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
@@ -127,6 +124,7 @@ import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -175,10 +173,10 @@ internal fun useNativeRailFor(
     safePadding: PaddingValues,
     direction: LayoutDirection,
 ): Boolean {
-    if (!appearance.navEnabled || appearance.navStyle == NavStyle.Liquid) return false
-    // OS4 Glass with an actual backdrop keeps its already accepted GlassRail and GlassBar.
-    if (appearance.uiStyle == UiStyle.OS4 &&
-        appearance.navStyle == NavStyle.Glass && glassBackdropAvailable
+    if (!appearance.navEnabled) return false
+    // OS4 Glass and Liquid share the original GlassRail layout; OS3 uses native Rail.
+    if (appearance.uiStyle == UiStyle.OS4 && glassBackdropAvailable &&
+        appearance.navStyle in setOf(NavStyle.Glass, NavStyle.Liquid)
     ) return false
     return canPlaceNativeRail(
         window,
@@ -265,9 +263,21 @@ private fun HubNativeRail(
     items: List<MainNavItem>,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
+    liquidBackdrop: Backdrop?,
+    liquidMode: LiquidMode,
 ) {
     if (!visible) return
-    NavigationRail(state = state, modifier = Modifier.fillMaxHeight()) {
+    // Preserve the upstream OS3 rail's width, toggle, indicator, scrolling and insets.
+    // Only the native surface switches to a page-sampled Liquid material.
+    NavigationRail(
+        state = state,
+        modifier = Modifier.fillMaxHeight().then(
+            if (liquidBackdrop != null) {
+                Modifier.liquidRailSurface(liquidBackdrop, RoundedCornerShape(0.dp), liquidMode)
+            } else Modifier
+        ),
+        color = if (liquidBackdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
+    ) {
         items.forEachIndexed { index, item ->
             NavigationRailItem(
                 selected = selectedIndex == index,
@@ -364,13 +374,16 @@ internal fun MainHub(
     val railVerticalInsets = railTopInset + railBottomInset
     val railContentWidth = GlassNavigationRailDefaults.ExpandedWidth +
         GlassNavigationRailDefaults.Margin * 2 + railStartInset
-    val useGlassRail = os4Glass && navBackdrop != null &&
-        canPlaceGlassRail(LocalWindowInfo.current.containerDpSize, railStartInset, railEndInset, railVerticalInsets)
-    // OS3 Standard, Blur and Glass use the upstream native Rail at wide widths.
-    // Liquid keeps its dedicated bottom material; the upstream has no Liquid rail.
+    val liquidBackdrop =
+        if (liquidMaterialActive) rememberLiquidNavBackdrop(surfaceColor) else null
+    val railBackdrop = if (os4Glass) navBackdrop else if (os4) liquidBackdrop else null
+    // The UI style owns geometry. Liquid changes only the material of that style's rail.
+    val useGlassRail = railBackdrop != null && canPlaceGlassRail(
+        LocalWindowInfo.current.containerDpSize, railStartInset, railEndInset, railVerticalInsets,
+    )
     val useNativeRail = useNativeRailFor(
         appearance = appearance,
-        glassBackdropAvailable = navBackdrop != null,
+        glassBackdropAvailable = navBackdrop != null || liquidBackdrop != null,
         window = LocalWindowInfo.current.containerDpSize,
         safePadding = railSafePadding,
         direction = LocalLayoutDirection.current,
@@ -380,20 +393,6 @@ internal fun MainHub(
     val railProgress = remember(useGlassRail, railState) {
         { if (useGlassRail) railState.progress else 1f }
     }
-    val liquidBackdrop =
-        if (liquidMaterialActive) {
-            rememberLiquidNavBackdrop(surfaceColor)
-        } else {
-            null
-        }
-    val useLiquidRail = liquidBackdrop != null && canPlaceLiquidRail(
-        window = LocalWindowInfo.current.containerDpSize,
-        uiStyle = appearance.uiStyle,
-        count = TopLevelPageCount,
-        safe = LiquidRailSafeArea(railStartInset, railEndInset, railVerticalInsets),
-    )
-    val liquidRailContentWidth = LiquidRailSpec.width(appearance.uiStyle) +
-        LiquidRailSpec.Margin * 2 + railStartInset
 
     val homeLabel = stringResource(R.string.nav_home)
     val featuresLabel = stringResource(R.string.nav_features)
@@ -429,7 +428,7 @@ internal fun MainHub(
         snackbarHost = { SnackbarHost(state = featureSnackbarState) },
         bottomBar = {
             when {
-                useGlassRail || useNativeRail || useLiquidRail -> Unit
+                useGlassRail || useNativeRail -> Unit
                 os4Glass && navBackdrop != null -> {
                     val selectedPage = pageSelection.selectedPage
                     val includeLabels = appearance.activeNavContent == NavContent.IconAndText
@@ -601,6 +600,8 @@ internal fun MainHub(
                 items = items,
                 selectedIndex = pageSelection.selectedPage,
                 onSelect = ::selectPage,
+                liquidBackdrop = liquidBackdrop.takeIf { appearance.navStyle == NavStyle.Liquid },
+                liquidMode = appearance.liquidMode,
             )
             Box(Modifier.weight(1f).fillMaxHeight()) {
         Box(
@@ -624,14 +625,10 @@ internal fun MainHub(
         ) {
             Box(
                 modifier = Modifier.fillMaxSize().then(
-                    if (useGlassRail || useLiquidRail) {
+                    if (useGlassRail) {
                         Modifier.layout { measurable, constraints ->
-                            val occupied = if (useGlassRail) {
-                                railContentWidth.toPx() * railState.progress
-                            } else {
-                                liquidRailContentWidth.toPx()
-                            }
-                            val start = occupied.roundToInt().coerceIn(0, constraints.maxWidth)
+                            val start = (railContentWidth.toPx() * railState.progress)
+                                .roundToInt().coerceIn(0, constraints.maxWidth)
                             val page = measurable.measure(constraints.offset(horizontal = -start))
                             layout(constraints.maxWidth, page.height) {
                                 page.placeRelative(start, 0)
@@ -703,34 +700,16 @@ internal fun MainHub(
                     selectedIndex = pageSelection.selectedPage,
                     onSelect = ::selectPage,
                 ),
-                backdrop = navBackdrop,
+                backdrop = railBackdrop,
                 state = railState,
                 showToggle = true,
+                // Keep upstream OS4 rail motion and indicator; substitute only the panel surface.
+                materialOverride = if (appearance.navStyle == NavStyle.Liquid) {
+                    { backdrop, shape ->
+                        Modifier.liquidRailSurface(backdrop, shape, appearance.liquidMode)
+                    }
+                } else null,
                 modifier = Modifier.fillMaxSize(),
-            )
-        }
-        // The Liquid overlay must stay outside the page's recorded backdrop.
-        if (useLiquidRail && liquidBackdrop != null) {
-            val liquidItems = remember(items) {
-                items.map { item -> LiquidRailItem(icon = item.icon, label = item.label) }
-            }
-            LiquidNavRail(
-                selectedIndex = { pageSelection.selectedPage },
-                onSelected = ::selectPage,
-                backdrop = liquidBackdrop,
-                appearance = LiquidRailAppearance(
-                    items = liquidItems,
-                    dark = dark,
-                    mode = appearance.liquidMode,
-                    uiStyle = appearance.uiStyle,
-                    contentMode = appearance.activeNavContent,
-                ),
-                modifier = Modifier.align(Alignment.CenterStart)
-                    .padding(
-                        start = railStartInset + LiquidRailSpec.Margin,
-                        top = railTopInset,
-                        bottom = railBottomInset,
-                    ),
             )
         }
             }

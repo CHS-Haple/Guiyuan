@@ -58,11 +58,20 @@ class NativeRailWindowEligibilityTest {
     }
 
     @Test
-    fun liquidAndDisabledNavKeepTheirOwnBehavior() {
+    fun liquidUsesTheOriginalUiStyleRailAndDisabledNavRemainsHidden() {
         val window = DpSize(750.dp, 420.dp)
-        assertFalse(useNativeRailFor(
+        assertTrue(useNativeRailFor(
             Appearance(uiStyle = UiStyle.OS3, navStyle = NavStyle.Liquid),
             true, window, PaddingValues(), LayoutDirection.Ltr,
+        ))
+        assertFalse(useNativeRailFor(
+            Appearance(uiStyle = UiStyle.OS4, navStyle = NavStyle.Liquid),
+            true, window, PaddingValues(), LayoutDirection.Ltr,
+        ))
+        // No shader: preserve the native OS4 fallback instead of showing an empty rail.
+        assertTrue(useNativeRailFor(
+            Appearance(uiStyle = UiStyle.OS4, navStyle = NavStyle.Liquid),
+            false, window, PaddingValues(), LayoutDirection.Ltr,
         ))
         assertFalse(useNativeRailFor(
             Appearance(uiStyle = UiStyle.OS4, navStyle = NavStyle.Standard, navEnabled = false),

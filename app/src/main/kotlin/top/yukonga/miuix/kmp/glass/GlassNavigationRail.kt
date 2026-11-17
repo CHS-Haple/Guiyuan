@@ -62,6 +62,7 @@ import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
 import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.GlassMaterials
 import top.yukonga.miuix.kmp.material.GlassShadow
+import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.GlassShadows
 import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -153,6 +154,7 @@ private class RailWindowRequest(
     val state: GlassNavigationRailState,
     val backdrop: Backdrop?,
     val showToggle: Boolean,
+    val materialOverride: (@Composable (Backdrop?, GlassShape) -> Modifier)?,
 )
 
 private class RailSourceWidths(val labels: List<Dp>, val slots: List<Dp>)
@@ -178,6 +180,7 @@ internal fun GlassNavigationRail(
     modifier: Modifier = Modifier,
     state: GlassNavigationRailState = rememberGlassNavigationRailState(),
     showToggle: Boolean = true,
+    materialOverride: (@Composable (Backdrop?, GlassShape) -> Modifier)? = null,
 ) {
     val items = destinations.items
     if (items.isEmpty()) return
@@ -206,7 +209,7 @@ internal fun GlassNavigationRail(
         }
     }
     RailNavigationWindow(
-        request = RailWindowRequest(destinations, state, backdrop, showToggle),
+        request = RailWindowRequest(destinations, state, backdrop, showToggle, materialOverride),
         widths = RailSourceWidths(labelWidths, sourceWidths),
         animation = RailAnimationState(rowProgress, iconAlpha),
         modifier = modifier,
@@ -291,6 +294,7 @@ private fun RailWindowPanel(
             material = GlassNavigationRailDefaults.material(),
             stroke = GlassNavigationRailDefaults.stroke(),
             shadow = GlassShadows.Float,
+            materialOverride = request.materialOverride,
         ),
         colors = RailPanelColors(
             selectedColor = if (MiuixTheme.isDynamicColor) colorScheme.primary else colorScheme.onSurface,

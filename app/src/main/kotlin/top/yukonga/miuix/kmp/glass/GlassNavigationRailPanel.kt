@@ -98,6 +98,7 @@ internal class RailPanelSurface(
     val material: GlassMaterial?,
     val stroke: EdgeStroke?,
     val shadow: GlassShadow?,
+    val materialOverride: (@Composable (Backdrop?, GlassShape) -> Modifier)? = null,
 )
 
 /** Colors and typography shared between rail rows and their indicator. */
@@ -148,32 +149,38 @@ private fun Modifier.railPanelSurfaceModifier(
     motion: RailPanelMotion,
     surface: RailPanelSurface,
     shape: GlassShape,
-): Modifier = this
-    .layout { measurable, _ ->
-        val fraction = state.progress.coerceIn(0f, 1f)
-        val width = lerp(geometry.endpoints.collapsedWidth.toPx(), geometry.endpoints.expandedWidth.toPx(), fraction).roundToInt()
-        val height = motion.panelHeight().roundToPx().coerceAtLeast(0)
-        val placeable = measurable.measure(Constraints.fixed(width, height))
-        layout(width, height) { placeable.place(0, 0) }
-    }
-    .offset {
-        IntOffset(
-            x = motion.panelStart().roundToPx(),
-            y = lerp(geometry.endpoints.collapsedTop.toPx(), geometry.endpoints.expandedTop.toPx(), state.progress).roundToInt(),
+): Modifier {
+    // Do not replace the MIUIX rail's layout, morph, input or lifecycle owner.
+    // Only the surface paint differs; the default Glass material path is unchanged.
+    val surfacePaint = surface.materialOverride?.invoke(surface.backdrop, shape)
+        ?: Modifier.glassPanel(
+            backdrop = surface.backdrop,
+            shape = shape,
+            style = surface.style,
+            alpha = surface.alpha,
+            material = surface.material,
+            stroke = surface.stroke,
+            shadow = surface.shadow,
+            shading = false,
+            fallback = Modifier.clip(shape).background(MiuixTheme.colorScheme.surfaceContainer),
         )
-    }
-    .glassPanel(
-        backdrop = surface.backdrop,
-        shape = shape,
-        style = surface.style,
-        alpha = surface.alpha,
-        material = surface.material,
-        stroke = surface.stroke,
-        shadow = surface.shadow,
-        shading = false,
-        fallback = Modifier.clip(shape).background(MiuixTheme.colorScheme.surfaceContainer),
-    )
-    .clip(shape)
+    return this
+        .layout { measurable, _ ->
+            val fraction = state.progress.coerceIn(0f, 1f)
+            val width = lerp(geometry.endpoints.collapsedWidth.toPx(), geometry.endpoints.expandedWidth.toPx(), fraction).roundToInt()
+            val height = motion.panelHeight().roundToPx().coerceAtLeast(0)
+            val placeable = measurable.measure(Constraints.fixed(width, height))
+            layout(width, height) { placeable.place(0, 0) }
+        }
+        .offset {
+            IntOffset(
+                x = motion.panelStart().roundToPx(),
+                y = lerp(geometry.endpoints.collapsedTop.toPx(), geometry.endpoints.expandedTop.toPx(), state.progress).roundToInt(),
+            )
+        }
+        .then(surfacePaint)
+        .clip(shape)
+}
 
 @Composable
 private fun RailPanelContents(
