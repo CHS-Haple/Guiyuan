@@ -84,7 +84,8 @@ import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
-import com.chaners.guiyuan.ui.components.liquid.liquidNativeRailSelection
+import com.chaners.guiyuan.ui.components.liquid.LiquidNativeRailSelection
+import com.chaners.guiyuan.ui.components.liquid.liquidRailPressObserver
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSelectedSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
 import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
@@ -285,15 +286,29 @@ private fun HubNativeRail(
             color = if (liquidMaterial != null) Color.Transparent else MiuixTheme.colorScheme.surface,
         ) {
             items.forEachIndexed { index, item ->
-                NavigationRailItem(
-                    selected = selectedIndex == index,
-                    onClick = { onSelect(index) },
-                    icon = item.icon,
-                    label = item.label,
-                    modifier = if (liquidMaterial != null && selectedIndex == index) {
-                        Modifier.liquidNativeRailSelection(liquidMaterial.backdrop, liquidMaterial.mode)
-                    } else Modifier,
-                )
+                val selected = selectedIndex == index
+                var pressed by remember(selected) { mutableStateOf(false) }
+                Box(
+                    modifier = Modifier.fillMaxWidth().then(
+                        if (liquidMaterial != null && selected) {
+                            Modifier.liquidRailPressObserver { pressed = it }
+                        } else Modifier
+                    ),
+                ) {
+                    if (liquidMaterial != null && selected) {
+                        LiquidNativeRailSelection(
+                            backdrop = liquidMaterial.backdrop,
+                            mode = liquidMaterial.mode,
+                            pressed = pressed,
+                        )
+                    }
+                    NavigationRailItem(
+                        selected = selected,
+                        onClick = { onSelect(index) },
+                        icon = item.icon,
+                        label = item.label,
+                    )
+                }
             }
         }
     }
@@ -700,7 +715,7 @@ internal fun MainHub(
             }
             }
         }
-        }
+        // The rail is not recorded into the backdrop it samples.
         if (useGlassRail) {
             // Wide rails use labeled destinations, independent of compact bottom-bar preference.
             val railItems = remember(items) {
@@ -740,6 +755,7 @@ internal fun MainHub(
                 modifier = Modifier.fillMaxSize(),
             )
         }
+            }
         }
 
         // Popups are hosted outside this page's backdrop recording.
