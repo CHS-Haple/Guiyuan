@@ -9,7 +9,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.matchParentSize
-import androidx.compose.foundation.layout.layout
+import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.lerp
 import top.yukonga.miuix.kmp.basic.NavigationRailDefaults
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.unit.roundToPx
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
