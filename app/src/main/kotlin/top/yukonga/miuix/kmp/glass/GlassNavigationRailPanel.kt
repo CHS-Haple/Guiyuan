@@ -402,6 +402,7 @@ private fun RailPanelRows(
     val interaction = pointer.interaction
     val pressedIndex = interaction.pressedIndex
     val selectedIndex = context.selection.selectedIndex
+    val itemWidth = geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2
     // The Glass rail retains upstream row press indication. Liquid uses the
     // single pointer owner and renders its lens outside the scroll viewport.
     val isLiquid = colors.indicator.liquidPaint != null
