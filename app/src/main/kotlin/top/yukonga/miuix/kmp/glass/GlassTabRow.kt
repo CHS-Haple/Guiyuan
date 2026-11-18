@@ -47,6 +47,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
@@ -83,6 +84,10 @@ import top.yukonga.miuix.kmp.material.withUnderlayBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.roundToInt
+
+/** A release outside the visible track cancels the preview instead of clamping selection. */
+internal fun segmentedTabContains(x: Float, y: Float, width: Float, height: Float): Boolean =
+    x >= 0f && x < width && y >= 0f && y < height
 
 /**
  * Colours used by a tab in each interaction state.
@@ -677,12 +682,30 @@ fun GlassSegmentedTabRow(
                                 val event = awaitPointerEvent()
                                 val change = event.changes.firstOrNull { it.id == down.id } ?: break
                                 if (change.isConsumed) break
+                                // A vertical scroll wins unless a horizontal drag already owns this gesture.
+                                val decision = if (grabOffset.isNaN()) {
+                                    railGestureDecision(
+                                        change.position.x - down.position.x,
+                                        change.position.y - down.position.y,
+                                        viewConfiguration.touchSlop,
+                                        horizontal = true,
+                                    )
+                                } else RailGestureDecision.Drag
+                                if (decision == RailGestureDecision.Cancel) break
                                 if (!change.pressed) {
-                                    if (change.changedToUp()) {
-                                        val releaseDelta = change.position.x - change.previousPosition.x
+                                    // Let an ancestor's final-pass consumption cancel a pending tap.
+                                    val final = awaitPointerEvent(PointerEventPass.Final)
+                                    val release = final.changes.firstOrNull { it.id == down.id } ?: break
+                                    if (!release.isConsumed && release.changedToUp() &&
+                                        segmentedTabContains(
+                                            release.position.x, release.position.y,
+                                            size.width.toFloat(), size.height.toFloat(),
+                                        )
+                                    ) {
+                                        val releaseDelta = release.position.x - release.previousPosition.x
                                         selectionX += if (layoutDirection == LayoutDirection.Rtl) -releaseDelta else releaseDelta
                                         onSelectState(indexAt(selectionX))
-                                        change.consume()
+                                        release.consume()
                                     }
                                     break
                                 }
@@ -694,8 +717,10 @@ fun GlassSegmentedTabRow(
                                 val delta = if (layoutDirection == LayoutDirection.Rtl) -pointerDelta else pointerDelta
                                 selectionX += delta
                                 if (grabOffset.isNaN()) {
-                                    if (abs(selectionX - downX) < viewConfiguration.touchSlop) {
+                                    if (decision == RailGestureDecision.Pending) {
                                         pressedIndex = indexAt(selectionX)
+                                        val final = awaitPointerEvent(PointerEventPass.Final)
+                                        if (final.changes.firstOrNull { it.id == down.id }?.isConsumed == true) break
                                         continue
                                     }
                                     grabOffset = downX - pressedLeft
