@@ -374,7 +374,7 @@ private fun LiquidNavigationSearchAction(
     )
     Box(
         modifier = Modifier
-            .size(GlassNavigationBarDefaults.Height)
+            .size(LiquidNavSpec.height)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -619,7 +619,7 @@ internal fun MainHub(
                                             rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
                                             onSelect = ::selectPage,
                                             trailingActionWidth = if (showNavigationSearch) {
-                                                GlassNavigationBarDefaults.Height + GlassNavigationBarDefaults.ActionSpacing
+                                                LiquidNavSpec.height + GlassNavigationBarDefaults.ActionSpacing
                                             } else 0.dp,
                                         )
                                     } else {
@@ -636,7 +636,10 @@ internal fun MainHub(
                                 tabsCount = items.size,
                                 dark = dark,
                                 mode = appearance.liquidMode,
-                                modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
+                                // OS4's action layout owns group margins; OS3 keeps its own.
+                                modifier = if (os4) Modifier else Modifier.padding(
+                                    horizontal = LiquidNavSpec.sidePadding,
+                                ),
                             ) {
                                 items.forEachIndexed { index, item ->
                                     LiquidNavEntry(
@@ -651,7 +654,10 @@ internal fun MainHub(
                         }
                         if (os4) {
                             GlassNavigationBarLayout(
-                                modifier = Modifier.fillMaxWidth(),
+                                // The capsule and action share the same symmetric Liquid margins.
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = LiquidNavSpec.sidePadding),
                                 trailingAction = if (showNavigationSearch) {
                                     {
                                         val label = stringResource(R.string.feature_search)
