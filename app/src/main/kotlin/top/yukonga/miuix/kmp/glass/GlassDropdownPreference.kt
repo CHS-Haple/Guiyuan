@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -116,7 +117,7 @@ fun GlassDropdownPreference(
         startAction = startAction,
         endActions = {
             Row(
-                modifier = Modifier.glassPopupAnchorValue(anchor),
+                modifier = Modifier.glassPopupAnchorValue(anchor, trackBounds = mounted.value),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val value = items.getOrNull(selectedIndex)
@@ -144,6 +145,9 @@ fun GlassDropdownPreference(
     )
 
     if (!mounted.value) return
+    DisposableEffect(anchor) {
+        onDispose { anchor.dropdownValueBounds = null }
+    }
 
     PopupLayout(
         visible = mounted,
@@ -153,10 +157,12 @@ fun GlassDropdownPreference(
         exitTransition = ExitTransition.None,
         renderInRootScaffold = renderInRootScaffold,
     ) {
-        // Box for the dropdown's full-page dismiss layer.
+        // A newly mounted popup must not reuse bounds from its prior lifetime.
+        val show = expanded && actualEnabled
+        if (show && anchor.dropdownValueBounds == null) return@PopupLayout
         Box(modifier = Modifier.fillMaxSize()) {
             GlassDropdownPopupContent(
-                show = expanded && actualEnabled,
+                show = show,
                 onDismissRequest = { setExpanded(false) },
                 anchorBounds = rowBounds,
                 backdrop = backdrop,
