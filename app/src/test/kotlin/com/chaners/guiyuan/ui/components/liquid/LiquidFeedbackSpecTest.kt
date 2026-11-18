@@ -33,10 +33,25 @@ class LiquidFeedbackSpecTest {
         ), 0.001f)
     }
 
-    @Test fun tallRailScaleKeepsTheLensInsideItsReservedActionGap() {
-        assertEquals(17.555f, liquidRailActionReachPx(320f, 54f, 16f, 22f, 3f), 0.001f)
-        assertEquals(17.85833f, liquidRailActionReachPx(192f, 54f, 16f, 22f, 3f), 0.001f)
-        assertEquals(0f, liquidRailActionReachPx(320f, 54f, 0f, 0f, 3f), 0.001f)
+    @Test fun railMiddleLensDoesNotReserveTheLastTabsOverhang() {
+        val pressed = LiquidFeedbackSpec.PressedLensScale
+        assertEquals(0f, liquidRailVisibleLensOverhangPx(
+            320f, 1.05f, 230f, pressed, 22f,
+        ), 0.001f)
+        assertEquals(0f, liquidRailVisibleLensOverhangPx(
+            320f, 1.05f, 317f, 1f, 22f,
+        ), 0.001f)
+    }
+
+    @Test fun railRightmostLensUsesItsCurrentSpringEvenDuringOvershoot() {
+        val pressed = LiquidFeedbackSpec.PressedLensScale
+        assertEquals(8.4f, liquidRailVisibleLensOverhangPx(
+            320f, 1.05f, 317f, pressed, 22f,
+        ), 0.001f)
+        val overshoot = 1f + (pressed - 1f) * 1.1f
+        assertEquals(9.555f, liquidRailVisibleLensOverhangPx(
+            320f, 1.05f, 317f, overshoot, 22f,
+        ), 0.001f)
     }
 
     @Test fun compactPanelUsesThePortraitPressGrowth() {

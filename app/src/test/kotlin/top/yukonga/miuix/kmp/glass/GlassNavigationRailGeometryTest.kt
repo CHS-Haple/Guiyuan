@@ -82,10 +82,9 @@ class GlassNavigationRailGeometryTest {
     @Test fun liquidSearchPreplansLensReachWithTheOriginalPressClock() {
         val actionCenter = 359f
         val panelCenter = 160f
-        // 16dp panel growth + 22dp lens growth, including 10% X-spring overshoot.
-        val reach = com.chaners.guiyuan.ui.components.liquid.liquidRailActionReachPx(
-            320f, 54f, 16f, 22f, 3f,
-        )
+        // The panel grows by 16px: the end moves 8px; a middle lens adds no overhang.
+        val panelHalfWidth = 160f
+        val lensOverhang = 8.4f
         val fullScale = com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale(
             320f, 54f, 16f, 1f,
         )
@@ -93,17 +92,23 @@ class GlassNavigationRailGeometryTest {
             320f, 54f, 16f, 0.5f,
         )
         assertEquals(0f, railSearchActionPlannedShift(
-            actionCenter - panelCenter, 1f, 0f, 1f, reach,
+            actionCenter - panelCenter, panelHalfWidth, 1f, 1f, 0f,
         ), 0.001f)
-        assertEquals(reach / 2f, railSearchActionPlannedShift(
-            actionCenter - panelCenter, halfScale, 0.5f, 1f, reach,
+        assertEquals(4f, railSearchActionPlannedShift(
+            actionCenter - panelCenter, panelHalfWidth, halfScale, 1f, 0f,
         ), 0.001f)
-        assertEquals(reach, railSearchActionPlannedShift(
-            actionCenter - panelCenter, fullScale, 1f, 1f, reach,
+        assertEquals(8f, railSearchActionPlannedShift(
+            actionCenter - panelCenter, panelHalfWidth, fullScale, 1f, 0f,
+        ), 0.001f)
+        assertEquals(16.4f, railSearchActionPlannedShift(
+            actionCenter - panelCenter, panelHalfWidth, fullScale, 1f, lensOverhang,
+        ), 0.001f)
+        assertEquals(8.975f, railSearchActionPlannedShift(
+            actionCenter - panelCenter, panelHalfWidth, fullScale, 0.5f, 0f,
         ), 0.001f)
         assertEquals(railSearchActionPressShift(50f, 500f, 1.04f),
-            railSearchActionPlannedShift(50f - 500f, 1.04f, 1f, 0f, reach), 0.001f)
-        // The action has no pressed-tab or lens-animation dependency.
+            railSearchActionPlannedShift(50f - 500f, panelHalfWidth, 1.04f, 0f, lensOverhang), 0.001f)
+        // The action samples the existing X spring: it has no new press/drag animation.
     }
 
     @Test fun collapsedRailAlwaysReservesSpaceForIndependentSearchButton() {
