@@ -361,7 +361,9 @@ private fun RailLiquidIndicator(
     // Preserve the visual press until the selected lens has settled.
     var settlingPress by remember(interaction) { mutableStateOf(false) }
     val pressing = pressedIndex >= 0
-    LaunchedEffect(interaction, pressing, selectedIndex, context.state.expanded) {
+    // The geometry writer changes the rail slot endpoints on resize. Restart the
+    // release-settle observer with those endpoints instead of awaiting a stale target.
+    LaunchedEffect(interaction, pressing, selectedIndex, context.state.expanded, geometry.tabWidths) {
         if (pressing) {
             settlingPress = true
         } else {
