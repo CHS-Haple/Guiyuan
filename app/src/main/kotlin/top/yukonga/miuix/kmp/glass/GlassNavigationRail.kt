@@ -4,6 +4,7 @@
 package top.yukonga.miuix.kmp.glass
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.AnimationVector1D
@@ -78,6 +79,7 @@ import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 import com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale
+import com.chaners.guiyuan.ui.components.liquid.liquidActionPressReachPx
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 
@@ -257,6 +259,14 @@ private fun RailNavigationWindow(
             widths.slots.map { it * capsule.widthRatio }
         }
         val collapsedHeight = GlassNavigationRailDefaults.CollapsedHeight
+        // The published MIUIX Glass capsule animates changed label/window widths;
+        // Liquid continues using the single native state.morph for its own surface.
+        val nativeAnimatedWidth by animateDpAsState(
+            capsule.width, RailMorphDpMotion, label = "railCapsuleWidth",
+        )
+        val currentCollapsedWidth = if (request.materialOverride == null) {
+            nativeAnimatedWidth
+        } else capsule.width
         val collapsedStart = (maxWidth - capsule.width) / 2
         val expandedTop = GlassNavigationRailDefaults.CollapsedTop
         val expandedHeight = (maxHeight - expandedTop - GlassNavigationRailDefaults.Margin)
@@ -273,6 +283,7 @@ private fun RailNavigationWindow(
             rememberRailMotion(
                 target = if (expanded) GlassNavigationRailDefaults.Margin else collapsedStart,
                 expanded = expanded,
+                targetChangeSpec = RailMorphDpMotion,
             ) { expanding -> if (expanding) RailMorphDpMotion else RailReboundMotion }
         } else null
         RailWindowPanel(
@@ -282,7 +293,7 @@ private fun RailNavigationWindow(
                     tabWidths = tabWidths,
                     labelWidths = widths.labels,
                     contentStart = capsule.contentStart,
-                    endpoints = RailPanelEndpoints(capsule.width, GlassNavigationRailDefaults.ExpandedWidth,
+                    endpoints = RailPanelEndpoints(currentCollapsedWidth, GlassNavigationRailDefaults.ExpandedWidth,
                         GlassNavigationRailDefaults.CollapsedTop, expandedTop),
                 ),
                 motion = RailPanelMotion(animation.rows, { animation.iconAlpha.value },
@@ -298,7 +309,8 @@ private fun RailNavigationWindow(
         RailWindowTrailingAction(
             action = request.trailingAction,
             state = request.state,
-            capsuleWidth = capsule.width,
+            capsuleWidth = currentCollapsedWidth,
+            liquid = request.materialOverride != null,
             panelHeight = { panelHeight.value },
             liquidPress = animation.liquidPress,
             panelStart = {
@@ -316,6 +328,7 @@ private fun RailWindowTrailingAction(
     action: (@Composable () -> Unit)?,
     state: GlassNavigationRailState,
     capsuleWidth: Dp,
+    liquid: Boolean,
     panelHeight: () -> Dp,
     liquidPress: Animatable<Float, AnimationVector1D>,
     panelStart: () -> Dp,
@@ -360,14 +373,19 @@ private fun RailWindowTrailingAction(
                     val panelWidthPx = panelWidth.toPx()
                     val panelHeightPx = panelHeight().toPx()
                     val actionSizePx = actionSize.toPx()
-                    val press = liquidPress.value.coerceIn(0f, 1f)
-                    val scale = liquidPanelPressScale(
-                        panelWidthPx, panelHeightPx, LiquidFeedbackSpec.PressedPanelGrowth.toPx(), press,
-                    )
-                    // Plan the lens reach on the original press; a slower lens spring
-                    // must not produce another search-button displacement.
-                    val lensReach = (LiquidFeedbackSpec.PressedPanelGrowth / 2f +
-                        LiquidFeedbackSpec.PressedLensGrowth / 2f - RailCollapsedEndPadding).toPx()
+                    // Soft Glass keeps the upstream panel/action position untouched.
+                    // Liquid alone preplans its extra lens reach on the original press.
+                    val press = if (liquid) liquidPress.value.coerceIn(0f, 1f) else 0f
+                    val scale = if (liquid) {
+                        liquidPanelPressScale(
+                            panelWidthPx, panelHeightPx, LiquidFeedbackSpec.PressedPanelGrowth.toPx(), press,
+                        )
+                    } else 1f
+                    val lensReach = if (liquid) liquidActionPressReachPx(
+                        LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
+                        LiquidFeedbackSpec.PressedLensGrowth.toPx(),
+                        RailCollapsedEndPadding.toPx(),
+                    ) else 0f
                     IntOffset(
                         x = (x + railSearchActionPlannedShift(
                             x + actionSizePx / 2f,
@@ -526,19 +544,21 @@ internal class RailMorphCorner(private val progress: () -> Float) : CornerSize {
 }
 
 /**
- * Keeps a geometry value on [target]. Flipping [expanded] animates to it with [spec]; a target that
- * moves on its own, as a window resize does, is followed at once unless a flip is still settling.
+ * Keeps one geometry value on [target]; the native Glass rail may animate window/label
+ * target changes, matching upstream. The Liquid rail still owns its single morph clock.
  */
 @Composable
 private fun rememberRailMotion(
     target: Dp,
     expanded: Boolean,
+    targetChangeSpec: AnimationSpec<Dp>? = null,
     spec: (expanding: Boolean) -> AnimationSpec<Dp>,
 ): Animatable<Dp, AnimationVector1D> {
     val animatable = remember { Animatable(target, Dp.VectorConverter) }
     val currentTarget by rememberUpdatedState(target)
     val currentExpanded by rememberUpdatedState(expanded)
     val currentSpec by rememberUpdatedState(spec)
+    val currentTargetChangeSpec by rememberUpdatedState(targetChangeSpec)
     LaunchedEffect(animatable) {
         var settledExpanded = currentExpanded
         var animating = false
@@ -549,7 +569,9 @@ private fun rememberRailMotion(
                 animatable.animateTo(value, currentSpec(expanding))
                 animating = false
             } else {
-                animatable.snapTo(value)
+                val targetSpec = currentTargetChangeSpec
+                if (targetSpec != null) animatable.animateTo(value, targetSpec)
+                else animatable.snapTo(value)
             }
         }
     }

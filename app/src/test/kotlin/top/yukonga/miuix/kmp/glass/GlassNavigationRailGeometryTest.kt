@@ -82,7 +82,10 @@ class GlassNavigationRailGeometryTest {
     @Test fun liquidSearchPreplansLensReachWithTheOriginalPressClock() {
         val actionCenter = 359f
         val panelCenter = 160f
-        val reach = 16f // 16dp panel / 2 + 22dp lens / 2 - 3dp end inset.
+        // 16dp panel growth + 22dp lens growth, including 10% X-spring overshoot.
+        val reach = com.chaners.guiyuan.ui.components.liquid.liquidActionPressReachPx(
+            16f, 22f, 3f,
+        )
         val fullScale = com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale(
             320f, 54f, 16f, 1f,
         )
@@ -92,10 +95,10 @@ class GlassNavigationRailGeometryTest {
         assertEquals(0f, railSearchActionPlannedShift(
             actionCenter, panelCenter, 1f, 0f, 1f, reach,
         ), 0.001f)
-        assertEquals(8f, railSearchActionPlannedShift(
+        assertEquals(8.55f, railSearchActionPlannedShift(
             actionCenter, panelCenter, halfScale, 0.5f, 1f, reach,
         ), 0.001f)
-        assertEquals(16f, railSearchActionPlannedShift(
+        assertEquals(17.1f, railSearchActionPlannedShift(
             actionCenter, panelCenter, fullScale, 1f, 1f, reach,
         ), 0.001f)
         assertEquals(railSearchActionPressShift(50f, 500f, 1.04f),
