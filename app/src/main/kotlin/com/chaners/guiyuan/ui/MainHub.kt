@@ -43,6 +43,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
@@ -363,6 +365,7 @@ private fun LiquidNavigationSearchAction(
     backdrop: Backdrop,
     mode: LiquidMode,
     label: String,
+    dark: Boolean,
     onClick: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -374,11 +377,20 @@ private fun LiquidNavigationSearchAction(
     )
     Box(
         modifier = Modifier
-            .size(GlassNavigationBarDefaults.Height)
+            // Match the portrait Liquid capsule's height rather than Glass's 54.dp height.
+            .size(LiquidNavSpec.height)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
             }
+            .dropShadow(
+                shape = CircleShape,
+                shadow = Shadow(
+                    radius = 10.dp,
+                    color = Color.Black,
+                    alpha = if (dark) 0.20f else 0.10f,
+                ),
+            )
             .liquidRailSurface(backdrop, CircleShape, mode)
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .semantics { role = Role.Button },
@@ -619,7 +631,7 @@ internal fun MainHub(
                                             rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
                                             onSelect = ::selectPage,
                                             trailingActionWidth = if (showNavigationSearch) {
-                                                GlassNavigationBarDefaults.Height + GlassNavigationBarDefaults.ActionSpacing
+                                                LiquidNavSpec.height + GlassNavigationBarDefaults.ActionSpacing
                                             } else 0.dp,
                                         )
                                     } else {
@@ -636,7 +648,8 @@ internal fun MainHub(
                                 tabsCount = items.size,
                                 dark = dark,
                                 mode = appearance.liquidMode,
-                                modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
+                                // OS4's shared layout owns the outer margin; OS3 keeps its original.
+                                modifier = if (os4) Modifier else Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
                             ) {
                                 items.forEachIndexed { index, item ->
                                     LiquidNavEntry(
@@ -651,7 +664,9 @@ internal fun MainHub(
                         }
                         if (os4) {
                             GlassNavigationBarLayout(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = LiquidNavSpec.sidePadding),
                                 trailingAction = if (showNavigationSearch) {
                                     {
                                         val label = stringResource(R.string.feature_search)
@@ -660,6 +675,7 @@ internal fun MainHub(
                                                 backdrop = liquidBackdrop,
                                                 mode = appearance.liquidMode,
                                                 label = label,
+                                                dark = dark,
                                                 onClick = featureSearch::open,
                                             )
                                         }
