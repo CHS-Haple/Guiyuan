@@ -143,8 +143,10 @@ object GlassNavigationBarDefaults {
 
     /** The bar's own body. */
     @Composable
-    fun material(): GlassMaterial = GlassMaterials.puredThinGlass(
-        isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
+    fun material(): GlassMaterial = dynamicGlassMaterial(
+        GlassMaterials.puredThinGlass(
+            isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
+        ),
     )
 
     /** Resting indicator fill, using the primary colour only in dynamic colour themes. */
