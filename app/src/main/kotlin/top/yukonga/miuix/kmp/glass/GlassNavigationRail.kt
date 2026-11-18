@@ -34,6 +34,7 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -268,6 +269,11 @@ private fun RailNavigationWindow(
         } else capsule.width
         val collapsedStart = (maxWidth - capsule.width) / 2
         val density = LocalDensity.current
+        val actionProgress = animateFloatAsState(
+            targetValue = if (request.trailingAction != null) 1f else 0f,
+            animationSpec = GlassMotion.navShowHide(),
+            label = "railSearchActionVisibility",
+        )
         val expandedTop = GlassNavigationRailDefaults.CollapsedTop
         val expandedHeight = (maxHeight - expandedTop - GlassNavigationRailDefaults.Margin)
             .coerceAtLeast(collapsedHeight)
@@ -301,21 +307,32 @@ private fun RailNavigationWindow(
                             GlassNavigationRailDefaults.Margin,
                             request.state.progress,
                         )
-                        if (request.materialOverride == null || request.trailingAction == null) {
-                            start
-                        } else with(density) {
+                        with(density) {
                             val progress = request.state.progress.coerceIn(0f, 1f)
-                            val width = currentCollapsedWidth +
-                                (GlassNavigationRailDefaults.ExpandedWidth - currentCollapsedWidth) * progress
-                            val widthPx = width.toPx()
-                            val scale = liquidPanelPressScale(
-                                widthPx, panelHeight.value.toPx(),
-                                LiquidFeedbackSpec.PressedPanelGrowth.toPx(), animation.liquid.press.value,
+                            val collapsedFraction = 1f - progress
+                            val actionReservePx = (GlassNavigationBarDefaults.ActionSpacing +
+                                GlassNavigationRailDefaults.CollapsedHeight).toPx()
+                            val groupShift = railCollapsedActionGroupShift(
+                                actionReservePx, actionProgress.value, collapsedFraction,
                             )
-                            val overhang = animation.liquid.lensEdge.overhangPx(
-                                widthPx, scale, LiquidFeedbackSpec.PressedLensGrowth.toPx(),
-                            )
-                            start + railLiquidGroupCenterCorrection(overhang, 1f - progress).toDp()
+                            val lensShift = if (request.materialOverride != null &&
+                                actionProgress.value > 0f
+                            ) {
+                                val width = currentCollapsedWidth +
+                                    (GlassNavigationRailDefaults.ExpandedWidth - currentCollapsedWidth) * progress
+                                val widthPx = width.toPx()
+                                val scale = liquidPanelPressScale(
+                                    widthPx, panelHeight.value.toPx(),
+                                    LiquidFeedbackSpec.PressedPanelGrowth.toPx(), animation.liquid.press.value,
+                                )
+                                railLiquidGroupCenterCorrection(
+                                    animation.liquid.lensEdge.overhangPx(
+                                        widthPx, scale, LiquidFeedbackSpec.PressedLensGrowth.toPx(),
+                                    ),
+                                    collapsedFraction,
+                                )
+                            } else 0f
+                            start + (groupShift + lensShift).toDp()
                         }
                     }, { panelHeight.value }, animation.liquid),
         )
@@ -325,6 +342,7 @@ private fun RailNavigationWindow(
             state = request.state,
             placement = placement,
             liquid = request.materialOverride != null,
+            actionProgress = actionProgress,
         )
     }
 }
@@ -336,14 +354,9 @@ private fun RailWindowTrailingAction(
     state: GlassNavigationRailState,
     placement: RailPlacement,
     liquid: Boolean,
+    actionProgress: State<Float>,
 ) {
-    // An independent search action shares the rail's safe-area coordinates and
-    // follows the same native panel morph; no new page or gesture writer.
-    val actionProgress = animateFloatAsState(
-        targetValue = if (action != null) 1f else 0f,
-        animationSpec = GlassMotion.navShowHide(),
-        label = "railSearchActionVisibility",
-    )
+    // A single upstream show/hide clock now also owns the collapsed group's centering.
     val retainedAction = remember { mutableStateOf(action) }
     SideEffect {
         if (action != null || actionProgress.value == 0f) {
@@ -389,6 +402,10 @@ private fun RailWindowTrailingAction(
         ) { presentedAction() }
     }
 }
+
+/** Reserve the independent action inside the same visual centre as the capsule. */
+internal fun railCollapsedActionGroupShift(reservedWidthPx: Float, actionFraction: Float, collapsedFraction: Float): Float =
+    -reservedWidthPx * actionFraction.coerceIn(0f, 1f) * collapsedFraction.coerceIn(0f, 1f) / 2f
 
 /** One right-overhanging lens must not move the centre of the capsule-action group. */
 internal fun railLiquidGroupCenterCorrection(endOverhangPx: Float, collapsedFraction: Float): Float =
