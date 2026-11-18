@@ -3,7 +3,6 @@
 
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
@@ -249,18 +248,3 @@ internal fun Os4SearchMode(
     }
 }
 
-/** Keep the native bar mounted; search only fades its overlapping action. */
-@Composable
-internal fun rememberOs4BarAlpha(expanded: Boolean): State<Float> {
-    val transition = updateTransition(expanded, label = "os4SearchBarOpacity")
-    return transition.animateFloat(
-        transitionSpec = {
-            tween(
-                150,
-                easing = if (targetState) CubicBezierEasing(0f, 0f, 0.67f, 1f)
-                    else CubicBezierEasing(0.26f, 0f, 0.6f, 0.2f),
-            )
-        },
-        label = "os4SearchBarAlpha",
-    ) { if (it) 0f else 1f }
-}
