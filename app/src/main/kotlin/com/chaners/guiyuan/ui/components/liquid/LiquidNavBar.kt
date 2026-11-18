@@ -486,6 +486,7 @@ internal fun LiquidNavBar(
                                 motion.value * tabWidth + panelOffset
                             } else {
                                 widthPx.value.toFloat() -
+                                    LiquidNavSpec.contentPadding.toPx() * 2f -
                                     (motion.value + 1f) * tabWidth +
                                     panelOffset
                             }
