@@ -151,6 +151,40 @@ class GlassNavigationRailGeometryTest {
         assertEquals(0f, railLiquidGroupCenterCorrection(-2f, 1f), 0.001f)
     }
 
+    @Test fun wideLiquidPressKeepsActionGapAndGroupCenterAwayFromWindowOrigin() {
+        val panelStart = 640f
+        val panelWidth = 320f
+        val actionWidth = GlassNavigationRailDefaults.CollapsedHeight.value
+        val gap = GlassNavigationBarDefaults.ActionSpacing.value
+        val idleCenter = panelStart + (panelWidth + gap + actionWidth) / 2f
+
+        // The scale belongs to the placed panel, not the parent containing its X offset.
+        for (press in listOf(0f, 0.5f, 1f)) {
+            val scale = com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale(
+                panelWidth, 54f, 16f, press,
+            )
+            val lensScale = 1f +
+                (com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec.PressedLensScale - 1f) * press
+            for (lensRight in listOf(150f, 246f, 314f)) {
+                val overhang = com.chaners.guiyuan.ui.components.liquid.liquidRailVisibleLensOverhangPx(
+                    panelWidth, scale, lensRight, lensScale, 22f,
+                )
+                val correction = railLiquidGroupCenterCorrection(overhang, 1f)
+                val visibleLeft = panelStart + correction - panelWidth * (scale - 1f) / 2f
+                val visibleRight = panelStart + panelWidth + correction +
+                    panelWidth * (scale - 1f) / 2f + overhang
+                val actionShift = railSearchActionPlannedShift(
+                    panelWidth / 2f + gap + actionWidth / 2f,
+                    panelWidth / 2f, scale, 1f, overhang,
+                )
+                val actionLeft = panelStart + panelWidth + gap + correction + actionShift
+
+                assertEquals(gap, actionLeft - visibleRight, 0.001f)
+                assertEquals(idleCenter, (visibleLeft + actionLeft + actionWidth) / 2f, 0.001f)
+            }
+        }
+    }
+
     @Test fun collapsedRailAlwaysReservesSpaceForIndependentSearchButton() {
         val needed = GlassNavigationBarDefaults.ActionSpacing + GlassNavigationRailDefaults.CollapsedHeight
         assertTrue(needed <= RailCollapsedSideReserve)
