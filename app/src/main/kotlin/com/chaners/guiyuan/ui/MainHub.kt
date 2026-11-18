@@ -387,9 +387,9 @@ private fun LiquidNavigationAction(
         // Follow the published MIUIX floating action's press/release timing,
         // retaining Guiyuan's Liquid surface rather than its primary-tinted material.
         animationSpec = GlassMotion.springOf(
-            damping = 1f, response = if (pressed) 0.15f else 0.3f,
+            damping = 1f, response = if (pointerPressed || holdDown) 0.15f else 0.3f,
         ),
-        label = "liquidNavSearchPressScale",
+        label = "liquidNavigationActionPressScale",
     )
     Box(
         modifier = Modifier

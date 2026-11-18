@@ -20,7 +20,7 @@ class NavigationActionPolicyTest {
     }
 
     @Test
-    fun unsupportedStylesOs3AndRailFallbackPreserveTopSearch() {
+    fun unsupportedStylesOs3AndRailFallbackPreserveTopBarAction() {
         val appearance = Appearance(uiStyle = UiStyle.OS4, navEnabled = true)
         for (style in listOf(NavStyle.Standard, NavStyle.Blur)) {
             assertFalse(hasOs4NavigationActionSlot(appearance.copy(navStyle = style), true, true, false, false))
@@ -35,7 +35,7 @@ class NavigationActionPolicyTest {
     }
 
     @Test
-    fun os4RailOnlyExposesSearchInGlassAndLiquid() {
+    fun os4RailOnlyExposesActionInGlassAndLiquid() {
         val glass = Appearance(uiStyle = UiStyle.OS4, navEnabled = true, navStyle = NavStyle.Glass)
         assertTrue(hasOs4RailActionSlot(glass, true))
         assertTrue(hasOs4RailActionSlot(glass.copy(navStyle = NavStyle.Liquid), true))
