@@ -3,12 +3,16 @@ package com.chaners.guiyuan.ui
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -57,6 +61,8 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -108,6 +114,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.job
 import top.yukonga.miuix.kmp.glass.GlassNavigationBar
+import top.yukonga.miuix.kmp.glass.GlassNavigationBarLayout
+import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassNavigationRail
 import top.yukonga.miuix.kmp.glass.GlassRailDestinations
@@ -345,6 +353,44 @@ private fun HubNativeRail(
     } else rail()
 }
 
+/**
+ * OS4 Liquid keeps its own optical surface and interaction; MIUIX owns action layout/transition.
+ * This is a separate button, never another destination or a second pager writer.
+ */
+@Composable
+private fun LiquidNavigationSearchAction(
+    backdrop: Backdrop,
+    mode: LiquidMode,
+    label: String,
+    onClick: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.9f else 1f,
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = 300f),
+        label = "liquidNavSearchPressScale",
+    )
+    Box(
+        modifier = Modifier
+            .size(GlassNavigationBarDefaults.Height)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .liquidRailSurface(backdrop, CircleShape, mode)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .semantics { role = Role.Button },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Os4GlassSearch,
+            contentDescription = label,
+            tint = MiuixTheme.colorScheme.onBackground,
+        )
+    }
+}
+
 @Composable
 internal fun MainHub(
     appearance: Appearance,
@@ -446,11 +492,17 @@ internal fun MainHub(
         safePadding = railSafePadding,
         direction = LocalLayoutDirection.current,
     )
-    val searchInGlassNav = hasOs4NavigationSearchSlot(
+    val searchInBottomNav = hasOs4NavigationSearchSlot(
         appearance = appearance,
         glassBackdropAvailable = navBackdrop != null,
+        liquidBackdropAvailable = liquidBackdrop != null,
         glassRailActive = useGlassRail,
         nativeRailActive = useNativeRail,
+    )
+    val showNavigationSearch = showOs4NavigationSearchAction(
+        slotAvailable = searchInBottomNav,
+        selectedPage = pageSelection.selectedPage,
+        searchActive = featureSearch.active,
     )
     val nativeRailState = rememberNavigationRailState()
     val railState = rememberGlassNavigationRailState()
@@ -511,17 +563,14 @@ internal fun MainHub(
                         onSelect = ::selectPage,
                         backdrop = navBackdrop,
                         touchExtension = appearance.navTouchExtension,
-                        trailingAction = if (showOs4NavigationSearchAction(
-                                slotAvailable = searchInGlassNav,
-                                selectedPage = selectedPage,
-                                searchActive = featureSearch.active,
-                            )) {
+                        trailingAction = if (showNavigationSearch) {
                             {
                                 val label = stringResource(R.string.feature_search)
                                 TooltipBox(text = label) {
                                     GlassIconButton(
                                         onClick = featureSearch::open,
                                         backdrop = navBackdrop,
+                                        size = GlassNavigationBarDefaults.Height,
                                     ) {
                                         Icon(Os4GlassSearch, contentDescription = label)
                                     }
@@ -560,7 +609,7 @@ internal fun MainHub(
                             Modifier
                                 .fillMaxWidth()
                                 .then(
-                                    if (appearance.navTouchExtension) {
+                                    if (appearance.navTouchExtension && !showNavigationSearch) {
                                         Modifier.navTouchExtension(
                                             bottomPadding = liquidBottomPadding,
                                             horizontalPadding = LiquidNavSpec.sidePadding,
@@ -575,24 +624,46 @@ internal fun MainHub(
                                 )
                                 .padding(bottom = liquidBottomPadding),
                     ) {
-                        LiquidNavBar(
-                            selectedIndex = { pageSelection.selectedPage },
-                            onSelected = ::selectPage,
-                            backdrop = liquidBackdrop,
-                            tabsCount = items.size,
-                            dark = dark,
-                            mode = appearance.liquidMode,
-                            modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
-                        ) {
-                            items.forEachIndexed { index, item ->
-                                LiquidNavEntry(
-                                    contentMode = appearance.activeNavContent,
-                                    selected = pageSelection.selectedPage == index,
-                                    onClick = { selectPage(index) },
-                                    icon = item.icon,
-                                    label = item.label,
-                                )
+                        val liquidBar: @Composable () -> Unit = {
+                            LiquidNavBar(
+                                selectedIndex = { pageSelection.selectedPage },
+                                onSelected = ::selectPage,
+                                backdrop = liquidBackdrop,
+                                tabsCount = items.size,
+                                dark = dark,
+                                mode = appearance.liquidMode,
+                                modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
+                            ) {
+                                items.forEachIndexed { index, item ->
+                                    LiquidNavEntry(
+                                        contentMode = appearance.activeNavContent,
+                                        selected = pageSelection.selectedPage == index,
+                                        onClick = { selectPage(index) },
+                                        icon = item.icon,
+                                        label = item.label,
+                                    )
+                                }
                             }
+                        }
+                        if (os4) {
+                            GlassNavigationBarLayout(
+                                modifier = Modifier.fillMaxWidth(),
+                                trailingAction = if (showNavigationSearch) {
+                                    {
+                                        val label = stringResource(R.string.feature_search)
+                                        TooltipBox(text = label) {
+                                            LiquidNavigationSearchAction(
+                                                backdrop = liquidBackdrop,
+                                                mode = appearance.liquidMode,
+                                                label = label,
+                                                onClick = featureSearch::open,
+                                            )
+                                        }
+                                    }
+                                } else null,
+                            ) { liquidBar() }
+                        } else {
+                            liquidBar()
                         }
                     }
                 }
@@ -729,7 +800,7 @@ internal fun MainHub(
                 featureSnackbarState = featureSnackbarState,
                 selectedPage = pageSelection.selectedPage,
                 featureSearch = featureSearch,
-                searchInNavigationBar = searchInGlassNav,
+                searchInNavigationBar = searchInBottomNav,
                 lang = lang,
                 iconHidden = iconHidden,
                 swipeBackEnabled = appearance.swipeBack,

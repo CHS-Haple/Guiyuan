@@ -4,17 +4,25 @@ import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.settings.UiStyle
 
-/** Only the OS4 glass bottom bar has the upstream independent trailing-action slot. */
+/** Use only an OS4 bottom bar with an actual action layout, never a rail or fallback. */
 internal fun hasOs4NavigationSearchSlot(
     appearance: Appearance,
     glassBackdropAvailable: Boolean,
+    liquidBackdropAvailable: Boolean,
     glassRailActive: Boolean,
     nativeRailActive: Boolean,
-): Boolean = appearance.uiStyle == UiStyle.OS4 &&
-    appearance.navEnabled && appearance.navStyle == NavStyle.Glass &&
-    glassBackdropAvailable && !glassRailActive && !nativeRailActive
+): Boolean {
+    if (appearance.uiStyle != UiStyle.OS4 || !appearance.navEnabled ||
+        glassRailActive || nativeRailActive
+    ) return false
+    return when (appearance.navStyle) {
+        NavStyle.Glass -> glassBackdropAvailable
+        NavStyle.Liquid -> liquidBackdropAvailable
+        NavStyle.Standard, NavStyle.Blur -> false
+    }
+}
 
-/** Keep navigation selection as the owner of appearance and search as the owner of activation. */
+/** The selected destination and the existing PageSearch own the action's visibility. */
 internal fun showOs4NavigationSearchAction(
     slotAvailable: Boolean,
     selectedPage: Int,
