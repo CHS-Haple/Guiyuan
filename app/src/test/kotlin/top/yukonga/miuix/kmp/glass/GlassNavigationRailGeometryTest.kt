@@ -79,6 +79,27 @@ class GlassNavigationRailGeometryTest {
         assertTrue(railSearchActionPressShift(50f, 500f, 1.04f) < 0f)
     }
 
+    @Test fun rightmostLiquidLensNeverOverlapsSearchActionWhenGrowing() {
+        // Rest position has an 8px separation; the actual lens extends by 11px.
+        val adjustment = railSearchLensClearance(
+            actionLeft = 508f, panelRight = 500f, endInset = 3f,
+            lensHalfGrowth = 11f, gap = 8f,
+            collapsedFraction = 1f, lastPressedAtEnd = true,
+        )
+        assertEquals(8f, adjustment, 0.001f)
+        assertTrue(508f + adjustment >= 500f - 3f + 11f + 8f)
+        // Middle/left destinations, released lens and expanded header stay put.
+        assertEquals(0f, railSearchLensClearance(
+            508f, 500f, 3f, 11f, 8f, 1f, false,
+        ), 0.001f)
+        assertEquals(0f, railSearchLensClearance(
+            508f, 500f, 3f, 0f, 8f, 1f, true,
+        ), 0.001f)
+        assertEquals(0f, railSearchLensClearance(
+            508f, 500f, 3f, 11f, 8f, 0f, true,
+        ), 0.001f)
+    }
+
     @Test fun collapsedRailAlwaysReservesSpaceForIndependentSearchButton() {
         val needed = GlassNavigationBarDefaults.ActionSpacing + GlassNavigationRailDefaults.CollapsedHeight
         assertTrue(needed <= RailCollapsedSideReserve)

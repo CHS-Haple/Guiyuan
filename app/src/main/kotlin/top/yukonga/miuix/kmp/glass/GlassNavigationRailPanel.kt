@@ -101,6 +101,8 @@ internal class RailPanelMotion(
     val panelStart: () -> Dp,
     val panelHeight: () -> Dp,
     val liquidPress: Animatable<Float, AnimationVector1D>,
+    val lensX: Animatable<Float, AnimationVector1D>,
+    val lastPressedIndex: androidx.compose.runtime.MutableIntState,
 )
 
 /** The native body and optional Liquid substitute are one material choice. */
@@ -170,6 +172,12 @@ internal fun GlassNavigationRailPanel(
     }
     val selectedIndex = context.selection.selectedIndex
     val pressed = interaction.pressedIndex >= 0
+    androidx.compose.runtime.SideEffect {
+        // Hold the last touched destination until the same lens spring settles.
+        if (liquidPaint != null && interaction.pressedIndex >= 0) {
+            motion.lastPressedIndex.intValue = interaction.pressedIndex
+        }
+    }
     LaunchedEffect(interaction, widths, selectedIndex, pressed, interaction.releaseGeneration) {
         interaction.updateWidths(widths)
         if (!pressed) interaction.settle(selectedIndex)
@@ -357,8 +365,17 @@ private fun RailLiquidIndicator(
             settlingPress = false
         }
     }
+    val opticalPress = pressing || settlingPress
+    // Move the original Liquid X spring to the Rail's single shared animation
+    // owner: the indicator and trailing search sample exactly the same frame.
+    LaunchedEffect(motion.lensX, opticalPress) {
+        motion.lensX.animateTo(
+            if (opticalPress) com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec.PressedLensScale else 1f,
+            spring(dampingRatio = 0.6f, stiffness = 250f),
+        )
+    }
     NavigationRailIndicator(
-        selection = RailIndicatorSelection(index, interaction, pressing || settlingPress),
+        selection = RailIndicatorSelection(index, interaction, opticalPress),
         motion = RailIndicatorMotion(
             progress = { motion.rowProgress[index].value },
             scrollOffset = { context.scrollState.value },
@@ -371,6 +388,7 @@ private fun RailLiquidIndicator(
             pressedColor = base.pressedColor,
             scaleOnPress = base.scaleOnPress,
             liquidPaint = base.liquidPaint,
+            liquidX = motion.lensX.asState(),
         ),
     )
 }

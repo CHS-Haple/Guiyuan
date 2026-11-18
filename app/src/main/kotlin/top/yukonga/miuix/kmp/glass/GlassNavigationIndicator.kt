@@ -9,6 +9,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +43,8 @@ internal class GlassIndicatorAppearance(
     val pressedColor: Color,
     val scaleOnPress: Boolean = true,
     val liquidPaint: (@Composable (Boolean) -> Modifier)? = null,
+    // Rail can share its optical X spring with a sibling action; native Glass ignores this.
+    val liquidX: State<Float>? = null,
 )
 
 @Composable
@@ -65,7 +68,7 @@ internal fun GlassNavigationIndicator(
             scaleOnPress = appearance.scaleOnPress,
         )
     } else {
-        LiquidRailIndicatorSurface(pressed, modifier, paint)
+        LiquidRailIndicatorSurface(pressed, modifier, paint, appearance.liquidX)
     }
 }
 
@@ -111,12 +114,14 @@ private fun LiquidRailIndicatorSurface(
     pressed: Boolean,
     modifier: Modifier,
     paint: @Composable (Boolean) -> Modifier,
+    sharedX: State<Float>?,
 ) {
-    val liquidX by animateFloatAsState(
+    val localX = if (sharedX == null) animateFloatAsState(
         targetValue = if (pressed) LiquidFeedbackSpec.PressedLensScale else 1f,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 250f),
         label = "liquidRailPressX",
-    )
+    ) else sharedX
+    val liquidX = localX.value
     val liquidY by animateFloatAsState(
         targetValue = if (pressed) LiquidFeedbackSpec.PressedLensScale else 1f,
         animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
@@ -126,7 +131,7 @@ private fun LiquidRailIndicatorSurface(
         modifier = modifier
             .graphicsLayer {
                 val pressRange = LiquidFeedbackSpec.PressedLensScale - 1f
-                val growth = 22.dp.toPx()
+                val growth = LiquidFeedbackSpec.PressedLensGrowth.toPx()
                 scaleX = 1f + growth / size.width.coerceAtLeast(1f) *
                     ((liquidX - 1f) / pressRange)
                 scaleY = 1f + growth / size.height.coerceAtLeast(1f) *

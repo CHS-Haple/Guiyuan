@@ -1,9 +1,13 @@
 package com.chaners.guiyuan.ui.components.liquid
 
+import androidx.compose.ui.unit.dp
+
 /** Portrait and wide rails share the same physical Liquid press targets. */
 internal object LiquidFeedbackSpec {
     const val PressedLensScale = 78f / 56f
     const val PressedItemScale = 1.2f
+    // The Rail lens's total X/Y press growth, shared by optics and hit-free action spacing.
+    val PressedLensGrowth = 22.dp
 }
 
 /** Portrait-width panel press growth, kept bounded by the long side of a wide rail. */
