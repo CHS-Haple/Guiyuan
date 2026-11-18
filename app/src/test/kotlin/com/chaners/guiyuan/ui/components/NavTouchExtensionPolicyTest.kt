@@ -60,6 +60,20 @@ class NavTouchExtensionPolicyTest {
     }
 
     @Test
+    fun trailingSearchExcludesOnlyItsOwnLogicalEndHitRegion() {
+        val ltr = navTouchHorizontalBounds(400f, padding = 24f, trailingActionWidth = 66f, rtl = false)
+        assertEquals(24f to 310f, ltr)
+        assertEquals(2, navTouchIndex(302f, ltr.first, ltr.second, 4f, 3, rtl = false))
+        assertNull(navTouchIndex(342f, ltr.first, ltr.second, 4f, 3, rtl = false))
+
+        val rtl = navTouchHorizontalBounds(400f, padding = 24f, trailingActionWidth = 66f, rtl = true)
+        assertEquals(90f to 376f, rtl)
+        assertEquals(2, navTouchIndex(94f, rtl.first, rtl.second, 4f, 3, rtl = true))
+        assertNull(navTouchIndex(40f, rtl.first, rtl.second, 4f, 3, rtl = true))
+        assertEquals(24f to 376f, navTouchHorizontalBounds(400f, 24f, 0f, rtl = false))
+    }
+
+    @Test
     fun liquidSelectionRespectsOuterInsetAndRtl() {
         assertEquals(0, navTouchIndex(48f, 36f, 324f, 4f, 3, rtl = false))
         assertEquals(2, navTouchIndex(48f, 36f, 324f, 4f, 3, rtl = true))

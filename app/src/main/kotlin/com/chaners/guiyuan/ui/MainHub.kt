@@ -609,7 +609,7 @@ internal fun MainHub(
                             Modifier
                                 .fillMaxWidth()
                                 .then(
-                                    if (appearance.navTouchExtension && !showNavigationSearch) {
+                                    if (appearance.navTouchExtension) {
                                         Modifier.navTouchExtension(
                                             bottomPadding = liquidBottomPadding,
                                             horizontalPadding = LiquidNavSpec.sidePadding,
@@ -617,6 +617,9 @@ internal fun MainHub(
                                             itemCount = items.size,
                                             rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
                                             onSelect = ::selectPage,
+                                            trailingActionWidth = if (showNavigationSearch) {
+                                                GlassNavigationBarDefaults.Height + GlassNavigationBarDefaults.ActionSpacing
+                                            } else 0.dp,
                                         )
                                     } else {
                                         Modifier

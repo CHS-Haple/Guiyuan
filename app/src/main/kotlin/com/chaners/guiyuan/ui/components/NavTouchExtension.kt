@@ -39,6 +39,7 @@ internal fun Modifier.navTouchExtension(
     itemCount: Int,
     rtl: Boolean,
     onSelect: (Int) -> Unit,
+    trailingActionWidth: Dp = 0.dp,
 ): Modifier {
     if (itemCount <= 0) return this
 
@@ -47,11 +48,17 @@ internal fun Modifier.navTouchExtension(
     if (extension == 0.dp) return this
 
     val select = rememberUpdatedState(onSelect)
-    return this.pointerInput(bottomPadding, extension, horizontalPadding, contentPadding, itemCount, rtl) {
+    return this.pointerInput(
+        bottomPadding, extension, horizontalPadding, contentPadding, itemCount, rtl, trailingActionWidth,
+    ) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false)
-            val left = horizontalPadding.toPx()
-            val right = size.width - left
+            val (left, right) = navTouchHorizontalBounds(
+                width = size.width.toFloat(),
+                padding = horizontalPadding.toPx(),
+                trailingActionWidth = trailingActionWidth.toPx(),
+                rtl = rtl,
+            )
             val top = size.height - bottomPadding.toPx()
             val bottom = top + extension.toPx()
             val start = down.position
@@ -78,6 +85,21 @@ internal fun Modifier.navTouchExtension(
                 select.value(index)
             }
         }
+    }
+}
+
+/** Exclude the independent navigation action from the destination-only bottom hit strip. */
+internal fun navTouchHorizontalBounds(
+    width: Float,
+    padding: Float,
+    trailingActionWidth: Float,
+    rtl: Boolean,
+): Pair<Float, Float> {
+    val exclusion = trailingActionWidth.coerceAtLeast(0f)
+    return if (rtl) {
+        (padding + exclusion) to (width - padding)
+    } else {
+        padding to (width - padding - exclusion)
     }
 }
 
