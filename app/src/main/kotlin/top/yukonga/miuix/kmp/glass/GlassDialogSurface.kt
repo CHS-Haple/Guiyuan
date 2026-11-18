@@ -24,8 +24,11 @@ object GlassDialogDefaults {
 
     /** The dialog's three color layers and blur input, selected from the current theme. */
     @Composable
-    fun material(): GlassMaterial = GlassMaterials.dialogGlass(
-        isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
+    fun material(): GlassMaterial = dynamicGlassMaterial(
+        GlassMaterials.dialogGlass(
+            isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
+        ),
+        alpha = 0.72f,
     )
 
     /** Initial bloom approximation, pending calibration of the native dialog's bloom fields. */
