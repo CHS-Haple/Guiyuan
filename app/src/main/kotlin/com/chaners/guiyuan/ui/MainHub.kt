@@ -367,19 +367,30 @@ private fun HubNativeRail(
  * OS4 Liquid keeps its own optical surface and interaction; MIUIX owns action layout/transition.
  * This is a separate button, never another destination or a second pager writer.
  */
+/** Both page actions share one callback owner and the same busy-state checks. */
+private class NavigationActionControls(
+    val hotReloadEnabled: Boolean,
+    val hotReloadInProgress: Boolean,
+    val onHotReload: () -> Unit,
+    val onSearch: () -> Unit,
+)
+
 @Composable
 private fun LiquidNavigationAction(
+    action: NavigationAction,
     backdrop: Backdrop,
     mode: LiquidMode,
-    label: String,
-    icon: ImageVector,
     dark: Boolean,
-    enabled: Boolean,
-    holdDown: Boolean,
-    onClick: () -> Unit,
-    size: Dp = LiquidNavSpec.height,
+    size: Dp,
+    controls: NavigationActionControls,
     pressLink: LiquidNavPressLink? = null,
 ) {
+    val isReload = action == NavigationAction.HotReload
+    val label = stringResource(if (isReload) R.string.hot_reload else R.string.feature_search)
+    val icon = if (isReload) Os4GlassRefresh else Os4GlassSearch
+    val enabled = !isReload || controls.hotReloadEnabled
+    val holdDown = isReload && controls.hotReloadInProgress
+    val onClick = if (isReload) controls.onHotReload else controls.onSearch
     val direction = LocalLayoutDirection.current
     val interactionSource = remember { MutableInteractionSource() }
     val pointerPressed by interactionSource.collectIsPressedAsState()
@@ -452,30 +463,24 @@ private fun NavigationTrailingAction(
     liquidMode: LiquidMode?,
     dark: Boolean,
     size: Dp,
-    hotReloadEnabled: Boolean,
-    hotReloadInProgress: Boolean,
-    onHotReload: () -> Unit,
-    onSearch: () -> Unit,
+    controls: NavigationActionControls,
     pressLink: LiquidNavPressLink? = null,
 ) {
     val reload = action == NavigationAction.HotReload
     val label = stringResource(if (reload) R.string.hot_reload else R.string.feature_search)
     val icon = if (reload) Os4GlassRefresh else Os4GlassSearch
-    val enabled = !reload || hotReloadEnabled
-    val holdDown = reload && hotReloadInProgress
-    val onClick = if (reload) onHotReload else onSearch
+    val enabled = !reload || controls.hotReloadEnabled
+    val holdDown = reload && controls.hotReloadInProgress
+    val onClick = if (reload) controls.onHotReload else controls.onSearch
     TooltipBox(text = label) {
         if (liquidMode != null) {
             LiquidNavigationAction(
+                action = action,
                 backdrop = backdrop,
                 mode = liquidMode,
-                label = label,
-                icon = icon,
                 dark = dark,
-                enabled = enabled,
-                holdDown = holdDown,
-                onClick = onClick,
                 size = size,
+                controls = controls,
                 pressLink = pressLink,
             )
         } else {
@@ -616,6 +621,12 @@ internal fun MainHub(
     val requestHotReload: () -> Unit = {
         if (hotReloadEnabled && !hotReloadInProgress) onHotReload()
     }
+    val actionControls = NavigationActionControls(
+        hotReloadEnabled,
+        hotReloadInProgress,
+        requestHotReload,
+        featureSearch::open,
+    )
     val nativeRailState = rememberNavigationRailState()
     val railState = rememberGlassNavigationRailState()
     val railProgress = remember(useGlassRail, railState) {
@@ -683,10 +694,7 @@ internal fun MainHub(
                                     liquidMode = null,
                                     dark = dark,
                                     size = GlassNavigationBarDefaults.Height,
-                                    hotReloadEnabled = hotReloadEnabled,
-                                    hotReloadInProgress = hotReloadInProgress,
-                                    onHotReload = requestHotReload,
-                                    onSearch = featureSearch::open,
+                                    controls = actionControls,
                                 )
                             }
                         },
@@ -777,10 +785,7 @@ internal fun MainHub(
                                             liquidMode = appearance.liquidMode,
                                             dark = dark,
                                             size = LiquidNavSpec.height,
-                                            hotReloadEnabled = hotReloadEnabled,
-                                            hotReloadInProgress = hotReloadInProgress,
-                                            onHotReload = requestHotReload,
-                                            onSearch = featureSearch::open,
+                                            controls = actionControls,
                                             pressLink = liquidPressLink,
                                         )
                                     }
@@ -990,10 +995,7 @@ internal fun MainHub(
                                     .takeIf { appearance.navStyle == NavStyle.Liquid },
                                 dark = dark,
                                 size = GlassNavigationRailDefaults.CollapsedHeight,
-                                hotReloadEnabled = hotReloadEnabled,
-                                hotReloadInProgress = hotReloadInProgress,
-                                onHotReload = requestHotReload,
-                                onSearch = featureSearch::open,
+                                controls = actionControls,
                             )
                         }
                     }
