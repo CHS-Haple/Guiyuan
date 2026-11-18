@@ -4,6 +4,7 @@
 package top.yukonga.miuix.kmp.glass
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.CubicBezierEasing
@@ -13,6 +14,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.captionBar
@@ -30,6 +32,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +43,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -156,6 +165,7 @@ private class RailWindowRequest(
     val backdrop: Backdrop?,
     val showToggle: Boolean,
     val materialOverride: RailLiquidPaint?,
+    val trailingAction: (@Composable () -> Unit)?,
 )
 
 private class RailSourceWidths(val labels: List<Dp>, val slots: List<Dp>)
@@ -182,6 +192,7 @@ internal fun GlassNavigationRail(
     state: GlassNavigationRailState = rememberGlassNavigationRailState(),
     showToggle: Boolean = true,
     materialOverride: RailLiquidPaint? = null,
+    trailingAction: (@Composable () -> Unit)? = null,
 ) {
     val items = destinations.items
     if (items.isEmpty()) return
@@ -215,7 +226,7 @@ internal fun GlassNavigationRail(
         }
     }
     RailNavigationWindow(
-        request = RailWindowRequest(destinations, state, backdrop, showToggle, materialOverride),
+        request = RailWindowRequest(destinations, state, backdrop, showToggle, materialOverride, trailingAction),
         widths = RailSourceWidths(labelWidths, sourceWidths),
         animation = RailAnimationState(rowProgress, iconAlpha),
         modifier = modifier,
@@ -278,7 +289,75 @@ private fun RailNavigationWindow(
                     }, { panelHeight.value }),
             ),
         )
+        // An independent search action shares the rail's safe-area coordinates and
+        // follows the same native panel morph; no new page or gesture writer.
+        val actionProgress = animateFloatAsState(
+            targetValue = if (request.trailingAction != null) 1f else 0f,
+            animationSpec = GlassMotion.navShowHide(),
+            label = "railSearchActionVisibility",
+        )
+        val retainedAction = remember { mutableStateOf(request.trailingAction) }
+        SideEffect {
+            if (request.trailingAction != null || actionProgress.value == 0f) {
+                retainedAction.value = request.trailingAction
+            }
+        }
+        val presentedAction = request.trailingAction ?:
+            retainedAction.value.takeIf { actionProgress.value > 0f }
+        if (presentedAction != null) {
+            val actionSize = GlassNavigationRailDefaults.CollapsedHeight
+            val density = LocalDensity.current
+            val shadowOutsets = remember(density) {
+                with(density) { popupShadowOutsets(GlassShadows.Regular) }
+            }
+            Box(
+                modifier = Modifier
+                    .size(actionSize)
+                    .offset {
+                        val progress = request.state.progress.coerceIn(0f, 1f)
+                        val panelWidth = capsule.width +
+                            (GlassNavigationRailDefaults.ExpandedWidth - capsule.width) * progress
+                        val panelStart = nativePanelStart?.value ?: railLiquidPanelStart(
+                            collapsedStart, GlassNavigationRailDefaults.Margin, progress,
+                        )
+                        IntOffset(
+                            x = (panelStart + railSearchActionSideOffset(
+                                panelWidth, progress, actionSize,
+                            )).roundToPx(),
+                            y = (GlassNavigationRailDefaults.CollapsedTop +
+                                RailExpandedToggleTop * progress).roundToPx(),
+                        )
+                    }
+                    .focusProperties { canFocus = request.trailingAction != null }
+                    .graphicsLayer {
+                        outsets = shadowOutsets
+                        val fraction = actionProgress.value.coerceIn(0f, 1f)
+                        alpha = fraction
+                        scaleX = 0.85f + fraction * 0.15f
+                        scaleY = 0.85f + fraction * 0.15f
+                    }
+                    .then(
+                        if (request.trailingAction == null) {
+                            Modifier.clearAndSetSemantics { }.pointerInput(Unit) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        awaitPointerEvent(PointerEventPass.Initial)
+                                            .changes.forEach { it.consume() }
+                                    }
+                                }
+                            }
+                        } else Modifier,
+                    ),
+            ) { presentedAction() }
+        }
     }
+}
+
+/** Logical end of the capsule when collapsed; right-side header slot when expanded. */
+internal fun railSearchActionSideOffset(panelWidth: Dp, progress: Float, actionSize: Dp): Dp {
+    val fraction = progress.coerceIn(0f, 1f)
+    return panelWidth + GlassNavigationBarDefaults.ActionSpacing * (1f - fraction) -
+        (RailExpandedToggleStart + actionSize) * fraction
 }
 
 @Composable

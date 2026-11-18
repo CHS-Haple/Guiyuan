@@ -367,6 +367,7 @@ private fun LiquidNavigationSearchAction(
     label: String,
     dark: Boolean,
     onClick: () -> Unit,
+    size: Dp = LiquidNavSpec.height,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -378,7 +379,7 @@ private fun LiquidNavigationSearchAction(
     Box(
         modifier = Modifier
             // Match the portrait Liquid capsule's height rather than Glass's 54.dp height.
-            .size(LiquidNavSpec.height)
+            .size(size)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -505,6 +506,7 @@ internal fun MainHub(
         safePadding = railSafePadding,
         direction = LocalLayoutDirection.current,
     )
+    val searchInRail = hasOs4RailSearchSlot(appearance, useGlassRail)
     val searchInBottomNav = hasOs4NavigationSearchSlot(
         appearance = appearance,
         glassBackdropAvailable = navBackdrop != null,
@@ -512,8 +514,9 @@ internal fun MainHub(
         glassRailActive = useGlassRail,
         nativeRailActive = useNativeRail,
     )
+    val searchInNavigation = searchInBottomNav || searchInRail
     val showNavigationSearch = showOs4NavigationSearchAction(
-        slotAvailable = searchInBottomNav,
+        slotAvailable = searchInNavigation,
         selectedPage = pageSelection.selectedPage,
         searchActive = featureSearch.active,
     )
@@ -820,7 +823,7 @@ internal fun MainHub(
                 featureSnackbarState = featureSnackbarState,
                 selectedPage = pageSelection.selectedPage,
                 featureSearch = featureSearch,
-                searchInNavigationBar = searchInBottomNav,
+                searchInNavigationBar = searchInNavigation,
                 lang = lang,
                 iconHidden = iconHidden,
                 swipeBackEnabled = appearance.swipeBack,
@@ -881,6 +884,31 @@ internal fun MainHub(
                 backdrop = railBackdrop,
                 state = railState,
                 showToggle = true,
+                trailingAction = if (searchInRail && showNavigationSearch) {
+                    {
+                        val label = stringResource(R.string.feature_search)
+                        TooltipBox(text = label) {
+                            if (appearance.navStyle == NavStyle.Liquid && liquidBackdrop != null) {
+                                LiquidNavigationSearchAction(
+                                    backdrop = liquidBackdrop,
+                                    mode = appearance.liquidMode,
+                                    label = label,
+                                    dark = dark,
+                                    onClick = featureSearch::open,
+                                    size = GlassNavigationRailDefaults.CollapsedHeight,
+                                )
+                            } else if (railBackdrop != null) {
+                                GlassIconButton(
+                                    onClick = featureSearch::open,
+                                    backdrop = railBackdrop,
+                                    size = GlassNavigationRailDefaults.CollapsedHeight,
+                                ) {
+                                    Icon(Os4GlassSearch, contentDescription = label)
+                                }
+                            }
+                        }
+                    }
+                } else null,
                 // Keep upstream OS4 rail motion and indicator; substitute only the panel surface.
                 materialOverride = if (appearance.navStyle == NavStyle.Liquid) {
                     RailLiquidPaint(

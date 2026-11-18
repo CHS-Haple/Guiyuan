@@ -28,3 +28,8 @@ internal fun showOs4NavigationSearchAction(
     selectedPage: Int,
     searchActive: Boolean,
 ): Boolean = slotAvailable && selectedPage == 1 && !searchActive
+
+/** A native-morph OS4 Glass/Liquid rail can own an independent search action. */
+internal fun hasOs4RailSearchSlot(appearance: Appearance, glassRailActive: Boolean): Boolean =
+    appearance.uiStyle == UiStyle.OS4 && appearance.navEnabled && glassRailActive &&
+        (appearance.navStyle == NavStyle.Glass || appearance.navStyle == NavStyle.Liquid)

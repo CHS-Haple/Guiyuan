@@ -52,6 +52,26 @@ class GlassNavigationRailGeometryTest {
         assertEquals(590.dp, railLiquidPanelStart(590.dp, expanded, 0f))
     }
 
+    @Test fun searchActionUsesNativeCapsuleEndAndExpandedHeaderSlot() {
+        val actionSize = GlassNavigationRailDefaults.CollapsedHeight
+        assertEquals(
+            180.dp + GlassNavigationBarDefaults.ActionSpacing,
+            railSearchActionSideOffset(180.dp, 0f, actionSize),
+        )
+        assertEquals(
+            GlassNavigationRailDefaults.ExpandedWidth - RailExpandedToggleStart - actionSize,
+            railSearchActionSideOffset(GlassNavigationRailDefaults.ExpandedWidth, 1f, actionSize),
+        )
+        assertEquals(
+            railSearchActionSideOffset(180.dp, 0f, actionSize),
+            railSearchActionSideOffset(180.dp, -1f, actionSize),
+        )
+        assertEquals(
+            railSearchActionSideOffset(GlassNavigationRailDefaults.ExpandedWidth, 1f, actionSize),
+            railSearchActionSideOffset(GlassNavigationRailDefaults.ExpandedWidth, 2f, actionSize),
+        )
+    }
+
     @Test fun resizingWideWindowKeepsContentOriginAndShrinksSlots() {
         val widths = listOf(100.dp, 100.dp, 100.dp)
         val roomy = railCapsuleGeometry(1200.dp, widths, true)

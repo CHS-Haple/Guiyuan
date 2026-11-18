@@ -33,6 +33,17 @@ class NavigationSearchActionPolicyTest {
     }
 
     @Test
+    fun os4RailOnlyExposesSearchInGlassAndLiquid() {
+        val glass = Appearance(uiStyle = UiStyle.OS4, navEnabled = true, navStyle = NavStyle.Glass)
+        assertTrue(hasOs4RailSearchSlot(glass, true))
+        assertTrue(hasOs4RailSearchSlot(glass.copy(navStyle = NavStyle.Liquid), true))
+        assertFalse(hasOs4RailSearchSlot(glass.copy(navStyle = NavStyle.Standard), true))
+        assertFalse(hasOs4RailSearchSlot(glass.copy(uiStyle = UiStyle.OS3), true))
+        assertFalse(hasOs4RailSearchSlot(glass.copy(navEnabled = false), true))
+        assertFalse(hasOs4RailSearchSlot(glass, false))
+    }
+
+    @Test
     fun onlyIdleFeaturesDestinationDisplaysTrailingSearch() {
         assertFalse(showOs4NavigationSearchAction(true, 0, false))
         assertTrue(showOs4NavigationSearchAction(true, 1, false))
