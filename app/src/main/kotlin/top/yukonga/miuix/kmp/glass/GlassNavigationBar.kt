@@ -196,6 +196,8 @@ object GlassNavigationBarDefaults {
  * @param unselectedColor Tint of the others. They are not dimmed; the indicator alone says which
  *   one is current.
  * @param touchExtension Whether safe bottom whitespace also accepts destination taps.
+ * @param trailingActionTouchExclusion Reserved action width plus gap, supplied by a caller
+ *   that knows its action size. Without it, action-bearing bars keep the hit strip disabled.
  * @param interactive Whether destination gestures, keyboard actions and accessibility actions are enabled.
  *   Noninteractive is for a visual preview, not for the real bottom navigation.
  * @param trailingAction Optional independent action outside the glass capsule. It owns its size
@@ -225,6 +227,7 @@ fun GlassNavigationBar(
     interactive: Boolean = true,
     touchExtension: Boolean = false,
     trailingAction: (@Composable () -> Unit)? = null,
+    trailingActionTouchExclusion: Dp = 0.dp,
 ) {
     if (items.isEmpty()) return
     val index = selectedIndex.coerceIn(0, items.lastIndex)
@@ -314,7 +317,9 @@ fun GlassNavigationBar(
         modifier = modifier
             .fillMaxWidth()
             .then(
-                if (touchExtension && inputEnabled && defaultWindowInsetsPadding && trailingAction == null) {
+                if (touchExtension && inputEnabled && defaultWindowInsetsPadding &&
+                    (trailingAction == null || trailingActionTouchExclusion > 0.dp)
+                ) {
                     Modifier.navTouchExtension(
                         bottomPadding = bottomPadding,
                         horizontalPadding = 0.dp,
@@ -322,6 +327,9 @@ fun GlassNavigationBar(
                         itemCount = items.size,
                         rtl = layoutDirection == LayoutDirection.Rtl,
                         onSelect = onSelect,
+                        trailingActionWidth = if (trailingAction != null) {
+                            trailingActionTouchExclusion
+                        } else 0.dp,
                     )
                 } else {
                     Modifier

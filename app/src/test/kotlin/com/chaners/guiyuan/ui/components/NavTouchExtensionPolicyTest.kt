@@ -60,6 +60,24 @@ class NavTouchExtensionPolicyTest {
     }
 
     @Test
+    fun glassTrailingActionKeepsTheBottomHitStripOnDestinationSlots() {
+        // The companion app uses the upstream 54dp button and 12dp action spacing.
+        val reserved = 54f + 12f
+        val ltr = navTouchHorizontalBounds(352f, 0f, reserved, rtl = false)
+        assertEquals(0f to 286f, ltr)
+        assertEquals(0, navTouchIndex(16f, ltr.first, ltr.second, 8f, 3, rtl = false))
+        assertEquals(1, navTouchIndex(143f, ltr.first, ltr.second, 8f, 3, rtl = false))
+        assertEquals(2, navTouchIndex(272f, ltr.first, ltr.second, 8f, 3, rtl = false))
+        assertNull(navTouchIndex(310f, ltr.first, ltr.second, 8f, 3, rtl = false))
+
+        val rtl = navTouchHorizontalBounds(352f, 0f, reserved, rtl = true)
+        assertEquals(66f to 352f, rtl)
+        assertEquals(0, navTouchIndex(340f, rtl.first, rtl.second, 8f, 3, rtl = true))
+        assertEquals(2, navTouchIndex(80f, rtl.first, rtl.second, 8f, 3, rtl = true))
+        assertNull(navTouchIndex(42f, rtl.first, rtl.second, 8f, 3, rtl = true))
+    }
+
+    @Test
     fun trailingSearchExcludesOnlyItsOwnLogicalEndHitRegion() {
         val ltr = navTouchHorizontalBounds(400f, padding = 24f, trailingActionWidth = 66f, rtl = false)
         assertEquals(24f to 310f, ltr)

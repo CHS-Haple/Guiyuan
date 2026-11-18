@@ -686,6 +686,10 @@ internal fun MainHub(
                         onSelect = ::selectPage,
                         backdrop = navBackdrop,
                         touchExtension = appearance.navTouchExtension,
+                        // Exclude the measured 54dp action and 12dp native MIUIX gap.
+                        trailingActionTouchExclusion = if (navigationAction != null) {
+                            GlassNavigationBarDefaults.Height + GlassNavigationBarDefaults.ActionSpacing
+                        } else 0.dp,
                         trailingAction = navigationAction?.let { action ->
                             {
                                 NavigationTrailingAction(
