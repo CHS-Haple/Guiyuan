@@ -37,4 +37,3 @@ fun GlassShape(
     bottomStart: Dp,
     smoothing: Float = GlassDefaults.Smoothing,
 ): GlassShape = top.yukonga.miuix.kmp.material.GlassShape(topStart, topEnd, bottomEnd, bottomStart, smoothing)
-
