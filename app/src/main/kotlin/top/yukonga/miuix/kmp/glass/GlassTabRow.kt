@@ -606,58 +606,58 @@ fun GlassSegmentedTabRow(
                     val width = size.width.toFloat()
                     val currentSlot = ((width - gap * (tabs.size - 1)) / tabs.size).coerceAtLeast(0f)
                     if (width > 0f && currentSlot > 0f) {
-                    fun logicalX(x: Float) = if (layoutDirection == LayoutDirection.Rtl) width - x else x
-                    fun indexAt(x: Float): Int = (x / (currentSlot + gap)).toInt().coerceIn(0, tabs.lastIndex)
+                        fun logicalX(x: Float) = if (layoutDirection == LayoutDirection.Rtl) width - x else x
+                        fun indexAt(x: Float): Int = (x / (currentSlot + gap)).toInt().coerceIn(0, tabs.lastIndex)
 
-                    val downX = logicalX(down.position.x)
-                    var selectionX = downX
-                    var current = indexAt(downX)
-                    pressedIndex = current
-                    dragging.value = true
-                    val pressedLeft = current * (currentSlot + gap)
-                    animateIndicator(pressedLeft, pressedLeft + currentSlot)
-                    var grabOffset = Float.NaN
-                    try {
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                            if (change.isConsumed) break
-                            if (!change.pressed) {
-                                if (change.changedToUp()) {
-                                    val releaseDelta = change.position.x - change.previousPosition.x
-                                    selectionX += if (layoutDirection == LayoutDirection.Rtl) -releaseDelta else releaseDelta
-                                    onSelectState(indexAt(selectionX))
-                                    change.consume()
+                        val downX = logicalX(down.position.x)
+                        var selectionX = downX
+                        var current = indexAt(downX)
+                        pressedIndex = current
+                        dragging.value = true
+                        val pressedLeft = current * (currentSlot + gap)
+                        animateIndicator(pressedLeft, pressedLeft + currentSlot)
+                        var grabOffset = Float.NaN
+                        try {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                if (change.isConsumed) break
+                                if (!change.pressed) {
+                                    if (change.changedToUp()) {
+                                        val releaseDelta = change.position.x - change.previousPosition.x
+                                        selectionX += if (layoutDirection == LayoutDirection.Rtl) -releaseDelta else releaseDelta
+                                        onSelectState(indexAt(selectionX))
+                                        change.consume()
+                                    }
+                                    break
                                 }
-                                break
-                            }
-                            val activeWidth = size.width.toFloat()
-                            val activeSlot = ((activeWidth - gap * (tabs.size - 1)) / tabs.size).coerceAtLeast(0f)
-                            val maxLeft = (activeWidth - activeSlot).coerceAtLeast(0f)
-                            val x = logicalX(change.position.x)
-                            val pointerDelta = change.position.x - change.previousPosition.x
-                            val delta = if (layoutDirection == LayoutDirection.Rtl) -pointerDelta else pointerDelta
-                            selectionX += delta
-                            if (grabOffset.isNaN()) {
-                                if (abs(selectionX - downX) < viewConfiguration.touchSlop) {
-                                    pressedIndex = indexAt(selectionX)
-                                    continue
+                                val activeWidth = size.width.toFloat()
+                                val activeSlot = ((activeWidth - gap * (tabs.size - 1)) / tabs.size).coerceAtLeast(0f)
+                                val maxLeft = (activeWidth - activeSlot).coerceAtLeast(0f)
+                                val x = logicalX(change.position.x)
+                                val pointerDelta = change.position.x - change.previousPosition.x
+                                val delta = if (layoutDirection == LayoutDirection.Rtl) -pointerDelta else pointerDelta
+                                selectionX += delta
+                                if (grabOffset.isNaN()) {
+                                    if (abs(selectionX - downX) < viewConfiguration.touchSlop) {
+                                        pressedIndex = indexAt(selectionX)
+                                        continue
+                                    }
+                                    grabOffset = downX - pressedLeft
                                 }
-                                grabOffset = downX - pressedLeft
+                                val chipLeft = (x - grabOffset).coerceIn(0f, maxLeft)
+                                val next = indexAt(selectionX)
+                                val target = navigationDragTarget(chipLeft, activeSlot, 0f, activeWidth, delta, next != current)
+                                animateIndicator(target.left, target.right, target.leftSpring, target.rightSpring)
+                                current = next
+                                pressedIndex = next
+                                change.consume()
                             }
-                            val chipLeft = (x - grabOffset).coerceIn(0f, maxLeft)
-                            val next = indexAt(selectionX)
-                            val target = navigationDragTarget(chipLeft, activeSlot, 0f, activeWidth, delta, next != current)
-                            animateIndicator(target.left, target.right, target.leftSpring, target.rightSpring)
-                            current = next
-                            pressedIndex = next
-                            change.consume()
+                        } finally {
+                            pressedIndex = -1
+                            dragging.value = false
+                            settleGeneration++
                         }
-                    } finally {
-                        pressedIndex = -1
-                        dragging.value = false
-                        settleGeneration++
-                    }
                     }
                 }
             },
