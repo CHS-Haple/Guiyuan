@@ -6,7 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -19,6 +18,7 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
+import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Search
 import androidx.compose.foundation.clickable
@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -53,9 +52,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -154,12 +151,10 @@ import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import top.yukonga.miuix.kmp.glass.GlassFloatingActionButton
 import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
-import top.yukonga.miuix.kmp.glass.GlassIconButton
-import top.yukonga.miuix.kmp.glass.GlassShadows
-import top.yukonga.miuix.kmp.glass.popupShadowOutsets
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -1418,6 +1413,42 @@ internal fun AnimatedPreferenceGroup(
 }
 
 @Composable
+private fun FeaturesSearchFab(
+    os4: Boolean,
+    backdrop: top.yukonga.miuix.kmp.blur.Backdrop?,
+    bottomPadding: Dp,
+    onClick: () -> Unit,
+) {
+    val label = stringResource(R.string.feature_search)
+    TooltipBox(text = label) {
+        if (os4) {
+            GlassFloatingActionButton(
+                onClick = onClick,
+                backdrop = backdrop,
+                modifier = Modifier.padding(bottom = bottomPadding),
+            ) {
+                Icon(
+                    Os4GlassSearch,
+                    contentDescription = label,
+                    tint = MiuixTheme.colorScheme.onPrimary,
+                )
+            }
+        } else {
+            FloatingActionButton(
+                onClick = onClick,
+                modifier = Modifier.padding(bottom = bottomPadding),
+            ) {
+                Icon(
+                    MiuixIcons.Search,
+                    contentDescription = label,
+                    tint = MiuixTheme.colorScheme.onPrimary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun HubPage(
     title: String,
     bottomContentPadding: Dp,
@@ -1458,12 +1489,6 @@ private fun HubPage(
         motion = searchMotion,
         collapsed = browsingScroll.state.collapsedFraction >= 1f,
     )
-    val barAlpha = rememberOs4BarAlpha(searchExpanded)
-    val os3SearchActionAlpha by animateFloatAsState(
-        targetValue = if (!os4 && search?.active == true) 0f else 1f,
-        animationSpec = tween(150),
-        label = "os3SearchAction",
-    )
     // Only actual content overlap changes the surface; search geometry has its own clock.
     val searchShadow = GlassTopAppBarDefaults.collapseRamp(scrollBehavior)
     val searchMaterial = animateFloatAsState(
@@ -1471,39 +1496,17 @@ private fun HubPage(
         animationSpec = GlassMotion.topBarButtonFloat(),
         label = "os4SearchMaterial",
     )
-    // Match the upstream search transition on the entire action, not only the glyph.
-    // Preserve the native Regular glass shadow's drawing outsets while it fades.
-    val searchActionOutsets = remember(density) {
-        with(density) { popupShadowOutsets(GlassShadows.Regular) }
-    }
-    val searchAction: @Composable RowScope.() -> Unit = {
-        if (search != null) {
-            val label = stringResource(R.string.feature_search)
-            val ready = !search.active && (!os4 || !searchMotion.mounted)
-            TooltipBox(text = label, enabled = ready) {
-                Box(
-                    Modifier
-                        .graphicsLayer {
-                            alpha = if (os4) barAlpha.value else os3SearchActionAlpha
-                            if (os4) outsets = searchActionOutsets
-                        }
-                        .then(if (ready) Modifier else Modifier.clearAndSetSemantics {}),
-                ) {
-                    if (os4) {
-                        GlassIconButton(onClick = { if (ready) { revealTitleOnExit = false; search.open() } }) {
-                            Icon(
-                                Os4GlassSearch,
-                                contentDescription = label,
-                            )
-                        }
-                    } else IconButton(
-                        onClick = search::open,
-                        enabled = ready,
-                    ) {
-                        Icon(MiuixIcons.Search, contentDescription = label)
-                    }
-                }
-            }
+    val searchFab: @Composable () -> Unit = {
+        if (search != null && !search.active && (!os4 || !searchMotion.mounted)) {
+            FeaturesSearchFab(
+                os4 = os4,
+                backdrop = topBarBackdrop,
+                bottomPadding = bottomContentPadding,
+                onClick = {
+                    revealTitleOnExit = false
+                    search.open()
+                },
+            )
         }
     }
     val searchContent: @Composable () -> Unit = {
@@ -1569,6 +1572,7 @@ private fun HubPage(
     }
     CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
     Scaffold(
+        floatingActionButton = searchFab,
         topBar = {
             if (os4) {
                 Box(Modifier.fillMaxWidth()) {
@@ -1581,8 +1585,6 @@ private fun HubPage(
                         isContentScrolled = listState.canScrollBackward,
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
-                        actions = searchAction,
-                        unclippedActions = search != null,
                     )
                     if (search != null) {
                         // An overlaid search row keeps the bar's measured height stable.
@@ -1614,7 +1616,6 @@ private fun HubPage(
                         title = title,
                         color = barColor,
                         scrollBehavior = scrollBehavior,
-                        actions = searchAction,
                         bottomContent = searchContent,
                     )
                 }
@@ -1639,7 +1640,7 @@ private fun HubPage(
                 contentPadding = pageContentPadding(
                     innerPadding = paddingValues,
                     outerBottomPadding = bottomContentPadding,
-                    extraBottom = 12.dp,
+                    extraBottom = if (search == null) 12.dp else 84.dp,
                 ),
                 content = content,
             )
