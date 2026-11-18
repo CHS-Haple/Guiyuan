@@ -56,7 +56,9 @@ class GlassNavigationRailGeometryTest {
         val viewport = 420.dp
         val capsule = railCapsuleGeometry(viewport, listOf(400.dp, 500.dp, 600.dp), true)
         val size = GlassNavigationRailDefaults.CollapsedHeight
+        val reserved = GlassNavigationBarDefaults.ActionSpacing + size
         val logicalX = (viewport - capsule.width) / 2f +
+            railCollapsedActionGroupShift(reserved.value, 1f, 1f).dp +
             railSearchActionSideOffset(capsule.width, 0f, size)
         assertTrue(logicalX + size <= viewport)
         // Compose's start-relative offset mirrors that rect when RTL.
@@ -109,6 +111,22 @@ class GlassNavigationRailGeometryTest {
         assertEquals(railSearchActionPressShift(50f, 500f, 1.04f),
             railSearchActionPlannedShift(50f - 500f, panelHalfWidth, 1.04f, 0f, lensOverhang), 0.001f)
         // The action samples the existing X spring: it has no new press/drag animation.
+    }
+
+    @Test fun collapsedRailCentersTheWholeCapsuleAndActionGroup() {
+        val viewport = 1200f
+        val capsuleWidth = 320f
+        val actionWidth = 54f
+        val gap = GlassNavigationBarDefaults.ActionSpacing.value
+        val capsuleStart = (viewport - capsuleWidth) / 2f
+        val shift = railCollapsedActionGroupShift(gap + actionWidth, 1f, 1f)
+        val actionRight = capsuleStart + capsuleWidth + gap + actionWidth
+
+        assertEquals(viewport / 2f, (capsuleStart + actionRight) / 2f + shift, 0.001f)
+        assertEquals(-33f, shift, 0.001f)
+        assertEquals(-16.5f, railCollapsedActionGroupShift(gap + actionWidth, 0.5f, 1f), 0.001f)
+        assertEquals(0f, railCollapsedActionGroupShift(gap + actionWidth, 1f, 0f), 0.001f)
+        assertEquals(0f, railCollapsedActionGroupShift(gap + actionWidth, 0f, 1f), 0.001f)
     }
 
     @Test fun liveLensOverhangDoesNotMoveCollapsedLiquidGroupCenterOrReduceGap() {
