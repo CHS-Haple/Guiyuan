@@ -415,14 +415,11 @@ private fun LiquidNavigationAction(
                 if (pressLink != null) Modifier.offset {
                     // Read the same lens, panel and drag frame as the nav bar;
                     // the link owns no extra animation or gesture writer.
-                    IntOffset(
-                        pressLink.actionOffsetX(
-                            LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
-                            LiquidNavSpec.contentPadding.toPx(),
-                            direction,
-                        ).roundToInt(),
-                        0,
+                    val offset = pressLink.actionOffsetX(
+                        LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
+                        LiquidNavSpec.contentPadding.toPx(), direction,
                     )
+                    IntOffset(offset.roundToInt(), 0)
                 } else Modifier
             )
             .graphicsLayer {
