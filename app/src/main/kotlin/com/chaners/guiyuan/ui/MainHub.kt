@@ -363,10 +363,6 @@ private fun HubNativeRail(
     } else rail()
 }
 
-/**
- * OS4 Liquid keeps its own optical surface and interaction; MIUIX owns action layout/transition.
- * This is a separate button, never another destination or a second pager writer.
- */
 /** Both page actions share one callback owner and the same busy-state checks. */
 private class NavigationActionControls(
     val hotReloadEnabled: Boolean,
@@ -375,6 +371,10 @@ private class NavigationActionControls(
     val onSearch: () -> Unit,
 )
 
+/**
+ * OS4 Liquid keeps its own optical surface and interaction; MIUIX owns action layout/transition.
+ * This is a separate button, never another destination or a second pager writer.
+ */
 @Composable
 private fun LiquidNavigationAction(
     action: NavigationAction,
