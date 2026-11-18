@@ -54,54 +54,84 @@ internal fun GlassNavigationIndicator(
         pressedColor = GlassNavigationBarDefaults.indicatorPressedColor(),
     ),
 ) {
+    val paint = appearance.liquidPaint
+    if (paint == null) {
+        NativeGlassIndicator(
+            pressed = pressed,
+            modifier = modifier,
+            height = height,
+            color = appearance.color,
+            pressedColor = appearance.pressedColor,
+            scaleOnPress = appearance.scaleOnPress,
+        )
+    } else {
+        LiquidRailIndicatorSurface(pressed, modifier, paint)
+    }
+}
+
+/** Native Glass keeps the pinned upstream press, fill, clip and draw ordering. */
+@Composable
+private fun NativeGlassIndicator(
+    pressed: Boolean,
+    modifier: Modifier,
+    height: Dp,
+    color: Color,
+    pressedColor: Color,
+    scaleOnPress: Boolean,
+) {
     val density = LocalDensity.current
-    val liquid = appearance.liquidPaint != null
-    // Preserve native Glass timing. Liquid uses portrait's independent X/Y
-    // press springs, with growth normalized to the wide pill's actual size.
     val scale by animateFloatAsState(
-        targetValue = if (!liquid && pressed && appearance.scaleOnPress) {
+        targetValue = if (pressed && scaleOnPress) {
             glassPressScale(with(density) { height.toPx() }, density.density)
-        } else 1f,
+        } else {
+            1f
+        },
         animationSpec = if (pressed) GlassMotion.pressDown() else GlassMotion.pressUp(),
         label = "glassNavigationIndicatorPress",
     )
-    val liquidX by animateFloatAsState(
-        targetValue = if (liquid && pressed) LiquidFeedbackSpec.PressedLensScale else 1f,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 250f),
-        label = "liquidRailPressX",
-    )
-    val liquidY by animateFloatAsState(
-        targetValue = if (liquid && pressed) LiquidFeedbackSpec.PressedLensScale else 1f,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
-        label = "liquidRailPressY",
-    )
     val fill = animateColorAsState(
-        targetValue = if (pressed) appearance.pressedColor else appearance.color,
+        targetValue = if (pressed) pressedColor else color,
         animationSpec = if (pressed) GlassMotion.navPressEnter() else GlassMotion.navPressExit(),
         label = "glassNavigationIndicatorFill",
     )
     Box(
         modifier = modifier
             .graphicsLayer {
-                if (appearance.liquidPaint != null) {
-                    // Portrait: a 56dp selection grows to 78dp on press.
-                    // Keep physical growth, not width-proportional scaling,
-                    // when the OS4 pill morphs from compact to a full row.
-                    val pressRange = LiquidFeedbackSpec.PressedLensScale - 1f
-                    val growth = 22.dp.toPx()
-                    val baseX = 1f + growth / size.width.coerceAtLeast(1f) *
-                        ((liquidX - 1f) / pressRange)
-                    val baseY = 1f + growth / size.height.coerceAtLeast(1f) *
-                        ((liquidY - 1f) / pressRange)
-                    scaleX = baseX
-                    scaleY = baseY
-                } else {
-                    scaleX = scale
-                    scaleY = scale
-                }
+                scaleX = scale
+                scaleY = scale
             }
-            .then(appearance.liquidPaint?.invoke(pressed) ?:
-                Modifier.clip(RoundedCornerShape(percent = 50))
-                    .drawBehind { drawRect(fill.value) }),
+            .clip(RoundedCornerShape(percent = 50))
+            .drawBehind { drawRect(fill.value) },
+    )
+}
+
+/** Liquid-only optics cannot create extra motion state in the native Glass path. */
+@Composable
+private fun LiquidRailIndicatorSurface(
+    pressed: Boolean,
+    modifier: Modifier,
+    paint: @Composable (Boolean) -> Modifier,
+) {
+    val liquidX by animateFloatAsState(
+        targetValue = if (pressed) LiquidFeedbackSpec.PressedLensScale else 1f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 250f),
+        label = "liquidRailPressX",
+    )
+    val liquidY by animateFloatAsState(
+        targetValue = if (pressed) LiquidFeedbackSpec.PressedLensScale else 1f,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
+        label = "liquidRailPressY",
+    )
+    Box(
+        modifier = modifier
+            .graphicsLayer {
+                val pressRange = LiquidFeedbackSpec.PressedLensScale - 1f
+                val growth = 22.dp.toPx()
+                scaleX = 1f + growth / size.width.coerceAtLeast(1f) *
+                    ((liquidX - 1f) / pressRange)
+                scaleY = 1f + growth / size.height.coerceAtLeast(1f) *
+                    ((liquidY - 1f) / pressRange)
+            }
+            .then(paint(pressed)),
     )
 }
