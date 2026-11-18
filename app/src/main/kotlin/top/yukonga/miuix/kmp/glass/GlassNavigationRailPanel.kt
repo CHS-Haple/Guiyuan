@@ -353,16 +353,13 @@ private fun RailLiquidIndicator(
     val index = if (pressedIndex >= 0) pressedIndex else selectedIndex
     // The existing indicator spring owns position; no separate optical velocity sampler.
     val rowPosition = animateFloatAsState(
-        targetValue = if (context.state.expanded && pressedIndex >= 0) {
-            interaction.previewRow
-        } else index.toFloat(),
+        targetValue = if (context.state.expanded && pressedIndex >= 0) interaction.previewRow
+            else index.toFloat(),
         animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
         label = "liquidRailIndicatorRow",
     )
     val base = colors.indicator
-    // Keep the same visual lens during release. Portrait Liquid settles the
-    // position before springing back the size; the actual page selection is
-    // already committed by HubPagerSelection, not by this optical release.
+    // Preserve the visual press until the selected lens has settled.
     var settlingPress by remember(interaction) { mutableStateOf(false) }
     val pressing = pressedIndex >= 0
     LaunchedEffect(interaction, pressing, selectedIndex, context.state.expanded) {
@@ -397,14 +394,14 @@ private fun RailLiquidIndicator(
             pressedColor = base.pressedColor,
             scaleOnPress = base.scaleOnPress,
             liquidPaint = base.liquidPaint,
-            lensTracking = rememberRailLensTracking(motion, geometry, index, interaction),
+            lensTracking = railLensTracking(motion, geometry, index, interaction),
         ),
     )
 }
 
 /** Track the exact same horizontal lens bounds used by NavigationRailIndicator's layout. */
 @Composable
-private fun rememberRailLensTracking(
+private fun railLensTracking(
     motion: RailPanelMotion,
     geometry: RailPanelGeometry,
     index: Int,
