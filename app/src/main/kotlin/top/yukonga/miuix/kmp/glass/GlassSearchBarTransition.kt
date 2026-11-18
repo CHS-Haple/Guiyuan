@@ -38,7 +38,7 @@ import kotlin.math.sqrt
 private const val SEARCH_TOP_BAR_BLUR_RADIUS = 50f
 
 // Map one second of spring motion onto the 400ms search transition.
-private val SearchModeEasing: Easing = run {
+internal val SearchModeEasing: Easing = run {
     val omega = 2.0 * PI / 0.75f
     val stiffness = (omega * omega).toFloat()
     val damping = (0.98f * 2.0 * omega).toFloat()
@@ -52,7 +52,6 @@ private val SearchModeEasing: Easing = run {
             ).toFloat()
     }
 }
-
 
 /** Shared page opacity keeps content and its sampled top-bar background in sync. */
 @Composable
