@@ -1413,6 +1413,42 @@ internal fun AnimatedPreferenceGroup(
 }
 
 @Composable
+private fun FeaturesSearchFab(
+    os4: Boolean,
+    backdrop: top.yukonga.miuix.kmp.blur.Backdrop?,
+    bottomPadding: Dp,
+    onClick: () -> Unit,
+) {
+    val label = stringResource(R.string.feature_search)
+    TooltipBox(text = label) {
+        if (os4) {
+            GlassFloatingActionButton(
+                onClick = onClick,
+                backdrop = backdrop,
+                modifier = Modifier.padding(bottom = bottomPadding),
+            ) {
+                Icon(
+                    Os4GlassSearch,
+                    contentDescription = label,
+                    tint = MiuixTheme.colorScheme.onPrimary,
+                )
+            }
+        } else {
+            FloatingActionButton(
+                onClick = onClick,
+                modifier = Modifier.padding(bottom = bottomPadding),
+            ) {
+                Icon(
+                    MiuixIcons.Search,
+                    contentDescription = label,
+                    tint = MiuixTheme.colorScheme.onPrimary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun HubPage(
     title: String,
     bottomContentPadding: Dp,
@@ -1462,36 +1498,15 @@ private fun HubPage(
     )
     val searchFab: @Composable () -> Unit = {
         if (search != null && !search.active && (!os4 || !searchMotion.mounted)) {
-            val label = stringResource(R.string.feature_search)
-            TooltipBox(text = label) {
-                if (os4) {
-                    GlassFloatingActionButton(
-                        onClick = {
-                            revealTitleOnExit = false
-                            search.open()
-                        },
-                        backdrop = topBarBackdrop,
-                        modifier = Modifier.padding(bottom = bottomContentPadding),
-                    ) {
-                        Icon(
-                            Os4GlassSearch,
-                            contentDescription = label,
-                            tint = MiuixTheme.colorScheme.onPrimary,
-                        )
-                    }
-                } else {
-                    FloatingActionButton(
-                        onClick = search::open,
-                        modifier = Modifier.padding(bottom = bottomContentPadding),
-                    ) {
-                        Icon(
-                            MiuixIcons.Search,
-                            contentDescription = label,
-                            tint = MiuixTheme.colorScheme.onPrimary,
-                        )
-                    }
-                }
-            }
+            FeaturesSearchFab(
+                os4 = os4,
+                backdrop = topBarBackdrop,
+                bottomPadding = bottomContentPadding,
+                onClick = {
+                    revealTitleOnExit = false
+                    search.open()
+                },
+            )
         }
     }
     val searchContent: @Composable () -> Unit = {
