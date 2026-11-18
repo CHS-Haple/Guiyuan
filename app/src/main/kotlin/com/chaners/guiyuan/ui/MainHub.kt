@@ -96,15 +96,19 @@ import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.FeaturesScreen
+import com.chaners.guiyuan.ui.screens.PageSearch
+import com.chaners.guiyuan.ui.screens.rememberPageSearch
 import com.chaners.guiyuan.ui.screens.HomeScreen
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
 import com.chaners.guiyuan.ui.screens.SemanticLeadingIcon
+import com.chaners.guiyuan.ui.icons.Os4GlassSearch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.job
 import top.yukonga.miuix.kmp.glass.GlassNavigationBar
+import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassNavigationRail
 import top.yukonga.miuix.kmp.glass.GlassRailDestinations
 import top.yukonga.miuix.kmp.glass.RailLiquidPaint
@@ -114,6 +118,8 @@ import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.basic.NavigationBarDisplayMode
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailState
@@ -356,6 +362,8 @@ internal fun MainHub(
     val featureSnackbarState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val pageSelection = remember(pagerState, scope) { HubPagerSelection(pagerState, scope) }
+    // One search owner for both the Features page and its optional OS4 navigation action.
+    val featureSearch = rememberPageSearch()
     LaunchedEffect(pagerState.currentPage) { pageSelection.syncActualPage() }
     val context = LocalContext.current
     var restartPickerOpen by remember { mutableStateOf(false) }
@@ -438,6 +446,12 @@ internal fun MainHub(
         safePadding = railSafePadding,
         direction = LocalLayoutDirection.current,
     )
+    val searchInGlassNav = hasOs4NavigationSearchSlot(
+        appearance = appearance,
+        glassBackdropAvailable = navBackdrop != null,
+        glassRailActive = useGlassRail,
+        nativeRailActive = useNativeRail,
+    )
     val nativeRailState = rememberNavigationRailState()
     val railState = rememberGlassNavigationRailState()
     val railProgress = remember(useGlassRail, railState) {
@@ -497,6 +511,23 @@ internal fun MainHub(
                         onSelect = ::selectPage,
                         backdrop = navBackdrop,
                         touchExtension = appearance.navTouchExtension,
+                        trailingAction = if (showOs4NavigationSearchAction(
+                                slotAvailable = searchInGlassNav,
+                                selectedPage = selectedPage,
+                                searchActive = featureSearch.active,
+                            )) {
+                            {
+                                val label = stringResource(R.string.feature_search)
+                                TooltipBox(text = label) {
+                                    GlassIconButton(
+                                        onClick = featureSearch::open,
+                                        backdrop = navBackdrop,
+                                    ) {
+                                        Icon(Os4GlassSearch, contentDescription = label)
+                                    }
+                                }
+                            }
+                        } else null,
                         modifier = Modifier
                             .padding(start = 24.dp, end = 24.dp, top = 20.dp),
                     )
@@ -696,6 +727,8 @@ internal fun MainHub(
                 pagerState = pagerState,
                 bottomPadding = innerPadding,
                 featureSnackbarState = featureSnackbarState,
+                featureSearch = featureSearch,
+                searchInNavigationBar = searchInGlassNav,
                 lang = lang,
                 iconHidden = iconHidden,
                 swipeBackEnabled = appearance.swipeBack,
@@ -956,6 +989,8 @@ private fun TopLevelPager(
     pagerState: PagerState,
     bottomPadding: PaddingValues,
     featureSnackbarState: SnackbarHostState,
+    featureSearch: PageSearch,
+    searchInNavigationBar: Boolean,
     lang: AppLang,
     iconHidden: Boolean,
     swipeBackEnabled: Boolean,
@@ -1007,6 +1042,8 @@ private fun TopLevelPager(
                 bottomContentPadding = bottom,
                 visible = pagerState.currentPage == 1,
                 snackbarState = featureSnackbarState,
+                search = featureSearch,
+                searchInNavigationBar = searchInNavigationBar,
                 onNavigate = onNavigate,
             )
             2 -> SettingsHubScreen(

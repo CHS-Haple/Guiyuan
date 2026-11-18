@@ -178,6 +178,8 @@ internal fun FeaturesScreen(
     bottomContentPadding: Dp,
     visible: Boolean,
     snackbarState: SnackbarHostState,
+    search: PageSearch,
+    searchInNavigationBar: Boolean,
     onNavigate: (AppRoute) -> Unit,
 ) {
     val context = LocalContext.current
@@ -293,7 +295,6 @@ internal fun FeaturesScreen(
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showBatteryColorSheet by rememberSaveable { mutableStateOf(false) }
 
-    val search = rememberPageSearch()
     LaunchedEffect(visible) {
         if (!visible) search.close()
     }
@@ -320,6 +321,7 @@ internal fun FeaturesScreen(
         title = stringResource(R.string.features_title),
         bottomContentPadding = bottomContentPadding,
         search = search,
+        searchInNavigationBar = searchInNavigationBar,
         overlay = {
             val selectedImport = pendingImport
             UiOverlayDialog(
@@ -1422,6 +1424,7 @@ private fun HubPage(
     title: String,
     bottomContentPadding: Dp,
     search: PageSearch? = null,
+    searchInNavigationBar: Boolean = false,
     overlay: @Composable () -> Unit = {},
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
@@ -1477,7 +1480,7 @@ private fun HubPage(
         with(density) { popupShadowOutsets(GlassShadows.Regular) }
     }
     val searchAction: @Composable RowScope.() -> Unit = {
-        if (search != null) {
+        if (search != null && !searchInNavigationBar) {
             val label = stringResource(R.string.feature_search)
             val ready = !search.active && (!os4 || !searchMotion.mounted)
             TooltipBox(text = label, enabled = ready) {
@@ -1582,7 +1585,7 @@ private fun HubPage(
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
                         actions = searchAction,
-                        unclippedActions = search != null,
+                        unclippedActions = search != null && !searchInNavigationBar,
                     )
                     if (search != null) {
                         // An overlaid search row keeps the bar's measured height stable.
