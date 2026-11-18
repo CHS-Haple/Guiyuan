@@ -78,6 +78,7 @@ import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale
 import kotlin.math.ceil
+import kotlin.math.roundToInt
 
 /** Default values for [GlassNavigationRail]. */
 object GlassNavigationRailDefaults {
