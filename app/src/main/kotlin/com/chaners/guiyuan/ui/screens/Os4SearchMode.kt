@@ -3,7 +3,6 @@
 
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -26,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.State
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.glass.GlassShadows
+import top.yukonga.miuix.kmp.glass.SearchModeEasing
 import top.yukonga.miuix.kmp.glass.popupShadowOutsets
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,27 +55,8 @@ import com.chaners.guiyuan.ui.icons.Os4GlassClose
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.exp
-import kotlin.math.sin
-import kotlin.math.sqrt
 
 private const val CANCEL_BLUR_PX = 50f
-
-// PR423 GlassSearchOverlay uses the nested EaseManager spring, not Compose's default spring.
-private val SearchEasing = run {
-    val omega = 2.0 * PI / 0.75
-    val stiffness = (omega * omega).toFloat()
-    val damping = (0.98 * 2.0 * omega).toFloat()
-    val decay = -damping / 2f
-    val frequency = sqrt(-(damping.toDouble() * damping - stiffness.toDouble() * 4)).toFloat() / 2f
-    val sine = decay / frequency
-    Easing { fraction ->
-        (1.0 + exp((decay * fraction).toDouble()) *
-            (-cos((frequency * fraction).toDouble()) + sine * sin((frequency * fraction).toDouble()))).toFloat()
-    }
-}
 
 internal data class Os4SearchMotion(
     val progress: Float,
@@ -87,7 +68,7 @@ internal data class Os4SearchMotion(
 internal fun rememberOs4SearchMotion(expanded: Boolean): Os4SearchMotion {
     val transition = updateTransition(targetState = expanded, label = "os4Search")
     val progress by transition.animateFloat(
-        transitionSpec = { tween(400, easing = SearchEasing) },
+        transitionSpec = { tween(400, easing = SearchModeEasing) },
         label = "searchGeometry",
     ) { if (it) 1f else 0f }
     val cancelAlpha by transition.animateFloat(
