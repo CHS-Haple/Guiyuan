@@ -54,15 +54,6 @@ internal fun liquidRailActionReachPx(
         panelScale * (lensOverhang - endInsetPx)).coerceAtLeast(0f)
 }
 
-/** Plan the maximum expected press clearance once; never chase the rendered lens spring. */
-internal fun liquidActionPressReachPx(
-    panelGrowthPx: Float,
-    lensGrowthPx: Float,
-    endInsetPx: Float,
-): Float = (panelGrowthPx / 2f +
-    lensGrowthPx * (1f + LiquidFeedbackSpec.LensXSpringOvershootAllowance) / 2f -
-    endInsetPx).coerceAtLeast(0f)
-
 /** Portrait-width panel press growth, kept bounded by the long side of a wide rail. */
 internal fun liquidPanelPressScale(
     widthPx: Float,

@@ -167,9 +167,7 @@ internal class LiquidNavPressLink {
     )
 
     private var source: Source? by mutableStateOf(null)
-    val progress: Float get() = source?.motion?.pressProgress?.coerceIn(0f, 1f) ?: 0f
     val dragOffsetX: Float get() = source?.dragOffset?.value ?: 0f
-    val lensWidthPx: Float get() = source?.lensWidth?.value ?: 0f
 
     fun visibleEndReachPx(panelGrowthPx: Float, endInsetPx: Float): Float {
         val current = source ?: return 0f

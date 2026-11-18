@@ -4,16 +4,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class LiquidFeedbackSpecTest {
-    @Test fun actionClearanceUsesMeasuredLensWidthAndExpectedSpringOvershoot() {
-        // Rail's fixed 56dp lens has 22dp extra width at the press target.
-        assertEquals(17.1f, liquidActionPressReachPx(16f, 22f, 3f), 0.001f)
-        assertEquals(16.1f, liquidActionPressReachPx(16f, 22f, 4f), 0.001f)
-        // A wider portrait slot actually stretches 33dp, not the fixed 22dp Rail value.
-        val actualGrowth = 84f * (LiquidFeedbackSpec.PressedLensScale - 1f)
-        assertEquals(22.15f, liquidActionPressReachPx(16f, actualGrowth, 4f), 0.001f)
-        assertEquals(0f, liquidActionPressReachPx(0f, 0f, 5f), 0.001f)
-    }
-
     @Test fun portraitActionMaintainsGapFromTheVisiblePanelOrLensEdge() {
         // The selected lens is a sibling of the panel; their growth must not be added.
         val pressed = LiquidFeedbackSpec.PressedLensScale
