@@ -185,4 +185,3 @@ internal class NavigationRailInteraction(
         if (right.targetValue != end) scope.launch { right.animateTo(end, rightSpring) }
     }
 }
-
