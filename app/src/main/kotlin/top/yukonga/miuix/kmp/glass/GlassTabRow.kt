@@ -540,7 +540,7 @@ fun GlassSegmentedTabRow(
     height: Dp = GlassSegmentedTabRowDefaults.Height,
     trackColor: Color = GlassSegmentedTabRowDefaults.restingTrackColor(),
     indicatorColor: Color = GlassSegmentedTabRowDefaults.indicatorColor(),
-    selectedContentColor: Color = MiuixTheme.colorScheme.onSurface,
+    selectedContentColor: Color = if (MiuixTheme.isDynamicColor) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
     contentColor: Color = MiuixTheme.colorScheme.onSurface,
 ) {
     if (tabs.isEmpty()) return
