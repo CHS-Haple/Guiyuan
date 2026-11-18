@@ -1,6 +1,8 @@
 package top.yukonga.miuix.kmp.glass
 
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntOffset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -104,6 +106,38 @@ class GlassNavigationRailGeometryTest {
         assertEquals(railSearchActionPressShift(50f, 500f, 1.04f),
             railSearchActionPlannedShift(50f, 500f, 1.04f, 1f, 0f, reach), 0.001f)
         // The action has no pressed-tab or lens-animation dependency.
+    }
+
+    @Test fun nativeGlassActionNeverReceivesLiquidPressClearance() {
+        val density = Density(1f)
+        val atRest = with(density) { railTrailingActionOffset(
+            0f, 280.dp, 100.dp, 54.dp, 54.dp, 0f, liquid = false,
+        ) }
+        val pressed = with(density) { railTrailingActionOffset(
+            0f, 280.dp, 100.dp, 54.dp, 54.dp, 1f, liquid = false,
+        ) }
+        assertEquals(atRest, pressed)
+        assertEquals(100 + 280 + GlassNavigationBarDefaults.ActionSpacing.value.toInt(), atRest.x)
+    }
+
+    @Test fun liquidActionUsesSinglePressClockAndNoSecondLensChase() {
+        val density = Density(1f)
+        fun position(press: Float) = with(density) {
+            railTrailingActionOffset(0f, 280.dp, 100.dp, 54.dp, 54.dp, press, liquid = true)
+        }
+        val rest = position(0f)
+        val half = position(0.5f)
+        val full = position(1f)
+        assertTrue(half.x > rest.x)
+        assertTrue(full.x > half.x)
+        assertTrue(full.x > rest.x)
+        val expanded = with(density) {
+            railTrailingActionOffset(1f, 280.dp, 12.dp, 400.dp, 54.dp, 1f, liquid = true)
+        }
+        val nativeExpanded = with(density) {
+            railTrailingActionOffset(1f, 280.dp, 12.dp, 400.dp, 54.dp, 0f, liquid = false)
+        }
+        assertEquals(nativeExpanded, expanded)
     }
 
     @Test fun collapsedRailAlwaysReservesSpaceForIndependentSearchButton() {
