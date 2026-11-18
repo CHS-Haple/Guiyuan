@@ -20,6 +20,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.derivedStateOf
@@ -37,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale
+import com.chaners.guiyuan.ui.components.liquid.liquidRailVisibleLensOverhangPx
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.layout.layout
@@ -94,13 +96,35 @@ internal class RailPanelGeometry(
     val endpoints: RailPanelEndpoints,
 )
 
+/** Borrow the rendered lens's current edge and original X spring without duplicating motion. */
+internal class RailLiquidLensLink {
+    internal class Source(val scaleX: State<Float>, val rightEdge: State<(() -> Float)?>)
+    private var source: Source? by mutableStateOf(null)
+
+    fun overhangPx(panelWidthPx: Float, panelScale: Float, lensGrowthPx: Float): Float {
+        val current = source ?: return 0f
+        val right = current.rightEdge.value?.invoke() ?: return 0f
+        return liquidRailVisibleLensOverhangPx(
+            panelWidthPx, panelScale, right, current.scaleX.value, lensGrowthPx,
+        )
+    }
+
+    internal fun attach(value: Source) { source = value }
+    internal fun detach(value: Source) { if (source === value) source = null }
+}
+
+internal class RailLiquidMotion(
+    val press: Animatable<Float, AnimationVector1D>,
+    val lensEdge: RailLiquidLensLink,
+)
+
 /** Values read during layout and drawing rather than recomposing the rows each frame. */
 internal class RailPanelMotion(
     val rowProgress: List<Animatable<Float, AnimationVector1D>>,
     val iconAlpha: () -> Float,
     val panelStart: () -> Dp,
     val panelHeight: () -> Dp,
-    val liquidPress: Animatable<Float, AnimationVector1D>,
+    val liquid: RailLiquidMotion,
 )
 
 /** The native body and optional Liquid substitute are one material choice. */
@@ -176,8 +200,8 @@ internal fun GlassNavigationRailPanel(
     }
     // The panel is the sole writer of this press animation. The sibling search
     // action reads its value to match the scaled panel's physical edge.
-    LaunchedEffect(motion.liquidPress, liquidPaint != null, pressed) {
-        motion.liquidPress.animateTo(
+    LaunchedEffect(motion.liquid.press, liquidPaint != null, pressed) {
+        motion.liquid.press.animateTo(
             if (liquidPaint != null && pressed) 1f else 0f,
             spring(dampingRatio = 1f, stiffness = 1000f),
         )
@@ -210,7 +234,7 @@ internal fun GlassNavigationRailPanel(
                 val scale = liquidPanelPressScale(
                     size.width, size.height,
                     com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
-                    motion.liquidPress.value,
+                    motion.liquid.press.value,
                 )
                 scaleX = scale
                 scaleY = scale
@@ -336,6 +360,19 @@ private fun RailLiquidIndicator(
         label = "liquidRailIndicatorRow",
     )
     val base = colors.indicator
+    val density = LocalDensity.current
+    val lensRightEdge = {
+        with(density) {
+            val fraction = motion.rowProgress[index].value.coerceIn(0f, 1f)
+            val bounds = navigationIndicatorBounds(
+                interaction.left.value, interaction.right.value, interaction.width,
+                interaction.contentStart, interaction.endPadding,
+            )
+            val expandedWidth = (geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2).toPx()
+            lerp(bounds.x, RailItemHorizontalMargin.toPx(), fraction) +
+                lerp(bounds.y - bounds.x, expandedWidth, fraction)
+        }
+    }
     // Keep the same visual lens during release. Portrait Liquid settles the
     // position before springing back the size; the actual page selection is
     // already committed by HubPagerSelection, not by this optical release.
@@ -373,6 +410,7 @@ private fun RailLiquidIndicator(
             pressedColor = base.pressedColor,
             scaleOnPress = base.scaleOnPress,
             liquidPaint = base.liquidPaint,
+            lensTracking = RailLensTracking(motion.liquid.lensEdge, lensRightEdge),
         ),
     )
 }

@@ -79,7 +79,6 @@ import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 import com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale
-import com.chaners.guiyuan.ui.components.liquid.liquidRailActionReachPx
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 
@@ -178,7 +177,7 @@ private class RailSourceWidths(val labels: List<Dp>, val slots: List<Dp>)
 private class RailAnimationState(
     val rows: List<Animatable<Float, AnimationVector1D>>,
     val iconAlpha: Animatable<Float, AnimationVector1D>,
-    val liquidPress: Animatable<Float, AnimationVector1D>,
+    val liquid: RailLiquidMotion,
 )
 
 private class RailPlacement(
@@ -224,7 +223,7 @@ internal fun GlassNavigationRail(
     val rowProgress = remember(items.size) { List(items.size) { Animatable(if (expanded) 1f else 0f) } }
     val iconAlpha = remember { Animatable(if (expanded) 1f else 0f) }
     // One press animation drives both the Liquid panel scale and the independent search position.
-    val liquidPress = remember { Animatable(0f) }
+    val liquid = remember { RailLiquidMotion(Animatable(0f), RailLiquidLensLink()) }
     LaunchedEffect(expanded, rowProgress) {
         val target = if (expanded) 1f else 0f
         launch { state.morph.animateTo(target, RailMorphMotion) }
@@ -236,7 +235,7 @@ internal fun GlassNavigationRail(
     RailNavigationWindow(
         request = RailWindowRequest(destinations, state, backdrop, showToggle, materialOverride, trailingAction),
         widths = RailSourceWidths(labelWidths, sourceWidths),
-        animation = RailAnimationState(rowProgress, iconAlpha, liquidPress),
+        animation = RailAnimationState(rowProgress, iconAlpha, liquid),
         modifier = modifier,
     )
 }
@@ -301,7 +300,7 @@ private fun RailNavigationWindow(
                             GlassNavigationRailDefaults.Margin,
                             request.state.progress,
                         )
-                    }, { panelHeight.value }, animation.liquidPress),
+                    }, { panelHeight.value }, animation.liquid),
         )
         RailWindowPanel(request = request, placement = placement)
         RailWindowTrailingAction(
@@ -391,23 +390,20 @@ private fun Density.railTrailingActionOffset(
     val x = (panelStart + railSearchActionSideOffset(panelWidth, progress, actionSize)).toPx()
     val y = (GlassNavigationRailDefaults.CollapsedTop + RailExpandedToggleTop * progress).toPx()
 
-    val press = if (liquid) placement.motion.liquidPress.value.coerceIn(0f, 1f) else 0f
+    val press = if (liquid) placement.motion.liquid.press.value.coerceIn(0f, 1f) else 0f
     val scale = if (liquid) {
         liquidPanelPressScale(
             panelWidthPx, panelHeightPx, LiquidFeedbackSpec.PressedPanelGrowth.toPx(), press,
         )
     } else 1f
-    val lensReach = if (liquid) liquidRailActionReachPx(
-        panelWidthPx, panelHeightPx,
-        LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
-        LiquidFeedbackSpec.PressedLensGrowth.toPx(),
-        RailCollapsedEndPadding.toPx(),
+    val lensOverhang = if (liquid) placement.motion.liquid.lensEdge.overhangPx(
+        panelWidthPx, scale, LiquidFeedbackSpec.PressedLensGrowth.toPx(),
     ) else 0f
 
     return IntOffset(
         x = (x + railSearchActionPlannedShift(
             x + actionSizePx / 2f - panelStart.toPx() - panelWidthPx / 2f,
-            scale, press, 1f - progress, lensReach,
+            panelWidthPx / 2f, scale, 1f - progress, lensOverhang,
         )).roundToInt(),
         y = (y + railSearchActionPressShift(
             y + actionSizePx / 2f,
@@ -421,17 +417,17 @@ private fun Density.railTrailingActionOffset(
 internal fun railSearchActionPressShift(actionCenter: Float, panelCenter: Float, scale: Float): Float =
     (actionCenter - panelCenter) * (scale - 1f)
 
-/** Reserve the rightmost Liquid lens during the same press clock regardless of dragged tab. */
+/** Collapsed: follow the actual visible end. Expanded: preserve the native header's scale. */
 internal fun railSearchActionPlannedShift(
     distanceFromPanelCenter: Float,
+    panelHalfWidthPx: Float,
     scale: Float,
-    press: Float,
     collapsedFraction: Float,
-    maxLensReach: Float,
+    lensOverhangPx: Float,
 ): Float {
-    val panelShift = distanceFromPanelCenter * (scale - 1f)
-    val extra = (maxLensReach * press.coerceIn(0f, 1f) - panelShift).coerceAtLeast(0f)
-    return panelShift + extra * collapsedFraction.coerceIn(0f, 1f)
+    val nativeShift = distanceFromPanelCenter * (scale - 1f)
+    val visibleEndShift = panelHalfWidthPx * (scale - 1f) + lensOverhangPx
+    return lerp(nativeShift, visibleEndShift, collapsedFraction.coerceIn(0f, 1f))
 }
 
 /** Logical end of the capsule when collapsed; right-side header slot when expanded. */

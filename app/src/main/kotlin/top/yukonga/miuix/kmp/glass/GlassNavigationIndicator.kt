@@ -9,7 +9,9 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -36,12 +38,16 @@ import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
  * @param scaleOnPress Whether a press scales the indicator down. Disable it when the press belongs
  *   to a row the indicator only spans visually, so the press feedback does not move the indicator.
  */
+/** Read-only link to the actual Liquid lens spring and unscaled logical-end edge. */
+internal class RailLensTracking(val link: RailLiquidLensLink, val right: () -> Float)
+
 /** The pill's two colors and press policy have one rendering owner. */
 internal class GlassIndicatorAppearance(
     val color: Color,
     val pressedColor: Color,
     val scaleOnPress: Boolean = true,
     val liquidPaint: (@Composable (Boolean) -> Modifier)? = null,
+    val lensTracking: RailLensTracking? = null,
 )
 
 @Composable
@@ -63,7 +69,7 @@ internal fun GlassNavigationIndicator(
             appearance = appearance,
         )
     } else {
-        LiquidRailIndicatorSurface(pressed, modifier, paint)
+        LiquidRailIndicatorSurface(pressed, modifier, paint, appearance.lensTracking)
     }
 }
 
@@ -107,12 +113,20 @@ private fun LiquidRailIndicatorSurface(
     pressed: Boolean,
     modifier: Modifier,
     paint: @Composable (Boolean) -> Modifier,
+    tracking: RailLensTracking?,
 ) {
-    val liquidX by animateFloatAsState(
+    val liquidX = animateFloatAsState(
         targetValue = if (pressed) LiquidFeedbackSpec.PressedLensScale else 1f,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 250f),
         label = "liquidRailPressX",
     )
+    val right = rememberUpdatedState(tracking?.right)
+    DisposableEffect(tracking?.link, liquidX) {
+        val link = tracking?.link
+        val source = link?.let { RailLiquidLensLink.Source(liquidX, right) }
+        if (source != null) link?.attach(source)
+        onDispose { if (source != null) link?.detach(source) }
+    }
     val liquidY by animateFloatAsState(
         targetValue = if (pressed) LiquidFeedbackSpec.PressedLensScale else 1f,
         animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
@@ -124,7 +138,7 @@ private fun LiquidRailIndicatorSurface(
                 val pressRange = LiquidFeedbackSpec.PressedLensScale - 1f
                 val growth = 22.dp.toPx()
                 scaleX = 1f + growth / size.width.coerceAtLeast(1f) *
-                    ((liquidX - 1f) / pressRange)
+                    ((liquidX.value - 1f) / pressRange)
                 scaleY = 1f + growth / size.height.coerceAtLeast(1f) *
                     ((liquidY - 1f) / pressRange)
             }

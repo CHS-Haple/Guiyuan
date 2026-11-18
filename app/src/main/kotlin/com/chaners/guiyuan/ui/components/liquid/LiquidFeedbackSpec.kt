@@ -9,8 +9,6 @@ internal object LiquidFeedbackSpec {
     val PressedPanelGrowth = 16.dp
     // This target growth is 56dp * (78/56 - 1) in the original Liquid lens.
     val PressedLensGrowth = 22.dp
-    // The 0.6-damped X spring's first overshoot is about 9.5% of its travel.
-    const val LensXSpringOvershootAllowance = 0.10f
 }
 
 /** Same X deformation as the portrait lens renderer, including its velocity stretch. */
@@ -33,21 +31,17 @@ internal fun liquidPortraitActionReachPx(
     (lensScaleX - 1f) * lensWidthPx / 2f - lensDistanceFromEndPx - endInsetPx,
 )
 
-/**
- * The Rail lens lives inside the scaled panel. Reserve its visible end under
- * the same press transformation, including the original X-spring overtravel.
- */
-internal fun liquidRailActionReachPx(
+/** Only the live selection lens, not a hypothetical last-tab lens, can extend past the panel. */
+internal fun liquidRailVisibleLensOverhangPx(
     panelWidthPx: Float,
-    panelHeightPx: Float,
-    panelGrowthPx: Float,
+    panelScale: Float,
+    lensRightPx: Float,
+    animatedLensX: Float,
     lensGrowthPx: Float,
-    endInsetPx: Float,
 ): Float {
-    val panelScale = liquidPanelPressScale(panelWidthPx, panelHeightPx, panelGrowthPx, 1f)
-    val lensOverhang = lensGrowthPx * (1f + LiquidFeedbackSpec.LensXSpringOvershootAllowance) / 2f
-    return (panelWidthPx * (panelScale - 1f) / 2f +
-        panelScale * (lensOverhang - endInsetPx)).coerceAtLeast(0f)
+    val range = LiquidFeedbackSpec.PressedLensScale - 1f
+    val extension = lensGrowthPx / 2f * ((animatedLensX - 1f) / range)
+    return ((lensRightPx + extension - panelWidthPx) * panelScale).coerceAtLeast(0f)
 }
 
 /** Portrait-width panel press growth, kept bounded by the long side of a wide rail. */
