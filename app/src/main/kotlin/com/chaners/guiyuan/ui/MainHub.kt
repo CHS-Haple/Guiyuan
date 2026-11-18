@@ -363,6 +363,27 @@ private fun HubNativeRail(
     } else rail()
 }
 
+/**
+ * Keeps the Liquid sibling beside its stretched capsule using its existing press/drag state.
+ * This modifier has no animation writer or separate overlap-correction lifecycle.
+ */
+@Composable
+private fun Modifier.followLiquidActionPress(link: LiquidNavPressLink?): Modifier {
+    if (link == null) return this
+    val direction = LocalLayoutDirection.current
+    return offset {
+        // Portrait's measured lens can grow farther than the fixed-width Rail lens.
+        val growth = link.lensWidthPx * (LiquidFeedbackSpec.PressedLensScale - 1f)
+        val reach = liquidActionPressReachPx(
+            LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
+            growth,
+            LiquidNavSpec.contentPadding.toPx(),
+        )
+        val drag = link.dragOffsetX * (if (direction == LayoutDirection.Ltr) 1f else -1f)
+        IntOffset((reach * link.progress + drag).roundToInt(), 0)
+    }
+}
+
 /** Both page actions share one callback owner and the same busy-state checks. */
 private class NavigationActionControls(
     val hotReloadEnabled: Boolean,
@@ -391,7 +412,6 @@ private fun LiquidNavigationAction(
     val enabled = !isReload || controls.hotReloadEnabled
     val holdDown = isReload && controls.hotReloadInProgress
     val onClick = if (isReload) controls.onHotReload else controls.onSearch
-    val direction = LocalLayoutDirection.current
     val interactionSource = remember { MutableInteractionSource() }
     val pointerPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -407,23 +427,7 @@ private fun LiquidNavigationAction(
         modifier = Modifier
             // Portrait uses the 64dp Liquid capsule; a Rail action follows Rail's height.
             .size(size)
-            .then(
-                if (pressLink != null) Modifier.offset {
-                    // The measured portrait lens can outgrow the fixed Rail lens.
-                    // Reserve its X-spring overtravel on the original press clock.
-                    val lensGrowth = pressLink.lensWidthPx *
-                        (LiquidFeedbackSpec.PressedLensScale - 1f)
-                    val reach = liquidActionPressReachPx(
-                        LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
-                        lensGrowth,
-                        LiquidNavSpec.contentPadding.toPx(),
-                    )
-                    // The offset is end-relative; the bar's drag translation is physical.
-                    val drag = pressLink.dragOffsetX *
-                        (if (direction == LayoutDirection.Ltr) 1f else -1f)
-                    IntOffset((reach * pressLink.progress + drag).roundToInt(), 0)
-                } else Modifier
-            )
+            .followLiquidActionPress(pressLink)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
