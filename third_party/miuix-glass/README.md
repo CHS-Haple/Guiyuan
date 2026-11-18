@@ -7,13 +7,12 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- The active source and Maven graph uses the latest fully published MIUIX
-  snapshot `0.9.4-76504ab0-SNAPSHOT` at full revision
-  `76504ab028bdff42dff346577b4e3780069a1969`.
-  Upstream `v0.9.5-beta01` source at `6d2554a850b8960e2616c968263ff64beb5ffb03` is newer,
-  but its 2026-11-17 Maven publication did not complete. Guiyuan backports
-  only reviewed app-local Glass fixes after this source pin until a complete
-  upstream publication is available.
+- The active source and Maven graph uses the successfully published MIUIX
+  snapshot `0.9.5-499f84fb-SNAPSHOT` at full revision
+  `499f84fb280b67beb279fc65aff33e57d46fae6d`. The upstream publication completed in
+  [run #44231252900](https://github.com/compose-miuix-ui/miuix/actions/runs/44231252900).
+  The earlier `v0.9.5-beta01` tag lacked a complete Maven publication;
+  Guiyuan therefore follows the verified snapshot instead of the tag.
   The prior Material integration is documented in
   [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
   The stable `main` line must be checked separately; do not treat a `dev`
