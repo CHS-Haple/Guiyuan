@@ -4,7 +4,6 @@
 package top.yukonga.miuix.kmp.glass
 
 import androidx.compose.ui.unit.Dp
-import top.yukonga.miuix.kmp.material.withUnderlayBlur as upstreamWithUnderlayBlur
 
 // Use the pinned MIUIX Material models without keeping app-owned copies of their state and tokens.
 // Local GlassStroke and the adapted shader/dismissal implementation remain separately owned.
@@ -39,5 +38,3 @@ fun GlassShape(
     smoothing: Float = GlassDefaults.Smoothing,
 ): GlassShape = top.yukonga.miuix.kmp.material.GlassShape(topStart, topEnd, bottomEnd, bottomStart, smoothing)
 
-internal fun GlassMaterial.withUnderlayBlur(underlay: GlassMaterial?): GlassMaterial =
-    this.upstreamWithUnderlayBlur(underlay)

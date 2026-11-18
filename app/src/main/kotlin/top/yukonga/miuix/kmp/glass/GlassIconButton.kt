@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.material.withUnderlayBlur
 import top.yukonga.miuix.kmp.material.drawEdgeStroke
 import top.yukonga.miuix.kmp.material.drawGlassMask
 

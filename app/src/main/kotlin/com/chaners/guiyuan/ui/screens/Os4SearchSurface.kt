@@ -22,7 +22,7 @@ import top.yukonga.miuix.kmp.glass.GlassDefaults
 import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.glassOnActionBar
 import top.yukonga.miuix.kmp.glass.glassShadow
-import top.yukonga.miuix.kmp.glass.withUnderlayBlur
+import top.yukonga.miuix.kmp.material.withUnderlayBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** The search geometry stays fixed while only the surface transitions with page overlap. */
