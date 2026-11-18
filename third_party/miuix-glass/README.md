@@ -56,9 +56,11 @@ existing call sites to published upstream Material definitions and functions.
 `GlassStroke.kt` aliases the upstream `EdgeStroke` and `GlassEdgeStrokes`.
 The app renders strokes, rim, masks and shadows via Material; the accepted
 #479 fused edge pass runs only when shading, positive stroke width and additive
-blend mode allow it. App-specific backdrop refraction/color blending and
-popup/Back lifecycles stay locally owned. Do not copy upstream shader sources
-back into this package or add a second Material model.
+blend mode allow it. Refraction now embeds upstream `MaterialAgsl` silhouette
+and rim fragments and delegates shape uniforms to `setSilhouetteUniforms`;
+no local copy of either shared implementation remains. App-specific backdrop
+refraction/color blending and popup/Back lifecycles stay locally owned. Do not
+copy shared shaders into the app or add a second Material model.
 
 ## Live app-specific boundaries
 
@@ -69,6 +71,12 @@ back into this package or add a second Material model.
 - `UiNativeTitleBar` uses the upstream `TopAppBarLayout` with native title
   blur, retaining accepted title-local clipping and measured unclipped
   navigation/action controls. The old parallel fallback is retired.
+- Search top-bar fade/scale/blur helpers mirror the published MIUIX
+  `GlassSearchOverlay` source from the exact pinned SHA; this app-local source
+  is required only because the full `miuix-glass` module conflicts with the
+  adapted package. `PageSearch` retains query and result ownership. Native
+  `TopAppBarLayout` still clips actions, so the measured outer shadow slot
+  remains until upstream provides an equivalent unclipped API.
 - Navigation retains noninteractive preview behavior, touch-safe bottom
   extension and exact native icon/material semantics. Do not replace a
   caller-owned touch or animation boundary with a similar-looking upstream
