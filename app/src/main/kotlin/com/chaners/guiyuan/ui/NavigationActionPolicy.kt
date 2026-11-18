@@ -4,8 +4,10 @@ import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.settings.UiStyle
 
+internal enum class NavigationAction { HotReload, Search }
+
 /** Use only an OS4 bottom bar with an actual action layout, never a rail or fallback. */
-internal fun hasOs4NavigationSearchSlot(
+internal fun hasOs4NavigationActionSlot(
     appearance: Appearance,
     glassBackdropAvailable: Boolean,
     liquidBackdropAvailable: Boolean,
@@ -22,14 +24,19 @@ internal fun hasOs4NavigationSearchSlot(
     }
 }
 
-/** The selected destination and the existing PageSearch own the action's visibility. */
-internal fun showOs4NavigationSearchAction(
+/** The selected destination owns this slot; Features search remains separately stateful. */
+internal fun navigationActionFor(
     slotAvailable: Boolean,
     selectedPage: Int,
     searchActive: Boolean,
-): Boolean = slotAvailable && selectedPage == 1 && !searchActive
+): NavigationAction? = when {
+    !slotAvailable -> null
+    selectedPage == 0 -> NavigationAction.HotReload
+    selectedPage == 1 && !searchActive -> NavigationAction.Search
+    else -> null
+}
 
 /** A native-morph OS4 Glass/Liquid rail can own an independent search action. */
-internal fun hasOs4RailSearchSlot(appearance: Appearance, glassRailActive: Boolean): Boolean =
+internal fun hasOs4RailActionSlot(appearance: Appearance, glassRailActive: Boolean): Boolean =
     appearance.uiStyle == UiStyle.OS4 && appearance.navEnabled && glassRailActive &&
         (appearance.navStyle == NavStyle.Glass || appearance.navStyle == NavStyle.Liquid)

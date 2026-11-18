@@ -116,6 +116,7 @@ import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
 import com.chaners.guiyuan.ui.screens.SemanticLeadingIcon
 import com.chaners.guiyuan.ui.icons.Os4GlassSearch
+import com.chaners.guiyuan.ui.icons.Os4GlassRefresh
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -366,20 +367,23 @@ private fun HubNativeRail(
  * This is a separate button, never another destination or a second pager writer.
  */
 @Composable
-private fun LiquidNavigationSearchAction(
+private fun LiquidNavigationAction(
     backdrop: Backdrop,
     mode: LiquidMode,
     label: String,
+    icon: ImageVector,
     dark: Boolean,
+    enabled: Boolean,
+    holdDown: Boolean,
     onClick: () -> Unit,
     size: Dp = LiquidNavSpec.height,
     pressLink: LiquidNavPressLink? = null,
 ) {
     val direction = LocalLayoutDirection.current
     val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
+    val pointerPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.9f else 1f,
+        targetValue = if (pointerPressed || holdDown) 0.9f else 1f,
         // Follow the published MIUIX floating action's press/release timing,
         // retaining Guiyuan's Liquid surface rather than its primary-tinted material.
         animationSpec = GlassMotion.springOf(
@@ -415,15 +419,74 @@ private fun LiquidNavigationSearchAction(
                 ),
             )
             .liquidRailSurface(backdrop, CircleShape, mode)
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .clickable(
+                enabled = enabled && !holdDown,
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            )
             .semantics { role = Role.Button },
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = Os4GlassSearch,
+            imageVector = icon,
             contentDescription = label,
-            tint = MiuixTheme.colorScheme.onBackground,
+            tint = if (enabled) MiuixTheme.colorScheme.onBackground
+                else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
         )
+    }
+}
+
+/** The one navigation action slot is shared by Home and Features. */
+@Composable
+private fun NavigationTrailingAction(
+    action: NavigationAction,
+    backdrop: Backdrop,
+    liquidMode: LiquidMode?,
+    dark: Boolean,
+    size: Dp,
+    hotReloadEnabled: Boolean,
+    hotReloadInProgress: Boolean,
+    onHotReload: () -> Unit,
+    onSearch: () -> Unit,
+    pressLink: LiquidNavPressLink? = null,
+) {
+    val reload = action == NavigationAction.HotReload
+    val label = stringResource(if (reload) R.string.hot_reload else R.string.feature_search)
+    val icon = if (reload) Os4GlassRefresh else Os4GlassSearch
+    val enabled = !reload || hotReloadEnabled
+    val holdDown = reload && hotReloadInProgress
+    val onClick = if (reload) onHotReload else onSearch
+    TooltipBox(text = label) {
+        if (liquidMode != null) {
+            LiquidNavigationAction(
+                backdrop = backdrop,
+                mode = liquidMode,
+                label = label,
+                icon = icon,
+                dark = dark,
+                enabled = enabled,
+                holdDown = holdDown,
+                onClick = onClick,
+                size = size,
+                pressLink = pressLink,
+            )
+        } else {
+            GlassIconButton(
+                onClick = { if (enabled && !holdDown) onClick() },
+                backdrop = backdrop,
+                size = size,
+                enabled = enabled,
+                holdDownState = holdDown,
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = label,
+                    tint = if (enabled) MiuixTheme.colorScheme.onSurface
+                        else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
+                )
+            }
+        }
     }
 }
 
@@ -528,20 +591,24 @@ internal fun MainHub(
         safePadding = railSafePadding,
         direction = LocalLayoutDirection.current,
     )
-    val searchInRail = hasOs4RailSearchSlot(appearance, useGlassRail)
-    val searchInBottomNav = hasOs4NavigationSearchSlot(
+    val actionInRail = hasOs4RailActionSlot(appearance, useGlassRail)
+    val actionInBottomNav = hasOs4NavigationActionSlot(
         appearance = appearance,
         glassBackdropAvailable = navBackdrop != null,
         liquidBackdropAvailable = liquidBackdrop != null,
         glassRailActive = useGlassRail,
         nativeRailActive = useNativeRail,
     )
-    val searchInNavigation = searchInBottomNav || searchInRail
-    val showNavigationSearch = showOs4NavigationSearchAction(
-        slotAvailable = searchInNavigation,
+    val navigationActionSlot = actionInBottomNav || actionInRail
+    val navigationAction = navigationActionFor(
+        slotAvailable = navigationActionSlot,
         selectedPage = pageSelection.selectedPage,
         searchActive = featureSearch.active,
     )
+    val hotReloadEnabled = !restartInProgress && !scopeRequestInProgress && !scopeBusy
+    val requestHotReload: () -> Unit = {
+        if (hotReloadEnabled && !hotReloadInProgress) onHotReload()
+    }
     val nativeRailState = rememberNavigationRailState()
     val railState = rememberGlassNavigationRailState()
     val railProgress = remember(useGlassRail, railState) {
@@ -601,20 +668,21 @@ internal fun MainHub(
                         onSelect = ::selectPage,
                         backdrop = navBackdrop,
                         touchExtension = appearance.navTouchExtension,
-                        trailingAction = if (showNavigationSearch) {
+                        trailingAction = navigationAction?.let { action ->
                             {
-                                val label = stringResource(R.string.feature_search)
-                                TooltipBox(text = label) {
-                                    GlassIconButton(
-                                        onClick = featureSearch::open,
-                                        backdrop = navBackdrop,
-                                        size = GlassNavigationBarDefaults.Height,
-                                    ) {
-                                        Icon(Os4GlassSearch, contentDescription = label)
-                                    }
-                                }
+                                NavigationTrailingAction(
+                                    action = action,
+                                    backdrop = navBackdrop,
+                                    liquidMode = null,
+                                    dark = dark,
+                                    size = GlassNavigationBarDefaults.Height,
+                                    hotReloadEnabled = hotReloadEnabled,
+                                    hotReloadInProgress = hotReloadInProgress,
+                                    onHotReload = requestHotReload,
+                                    onSearch = featureSearch::open,
+                                )
                             }
-                        } else null,
+                        },
                         modifier = Modifier
                             .padding(start = 24.dp, end = 24.dp, top = 20.dp),
                     )
@@ -656,7 +724,7 @@ internal fun MainHub(
                                             itemCount = items.size,
                                             rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
                                             onSelect = ::selectPage,
-                                            trailingActionWidth = if (showNavigationSearch) {
+                                            trailingActionWidth = if (navigationAction != null) {
                                                 LiquidNavSpec.height + GlassNavigationBarDefaults.ActionSpacing
                                             } else 0.dp,
                                         )
@@ -694,21 +762,22 @@ internal fun MainHub(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = LiquidNavSpec.sidePadding),
-                                trailingAction = if (showNavigationSearch) {
+                                trailingAction = navigationAction?.let { action ->
                                     {
-                                        val label = stringResource(R.string.feature_search)
-                                        TooltipBox(text = label) {
-                                            LiquidNavigationSearchAction(
-                                                backdrop = liquidBackdrop,
-                                                mode = appearance.liquidMode,
-                                                label = label,
-                                                dark = dark,
-                                                onClick = featureSearch::open,
-                                                pressLink = liquidPressLink,
-                                            )
-                                        }
+                                        NavigationTrailingAction(
+                                            action = action,
+                                            backdrop = liquidBackdrop,
+                                            liquidMode = appearance.liquidMode,
+                                            dark = dark,
+                                            size = LiquidNavSpec.height,
+                                            hotReloadEnabled = hotReloadEnabled,
+                                            hotReloadInProgress = hotReloadInProgress,
+                                            onHotReload = requestHotReload,
+                                            onSearch = featureSearch::open,
+                                            pressLink = liquidPressLink,
+                                        )
                                     }
-                                } else null,
+                                },
                             ) { liquidBar() }
                         } else {
                             liquidBar()
@@ -848,7 +917,7 @@ internal fun MainHub(
                 featureSnackbarState = featureSnackbarState,
                 selectedPage = pageSelection.selectedPage,
                 featureSearch = featureSearch,
-                searchInNavigationBar = searchInNavigation,
+                searchInNavigationBar = navigationActionSlot,
                 lang = lang,
                 iconHidden = iconHidden,
                 swipeBackEnabled = appearance.swipeBack,
@@ -872,13 +941,8 @@ internal fun MainHub(
                         }
                     }
                 },
-                onHotReload = {
-                    if (!hotReloadInProgress && !restartInProgress && !scopeRequestInProgress &&
-                        !scopeBusy
-                    ) {
-                        onHotReload()
-                    }
-                },
+                onHotReload = requestHotReload,
+                hotReloadInNavigation = navigationActionSlot,
                 onLangChange = onLangChange,
                 onIconHiddenChange = onIconHiddenChange,
                 onSwipeBackChange = onSwipeBackChange,
@@ -909,28 +973,21 @@ internal fun MainHub(
                 backdrop = railBackdrop,
                 state = railState,
                 showToggle = true,
-                trailingAction = if (searchInRail && showNavigationSearch) {
+                trailingAction = if (actionInRail) navigationAction?.let { action ->
                     {
-                        val label = stringResource(R.string.feature_search)
-                        TooltipBox(text = label) {
-                            if (appearance.navStyle == NavStyle.Liquid && liquidBackdrop != null) {
-                                LiquidNavigationSearchAction(
-                                    backdrop = liquidBackdrop,
-                                    mode = appearance.liquidMode,
-                                    label = label,
-                                    dark = dark,
-                                    onClick = featureSearch::open,
-                                    size = GlassNavigationRailDefaults.CollapsedHeight,
-                                )
-                            } else if (railBackdrop != null) {
-                                GlassIconButton(
-                                    onClick = featureSearch::open,
-                                    backdrop = railBackdrop,
-                                    size = GlassNavigationRailDefaults.CollapsedHeight,
-                                ) {
-                                    Icon(Os4GlassSearch, contentDescription = label)
-                                }
-                            }
+                        railBackdrop?.let { backdrop ->
+                            NavigationTrailingAction(
+                                action = action,
+                                backdrop = backdrop,
+                                liquidMode = appearance.liquidMode
+                                    .takeIf { appearance.navStyle == NavStyle.Liquid },
+                                dark = dark,
+                                size = GlassNavigationRailDefaults.CollapsedHeight,
+                                hotReloadEnabled = hotReloadEnabled,
+                                hotReloadInProgress = hotReloadInProgress,
+                                onHotReload = requestHotReload,
+                                onSearch = featureSearch::open,
+                            )
                         }
                     }
                 } else null,
@@ -1146,6 +1203,7 @@ private fun TopLevelPager(
     onRestart: () -> Unit,
     onRequestScope: () -> Unit,
     onHotReload: () -> Unit,
+    hotReloadInNavigation: Boolean,
     onLangChange: (AppLang) -> Unit,
     onIconHiddenChange: (Boolean) -> Unit,
     onSwipeBackChange: (Boolean) -> Unit,
@@ -1182,6 +1240,7 @@ private fun TopLevelPager(
                 onRequestScope = onRequestScope,
                 previewState = previewState,
                 onHotReload = onHotReload,
+                hotReloadInNavigation = hotReloadInNavigation,
                 onOpenPreviewSandbox = { onNavigate(AppRoute.PreviewSandbox) },
             )
             1 -> FeaturesScreen(

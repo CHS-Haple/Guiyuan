@@ -95,6 +95,7 @@ internal fun HomeScreen(
     onRequestScope: () -> Unit,
     previewState: PreviewSandboxUiState,
     onHotReload: () -> Unit,
+    hotReloadInNavigation: Boolean,
     onOpenPreviewSandbox: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -136,11 +137,13 @@ internal fun HomeScreen(
         { offset -> scrollBehavior.state.overscrollOffset = offset }
     }
     val actions: @Composable RowScope.() -> Unit = {
-        HotReloadAction(
-            inProgress = hotReloadInProgress,
-            enabled = !restartInProgress && !scopeRequestInProgress,
-            onClick = onHotReload,
-        )
+        if (!hotReloadInNavigation) {
+            HotReloadAction(
+                inProgress = hotReloadInProgress,
+                enabled = !restartInProgress && !scopeRequestInProgress,
+                onClick = onHotReload,
+            )
+        }
     }
 
     CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
