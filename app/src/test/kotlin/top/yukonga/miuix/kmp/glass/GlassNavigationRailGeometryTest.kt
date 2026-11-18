@@ -111,6 +111,28 @@ class GlassNavigationRailGeometryTest {
         // The action samples the existing X spring: it has no new press/drag animation.
     }
 
+    @Test fun liveLensOverhangDoesNotMoveCollapsedLiquidGroupCenterOrReduceGap() {
+        val halfWidth = 160f
+        val scale = 1.05f
+        val endOverhang = 9f
+        val correction = railLiquidGroupCenterCorrection(endOverhang, 1f)
+        val actionShift = railSearchActionPlannedShift(199f, halfWidth, scale, 1f, endOverhang)
+
+        // Panel growth extends equally on both sides; the independent lens
+        // can extend the visual right edge farther, so both siblings shift together.
+        val leftEdgeShift = -halfWidth * (scale - 1f) + correction
+        val actionRightEdgeShift = actionShift + correction
+        assertEquals(0f, (leftEdgeShift + actionRightEdgeShift) / 2f, 0.001f)
+
+        val lensRightEdgeShift = halfWidth * (scale - 1f) + endOverhang + correction
+        val idleGap = GlassNavigationBarDefaults.ActionSpacing.value
+        assertEquals(idleGap, idleGap + actionRightEdgeShift - lensRightEdgeShift, 0.001f)
+        assertEquals(-4.5f, correction, 0.001f)
+        assertEquals(-2.25f, railLiquidGroupCenterCorrection(endOverhang, 0.5f), 0.001f)
+        assertEquals(0f, railLiquidGroupCenterCorrection(endOverhang, 0f), 0.001f)
+        assertEquals(0f, railLiquidGroupCenterCorrection(-2f, 1f), 0.001f)
+    }
+
     @Test fun collapsedRailAlwaysReservesSpaceForIndependentSearchButton() {
         val needed = GlassNavigationBarDefaults.ActionSpacing + GlassNavigationRailDefaults.CollapsedHeight
         assertTrue(needed <= RailCollapsedSideReserve)
