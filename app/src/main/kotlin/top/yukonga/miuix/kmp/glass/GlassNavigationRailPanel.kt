@@ -100,6 +100,7 @@ internal class RailPanelMotion(
     val iconAlpha: () -> Float,
     val panelStart: () -> Dp,
     val panelHeight: () -> Dp,
+    val liquidPress: Animatable<Float, AnimationVector1D>,
 )
 
 /** The native body and optional Liquid substitute are one material choice. */
@@ -173,11 +174,14 @@ internal fun GlassNavigationRailPanel(
         interaction.updateWidths(widths)
         if (!pressed) interaction.settle(selectedIndex)
     }
-    val panelPress by animateFloatAsState(
-        targetValue = if (liquidPaint != null && interaction.pressedIndex >= 0) 1f else 0f,
-        animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
-        label = "liquidRailPanelPress",
-    )
+    // The panel is the sole writer of this press animation. The sibling search
+    // action reads its value to match the scaled panel's physical edge.
+    LaunchedEffect(motion.liquidPress, liquidPaint != null, pressed) {
+        motion.liquidPress.animateTo(
+            if (liquidPaint != null && pressed) 1f else 0f,
+            spring(dampingRatio = 1f, stiffness = 1000f),
+        )
+    }
     // Record only the physical Liquid panel, never the selected lens itself.
     // The selected indicator samples page + recorded panel, as in portrait LiquidNavBar.
     val materialBackdrop = if (liquidPaint != null && surface.backdrop != null) {
@@ -204,7 +208,7 @@ internal fun GlassNavigationRailPanel(
             .then(if (liquidPaint != null) Modifier.graphicsLayer {
                 // Scale the complete material, not content already clipped to the idle panel.
                 val scale = liquidPanelPressScale(
-                    size.width, size.height, 16.dp.toPx(), panelPress,
+                    size.width, size.height, 16.dp.toPx(), motion.liquidPress.value,
                 )
                 scaleX = scale
                 scaleY = scale

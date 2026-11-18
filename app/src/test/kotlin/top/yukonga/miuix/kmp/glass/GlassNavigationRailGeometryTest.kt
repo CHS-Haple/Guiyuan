@@ -64,6 +64,21 @@ class GlassNavigationRailGeometryTest {
         assertTrue(rtlPhysicalX >= 0.dp)
     }
 
+    @Test fun liquidSearchActionFollowsExactlyTheSamePanelPressScale() {
+        // Collapsed: the button is right of the physical panel centre and
+        // must follow its 16dp press growth rather than remain at idle X.
+        val panelWidth = 320f
+        val panelHeight = 54f
+        val expanded = com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale(
+            panelWidth, panelHeight, 16f, 1f,
+        )
+        assertEquals(0f, railSearchActionPressShift(390f, 160f, 1f), 0.001f)
+        assertEquals(11.5f, railSearchActionPressShift(390f, 160f, expanded), 0.001f)
+        assertTrue(railSearchActionPressShift(390f, 160f, expanded) > 0f)
+        // Expanded: the header action lies above the tall panel centre.
+        assertTrue(railSearchActionPressShift(50f, 500f, 1.04f) < 0f)
+    }
+
     @Test fun collapsedRailAlwaysReservesSpaceForIndependentSearchButton() {
         val needed = GlassNavigationBarDefaults.ActionSpacing + GlassNavigationRailDefaults.CollapsedHeight
         assertTrue(needed <= RailCollapsedSideReserve)
