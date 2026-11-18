@@ -159,6 +159,8 @@ import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassShadows
+import top.yukonga.miuix.kmp.glass.glassSearchBarTransition
+import top.yukonga.miuix.kmp.glass.rememberGlassSearchBarAlpha
 import top.yukonga.miuix.kmp.glass.popupShadowOutsets
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
@@ -1463,7 +1465,7 @@ private fun HubPage(
         motion = searchMotion,
         collapsed = browsingScroll.state.collapsedFraction >= 1f,
     )
-    val barAlpha = rememberOs4BarAlpha(searchExpanded)
+    val barAlpha = rememberGlassSearchBarAlpha(searchExpanded)
     val os3SearchActionAlpha by animateFloatAsState(
         targetValue = if (!os4 && search?.active == true) 0f else 1f,
         animationSpec = tween(150),
@@ -1578,6 +1580,13 @@ private fun HubPage(
             if (os4) {
                 Box(Modifier.fillMaxWidth()) {
                     GlassTopAppBar(
+                        // The published transition owns foreground scale/blur/fade; the
+                        // independently placed search action keeps its own opacity because
+                        // the native title layout still clips glass button shadows.
+                        contentModifier = Modifier.glassSearchBarTransition(
+                            expanded = searchExpanded,
+                            barAlpha = { barAlpha.value },
+                        ),
                         progressiveBlur = LocalTopBarProgressiveBlur.current,
                         title = if (searchMotion.mounted && searchExpanded) "" else title,
                         titleAlpha = { titleReveal.value * railProgress() },
