@@ -43,10 +43,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -311,7 +311,7 @@ fun GlassNavigationBar(
         // inset that doubled bottom whitespace when caption and navigation coexist.
         val systemBottom = maxOf(navigationBarBottom, animatedCaptionBarHeight)
         when {
-            systemBottom <= 16.dp -> 28.dp
+            systemBottom <= 16.dp -> 20.dp
             systemBottom >= 28.dp -> systemBottom
             else -> 12.dp + systemBottom
         }
@@ -350,18 +350,14 @@ fun GlassNavigationBar(
             .padding(bottom = bottomPadding)
             .graphicsLayer {
                 val show = showScale.value
+                val visibility = ((show - GlassMotion.NAV_HIDE_SCALE) / (1f - GlassMotion.NAV_HIDE_SCALE))
+                    .coerceIn(0f, 1f)
                 scaleX = show
                 scaleY = show
-                this.alpha = ((show - GlassMotion.NAV_HIDE_SCALE) / (1f - GlassMotion.NAV_HIDE_SCALE))
-                    .coerceIn(0f, 1f)
-            }
-            .blur(
-                radius = (
-                    (1f - ((showScale.value - GlassMotion.NAV_HIDE_SCALE) / (1f - GlassMotion.NAV_HIDE_SCALE)))
-                        .coerceIn(0f, 1f) * GlassMotion.NAV_HIDE_BLUR_DP
-                    ).dp,
-                edgeTreatment = BlurredEdgeTreatment.Unbounded,
-            ),
+                this.alpha = visibility
+                val blurPx = ((1f - visibility) * GlassMotion.NAV_HIDE_BLUR_DP).dp.toPx()
+                renderEffect = if (blurPx > 0.5f) BlurEffect(blurPx, blurPx, TileMode.Decal) else null
+            },
         trailingAction = trailingAction?.let { action ->
             {
                 Box(
