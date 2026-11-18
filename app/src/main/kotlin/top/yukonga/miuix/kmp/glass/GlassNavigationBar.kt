@@ -31,7 +31,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -76,6 +76,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -90,7 +91,7 @@ import kotlin.math.roundToInt
  * @property label Optional caption under the icon.
  * @property contentDescription What a screen reader announces for it.
  */
-@Immutable
+@Stable
 data class GlassNavigationItem(
     val icon: ImageVector,
     val label: String? = null,
@@ -290,11 +291,6 @@ fun GlassNavigationBar(
     val bottomPadding = if (defaultWindowInsetsPadding) {
         val navigationInset = WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)
             .asPaddingValues().calculateBottomPadding()
-        val floatingMargin = when {
-            navigationInset <= 16.dp -> 28.dp
-            navigationInset >= 28.dp -> navigationInset
-            else -> 12.dp + navigationInset
-        }
         val captionInset = WindowInsets.captionBar.only(WindowInsetsSides.Bottom)
             .asPaddingValues().calculateBottomPadding()
         val animatedCaptionInset by animateDpAsState(
@@ -302,7 +298,14 @@ fun GlassNavigationBar(
             animationSpec = tween(durationMillis = 300),
             label = "glassNavigationCaptionBarHeight",
         )
-        floatingMargin + animatedCaptionInset
+        // Upstream 3177a684: captionBar may describe the same bottom safe area.
+        // Android takes the larger inset, never sums the two.
+        val systemBottom = maxOf(navigationInset, animatedCaptionInset)
+        when {
+            systemBottom <= 16.dp -> 28.dp
+            systemBottom >= 28.dp -> systemBottom
+            else -> 12.dp + systemBottom
+        }
     } else {
         0.dp
     }
@@ -541,12 +544,14 @@ fun GlassNavigationBar(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(GlassNavigationBarDefaults.LabelSpacing),
                             ) {
-                                Icon(
-                                    imageVector = item.icon,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(GlassNavigationBarDefaults.IconSize),
-                                    tint = tint,
-                                )
+                                BadgedBox(badge = { item.badge?.invoke() }) {
+                                    Icon(
+                                        imageVector = item.icon,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(GlassNavigationBarDefaults.IconSize),
+                                        tint = tint,
+                                    )
+                                }
                                 if (item.label != null) {
                                     Text(
                                         text = item.label,
