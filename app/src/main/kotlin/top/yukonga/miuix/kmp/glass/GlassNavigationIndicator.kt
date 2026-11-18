@@ -121,7 +121,6 @@ private fun LiquidRailIndicatorSurface(
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 250f),
         label = "liquidRailPressX",
     ) else sharedX
-    val liquidX = localX.value
     val liquidY by animateFloatAsState(
         targetValue = if (pressed) LiquidFeedbackSpec.PressedLensScale else 1f,
         animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
@@ -132,8 +131,9 @@ private fun LiquidRailIndicatorSurface(
             .graphicsLayer {
                 val pressRange = LiquidFeedbackSpec.PressedLensScale - 1f
                 val growth = LiquidFeedbackSpec.PressedLensGrowth.toPx()
+                // Keep this draw-phase state read off Compose's recomposition path.
                 scaleX = 1f + growth / size.width.coerceAtLeast(1f) *
-                    ((liquidX - 1f) / pressRange)
+                    ((localX.value - 1f) / pressRange)
                 scaleY = 1f + growth / size.height.coerceAtLeast(1f) *
                     ((liquidY - 1f) / pressRange)
             }
