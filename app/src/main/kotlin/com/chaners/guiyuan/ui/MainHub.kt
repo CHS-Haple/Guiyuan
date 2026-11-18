@@ -413,16 +413,16 @@ private fun LiquidNavigationAction(
             .size(surface.size)
             .then(
                 if (pressLink != null) Modifier.offset {
-                    // Match the actual farther edge of the sibling lens/panel.
-                    // The drag and lens X deformation already have their own native clock;
-                    // this modifier only reads the same rendered frame, no extra animation.
-                    val reach = pressLink.visibleEndReachPx(
-                        LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
-                        LiquidNavSpec.contentPadding.toPx(),
+                    // Read the same lens, panel and drag frame as the nav bar;
+                    // the link owns no extra animation or gesture writer.
+                    IntOffset(
+                        pressLink.actionOffsetX(
+                            LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
+                            LiquidNavSpec.contentPadding.toPx(),
+                            direction,
+                        ).roundToInt(),
+                        0,
                     )
-                    val drag = pressLink.dragOffsetX *
-                        (if (direction == LayoutDirection.Ltr) 1f else -1f)
-                    IntOffset((reach + drag).roundToInt(), 0)
                 } else Modifier
             )
             .graphicsLayer {

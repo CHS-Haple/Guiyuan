@@ -169,6 +169,10 @@ internal class LiquidNavPressLink {
     private var source: Source? by mutableStateOf(null)
     val dragOffsetX: Float get() = source?.dragOffset?.value ?: 0f
 
+    fun actionOffsetX(panelGrowthPx: Float, endInsetPx: Float, direction: LayoutDirection): Float =
+        visibleEndReachPx(panelGrowthPx, endInsetPx) +
+            dragOffsetX * (if (direction == LayoutDirection.Ltr) 1f else -1f)
+
     fun visibleEndReachPx(panelGrowthPx: Float, endInsetPx: Float): Float {
         val current = source ?: return 0f
         val motion = current.motion
