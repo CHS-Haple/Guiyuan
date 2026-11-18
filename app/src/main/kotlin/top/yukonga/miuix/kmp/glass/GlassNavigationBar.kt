@@ -198,6 +198,8 @@ object GlassNavigationBarDefaults {
  * @param touchExtension Whether safe bottom whitespace also accepts destination taps.
  * @param trailingActionTouchExclusion Reserved action width plus gap, supplied by a caller
  *   that knows its action size. Without it, action-bearing bars keep the hit strip disabled.
+ * @param trailingActionTouchSize Actual action button width, excluding its gap.
+ * @param onTrailingActionTouch The original action callback for short taps in its safe bottom strip.
  * @param interactive Whether destination gestures, keyboard actions and accessibility actions are enabled.
  *   Noninteractive is for a visual preview, not for the real bottom navigation.
  * @param trailingAction Optional independent action outside the glass capsule. It owns its size
@@ -228,6 +230,8 @@ fun GlassNavigationBar(
     touchExtension: Boolean = false,
     trailingAction: (@Composable () -> Unit)? = null,
     trailingActionTouchExclusion: Dp = 0.dp,
+    trailingActionTouchSize: Dp = 0.dp,
+    onTrailingActionTouch: (() -> Unit)? = null,
 ) {
     if (items.isEmpty()) return
     val index = selectedIndex.coerceIn(0, items.lastIndex)
@@ -330,6 +334,12 @@ fun GlassNavigationBar(
                         trailingActionWidth = if (trailingAction != null) {
                             trailingActionTouchExclusion
                         } else 0.dp,
+                        trailingActionSize = if (trailingAction != null) {
+                            trailingActionTouchSize
+                        } else 0.dp,
+                        onTrailingAction = if (trailingAction != null) {
+                            onTrailingActionTouch
+                        } else null,
                     )
                 } else {
                     Modifier

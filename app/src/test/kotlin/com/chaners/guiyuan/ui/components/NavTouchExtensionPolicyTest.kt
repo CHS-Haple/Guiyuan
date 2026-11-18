@@ -5,6 +5,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class NavTouchExtensionPolicyTest {
@@ -75,6 +77,31 @@ class NavTouchExtensionPolicyTest {
         assertEquals(0, navTouchIndex(340f, rtl.first, rtl.second, 8f, 3, rtl = true))
         assertEquals(2, navTouchIndex(80f, rtl.first, rtl.second, 8f, 3, rtl = true))
         assertNull(navTouchIndex(42f, rtl.first, rtl.second, 8f, 3, rtl = true))
+    }
+
+    @Test
+    fun trailingActionReceivesItsOwnSafeBottomHitRegionWithoutStealingDestinations() {
+        val width = 352f
+        val size = 54f
+        val reserved = size + 12f
+        val ltr = navTouchHorizontalBounds(width, 0f, reserved, rtl = false)
+        assertTrue(navTouchActionHit(310f, width, 0f, reserved, size, rtl = false))
+        assertTrue(navTouchActionHit(351f, width, 0f, reserved, size, rtl = false))
+        assertFalse(navTouchActionHit(291f, width, 0f, reserved, size, rtl = false))
+        assertFalse(navTouchActionHit(272f, width, 0f, reserved, size, rtl = false))
+        assertNull(navTouchIndex(310f, ltr.first, ltr.second, 8f, 3, rtl = false))
+        assertEquals(2, navTouchIndex(272f, ltr.first, ltr.second, 8f, 3, rtl = false))
+
+        val rtl = navTouchHorizontalBounds(width, 0f, reserved, rtl = true)
+        assertTrue(navTouchActionHit(2f, width, 0f, reserved, size, rtl = true))
+        assertTrue(navTouchActionHit(53f, width, 0f, reserved, size, rtl = true))
+        assertFalse(navTouchActionHit(61f, width, 0f, reserved, size, rtl = true))
+        assertFalse(navTouchActionHit(80f, width, 0f, reserved, size, rtl = true))
+        assertNull(navTouchIndex(2f, rtl.first, rtl.second, 8f, 3, rtl = true))
+        assertEquals(2, navTouchIndex(80f, rtl.first, rtl.second, 8f, 3, rtl = true))
+        assertFalse(navTouchActionHit(310f, width, 0f, 0f, size, rtl = false))
+        assertFalse(navTouchActionHit(310f, width, 0f, reserved, 0f, rtl = false))
+        assertFalse(navTouchActionHit(310f, width, 0f, 40f, size, rtl = false))
     }
 
     @Test

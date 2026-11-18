@@ -40,6 +40,8 @@ internal fun Modifier.navTouchExtension(
     rtl: Boolean,
     onSelect: (Int) -> Unit,
     trailingActionWidth: Dp = 0.dp,
+    trailingActionSize: Dp = 0.dp,
+    onTrailingAction: (() -> Unit)? = null,
 ): Modifier {
     if (itemCount <= 0) return this
 
@@ -48,8 +50,10 @@ internal fun Modifier.navTouchExtension(
     if (extension == 0.dp) return this
 
     val select = rememberUpdatedState(onSelect)
+    val trailingTap = rememberUpdatedState(onTrailingAction)
     return this.pointerInput(
-        bottomPadding, extension, horizontalPadding, contentPadding, itemCount, rtl, trailingActionWidth,
+        bottomPadding, extension, horizontalPadding, contentPadding, itemCount, rtl,
+        trailingActionWidth, trailingActionSize,
     ) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false)
@@ -62,27 +66,34 @@ internal fun Modifier.navTouchExtension(
             val top = size.height - bottomPadding.toPx()
             val bottom = top + extension.toPx()
             val start = down.position
-            val up =
-                if (start.x >= left && start.x < right &&
-                    start.y >= top && start.y < bottom
-                ) awaitShortTapUp(down) else null
-            val index =
-                up?.takeIf { change ->
-                    change.position.x >= left && change.position.x < right &&
-                        change.position.y >= top && change.position.y < bottom
-                }?.let { change ->
-                    navTouchIndex(
-                        x = change.position.x,
-                        left = left,
-                        right = right,
-                        contentPadding = contentPadding.toPx(),
-                        count = itemCount,
-                        rtl = rtl,
+            if (start.y < top || start.y >= bottom) return@awaitEachGesture
+            val startIndex = navTouchIndex(
+                start.x, left, right, contentPadding.toPx(), itemCount, rtl,
+            )
+            val startedOnAction = trailingTap.value != null && navTouchActionHit(
+                start.x, size.width.toFloat(), horizontalPadding.toPx(),
+                trailingActionWidth.toPx(), trailingActionSize.toPx(), rtl,
+            )
+            if (startIndex == null && !startedOnAction) return@awaitEachGesture
+            val up = awaitShortTapUp(down) ?: return@awaitEachGesture
+            if (up.position.y < top || up.position.y >= bottom) return@awaitEachGesture
+            if (startedOnAction) {
+                if (navTouchActionHit(
+                        up.position.x, size.width.toFloat(), horizontalPadding.toPx(),
+                        trailingActionWidth.toPx(), trailingActionSize.toPx(), rtl,
                     )
+                ) {
+                    trailingTap.value?.let { action ->
+                        up.consume()
+                        action()
+                    }
                 }
-            if (up != null && index != null) {
+            } else if (startIndex != null && navTouchIndex(
+                    up.position.x, left, right, contentPadding.toPx(), itemCount, rtl,
+                ) == startIndex
+            ) {
                 up.consume()
-                select.value(index)
+                select.value(startIndex)
             }
         }
     }
@@ -101,6 +112,21 @@ internal fun navTouchHorizontalBounds(
     } else {
         padding to (width - padding - exclusion)
     }
+}
+
+/** The trailing control shares the safe tap strip, but never the destination hit region. */
+internal fun navTouchActionHit(
+    x: Float,
+    width: Float,
+    padding: Float,
+    reservedWidth: Float,
+    actionSize: Float,
+    rtl: Boolean,
+): Boolean {
+    if (actionSize <= 0f || reservedWidth < actionSize || width <= padding * 2f) return false
+    val edge = if (rtl) padding else width - padding
+    return if (rtl) x >= edge && x < edge + actionSize
+    else x >= edge - actionSize && x < edge
 }
 
 internal fun navTouchExtensionHeight(bottomPadding: Dp, gestureInset: Dp): Dp =

@@ -690,6 +690,13 @@ internal fun MainHub(
                         trailingActionTouchExclusion = if (navigationAction != null) {
                             GlassNavigationBarDefaults.Height + GlassNavigationBarDefaults.ActionSpacing
                         } else 0.dp,
+                        trailingActionTouchSize = if (navigationAction != null) {
+                            GlassNavigationBarDefaults.Height
+                        } else 0.dp,
+                        onTrailingActionTouch = navigationAction?.let { action ->
+                            if (action == NavigationAction.HotReload) actionControls.onHotReload
+                            else actionControls.onSearch
+                        },
                         trailingAction = navigationAction?.let { action ->
                             {
                                 NavigationTrailingAction(
@@ -746,6 +753,13 @@ internal fun MainHub(
                                             trailingActionWidth = if (navigationAction != null) {
                                                 LiquidNavSpec.height + GlassNavigationBarDefaults.ActionSpacing
                                             } else 0.dp,
+                                            trailingActionSize = if (navigationAction != null) {
+                                                LiquidNavSpec.height
+                                            } else 0.dp,
+                                            onTrailingAction = navigationAction?.let { action ->
+                                                if (action == NavigationAction.HotReload) actionControls.onHotReload
+                                                else actionControls.onSearch
+                                            },
                                         )
                                     } else {
                                         Modifier
