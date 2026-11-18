@@ -3,6 +3,7 @@ package com.chaners.guiyuan.ui
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -597,6 +598,12 @@ internal fun MainHub(
         safePadding = railSafePadding,
         direction = LocalLayoutDirection.current,
     )
+    // The OS3-style native rail sits outside the page's recorded backdrop.
+    // Give it an in-bounds recording of its own underlying surface so the lens
+    // never samples beyond the page and the rail cannot record itself.
+    val nativeRailBackdrop = if (
+        useNativeRail && appearance.navStyle == NavStyle.Liquid && liquidBackdrop != null
+    ) rememberLiquidNavBackdrop(surfaceColor) else null
     val actionInRail = hasOs4RailActionSlot(appearance, useGlassRail)
     val actionInBottomNav = hasOs4NavigationActionSlot(
         appearance = appearance,
@@ -886,15 +893,25 @@ internal fun MainHub(
         // or disappears during rotation and split-screen resizing.
         Row(Modifier.fillMaxSize()) {
             if (useNativeRail) {
-                HubNativeRail(
-                    state = nativeRailState,
-                    items = items,
-                    selectedIndex = pageSelection.selectedPage,
-                    onSelect = ::selectPage,
-                    liquidMaterial = liquidBackdrop
-                        .takeIf { appearance.navStyle == NavStyle.Liquid }
-                        ?.let { LiquidRailMaterial(it, appearance.liquidMode) },
-                )
+                Box(Modifier.fillMaxHeight()) {
+                    if (nativeRailBackdrop != null) {
+                        // Record only the base surface. The rail remains an
+                        // independent sibling above this recording.
+                        Box(
+                            Modifier.matchParentSize()
+                                .layerBackdrop(nativeRailBackdrop)
+                                .background(surfaceColor),
+                        )
+                    }
+                    HubNativeRail(
+                        state = nativeRailState,
+                        items = items,
+                        selectedIndex = pageSelection.selectedPage,
+                        onSelect = ::selectPage,
+                        liquidMaterial = nativeRailBackdrop
+                            ?.let { LiquidRailMaterial(it, appearance.liquidMode) },
+                    )
+                }
             }
             Box(Modifier.weight(1f).fillMaxHeight()) {
         Box(
