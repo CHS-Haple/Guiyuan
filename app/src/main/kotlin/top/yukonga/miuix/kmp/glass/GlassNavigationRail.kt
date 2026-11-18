@@ -307,32 +307,14 @@ private fun RailNavigationWindow(
                             GlassNavigationRailDefaults.Margin,
                             request.state.progress,
                         )
-                        with(density) {
-                            val progress = request.state.progress.coerceIn(0f, 1f)
-                            val collapsedFraction = 1f - progress
-                            val actionReservePx = (GlassNavigationBarDefaults.ActionSpacing +
-                                GlassNavigationRailDefaults.CollapsedHeight).toPx()
-                            val groupShift = railCollapsedActionGroupShift(
-                                actionReservePx, actionProgress.value, collapsedFraction,
+                        start + with(density) {
+                            railCollapsedVisualCenterOffset(
+                                progress = request.state.progress,
+                                actionFraction = actionProgress.value,
+                                collapsedWidth = currentCollapsedWidth,
+                                panelHeight = panelHeight.value,
+                                liquid = animation.liquid.takeIf { request.materialOverride != null },
                             )
-                            val lensShift = if (request.materialOverride != null &&
-                                actionProgress.value > 0f
-                            ) {
-                                val width = currentCollapsedWidth +
-                                    (GlassNavigationRailDefaults.ExpandedWidth - currentCollapsedWidth) * progress
-                                val widthPx = width.toPx()
-                                val scale = liquidPanelPressScale(
-                                    widthPx, panelHeight.value.toPx(),
-                                    LiquidFeedbackSpec.PressedPanelGrowth.toPx(), animation.liquid.press.value,
-                                )
-                                railLiquidGroupCenterCorrection(
-                                    animation.liquid.lensEdge.overhangPx(
-                                        widthPx, scale, LiquidFeedbackSpec.PressedLensGrowth.toPx(),
-                                    ),
-                                    collapsedFraction,
-                                )
-                            } else 0f
-                            start + (groupShift + lensShift).toDp()
                         }
                     }, { panelHeight.value }, animation.liquid),
         )
@@ -401,6 +383,33 @@ private fun RailWindowTrailingAction(
                 ),
         ) { presentedAction() }
     }
+}
+
+/** One derived layout coordinate shared by the panel, lens and independent action. */
+private fun Density.railCollapsedVisualCenterOffset(
+    progress: Float,
+    actionFraction: Float,
+    collapsedWidth: Dp,
+    panelHeight: Dp,
+    liquid: RailLiquidMotion?,
+): Dp {
+    val fraction = progress.coerceIn(0f, 1f)
+    val collapsed = 1f - fraction
+    val reserve = (GlassNavigationBarDefaults.ActionSpacing + GlassNavigationRailDefaults.CollapsedHeight).toPx()
+    val groupShift = railCollapsedActionGroupShift(reserve, actionFraction, collapsed)
+    if (liquid == null || actionFraction <= 0f) return groupShift.toDp()
+
+    val width = collapsedWidth +
+        (GlassNavigationRailDefaults.ExpandedWidth - collapsedWidth) * fraction
+    val widthPx = width.toPx()
+    val scale = liquidPanelPressScale(
+        widthPx, panelHeight.toPx(), LiquidFeedbackSpec.PressedPanelGrowth.toPx(), liquid.press.value,
+    )
+    val lensShift = railLiquidGroupCenterCorrection(
+        liquid.lensEdge.overhangPx(widthPx, scale, LiquidFeedbackSpec.PressedLensGrowth.toPx()),
+        collapsed,
+    )
+    return (groupShift + lensShift).toDp()
 }
 
 /** Reserve the independent action inside the same visual centre as the capsule. */
