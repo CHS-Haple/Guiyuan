@@ -55,6 +55,7 @@ import com.chaners.guiyuan.ui.icons.Os4GlassClose
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.PI
 
 private const val CANCEL_BLUR_PX = 50f
 
