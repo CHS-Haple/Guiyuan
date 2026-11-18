@@ -184,11 +184,20 @@ fun Modifier.glassPopupAnchorRow(anchor: GlassPopupAnchor): Modifier = this.onGl
  * @param anchor The anchor the row reported itself to.
  */
 @Stable
-fun Modifier.glassPopupAnchorValue(anchor: GlassPopupAnchor): Modifier = this
-    .onGloballyPositioned { anchor.dropdownValueBounds = it.boundsInWindow() }
-    .graphicsLayer {
+fun Modifier.glassPopupAnchorValue(anchor: GlassPopupAnchor): Modifier =
+    glassPopupAnchorValue(anchor, trackBounds = true)
+
+@Stable
+internal fun Modifier.glassPopupAnchorValue(anchor: GlassPopupAnchor, trackBounds: Boolean): Modifier {
+    val positioned = if (trackBounds) {
+        onGloballyPositioned { anchor.dropdownValueBounds = it.boundsInWindow() }
+    } else {
+        this
+    }
+    return positioned.graphicsLayer {
         alpha = maxOf(anchor.valueAlphaState?.value ?: 1f, anchor.dropdownValueAlpha)
     }
+}
 
 /**
  * A glass menu that expands from an anchored control with a content crossfade.
