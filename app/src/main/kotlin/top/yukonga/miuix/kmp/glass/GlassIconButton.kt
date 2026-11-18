@@ -128,7 +128,7 @@ fun GlassIconButton(
 @Composable
 // foldIn only reads the anchor marker; the modifier is still applied to exactly one root Box.
 @Suppress("ktlint:compose:modifier-reused-check", "ktlint:compose:state-param-check")
-private fun GlassButtonSurface(
+internal fun GlassButtonSurface(
     backdrop: Backdrop?,
     floating: Boolean,
     surfaceAlpha: Float,
