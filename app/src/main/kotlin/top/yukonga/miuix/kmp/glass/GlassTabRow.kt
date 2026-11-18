@@ -136,8 +136,10 @@ object GlassTabRowDefaults {
 
     /** `filter-sort-view2-*-glass`: 20dp mask blur with pured-thin-glass colour layers. */
     @Composable
-    fun material(): GlassMaterial = GlassMaterials.puredThinGlass(
-        isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
+    fun material(): GlassMaterial = dynamicGlassMaterial(
+        GlassMaterials.puredThinGlass(
+            isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
+        ),
     )
 
     /** Bloom stroke for selected and unselected tabs. */
@@ -398,8 +400,10 @@ object GlassSegmentedTabRowDefaults {
 
     /** `filter-sort-view-glass`: 20dp mask blur with pured-thin-glass colour layers. */
     @Composable
-    fun material(): GlassMaterial = GlassMaterials.puredThinGlass(
-        isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
+    fun material(): GlassMaterial = dynamicGlassMaterial(
+        GlassMaterials.puredThinGlass(
+            isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
+        ),
     )
 
     /** Bloom stroke for the track. */
