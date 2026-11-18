@@ -247,4 +247,3 @@ internal fun Os4SearchMode(
         }
     }
 }
-
