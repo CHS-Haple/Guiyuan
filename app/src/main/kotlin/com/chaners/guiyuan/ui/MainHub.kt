@@ -378,7 +378,7 @@ private fun LiquidNavigationSearchAction(
     )
     Box(
         modifier = Modifier
-            // Match the portrait Liquid capsule's height rather than Glass's 54.dp height.
+            // Portrait uses the 64dp Liquid capsule; a Rail action follows Rail's height.
             .size(size)
             .graphicsLayer {
                 scaleX = scale

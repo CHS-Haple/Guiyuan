@@ -52,6 +52,11 @@ class GlassNavigationRailGeometryTest {
         assertEquals(590.dp, railLiquidPanelStart(590.dp, expanded, 0f))
     }
 
+    @Test fun collapsedRailAlwaysReservesSpaceForIndependentSearchButton() {
+        val needed = GlassNavigationBarDefaults.ActionSpacing + GlassNavigationRailDefaults.CollapsedHeight
+        assertTrue(needed <= RailCollapsedSideReserve)
+    }
+
     @Test fun searchActionUsesNativeCapsuleEndAndExpandedHeaderSlot() {
         val actionSize = GlassNavigationRailDefaults.CollapsedHeight
         assertEquals(
