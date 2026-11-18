@@ -5,28 +5,27 @@ package top.yukonga.miuix.kmp.glass.internal
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
-import androidx.compose.ui.unit.LayoutDirection
 import top.yukonga.miuix.kmp.blur.BackdropEffectScope
 import top.yukonga.miuix.kmp.blur.runtimeShaderEffect
-import top.yukonga.miuix.kmp.glass.GlassColorBlendMode
-import top.yukonga.miuix.kmp.glass.GlassDefaults
+import top.yukonga.miuix.kmp.material.GlassColorBlendMode
 import top.yukonga.miuix.kmp.material.GlassColorLayer
+import top.yukonga.miuix.kmp.material.GlassDefaults
+import top.yukonga.miuix.kmp.material.GlassMaterial
+import top.yukonga.miuix.kmp.material.GlassShape
+import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.material.RuntimeShader
-import top.yukonga.miuix.kmp.glass.GlassMaterial
-import top.yukonga.miuix.kmp.glass.GlassShape
-import top.yukonga.miuix.kmp.glass.GlassStyle
+import top.yukonga.miuix.kmp.material.setSilhouetteUniforms
 import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.min
 
 /**
- * Chains the glass material onto the effect pipeline.
+ * Adds the glass material to the backdrop effect pipeline.
  *
- * @param style The material to render.
- * @param shape The silhouette. Its corner sizes and smoothing drive the shader's distance field.
- * @param alpha Opacity multiplier folded into the material's own opacity.
- * @param tint Overrides [top.yukonga.miuix.kmp.glass.GlassInner.tint] when specified. Its alpha
- *   replaces the style's tint strength.
+ * @param style Glass style.
+ * @param shape Surface shape.
+ * @param alpha Material opacity multiplier.
+ * @param tint Optional tint override; its alpha replaces the style's tint strength.
  */
 internal fun BackdropEffectScope.glassEffect(
     style: GlassStyle,
@@ -44,17 +43,6 @@ internal fun BackdropEffectScope.glassEffect(
     val textureWidth = (paddedWidth / downscaleFactor).coerceAtLeast(1f)
     val textureHeight = (paddedHeight / downscaleFactor).coerceAtLeast(1f)
 
-    val halfMin = min(width, height) * 0.5f
-    val isLtr = layoutDirection == LayoutDirection.Ltr
-    val start = shape.topStart.toPx(size, this)
-    val end = shape.topEnd.toPx(size, this)
-    val bottomEnd = shape.bottomEnd.toPx(size, this)
-    val bottomStart = shape.bottomStart.toPx(size, this)
-    val topLeft = (if (isLtr) start else end).coerceIn(0f, halfMin) / scale
-    val topRight = (if (isLtr) end else start).coerceIn(0f, halfMin) / scale
-    val bottomRight = (if (isLtr) bottomEnd else bottomStart).coerceIn(0f, halfMin) / scale
-    val bottomLeft = (if (isLtr) bottomStart else bottomEnd).coerceIn(0f, halfMin) / scale
-
     val sourceScale = density / GlassDefaults.SourceDensity
     val edgeFullPx = (style.edge.width * sourceScale).coerceAtLeast(1f)
     val tintColor = if (tint.isSpecified) tint else style.inner.tint
@@ -67,11 +55,9 @@ internal fun BackdropEffectScope.glassEffect(
         .coerceIn(0f, 1f)
 
     runtimeShaderEffect(GLASS_SHADER_KEY, GLASS_SHADER, "child") {
-        setFloatUniform("in_size", width / scale, height / scale)
+        setSilhouetteUniforms(shape, layoutDirection, size, this@glassEffect, scale)
         setFloatUniform("in_pad", padding / scale, padding / scale)
         setFloatUniform("in_maxCoord", textureWidth - 0.5f, textureHeight - 0.5f)
-        setFloatUniform("in_radii", topLeft, topRight, bottomRight, bottomLeft)
-        setFloatUniform("in_smoothing", shape.smoothing.coerceIn(0f, 1f))
         setFloatUniform(
             "in_alphaEdge",
             (style.inner.alpha * alpha).coerceIn(0f, 1f),
@@ -140,10 +126,10 @@ internal fun BackdropEffectScope.glassEffect(
 }
 
 /**
- * Chains a colour treatment onto the effect pipeline.
+ * Adds color blending to the backdrop effect pipeline.
  *
- * @param material The material whose layers to apply, nearest the backdrop first.
- * @param alpha Opacity multiplier folded into every material layer.
+ * @param material Ordered color layers, nearest the backdrop first.
+ * @param alpha Opacity multiplier for each layer.
  */
 internal fun BackdropEffectScope.colorBlendEffect(
     material: GlassMaterial,
@@ -169,6 +155,7 @@ internal fun BackdropEffectScope.colorBlendEffect(
     }
 }
 
+/** Writes one optional colour layer, or clears the slot when [layer] is absent. */
 private fun RuntimeShader.setLayerUniform(index: Int, layer: GlassColorLayer?, surfaceAlpha: Float) {
     if (layer == null) {
         setFloatUniform("in_blend$index", 0f, 0f, 0f, 0f)
@@ -177,7 +164,7 @@ private fun RuntimeShader.setLayerUniform(index: Int, layer: GlassColorLayer?, s
     }
 }
 
-/** The id the shader's blend switch reads. Keep in step with `GLASS_COLOR_BLEND_SHADER`. */
+/** Blend-mode ID; must match the switch in `GLASS_COLOR_BLEND_SHADER`. */
 private val GlassColorBlendMode.id: Float
     get() = when (this) {
         GlassColorBlendMode.SrcOver -> 0f
