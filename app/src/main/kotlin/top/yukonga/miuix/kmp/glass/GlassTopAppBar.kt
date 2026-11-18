@@ -466,7 +466,7 @@ fun GlassTopAppBar(
                     .progressiveTextureBlur(
                         backdrop = rawBackdrop,
                         shape = RectangleShape,
-                        gradient = ProgressiveBlur.Top.copy(curve = 0.5f),
+                        gradient = ProgressiveBlur.Top.copy(curve = 0.25f),
                         blurRadius = GlassTopAppBarDefaults.ProgressiveBlurRadius.value,
                         colors = blurColors,
                     ),
