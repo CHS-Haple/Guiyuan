@@ -363,6 +363,13 @@ private fun HubNativeRail(
 }
 
 /** Both page actions share one callback owner and the same busy-state checks. */
+private class NavigationActionSurface(
+    val backdrop: Backdrop,
+    val liquidMode: LiquidMode?,
+    val dark: Boolean,
+    val size: Dp,
+)
+
 private class NavigationActionControls(
     val hotReloadEnabled: Boolean,
     val hotReloadInProgress: Boolean,
@@ -377,10 +384,8 @@ private class NavigationActionControls(
 @Composable
 private fun LiquidNavigationAction(
     action: NavigationAction,
-    backdrop: Backdrop,
+    surface: NavigationActionSurface,
     mode: LiquidMode,
-    dark: Boolean,
-    size: Dp,
     controls: NavigationActionControls,
     pressLink: LiquidNavPressLink? = null,
 ) {
@@ -405,7 +410,7 @@ private fun LiquidNavigationAction(
     Box(
         modifier = Modifier
             // Portrait uses the 64dp Liquid capsule; a Rail action follows Rail's height.
-            .size(size)
+            .size(surface.size)
             .then(
                 if (pressLink != null) Modifier.offset {
                     // Match the actual farther edge of the sibling lens/panel.
@@ -429,10 +434,10 @@ private fun LiquidNavigationAction(
                 shadow = Shadow(
                     radius = 10.dp,
                     color = Color.Black,
-                    alpha = if (dark) 0.20f else 0.10f,
+                    alpha = if (surface.dark) 0.20f else 0.10f,
                 ),
             )
-            .liquidRailSurface(backdrop, CircleShape, mode)
+            .liquidRailSurface(surface.backdrop, CircleShape, mode)
             .clickable(
                 enabled = enabled && !holdDown,
                 interactionSource = interactionSource,
@@ -455,10 +460,7 @@ private fun LiquidNavigationAction(
 @Composable
 private fun NavigationTrailingAction(
     action: NavigationAction,
-    backdrop: Backdrop,
-    liquidMode: LiquidMode?,
-    dark: Boolean,
-    size: Dp,
+    surface: NavigationActionSurface,
     controls: NavigationActionControls,
     pressLink: LiquidNavPressLink? = null,
 ) {
@@ -469,21 +471,20 @@ private fun NavigationTrailingAction(
     val holdDown = reload && controls.hotReloadInProgress
     val onClick = if (reload) controls.onHotReload else controls.onSearch
     TooltipBox(text = label) {
-        if (liquidMode != null) {
+        val mode = surface.liquidMode
+        if (mode != null) {
             LiquidNavigationAction(
                 action = action,
-                backdrop = backdrop,
-                mode = liquidMode,
-                dark = dark,
-                size = size,
+                surface = surface,
+                mode = mode,
                 controls = controls,
                 pressLink = pressLink,
             )
         } else {
             GlassIconButton(
                 onClick = { if (enabled && !holdDown) onClick() },
-                backdrop = backdrop,
-                size = size,
+                backdrop = surface.backdrop,
+                size = surface.size,
                 enabled = enabled,
                 holdDownState = holdDown,
             ) {
@@ -697,10 +698,9 @@ internal fun MainHub(
                             {
                                 NavigationTrailingAction(
                                     action = action,
-                                    backdrop = navBackdrop,
-                                    liquidMode = null,
-                                    dark = dark,
-                                    size = GlassNavigationBarDefaults.Height,
+                                    surface = NavigationActionSurface(
+                                        navBackdrop, null, dark, GlassNavigationBarDefaults.Height,
+                                    ),
                                     controls = actionControls,
                                 )
                             }
@@ -795,10 +795,9 @@ internal fun MainHub(
                                     {
                                         NavigationTrailingAction(
                                             action = action,
-                                            backdrop = liquidBackdrop,
-                                            liquidMode = appearance.liquidMode,
-                                            dark = dark,
-                                            size = LiquidNavSpec.height,
+                                            surface = NavigationActionSurface(
+                                                liquidBackdrop, appearance.liquidMode, dark, LiquidNavSpec.height,
+                                            ),
                                             controls = actionControls,
                                             pressLink = liquidPressLink,
                                         )
@@ -1004,11 +1003,14 @@ internal fun MainHub(
                         railBackdrop?.let { backdrop ->
                             NavigationTrailingAction(
                                 action = action,
-                                backdrop = backdrop,
-                                liquidMode = appearance.liquidMode
-                                    .takeIf { appearance.navStyle == NavStyle.Liquid },
-                                dark = dark,
-                                size = GlassNavigationRailDefaults.CollapsedHeight,
+                                surface = NavigationActionSurface(
+                                    backdrop,
+                                    appearance.liquidMode.takeIf {
+                                        appearance.navStyle == NavStyle.Liquid
+                                    },
+                                    dark,
+                                    GlassNavigationRailDefaults.CollapsedHeight,
+                                ),
                                 controls = actionControls,
                             )
                         }

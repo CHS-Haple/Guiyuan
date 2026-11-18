@@ -60,9 +60,7 @@ internal fun GlassNavigationIndicator(
             pressed = pressed,
             modifier = modifier,
             height = height,
-            color = appearance.color,
-            pressedColor = appearance.pressedColor,
-            scaleOnPress = appearance.scaleOnPress,
+            appearance = appearance,
         )
     } else {
         LiquidRailIndicatorSurface(pressed, modifier, paint)
@@ -75,13 +73,11 @@ private fun NativeGlassIndicator(
     pressed: Boolean,
     modifier: Modifier,
     height: Dp,
-    color: Color,
-    pressedColor: Color,
-    scaleOnPress: Boolean,
+    appearance: GlassIndicatorAppearance,
 ) {
     val density = LocalDensity.current
     val scale by animateFloatAsState(
-        targetValue = if (pressed && scaleOnPress) {
+        targetValue = if (pressed && appearance.scaleOnPress) {
             glassPressScale(with(density) { height.toPx() }, density.density)
         } else {
             1f
@@ -90,7 +86,7 @@ private fun NativeGlassIndicator(
         label = "glassNavigationIndicatorPress",
     )
     val fill = animateColorAsState(
-        targetValue = if (pressed) pressedColor else color,
+        targetValue = if (pressed) appearance.pressedColor else appearance.color,
         animationSpec = if (pressed) GlassMotion.navPressEnter() else GlassMotion.navPressExit(),
         label = "glassNavigationIndicatorFill",
     )
