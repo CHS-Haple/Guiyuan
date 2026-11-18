@@ -120,6 +120,7 @@ import top.yukonga.miuix.kmp.glass.GlassNavigationBar
 import top.yukonga.miuix.kmp.glass.GlassNavigationBarLayout
 import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.GlassNavigationRail
 import top.yukonga.miuix.kmp.glass.GlassRailDestinations
 import top.yukonga.miuix.kmp.glass.RailLiquidPaint
@@ -373,7 +374,11 @@ private fun LiquidNavigationSearchAction(
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.9f else 1f,
-        animationSpec = spring(dampingRatio = 0.8f, stiffness = 300f),
+        // Follow the published MIUIX floating action's press/release timing,
+        // retaining Guiyuan's Liquid surface rather than its primary-tinted material.
+        animationSpec = GlassMotion.springOf(
+            damping = 1f, response = if (pressed) 0.15f else 0.3f,
+        ),
         label = "liquidNavSearchPressScale",
     )
     Box(
