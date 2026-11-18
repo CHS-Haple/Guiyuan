@@ -727,6 +727,7 @@ internal fun MainHub(
                 pagerState = pagerState,
                 bottomPadding = innerPadding,
                 featureSnackbarState = featureSnackbarState,
+                selectedPage = pageSelection.selectedPage,
                 featureSearch = featureSearch,
                 searchInNavigationBar = searchInGlassNav,
                 lang = lang,
@@ -989,6 +990,7 @@ private fun TopLevelPager(
     pagerState: PagerState,
     bottomPadding: PaddingValues,
     featureSnackbarState: SnackbarHostState,
+    selectedPage: Int,
     featureSearch: PageSearch,
     searchInNavigationBar: Boolean,
     lang: AppLang,
@@ -1040,7 +1042,7 @@ private fun TopLevelPager(
             )
             1 -> FeaturesScreen(
                 bottomContentPadding = bottom,
-                visible = pagerState.currentPage == 1,
+                visible = selectedPage == 1,
                 snackbarState = featureSnackbarState,
                 search = featureSearch,
                 searchInNavigationBar = searchInNavigationBar,
