@@ -1455,6 +1455,8 @@ private fun HubPage(
     val searchExpanded = os4 && search?.active == true
     val searchMotion = rememberOs4SearchMotion(searchExpanded)
     var revealTitleOnExit by remember { mutableStateOf(false) }
+    // Navigation may open search directly; clear any title-reveal flag from its previous exit.
+    LaunchedEffect(searchExpanded) { if (searchExpanded) revealTitleOnExit = false }
     val titleReveal = rememberOs4TitleReveal(
         expanded = searchExpanded,
         exitNeedsReveal = revealTitleOnExit,
