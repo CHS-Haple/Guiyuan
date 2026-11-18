@@ -267,6 +267,7 @@ private fun RailNavigationWindow(
             nativeAnimatedWidth
         } else capsule.width
         val collapsedStart = (maxWidth - capsule.width) / 2
+        val density = LocalDensity.current
         val expandedTop = GlassNavigationRailDefaults.CollapsedTop
         val expandedHeight = (maxHeight - expandedTop - GlassNavigationRailDefaults.Margin)
             .coerceAtLeast(collapsedHeight)
@@ -295,11 +296,27 @@ private fun RailNavigationWindow(
                 ),
                 motion = RailPanelMotion(animation.rows, { animation.iconAlpha.value },
                     {
-                        nativePanelStart?.value ?: railLiquidPanelStart(
+                        val start = nativePanelStart?.value ?: railLiquidPanelStart(
                             collapsedStart,
                             GlassNavigationRailDefaults.Margin,
                             request.state.progress,
                         )
+                        if (request.materialOverride == null || request.trailingAction == null) {
+                            start
+                        } else with(density) {
+                            val progress = request.state.progress.coerceIn(0f, 1f)
+                            val width = currentCollapsedWidth +
+                                (GlassNavigationRailDefaults.ExpandedWidth - currentCollapsedWidth) * progress
+                            val widthPx = width.toPx()
+                            val scale = liquidPanelPressScale(
+                                widthPx, panelHeight.value.toPx(),
+                                LiquidFeedbackSpec.PressedPanelGrowth.toPx(), animation.liquid.press.value,
+                            )
+                            val overhang = animation.liquid.lensEdge.overhangPx(
+                                widthPx, scale, LiquidFeedbackSpec.PressedLensGrowth.toPx(),
+                            )
+                            start + railLiquidGroupCenterCorrection(overhang, 1f - progress).toDp()
+                        }
                     }, { panelHeight.value }, animation.liquid),
         )
         RailWindowPanel(request = request, placement = placement)
@@ -372,6 +389,10 @@ private fun RailWindowTrailingAction(
         ) { presentedAction() }
     }
 }
+
+/** One right-overhanging lens must not move the centre of the capsule-action group. */
+internal fun railLiquidGroupCenterCorrection(endOverhangPx: Float, collapsedFraction: Float): Float =
+    -endOverhangPx.coerceAtLeast(0f) * collapsedFraction.coerceIn(0f, 1f) / 2f
 
 /** Render the action next to the existing rail panel at its physical press edge. */
 private fun Density.railTrailingActionOffset(
