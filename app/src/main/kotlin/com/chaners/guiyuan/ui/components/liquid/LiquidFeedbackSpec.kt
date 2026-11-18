@@ -14,23 +14,3 @@ internal fun liquidPanelPressScale(
     progress: Float,
 ): Float = 1f + growthPx * progress.coerceIn(0f, 1f) /
     maxOf(widthPx, heightPx).coerceAtLeast(1f)
-
-/** The portrait Liquid lens deformation law, rotated only for vertical rails. */
-internal data class LiquidLensScales(val x: Float, val y: Float)
-
-internal fun liquidVelocityScales(
-    baseX: Float,
-    baseY: Float,
-    signedVelocity: Float,
-    vertical: Boolean,
-): LiquidLensScales {
-    // Exactly the coefficients used by LiquidNavBar's original layerBlock.
-    val velocity = signedVelocity / 10f
-    val along = (velocity * 0.75f).coerceIn(-0.2f, 0.2f)
-    val across = (velocity * 0.25f).coerceIn(-0.2f, 0.2f)
-    return if (vertical) {
-        LiquidLensScales(baseX * (1f - across), baseY / (1f - along))
-    } else {
-        LiquidLensScales(baseX / (1f - along), baseY * (1f - across))
-    }
-}

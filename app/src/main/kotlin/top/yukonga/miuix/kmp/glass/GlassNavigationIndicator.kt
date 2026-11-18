@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.chaners.guiyuan.ui.components.liquid.liquidVelocityScales
 import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 
 /**
@@ -43,8 +42,6 @@ internal class GlassIndicatorAppearance(
     val pressedColor: Color,
     val scaleOnPress: Boolean = true,
     val liquidPaint: (@Composable (Boolean) -> Modifier)? = null,
-    val motionVelocity: () -> Float = { 0f },
-    val verticalMotion: Boolean = false,
 )
 
 @Composable
@@ -96,13 +93,8 @@ internal fun GlassNavigationIndicator(
                         ((liquidX - 1f) / pressRange)
                     val baseY = 1f + growth / size.height.coerceAtLeast(1f) *
                         ((liquidY - 1f) / pressRange)
-                    val scales = liquidVelocityScales(
-                        baseX, baseY, appearance.motionVelocity(), appearance.verticalMotion,
-                    )
-                    scaleX = scales.x
-                    scaleY = scales.y
-                    translationX = 0f
-                    translationY = 0f
+                    scaleX = baseX
+                    scaleY = baseY
                 } else {
                     scaleX = scale
                     scaleY = scale

@@ -7,10 +7,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.util.VelocityTracker
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -171,9 +167,11 @@ internal fun GlassNavigationRailPanel(
     val interaction = remember(widths.size, startPx, endPx, scope) {
         NavigationRailInteraction(widths, startPx, endPx, context.selection.selectedIndex, scope)
     }
-    LaunchedEffect(interaction, widths) {
+    val selectedIndex = context.selection.selectedIndex
+    val pressed = interaction.pressedIndex >= 0
+    LaunchedEffect(interaction, widths, selectedIndex, pressed, interaction.releaseGeneration) {
         interaction.updateWidths(widths)
-        if (interaction.pressedIndex < 0) interaction.settle(context.selection.selectedIndex)
+        if (!pressed) interaction.settle(selectedIndex)
     }
     val panelPress by animateFloatAsState(
         targetValue = if (liquidPaint != null && interaction.pressedIndex >= 0) 1f else 0f,
@@ -309,10 +307,6 @@ private fun RailPanelContents(
         onSelect = rememberUpdatedState(context.selection.onSelect),
         scrollEnabled = scrollEnabled,
     )
-    val pressed = interaction.pressedIndex >= 0
-    LaunchedEffect(interaction, context.selection.selectedIndex, pressed, interaction.releaseGeneration) {
-        if (!pressed) interaction.settle(context.selection.selectedIndex)
-    }
     RailPanelScroll(context, geometry, motion, colors, pointer)
 }
 
@@ -327,9 +321,7 @@ private fun RailLiquidIndicator(
     val pressedIndex = interaction.pressedIndex
     val selectedIndex = context.selection.selectedIndex
     val index = if (pressedIndex >= 0) pressedIndex else selectedIndex
-    // A stable animation state retargets smoothly as pointer samples arrive.
-    // Restarting a LaunchedEffect per pointer update resets the velocity and stutters.
-    // Keep the accepted continuous position spring; never restart it per event.
+    // The existing indicator spring owns position; no separate optical velocity sampler.
     val rowPosition = animateFloatAsState(
         targetValue = if (context.state.expanded && pressedIndex >= 0) {
             interaction.previewRow
@@ -337,39 +329,6 @@ private fun RailLiquidIndicator(
         animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
         label = "liquidRailIndicatorRow",
     )
-    val moving = pressedIndex >= 0
-    val velocityAnim = remember(interaction) { Animatable(0f, 5f) }
-    // Port LiquidDragMotion's displayed-position VelocityTracker and the
-    // same 0.5 / 300 velocity spring, without introducing a second pointer.
-    LaunchedEffect(interaction, context.state.expanded, moving) {
-        val expanded = context.state.expanded
-        val tracker = VelocityTracker()
-        val range = if (expanded) {
-            context.selection.items.lastIndex.toFloat()
-        } else {
-            // Portrait normalizes by the full first-to-last destination travel,
-            // not the entire pill including half a tab at each outer edge.
-            val widths = interaction.widths
-            widths.sum() - (widths.firstOrNull() ?: 0f) / 2f -
-                (widths.lastOrNull() ?: 0f) / 2f
-        }
-        if (moving) velocityAnim.snapTo(0f)
-        snapshotFlow {
-            if (expanded) rowPosition.value
-            else (interaction.left.value + interaction.right.value) / 2f
-        }.collect { position ->
-            tracker.addPosition(android.os.SystemClock.uptimeMillis(), Offset(position, 0f))
-            val target = if (range > 0f) tracker.calculateVelocity().x / range else 0f
-            if (kotlin.math.abs(velocityAnim.targetValue - target) > 0.001f) {
-                launch {
-                    velocityAnim.animateTo(
-                        target,
-                        spring(dampingRatio = 0.5f, stiffness = 300f, visibilityThreshold = 0.01f),
-                    )
-                }
-            }
-        }
-    }
     val base = colors.indicator
     // Keep the same visual lens during release. Portrait Liquid settles the
     // position before springing back the size; the actual page selection is
@@ -408,8 +367,6 @@ private fun RailLiquidIndicator(
             pressedColor = base.pressedColor,
             scaleOnPress = base.scaleOnPress,
             liquidPaint = base.liquidPaint,
-            motionVelocity = { velocityAnim.value },
-            verticalMotion = context.state.expanded,
         ),
     )
 }

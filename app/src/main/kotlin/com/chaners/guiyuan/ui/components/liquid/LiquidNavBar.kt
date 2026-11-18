@@ -467,11 +467,12 @@ internal fun LiquidNavBar(
                             )
                         },
                         layerBlock = {
-                            val scales = liquidVelocityScales(
-                                motion.scaleX, motion.scaleY, motion.velocity, vertical = false,
-                            )
-                            scaleX = scales.x
-                            scaleY = scales.y
+                            // Keep the original portrait Liquid velocity feedback.
+                            scaleX = motion.scaleX
+                            scaleY = motion.scaleY
+                            val velocity = motion.velocity / 10f
+                            scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
+                            scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
                         },
                         onDrawSurface = {
                             val progress = motion.pressProgress
