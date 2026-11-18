@@ -286,9 +286,7 @@ private fun RailNavigationWindow(
                 targetChangeSpec = RailMorphDpMotion,
             ) { expanding -> if (expanding) RailMorphDpMotion else RailReboundMotion }
         } else null
-        RailWindowPanel(
-            request = request,
-            placement = RailPlacement(
+        val placement = RailPlacement(
                 geometry = RailPanelGeometry(
                     tabWidths = tabWidths,
                     labelWidths = widths.labels,
@@ -304,20 +302,13 @@ private fun RailNavigationWindow(
                             request.state.progress,
                         )
                     }, { panelHeight.value }, animation.liquidPress),
-            ),
         )
+        RailWindowPanel(request = request, placement = placement)
         RailWindowTrailingAction(
             action = request.trailingAction,
             state = request.state,
-            capsuleWidth = currentCollapsedWidth,
+            placement = placement,
             liquid = request.materialOverride != null,
-            panelHeight = { panelHeight.value },
-            liquidPress = animation.liquidPress,
-            panelStart = {
-                nativePanelStart?.value ?: railLiquidPanelStart(
-                    collapsedStart, GlassNavigationRailDefaults.Margin, request.state.progress,
-                )
-            },
         )
     }
 }
@@ -327,11 +318,8 @@ private fun RailNavigationWindow(
 private fun RailWindowTrailingAction(
     action: (@Composable () -> Unit)?,
     state: GlassNavigationRailState,
-    capsuleWidth: Dp,
+    placement: RailPlacement,
     liquid: Boolean,
-    panelHeight: () -> Dp,
-    liquidPress: Animatable<Float, AnimationVector1D>,
-    panelStart: () -> Dp,
 ) {
     // An independent search action shares the rail's safe-area coordinates and
     // follows the same native panel morph; no new page or gesture writer.
@@ -358,47 +346,9 @@ private fun RailWindowTrailingAction(
             modifier = Modifier
                 .size(actionSize)
                 .offset {
-                    val progress = state.progress.coerceIn(0f, 1f)
-                    val panelWidth = capsuleWidth +
-                        (GlassNavigationRailDefaults.ExpandedWidth - capsuleWidth) * progress
-                    val currentPanelStart = panelStart()
-                    // The original Liquid rail grows about its centre on press.
-                    // Keep the independent search button beside that *transformed*
-                    // panel, not beside the idle geometry; the button itself is not scaled.
-                    val x = (currentPanelStart + railSearchActionSideOffset(
-                        panelWidth, progress, actionSize,
-                    )).toPx()
-                    val y = (GlassNavigationRailDefaults.CollapsedTop +
-                        RailExpandedToggleTop * progress).toPx()
-                    val panelWidthPx = panelWidth.toPx()
-                    val panelHeightPx = panelHeight().toPx()
-                    val actionSizePx = actionSize.toPx()
-                    // Soft Glass keeps the upstream panel/action position untouched.
-                    // Liquid alone preplans its extra lens reach on the original press.
-                    val press = if (liquid) liquidPress.value.coerceIn(0f, 1f) else 0f
-                    val scale = if (liquid) {
-                        liquidPanelPressScale(
-                            panelWidthPx, panelHeightPx, LiquidFeedbackSpec.PressedPanelGrowth.toPx(), press,
-                        )
-                    } else 1f
-                    val lensReach = if (liquid) liquidRailActionReachPx(
-                        panelWidthPx, panelHeightPx,
-                        LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
-                        LiquidFeedbackSpec.PressedLensGrowth.toPx(),
-                        RailCollapsedEndPadding.toPx(),
-                    ) else 0f
-                    IntOffset(
-                        x = (x + railSearchActionPlannedShift(
-                            x + actionSizePx / 2f,
-                            currentPanelStart.toPx() + panelWidthPx / 2f,
-                            scale, press, 1f - progress, lensReach,
-                        )).roundToInt(),
-                        y = (y + railSearchActionPressShift(
-                            y + actionSizePx / 2f,
-                            GlassNavigationRailDefaults.CollapsedTop.toPx() + panelHeightPx / 2f,
-                            scale,
-                        )).roundToInt(),
-                    )
+                    with(density) {
+                        railTrailingActionOffset(state.progress.coerceIn(0f, 1f), placement, actionSize, liquid)
+                    }
                 }
                 .focusProperties { canFocus = action != null }
                 .graphicsLayer {
@@ -424,20 +374,62 @@ private fun RailWindowTrailingAction(
     }
 }
 
+/** Render the action next to the existing rail panel at its physical press edge. */
+private fun Density.railTrailingActionOffset(
+    progress: Float,
+    placement: RailPlacement,
+    actionSize: Dp,
+    liquid: Boolean,
+): IntOffset {
+    val capsuleWidth = placement.geometry.endpoints.collapsedWidth
+    val panelWidth = capsuleWidth +
+        (GlassNavigationRailDefaults.ExpandedWidth - capsuleWidth) * progress
+    val panelStart = placement.motion.panelStart()
+    val panelHeightPx = placement.motion.panelHeight().toPx()
+    val panelWidthPx = panelWidth.toPx()
+    val actionSizePx = actionSize.toPx()
+    val x = (panelStart + railSearchActionSideOffset(panelWidth, progress, actionSize)).toPx()
+    val y = (GlassNavigationRailDefaults.CollapsedTop + RailExpandedToggleTop * progress).toPx()
+
+    val press = if (liquid) placement.motion.liquidPress.value.coerceIn(0f, 1f) else 0f
+    val scale = if (liquid) {
+        liquidPanelPressScale(
+            panelWidthPx, panelHeightPx, LiquidFeedbackSpec.PressedPanelGrowth.toPx(), press,
+        )
+    } else 1f
+    val lensReach = if (liquid) liquidRailActionReachPx(
+        panelWidthPx, panelHeightPx,
+        LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
+        LiquidFeedbackSpec.PressedLensGrowth.toPx(),
+        RailCollapsedEndPadding.toPx(),
+    ) else 0f
+
+    return IntOffset(
+        x = (x + railSearchActionPlannedShift(
+            x + actionSizePx / 2f - panelStart.toPx() - panelWidthPx / 2f,
+            scale, press, 1f - progress, lensReach,
+        )).roundToInt(),
+        y = (y + railSearchActionPressShift(
+            y + actionSizePx / 2f,
+            GlassNavigationRailDefaults.CollapsedTop.toPx() + panelHeightPx / 2f,
+            scale,
+        )).roundToInt(),
+    )
+}
+
 /** A point follows the panel's existing centre-origin scale; no independent press animation. */
 internal fun railSearchActionPressShift(actionCenter: Float, panelCenter: Float, scale: Float): Float =
     (actionCenter - panelCenter) * (scale - 1f)
 
 /** Reserve the rightmost Liquid lens during the same press clock regardless of dragged tab. */
 internal fun railSearchActionPlannedShift(
-    actionCenter: Float,
-    panelCenter: Float,
+    distanceFromPanelCenter: Float,
     scale: Float,
     press: Float,
     collapsedFraction: Float,
     maxLensReach: Float,
 ): Float {
-    val panelShift = railSearchActionPressShift(actionCenter, panelCenter, scale)
+    val panelShift = distanceFromPanelCenter * (scale - 1f)
     val extra = (maxLensReach * press.coerceIn(0f, 1f) - panelShift).coerceAtLeast(0f)
     return panelShift + extra * collapsedFraction.coerceIn(0f, 1f)
 }

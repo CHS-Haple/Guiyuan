@@ -526,12 +526,13 @@ fun GlassSegmentedTabRow(
     }
 
     LaunchedEffect(index, settleGeneration, targetLeft, slot) {
-        if (dragging.value || slot <= 0f) return@LaunchedEffect
-        if (indicatorRight.value <= indicatorLeft.value) {
-            indicatorLeft.snapTo(targetLeft)
-            indicatorRight.snapTo(targetLeft + slot)
-        } else {
-            animateIndicator(targetLeft, targetLeft + slot)
+        if (!dragging.value && slot > 0f) {
+            if (indicatorRight.value <= indicatorLeft.value) {
+                indicatorLeft.snapTo(targetLeft)
+                indicatorRight.snapTo(targetLeft + slot)
+            } else {
+                animateIndicator(targetLeft, targetLeft + slot)
+            }
         }
     }
 
@@ -604,7 +605,7 @@ fun GlassSegmentedTabRow(
                     val down = awaitFirstDown(requireUnconsumed = false)
                     val width = size.width.toFloat()
                     val currentSlot = ((width - gap * (tabs.size - 1)) / tabs.size).coerceAtLeast(0f)
-                    if (width <= 0f || currentSlot <= 0f) return@awaitEachGesture
+                    if (width > 0f && currentSlot > 0f) {
                     fun logicalX(x: Float) = if (layoutDirection == LayoutDirection.Rtl) width - x else x
                     fun indexAt(x: Float): Int = (x / (currentSlot + gap)).toInt().coerceIn(0, tabs.lastIndex)
 
@@ -656,6 +657,7 @@ fun GlassSegmentedTabRow(
                         pressedIndex = -1
                         dragging.value = false
                         settleGeneration++
+                    }
                     }
                 }
             },

@@ -93,16 +93,16 @@ class GlassNavigationRailGeometryTest {
             320f, 54f, 16f, 0.5f,
         )
         assertEquals(0f, railSearchActionPlannedShift(
-            actionCenter, panelCenter, 1f, 0f, 1f, reach,
+            actionCenter - panelCenter, 1f, 0f, 1f, reach,
         ), 0.001f)
         assertEquals(reach / 2f, railSearchActionPlannedShift(
-            actionCenter, panelCenter, halfScale, 0.5f, 1f, reach,
+            actionCenter - panelCenter, halfScale, 0.5f, 1f, reach,
         ), 0.001f)
         assertEquals(reach, railSearchActionPlannedShift(
-            actionCenter, panelCenter, fullScale, 1f, 1f, reach,
+            actionCenter - panelCenter, fullScale, 1f, 1f, reach,
         ), 0.001f)
         assertEquals(railSearchActionPressShift(50f, 500f, 1.04f),
-            railSearchActionPlannedShift(50f, 500f, 1.04f, 1f, 0f, reach), 0.001f)
+            railSearchActionPlannedShift(50f - 500f, 1.04f, 1f, 0f, reach), 0.001f)
         // The action has no pressed-tab or lens-animation dependency.
     }
 
