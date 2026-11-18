@@ -23,8 +23,12 @@ object GlassBottomSheetDefaults {
 
     /** Native sheets and dialogs reference the same 60dp blur and three color layers. */
     @Composable
-    fun material(): GlassMaterial = GlassMaterials.dialogGlass(
-        isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
+    fun material(): GlassMaterial = dynamicGlassMaterial(
+        GlassMaterials.dialogGlass(
+            isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
+        ),
+        tint = MiuixTheme.colorScheme.surfaceContainer,
+        alpha = 0.72f,
     )
 
     /** Initial approximation; native sheet bloom uses a different config from dialogs. */
