@@ -228,18 +228,7 @@ internal fun GlassNavigationRailPanel(
         )
     } else colors
     Box(
-        modifier = Modifier
-            .then(if (liquidPaint != null) Modifier.graphicsLayer {
-                // Scale the complete material, not content already clipped to the idle panel.
-                val scale = liquidPanelPressScale(
-                    size.width, size.height,
-                    com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
-                    motion.liquid.press.value,
-                )
-                scaleX = scale
-                scaleY = scale
-            } else Modifier)
-            .railPanelSurfaceModifier(state, geometry, motion, surface, shape),
+        modifier = Modifier.railPanelSurfaceModifier(state, geometry, motion, surface, shape),
     ) {
         if (materialBackdrop != null && liquidPaint != null) {
             // Draw once, visibly, and record this same surface for selected optics.
@@ -310,6 +299,16 @@ private fun Modifier.railPanelSurfaceModifier(
                 y = lerp(geometry.endpoints.collapsedTop.toPx(), geometry.endpoints.expandedTop.toPx(), state.progress).roundToInt(),
             )
         }
+        // Scale only the placed panel. An outer layer would scale its X offset as well.
+        .then(if (override != null) Modifier.graphicsLayer {
+            val scale = liquidPanelPressScale(
+                size.width, size.height,
+                com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
+                motion.liquid.press.value,
+            )
+            scaleX = scale
+            scaleY = scale
+        } else Modifier)
         .then(surfacePaint)
         // Liquid's material already uses the panel shape. Its pressed lens must
         // extend past the idle panel; Glass keeps the original child clip.
