@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -468,20 +467,13 @@ private fun RailPanelRows(
     val pressedIndex = interaction.pressedIndex
     val selectedIndex = context.selection.selectedIndex
     val itemWidth = geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2
-    // The Glass rail retains upstream row press indication. Liquid uses the
-    // single pointer owner and renders its lens outside the scroll viewport.
-    val isLiquid = colors.indicator.liquidPaint != null
-    val expandedPress = if (isLiquid) -1 else {
-        interaction.rowInteractions.map { it.collectIsPressedAsState() }.indexOfFirst { it.value }
-    }
-    if (!isLiquid) {
-        val indicatorIndex = when {
-            pressedIndex >= 0 -> pressedIndex
-            expandedPress >= 0 -> expandedPress
-            else -> selectedIndex
-        }
+    // Keep native Glass exactly on the upstream press ownership path:
+    // expanded row PressInteraction drives only the row's indication,
+    // NOT the selected lens or its press scaling. Liquid owns its lens separately.
+    if (colors.indicator.liquidPaint == null) {
+        val indicatorIndex = if (pressedIndex >= 0) pressedIndex else selectedIndex
         NavigationRailIndicator(
-            selection = RailIndicatorSelection(indicatorIndex, interaction, pressedIndex >= 0 || expandedPress >= 0),
+            selection = RailIndicatorSelection(indicatorIndex, interaction, pressedIndex >= 0),
             motion = RailIndicatorMotion(
                 progress = { motion.rowProgress[indicatorIndex].value },
                 scrollOffset = { context.scrollState.value },
@@ -504,7 +496,7 @@ private fun RailPanelRows(
                 ),
                 motion = RailRowMotion(
                     expanded = context.state.expanded,
-                    pressed = pressedIndex == position || (expandedPress == position),
+                    pressed = pressedIndex == position,
                     rowProgress = { motion.rowProgress[position].value },
                     iconAlpha = motion.iconAlpha,
                     scrollOffset = { context.scrollState.value },
