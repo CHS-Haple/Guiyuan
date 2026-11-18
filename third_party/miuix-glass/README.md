@@ -8,12 +8,16 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 ## Source and licensing
 
 - The active source and Maven graph uses the successfully published MIUIX
-  snapshot `0.9.5-3177a684-SNAPSHOT` at full revision
-  `3177a684622a774276c49f52489a43d0d0ed123d`. The upstream publication completed in
-  [run #44240196907](https://github.com/compose-miuix-ui/miuix/actions/runs/44240196907).
+  snapshot `0.9.5-670cf597-SNAPSHOT` at full revision
+  `670cf5975c157b64d625d94deca7e7c21bd4a7b6`. The upstream publication completed in
+  [run #44343476082](https://github.com/compose-miuix-ui/miuix/actions/runs/44343476082).
   Upstream `v0.9.5-beta01` is a pre-release, not a `v0.9.5` stable
   release. The exact source-pinned snapshot is identified separately by
   upstream's `0.9.5-<short SHA>-SNAPSHOT` Maven convention.
+  The source-pinned `670cf597` graph includes the upstream progressive-blur
+  caching/shader refinements and dynamic palette support. Guiyuan keeps its
+  adapted glass, search and navigation ownership while migrating applicable
+  defaults; this source update requires its own CI and device evidence.
   The prior Material integration is documented in
   [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
   The stable `main` line must be checked separately; do not treat a `dev`
