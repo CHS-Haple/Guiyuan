@@ -360,19 +360,6 @@ private fun RailLiquidIndicator(
         label = "liquidRailIndicatorRow",
     )
     val base = colors.indicator
-    val density = LocalDensity.current
-    val lensRightEdge = {
-        with(density) {
-            val fraction = motion.rowProgress[index].value.coerceIn(0f, 1f)
-            val bounds = navigationIndicatorBounds(
-                interaction.left.value, interaction.right.value, interaction.width,
-                interaction.contentStart, interaction.endPadding,
-            )
-            val expandedWidth = (geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2).toPx()
-            lerp(bounds.x, RailItemHorizontalMargin.toPx(), fraction) +
-                lerp(bounds.y - bounds.x, expandedWidth, fraction)
-        }
-    }
     // Keep the same visual lens during release. Portrait Liquid settles the
     // position before springing back the size; the actual page selection is
     // already committed by HubPagerSelection, not by this optical release.
@@ -410,9 +397,32 @@ private fun RailLiquidIndicator(
             pressedColor = base.pressedColor,
             scaleOnPress = base.scaleOnPress,
             liquidPaint = base.liquidPaint,
-            lensTracking = RailLensTracking(motion.liquid.lensEdge, lensRightEdge),
+            lensTracking = rememberRailLensTracking(motion, geometry, index, interaction),
         ),
     )
+}
+
+/** Track the exact same horizontal lens bounds used by NavigationRailIndicator's layout. */
+@Composable
+private fun rememberRailLensTracking(
+    motion: RailPanelMotion,
+    geometry: RailPanelGeometry,
+    index: Int,
+    interaction: NavigationRailInteraction,
+): RailLensTracking {
+    val density = LocalDensity.current
+    return RailLensTracking(motion.liquid.lensEdge) {
+        with(density) {
+            val fraction = motion.rowProgress[index].value.coerceIn(0f, 1f)
+            val bounds = navigationIndicatorBounds(
+                interaction.left.value, interaction.right.value, interaction.width,
+                interaction.contentStart, interaction.endPadding,
+            )
+            val expandedWidth = (geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2).toPx()
+            lerp(bounds.x, RailItemHorizontalMargin.toPx(), fraction) +
+                lerp(bounds.y - bounds.x, expandedWidth, fraction)
+        }
+    }
 }
 
 @Composable
