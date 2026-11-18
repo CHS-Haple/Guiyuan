@@ -79,25 +79,28 @@ class GlassNavigationRailGeometryTest {
         assertTrue(railSearchActionPressShift(50f, 500f, 1.04f) < 0f)
     }
 
-    @Test fun rightmostLiquidLensNeverOverlapsSearchActionWhenGrowing() {
-        // Rest position has an 8px separation; the actual lens extends by 11px.
-        val adjustment = railSearchLensClearance(
-            actionLeft = 508f, panelRight = 500f, endInset = 3f,
-            lensHalfGrowth = 11f, gap = 8f,
-            collapsedFraction = 1f, lastPressedAtEnd = true,
+    @Test fun liquidSearchPreplansLensReachWithTheOriginalPressClock() {
+        val actionCenter = 359f
+        val panelCenter = 160f
+        val reach = 16f // 16dp panel / 2 + 22dp lens / 2 - 3dp end inset.
+        val fullScale = com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale(
+            320f, 54f, 16f, 1f,
         )
-        assertEquals(8f, adjustment, 0.001f)
-        assertTrue(508f + adjustment >= 500f - 3f + 11f + 8f)
-        // Middle/left destinations, released lens and expanded header stay put.
-        assertEquals(0f, railSearchLensClearance(
-            508f, 500f, 3f, 11f, 8f, 1f, false,
+        val halfScale = com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale(
+            320f, 54f, 16f, 0.5f,
+        )
+        assertEquals(0f, railSearchActionPlannedShift(
+            actionCenter, panelCenter, 1f, 0f, 1f, reach,
         ), 0.001f)
-        assertEquals(0f, railSearchLensClearance(
-            508f, 500f, 3f, 0f, 8f, 1f, true,
+        assertEquals(8f, railSearchActionPlannedShift(
+            actionCenter, panelCenter, halfScale, 0.5f, 1f, reach,
         ), 0.001f)
-        assertEquals(0f, railSearchLensClearance(
-            508f, 500f, 3f, 11f, 8f, 0f, true,
+        assertEquals(16f, railSearchActionPlannedShift(
+            actionCenter, panelCenter, fullScale, 1f, 1f, reach,
         ), 0.001f)
+        assertEquals(railSearchActionPressShift(50f, 500f, 1.04f),
+            railSearchActionPlannedShift(50f, 500f, 1.04f, 1f, 0f, reach), 0.001f)
+        // The action has no pressed-tab or lens-animation dependency.
     }
 
     @Test fun collapsedRailAlwaysReservesSpaceForIndependentSearchButton() {

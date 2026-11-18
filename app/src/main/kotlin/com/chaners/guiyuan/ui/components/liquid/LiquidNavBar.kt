@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
@@ -153,6 +154,19 @@ internal fun litHighlight(tilt: GlassTilt, offsetDegrees: Float): EdgeStroke {
 internal object LiquidNavSpec {
     val height = 64.dp
     val sidePadding = 36.dp
+    val contentPadding = 4.dp
+}
+
+/** The bar is the sole animation writer; its sibling action reads the same frames. */
+internal class LiquidNavPressLink {
+    internal class Source(val motion: LiquidDragMotion, val dragOffset: State<Float>)
+
+    private var source: Source? by mutableStateOf(null)
+    val progress: Float get() = source?.motion?.pressProgress?.coerceIn(0f, 1f) ?: 0f
+    val dragOffsetX: Float get() = source?.dragOffset?.value ?: 0f
+
+    internal fun attach(value: Source) { source = value }
+    internal fun detach(value: Source) { if (source === value) source = null }
 }
 
 internal data class LiquidParams(
@@ -207,6 +221,7 @@ internal fun LiquidNavBar(
     mode: LiquidMode = LiquidMode.Balanced,
     interactive: Boolean = true,
     modifier: Modifier = Modifier,
+    pressLink: LiquidNavPressLink? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
     require(tabsCount > 0)
@@ -239,7 +254,7 @@ internal fun LiquidNavBar(
         val widthPx = rememberUpdatedState(constraints.maxWidth)
         val tabWidthPx = rememberUpdatedState(tabWidth)
         val offsetAnim = remember { Animatable(0f) }
-        val panelOffset by remember(density) {
+        val panelOffsetState = remember(density) {
             derivedStateOf {
                 val fraction =
                     (offsetAnim.value / widthPx.value)
@@ -250,6 +265,7 @@ internal fun LiquidNavBar(
             }
         }
 
+        val panelOffset by panelOffsetState
         val ltr = LocalLayoutDirection.current == LayoutDirection.Ltr
         val currentLtr = rememberUpdatedState(ltr)
         val scope = rememberCoroutineScope()
@@ -304,6 +320,16 @@ internal fun LiquidNavBar(
                     },
                 )
             }
+
+        if (pressLink != null) {
+            val source = remember(motion, panelOffsetState) {
+                LiquidNavPressLink.Source(motion, panelOffsetState)
+            }
+            DisposableEffect(pressLink, source) {
+                pressLink.attach(source)
+                onDispose { pressLink.detach(source) }
+            }
+        }
 
         // Pager selection is authoritative. Mirror external page changes into Liquid's motion
         // without emitting the same selection event back to HubPagerSelection.
@@ -374,7 +400,7 @@ internal fun LiquidNavBar(
                             val scale =
                                 lerp(
                                     1f,
-                                    1f + 16.dp.toPx() / size.width,
+                                    1f + LiquidFeedbackSpec.PressedPanelGrowth.toPx() / size.width,
                                     progress,
                                 )
                             scaleX = scale
@@ -390,7 +416,7 @@ internal fun LiquidNavBar(
                     .then(if (interactive) motion.modifier else Modifier)
                     .height(LiquidNavSpec.height)
                     .fillMaxWidth()
-                    .padding(4.dp),
+                    .padding(LiquidNavSpec.contentPadding),
             verticalAlignment = Alignment.CenterVertically,
             content = {
                 CompositionLocalProvider(LocalContentColor provides normalColor) {
@@ -436,7 +462,7 @@ internal fun LiquidNavBar(
         Box(
             modifier =
                 Modifier
-                    .padding(horizontal = 4.dp)
+                    .padding(horizontal = LiquidNavSpec.contentPadding)
                     .graphicsLayer {
                         translationX =
                             if (ltr) {

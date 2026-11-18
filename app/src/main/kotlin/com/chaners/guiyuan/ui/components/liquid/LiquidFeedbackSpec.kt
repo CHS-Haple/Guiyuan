@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.dp
 internal object LiquidFeedbackSpec {
     const val PressedLensScale = 78f / 56f
     const val PressedItemScale = 1.2f
+    val PressedPanelGrowth = 16.dp
     // The Rail lens's total X/Y press growth, shared by optics and hit-free action spacing.
     val PressedLensGrowth = 22.dp
 }

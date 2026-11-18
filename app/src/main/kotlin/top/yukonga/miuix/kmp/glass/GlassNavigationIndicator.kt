@@ -9,7 +9,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,8 +42,6 @@ internal class GlassIndicatorAppearance(
     val pressedColor: Color,
     val scaleOnPress: Boolean = true,
     val liquidPaint: (@Composable (Boolean) -> Modifier)? = null,
-    // Rail can share its optical X spring with a sibling action; native Glass ignores this.
-    val liquidX: State<Float>? = null,
 )
 
 @Composable
@@ -68,7 +65,7 @@ internal fun GlassNavigationIndicator(
             scaleOnPress = appearance.scaleOnPress,
         )
     } else {
-        LiquidRailIndicatorSurface(pressed, modifier, paint, appearance.liquidX)
+        LiquidRailIndicatorSurface(pressed, modifier, paint)
     }
 }
 
@@ -114,13 +111,12 @@ private fun LiquidRailIndicatorSurface(
     pressed: Boolean,
     modifier: Modifier,
     paint: @Composable (Boolean) -> Modifier,
-    sharedX: State<Float>?,
 ) {
-    val localX = if (sharedX == null) animateFloatAsState(
+    val liquidX by animateFloatAsState(
         targetValue = if (pressed) LiquidFeedbackSpec.PressedLensScale else 1f,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 250f),
         label = "liquidRailPressX",
-    ) else sharedX
+    )
     val liquidY by animateFloatAsState(
         targetValue = if (pressed) LiquidFeedbackSpec.PressedLensScale else 1f,
         animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
@@ -130,10 +126,9 @@ private fun LiquidRailIndicatorSurface(
         modifier = modifier
             .graphicsLayer {
                 val pressRange = LiquidFeedbackSpec.PressedLensScale - 1f
-                val growth = LiquidFeedbackSpec.PressedLensGrowth.toPx()
-                // Keep this draw-phase state read off Compose's recomposition path.
+                val growth = 22.dp.toPx()
                 scaleX = 1f + growth / size.width.coerceAtLeast(1f) *
-                    ((localX.value - 1f) / pressRange)
+                    ((liquidX - 1f) / pressRange)
                 scaleY = 1f + growth / size.height.coerceAtLeast(1f) *
                     ((liquidY - 1f) / pressRange)
             }

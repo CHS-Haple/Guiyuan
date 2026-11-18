@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
@@ -63,6 +64,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -94,6 +96,8 @@ import com.chaners.guiyuan.ui.components.measuredNavTouchExtension
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
+import com.chaners.guiyuan.ui.components.liquid.LiquidNavPressLink
+import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
 import com.chaners.guiyuan.ui.components.liquid.LiquidNativeRailSelection
@@ -369,7 +373,9 @@ private fun LiquidNavigationSearchAction(
     dark: Boolean,
     onClick: () -> Unit,
     size: Dp = LiquidNavSpec.height,
+    pressLink: LiquidNavPressLink? = null,
 ) {
+    val direction = LocalLayoutDirection.current
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -385,6 +391,17 @@ private fun LiquidNavigationSearchAction(
         modifier = Modifier
             // Portrait uses the 64dp Liquid capsule; a Rail action follows Rail's height.
             .size(size)
+            .then(
+                if (pressLink != null) Modifier.offset {
+                    val reach = (LiquidFeedbackSpec.PressedPanelGrowth / 2f +
+                        LiquidFeedbackSpec.PressedLensGrowth / 2f -
+                        LiquidNavSpec.contentPadding).toPx()
+                    // The offset is end-relative; the bar's drag translation is physical.
+                    val drag = pressLink.dragOffsetX *
+                        (if (direction == LayoutDirection.Ltr) 1f else -1f)
+                    IntOffset((reach * pressLink.progress + drag).roundToInt(), 0)
+                } else Modifier
+            )
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -625,6 +642,7 @@ internal fun MainHub(
                 }
 
                 liquidBackdrop != null -> {
+                    val liquidPressLink = remember { LiquidNavPressLink() }
                     Column(
                         modifier =
                             Modifier
@@ -656,6 +674,7 @@ internal fun MainHub(
                                 tabsCount = items.size,
                                 dark = dark,
                                 mode = appearance.liquidMode,
+                                pressLink = if (os4) liquidPressLink else null,
                                 // OS4's shared layout owns the outer margin; OS3 keeps its original.
                                 modifier = if (os4) Modifier else Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
                             ) {
@@ -685,6 +704,7 @@ internal fun MainHub(
                                                 label = label,
                                                 dark = dark,
                                                 onClick = featureSearch::open,
+                                                pressLink = liquidPressLink,
                                             )
                                         }
                                     }
