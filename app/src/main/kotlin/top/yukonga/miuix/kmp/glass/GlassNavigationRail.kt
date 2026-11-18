@@ -79,7 +79,7 @@ import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 import com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale
-import com.chaners.guiyuan.ui.components.liquid.liquidActionPressReachPx
+import com.chaners.guiyuan.ui.components.liquid.liquidRailActionReachPx
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 
@@ -381,7 +381,8 @@ private fun RailWindowTrailingAction(
                             panelWidthPx, panelHeightPx, LiquidFeedbackSpec.PressedPanelGrowth.toPx(), press,
                         )
                     } else 1f
-                    val lensReach = if (liquid) liquidActionPressReachPx(
+                    val lensReach = if (liquid) liquidRailActionReachPx(
+                        panelWidthPx, panelHeightPx,
                         LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
                         LiquidFeedbackSpec.PressedLensGrowth.toPx(),
                         RailCollapsedEndPadding.toPx(),

@@ -98,7 +98,6 @@ import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavPressLink
 import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
-import com.chaners.guiyuan.ui.components.liquid.liquidActionPressReachPx
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
 import com.chaners.guiyuan.ui.components.liquid.LiquidNativeRailSelection
@@ -409,19 +408,16 @@ private fun LiquidNavigationAction(
             .size(size)
             .then(
                 if (pressLink != null) Modifier.offset {
-                    // The measured portrait lens can outgrow the fixed Rail lens.
-                    // Reserve its X-spring overtravel on the original press clock.
-                    val lensGrowth = pressLink.lensWidthPx *
-                        (LiquidFeedbackSpec.PressedLensScale - 1f)
-                    val reach = liquidActionPressReachPx(
+                    // Match the actual farther edge of the sibling lens/panel.
+                    // The drag and lens X deformation already have their own native clock;
+                    // this modifier only reads the same rendered frame, no extra animation.
+                    val reach = pressLink.visibleEndReachPx(
                         LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
-                        lensGrowth,
                         LiquidNavSpec.contentPadding.toPx(),
                     )
-                    // The offset is end-relative; the bar's drag translation is physical.
                     val drag = pressLink.dragOffsetX *
                         (if (direction == LayoutDirection.Ltr) 1f else -1f)
-                    IntOffset((reach * pressLink.progress + drag).roundToInt(), 0)
+                    IntOffset((reach + drag).roundToInt(), 0)
                 } else Modifier
             )
             .graphicsLayer {

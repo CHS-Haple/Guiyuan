@@ -163,12 +163,27 @@ internal class LiquidNavPressLink {
         val motion: LiquidDragMotion,
         val dragOffset: State<Float>,
         val lensWidth: State<Float>,
+        val tabCount: Int,
     )
 
     private var source: Source? by mutableStateOf(null)
     val progress: Float get() = source?.motion?.pressProgress?.coerceIn(0f, 1f) ?: 0f
     val dragOffsetX: Float get() = source?.dragOffset?.value ?: 0f
     val lensWidthPx: Float get() = source?.lensWidth?.value ?: 0f
+
+    fun visibleEndReachPx(panelGrowthPx: Float, endInsetPx: Float): Float {
+        val current = source ?: return 0f
+        val motion = current.motion
+        return liquidPortraitActionReachPx(
+            panelGrowthPx = panelGrowthPx,
+            pressProgress = motion.pressProgress,
+            lensWidthPx = current.lensWidth.value,
+            lensScaleX = liquidRenderedLensScaleX(motion.scaleX, motion.velocity),
+            lensPosition = motion.value,
+            lastIndex = current.tabCount - 1,
+            endInsetPx = endInsetPx,
+        )
+    }
 
     internal fun attach(value: Source) { source = value }
     internal fun detach(value: Source) { if (source === value) source = null }
@@ -328,7 +343,7 @@ internal fun LiquidNavBar(
 
         if (pressLink != null) {
             val source = remember(motion, panelOffsetState, tabWidthPx) {
-                LiquidNavPressLink.Source(motion, panelOffsetState, tabWidthPx)
+                LiquidNavPressLink.Source(motion, panelOffsetState, tabWidthPx, tabsCount)
             }
             DisposableEffect(pressLink, source) {
                 pressLink.attach(source)
@@ -473,7 +488,7 @@ internal fun LiquidNavBar(
                             if (ltr) {
                                 motion.value * tabWidth + panelOffset
                             } else {
-                                size.width -
+                                widthPx.value.toFloat() -
                                     (motion.value + 1f) * tabWidth +
                                     panelOffset
                             }
@@ -499,10 +514,9 @@ internal fun LiquidNavBar(
                         },
                         layerBlock = {
                             // Keep the original portrait Liquid velocity feedback.
-                            scaleX = motion.scaleX
+                            scaleX = liquidRenderedLensScaleX(motion.scaleX, motion.velocity)
                             scaleY = motion.scaleY
                             val velocity = motion.velocity / 10f
-                            scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
                             scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
                         },
                         onDrawSurface = {
