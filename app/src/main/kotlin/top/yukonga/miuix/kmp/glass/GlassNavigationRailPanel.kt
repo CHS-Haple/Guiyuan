@@ -372,11 +372,15 @@ private fun RailLiquidIndicator(
                 snapshotFlow { rowPosition.value }
                     .first { abs(it - selectedIndex.toFloat()) <= tolerance }
             } else {
-                val left = interaction.start(selectedIndex)
-                val right = interaction.start(selectedIndex + 1)
-                val tolerance = (interaction.width * 0.025f).coerceAtLeast(1f)
-                snapshotFlow { interaction.left.value to interaction.right.value }
-                    .first { (x, y) -> abs(x - left) <= tolerance && abs(y - right) <= tolerance }
+                // Slot endpoints can change while the release spring is running.
+                // Compare against the live geometry on every animation observation.
+                snapshotFlow {
+                    val left = interaction.start(selectedIndex)
+                    val right = interaction.start(selectedIndex + 1)
+                    val tolerance = (interaction.width * 0.025f).coerceAtLeast(1f)
+                    abs(interaction.left.value - left) <= tolerance &&
+                        abs(interaction.right.value - right) <= tolerance
+                }.first { it }
             }
             settlingPress = false
         }
