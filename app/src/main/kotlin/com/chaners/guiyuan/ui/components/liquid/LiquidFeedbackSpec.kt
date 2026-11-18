@@ -22,20 +22,16 @@ internal fun liquidRenderedLensScaleX(scaleX: Float, velocity: Float): Float =
  * visible logical-end edge reaches farther, without adding their growth twice.
  */
 internal fun liquidPortraitActionReachPx(
-    panelGrowthPx: Float,
-    pressProgress: Float,
+    panelReachPx: Float,
     lensWidthPx: Float,
     lensScaleX: Float,
-    lensPosition: Float,
-    lastIndex: Int,
+    lensDistanceFromEndPx: Float,
     endInsetPx: Float,
-): Float {
-    val panelReach = panelGrowthPx / 2f * pressProgress.coerceIn(0f, 1f)
-    if (lensWidthPx <= 0f || lastIndex < 0) return panelReach.coerceAtLeast(0f)
-    val lensReach = (lensPosition - lastIndex) * lensWidthPx +
-        (lensScaleX - 1f) * lensWidthPx / 2f - endInsetPx
-    return maxOf(0f, panelReach, lensReach)
-}
+): Float = maxOf(
+    0f,
+    panelReachPx,
+    (lensScaleX - 1f) * lensWidthPx / 2f - lensDistanceFromEndPx - endInsetPx,
+)
 
 /**
  * The Rail lens lives inside the scaled panel. Reserve its visible end under

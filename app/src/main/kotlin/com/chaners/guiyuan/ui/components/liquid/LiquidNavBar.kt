@@ -172,13 +172,12 @@ internal class LiquidNavPressLink {
     fun visibleEndReachPx(panelGrowthPx: Float, endInsetPx: Float): Float {
         val current = source ?: return 0f
         val motion = current.motion
+        val width = current.lensWidth.value
         return liquidPortraitActionReachPx(
-            panelGrowthPx = panelGrowthPx,
-            pressProgress = motion.pressProgress,
-            lensWidthPx = current.lensWidth.value,
+            panelReachPx = panelGrowthPx / 2f * motion.pressProgress.coerceIn(0f, 1f),
+            lensWidthPx = width,
             lensScaleX = liquidRenderedLensScaleX(motion.scaleX, motion.velocity),
-            lensPosition = motion.value,
-            lastIndex = current.tabCount - 1,
+            lensDistanceFromEndPx = (current.tabCount - 1 - motion.value) * width,
             endInsetPx = endInsetPx,
         )
     }

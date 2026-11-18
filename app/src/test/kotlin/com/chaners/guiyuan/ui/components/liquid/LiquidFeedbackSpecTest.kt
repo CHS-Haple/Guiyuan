@@ -8,16 +8,16 @@ class LiquidFeedbackSpecTest {
         // The selected lens is a sibling of the panel; their growth must not be added.
         val pressed = LiquidFeedbackSpec.PressedLensScale
         assertEquals(12.5f, liquidPortraitActionReachPx(
-            16f, 1f, 84f, pressed, 2f, 2, 4f,
+            8f, 84f, pressed, 0f, 4f,
         ), 0.001f)
         assertEquals(8f, liquidPortraitActionReachPx(
-            16f, 1f, 84f, pressed, 0f, 2, 4f,
+            8f, 84f, pressed, 168f, 4f,
         ), 0.001f)
         assertEquals(0f, liquidPortraitActionReachPx(
-            16f, 0f, 84f, 1f, 2f, 2, 4f,
+            0f, 84f, 1f, 0f, 4f,
         ), 0.001f)
         assertEquals(4.4f, liquidPortraitActionReachPx(
-            16f, 0.5f, 84f, 1.2f, 2f, 2, 4f,
+            4f, 84f, 1.2f, 0f, 4f,
         ), 0.001f)
     }
 
@@ -26,10 +26,10 @@ class LiquidFeedbackSpecTest {
         val stretched = liquidRenderedLensScaleX(LiquidFeedbackSpec.PressedLensScale, 10f)
         assertEquals(1.7410715f, stretched, 0.0001f)
         assertEquals(27.125f, liquidPortraitActionReachPx(
-            16f, 1f, 84f, stretched, 2f, 2, 4f,
+            8f, 84f, stretched, 0f, 4f,
         ), 0.01f)
         assertEquals(0f, liquidPortraitActionReachPx(
-            16f, 0f, 0f, stretched, 2f, 2, 4f,
+            0f, 0f, stretched, 0f, 4f,
         ), 0.001f)
     }
 
