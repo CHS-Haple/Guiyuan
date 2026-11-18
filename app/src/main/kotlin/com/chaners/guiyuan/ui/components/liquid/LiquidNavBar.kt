@@ -159,11 +159,16 @@ internal object LiquidNavSpec {
 
 /** The bar is the sole animation writer; its sibling action reads the same frames. */
 internal class LiquidNavPressLink {
-    internal class Source(val motion: LiquidDragMotion, val dragOffset: State<Float>)
+    internal class Source(
+        val motion: LiquidDragMotion,
+        val dragOffset: State<Float>,
+        val lensWidth: State<Float>,
+    )
 
     private var source: Source? by mutableStateOf(null)
     val progress: Float get() = source?.motion?.pressProgress?.coerceIn(0f, 1f) ?: 0f
     val dragOffsetX: Float get() = source?.dragOffset?.value ?: 0f
+    val lensWidthPx: Float get() = source?.lensWidth?.value ?: 0f
 
     internal fun attach(value: Source) { source = value }
     internal fun detach(value: Source) { if (source === value) source = null }
@@ -322,8 +327,8 @@ internal fun LiquidNavBar(
             }
 
         if (pressLink != null) {
-            val source = remember(motion, panelOffsetState) {
-                LiquidNavPressLink.Source(motion, panelOffsetState)
+            val source = remember(motion, panelOffsetState, tabWidthPx) {
+                LiquidNavPressLink.Source(motion, panelOffsetState, tabWidthPx)
             }
             DisposableEffect(pressLink, source) {
                 pressLink.attach(source)

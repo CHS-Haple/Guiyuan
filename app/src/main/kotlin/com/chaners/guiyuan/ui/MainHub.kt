@@ -98,6 +98,7 @@ import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavPressLink
 import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
+import com.chaners.guiyuan.ui.components.liquid.liquidActionPressReachPx
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
 import com.chaners.guiyuan.ui.components.liquid.LiquidNativeRailSelection
@@ -393,9 +394,15 @@ private fun LiquidNavigationSearchAction(
             .size(size)
             .then(
                 if (pressLink != null) Modifier.offset {
-                    val reach = (LiquidFeedbackSpec.PressedPanelGrowth / 2f +
-                        LiquidFeedbackSpec.PressedLensGrowth / 2f -
-                        LiquidNavSpec.contentPadding).toPx()
+                    // The portrait lens uses the measured slot width, not the Rail's
+                    // fixed 56dp/22dp optical growth; reserve its X-spring overshoot upfront.
+                    val lensGrowth = pressLink.lensWidthPx *
+                        (LiquidFeedbackSpec.PressedLensScale - 1f)
+                    val reach = liquidActionPressReachPx(
+                        LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
+                        lensGrowth,
+                        LiquidNavSpec.contentPadding.toPx(),
+                    )
                     // The offset is end-relative; the bar's drag translation is physical.
                     val drag = pressLink.dragOffsetX *
                         (if (direction == LayoutDirection.Ltr) 1f else -1f)
