@@ -117,11 +117,15 @@ object GlassTopAppBarDefaults {
 
     /** The traditional fill used when backdrop material is unavailable. */
     @Composable
-    fun buttonFill(): Color = if (isDarkTheme()) Color(0xFF2C2C2C) else Color.White
+    fun buttonFill(): Color = when {
+        MiuixTheme.isDynamicColor -> MiuixTheme.colorScheme.surfaceContainerHigh
+        isDarkTheme() -> Color(0xFF2C2C2C)
+        else -> Color.White
+    }
 
     /** The `internal-pured-thin-glass` action-button material. */
     @Composable
-    fun buttonMaterial(): GlassMaterial = GlassMaterials.puredThinGlass(isDarkTheme())
+    fun buttonMaterial(): GlassMaterial = dynamicGlassMaterial(GlassMaterials.puredThinGlass(isDarkTheme()))
 
     /** The parent material applied before child button and tab materials. */
     @Composable
