@@ -289,67 +289,85 @@ private fun RailNavigationWindow(
                     }, { panelHeight.value }),
             ),
         )
-        // An independent search action shares the rail's safe-area coordinates and
-        // follows the same native panel morph; no new page or gesture writer.
-        val actionProgress = animateFloatAsState(
-            targetValue = if (request.trailingAction != null) 1f else 0f,
-            animationSpec = GlassMotion.navShowHide(),
-            label = "railSearchActionVisibility",
+        RailWindowTrailingAction(
+            action = request.trailingAction,
+            state = request.state,
+            capsuleWidth = capsule.width,
+            panelStart = {
+                nativePanelStart?.value ?: railLiquidPanelStart(
+                    collapsedStart, GlassNavigationRailDefaults.Margin, request.state.progress,
+                )
+            },
         )
-        val retainedAction = remember { mutableStateOf(request.trailingAction) }
-        SideEffect {
-            if (request.trailingAction != null || actionProgress.value == 0f) {
-                retainedAction.value = request.trailingAction
-            }
+    }
+}
+
+/** This action is not a rail destination and never owns the rail's pointer recognizer. */
+@Composable
+private fun RailWindowTrailingAction(
+    action: (@Composable () -> Unit)?,
+    state: GlassNavigationRailState,
+    capsuleWidth: Dp,
+    panelStart: () -> Dp,
+) {
+    // An independent search action shares the rail's safe-area coordinates and
+    // follows the same native panel morph; no new page or gesture writer.
+    val actionProgress = animateFloatAsState(
+        targetValue = if (action != null) 1f else 0f,
+        animationSpec = GlassMotion.navShowHide(),
+        label = "railSearchActionVisibility",
+    )
+    val retainedAction = remember { mutableStateOf(action) }
+    SideEffect {
+        if (action != null || actionProgress.value == 0f) {
+            retainedAction.value = action
         }
-        val presentedAction = request.trailingAction ?:
-            retainedAction.value.takeIf { actionProgress.value > 0f }
-        if (presentedAction != null) {
-            val actionSize = GlassNavigationRailDefaults.CollapsedHeight
-            val density = LocalDensity.current
-            val shadowOutsets = remember(density) {
-                with(density) { popupShadowOutsets(GlassShadows.Regular) }
-            }
-            Box(
-                modifier = Modifier
-                    .size(actionSize)
-                    .offset {
-                        val progress = request.state.progress.coerceIn(0f, 1f)
-                        val panelWidth = capsule.width +
-                            (GlassNavigationRailDefaults.ExpandedWidth - capsule.width) * progress
-                        val panelStart = nativePanelStart?.value ?: railLiquidPanelStart(
-                            collapsedStart, GlassNavigationRailDefaults.Margin, progress,
-                        )
-                        IntOffset(
-                            x = (panelStart + railSearchActionSideOffset(
-                                panelWidth, progress, actionSize,
-                            )).roundToPx(),
-                            y = (GlassNavigationRailDefaults.CollapsedTop +
-                                RailExpandedToggleTop * progress).roundToPx(),
-                        )
-                    }
-                    .focusProperties { canFocus = request.trailingAction != null }
-                    .graphicsLayer {
-                        outsets = shadowOutsets
-                        val fraction = actionProgress.value.coerceIn(0f, 1f)
-                        alpha = fraction
-                        scaleX = 0.85f + fraction * 0.15f
-                        scaleY = 0.85f + fraction * 0.15f
-                    }
-                    .then(
-                        if (request.trailingAction == null) {
-                            Modifier.clearAndSetSemantics { }.pointerInput(Unit) {
-                                awaitPointerEventScope {
-                                    while (true) {
-                                        awaitPointerEvent(PointerEventPass.Initial)
-                                            .changes.forEach { it.consume() }
-                                    }
+    }
+    val presentedAction = action ?:
+        retainedAction.value.takeIf { actionProgress.value > 0f }
+    if (presentedAction != null) {
+        val actionSize = GlassNavigationRailDefaults.CollapsedHeight
+        val density = LocalDensity.current
+        val shadowOutsets = remember(density) {
+            with(density) { popupShadowOutsets(GlassShadows.Regular) }
+        }
+        Box(
+            modifier = Modifier
+                .size(actionSize)
+                .offset {
+                    val progress = state.progress.coerceIn(0f, 1f)
+                    val panelWidth = capsuleWidth +
+                        (GlassNavigationRailDefaults.ExpandedWidth - capsuleWidth) * progress
+                    val currentPanelStart = panelStart()
+                    IntOffset(
+                        x = (currentPanelStart + railSearchActionSideOffset(
+                            panelWidth, progress, actionSize,
+                        )).roundToPx(),
+                        y = (GlassNavigationRailDefaults.CollapsedTop +
+                            RailExpandedToggleTop * progress).roundToPx(),
+                    )
+                }
+                .focusProperties { canFocus = action != null }
+                .graphicsLayer {
+                    outsets = shadowOutsets
+                    val fraction = actionProgress.value.coerceIn(0f, 1f)
+                    alpha = fraction
+                    scaleX = 0.85f + fraction * 0.15f
+                    scaleY = 0.85f + fraction * 0.15f
+                }
+                .then(
+                    if (action == null) {
+                        Modifier.clearAndSetSemantics { }.pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    awaitPointerEvent(PointerEventPass.Initial)
+                                        .changes.forEach { it.consume() }
                                 }
                             }
-                        } else Modifier,
-                    ),
-            ) { presentedAction() }
-        }
+                        }
+                    } else Modifier,
+                ),
+        ) { presentedAction() }
     }
 }
 

@@ -52,6 +52,18 @@ class GlassNavigationRailGeometryTest {
         assertEquals(590.dp, railLiquidPanelStart(590.dp, expanded, 0f))
     }
 
+    @Test fun longRailLabelsCannotPushActionOutsideSafeWindowIncludingRtl() {
+        val viewport = 420.dp
+        val capsule = railCapsuleGeometry(viewport, listOf(400.dp, 500.dp, 600.dp), true)
+        val size = GlassNavigationRailDefaults.CollapsedHeight
+        val logicalX = (viewport - capsule.width) / 2f +
+            railSearchActionSideOffset(capsule.width, 0f, size)
+        assertTrue(logicalX + size <= viewport)
+        // Compose's start-relative offset mirrors that rect when RTL.
+        val rtlPhysicalX = viewport - logicalX - size
+        assertTrue(rtlPhysicalX >= 0.dp)
+    }
+
     @Test fun collapsedRailAlwaysReservesSpaceForIndependentSearchButton() {
         val needed = GlassNavigationBarDefaults.ActionSpacing + GlassNavigationRailDefaults.CollapsedHeight
         assertTrue(needed <= RailCollapsedSideReserve)
