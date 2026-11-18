@@ -22,8 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
@@ -38,16 +36,15 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
 
 /**
- * A standard Miuix preference row with a Scaffold-hosted [GlassDropdownPopup].
+ * A preference row with a Scaffold-hosted [GlassDropdownPopup].
  *
- * The component owns expansion, anchor measurement and dismissal. The caller owns selection.
- * The [backdrop] must exclude the popup host so the material never samples itself.
+ * Selection is caller-controlled. The [backdrop] must exclude the popup host to avoid self-sampling.
  *
  * @param onSelectedIndexChange Called with the selected option's index.
  * @param items Available options. An empty list disables the preference.
  * @param selectedIndex Index of the currently selected option.
  * @param title Preference title, using the standard [BasicComponent] typography.
- * @param backdrop Clean page recording; null uses the popup's opaque fallback.
+ * @param backdrop Page backdrop; `null` uses an opaque popup fill.
  * @param modifier Modifier applied to the preference row.
  * @param enabled Whether the row can open the popup.
  * @param showValue Whether to display the selected option beside the arrow.
@@ -86,7 +83,6 @@ fun GlassDropdownPreference(
     var expanded by remember { mutableStateOf(false) }
     val mounted = remember { mutableStateOf(false) }
     val anchor = rememberGlassPopupAnchor()
-    var rowBounds by remember { mutableStateOf(Rect.Zero) }
     val actualEnabled = enabled && items.isNotEmpty()
     val currentOnExpandedChange by rememberUpdatedState(onExpandedChange)
     val setExpanded: (Boolean) -> Unit = remember {
@@ -109,7 +105,7 @@ fun GlassDropdownPreference(
     }
 
     BasicComponent(
-        modifier = modifier.onGloballyPositioned { rowBounds = it.boundsInWindow() },
+        modifier = modifier,
         title = title,
         titleColor = titleColor,
         summary = summary,
@@ -157,14 +153,16 @@ fun GlassDropdownPreference(
         exitTransition = ExitTransition.None,
         renderInRootScaffold = renderInRootScaffold,
     ) {
-        // A newly mounted popup must not reuse bounds from its prior lifetime.
+        // Wait for fresh anchor bounds before opening.
+        val bounds = anchor.dropdownValueBounds
         val show = expanded && actualEnabled
-        if (show && anchor.dropdownValueBounds == null) return@PopupLayout
+        if (show && bounds == null) return@PopupLayout
+        // Full-page dismiss area.
         Box(modifier = Modifier.fillMaxSize()) {
             GlassDropdownPopupContent(
                 show = show,
                 onDismissRequest = { setExpanded(false) },
-                anchorBounds = rowBounds,
+                anchorBounds = bounds ?: Rect.Zero,
                 backdrop = backdrop,
                 anchor = anchor,
                 sizing = sizing,
