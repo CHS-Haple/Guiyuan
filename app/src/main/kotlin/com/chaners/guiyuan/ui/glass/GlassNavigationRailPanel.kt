@@ -272,9 +272,9 @@ private fun Modifier.railPanelSurfaceModifier(
     val surfacePaint = if (override != null && surface.backdrop != null) {
         // The visible panel material is a sibling child, recorded before the selected lens.
         // Keep its original MIUIX Float shadow here, without double-painting the surface.
-        Modifier.glassShadow(shape, surface.shadow)
+        Modifier.glassShadow(shape, surface.shadow, alpha = 1f)
     } else if (override != null) {
-        Modifier.glassShadow(shape, surface.shadow).then(override(surface.backdrop, shape))
+        Modifier.glassShadow(shape, surface.shadow, alpha = 1f).then(override(surface.backdrop, shape))
     } else {
         Modifier.glassPanel(
             backdrop = surface.backdrop,
