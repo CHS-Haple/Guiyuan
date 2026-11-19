@@ -505,7 +505,10 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
-    fun activate(host: Any): Result {
+    fun activate(
+        host: Any,
+        requestNativeStatusIconLayout: Boolean = false,
+    ): Result {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             return Result.Failure(REASON_MAIN_THREAD_REQUIRED)
         }
@@ -546,6 +549,11 @@ internal object SysUiPresentationOwner {
         optionalNativeRead { field.get(statusIcons) as? MutableList<*> }
             ?: return Result.Failure(REASON_IGNORED_SLOTS_LIST_UNAVAILABLE)
 
+        // Only the verified same-host reload prearm requests layout directly on
+        // the native status-icon owner. Ordinary activation keeps the existing
+        // battery-container lifecycle to avoid unrelated native relayouts.
+        val nativeLayoutTarget =
+            if (requestNativeStatusIconLayout) statusIcons else batteryContainer
         val existing = current
         if (existing?.matches(hostView, statusIcons, batteryContainer, battery, batteryCarrier) == true) {
             if (!existing.syncEndReservation()) {
@@ -557,7 +565,7 @@ internal object SysUiPresentationOwner {
             ) {
                 return Result.Failure("home-reuse-aborted-after-fail-native")
             }
-            batteryContainer.requestLayout()
+            nativeLayoutTarget.requestLayout()
             return Result.Active(representedSlots.size, masked, true)
         }
 
@@ -587,7 +595,7 @@ internal object SysUiPresentationOwner {
         ) {
             return Result.Failure("home-activation-aborted-after-fail-native")
         }
-        batteryContainer.requestLayout()
+        nativeLayoutTarget.requestLayout()
         eventSink?.invoke(
             "homePresentation active carrier=MiuiStatusBatteryContainer.overlay " +
                 LOG_REPRESENTED_SLOTS + representedSlots.joinToString(",") +
