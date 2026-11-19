@@ -481,3 +481,13 @@ fun BoxScope.GlassTransformPopup(
         )
     }
 }
+
+/**
+ * Geometry written during measurement and read during drawing to align the anchor content.
+ * Not snapshot state: writes during measurement must not invalidate that pass.
+ */
+private class TransformTravel {
+    var endCenterX: Float = 0f
+    var endCenterY: Float = 0f
+    var endWidth: Float = 0f
+}
