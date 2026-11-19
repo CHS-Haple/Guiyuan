@@ -61,6 +61,7 @@ import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.material.drawEdgeStroke
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import kotlin.math.roundToInt
+import top.yukonga.miuix.kmp.material.EdgeStroke
 
 /**
  * Size limits and window margin for a glass popup.
@@ -92,7 +93,7 @@ data class GlassPopupSizing(
 data class GlassPopupVisuals(
     val style: GlassStyle,
     val alpha: Float,
-    val stroke: GlassStroke?,
+    val stroke: EdgeStroke?,
     val shadow: GlassShadow?,
     val material: GlassMaterial?,
     val containerColor: Color,

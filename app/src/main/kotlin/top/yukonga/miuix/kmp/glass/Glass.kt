@@ -33,6 +33,7 @@ import top.yukonga.miuix.kmp.material.drawGlassShadow
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.glass.internal.glassEffect
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.material.EdgeStroke
 
 /**
  * Renders this composable as a sheet of glass over [backdrop].
@@ -62,7 +63,7 @@ fun Modifier.glass(
     tint: Color = Color.Unspecified,
     material: GlassMaterial? = null,
     noiseCoefficient: Float = GlassDefaults.NoiseCoefficient,
-    stroke: GlassStroke? = null,
+    stroke: EdgeStroke? = null,
     contentBlendMode: BlendMode = BlendMode.SrcOver,
     enabled: Boolean = true,
     shading: Boolean = true,
@@ -89,7 +90,7 @@ internal fun Modifier.glassOnActionBar(
     alpha: Float,
     material: GlassMaterial?,
     underlayMaterial: GlassMaterial,
-    stroke: GlassStroke?,
+    stroke: EdgeStroke?,
     enabled: Boolean = true,
 ): Modifier = glassImpl(
     backdrop = backdrop,
@@ -115,7 +116,7 @@ private fun Modifier.glassImpl(
     material: GlassMaterial?,
     underlayMaterial: GlassMaterial?,
     noiseCoefficient: Float,
-    stroke: GlassStroke?,
+    stroke: EdgeStroke?,
     contentBlendMode: BlendMode,
     enabled: Boolean,
     shading: Boolean,
@@ -148,7 +149,7 @@ private data class GlassPipeline(
     private val material: GlassMaterial?,
     private val underlayMaterial: GlassMaterial?,
     private val noiseCoefficient: Float,
-    private val stroke: GlassStroke?,
+    private val stroke: EdgeStroke?,
     private val shading: Boolean,
 ) : BackdropPipeline {
 

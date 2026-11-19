@@ -83,6 +83,8 @@ import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import top.yukonga.miuix.kmp.material.EdgeStroke
+import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
 
 /**
  * One destination in a [GlassNavigationBar].
@@ -137,7 +139,7 @@ object GlassNavigationBarDefaults {
 
     /** The rim traced around the bar. */
     @Composable
-    fun stroke(): GlassStroke = GlassStrokes.forTheme(
+    fun stroke(): EdgeStroke = GlassEdgeStrokes.forTheme(
         isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
     )
 
@@ -220,7 +222,7 @@ fun GlassNavigationBar(
     shape: GlassShape = GlassShape(CornerSize(50), CornerSize(50), CornerSize(50), CornerSize(50)),
     alpha: Float = 1f,
     visible: Boolean = true,
-    stroke: GlassStroke? = GlassNavigationBarDefaults.stroke(),
+    stroke: EdgeStroke? = GlassNavigationBarDefaults.stroke(),
     shadow: GlassShadow? = GlassShadows.Float,
     height: Dp = GlassNavigationBarDefaults.Height,
     material: GlassMaterial? = GlassNavigationBarDefaults.material(),

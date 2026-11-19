@@ -6,7 +6,7 @@ package top.yukonga.miuix.kmp.glass
 import androidx.compose.ui.unit.Dp
 
 // Use the pinned MIUIX Material models without keeping app-owned copies of their state and tokens.
-// Local GlassStroke and the adapted shader/dismissal implementation remain separately owned.
+// Adapted backdrop rendering and popup/dismissal behavior remain app-owned.
 typealias GlassColorBlendMode = top.yukonga.miuix.kmp.material.GlassColorBlendMode
 typealias GlassColorLayer = top.yukonga.miuix.kmp.material.GlassColorLayer
 typealias GlassMaterial = top.yukonga.miuix.kmp.material.GlassMaterial

@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.DpSize
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.layout.DialogDefaults
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.material.EdgeStroke
 
 /**
  * A Scaffold-hosted dialog with the native dialog blur/blend material and animated scrim.
@@ -62,7 +63,7 @@ fun GlassDialog(
     outsideMargin: DpSize = DialogDefaults.outsideMargin,
     insideMargin: DpSize = DialogDefaults.insideMargin,
     material: GlassMaterial = GlassDialogDefaults.material(),
-    stroke: GlassStroke? = GlassDialogDefaults.stroke(),
+    stroke: EdgeStroke? = GlassDialogDefaults.stroke(),
     containerColor: Color = GlassDialogDefaults.containerColor(),
     dimColor: Color = GlassDialogDefaults.ScrimColor,
     onDismissFinished: (() -> Unit)? = null,

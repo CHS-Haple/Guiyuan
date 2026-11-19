@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.material.drawEdgeStroke
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.material.EdgeStroke
 
 /**
  * Makes this composable a sheet of glass over [backdrop], with the shadow it casts.
@@ -34,7 +35,7 @@ fun Modifier.glassPanel(
     style: GlassStyle = GlassDefaults.Style,
     alpha: Float = 1f,
     material: GlassMaterial? = null,
-    stroke: GlassStroke? = null,
+    stroke: EdgeStroke? = null,
     shadow: GlassShadow? = GlassShadows.Regular,
     shading: Boolean = true,
     fallback: Modifier? = null,

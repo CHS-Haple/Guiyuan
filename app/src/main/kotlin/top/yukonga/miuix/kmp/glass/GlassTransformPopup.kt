@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import top.yukonga.miuix.kmp.blur.Backdrop
 import kotlin.math.roundToInt
+import top.yukonga.miuix.kmp.material.EdgeStroke
 
 /**
  * Anchor geometry and appearance for a [GlassTransformPopup] or [GlassDropdownPopup].
@@ -110,7 +111,7 @@ internal data class GlassAnchorSurface(
     val style: GlassStyle,
     val material: GlassMaterial,
     val underlayMaterial: GlassMaterial?,
-    val stroke: GlassStroke?,
+    val stroke: EdgeStroke?,
     val fill: Color,
 )
 

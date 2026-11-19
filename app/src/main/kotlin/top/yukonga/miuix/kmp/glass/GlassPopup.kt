@@ -47,6 +47,8 @@ import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.layout.CascadingPopupDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.material.EdgeStroke
+import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
 
 /** Default values for [GlassPopup]. */
 object GlassPopupDefaults {
@@ -129,7 +131,7 @@ object GlassPopupDefaults {
     fun visuals(
         style: GlassStyle = GlassDefaults.Style,
         alpha: Float = 1f,
-        stroke: GlassStroke? = stroke(),
+        stroke: EdgeStroke? = stroke(),
         shadow: GlassShadow? = GlassShadows.Regular,
         material: GlassMaterial? = material(),
         containerColor: Color = containerColor(),
@@ -151,10 +153,10 @@ object GlassPopupDefaults {
 
     /** Default popup bloom stroke for the current theme. */
     @Composable
-    fun stroke(): GlassStroke = GlassStrokes.forTheme(
+    fun stroke(): EdgeStroke = GlassEdgeStrokes.forTheme(
         isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
-        light = GlassStrokes.SmallLight,
-        dark = GlassStrokes.SmallDark,
+        light = GlassEdgeStrokes.SmallLight,
+        dark = GlassEdgeStrokes.SmallDark,
     )
 
     /** Opaque fallback color for the current theme. */
