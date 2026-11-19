@@ -3,6 +3,8 @@
 
 package top.yukonga.miuix.kmp.glass
 
+import com.chaners.guiyuan.ui.components.glass.RailToggle
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -554,6 +556,7 @@ private fun RailPanelToggle(
             onClick = { state.expanded = !expanded },
             expanded = expanded,
             size = if (expanded) RailToggleBoxSize else RailCollapsedRowHeight,
+            iconSize = RailIconSize,
             tint = colors.unselectedColor,
             contentDescription = context.toggleContentDescription,
         )

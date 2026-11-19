@@ -4,6 +4,9 @@
 
 package top.yukonga.miuix.kmp.glass
 
+import com.chaners.guiyuan.ui.components.glass.NativeTitleLocalClip
+import com.chaners.guiyuan.ui.components.glass.UiNativeTitleBar
+
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
