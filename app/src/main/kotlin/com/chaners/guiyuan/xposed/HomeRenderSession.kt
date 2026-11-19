@@ -568,8 +568,9 @@ internal object HomeRenderSession {
                     lastSampledBounds = bounds
                     if (geometrySamples < 8) {
                         geometrySamples++
+                        val geometry = geometryDiagnostic()
                         emitEvent {
-                            "homeRenderGeometry boundary=native-layout " + geometryDiagnostic()
+                            "homeRenderGeometry boundary=native-layout " + geometry
                         }
                     }
                 }
