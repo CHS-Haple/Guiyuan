@@ -3,6 +3,10 @@
 
 package com.chaners.guiyuan.ui.glass
 
+import top.yukonga.miuix.kmp.glass.GlassMotion
+import top.yukonga.miuix.kmp.anim.folmeSpring
+import androidx.compose.animation.core.SpringSpec
+
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.updateTransition
@@ -44,6 +48,15 @@ import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.GlassStyle
+
+private const val GuiyuanPopupMaskVisibleChange = 1f / 256f
+
+// Upstream GlassMotion keeps this spring internal; the adapted popup owns its mask.
+private fun guiyuanPopupMaskSpring(expanding: Boolean): SpringSpec<Float> = folmeSpring(
+    damping = 0.95f,
+    response = if (expanding) 0.35f else 0.2f,
+    visibilityThreshold = GuiyuanPopupMaskVisibleChange * 0.75f,
+)
 
 /**
  * Anchor geometry and appearance for a [GlassTransformPopup] or [GlassDropdownPopup].
@@ -275,7 +288,7 @@ fun BoxScope.GlassTransformPopup(
     )
     val maskAlpha = animateFloatAsState(
         targetValue = if (stacked) 1f else 0f,
-        animationSpec = GlassMotion.secondaryPopupMask(stacked),
+        animationSpec = guiyuanPopupMaskSpring(stacked),
         label = "glassTransformMask",
     )
     val active = show || transition.currentState || transition.isRunning
@@ -357,7 +370,7 @@ fun BoxScope.GlassTransformPopup(
         },
         overlay = {
             val fraction = popupFractionWithBack(maskAlpha.value, anchor.secondaryBackProgress).coerceIn(0f, 1f)
-            if (fraction > GlassMotion.POPUP_MASK_MIN_VISIBLE_CHANGE) {
+            if (fraction > GuiyuanPopupMaskVisibleChange) {
                 drawRect(maskColor.copy(alpha = maskColor.alpha * fraction))
             }
         },
