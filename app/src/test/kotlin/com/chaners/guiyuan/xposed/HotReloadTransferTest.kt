@@ -7,6 +7,62 @@ import org.junit.Test
 
 class HotReloadTransferTest {
     @Test
+    fun landscapeReleaseUsesNativeLayoutWhilePortraitMayPreserveCompactLayout() {
+        assertFalse(
+            SysUiHotReload.shouldRetainCompactHomeLayoutOnRetire(
+                eligible = true,
+                isLandscape = true,
+            ),
+        )
+        assertFalse(
+            SysUiHotReload.shouldRetainCompactHomeLayoutOnRetire(
+                eligible = false,
+                isLandscape = true,
+            ),
+        )
+        assertEquals(
+            true,
+            SysUiHotReload.shouldRetainCompactHomeLayoutOnRetire(
+                eligible = true,
+                isLandscape = false,
+            ),
+        )
+        assertFalse(
+            SysUiHotReload.shouldRetainCompactHomeLayoutOnRetire(
+                eligible = false,
+                isLandscape = false,
+            ),
+        )
+    }
+
+    @Test
+    fun homePrearmRequiresVerifiedTransferAndCompleteNativePrerequisites() {
+        assertEquals(
+            true,
+            SysUiHotReload.shouldPrearmHome(
+                transferEligible = true, featureEnabled = true,
+                mobileReady = true, batteryReady = true,
+            ),
+        )
+        val cases = listOf(
+            listOf(false, true, true, true),
+            listOf(true, false, true, true),
+            listOf(true, true, false, true),
+            listOf(true, true, true, false),
+        )
+        for (gates in cases) {
+            assertFalse(
+                SysUiHotReload.shouldPrearmHome(
+                    transferEligible = gates[0],
+                    featureEnabled = gates[1],
+                    mobileReady = gates[2],
+                    batteryReady = gates[3],
+                ),
+            )
+        }
+    }
+
+    @Test
     fun v9CallbackTransferCannotEnterNewGeneration() {
         var invoked = false
         val oldCallback = Runnable { invoked = true }
