@@ -42,7 +42,15 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSectio
 ) {
     Section(R.string.section_network) {
         networkSizesAndWeights(search, visual, visualRepo, enabled)
-        networkNativeFontWeight(search, visual, visualRepo, enabled, weight, weightDialogOpen, onOpenWeightDialog)
+        if (search.matches(R.string.mobile_type_weight)) {
+            NativeWeightSlider(
+                value = visual.mobileTypeWeight,
+                onValueChange = visualRepo::setMobileTypeWeight,
+                weight = weight,
+                dialogOpen = weightDialogOpen,
+                onOpenDialog = onOpenWeightDialog,
+            )
+        }
         networkFollowBatteryColor(search, visual, visualRepo, enabled)
     }
 }
@@ -104,50 +112,6 @@ private fun ColumnScope.networkSizesAndWeights(
             row = NetworkSizeRow.MOBILE_TYPE,
             defaultValue = mobileTypeScaleDefault(visual.layout),
             enabled = enabled,
-        )
-    }
-}
-
-@Composable
-private fun ColumnScope.networkNativeFontWeight(
-    search: PageSearch,
-    visual: VisualCfg,
-    visualRepo: VisualRepo,
-    enabled: Boolean,
-    weight: FeatureWeightUi,
-    weightDialogOpen: Boolean,
-    onOpenWeightDialog: () -> Unit,
-) {
-    if (search.matches(R.string.mobile_type_weight)) {
-        SliderPreference(
-            value = visual.mobileTypeWeight.toFloat().coerceIn(
-                weight.valueRange.start, weight.valueRange.endInclusive,
-            ),
-            onValueChange = { value ->
-                visualRepo.setMobileTypeWeight(value.roundToInt())
-            },
-            title = stringResource(R.string.mobile_type_weight),
-            summary = weight.rangeText
-                ?: stringResource(
-                    if (weight.pending) R.string.font_weight_pending
-                    else R.string.font_weight_unverified,
-                ),
-            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, enabled, R.drawable.ic_material_symbol_line_weight) },
-            valueText = stringResource(
-                R.string.integer_value,
-                visual.mobileTypeWeight.coerceIn(
-                    weight.valueRange.start.roundToInt(),
-                    weight.valueRange.endInclusive.roundToInt(),
-                ),
-            ),
-            valueRange = weight.valueRange,
-            steps = 0,
-            keyPoints = weight.points,
-            magnetThreshold = weight.verifiedRange?.let(::weightSnapThreshold) ?: 0f,
-            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-            holdDownState = weightDialogOpen,
-            enabled = enabled && weight.verifiedRange != null,
-            onClick = { onOpenWeightDialog() },
         )
     }
 }
