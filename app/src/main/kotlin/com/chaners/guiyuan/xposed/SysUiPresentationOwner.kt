@@ -157,6 +157,9 @@ internal object SysUiPresentationOwner {
         current?.ownedRepresentedSlots() ?: emptySet()
 
     @Synchronized
+    internal fun homeClaimed(): Boolean =
+        current?.hasPresentationClaim() == true
+
     internal fun homeCarrierVisible(): Boolean =
         current?.isNativeCarrierPresentationVisible() == true
 
@@ -502,7 +505,10 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
-    fun activate(host: Any): Result {
+    fun activate(
+        host: Any,
+        requestNativeStatusIconLayout: Boolean = false,
+    ): Result {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             return Result.Failure(REASON_MAIN_THREAD_REQUIRED)
         }
@@ -543,6 +549,11 @@ internal object SysUiPresentationOwner {
         optionalNativeRead { field.get(statusIcons) as? MutableList<*> }
             ?: return Result.Failure(REASON_IGNORED_SLOTS_LIST_UNAVAILABLE)
 
+        // Only the verified same-host reload prearm requests layout directly on
+        // the native status-icon owner. Ordinary activation keeps the existing
+        // battery-container lifecycle to avoid unrelated native relayouts.
+        val nativeLayoutTarget =
+            if (requestNativeStatusIconLayout) statusIcons else batteryContainer
         val existing = current
         if (existing?.matches(hostView, statusIcons, batteryContainer, battery, batteryCarrier) == true) {
             if (!existing.syncEndReservation()) {
@@ -554,7 +565,7 @@ internal object SysUiPresentationOwner {
             ) {
                 return Result.Failure("home-reuse-aborted-after-fail-native")
             }
-            batteryContainer.requestLayout()
+            nativeLayoutTarget.requestLayout()
             return Result.Active(representedSlots.size, masked, true)
         }
 
@@ -584,7 +595,7 @@ internal object SysUiPresentationOwner {
         ) {
             return Result.Failure("home-activation-aborted-after-fail-native")
         }
-        batteryContainer.requestLayout()
+        nativeLayoutTarget.requestLayout()
         eventSink?.invoke(
             "homePresentation active carrier=MiuiStatusBatteryContainer.overlay " +
                 LOG_REPRESENTED_SLOTS + representedSlots.joinToString(",") +
@@ -1055,6 +1066,7 @@ internal object SysUiPresentationOwner {
     @Suppress("TooGenericExceptionCaught")
     fun releaseGenerationForHotReload(
         requestLayout: Boolean = true,
+        homeRequestLayout: Boolean = requestLayout,
     ): Int {
         val failures = ArrayList<Throwable>(1)
         fun stop(release: () -> Int): Int =
@@ -1075,7 +1087,7 @@ internal object SysUiPresentationOwner {
         val home = current ?: homeRetirement.pending
         current = null
         val homeRestored = stop {
-            home?.let { stopHome(it, HOT_RELOAD_OLD_GENERATION, requestLayout) } ?: 0
+            home?.let { stopHome(it, HOT_RELOAD_OLD_GENERATION, homeRequestLayout) } ?: 0
         }
 
         val keyguard = keyguardFamilyCurrent ?: familyRetirement.pending
@@ -1974,7 +1986,8 @@ internal object SysUiPresentationOwner {
             val explicitLayoutRequest =
                 requestLayout && ignoreScope == IgnoreScope.CALL
             if (explicitLayoutRequest) {
-                releaseAttempt(failures) { batteryContainer.get()?.requestLayout() }
+                // Recompute native slot positions after releasing Home clip masks.
+                releaseAttempt(failures) { statusIcons.get()?.requestLayout() }
             }
             releaseAttempt(failures) {
                 onEvent(
