@@ -109,7 +109,7 @@ internal fun LazyListScope.diagnosticsLogItems(
         }
         when {
             view.snapshot == null -> {
-                item(key = "diagnostics-view.loading") {
+                item(key = "diagnostics-loading") {
                     if (view.loading) {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(top = 72.dp),
