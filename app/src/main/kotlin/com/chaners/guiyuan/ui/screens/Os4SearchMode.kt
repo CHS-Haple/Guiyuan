@@ -3,6 +3,7 @@
 
 package com.chaners.guiyuan.ui.screens
 
+import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -55,6 +56,26 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.exp
+import kotlin.math.sin
+import kotlin.math.sqrt
+
+// Map one second of spring motion onto the 400ms search transition.
+internal val SearchModeEasing: Easing = run {
+    val omega = 2.0 * PI / 0.75f
+    val stiffness = (omega * omega).toFloat()
+    val damping = (0.98f * 2.0 * omega).toFloat()
+    val decay = -damping / 2f
+    val frequency = sqrt(-(damping.toDouble() * damping - stiffness.toDouble() * 4)).toFloat() / 2f
+    val sineCoefficient = decay / frequency
+    Easing { fraction ->
+        (
+            1.0 + exp((decay * fraction).toDouble()) *
+                (-cos((frequency * fraction).toDouble()) + sineCoefficient * sin((frequency * fraction).toDouble()))
+            ).toFloat()
+    }
+}
 
 private const val CANCEL_BLUR_PX = 50f
 

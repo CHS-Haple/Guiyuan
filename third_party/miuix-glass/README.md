@@ -71,9 +71,10 @@ copy shared shaders into the app or add a second Material model.
 - `UiNativeTitleBar` uses the upstream `TopAppBarLayout` with native title
   blur, retaining accepted title-local clipping and measured unclipped
   navigation/action controls. The old parallel fallback is retired.
-- Search top-bar fade/scale/blur helpers mirror the published MIUIX
-  `GlassSearchOverlay` source from the exact pinned SHA; this app-local source
-  now lives in the app namespace to avoid collisions with the native module. `PageSearch` retains query and result ownership. Native
+- Search top-bar fade/scale/blur now uses the published MIUIX
+  `rememberGlassSearchBarAlpha` and `glassSearchBarTransition` functions directly;
+  the duplicate app-local copy is retired. `PageSearch` retains query and result ownership,
+  while its own search geometry still uses the source-matched easing curve. Native
   `TopAppBarLayout` still clips actions, so the measured outer shadow slot
   remains until upstream provides an equivalent unclipped API.
 - Navigation retains noninteractive preview behavior, touch-safe bottom
