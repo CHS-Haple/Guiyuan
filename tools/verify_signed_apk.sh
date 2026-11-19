@@ -33,4 +33,4 @@ fi
 apkanalyzer="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
 test -n "$apkanalyzer" && test -x "$apkanalyzer"
 test "$("$apkanalyzer" manifest debuggable "$SIGNED_APK_PATH")" = false
-echo "Verified signed APK: $SIGNED_APK_PATH ($version; $package)" 
+echo "Verified signed APK: $SIGNED_APK_PATH ($version; $package)"
