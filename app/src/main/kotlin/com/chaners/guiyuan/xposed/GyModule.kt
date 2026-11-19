@@ -4091,7 +4091,12 @@ class GyModule : XposedModule() {
                     batteryReady = StatusStateStore.snapshot().battery != null,
                 )
             ) {
-                when (SysUiPresentationOwner.activate(host)) {
+                when (
+                    SysUiPresentationOwner.activate(
+                        host = host,
+                        requestNativeStatusIconLayout = true,
+                    )
+                ) {
                     is SysUiPresentationOwner.Result.Active -> true
                     else -> {
                         SysUiPresentationOwner.deactivate("hotReload-prearm-failed")
