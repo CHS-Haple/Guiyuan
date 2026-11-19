@@ -2627,6 +2627,8 @@ internal object SysUiPresentationOwner {
                         verifiedNativeOverhang =
                             leasePhase == LeasePhase.PREARM &&
                                 params.width > parentContentWidthPx &&
+                                !hostView.isLayoutRequested &&
+                                !parent.isLayoutRequested &&
                                 isVerifiedNativeOverhang(hostView, parent),
                     )
                 ) {
@@ -2678,13 +2680,7 @@ internal object SysUiPresentationOwner {
             }
             if (baselineWidthPx > parentContentWidthPx) {
                 if (!isVerifiedNativeOverhang(hostView, parent)) {
-                    onFailNative(
-                        if (hostView.isLayoutRequested || parent.isLayoutRequested) {
-                            "fake-carrier-native-overhang-admission-layout-pending"
-                        } else {
-                            "fake-carrier-native-overhang-unverified"
-                        },
-                    )
+                    onFailNative("fake-carrier-native-overhang-unverified")
                     return null
                 }
                 if (!nativeOverhangAccepted) {
@@ -2743,9 +2739,6 @@ internal object SysUiPresentationOwner {
             hostView: ViewGroup,
             parent: ViewGroup,
         ): Boolean {
-            // A measured overhang is not final while either native owner
-            // still has a pending layout; never mask based on stale bounds.
-            if (hostView.isLayoutRequested || parent.isLayoutRequested) return false
             if (parent.childCount != 1 || parent.getChildAt(0) !== hostView) return false
             val params = hostView.layoutParams ?: return false
             val margins = params as? ViewGroup.MarginLayoutParams
@@ -2956,13 +2949,7 @@ internal object SysUiPresentationOwner {
                     nativeHost != null && nativeParent != null &&
                         isVerifiedNativeOverhang(nativeHost, nativeParent)
                 if (!nativeStillVerified) {
-                    onFailNative(
-                        if (nativeHost?.isLayoutRequested == true || nativeParent?.isLayoutRequested == true) {
-                            "fake-carrier-native-overhang-cutover-layout-pending"
-                        } else {
-                            "fake-carrier-native-overhang-changed"
-                        },
-                    )
+                    onFailNative("fake-carrier-native-overhang-changed")
                     return false
                 }
             }
