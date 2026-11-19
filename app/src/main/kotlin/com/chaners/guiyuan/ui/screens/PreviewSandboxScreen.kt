@@ -501,7 +501,6 @@ internal fun PreviewSandboxScreen(
                             onSelected = { index ->
                                 PreviewSimCards.entries.getOrNull(index)?.let(onSimCardsChange)
                             },
-                            maxWidth = 300.dp,
                         )
                         AnimatedPreferenceGroup(visible = state.mobileOptionsVisible && state.simCards == PreviewSimCards.BOTH) {
                             UiDropdownPreference(
@@ -738,7 +737,6 @@ internal fun PreviewSandboxScreen(
                             onSelected = { index ->
                                 onBatteryModeChange(PreviewBatteryMode.entries[index])
                             },
-                            modifier = Modifier,
                         )
                         SandboxSegmentedField(
                             title = stringResource(R.string.home_preview_charging_state_title),
@@ -748,7 +746,6 @@ internal fun PreviewSandboxScreen(
                             onSelected = { index ->
                                 onChargingStateChange(PreviewChargingState.entries[index])
                             },
-                            modifier = Modifier,
                         )
                     }
                 }

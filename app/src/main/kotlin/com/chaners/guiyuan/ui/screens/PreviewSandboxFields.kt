@@ -18,7 +18,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
@@ -40,10 +39,8 @@ internal fun SandboxSegmentedField(
     options: List<String>,
     selectedIndex: Int,
     onSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    maxWidth: Dp = 300.dp,
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val glass = LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()
         val requiredWidth = if (glass) sandboxSegmentedRequiredWidth(options) else 0
 
@@ -73,7 +70,7 @@ internal fun SandboxSegmentedField(
                             tabs = options,
                             selectedTabIndex = selectedIndex,
                             onTabSelected = onSelected,
-                            modifier = if (glass) Modifier.fillMaxWidth() else Modifier.widthIn(max = maxWidth).fillMaxWidth(),
+                            modifier = if (glass) Modifier.fillMaxWidth() else Modifier.widthIn(max = 300.dp).fillMaxWidth(),
                         )
                     }
                 },
