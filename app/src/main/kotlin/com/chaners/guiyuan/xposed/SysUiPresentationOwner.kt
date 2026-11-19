@@ -2624,6 +2624,12 @@ internal object SysUiPresentationOwner {
                         appliedWidthPx = existingAppliedWidthPx,
                         currentParentContentWidthPx = parentContentWidthPx,
                         leasedParentContentWidthPx = fakeCarrierParentWidth,
+                        verifiedNativeOverhang =
+                            leasePhase == LeasePhase.PREARM &&
+                                params.width > parentContentWidthPx &&
+                                !hostView.isLayoutRequested &&
+                                !parent.isLayoutRequested &&
+                                isVerifiedNativeOverhang(hostView, parent),
                     )
                 ) {
                     FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.REUSE ->
