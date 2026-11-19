@@ -399,8 +399,16 @@ jobs:
         run: |
           set -euo pipefail
           base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
-          if git diff --quiet "$base" "$HEAD_SHA" -- gradle.properties app/src/os4Published/kotlin app/src/os4Upstream/kotlin; then
-            echo "MIUIX version and OS4 source variants unchanged; skip published dependency preflight."
+          # Cache policy and Build identity edits must not trigger unrelated
+          # published-Maven checks. Compare only the pinned MIUIX coordinates
+          # and the source/API paths that may change their ABI usage.
+          baseline_props="$(git show "$base:gradle.properties")"
+          current_props="$(cat gradle.properties)"
+          baseline_miuix="$(grep -E '^miuix\.(version|revision|upstream\.revision)=' <<< "$baseline_props" || true)"
+          current_miuix="$(grep -E '^miuix\.(version|revision|upstream\.revision)=' <<< "$current_props" || true)"
+          if [[ "$baseline_miuix" == "$current_miuix" ]] &&
+             git diff --quiet "$base" "$HEAD_SHA" -- app/build.gradle.kts app/src/os4Published/kotlin app/src/os4Upstream/kotlin; then
+            echo "MIUIX published coordinates and ABI surfaces unchanged; skip Maven preflight."
             exit 0
           fi
           test -z "${GY_OS4_MIUIXDIR:-}"
