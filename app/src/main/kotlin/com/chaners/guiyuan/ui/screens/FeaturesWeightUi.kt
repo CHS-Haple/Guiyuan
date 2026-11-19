@@ -14,6 +14,7 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.preference.SliderPreference
 
 internal data class FeatureWeightUi(
+    val row: NativeWeightRow,
     val verifiedRange: IntRange?,
     val valueRange: ClosedFloatingPointRange<Float>,
     val points: List<Float>?,
@@ -22,7 +23,7 @@ internal data class FeatureWeightUi(
 )
 
 @Composable
-internal fun featureWeightUi(axis: NativeFontAxis.State, fallbackRange: IntRange): FeatureWeightUi {
+internal fun featureWeightUi(axis: NativeFontAxis.State, fallbackRange: IntRange, row: NativeWeightRow): FeatureWeightUi {
     val verified = axis.verifiedWeightRange()
     val valueRange = (verified?.first ?: fallbackRange.first).toFloat()..
         (verified?.last ?: fallbackRange.last).toFloat()
@@ -31,6 +32,7 @@ internal fun featureWeightUi(axis: NativeFontAxis.State, fallbackRange: IntRange
         stringResource(R.string.font_weight_range, range.first, range.last)
     }
     return FeatureWeightUi(
+        row = row,
         verifiedRange = verified,
         valueRange = valueRange,
         points = points,
@@ -64,7 +66,6 @@ internal enum class NativeWeightRow(
 
 @Composable
 internal fun NativeWeightSlider(
-    row: NativeWeightRow,
     value: Int,
     onValueChange: (Int) -> Unit,
     weight: FeatureWeightUi,
@@ -77,12 +78,12 @@ internal fun NativeWeightSlider(
             weight.valueRange.start, weight.valueRange.endInclusive,
         ),
         onValueChange = { onValueChange(it.roundToInt()) },
-        title = stringResource(row.titleRes),
+        title = stringResource(weight.row.titleRes),
         summary = weight.rangeText ?: stringResource(
             if (weight.pending) R.string.font_weight_pending else R.string.font_weight_unverified,
         ),
         startAction = {
-            SemanticLeadingIcon(row.iconRes, enabled, R.drawable.ic_material_symbol_line_weight)
+            SemanticLeadingIcon(weight.row.iconRes, enabled, R.drawable.ic_material_symbol_line_weight)
         },
         valueText = stringResource(
             R.string.integer_value,

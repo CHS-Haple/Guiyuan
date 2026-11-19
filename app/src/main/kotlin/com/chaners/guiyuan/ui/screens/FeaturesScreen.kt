@@ -80,10 +80,11 @@ internal fun FeaturesScreen(
         remember(context.applicationContext) {
             NativeFontAxis.observeBattery(context.applicationContext)
         }.collectAsState(initial = NativeFontAxis.State.Pending)
-    val mobileWeight = featureWeightUi(fontAxis, 200..1000)
+    val mobileWeight = featureWeightUi(fontAxis, 200..1000, NativeWeightRow.MOBILE_TYPE)
     val batteryWeight = featureWeightUi(
         batteryAxis,
         BATTERY_TOP_TEXT_WEIGHT_MIN..BATTERY_TOP_TEXT_WEIGHT_MAX,
+        NativeWeightRow.BATTERY,
     )
     val schemeRepo =
         remember(context.applicationContext) {

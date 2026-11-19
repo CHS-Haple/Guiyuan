@@ -44,7 +44,6 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSectio
         networkSizesAndWeights(search, visual, visualRepo, enabled)
         if (search.matches(R.string.mobile_type_weight)) {
             NativeWeightSlider(
-                row = NativeWeightRow.MOBILE_TYPE,
                 value = visual.mobileTypeWeight,
                 onValueChange = visualRepo::setMobileTypeWeight,
                 weight = weight,

@@ -141,7 +141,6 @@ private fun ColumnScope.batteryTopReadout(
         }
         if (search.matches(R.string.battery_top_text_weight)) {
             NativeWeightSlider(
-                row = NativeWeightRow.BATTERY,
                 value = visual.topTextWeight,
                 onValueChange = visualRepo::setTopTextWeight,
                 weight = weight,
