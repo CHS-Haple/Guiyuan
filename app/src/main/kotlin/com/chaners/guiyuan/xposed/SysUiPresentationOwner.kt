@@ -2627,8 +2627,6 @@ internal object SysUiPresentationOwner {
                         verifiedNativeOverhang =
                             leasePhase == LeasePhase.PREARM &&
                                 params.width > parentContentWidthPx &&
-                                !hostView.isLayoutRequested &&
-                                !parent.isLayoutRequested &&
                                 isVerifiedNativeOverhang(hostView, parent),
                     )
                 ) {
@@ -2739,6 +2737,9 @@ internal object SysUiPresentationOwner {
             hostView: ViewGroup,
             parent: ViewGroup,
         ): Boolean {
+            // A measured overhang is not final while either native owner
+            // still has a pending layout; never mask based on stale bounds.
+            if (hostView.isLayoutRequested || parent.isLayoutRequested) return false
             if (parent.childCount != 1 || parent.getChildAt(0) !== hostView) return false
             val params = hostView.layoutParams ?: return false
             val margins = params as? ViewGroup.MarginLayoutParams
