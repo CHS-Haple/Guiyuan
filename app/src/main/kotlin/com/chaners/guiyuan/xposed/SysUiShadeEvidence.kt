@@ -32,11 +32,17 @@ internal object SysUiShadeEvidence {
         classLoader: ClassLoader,
         isDetailedDiagnosticsEnabled: () -> Boolean,
         onEvent: (String) -> Unit,
-    ): HookHandle {
+    ): List<HookHandle> {
         val callback = Class.forName(CALLBACK_CLASS, false, classLoader)
         val callbackMethod =
             callback.getDeclaredMethod("onExpansionChanged", Float::class.javaPrimitiveType)
                 .apply { isAccessible = true }
+        val appearanceMethod =
+            callback.getDeclaredMethod(
+                "onAppearanceChanged",
+                Boolean::class.javaPrimitiveType,
+                Boolean::class.javaPrimitiveType,
+            ).apply { isAccessible = true }
         val outer = callback.getDeclaredField("this\$0").apply { isAccessible = true }
         val headerClass = Class.forName(HEADER_CLASS, false, classLoader)
         val headerLazy = headerClass.getDeclaredField("headerController").apply { isAccessible = true }
@@ -56,7 +62,7 @@ internal object SysUiShadeEvidence {
                 .getDeclaredMethod("isVerticalMode", Context::class.java)
                 .apply { isAccessible = true }
 
-        return module.hook(callbackMethod)
+        val expansionHandle = module.hook(callbackMethod)
             .setId("combinedstatus.notification-shade.evidence")
             .intercept(
                 Hooker { chain ->
@@ -117,6 +123,58 @@ internal object SysUiShadeEvidence {
                     result
                 },
             )
+        val appearanceHandle =
+            try {
+                module.hook(appearanceMethod)
+                    .setId("combinedstatus.notification-shade.appearance-evidence")
+                    .intercept(
+                        Hooker { chain ->
+                            val result = chain.proceed()
+                            if (isDetailedDiagnosticsEnabled()) {
+                                val appearance = chain.getArg(0) as? Boolean
+                                val animated = chain.getArg(1) as? Boolean
+                                if (appearance != null &&
+                                    samples.observeAppearance(chain.thisObject, appearance)
+                                ) {
+                                    SysUiCcSource.dispatchRuntimeCallback(
+                                        callback = {
+                                            val state =
+                                                if (Looper.myLooper() !== Looper.getMainLooper()) {
+                                                    "state=unavailable reason=non-main-native-callback"
+                                                } else {
+                                                    val controller = outer.get(chain.thisObject)
+                                                    val selectedHeader =
+                                                        headerLazy.get(controller)?.let { lazyGet.invoke(it) }
+                                                    val carrierView =
+                                                        selectedHeader?.let { carrier.get(it) as? View }
+                                                    "homeOverlayShown=" + HomeRenderSession.isOverlayShown() +
+                                                        " carrier={" + viewState(carrierView) + "}" +
+                                                        " ccFake=" + (CcRenderSession.visualState() ?: "none")
+                                                }
+                                            onEvent(
+                                                "shadeEvidence appearance=" + appearance +
+                                                    " animated=" + animated +
+                                                    " nativeChannel=notification-header-folme " + state,
+                                            )
+                                        },
+                                    )
+                                }
+                            }
+                            result
+                        },
+                    )
+            } catch (failure: Throwable) {
+                SysUiFatal.rethrow(failure)
+                try {
+                    expansionHandle.unhook()
+                } catch (cleanup: Throwable) {
+                    SysUiFatal.rethrow(cleanup)
+                    failure.addSuppressed(cleanup)
+                    throw IllegalStateException("shade-evidence-hook-release-failed", failure)
+                }
+                throw failure
+            }
+        return listOf(expansionHandle, appearanceHandle)
     }
 
     private fun viewState(view: View?): String {
@@ -161,6 +219,8 @@ internal class ShadeEvidenceGate(private val maxReports: Int = 24) {
     private var previousStage = -1
     private var previousFraction = Float.NaN
     private var reports = 0
+    private var lastAppearance: Boolean? = null
+    private var appearanceReports = 0
 
     @Synchronized
     fun reset() {
@@ -168,16 +228,32 @@ internal class ShadeEvidenceGate(private val maxReports: Int = 24) {
         previousStage = -1
         previousFraction = Float.NaN
         reports = 0
+        lastAppearance = null
+        appearanceReports = 0
+    }
+
+    private fun switchOwner(candidate: Any?) {
+        if (ownerRef?.get() !== candidate) {
+            ownerRef = candidate?.let(::WeakReference)
+            previousStage = -1
+            previousFraction = Float.NaN
+            lastAppearance = null
+        }
+    }
+
+    @Synchronized
+    fun observeAppearance(candidate: Any?, appearance: Boolean): Boolean {
+        switchOwner(candidate)
+        if (lastAppearance == appearance || appearanceReports >= 12) return false
+        lastAppearance = appearance
+        appearanceReports++
+        return true
     }
 
     @Synchronized
     fun observe(candidate: Any?, fraction: Float): String? {
         if (!fraction.isFinite() || fraction < 0f || fraction > 1f) return null
-        if (ownerRef?.get() !== candidate) {
-            ownerRef = candidate?.let(::WeakReference)
-            previousStage = -1
-            previousFraction = Float.NaN
-        }
+        switchOwner(candidate)
         val stage =
             when {
                 fraction == 0f -> 0
