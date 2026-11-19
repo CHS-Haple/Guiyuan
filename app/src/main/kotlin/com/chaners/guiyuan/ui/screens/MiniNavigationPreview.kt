@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.LiquidMode
+import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.settings.UiStyle
@@ -55,18 +56,14 @@ private val MiniNavigationViewportHeight = 76.dp
 
 @Composable
 internal fun MiniNavigationPreview(
-    uiStyle: UiStyle,
-    floating: Boolean,
-    style: NavStyle,
-    content: NavContent,
-    liquidMode: LiquidMode,
+    appearance: Appearance,
     dark: Boolean,
 ) {
-    val os4Glass = uiStyle == UiStyle.OS4 && floating && style == NavStyle.Glass
+    val os4Glass = appearance.uiStyle == UiStyle.OS4 && appearance.navEnabled && appearance.navStyle == NavStyle.Glass
     val miuixMaterialActive =
-        floating && style.requiresTextureBackdrop && isRuntimeShaderSupported()
+        appearance.navEnabled && appearance.navStyle.requiresTextureBackdrop && isRuntimeShaderSupported()
     val liquidMaterialActive =
-        floating && style == NavStyle.Liquid &&
+        appearance.navEnabled && appearance.navStyle == NavStyle.Liquid &&
             isRuntimeShaderSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
     val miuixBackdrop =
@@ -90,10 +87,10 @@ internal fun MiniNavigationPreview(
         } else {
             0.dp
         }
-    val standardNav = !floating || (os4Glass && miuixBackdrop == null)
+    val standardNav = !appearance.navEnabled || (os4Glass && miuixBackdrop == null)
 
     if (os4Glass && miuixBackdrop != null) {
-        MiniGlassNavigationPreview(content, miuixBackdrop)
+        MiniGlassNavigationPreview(appearance.activeNavContent, miuixBackdrop)
         return
     }
 
@@ -104,9 +101,9 @@ internal fun MiniNavigationPreview(
         bottomPadding = if (standardNav) 0.dp else liquidBottomSpace,
     ) {
         when {
-            standardNav -> MiniStandardNavigationPreview(content, os4Glass)
-            liquidBackdrop != null -> MiniLiquidNavigationPreview(content, liquidMode, dark, liquidBackdrop)
-            else -> MiniFloatingNavigationPreview(content, uiStyle, style, dark, miuixBackdrop, os4Glass)
+            standardNav -> MiniStandardNavigationPreview(appearance.activeNavContent, os4Glass)
+            liquidBackdrop != null -> MiniLiquidNavigationPreview(appearance.activeNavContent, appearance.liquidMode, dark, liquidBackdrop)
+            else -> MiniFloatingNavigationPreview(appearance.activeNavContent, appearance.uiStyle, appearance.navStyle, dark, miuixBackdrop)
         }
     }
 }
@@ -233,10 +230,9 @@ private fun MiniFloatingNavigationPreview(
     style: NavStyle,
     dark: Boolean,
     miuixBackdrop: LayerBackdrop?,
-    os4Glass: Boolean,
 ) {
     val floatingModifier =
-        if (miuixBackdrop != null && !os4Glass) {
+        if (miuixBackdrop != null) {
             Modifier.floatingNavMaterial(
                 backdrop = miuixBackdrop,
                 dark = dark,
