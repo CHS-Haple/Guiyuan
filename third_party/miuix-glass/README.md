@@ -96,6 +96,7 @@ and `glassPanel` APIs instead of maintaining corresponding component copies.
 Its published material, edge and shader APIs also remain authoritative.
 The preview sandbox's segmented Glass tabs use the published upstream `GlassSegmentedTabRow` and defaults; the app-local `GlassTabRow.kt` source copy is retired.
 The public glass surface and constant-alpha shadow modifiers now resolve to MIUIX's published API; only app-specific action-bar underlay and state-driven shadow helpers remain local.
+Integer and scheme-rename dialogs use published `GlassTextField` in OS4, retaining native `TextField` for OS3. Card-embedded numeric/hex fields keep their existing non-Glass presentation.
 The remaining app-local Glass files preserve the accepted navigation/rail,
 noninteractive preview and touch exclusion, controlled search, popup anchor
 and Back lifecycle, long-press/held-state button, title slots and custom

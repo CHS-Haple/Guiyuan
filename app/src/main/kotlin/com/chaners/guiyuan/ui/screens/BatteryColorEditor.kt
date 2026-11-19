@@ -43,6 +43,7 @@ import top.yukonga.miuix.kmp.basic.HsvSaturationSlider
 import top.yukonga.miuix.kmp.basic.HsvValueSlider
 import top.yukonga.miuix.kmp.basic.Text
 import com.chaners.guiyuan.ui.components.UiDialogButton
+import com.chaners.guiyuan.ui.components.UiDialogTextField
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.basic.TextField
@@ -407,7 +408,7 @@ internal fun BatteryRenameSchemeDialog(
     ) {
         if (scheme != null) {
             Column {
-                TextField(
+                UiDialogTextField(
                     value = name,
                     onValueChange = { name = limitCustomSchemeName(it) },
                     label = stringResource(R.string.battery_custom_scheme_name),
