@@ -95,6 +95,7 @@ The published MIUIX Glass module is now linked directly. The app uses its
 and `glassPanel` APIs instead of maintaining corresponding component copies.
 Its published material, edge and shader APIs also remain authoritative.
 The preview sandbox's segmented Glass tabs use the published upstream `GlassSegmentedTabRow` and defaults; the app-local `GlassTabRow.kt` source copy is retired.
+Navigation destinations and `GlassNavigationBarDefaults` now also use the upstream public types; local navigation/rail still owns only Guiyuan-specific gestures, geometry and hit-area extension.
 The public glass surface and constant-alpha shadow modifiers now resolve to MIUIX's published API; only app-specific action-bar underlay and state-driven shadow helpers remain local.
 Integer and scheme-rename dialogs use published `GlassTextField` in OS4, retaining native `TextField` for OS3. Card-embedded numeric/hex fields keep their existing non-Glass presentation.
 The remaining app-local Glass files preserve the accepted navigation/rail,

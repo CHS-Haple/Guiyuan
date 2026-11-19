@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package com.chaners.guiyuan.ui.glass
+import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
 
 import top.yukonga.miuix.kmp.glass.GlassMotion
 

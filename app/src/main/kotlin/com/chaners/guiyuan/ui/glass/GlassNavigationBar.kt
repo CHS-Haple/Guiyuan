@@ -3,6 +3,8 @@
 // Modified from upstream (2026): preview interactivity and bottom hit-area extension.
 
 package com.chaners.guiyuan.ui.glass
+import top.yukonga.miuix.kmp.glass.GlassNavigationItem
+import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
 
 import top.yukonga.miuix.kmp.glass.GlassMotion
 
@@ -96,91 +98,6 @@ import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.material.GlassShadow
 import top.yukonga.miuix.kmp.material.GlassShadows
-
-/**
- * One destination in a [GlassNavigationBar].
- *
- * @property icon The icon drawn for this destination.
- * @property label Optional caption under the icon.
- * @property contentDescription What a screen reader announces for it.
- */
-@Stable
-data class GlassNavigationItem(
-    val icon: ImageVector,
-    val label: String? = null,
-    val contentDescription: String? = null,
-    val badge: (@Composable () -> Unit)? = null,
-)
-
-/** Default values for [GlassNavigationBar]. */
-object GlassNavigationBarDefaults {
-
-    /** Minimum height; wrapped captions can make the bar taller. */
-    val Height: Dp = 54.dp
-
-    /** Space between the glass capsule and an optional trailing action. */
-    val ActionSpacing: Dp = 12.dp
-
-    /** Size of an icon. */
-    val IconSize: Dp = 25.dp
-
-    /** Caption size in dp. */
-    val LabelSize: Dp = 11.dp
-
-    /** Caption size used when the system font scale reaches 1.6. */
-    val LargeLabelSize: Dp = 16.dp
-
-    /** Space above and below each icon-and-caption group. */
-    val ContentPaddingVertical: Dp = 6.dp
-
-    /** Gap between an icon and its caption. */
-    val LabelSpacing: Dp = 0.dp
-
-    /** Inset between the top and bottom of the bar and the indicator. */
-    val IndicatorPaddingVertical: Dp = 3.dp
-
-    /** The bar's own horizontal inset: where the destinations are laid out from. */
-    val ContentPaddingHorizontal: Dp = 8.dp
-
-    /** How far the capsule reaches past its destination's share of the bar, on each side. */
-    val IndicatorOverhang: Dp = 5.dp
-
-    /** Opacity of the destination under the finger. */
-    val PressedAlpha: Float = 0.6f
-
-    /** The rim traced around the bar. */
-    @Composable
-    fun stroke(): EdgeStroke = GlassEdgeStrokes.forTheme(
-        isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
-    )
-
-    /** The bar's own body. */
-    @Composable
-    fun material(): GlassMaterial = dynamicGlassMaterial(
-        GlassMaterials.puredThinGlass(
-            isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
-        ),
-    )
-
-    /** Resting indicator fill, using the primary colour only in dynamic colour themes. */
-    @Composable
-    fun indicatorColor(): Color = indicatorTint().copy(
-        alpha = if (MiuixTheme.colorScheme.background.luminance() < 0.5f) 0.12f else 0.06f,
-    )
-
-    /** Pressed indicator fill, using the same theme tint at a higher opacity. */
-    @Composable
-    fun indicatorPressedColor(): Color = indicatorTint().copy(
-        alpha = if (MiuixTheme.colorScheme.background.luminance() < 0.5f) 0.26f else 0.16f,
-    )
-
-    @Composable
-    private fun indicatorTint(): Color = when {
-        MiuixTheme.isDynamicColor -> MiuixTheme.colorScheme.primary
-        MiuixTheme.colorScheme.background.luminance() < 0.5f -> Color.White
-        else -> Color.Black
-    }
-}
 
 /**
  * A floating bottom bar on glass.

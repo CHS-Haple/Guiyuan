@@ -118,7 +118,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.job
 import com.chaners.guiyuan.ui.glass.GlassNavigationBar
 import com.chaners.guiyuan.ui.glass.GlassNavigationBarLayout
-import com.chaners.guiyuan.ui.glass.GlassNavigationBarDefaults
+import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
 import com.chaners.guiyuan.ui.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassMotion
 import com.chaners.guiyuan.ui.glass.GlassNavigationRail
@@ -126,7 +126,7 @@ import com.chaners.guiyuan.ui.glass.GlassRailDestinations
 import com.chaners.guiyuan.ui.glass.RailLiquidPaint
 import com.chaners.guiyuan.ui.glass.GlassNavigationRailDefaults
 import com.chaners.guiyuan.ui.glass.rememberGlassNavigationRailState
-import com.chaners.guiyuan.ui.glass.GlassNavigationItem
+import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
