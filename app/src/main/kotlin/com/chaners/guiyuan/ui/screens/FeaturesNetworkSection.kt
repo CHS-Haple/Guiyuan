@@ -2,6 +2,7 @@ package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.chaners.guiyuan.R
@@ -40,110 +41,143 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSectio
     onOpenWeightDialog: () -> Unit,
 ) {
     Section(R.string.section_network) {
-        if (search.matches(R.string.wifi_size)) {
-            NetworkSizeSlider(
-                value = visual.wifiScale,
-                onValueChange = visualRepo::setWifiScale,
-                row = NetworkSizeRow.WIFI,
-                defaultValue = WIFI_SIZE_SCALE_DEFAULT,
-                enabled = enabled,
-            )
-        }
-        if (search.matches(R.string.wifi_weight)) {
-            NetworkWeightSlider(
-                value = visual.wifiWeight,
-                onValueChange = visualRepo::setWifiWeight,
-                row = NetworkWeightRow.WIFI,
-                enabled = enabled,
-            )
-        }
-        if (search.matches(R.string.airplane_size)) {
-            NetworkSizeSlider(
-                value = visual.airplaneScale,
-                onValueChange = visualRepo::setAirplaneScale,
-                row = NetworkSizeRow.AIRPLANE,
-                defaultValue = AIRPLANE_SIZE_SCALE_DEFAULT,
-                enabled = enabled,
-            )
-        }
-        if (search.matches(R.string.airplane_weight)) {
-            NetworkWeightSlider(
-                value = visual.airplaneWeight,
-                onValueChange = visualRepo::setAirplaneWeight,
-                row = NetworkWeightRow.AIRPLANE,
-                enabled = enabled,
-            )
-        }
-        if (search.matches(R.string.no_sim_size)) {
-            NetworkSizeSlider(
-                value = visual.noSimScale,
-                onValueChange = visualRepo::setNoSimScale,
-                row = NetworkSizeRow.NO_SIM,
-                defaultValue = NO_SIM_SIZE_SCALE_DEFAULT,
-                enabled = enabled,
-            )
-        }
-        if (search.matches(R.string.mobile_type_size)) {
-            NetworkSizeSlider(
-                value = visual.mobileTypeScale,
-                onValueChange = visualRepo::setMobileTypeScale,
-                row = NetworkSizeRow.MOBILE_TYPE,
-                defaultValue = mobileTypeScaleDefault(visual.layout),
-                enabled = enabled,
-            )
-        }
-        if (search.matches(R.string.mobile_type_weight)) {
-            SliderPreference(
-                value = visual.mobileTypeWeight.toFloat().coerceIn(
-                    weight.valueRange.start, weight.valueRange.endInclusive,
+        networkSizesAndWeights(search, visual, visualRepo, enabled)
+        networkNativeFontWeight(search, visual, visualRepo, enabled, weight, weightDialogOpen, onOpenWeightDialog)
+        networkFollowBatteryColor(search, visual, visualRepo, enabled)
+    }
+}
+
+@Composable
+private fun ColumnScope.networkSizesAndWeights(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+) {
+    if (search.matches(R.string.wifi_size)) {
+        NetworkSizeSlider(
+            value = visual.wifiScale,
+            onValueChange = visualRepo::setWifiScale,
+            row = NetworkSizeRow.WIFI,
+            defaultValue = WIFI_SIZE_SCALE_DEFAULT,
+            enabled = enabled,
+        )
+    }
+    if (search.matches(R.string.wifi_weight)) {
+        NetworkWeightSlider(
+            value = visual.wifiWeight,
+            onValueChange = visualRepo::setWifiWeight,
+            row = NetworkWeightRow.WIFI,
+            enabled = enabled,
+        )
+    }
+    if (search.matches(R.string.airplane_size)) {
+        NetworkSizeSlider(
+            value = visual.airplaneScale,
+            onValueChange = visualRepo::setAirplaneScale,
+            row = NetworkSizeRow.AIRPLANE,
+            defaultValue = AIRPLANE_SIZE_SCALE_DEFAULT,
+            enabled = enabled,
+        )
+    }
+    if (search.matches(R.string.airplane_weight)) {
+        NetworkWeightSlider(
+            value = visual.airplaneWeight,
+            onValueChange = visualRepo::setAirplaneWeight,
+            row = NetworkWeightRow.AIRPLANE,
+            enabled = enabled,
+        )
+    }
+    if (search.matches(R.string.no_sim_size)) {
+        NetworkSizeSlider(
+            value = visual.noSimScale,
+            onValueChange = visualRepo::setNoSimScale,
+            row = NetworkSizeRow.NO_SIM,
+            defaultValue = NO_SIM_SIZE_SCALE_DEFAULT,
+            enabled = enabled,
+        )
+    }
+    if (search.matches(R.string.mobile_type_size)) {
+        NetworkSizeSlider(
+            value = visual.mobileTypeScale,
+            onValueChange = visualRepo::setMobileTypeScale,
+            row = NetworkSizeRow.MOBILE_TYPE,
+            defaultValue = mobileTypeScaleDefault(visual.layout),
+            enabled = enabled,
+        )
+    }
+}
+
+@Composable
+private fun ColumnScope.networkNativeFontWeight(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+    weight: FeatureWeightUi,
+    weightDialogOpen: Boolean,
+    onOpenWeightDialog: () -> Unit,
+) {
+    if (search.matches(R.string.mobile_type_weight)) {
+        SliderPreference(
+            value = visual.mobileTypeWeight.toFloat().coerceIn(
+                weight.valueRange.start, weight.valueRange.endInclusive,
+            ),
+            onValueChange = { value ->
+                visualRepo.setMobileTypeWeight(value.roundToInt())
+            },
+            title = stringResource(R.string.mobile_type_weight),
+            summary = weight.rangeText
+                ?: stringResource(
+                    if (weight.pending) R.string.font_weight_pending
+                    else R.string.font_weight_unverified,
                 ),
-                onValueChange = { value ->
-                    visualRepo.setMobileTypeWeight(value.roundToInt())
-                },
-                title = stringResource(R.string.mobile_type_weight),
-                summary = weight.rangeText
-                    ?: stringResource(
-                        if (weight.pending) R.string.font_weight_pending
-                        else R.string.font_weight_unverified,
-                    ),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, enabled, R.drawable.ic_material_symbol_line_weight) },
-                valueText = stringResource(
-                    R.string.integer_value,
-                    visual.mobileTypeWeight.coerceIn(
-                        weight.valueRange.start.roundToInt(),
-                        weight.valueRange.endInclusive.roundToInt(),
-                    ),
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_5g, enabled, R.drawable.ic_material_symbol_line_weight) },
+            valueText = stringResource(
+                R.string.integer_value,
+                visual.mobileTypeWeight.coerceIn(
+                    weight.valueRange.start.roundToInt(),
+                    weight.valueRange.endInclusive.roundToInt(),
                 ),
-                valueRange = weight.valueRange,
-                steps = 0,
-                keyPoints = weight.points,
-                magnetThreshold = weight.verifiedRange?.let(::weightSnapThreshold) ?: 0f,
-                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                holdDownState = weightDialogOpen,
-                enabled = enabled && weight.verifiedRange != null,
-                onClick = { onOpenWeightDialog() },
-            )
-        }
-        if (search.matches(R.string.mobile_follow_battery_color)) {
-            SwitchPreference(
-                title = stringResource(R.string.mobile_follow_battery_color),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt, enabled, R.drawable.ic_material_symbol_colorize) },
-                summary = stringResource(R.string.mobile_follow_battery_color_summary),
-                checked = visual.mobileFollowsBatteryColor,
-                enabled = enabled,
-                onCheckedChange = visualRepo::setMobileFollowsBatteryColor,
-            )
-        }
-        if (search.matches(R.string.center_follow_battery_color)) {
-            SwitchPreference(
-                title = stringResource(R.string.center_follow_battery_color),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, enabled, R.drawable.ic_material_symbol_colorize) },
-                summary = stringResource(R.string.center_follow_battery_color_summary),
-                checked = visual.centerFollowsBatteryColor,
-                enabled = enabled,
-                onCheckedChange = visualRepo::setCenterFollowsBatteryColor,
-            )
-        }
+            ),
+            valueRange = weight.valueRange,
+            steps = 0,
+            keyPoints = weight.points,
+            magnetThreshold = weight.verifiedRange?.let(::weightSnapThreshold) ?: 0f,
+            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+            holdDownState = weightDialogOpen,
+            enabled = enabled && weight.verifiedRange != null,
+            onClick = { onOpenWeightDialog() },
+        )
+    }
+}
+
+@Composable
+private fun ColumnScope.networkFollowBatteryColor(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+) {
+    if (search.matches(R.string.mobile_follow_battery_color)) {
+        SwitchPreference(
+            title = stringResource(R.string.mobile_follow_battery_color),
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt, enabled, R.drawable.ic_material_symbol_colorize) },
+            summary = stringResource(R.string.mobile_follow_battery_color_summary),
+            checked = visual.mobileFollowsBatteryColor,
+            enabled = enabled,
+            onCheckedChange = visualRepo::setMobileFollowsBatteryColor,
+        )
+    }
+    if (search.matches(R.string.center_follow_battery_color)) {
+        SwitchPreference(
+            title = stringResource(R.string.center_follow_battery_color),
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, enabled, R.drawable.ic_material_symbol_colorize) },
+            summary = stringResource(R.string.center_follow_battery_color_summary),
+            checked = visual.centerFollowsBatteryColor,
+            enabled = enabled,
+            onCheckedChange = visualRepo::setCenterFollowsBatteryColor,
+        )
     }
 }
 
