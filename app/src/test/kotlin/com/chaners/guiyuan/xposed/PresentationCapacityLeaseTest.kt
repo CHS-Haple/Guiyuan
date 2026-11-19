@@ -240,6 +240,7 @@ class PresentationCapacityLeaseTest {
                 laidOutCarrierWidthPx = 1365,
                 attached = true,
                 endAnchored = true,
+                layoutSettled = true,
             ),
         )
         assertFalse(
@@ -249,6 +250,7 @@ class PresentationCapacityLeaseTest {
                 laidOutCarrierWidthPx = 1309,
                 attached = true,
                 endAnchored = true,
+                layoutSettled = true,
             ),
         )
         for ((attached, endAnchored) in listOf(false to true, true to false)) {
@@ -259,6 +261,7 @@ class PresentationCapacityLeaseTest {
                     laidOutCarrierWidthPx = 1365,
                     attached = attached,
                     endAnchored = endAnchored,
+                    layoutSettled = true,
                 ),
             )
         }
@@ -269,6 +272,33 @@ class PresentationCapacityLeaseTest {
                 laidOutCarrierWidthPx = 1309,
                 attached = true,
                 endAnchored = true,
+                layoutSettled = true,
+            ),
+        )
+    }
+
+    @Test
+    fun nativeEndOverhangRejectsPendingNativeLayout() {
+        // Both native host and its parent must be settled before an existing
+        // overhang may be accepted or revalidated for visual masking.
+        assertFalse(
+            FakeCarrierCapacityLeasePolicy.mayInheritNativeOverhang(
+                nativeCarrierWidthPx = 1362,
+                parentContentWidthPx = 1309,
+                laidOutCarrierWidthPx = 1362,
+                attached = true,
+                endAnchored = true,
+                layoutSettled = false,
+            ),
+        )
+        assertTrue(
+            FakeCarrierCapacityLeasePolicy.mayInheritNativeOverhang(
+                nativeCarrierWidthPx = 1362,
+                parentContentWidthPx = 1309,
+                laidOutCarrierWidthPx = 1362,
+                attached = true,
+                endAnchored = true,
+                layoutSettled = true,
             ),
         )
     }
