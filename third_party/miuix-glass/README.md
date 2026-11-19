@@ -22,7 +22,7 @@ source checkout in `.github/actions/miuix-source/action.yml`.
   [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
   The stable `main` line must be checked separately; do not treat a `dev`
   pin as a stable-release upgrade.
-- `app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` contains an adapted,
+- `app/src/main/kotlin/com/chaners/guiyuan/ui/glass/` contains an adapted,
   app-compiled subset of the upstream
   [MIUIX Glass implementation](https://github.com/compose-miuix-ui/miuix/pull/423).
   Its earlier source was reconciled at `45645854cd46c32275c5666e3aafa9980d8f104e`;
@@ -93,10 +93,12 @@ copy shared shaders into the app or add a second Material model.
 Dialog, BottomSheet, title and edge drawing now use one published MIUIX API
 contract. Remaining local source implements adapted backdrop/refraction and
 Guiyuan-specific UI and lifecycle ownership.
-A whole-module `miuix-glass-android` swap must atomically remove conflicting
-same-package local declarations; linking it alongside the local bridge causes
-duplicate classes and can expose `internal` visibility/ABI failures. Do not
-modify the upstream checkout during CI to bypass these issues.
+The work-branch trial links the published `miuix-glass-android` module and
+source-substitutes it from the same pinned upstream revision, after relocating
+adapted local components to `com.chaners.guiyuan.ui.glass`. This resolves
+same-package JVM class collisions but does not itself prove public API parity,
+correct upstream runtime behavior, or safe removal of app-owned interaction
+and lifecycle implementations. Do not modify upstream source in CI.
 
 For later upstream alignment, preserve adapted backdrop/refraction and
 popup, Back/scrim and navigation ownership. Validate both source-matched and
