@@ -1575,6 +1575,7 @@ internal object SysUiPresentationOwner {
         }
 
         private var capacityLeaseAwaitingLayout = false
+        private var nativeOverhangAccepted = false
         private var firstLeaseWidthMismatch: String? = null
         private var leasePhase = LeasePhase.PREARM
         private var pendingNativeCarrierWidth: Int? = null
@@ -2671,6 +2672,27 @@ internal object SysUiPresentationOwner {
                 onFailNative("fake-carrier-width-unavailable")
                 return null
             }
+            if (baselineWidthPx > parentContentWidthPx) {
+                if (!isVerifiedNativeOverhang(hostView, parent)) {
+                    onFailNative("fake-carrier-native-overhang-unverified")
+                    return null
+                }
+                if (!nativeOverhangAccepted) {
+                    onEvent(
+                        eventPrefix + " fakeCarrierCapacity mode=native-end-overhang" +
+                            LOG_NATIVE_WIDTH + baselineWidthPx +
+                            " parentContentWidth=" + parentContentWidthPx +
+                            " left=" + hostView.left +
+                            " right=" + hostView.right +
+                            " lease=none owner=systemui-native-layout",
+                    )
+                }
+                nativeOverhangAccepted = true
+                // Zero extra width is owned. End padding is still separately
+                // admitted only when the native measured icon row can fit it.
+                return 0
+            }
+            nativeOverhangAccepted = false
             val capacityDeltaPx =
                 EndReservationPolicy.resolveFakeCarrierCapacityDelta(
                     nativeCarrierWidthPx = baselineWidthPx,
@@ -2705,6 +2727,26 @@ internal object SysUiPresentationOwner {
                     LOG_CC_FAKE_SESSION_OWNER,
             )
             return capacityDeltaPx
+        }
+
+        private fun isVerifiedNativeOverhang(
+            hostView: ViewGroup,
+            parent: ViewGroup,
+        ): Boolean {
+            if (parent.childCount != 1 || parent.getChildAt(0) !== hostView) return false
+            val params = hostView.layoutParams ?: return false
+            val margins = params as? ViewGroup.MarginLayoutParams
+            if (margins != null &&
+                (margins.marginStart != 0 || margins.marginEnd != 0 ||
+                    margins.leftMargin != 0 || margins.rightMargin != 0)
+            ) return false
+            return FakeCarrierCapacityLeasePolicy.mayInheritNativeOverhang(
+                nativeCarrierWidthPx = params.width,
+                parentContentWidthPx = parent.width - parent.paddingLeft - parent.paddingRight,
+                laidOutCarrierWidthPx = hostView.width,
+                attached = hostView.isAttachedToWindow,
+                endAnchored = isFakeCarrierEndAnchored(hostView, parent),
+            )
         }
 
         private fun isFakeCarrierEndAnchored(
@@ -2822,6 +2864,7 @@ internal object SysUiPresentationOwner {
             appliedFakeCarrierWidthPx = null
             fakeCarrierCapacityDeltaPx = null
             capacityLeaseAwaitingLayout = false
+            nativeOverhangAccepted = false
         }
 
         fun isLayoutCutoverReady(): Boolean =
@@ -2893,7 +2936,16 @@ internal object SysUiPresentationOwner {
         fun validateNativeLayoutBeforeVisualMask(): Boolean {
             if (!active || !started) return false
             if (surfaceName == CONTROL_CENTER_FAKE_SURFACE && appliedFakeCarrierWidthPx == null) {
-                return false
+                if (!nativeOverhangAccepted) return false
+                val nativeHost = host.get()
+                val nativeParent = nativeHost?.parent as? ViewGroup
+                val nativeStillVerified =
+                    nativeHost != null && nativeParent != null &&
+                        isVerifiedNativeOverhang(nativeHost, nativeParent)
+                if (!nativeStillVerified) {
+                    onFailNative("fake-carrier-native-overhang-changed")
+                    return false
+                }
             }
             if (!capacityLeaseAwaitingLayout) return true
 
