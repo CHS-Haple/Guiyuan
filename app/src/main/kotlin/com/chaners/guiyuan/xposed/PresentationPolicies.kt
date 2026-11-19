@@ -46,6 +46,22 @@ internal object VisualMaskPolicy {
 }
 
 internal object FakeCarrierCapacityLeasePolicy {
+    // The native QS Fake status area may extend to the left of its narrower
+    // parent while retaining the parent's end anchor. Its existing width is
+    // not a lease: accept only a laid-out, attached native overhang and never
+    // write a smaller parent width back to the SystemUI carrier.
+    fun mayInheritNativeOverhang(
+        nativeCarrierWidthPx: Int,
+        parentContentWidthPx: Int,
+        laidOutCarrierWidthPx: Int,
+        attached: Boolean,
+        endAnchored: Boolean,
+    ): Boolean =
+        nativeCarrierWidthPx > parentContentWidthPx &&
+            parentContentWidthPx > 0 &&
+            laidOutCarrierWidthPx == nativeCarrierWidthPx &&
+            attached && endAnchored
+
     enum class ExistingLeaseAction {
         REUSE,
         ADOPT_HIDDEN_NATIVE,
@@ -58,7 +74,20 @@ internal object FakeCarrierCapacityLeasePolicy {
         appliedWidthPx: Int,
         currentParentContentWidthPx: Int,
         leasedParentContentWidthPx: Int?,
+        verifiedNativeOverhang: Boolean = false,
     ): ExistingLeaseAction {
+        // A hidden/prearm lease can be superseded by a completed SystemUI
+        // landscape end-overhang after the native parent changes size.
+        // Never adopt an unverified or already-visible foreign width writer.
+        if (
+            !visibleCycleActive &&
+            liveWidthPx != appliedWidthPx &&
+            verifiedNativeOverhang &&
+            currentParentContentWidthPx > 0 &&
+            liveWidthPx > currentParentContentWidthPx
+        ) {
+            return ExistingLeaseAction.ADOPT_HIDDEN_NATIVE
+        }
         if (
             leasedParentContentWidthPx == null ||
             leasedParentContentWidthPx != currentParentContentWidthPx
