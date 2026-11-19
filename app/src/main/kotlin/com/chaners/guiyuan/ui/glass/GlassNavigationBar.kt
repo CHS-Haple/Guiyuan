@@ -27,9 +27,13 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.captionBar
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import com.chaners.guiyuan.ui.components.navTouchExtension
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -250,7 +254,18 @@ fun GlassNavigationBar(
     }
 
     GlassNavigationBarLayout(
-        modifier = modifier
+        modifier = Modifier
+            .then(
+                if (defaultWindowInsetsPadding) {
+                    Modifier.windowInsetsPadding(
+                        WindowInsets.displayCutout.union(WindowInsets.navigationBars)
+                            .only(WindowInsetsSides.Horizontal),
+                    )
+                } else {
+                    Modifier
+                },
+            )
+            .then(modifier)
             .fillMaxWidth()
             .then(
                 if (touchExtension && inputEnabled && defaultWindowInsetsPadding &&

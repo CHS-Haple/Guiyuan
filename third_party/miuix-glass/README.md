@@ -8,16 +8,18 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 ## Source and licensing
 
 - The active source and Maven graph uses the successfully published MIUIX
-  snapshot `0.9.5-d27cbb0b-SNAPSHOT` at full revision
-  `d27cbb0b375912cdf42670553fdb564d8ff7fc23`. The upstream publication completed in
-  [run #44476825158](https://github.com/compose-miuix-ui/miuix/actions/runs/44476825158).
+  snapshot `0.9.5-5ff41ba9-SNAPSHOT` at full revision
+  `5ff41ba90d963e48c3db1f3b28eb8dbebc9391f9`. The upstream publication completed in
+  [run #44571884911](https://github.com/compose-miuix-ui/miuix/actions/runs/44476825158).
   Upstream `v0.9.5-beta01` is a pre-release, not a `v0.9.5` stable
   release. The exact source-pinned snapshot is identified separately by
   upstream's `0.9.5-<short SHA>-SNAPSHOT` Maven convention.
-  The source-pinned `d27cbb0b` graph includes the upstream progressive-blur
-  caching/shader refinements and dynamic palette support. Guiyuan keeps its
-  adapted glass, search and navigation ownership while migrating applicable
-  defaults; this source update requires its own CI and device evidence.
+  The `5ff41ba9` integration follows upstream system-bars title insets,
+  conditional idle backdrop capture, and horizontal bottom-bar safe insets;
+  it also consumes upstream progressive-blur and scroll behavior refinements
+  through the matched dependency graph. Guiyuan retains its adapted glass,
+  search, navigation and input ownership. Source-Maven parity and focused
+  device validation are required before accepting this candidate.
   The prior Material integration is documented in
   [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
   The stable `main` line must be checked separately; do not treat a `dev`
@@ -126,4 +128,4 @@ Dated integration evidence is in
 history. The previous long-form conformance/audit investigations remain
 accessible in Git history, not in active documentation.
 
-The `d27cbb0b` published revision adds upstream progressive blur/graphics-layer resource gating and a drag badge clipping fix; Guiyuan's app-owned top bar/button and navigation adapters mirror these affected layout and backdrop-consumer contracts while retaining Guiyuan-only ownership. Source and Maven parity must pass on this new revision before delivery.
+The accepted `d27cbb0b` baseline already brought progressive blur/graphics-layer resource gating and drag badge clipping. The `5ff41ba9` candidate retains those contracts and adds the source-matched inset and idle-capture adjustments described above. Source and Maven parity must pass before any device checkpoint.
