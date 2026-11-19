@@ -157,7 +157,6 @@ internal object SysUiPresentationOwner {
         current?.ownedRepresentedSlots() ?: emptySet()
 
     @Synchronized
-    @Synchronized
     internal fun homeClaimed(): Boolean =
         current?.hasPresentationClaim() == true
 
