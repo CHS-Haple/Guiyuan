@@ -165,6 +165,16 @@ internal object SysUiHotReload {
         )
     }
 
+    // Preserve native for any incomplete in-place Home transfer; never prearm
+    // outside an eligible Hot Reload or when native replacement is unavailable.
+    internal fun shouldPrearmHome(
+        transferEligible: Boolean,
+        featureEnabled: Boolean,
+        mobileReady: Boolean,
+        batteryReady: Boolean,
+    ): Boolean =
+        transferEligible && featureEnabled && mobileReady && batteryReady
+
     // Failure-only native fallback. The ordinary same-host transfer must not
     // cause an intermediate expanded native layout/Folme move.
     fun requestNativeHomeRelayoutAfterFailedTransfer(host: Any?) {

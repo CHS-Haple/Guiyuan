@@ -4127,10 +4127,12 @@ class GyModule : XposedModule() {
         // The same main-thread attach either commits the renderer or rolls back.
         val homePrearmed =
             if (
-                prearmHome &&
-                FeaturePrefsOwner.current().enabled &&
-                SysUiNetworkRuntime.mobileReady &&
-                StatusStateStore.snapshot().battery != null
+                SysUiHotReload.shouldPrearmHome(
+                    transferEligible = prearmHome,
+                    featureEnabled = FeaturePrefsOwner.current().enabled,
+                    mobileReady = SysUiNetworkRuntime.mobileReady,
+                    batteryReady = StatusStateStore.snapshot().battery != null,
+                )
             ) {
                 when (SysUiPresentationOwner.activate(host)) {
                     is SysUiPresentationOwner.Result.Active -> true

@@ -7,6 +7,33 @@ import org.junit.Test
 
 class HotReloadTransferTest {
     @Test
+    fun homePrearmRequiresVerifiedTransferAndCompleteNativePrerequisites() {
+        assertEquals(
+            true,
+            SysUiHotReload.shouldPrearmHome(
+                transferEligible = true, featureEnabled = true,
+                mobileReady = true, batteryReady = true,
+            ),
+        )
+        val cases = listOf(
+            listOf(false, true, true, true),
+            listOf(true, false, true, true),
+            listOf(true, true, false, true),
+            listOf(true, true, true, false),
+        )
+        for (gates in cases) {
+            assertFalse(
+                SysUiHotReload.shouldPrearmHome(
+                    transferEligible = gates[0],
+                    featureEnabled = gates[1],
+                    mobileReady = gates[2],
+                    batteryReady = gates[3],
+                ),
+            )
+        }
+    }
+
+    @Test
     fun v9CallbackTransferCannotEnterNewGeneration() {
         var invoked = false
         val oldCallback = Runnable { invoked = true }
