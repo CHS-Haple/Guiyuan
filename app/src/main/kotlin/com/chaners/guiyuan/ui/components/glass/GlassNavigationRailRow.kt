@@ -3,6 +3,8 @@
 
 package com.chaners.guiyuan.ui.components.glass
 
+import top.yukonga.miuix.kmp.glass.navigationIndicatorBounds
+
 import top.yukonga.miuix.kmp.glass.GlassIndicatorAppearance
 import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults

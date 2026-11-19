@@ -3,6 +3,10 @@
 
 package com.chaners.guiyuan.ui.components.glass
 
+import top.yukonga.miuix.kmp.glass.navigationSlotAt
+import top.yukonga.miuix.kmp.glass.navigationDragWidth
+import top.yukonga.miuix.kmp.glass.navigationDragTarget
+
 import top.yukonga.miuix.kmp.glass.GlassMotion
 
 import androidx.compose.animation.core.Animatable

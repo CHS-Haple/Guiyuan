@@ -3,6 +3,8 @@
 
 package com.chaners.guiyuan.ui.components.glass
 
+import top.yukonga.miuix.kmp.glass.navigationIndicatorBounds
+
 import top.yukonga.miuix.kmp.glass.GlassIndicatorAppearance
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.glass.RailLensTracking
