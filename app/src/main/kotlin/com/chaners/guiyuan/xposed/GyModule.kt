@@ -308,10 +308,23 @@ class GyModule : XposedModule() {
             "controlCenterCompactReady" to prepared.controlCenterCompactReady,
         )
 
+        // Suppress intermediate expanded layout only for an existing,
+        // complete Home presentation that can be transferred.
+        val compactHomeHandoff =
+            SysUiHotReload.shouldPrearmHome(
+                transferEligible =
+                    SysUiCcSource.currentHomeEligibility() == true &&
+                        SysUiPresentationOwner.homeClaimed(),
+                featureEnabled = FeaturePrefsOwner.current().enabled,
+                mobileReady = SysUiNetworkRuntime.mobileReady,
+                batteryReady = StatusStateStore.snapshot().battery != null,
+            )
         // The old module cannot outlive this API 102 callback with View listeners.
         val retired =
             runCatching {
-                SysUiHotReload.retireOnMain(::teardownOldGeneration)
+                SysUiHotReload.retireOnMain {
+                    teardownOldGeneration(compactHomeHandoff)
+                }
             }.onFailure { error ->
                 SysUiHotReload.rethrowFatal(error)
                 log(Log.ERROR, TAG, "Hot reload old-generation retirement failed", error)
@@ -3831,7 +3844,7 @@ class GyModule : XposedModule() {
         )
     }
 
-    private fun teardownOldGeneration() {
+    private fun teardownOldGeneration(compactHomeHandoff: Boolean) {
         retiredForHotReload = true
         clearHotReloadSceneState()
         homeAodTargetPrearmPending = false
@@ -3856,13 +3869,15 @@ class GyModule : XposedModule() {
         release { CcRenderSession.detach(source = "hotReload-oldGeneration") }
         // A verified in-place transfer must not request an expanded native
         // icon layout before the next compact presentation can reclaim it.
-        release { HomeRenderSession.detach(notifyReadinessOnStop = false) }
+        release {
+            HomeRenderSession.detach(notifyReadinessOnStop = !compactHomeHandoff)
+        }
         release { KeyguardRenderSession.detach() }
         release { KeyguardRenderSession.detachAod() }
         var restoredViews: Int? = null
         release {
             restoredViews = SysUiPresentationOwner.releaseGenerationForHotReload(
-                homeRequestLayout = false,
+                homeRequestLayout = !compactHomeHandoff,
             )
         }
         release { NativeStatusObserver.deactivate() }
@@ -4098,19 +4113,33 @@ class GyModule : XposedModule() {
         }
         var rendererReadyOnAttach = false
         val renderFailure =
-            HomeRenderSession.attach(
-                host = host,
+            try {
+                HomeRenderSession.attach(
+                    host = host,
                 onEvent = ::logRuntimeEvent,
                 onLatencySample = ::onRenderLatencySample,
                 isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
                 initialNativeHandoffActive = true,
                 initialTintState = rendererInitialTintState,
                 allowLiveTintSeed = allowLiveTintSeed,
-                onPresentationReadinessChanged = { ready ->
-                    rendererReadyOnAttach = ready
-                    onHomeReadyChanged(host, ready, source)
-                },
-            )
+                    onPresentationReadinessChanged = { ready ->
+                        rendererReadyOnAttach = ready
+                        onHomeReadyChanged(host, ready, source)
+                    },
+                )
+            } catch (error: Throwable) {
+                // Roll back before propagating the attachment error, without
+                // discarding the original cause if native cleanup also fails.
+                if (homePrearmed) {
+                    try {
+                        SysUiPresentationOwner.deactivate("hotReload-prearm-attach-failed")
+                    } catch (cleanup: Throwable) {
+                        SysUiHotReload.rethrowFatal(cleanup)
+                        if (cleanup !== error) error.addSuppressed(cleanup)
+                    }
+                }
+                throw error
+            }
         if (renderFailure == null) {
             // Native icon Tint can arrive before Home attaches during Hot Reload.
             if (!allowLiveTintSeed && rendererInitialTintState == null) {

@@ -157,6 +157,10 @@ internal object SysUiPresentationOwner {
         current?.ownedRepresentedSlots() ?: emptySet()
 
     @Synchronized
+    @Synchronized
+    internal fun homeClaimed(): Boolean =
+        current?.hasPresentationClaim() == true
+
     internal fun homeCarrierVisible(): Boolean =
         current?.isNativeCarrierPresentationVisible() == true
 
