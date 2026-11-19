@@ -4,6 +4,8 @@
 
 package com.chaners.guiyuan.ui.components.glass
 
+import top.yukonga.miuix.kmp.glass.navigationDragTarget
+
 import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.dynamicGlassMaterial
