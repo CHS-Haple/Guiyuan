@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -32,6 +33,19 @@ class ShadeEvidenceGateTest {
         assertNull(gate.observe(owner, 0.8f))
         gate.reset()
         assertTrue(gate.observe(owner, 0f) != null)
+    }
+
+    @Test
+    fun appearanceEventsAreBatchedByNativeBooleanTransitions() {
+        val gate = ShadeEvidenceGate()
+        val callback = Any()
+        assertTrue(gate.observeAppearance(callback, false))
+        assertFalse(gate.observeAppearance(callback, false))
+        assertTrue(gate.observeAppearance(callback, true))
+        assertFalse(gate.observeAppearance(callback, true))
+        assertTrue(gate.observeAppearance(Any(), true))
+        gate.reset()
+        assertTrue(gate.observeAppearance(callback, true))
     }
 
     @Test
