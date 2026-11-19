@@ -42,6 +42,7 @@ import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarDefaults
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -89,57 +90,71 @@ internal fun MiniNavigationPreview(
         } else {
             0.dp
         }
-    val floatingModifier =
-        if (miuixBackdrop != null && !os4Glass) {
-            Modifier.floatingNavMaterial(
-                backdrop = miuixBackdrop,
-                dark = dark,
-                style = style,
-            )
-        } else {
-            Modifier
-        }
-
     val standardNav = !floating || (os4Glass && miuixBackdrop == null)
 
     if (os4Glass && miuixBackdrop != null) {
-        // The glass bar can grow for captions. Let the preview measure its actual
-        // height and keep its shadow inside the preview surface.
-        Box(modifier = Modifier.fillMaxWidth()) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .layerBackdrop(miuixBackdrop),
-            ) {
-                MiniPreviewBackdropContent()
-            }
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Spacer(modifier = Modifier.height(20.dp))
-                GlassNavigationBar(
-                    items = listOf(
-                        GlassNavigationItem(MiuixIcons.Normal.Home, stringResource(R.string.nav_home).takeIf { content == NavContent.IconAndText }),
-                        GlassNavigationItem(MiuixIcons.Normal.Tune, stringResource(R.string.nav_features).takeIf { content == NavContent.IconAndText }),
-                        GlassNavigationItem(MiuixIcons.Normal.Settings, stringResource(R.string.nav_settings).takeIf { content == NavContent.IconAndText }),
-                    ),
-                    selectedIndex = 2,
-                    onSelect = {},
-                    backdrop = miuixBackdrop,
-                    interactive = false,
-                    defaultWindowInsetsPadding = false,
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 24.dp),
-                )
-            }
-        }
+        MiniGlassNavigationPreview(content, miuixBackdrop)
         return
     }
 
+    MiniPreviewFrame(
+        miuixBackdrop = miuixBackdrop,
+        liquidBackdrop = liquidBackdrop,
+        height = MiniNavigationViewportHeight + liquidBottomSpace,
+        bottomPadding = if (standardNav) 0.dp else liquidBottomSpace,
+    ) {
+        when {
+            standardNav -> MiniStandardNavigationPreview(content, os4Glass)
+            liquidBackdrop != null -> MiniLiquidNavigationPreview(content, liquidMode, dark, liquidBackdrop)
+            else -> MiniFloatingNavigationPreview(content, uiStyle, style, dark, miuixBackdrop, os4Glass)
+        }
+    }
+}
+
+
+@Composable
+private fun MiniGlassNavigationPreview(content: NavContent, miuixBackdrop: LayerBackdrop) {
+    // The glass bar can grow for captions. Let the preview measure its actual
+    // height and keep its shadow inside the preview surface.
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .layerBackdrop(miuixBackdrop),
+        ) {
+            MiniPreviewBackdropContent()
+        }
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Spacer(modifier = Modifier.height(20.dp))
+            GlassNavigationBar(
+                items = listOf(
+                    GlassNavigationItem(MiuixIcons.Normal.Home, stringResource(R.string.nav_home).takeIf { content == NavContent.IconAndText }),
+                    GlassNavigationItem(MiuixIcons.Normal.Tune, stringResource(R.string.nav_features).takeIf { content == NavContent.IconAndText }),
+                    GlassNavigationItem(MiuixIcons.Normal.Settings, stringResource(R.string.nav_settings).takeIf { content == NavContent.IconAndText }),
+                ),
+                selectedIndex = 2,
+                onSelect = {},
+                backdrop = miuixBackdrop,
+                interactive = false,
+                defaultWindowInsetsPadding = false,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 24.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun MiniPreviewFrame(
+    miuixBackdrop: LayerBackdrop?,
+    liquidBackdrop: LayerBackdrop?,
+    height: Dp,
+    bottomPadding: Dp,
+    content: @Composable () -> Unit,
+) {
     Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(MiniNavigationViewportHeight + liquidBottomSpace),
+        modifier = Modifier.fillMaxWidth().height(height),
         contentAlignment = Alignment.TopCenter,
     ) {
         Box(
@@ -163,98 +178,125 @@ internal fun MiniNavigationPreview(
         ) {
             MiniPreviewBackdropContent()
         }
-
-        if (!standardNav) {
-            MiniNavViewport(bottomPadding = liquidBottomSpace) {
-                if (liquidBackdrop != null) {
-                    val labels =
-                        listOf(
-                            stringResource(R.string.nav_home),
-                            stringResource(R.string.nav_features),
-                            stringResource(R.string.nav_settings),
-                        )
-                    val icons =
-                        listOf(
-                            MiuixIcons.Normal.Home,
-                            MiuixIcons.Normal.Tune,
-                            MiuixIcons.Normal.Settings,
-                        )
-                    LiquidNavBar(
-                        selectedIndex = { 2 },
-                        onSelected = {},
-                        backdrop = liquidBackdrop,
-                        tabsCount = labels.size,
-                        dark = dark,
-                        mode = liquidMode,
-                        interactive = false,
-                        modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
-                    ) {
-                        labels.indices.forEach { index ->
-                            LiquidNavEntry(
-                                contentMode = content,
-                                selected = index == 2,
-                                onClick = {},
-                                icon = icons[index],
-                                label = labels[index],
-                                interactive = false,
-                            )
-                        }
-                    }
-                } else {
-                    val previewInteractive = uiStyle != UiStyle.OS4
-                    FloatingNavigationBar(
-                        modifier = if (previewInteractive) floatingModifier else floatingModifier.clearAndSetSemantics {},
-                        color =
-                            if (miuixBackdrop != null) {
-                                Color.Transparent
-                            } else {
-                                MiuixTheme.colorScheme.surfaceContainer
-                            },
-                        defaultWindowInsetsPadding = false,
-                    ) {
-                        NavContentItem(
-                            content = content,
-                            selected = false,
-                            onClick = {},
-                            icon = MiuixIcons.Normal.Home,
-                            label = stringResource(R.string.nav_home),
-                            interactive = previewInteractive,
-                        )
-                        NavContentItem(
-                            content = content,
-                            selected = false,
-                            onClick = {},
-                            icon = MiuixIcons.Normal.Tune,
-                            label = stringResource(R.string.nav_features),
-                            interactive = previewInteractive,
-                        )
-                        NavContentItem(
-                            content = content,
-                            selected = true,
-                            onClick = {},
-                            icon = MiuixIcons.Normal.Settings,
-                            label = stringResource(R.string.nav_settings),
-                            interactive = previewInteractive,
-                        )
-                    }
-                }
-            }
-        } else {
-            val showLabel = !os4Glass || content == NavContent.IconAndText
-            MiniNavViewport {
-                NavigationBar(
-                    color = MiuixTheme.colorScheme.surface,
-                    showDivider = true,
-                    defaultWindowInsetsPadding = false,
-                ) {
-                    MiniStandardNavigationItem(selected = false, icon = MiuixIcons.Normal.Home, showLabel = showLabel)
-                    MiniStandardNavigationItem(selected = false, icon = MiuixIcons.Normal.Tune, showLabel = showLabel)
-                    MiniStandardNavigationItem(selected = true, icon = MiuixIcons.Normal.Settings, showLabel = showLabel)
-                }
-            }
+        MiniNavViewport(bottomPadding = bottomPadding) {
+            content()
         }
     }
 }
+
+@Composable
+private fun MiniLiquidNavigationPreview(
+    content: NavContent,
+    liquidMode: LiquidMode,
+    dark: Boolean,
+    liquidBackdrop: LayerBackdrop,
+) {
+    val labels =
+        listOf(
+            stringResource(R.string.nav_home),
+            stringResource(R.string.nav_features),
+            stringResource(R.string.nav_settings),
+        )
+    val icons =
+        listOf(
+            MiuixIcons.Normal.Home,
+            MiuixIcons.Normal.Tune,
+            MiuixIcons.Normal.Settings,
+        )
+    LiquidNavBar(
+        selectedIndex = { 2 },
+        onSelected = {},
+        backdrop = liquidBackdrop,
+        tabsCount = labels.size,
+        dark = dark,
+        mode = liquidMode,
+        interactive = false,
+        modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
+    ) {
+        labels.indices.forEach { index ->
+            LiquidNavEntry(
+                contentMode = content,
+                selected = index == 2,
+                onClick = {},
+                icon = icons[index],
+                label = labels[index],
+                interactive = false,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MiniFloatingNavigationPreview(
+    content: NavContent,
+    uiStyle: UiStyle,
+    style: NavStyle,
+    dark: Boolean,
+    miuixBackdrop: LayerBackdrop?,
+    os4Glass: Boolean,
+) {
+    val floatingModifier =
+        if (miuixBackdrop != null && !os4Glass) {
+            Modifier.floatingNavMaterial(
+                backdrop = miuixBackdrop,
+                dark = dark,
+                style = style,
+            )
+        } else {
+            Modifier
+        }
+    val previewInteractive = uiStyle != UiStyle.OS4
+    FloatingNavigationBar(
+        modifier = if (previewInteractive) floatingModifier else floatingModifier.clearAndSetSemantics {},
+        color =
+            if (miuixBackdrop != null) {
+                Color.Transparent
+            } else {
+                MiuixTheme.colorScheme.surfaceContainer
+            },
+        defaultWindowInsetsPadding = false,
+    ) {
+        NavContentItem(
+            content = content,
+            selected = false,
+            onClick = {},
+            icon = MiuixIcons.Normal.Home,
+            label = stringResource(R.string.nav_home),
+            interactive = previewInteractive,
+        )
+        NavContentItem(
+            content = content,
+            selected = false,
+            onClick = {},
+            icon = MiuixIcons.Normal.Tune,
+            label = stringResource(R.string.nav_features),
+            interactive = previewInteractive,
+        )
+        NavContentItem(
+            content = content,
+            selected = true,
+            onClick = {},
+            icon = MiuixIcons.Normal.Settings,
+            label = stringResource(R.string.nav_settings),
+            interactive = previewInteractive,
+        )
+    }
+}
+
+@Composable
+private fun MiniStandardNavigationPreview(content: NavContent, os4Glass: Boolean) {
+    val showLabel = !os4Glass || content == NavContent.IconAndText
+    NavigationBar(
+        color = MiuixTheme.colorScheme.surface,
+        showDivider = true,
+        defaultWindowInsetsPadding = false,
+    ) {
+        MiniStandardNavigationItem(selected = false, icon = MiuixIcons.Normal.Home, showLabel = showLabel)
+        MiniStandardNavigationItem(selected = false, icon = MiuixIcons.Normal.Tune, showLabel = showLabel)
+        MiniStandardNavigationItem(selected = true, icon = MiuixIcons.Normal.Settings, showLabel = showLabel)
+    }
+}
+
 
 @Composable
 private fun MiniNavViewport(
