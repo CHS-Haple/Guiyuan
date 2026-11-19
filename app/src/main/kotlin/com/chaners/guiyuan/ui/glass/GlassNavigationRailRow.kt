@@ -3,6 +3,7 @@
 
 package com.chaners.guiyuan.ui.glass
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
+import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
 
 import top.yukonga.miuix.kmp.glass.GlassMotion
 
@@ -250,9 +251,9 @@ private fun RailRowContent(
                 )
             }
         }
-        if (identity.item.label != null) {
+        identity.item.label?.let { label ->
             Text(
-                text = identity.item.label,
+                text = label,
                 modifier = Modifier.layout { measurable, constraints ->
                     val placeable = measurable.measure(
                         constraints.copy(maxWidth = maxOf(constraints.maxWidth, frame.geometry.labelMinWidth)),

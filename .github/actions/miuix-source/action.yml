@@ -7,7 +7,7 @@ runs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: compose-miuix-ui/miuix
-        ref: 670cf5975c157b64d625d94deca7e7c21bd4a7b6
+        ref: d27cbb0b375912cdf42670553fdb564d8ff7fc23
         path: miuix-upstream
         persist-credentials: false
     - name: Verify exact source revision and Glass integration files

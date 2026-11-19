@@ -156,7 +156,7 @@ import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import com.chaners.guiyuan.ui.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassMotion
 import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
-import com.chaners.guiyuan.ui.glass.GlassNavigationRailDefaults
+import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import com.chaners.guiyuan.ui.glass.GlassIconButton
 import top.yukonga.miuix.kmp.material.GlassShadows
 import com.chaners.guiyuan.ui.glass.popupShadowOutsets

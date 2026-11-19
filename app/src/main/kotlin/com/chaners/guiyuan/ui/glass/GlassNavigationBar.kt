@@ -499,9 +499,9 @@ fun GlassNavigationBar(
                                         tint = tint,
                                     )
                                 }
-                                if (item.label != null) {
+                                item.label?.let { label ->
                                     Text(
-                                        text = item.label,
+                                        text = label,
                                         style = MiuixTheme.textStyles.footnote2.copy(fontSize = labelSize),
                                         color = tint,
                                         textAlign = TextAlign.Center,
