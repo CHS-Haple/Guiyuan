@@ -355,14 +355,14 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Install Android API 37
+      - name: Install Android API 37.2
         if: steps.scope.outputs.run_android == 'true'
         shell: bash
         run: |
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" --channel=3 "platforms;android-37.0" "build-tools;37.0.0"
+          "$SDKMANAGER" --channel=3 "platforms;android-37.2" "build-tools;37.0.0"
 
       - name: Set up source-matched Gradle with trusted cache
         if: steps.scope.outputs.run_android == 'true'
@@ -470,7 +470,7 @@ jobs:
         run: |
           set -euo pipefail
           base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
-          if git diff --quiet "$base" "$HEAD_SHA" -- gradle.properties app/build.gradle.kts app/src/main/kotlin/top/yukonga/miuix/kmp/glass app/src/main/kotlin/com/chaners/guiyuan/ui/components/UiOverlayDialog.kt app/src/main/kotlin/com/chaners/guiyuan/ui/components/UiOverlayBottomSheet.kt; then
+          if git diff --quiet "$base" "$HEAD_SHA" -- gradle.properties app/build.gradle.kts app/src/main/kotlin/com/chaners/guiyuan/ui/glass app/src/main/kotlin/com/chaners/guiyuan/ui/components/UiOverlayDialog.kt app/src/main/kotlin/com/chaners/guiyuan/ui/components/UiOverlayBottomSheet.kt; then
             echo "MIUIX dependencies and Glass surfaces unchanged; skip published ABI check."
             exit 0
           fi

@@ -80,7 +80,6 @@ internal object DiagLogReader {
         val result: RootShell.Result,
         val lines: List<String>,
         val sessionLines: List<String>,
-        val previousSessionLines: List<String> = emptyList(),
         val clearedAt: LocalDateTime? = null,
         val liveSystemUiPids: Set<String> = emptySet(),
     )
@@ -102,7 +101,6 @@ internal object DiagLogReader {
                 result = lspResult,
                 lines = lspLines,
                 sessionLines = latestSession(lspLines),
-                previousSessionLines = previousSession(lspLines),
                 clearedAt = boundary,
             )
         } else {
@@ -118,7 +116,6 @@ internal object DiagLogReader {
                 result = logcatResult,
                 lines = logcatLines,
                 sessionLines = latestSession(logcatLines),
-                previousSessionLines = previousSession(logcatLines),
                 clearedAt = boundary,
             )
         }
@@ -154,46 +151,6 @@ internal object DiagLogReader {
                 }
             }
             .toList()
-
-    // Detailed exports retain the immediately preceding generation, which may
-    // contain the failed reload that a later successful reload would obscure.
-    // This is a read-only, on-demand selection of already collected log lines.
-    internal fun previousSession(lines: List<String>): List<String> {
-        if (lines.isEmpty()) return emptyList()
-        val events = lines.map(DiagProtocol::parse)
-        val currentId =
-            latestSession(lines)
-                .firstNotNullOfOrNull { line ->
-                    DiagProtocol.parse(line)?.fields?.get(SESSION_ID_FIELD)
-                } ?: return emptyList()
-        val currentStart =
-            events.indexOfFirst { event -> event?.fields?.get(SESSION_ID_FIELD) == currentId }
-        if (currentStart <= 0) return emptyList()
-
-        val priorId =
-            (currentStart - 1 downTo 0)
-                .firstNotNullOfOrNull { index ->
-                    events[index]?.takeIf { event ->
-                        (event.event == "module.loaded" || event.event == "module.reloaded") &&
-                            event.fields[SESSION_ID_FIELD] != currentId
-                    }?.fields?.get(SESSION_ID_FIELD)
-                } ?: return emptyList()
-        val priorStart =
-            events.indexOfFirst { event -> event?.fields?.get(SESSION_ID_FIELD) == priorId }
-        if (priorStart < 0 || priorStart >= currentStart) return emptyList()
-        val priorPid = pidOf(lines[priorStart])
-
-        return lines.indices.asSequence()
-            .filter { index ->
-                if (index < priorStart) return@filter false
-                val taggedId = events[index]?.fields?.get(SESSION_ID_FIELD)
-                taggedId == priorId ||
-                    (index < currentStart && taggedId == null &&
-                        (priorPid == null || pidOf(lines[index]) == priorPid))
-            }
-            .map(lines::get)
-            .toList()
-    }
 
     internal fun latestSession(lines: List<String>): List<String> {
         if (lines.isEmpty()) {

@@ -173,41 +173,6 @@ class DiagLogReaderSessionTest {
     }
 
     @Test
-    fun precedingSessionKeepsOldReloadEvidenceWithoutMixingNewGeneration() {
-        fun event(second: Int, kind: String, session: String): String =
-            "10-11 19:15:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
-                DiagProtocol.format(
-                    event = kind,
-                    component = if (kind.startsWith(EVENT_MODULE_PREFIX)) COMPONENT_MODULE else COMPONENT_HOT_RELOAD,
-                    fields = mapOf(FIELD_SESSION_ID to session),
-                )
-
-        val oldStart = event(30, EVENT_MODULE_LOADED, SESSION_OLD)
-        val oldFailure = event(31, EVENT_HOT_RELOAD_COMPLETE, SESSION_OLD)
-        val oldRaw = "10-11 19:15:31.100 2200 2200 I CombinedStatus: old-native-fallback"
-        val newBind = event(32, EVENT_DIAGNOSTICS_BIND, SESSION_NEW)
-        val newStart = event(33, EVENT_MODULE_RELOADED, SESSION_NEW)
-        val oldTeardown = event(34, EVENT_RUNTIME_TEARDOWN, SESSION_OLD)
-        val newComplete = event(35, EVENT_HOT_RELOAD_COMPLETE, SESSION_NEW)
-        val lines = listOf(oldStart, oldFailure, oldRaw, newBind, newStart, oldTeardown, newComplete)
-
-        assertEquals(
-            listOf(oldStart, oldFailure, oldRaw, oldTeardown),
-            DiagLogReader.previousSession(lines),
-        )
-        assertEquals(
-            listOf(newBind, newStart, newComplete),
-            DiagLogReader.latestSession(lines),
-        )
-    }
-
-    @Test
-    fun precedingSessionIsAbsentForFirstSystemUiGeneration() {
-        val first = logcatSessionEvent("20:17", 31, EVENT_MODULE_LOADED, STATE_READY, SESSION_OLD)
-        assertEquals(emptyList<String>(), DiagLogReader.previousSession(listOf(first)))
-    }
-
-    @Test
     fun hotReloadKeepsNewestStartedSessionDespiteTrailingOldGenerationEvents() {
         fun event(second: Int, kind: String, session: String): String =
             "[ 2026-10-11T19:15:${second.toString().padStart(2, '0')}.000 " +

@@ -6,7 +6,6 @@ import com.chaners.guiyuan.settings.DiagLevel
 internal object DiagReport {
     private const val DETAILED_LINES = 1500
     private const val RELEASE_LINES = 300
-    private const val PREVIOUS_SESSION_LINES = 250
 
     internal fun exportLineLimit(level: DiagLevel): Int =
         if (
@@ -43,7 +42,6 @@ internal object DiagReport {
                 appendLine()
             }
             appendRuntimeLog(log, logLines, omitted)
-            if (limit == DETAILED_LINES) appendPreviousSession(log)
             appendLine("[Report]")
             appendLine("generatedAt=" + snapshot.capturedAt)
         }
@@ -151,19 +149,6 @@ internal object DiagReport {
         } else {
             logLines.forEach(::appendLine)
         }
-        appendLine()
-    }
-
-    private fun StringBuilder.appendPreviousSession(log: DiagLogReader.Snapshot) {
-        val previous = log.previousSessionLines
-        if (previous.isEmpty()) return
-        val selected = previous.takeLast(PREVIOUS_SESSION_LINES)
-        appendLine("[Previous runtime session]")
-        appendLine("scope=preceding-systemui-generation")
-        appendLine("lines=" + selected.size)
-        val omitted = previous.size - selected.size
-        if (omitted > 0) appendLine("omittedEarlierLines=" + omitted)
-        selected.forEach(::appendLine)
         appendLine()
     }
 

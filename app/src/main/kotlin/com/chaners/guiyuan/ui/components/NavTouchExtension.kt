@@ -39,6 +39,9 @@ internal fun Modifier.navTouchExtension(
     itemCount: Int,
     rtl: Boolean,
     onSelect: (Int) -> Unit,
+    trailingActionWidth: Dp = 0.dp,
+    trailingActionSize: Dp = 0.dp,
+    onTrailingAction: (() -> Unit)? = null,
 ): Modifier {
     if (itemCount <= 0) return this
 
@@ -47,38 +50,85 @@ internal fun Modifier.navTouchExtension(
     if (extension == 0.dp) return this
 
     val select = rememberUpdatedState(onSelect)
-    return this.pointerInput(bottomPadding, extension, horizontalPadding, contentPadding, itemCount, rtl) {
+    val trailingTap = rememberUpdatedState(onTrailingAction)
+    return this.pointerInput(
+        bottomPadding, extension, horizontalPadding, contentPadding, itemCount, rtl,
+        trailingActionWidth, trailingActionSize,
+    ) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false)
-            val left = horizontalPadding.toPx()
-            val right = size.width - left
+            val (left, right) = navTouchHorizontalBounds(
+                width = size.width.toFloat(),
+                padding = horizontalPadding.toPx(),
+                trailingActionWidth = trailingActionWidth.toPx(),
+                rtl = rtl,
+            )
             val top = size.height - bottomPadding.toPx()
             val bottom = top + extension.toPx()
             val start = down.position
-            val up =
-                if (start.x >= left && start.x < right &&
-                    start.y >= top && start.y < bottom
-                ) awaitShortTapUp(down) else null
-            val index =
-                up?.takeIf { change ->
-                    change.position.x >= left && change.position.x < right &&
-                        change.position.y >= top && change.position.y < bottom
-                }?.let { change ->
-                    navTouchIndex(
-                        x = change.position.x,
-                        left = left,
-                        right = right,
-                        contentPadding = contentPadding.toPx(),
-                        count = itemCount,
-                        rtl = rtl,
-                    )
+            if (start.y >= top && start.y < bottom) {
+                val bounds = left to right
+                val reserved = trailingActionWidth.toPx()
+                val actionSize = trailingActionSize.toPx()
+                val startIndex = navTouchIndex(
+                    start.x, left, right, contentPadding.toPx(), itemCount, rtl,
+                )
+                val startedOnAction = trailingTap.value != null &&
+                    navTouchActionHit(start.x, bounds, reserved, actionSize, rtl)
+                if (startIndex != null || startedOnAction) {
+                    val up = awaitShortTapUp(down)
+                    if (up != null && up.position.y >= top && up.position.y < bottom) {
+                        if (startedOnAction) {
+                            if (navTouchActionHit(up.position.x, bounds, reserved, actionSize, rtl)) {
+                                trailingTap.value?.let { action ->
+                                    up.consume()
+                                    action()
+                                }
+                            }
+                        } else if (startIndex != null && navTouchIndex(
+                                up.position.x, left, right, contentPadding.toPx(), itemCount, rtl,
+                            ) == startIndex
+                        ) {
+                            up.consume()
+                            select.value(startIndex)
+                        }
+                    }
                 }
-            if (up != null && index != null) {
-                up.consume()
-                select.value(index)
             }
         }
     }
+}
+
+/** Exclude the independent navigation action from the destination-only bottom hit strip. */
+internal fun navTouchHorizontalBounds(
+    width: Float,
+    padding: Float,
+    trailingActionWidth: Float,
+    rtl: Boolean,
+): Pair<Float, Float> {
+    val exclusion = trailingActionWidth.coerceAtLeast(0f)
+    return if (rtl) {
+        (padding + exclusion) to (width - padding)
+    } else {
+        padding to (width - padding - exclusion)
+    }
+}
+
+/** The trailing control shares the safe tap strip, but never the destination hit region. */
+internal fun navTouchActionHit(
+    x: Float,
+    destinationBounds: Pair<Float, Float>,
+    reservedWidth: Float,
+    actionSize: Float,
+    rtl: Boolean,
+): Boolean {
+    if (actionSize <= 0f || reservedWidth < actionSize ||
+        destinationBounds.second <= destinationBounds.first
+    ) return false
+    val edge = if (rtl) destinationBounds.first - reservedWidth
+        else destinationBounds.second + reservedWidth
+    return if (rtl) x >= edge && x < edge + actionSize
+    else x >= edge - actionSize && x < edge
 }
 
 internal fun navTouchExtensionHeight(bottomPadding: Dp, gestureInset: Dp): Dp =

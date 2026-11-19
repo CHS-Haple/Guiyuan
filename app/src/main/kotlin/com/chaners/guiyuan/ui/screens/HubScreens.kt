@@ -13,6 +13,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
+import top.yukonga.miuix.kmp.glass.glassSearchBarTransition
+import top.yukonga.miuix.kmp.glass.rememberGlassSearchBarAlpha
 import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Icon
@@ -153,13 +155,13 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
-import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import com.chaners.guiyuan.ui.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassMotion
-import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
+import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
-import top.yukonga.miuix.kmp.glass.GlassIconButton
-import top.yukonga.miuix.kmp.glass.GlassShadows
-import top.yukonga.miuix.kmp.glass.popupShadowOutsets
+import com.chaners.guiyuan.ui.glass.GlassIconButton
+import top.yukonga.miuix.kmp.material.GlassShadows
+import com.chaners.guiyuan.ui.glass.popupShadowOutsets
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -178,6 +180,8 @@ internal fun FeaturesScreen(
     bottomContentPadding: Dp,
     visible: Boolean,
     snackbarState: SnackbarHostState,
+    search: PageSearch,
+    searchInNavigationBar: Boolean,
     onNavigate: (AppRoute) -> Unit,
 ) {
     val context = LocalContext.current
@@ -293,7 +297,6 @@ internal fun FeaturesScreen(
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showBatteryColorSheet by rememberSaveable { mutableStateOf(false) }
 
-    val search = rememberPageSearch()
     LaunchedEffect(visible) {
         if (!visible) search.close()
     }
@@ -320,6 +323,7 @@ internal fun FeaturesScreen(
         title = stringResource(R.string.features_title),
         bottomContentPadding = bottomContentPadding,
         search = search,
+        searchInNavigationBar = searchInNavigationBar,
         overlay = {
             val selectedImport = pendingImport
             UiOverlayDialog(
@@ -1422,6 +1426,7 @@ private fun HubPage(
     title: String,
     bottomContentPadding: Dp,
     search: PageSearch? = null,
+    searchInNavigationBar: Boolean = false,
     overlay: @Composable () -> Unit = {},
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
@@ -1452,13 +1457,15 @@ private fun HubPage(
     val searchExpanded = os4 && search?.active == true
     val searchMotion = rememberOs4SearchMotion(searchExpanded)
     var revealTitleOnExit by remember { mutableStateOf(false) }
+    // Navigation may open search directly; clear any title-reveal flag from its previous exit.
+    LaunchedEffect(searchExpanded) { if (searchExpanded) revealTitleOnExit = false }
     val titleReveal = rememberOs4TitleReveal(
         expanded = searchExpanded,
         exitNeedsReveal = revealTitleOnExit,
         motion = searchMotion,
         collapsed = browsingScroll.state.collapsedFraction >= 1f,
     )
-    val barAlpha = rememberOs4BarAlpha(searchExpanded)
+    val barAlpha = rememberGlassSearchBarAlpha(searchExpanded)
     val os3SearchActionAlpha by animateFloatAsState(
         targetValue = if (!os4 && search?.active == true) 0f else 1f,
         animationSpec = tween(150),
@@ -1477,7 +1484,7 @@ private fun HubPage(
         with(density) { popupShadowOutsets(GlassShadows.Regular) }
     }
     val searchAction: @Composable RowScope.() -> Unit = {
-        if (search != null) {
+        if (search != null && !searchInNavigationBar) {
             val label = stringResource(R.string.feature_search)
             val ready = !search.active && (!os4 || !searchMotion.mounted)
             TooltipBox(text = label, enabled = ready) {
@@ -1573,6 +1580,13 @@ private fun HubPage(
             if (os4) {
                 Box(Modifier.fillMaxWidth()) {
                     GlassTopAppBar(
+                        // The published transition owns foreground scale/blur/fade; the
+                        // independently placed search action keeps its own opacity because
+                        // the native title layout still clips glass button shadows.
+                        contentModifier = Modifier.glassSearchBarTransition(
+                            expanded = searchExpanded,
+                            barAlpha = { barAlpha.value },
+                        ),
                         progressiveBlur = LocalTopBarProgressiveBlur.current,
                         title = if (searchMotion.mounted && searchExpanded) "" else title,
                         titleAlpha = { titleReveal.value * railProgress() },
@@ -1582,7 +1596,7 @@ private fun HubPage(
                         backdrop = topBarBackdrop,
                         scrollBehavior = scrollBehavior,
                         actions = searchAction,
-                        unclippedActions = search != null,
+                        unclippedActions = search != null && !searchInNavigationBar,
                     )
                     if (search != null) {
                         // An overlaid search row keeps the bar's measured height stable.

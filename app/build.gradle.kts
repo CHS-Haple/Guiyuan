@@ -51,7 +51,7 @@ android {
 
     compileSdk {
         version = release(37) {
-            minorApiLevel = 0
+            minorApiLevel = 2
         }
     }
 
@@ -133,9 +133,7 @@ android {
             initWith(getByName("release"))
             matchingFallbacks += listOf("release")
             isDebuggable = false
-            // Temporary source-branch-only diagnostic candidate for landscape native evidence.
-            // Do not propagate this override to dev/main or ordinary Canary builds.
-            buildConfigField("boolean", deepDiagnosticsBuildField, "true")
+            // Keep routine diagnostics identical to Release; Canary validates candidate code, not extra probes.
             buildConfigField("String", "BUILD_CHANNEL", "\"canary\"")
         }
     }
@@ -171,6 +169,7 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion")
     // Both OS4 UI source sets reuse the same upstream Glass icons from the pinned dependency.
     implementation("top.yukonga.miuix.kmp:miuix-glass-icons-android:$miuixVersion")
+    implementation("top.yukonga.miuix.kmp:miuix-glass-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-material-android:$miuixVersion")

@@ -238,7 +238,6 @@ class GyModule : XposedModule() {
                 classLoader = param.classLoader,
                 source = "coldStart",
             )
-            installShadeEvidence(param.classLoader, "coldStart")
             installIslandSource(
                 classLoader = param.classLoader,
                 source = "coldStart",
@@ -487,7 +486,6 @@ class GyModule : XposedModule() {
                 classLoader = classLoader,
                 source = "hotReload",
             )
-            installShadeEvidence(classLoader, "hotReload")
             installIslandSource(
                 classLoader = classLoader,
                 source = "hotReload",
@@ -711,10 +709,6 @@ class GyModule : XposedModule() {
                     (restored.controlCenterHomeEligible ?: "unknown"),
                 "controlCenterFakePrearm" to controlCenterFakeRestore,
                 "tintTransfer" to if (transferredTint != null) "restored" else "native-fallback",
-                "homeGeometry" to
-                    if (deepDiagnosticsEnabled) HomeRenderSession.geometryDiagnostic() else null,
-                "ccGeometry" to
-                    if (deepDiagnosticsEnabled) CcRenderSession.geometryDiagnostic() else null,
             )
             logDiagnostic(
                 level = Log.INFO,
@@ -729,6 +723,7 @@ class GyModule : XposedModule() {
             )
         }.onFailure { error ->
             retireFailedHostAttach(capture.host, error)
+            SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(capture.host)
             SysUiHostRegistry.discardIfCurrent(capture.host)
             reportHotReloadFailure(error)
             log(Log.ERROR, TAG, "Hot reload main-thread restore failed", error)
@@ -990,39 +985,6 @@ class GyModule : XposedModule() {
                 "source" to source,
             )
             log(Log.ERROR, TAG, "Island motion source installation failed", error)
-        }
-    }
-
-    private fun installShadeEvidence(classLoader: ClassLoader, source: String) {
-        runCatching {
-            SysUiShadeEvidence.install(
-                module = this,
-                classLoader = classLoader,
-                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
-                onEvent = { event ->
-                    if (!retiredForHotReload) logRuntimeEvent(event)
-                },
-            )
-        }.onSuccess {
-            logDiagnostic(
-                level = Log.INFO,
-                event = "source.install",
-                component = "shadeEvidence",
-                state = "ready",
-                "source" to source,
-                "behavior" to "read-only-bounded-notification-header",
-            )
-        }.onFailure { error ->
-            SysUiHotReload.rethrowFatal(error)
-            logDiagnostic(
-                level = Log.WARN,
-                event = "source.install",
-                component = "shadeEvidence",
-                state = "unavailable",
-                "source" to source,
-                "reason" to (error.message ?: error.javaClass.simpleName),
-                "fallback" to "native-unchanged",
-            )
         }
     }
 
@@ -1655,23 +1617,12 @@ class GyModule : XposedModule() {
 
     private fun onCcProjectionReadyChanged(ready: Boolean) {
         CcTransitionOwner.onProjectionReadinessChanged(ready)
-        if (controlCenterSceneVisible) {
-            // Projected owner is already visible when ready=true. On the reverse
-            // edge Home is restored before the projected owner is removed.
-            HomeRenderSession.onControlCenterAuthorityChanged(!ready)
+        if (!controlCenterSceneVisible) {
+            return
         }
-        if (deepDiagnosticsEnabled) {
-            logDiagnostic(
-                level = Log.INFO,
-                event = "projection.readinessSnapshot",
-                component = "controlCenterProjection",
-                state = if (ready) "ready" else "native",
-                "ccVisible" to controlCenterSceneVisible,
-                "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
-                "fakeGeometry" to CcRenderSession.geometryDiagnostic(),
-                "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
-            )
-        }
+        // Projected owner is already visible when ready=true. On the reverse
+        // edge Home is restored before the projected owner is removed.
+        HomeRenderSession.onControlCenterAuthorityChanged(!ready)
     }
 
     private fun onCcRuntimeFailure(error: Throwable) {
@@ -3903,19 +3854,13 @@ class GyModule : XposedModule() {
 
         release { CcTransitionOwner.detach("hotReload-oldGeneration") }
         release { CcRenderSession.detach(source = "hotReload-oldGeneration") }
-        // A verified same-host Hot Reload must not briefly reflow native
-        // network icons into the expanded layout: native onLayout drives a
-        // Folme MOVE that can outlive the next generation's compact cutover.
-        // The presentation owner is still retired below; this only avoids
-        // its duplicate readiness-loss layout request during the handoff.
+        // A verified in-place transfer must not request an expanded native
+        // icon layout before the next compact presentation can reclaim it.
         release { HomeRenderSession.detach(notifyReadinessOnStop = false) }
         release { KeyguardRenderSession.detach() }
         release { KeyguardRenderSession.detachAod() }
         var restoredViews: Int? = null
         release {
-            // Restore the owned clip/padding state and retire every listener,
-            // without producing an intermediate unmasked native layout pass.
-            // The next generation requests the compact native layout itself.
             restoredViews = SysUiPresentationOwner.releaseGenerationForHotReload(
                 homeRequestLayout = false,
             )
@@ -3929,7 +3874,6 @@ class GyModule : XposedModule() {
         release { PresentationStore.reset() }
         release { SysUiIslandSource.resetRuntimeState() }
         release { SysUiCcSource.resetRuntimeState() }
-        release { SysUiShadeEvidence.resetRuntimeState() }
         release {
             logDiagnostic(
                 level = if (errors.isEmpty()) Log.INFO else Log.ERROR,
@@ -4121,10 +4065,8 @@ class GyModule : XposedModule() {
                 )
             }
 
-        // During an in-place Hot Reload, the first native layout must already
-        // see the compact Home slot exclusion. The renderer can report readiness
-        // only after its own native layout probe, which otherwise runs too late.
-        // The same main-thread attach either commits the renderer or rolls back.
+        // Native layout must see the represented Home slots excluded before
+        // the renderer's first layout probe, not only after ownerReady=true.
         val homePrearmed =
             if (
                 SysUiHotReload.shouldPrearmHome(
@@ -4194,8 +4136,7 @@ class GyModule : XposedModule() {
             )
         }
 
-        // If no presentation is committed within this same main-thread attach,
-        // never leave a prearmed native mask without a rendered replacement.
+        // No renderer means no native mask can survive the same main-thread attach.
         if (homePrearmed && !rendererReadyOnAttach) {
             SysUiPresentationOwner.deactivate("hotReload-prearm-renderer-not-ready")
         }

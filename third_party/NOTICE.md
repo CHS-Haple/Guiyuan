@@ -20,8 +20,8 @@ Resolved dependency versions come from Gradle, not this document.
 ## Included and adapted source
 
 - **MIUIX Glass:** Adapted local source under
-  `app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` and
-  `app/src/os4Upstream/kotlin/top/yukonga/miuix/kmp/glass/`.
+  `app/src/main/kotlin/com/chaners/guiyuan/ui/glass/`.
+  Upstream `miuix-glass-android` is linked from the pinned MIUIX dependency;
   Source: [MIUIX Glass](https://github.com/compose-miuix-ui/miuix/pull/423).
   Apache-2.0; [license copy](miuix-glass/LICENSE) and
   [source attribution](miuix-glass/README.md).

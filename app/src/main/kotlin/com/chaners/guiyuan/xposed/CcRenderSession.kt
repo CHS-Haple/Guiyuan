@@ -174,9 +174,6 @@ internal object CcRenderSession {
     fun visualState(): String? = current?.visualState()
 
     @Synchronized
-    fun geometryDiagnostic(): String? = current?.geometryDiagnostic()
-
-    @Synchronized
     fun setRequestedVisible(visible: Boolean): Boolean =
         current?.setRequestedVisible(visible) ?: false
 

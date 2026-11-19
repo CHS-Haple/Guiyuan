@@ -140,9 +140,6 @@ internal object HomeRenderSession {
     fun isOverlayShown(): Boolean = current?.isOverlayShown() == true
 
     @Synchronized
-    fun geometryDiagnostic(): String? = current?.geometryDiagnostic()
-
-    @Synchronized
     fun setNativeHandoffActive(active: Boolean) {
         current?.setNativeHandoffActive(active)
     }
@@ -270,8 +267,6 @@ internal object HomeRenderSession {
         private val renderController = RenderController(probeView)
         private var readyLogged = false
         private var layoutLogged = false
-        private var geometrySamples = 0
-        private var lastSampledBounds: Rect? = null
         private var deferredStateLogged = false
         private var rejectedTintLogged = false
         private var nativeTintObserved = false
@@ -397,27 +392,6 @@ internal object HomeRenderSession {
         }
 
         fun isOverlayShown(): Boolean = probeView.isShown
-
-        fun geometryDiagnostic(): String =
-            "layoutReady=" + layoutReady +
-                ":modelReady=" + modelReady +
-                ":tintReady=" + tintReady +
-                ":ownerReady=" + lastPresentationReady +
-                ":host=" + viewBounds(host.get()) +
-                ":batteryArea=" + viewBounds(batteryContainer.get()) +
-                ":statusIcons=" + viewBounds(statusIcons.get()) +
-                ":carrier=" + viewBounds(batteryCarrier.get()) +
-                ":projection=" + viewBounds(probeView)
-
-        private fun viewBounds(view: View?): String {
-            if (view == null) return "none"
-            return view.javaClass.simpleName +
-                "@" + System.identityHashCode(view).toString(16) +
-                "(" + view.left + "," + view.top + "," + view.width + "," + view.height + ")" +
-                ":attached=" + view.isAttachedToWindow +
-                ":shown=" + view.isShown +
-                ":alpha=" + view.alpha
-        }
 
         fun setFeatureEnabled(enabled: Boolean) {
             if (Looper.myLooper() !== Looper.getMainLooper()) {
@@ -576,19 +550,6 @@ internal object HomeRenderSession {
             }
             probeView.layoutAtAnchor(anchorRect)
             layoutReady = true
-            if (isDetailedDiagnosticsEnabled()) {
-                val bounds = Rect(probeView.left, probeView.top, probeView.right, probeView.bottom)
-                if (lastSampledBounds != bounds) {
-                    lastSampledBounds = bounds
-                    if (geometrySamples < 8) {
-                        geometrySamples++
-                        val geometry = geometryDiagnostic()
-                        emitEvent {
-                            "homeRenderGeometry boundary=native-layout " + geometry
-                        }
-                    }
-                }
-            }
 
             if (!layoutLogged) {
                 layoutLogged = true
