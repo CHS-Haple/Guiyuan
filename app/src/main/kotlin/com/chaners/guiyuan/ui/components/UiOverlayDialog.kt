@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.LocalUiStyle
-import com.chaners.guiyuan.ui.glass.GlassDialog
+import top.yukonga.miuix.kmp.glass.GlassDialog
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 
 /** Only compiled against PR #423's matched DialogSurfaceScope ABI. */
