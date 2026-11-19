@@ -25,12 +25,10 @@ internal fun DrawScope.drawWave(
 ) {
     if (progress <= 0f || progress >= 1f) return
 
-    val radius = diameter * (0.55f + 1.15f * progress)
-    val feather = diameter * (0.20f + 0.07f * progress)
+    val radius = waveRadius(progress, diameter)
+    val feather = waveFeather(progress, diameter)
     val edge = radius + feather
-    val turn = phase - 0.55f * progress
-    val shift = diameter * 0.025f * progress
-    val front = center + Offset(cos(turn) * shift, sin(turn) * shift)
+    val front = center + waveDrift(progress, diameter, phase)
     val alpha = strength * sin((PI * progress).toFloat()).coerceAtLeast(0f)
 
     drawCircle(
@@ -51,7 +49,7 @@ internal fun DrawScope.drawWave(
 
 // The slight drift remains circular and gives text the same wavefront crossing time.
 private fun flowRadius(progress: Float, angle: Float, diameter: Float, phase: Float): Float {
-    val radius = diameter * (0.55f + 1.15f * progress)
+    val radius = waveRadius(progress, diameter)
     val shift = diameter * 0.025f * progress
     return radius + shift * cos(angle - (phase - 0.55f * progress))
 }
@@ -83,17 +81,12 @@ private fun DrawScope.drawGlint(
     strength: Float,
 ) {
     if (progress <= 0f || progress >= 1f) return
-    val radius = diameter * (0.55f + 1.15f * progress)
-    val feather = diameter * (0.20f + 0.07f * progress)
+    val radius = waveRadius(progress, diameter)
+    val feather = waveFeather(progress, diameter)
     val edge = radius + feather
-    val turn = phase - 0.55f * progress
-    val shift = diameter * 0.025f * progress
     // Use the ripple's moving circle, not an unrelated diagonal sweep.
-    val front =
-        Offset(
-            size.width / 2f + cos(turn) * shift,
-            size.height / 2f - distance + sin(turn) * shift,
-        )
+    val drift = waveDrift(progress, diameter, phase)
+    val front = Offset(size.width / 2f + drift.x, size.height / 2f - distance + drift.y)
     val intensity = strength * sin((PI * progress).toFloat()).coerceAtLeast(0f)
     drawRect(
         brush = Brush.radialGradient(
@@ -121,7 +114,18 @@ internal fun waveLift(progress: Float, distance: Float, diameter: Float, phase: 
 private fun wavefrontLift(progress: Float, distance: Float, diameter: Float, phase: Float): Float {
     if (progress <= 0f || progress >= 1f) return 0f
     val radius = flowRadius(progress, (PI / 2).toFloat(), diameter, phase)
-    val feather = diameter * (0.20f + 0.07f * progress)
+    val feather = waveFeather(progress, diameter)
     val crossing = (1f - abs(distance - radius) / feather).coerceIn(0f, 1f)
     return crossing * sin((PI * progress).toFloat())
+}
+
+// Shared wavefront dimensions and drift keep the mark and text highlights aligned.
+private fun waveRadius(progress: Float, diameter: Float): Float = diameter * (0.55f + 1.15f * progress)
+
+private fun waveFeather(progress: Float, diameter: Float): Float = diameter * (0.20f + 0.07f * progress)
+
+private fun waveDrift(progress: Float, diameter: Float, phase: Float): Offset {
+    val turn = phase - 0.55f * progress
+    val shift = diameter * 0.025f * progress
+    return Offset(cos(turn) * shift, sin(turn) * shift)
 }
