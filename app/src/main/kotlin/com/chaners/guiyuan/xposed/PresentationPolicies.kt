@@ -74,7 +74,20 @@ internal object FakeCarrierCapacityLeasePolicy {
         appliedWidthPx: Int,
         currentParentContentWidthPx: Int,
         leasedParentContentWidthPx: Int?,
+        verifiedNativeOverhang: Boolean = false,
     ): ExistingLeaseAction {
+        // A hidden/prearm lease can be superseded by a completed SystemUI
+        // landscape end-overhang after the native parent changes size.
+        // Never adopt an unverified or already-visible foreign width writer.
+        if (
+            !visibleCycleActive &&
+            liveWidthPx != appliedWidthPx &&
+            verifiedNativeOverhang &&
+            currentParentContentWidthPx > 0 &&
+            liveWidthPx > currentParentContentWidthPx
+        ) {
+            return ExistingLeaseAction.ADOPT_HIDDEN_NATIVE
+        }
         if (
             leasedParentContentWidthPx == null ||
             leasedParentContentWidthPx != currentParentContentWidthPx
