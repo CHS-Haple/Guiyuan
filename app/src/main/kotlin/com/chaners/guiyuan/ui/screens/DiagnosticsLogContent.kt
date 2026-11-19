@@ -58,68 +58,85 @@ internal fun LazyListScope.diagnosticsLogItems(
 ) {
     diagnosticsLogHeader(view)
     when {
-        view.snapshot == null -> {
-        item(key = "diagnostics-loading") {
-            if (view.loading) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(top = 72.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    CircularProgressIndicator()
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = stringResource(R.string.diagnostics_loading),
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    )
-                }
-            } else {
-                LogStateCard(text = stringResource(R.string.diagnostics_events_empty))
+        view.snapshot == null -> diagnosticsLoadingItem(view)
+        view.filteredEntries.isNotEmpty() -> diagnosticsHistoryItems(view, context, onToggle)
+        else -> diagnosticsEmptyItems(view, onRetry)
+    }
+}
+
+private fun LazyListScope.diagnosticsLoadingItem(view: DiagnosticsLogPresentation) {
+    item(key = "diagnostics-loading") {
+        if (view.loading) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(top = 72.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                CircularProgressIndicator()
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.diagnostics_loading),
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                )
             }
+        } else {
+            LogStateCard(text = stringResource(R.string.diagnostics_events_empty))
         }
-        }
-        view.filteredEntries.isNotEmpty() -> {
-        itemsIndexed(
-            items = view.filteredEntries,
-            key = { index, entry -> logRowKey(entry, index) },
-        ) { index, entry ->
-            val rowKey = logRowKey(entry, index)
-            LogCard(
-                context = context,
-                entry = entry,
-                expanded = view.expandedKey == rowKey,
-                onToggle = { onToggle(rowKey) },
-                modifier =
-                    Modifier
-                        .animateItem(
-                            fadeInSpec = null,
-                            placementSpec = view.placementSpec,
-                            fadeOutSpec = null,
-                        )
-                        .graphicsLayer {
-                            val shown = logProgress(view.rise.value, index)
-                            translationY = view.risePx * (1f - shown)
-                            alpha = shown
-                        },
-            )
-        }
-        item(key = "diagnostics-history-end") {
-            Text(
-                text = stringResource(
-                    when {
-                        view.captureTruncated && view.filterActive -> R.string.diagnostics_events_end_truncated_filtered
-                        view.captureTruncated -> R.string.diagnostics_events_end_truncated
-                        view.filterActive -> R.string.diagnostics_events_end_filtered
-                        else -> R.string.diagnostics_events_end
+    }
+}
+
+private fun LazyListScope.diagnosticsHistoryItems(
+    view: DiagnosticsLogPresentation,
+    context: Context,
+    onToggle: (String) -> Unit,
+) {
+    itemsIndexed(
+        items = view.filteredEntries,
+        key = { index, entry -> logRowKey(entry, index) },
+    ) { index, entry ->
+        val rowKey = logRowKey(entry, index)
+        LogCard(
+            context = context,
+            entry = entry,
+            expanded = view.expandedKey == rowKey,
+            onToggle = { onToggle(rowKey) },
+            modifier =
+                Modifier
+                    .animateItem(
+                        fadeInSpec = null,
+                        placementSpec = view.placementSpec,
+                        fadeOutSpec = null,
+                    )
+                    .graphicsLayer {
+                        val shown = logProgress(view.rise.value, index)
+                        translationY = view.risePx * (1f - shown)
+                        alpha = shown
                     },
-                ),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                textAlign = TextAlign.Center,
-            )
-        }
-        }
+        )
+    }
+    item(key = "diagnostics-history-end") {
+        Text(
+            text = stringResource(
+                when {
+                    view.captureTruncated && view.filterActive -> R.string.diagnostics_events_end_truncated_filtered
+                    view.captureTruncated -> R.string.diagnostics_events_end_truncated
+                    view.filterActive -> R.string.diagnostics_events_end_filtered
+                    else -> R.string.diagnostics_events_end
+                },
+            ),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+private fun LazyListScope.diagnosticsEmptyItems(
+    view: DiagnosticsLogPresentation,
+    onRetry: () -> Unit,
+) {
+    when {
         view.showRootGuide -> {
         item(key = "diagnostics-root-unavailable") {
             LogEmptyGuide(
