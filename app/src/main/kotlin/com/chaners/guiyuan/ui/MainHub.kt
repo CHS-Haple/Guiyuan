@@ -3,7 +3,6 @@ package com.chaners.guiyuan.ui
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -43,7 +42,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.shadow.Shadow
@@ -101,8 +99,6 @@ import com.chaners.guiyuan.ui.components.liquid.LiquidNavPressLink
 import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
-import com.chaners.guiyuan.ui.components.liquid.LiquidNativeRailSelection
-import com.chaners.guiyuan.ui.components.liquid.liquidRailPressObserver
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSelectedSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
 import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
@@ -283,84 +279,24 @@ private data class MainNavItem(
     val icon: ImageVector,
 )
 
-/** Native rail material settings travel together; the native rail still owns layout. */
-private data class LiquidRailMaterial(
-    val backdrop: Backdrop,
-    val mode: LiquidMode,
-)
-
-/**
- * Keep the page at one stable slot during bottom↔rail transitions. This helper owns only
- * the upstream NavigationRail subtree, not pager selection or rail motion.
- */
+/** Map app destinations to the MIUIX-native rail; no parallel press or selected lens. */
 @Composable
 private fun HubNativeRail(
     state: NavigationRailState,
     items: List<MainNavItem>,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
-    liquidMaterial: LiquidRailMaterial?,
 ) {
-    // The MIUIX OS3 rail retains its layout, morph, semantics and one click owner.
-    // One visual preview index prevents two lenses appearing during a press.
-    var activeLiquidIndex by remember { mutableIntStateOf(-1) }
-    val rail: @Composable () -> Unit = {
-        NavigationRail(
-            state = state,
-            modifier = Modifier.fillMaxHeight().then(
-                if (liquidMaterial != null) {
-                    Modifier.liquidRailSurface(liquidMaterial.backdrop, RoundedCornerShape(0.dp), liquidMaterial.mode)
-                } else Modifier
-            ),
-            color = if (liquidMaterial != null) Color.Transparent else MiuixTheme.colorScheme.surface,
-        ) {
-            items.forEachIndexed { index, item ->
-                val selected = selectedIndex == index
-                val pressed = activeLiquidIndex == index
-                val preview = if (activeLiquidIndex >= 0) pressed else selected
-                val pressScale by animateFloatAsState(
-                    targetValue = if (liquidMaterial != null && pressed) 1.06f else 1f,
-                    animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
-                    label = "nativeLiquidRailItemPress",
-                )
-                Box(
-                    modifier = Modifier.fillMaxWidth().then(
-                        if (liquidMaterial != null) {
-                            Modifier.liquidRailPressObserver { down ->
-                                if (down) activeLiquidIndex = index
-                                else if (activeLiquidIndex == index) activeLiquidIndex = -1
-                            }
-                        } else Modifier
-                    ),
-                ) {
-                    if (liquidMaterial != null && preview) {
-                        LiquidNativeRailSelection(
-                            backdrop = liquidMaterial.backdrop,
-                            mode = liquidMaterial.mode,
-                            pressed = pressed,
-                        )
-                    }
-                    NavigationRailItem(
-                        selected = selected,
-                        onClick = { onSelect(index) },
-                        icon = item.icon,
-                        label = item.label,
-                        modifier = if (liquidMaterial != null) {
-                            Modifier.graphicsLayer {
-                                scaleX = pressScale
-                                scaleY = pressScale
-                            }
-                        } else Modifier,
-                    )
-                }
-            }
+    NavigationRail(state = state, modifier = Modifier.fillMaxHeight()) {
+        items.forEachIndexed { index, item ->
+            NavigationRailItem(
+                selected = selectedIndex == index,
+                onClick = { onSelect(index) },
+                icon = item.icon,
+                label = item.label,
+            )
         }
     }
-    if (liquidMaterial != null) {
-        // Suppress only the stock solid selection fill; lens/press drawing owns that slot.
-        val colors = MiuixTheme.colorScheme.copy(surfaceContainerHigh = Color.Transparent)
-        MiuixTheme(colors = colors) { rail() }
-    } else rail()
 }
 
 /** Both page actions share one callback owner and the same busy-state checks. */
@@ -598,12 +534,6 @@ internal fun MainHub(
         safePadding = railSafePadding,
         direction = LocalLayoutDirection.current,
     )
-    // The OS3-style native rail sits outside the page's recorded backdrop.
-    // Give it an in-bounds recording of its own underlying surface so the lens
-    // never samples beyond the page and the rail cannot record itself.
-    val nativeRailBackdrop = if (
-        useNativeRail && appearance.navStyle == NavStyle.Liquid && liquidBackdrop != null
-    ) rememberLiquidNavBackdrop(surfaceColor) else null
     val actionInRail = hasOs4RailActionSlot(appearance, useGlassRail)
     val actionInBottomNav = hasOs4NavigationActionSlot(
         appearance = appearance,
@@ -893,25 +823,13 @@ internal fun MainHub(
         // or disappears during rotation and split-screen resizing.
         Row(Modifier.fillMaxSize()) {
             if (useNativeRail) {
-                Box(Modifier.fillMaxHeight()) {
-                    if (nativeRailBackdrop != null) {
-                        // Record only the base surface. The rail remains an
-                        // independent sibling above this recording.
-                        Box(
-                            Modifier.matchParentSize()
-                                .layerBackdrop(nativeRailBackdrop)
-                                .background(surfaceColor),
-                        )
-                    }
-                    HubNativeRail(
-                        state = nativeRailState,
-                        items = items,
-                        selectedIndex = pageSelection.selectedPage,
-                        onSelect = ::selectPage,
-                        liquidMaterial = nativeRailBackdrop
-                            ?.let { LiquidRailMaterial(it, appearance.liquidMode) },
-                    )
-                }
+                // OS3 wide Liquid follows the native rail, not a second lens/press layer.
+                HubNativeRail(
+                    state = nativeRailState,
+                    items = items,
+                    selectedIndex = pageSelection.selectedPage,
+                    onSelect = ::selectPage,
+                )
             }
             Box(Modifier.weight(1f).fillMaxHeight()) {
         Box(
@@ -926,7 +844,7 @@ internal fun MainHub(
                         },
                     )
                     .then(
-                        if (liquidBackdrop != null) {
+                        if (liquidBackdrop != null && !useNativeRail) {
                             Modifier.liquidNavBackdropSource(liquidBackdrop)
                         } else {
                             Modifier
