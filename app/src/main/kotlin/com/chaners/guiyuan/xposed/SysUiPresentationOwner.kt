@@ -2660,14 +2660,7 @@ internal object SysUiPresentationOwner {
                 return null
             }
             if (baselineWidthPx > parentContentWidthPx) {
-                if (!FakeCarrierCapacityLeasePolicy.mayInheritNativeOverhang(
-                        nativeCarrierWidthPx = baselineWidthPx,
-                        parentContentWidthPx = parentContentWidthPx,
-                        laidOutCarrierWidthPx = hostView.width,
-                        attached = hostView.isAttachedToWindow,
-                        endAnchored = isFakeCarrierEndAnchored(hostView, parent),
-                    )
-                ) {
+                if (!isVerifiedNativeOverhang(hostView, parent)) {
                     onFailNative("fake-carrier-native-overhang-unverified")
                     return null
                 }
@@ -2721,6 +2714,26 @@ internal object SysUiPresentationOwner {
                     LOG_CC_FAKE_SESSION_OWNER,
             )
             return capacityDeltaPx
+        }
+
+        private fun isVerifiedNativeOverhang(
+            hostView: ViewGroup,
+            parent: ViewGroup,
+        ): Boolean {
+            if (parent.childCount != 1 || parent.getChildAt(0) !== hostView) return false
+            val params = hostView.layoutParams ?: return false
+            val margins = params as? ViewGroup.MarginLayoutParams
+            if (margins != null &&
+                (margins.marginStart != 0 || margins.marginEnd != 0 ||
+                    margins.leftMargin != 0 || margins.rightMargin != 0)
+            ) return false
+            return FakeCarrierCapacityLeasePolicy.mayInheritNativeOverhang(
+                nativeCarrierWidthPx = params.width,
+                parentContentWidthPx = parent.width - parent.paddingLeft - parent.paddingRight,
+                laidOutCarrierWidthPx = hostView.width,
+                attached = hostView.isAttachedToWindow,
+                endAnchored = isFakeCarrierEndAnchored(hostView, parent),
+            )
         }
 
         private fun isFakeCarrierEndAnchored(
@@ -2913,20 +2926,9 @@ internal object SysUiPresentationOwner {
                 if (!nativeOverhangAccepted) return false
                 val nativeHost = host.get()
                 val nativeParent = nativeHost?.parent as? ViewGroup
-                val paramsWidth = nativeHost?.layoutParams?.width
-                val parentContentWidth =
-                    nativeParent?.let { it.width - it.paddingLeft - it.paddingRight }
                 val nativeStillVerified =
                     nativeHost != null && nativeParent != null &&
-                        nativeParent.childCount == 1 && nativeParent.getChildAt(0) === nativeHost &&
-                        paramsWidth != null && parentContentWidth != null &&
-                        FakeCarrierCapacityLeasePolicy.mayInheritNativeOverhang(
-                            nativeCarrierWidthPx = paramsWidth,
-                            parentContentWidthPx = parentContentWidth,
-                            laidOutCarrierWidthPx = nativeHost.width,
-                            attached = nativeHost.isAttachedToWindow,
-                            endAnchored = isFakeCarrierEndAnchored(nativeHost, nativeParent),
-                        )
+                        isVerifiedNativeOverhang(nativeHost, nativeParent)
                 if (!nativeStillVerified) {
                     onFailNative("fake-carrier-native-overhang-changed")
                     return false
