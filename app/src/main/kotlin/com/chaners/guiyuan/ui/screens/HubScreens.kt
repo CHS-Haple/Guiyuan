@@ -154,7 +154,7 @@ import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import com.chaners.guiyuan.ui.glass.GlassTopAppBar
-import com.chaners.guiyuan.ui.glass.GlassMotion
+import top.yukonga.miuix.kmp.glass.GlassMotion
 import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
 import com.chaners.guiyuan.ui.glass.GlassNavigationRailDefaults
 import com.chaners.guiyuan.ui.glass.GlassIconButton

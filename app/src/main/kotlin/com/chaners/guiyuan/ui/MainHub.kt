@@ -120,7 +120,7 @@ import com.chaners.guiyuan.ui.glass.GlassNavigationBar
 import com.chaners.guiyuan.ui.glass.GlassNavigationBarLayout
 import com.chaners.guiyuan.ui.glass.GlassNavigationBarDefaults
 import com.chaners.guiyuan.ui.glass.GlassIconButton
-import com.chaners.guiyuan.ui.glass.GlassMotion
+import top.yukonga.miuix.kmp.glass.GlassMotion
 import com.chaners.guiyuan.ui.glass.GlassNavigationRail
 import com.chaners.guiyuan.ui.glass.GlassRailDestinations
 import com.chaners.guiyuan.ui.glass.RailLiquidPaint
