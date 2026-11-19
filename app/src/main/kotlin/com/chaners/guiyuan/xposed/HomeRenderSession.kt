@@ -23,9 +23,13 @@ internal object HomeRenderSession {
     private var current: Session? = null
     private val retirement = RetirementGate<Session>()
 
-    private fun stop(session: Session, removeVisual: Boolean = true) {
+    private fun stop(
+        session: Session,
+        removeVisual: Boolean = true,
+        notifyReadinessOnStop: Boolean = true,
+    ) {
         retirement.release(session) {
-            session.stop(removeVisual)
+            session.stop(removeVisual, notifyReadinessOnStop)
             0
         }
     }
@@ -148,9 +152,16 @@ internal object HomeRenderSession {
         current?.transitionSourceWitness()
 
     @Synchronized
-    fun detach(preserveVisual: Boolean = false) {
+    fun detach(
+        preserveVisual: Boolean = false,
+        notifyReadinessOnStop: Boolean = true,
+    ) {
         val session = current ?: retirement.pending ?: return
-        stop(session, removeVisual = !preserveVisual)
+        stop(
+            session,
+            removeVisual = !preserveVisual,
+            notifyReadinessOnStop = notifyReadinessOnStop,
+        )
         if (current === session) current = null
     }
 
@@ -333,10 +344,13 @@ internal object HomeRenderSession {
             }
         }
 
-        fun stop(removeVisual: Boolean = true) {
+        fun stop(
+            removeVisual: Boolean = true,
+            notifyReadinessOnStop: Boolean = true,
+        ) {
             layoutReady = false
             releaseAll(
-                { dispatchPresentationReadiness("stop") },
+                { if (notifyReadinessOnStop) dispatchPresentationReadiness("stop") },
                 { batteryContainer.get()?.removeOnAttachStateChangeListener(this) },
                 { batteryContainer.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { batteryCarrier.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
