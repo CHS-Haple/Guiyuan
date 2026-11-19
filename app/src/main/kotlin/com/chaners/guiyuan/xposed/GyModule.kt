@@ -3879,8 +3879,9 @@ class GyModule : XposedModule() {
 
         release { CcTransitionOwner.detach("hotReload-oldGeneration") }
         release { CcRenderSession.detach(source = "hotReload-oldGeneration") }
-        // A verified in-place transfer must not request an expanded native
-        // icon layout before the next compact presentation can reclaim it.
+        // Preserve compact native layout only when the generation transfer
+        // can safely skip the native fallback. Landscape always restores the
+        // native slot layout before the next module generation is ready.
         release {
             HomeRenderSession.detach(notifyReadinessOnStop = !compactHomeHandoff)
         }
