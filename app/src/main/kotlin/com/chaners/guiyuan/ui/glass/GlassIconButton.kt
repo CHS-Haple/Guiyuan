@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Retains existing Guiyuan long-press, disabled and hold-down API.
 
-package top.yukonga.miuix.kmp.glass
+package com.chaners.guiyuan.ui.glass
 
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.updateTransition

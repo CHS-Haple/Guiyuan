@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Modified from upstream (2026): Back ownership for nested popup/dismiss flows.
 
-package top.yukonga.miuix.kmp.glass
+package com.chaners.guiyuan.ui.glass
 
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.animateFloat
