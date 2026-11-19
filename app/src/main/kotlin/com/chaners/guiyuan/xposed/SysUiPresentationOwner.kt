@@ -2678,7 +2678,13 @@ internal object SysUiPresentationOwner {
             }
             if (baselineWidthPx > parentContentWidthPx) {
                 if (!isVerifiedNativeOverhang(hostView, parent)) {
-                    onFailNative("fake-carrier-native-overhang-unverified")
+                    onFailNative(
+                        if (hostView.isLayoutRequested || parent.isLayoutRequested) {
+                            "fake-carrier-native-overhang-admission-layout-pending"
+                        } else {
+                            "fake-carrier-native-overhang-unverified"
+                        },
+                    )
                     return null
                 }
                 if (!nativeOverhangAccepted) {
@@ -2950,7 +2956,13 @@ internal object SysUiPresentationOwner {
                     nativeHost != null && nativeParent != null &&
                         isVerifiedNativeOverhang(nativeHost, nativeParent)
                 if (!nativeStillVerified) {
-                    onFailNative("fake-carrier-native-overhang-changed")
+                    onFailNative(
+                        if (nativeHost?.isLayoutRequested == true || nativeParent?.isLayoutRequested == true) {
+                            "fake-carrier-native-overhang-cutover-layout-pending"
+                        } else {
+                            "fake-carrier-native-overhang-changed"
+                        },
+                    )
                     return false
                 }
             }
