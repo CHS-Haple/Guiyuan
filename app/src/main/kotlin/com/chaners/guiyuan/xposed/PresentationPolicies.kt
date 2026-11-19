@@ -46,6 +46,22 @@ internal object VisualMaskPolicy {
 }
 
 internal object FakeCarrierCapacityLeasePolicy {
+    // The native QS Fake status area may extend to the left of its narrower
+    // parent while retaining the parent's end anchor. Its existing width is
+    // not a lease: accept only a laid-out, attached native overhang and never
+    // write a smaller parent width back to the SystemUI carrier.
+    fun mayInheritNativeOverhang(
+        nativeCarrierWidthPx: Int,
+        parentContentWidthPx: Int,
+        laidOutCarrierWidthPx: Int,
+        attached: Boolean,
+        endAnchored: Boolean,
+    ): Boolean =
+        nativeCarrierWidthPx > parentContentWidthPx &&
+            parentContentWidthPx > 0 &&
+            laidOutCarrierWidthPx == nativeCarrierWidthPx &&
+            attached && endAnchored
+
     enum class ExistingLeaseAction {
         REUSE,
         ADOPT_HIDDEN_NATIVE,

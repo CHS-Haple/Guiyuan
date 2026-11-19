@@ -133,7 +133,9 @@ android {
             initWith(getByName("release"))
             matchingFallbacks += listOf("release")
             isDebuggable = false
-            // Keep routine diagnostics identical to Release; Canary validates candidate code, not extra probes.
+            // Temporary source-branch-only diagnostic candidate for landscape native evidence.
+            // Do not propagate this override to dev/main or ordinary Canary builds.
+            buildConfigField("boolean", deepDiagnosticsBuildField, "true")
             buildConfigField("String", "BUILD_CHANNEL", "\"canary\"")
         }
     }
