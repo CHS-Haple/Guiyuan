@@ -59,6 +59,7 @@ private fun ColumnScope.featureLayoutChoices(
     enabled: Boolean,
     bothSidesSearch: Boolean,
 ) {
+    val searching = search.filtering
     // Display order is deliberately independent of the persisted ContentLayout enum.
     val layoutChoices = listOf(
         ContentLayout.NETWORK_CENTER to stringResource(R.string.content_layout_network_center),
