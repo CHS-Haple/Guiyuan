@@ -4,6 +4,7 @@
 package com.chaners.guiyuan.ui.glass
 
 import top.yukonga.miuix.kmp.glass.GlassMotion
+import top.yukonga.miuix.kmp.glass.GlassIconButton
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
@@ -116,6 +117,7 @@ internal fun RailToggle(
     onClick: () -> Unit,
     expanded: Boolean,
     size: Dp,
+    iconSize: Dp,
     tint: Color,
     contentDescription: String,
 ) {
@@ -145,6 +147,7 @@ internal fun RailToggle(
             shadow = null,
         ) {
             RailToggleGlyph(
+                iconSize = iconSize,
                 tint = tint,
                 topBarAlpha = { topBarAlpha.value },
                 sideBarAlpha = { sideBarAlpha.value },
@@ -165,6 +168,7 @@ internal fun RailToggle(
             contentAlignment = Alignment.Center,
         ) {
             RailToggleGlyph(
+                iconSize = iconSize,
                 tint = tint,
                 topBarAlpha = { topBarAlpha.value },
                 sideBarAlpha = { sideBarAlpha.value },
@@ -177,6 +181,8 @@ internal fun RailToggle(
 
 @Composable
 private fun RailToggleGlyph(
+    iconSize: Dp,
+                iconSize = iconSize,
     tint: Color,
     topBarAlpha: () -> Float,
     sideBarAlpha: () -> Float,
@@ -188,7 +194,7 @@ private fun RailToggleGlyph(
             imageVector = RailTopBarIcon,
             contentDescription = contentDescription,
             modifier = Modifier
-                .size(RailIconSize)
+                .size(iconSize)
                 .graphicsLayer { alpha = topBarAlpha() * contentAlpha() },
             tint = tint,
         )
@@ -196,7 +202,7 @@ private fun RailToggleGlyph(
             imageVector = RailSideBarIcon,
             contentDescription = null,
             modifier = Modifier
-                .size(RailIconSize)
+                .size(iconSize)
                 .graphicsLayer { alpha = sideBarAlpha() * contentAlpha() },
             tint = tint,
         )
