@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
@@ -455,7 +455,7 @@ fun GlassTopAppBar(
 
     Box(modifier = modifier.onGloballyPositioned { barOrigin = it.positionInRoot() }) {
         if (progressiveBackdrop != null && rawBackdrop != null) {
-            val topInsets = WindowInsets.statusBars
+            val topInsets = WindowInsets.systemBars
             val surfaceColor = MiuixTheme.colorScheme.surface
             val blendColors = remember(surfaceColor) {
                 listOf(BlendColorEntry(surfaceColor.copy(alpha = 0.3f)))
@@ -473,7 +473,7 @@ fun GlassTopAppBar(
                     rampVal * currentBgAlpha().coerceIn(0f, 1f) > 0.001f
                 }
             }
-            val backdropCaptureModifier = if (hasButtonBackdropConsumers) {
+            val backdropCaptureModifier = if (hasButtonBackdropConsumers && (keepMaterial || bandActive)) {
                 Modifier
                     .onGloballyPositioned { backgroundCoordinates = it }
                     .layerBackdrop(progressiveBackdrop)
