@@ -202,6 +202,35 @@ class DiagLogReaderSessionTest {
     }
 
     @Test
+    fun precedingSessionFindsFailedReloadWithoutModuleStart() {
+        fun event(second: Int, kind: String, state: String?, session: String): String =
+            "10-11 19:16:${second.toString().padStart(2, '0')}.000 2200 2200 I CombinedStatus: " +
+                DiagProtocol.format(
+                    event = kind,
+                    component =
+                        if (kind.startsWith(EVENT_MODULE_PREFIX)) COMPONENT_MODULE
+                        else if (kind == EVENT_DIAGNOSTICS_BIND) "diagnostics"
+                        else COMPONENT_HOT_RELOAD,
+                    state = state,
+                    fields = mapOf(FIELD_SESSION_ID to session),
+                )
+
+        val oldStart = event(20, EVENT_MODULE_LOADED, STATE_READY, SESSION_OLD)
+        val failedBind = event(21, EVENT_DIAGNOSTICS_BIND, STATE_READY, "failed")
+        val failedEnd = event(22, EVENT_HOT_RELOAD_COMPLETE, STATE_ERROR, "failed")
+        val delayedOld = event(23, EVENT_RUNTIME_TEARDOWN, "released", SESSION_OLD)
+        val successfulStart = event(24, EVENT_MODULE_RELOADED, STATE_READY, SESSION_NEW)
+        val successfulEnd = event(25, EVENT_HOT_RELOAD_COMPLETE, STATE_READY, SESSION_NEW)
+
+        assertEquals(
+            listOf(failedBind, failedEnd),
+            DiagLogReader.previousSession(
+                listOf(oldStart, failedBind, failedEnd, delayedOld, successfulStart, successfulEnd),
+            ),
+        )
+    }
+
+    @Test
     fun precedingSessionIsAbsentForFirstSystemUiGeneration() {
         val first = logcatSessionEvent("20:17", 31, EVENT_MODULE_LOADED, STATE_READY, SESSION_OLD)
         assertEquals(emptyList<String>(), DiagLogReader.previousSession(listOf(first)))

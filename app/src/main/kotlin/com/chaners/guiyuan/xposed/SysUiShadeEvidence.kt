@@ -163,11 +163,11 @@ internal object SysUiShadeEvidence {
                             result
                         },
                     )
-            } catch (failure: Throwable) {
+            } catch (failure: Exception) {
                 SysUiFatal.rethrow(failure)
                 try {
                     expansionHandle.unhook()
-                } catch (cleanup: Throwable) {
+                } catch (cleanup: Exception) {
                     SysUiFatal.rethrow(cleanup)
                     failure.addSuppressed(cleanup)
                     throw IllegalStateException("shade-evidence-hook-release-failed", failure)

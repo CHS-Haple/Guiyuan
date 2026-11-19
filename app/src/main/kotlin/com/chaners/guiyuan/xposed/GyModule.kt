@@ -991,7 +991,7 @@ class GyModule : XposedModule() {
             SysUiShadeEvidence.install(
                 module = this,
                 classLoader = classLoader,
-                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                isDetailedDiagnosticsEnabled = { !retiredForHotReload && deepDiagnosticsEnabled },
                 onEvent = { event ->
                     if (!retiredForHotReload) logRuntimeEvent(event)
                 },

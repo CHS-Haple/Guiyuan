@@ -170,14 +170,15 @@ internal object DiagLogReader {
             events.indexOfFirst { event -> event?.fields?.get(SESSION_ID_FIELD) == currentId }
         if (currentStart <= 0) return emptyList()
 
+        // Distinct IDs preserve first appearance order. A failed reload may
+        // never emit module.reloaded, and late old teardown must not override it.
         val priorId =
-            (currentStart - 1 downTo 0)
-                .firstNotNullOfOrNull { index ->
-                    events[index]?.takeIf { event ->
-                        (event.event == "module.loaded" || event.event == "module.reloaded") &&
-                            event.fields[SESSION_ID_FIELD] != currentId
-                    }?.fields?.get(SESSION_ID_FIELD)
-                } ?: return emptyList()
+            events.asSequence()
+                .take(currentStart)
+                .mapNotNull { it?.fields?.get(SESSION_ID_FIELD) }
+                .filterNot { it == currentId }
+                .distinct()
+                .lastOrNull() ?: return emptyList()
         val priorStart =
             events.indexOfFirst { event -> event?.fields?.get(SESSION_ID_FIELD) == priorId }
         if (priorStart < 0 || priorStart >= currentStart) return emptyList()
@@ -187,9 +188,8 @@ internal object DiagLogReader {
             .filter { index ->
                 if (index < priorStart) return@filter false
                 val taggedId = events[index]?.fields?.get(SESSION_ID_FIELD)
-                taggedId == priorId ||
-                    (index < currentStart && taggedId == null &&
-                        (priorPid == null || pidOf(lines[index]) == priorPid))
+                if (taggedId != null) return@filter taggedId == priorId
+                index < currentStart && (priorPid == null || pidOf(lines[index]) == priorPid)
             }
             .map(lines::get)
             .toList()
