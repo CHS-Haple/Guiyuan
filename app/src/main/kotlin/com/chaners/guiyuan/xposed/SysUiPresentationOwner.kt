@@ -1975,7 +1975,8 @@ internal object SysUiPresentationOwner {
             val explicitLayoutRequest =
                 requestLayout && ignoreScope == IgnoreScope.CALL
             if (explicitLayoutRequest) {
-                releaseAttempt(failures) { batteryContainer.get()?.requestLayout() }
+                // Recompute native slot positions after releasing Home clip masks.
+                releaseAttempt(failures) { statusIcons.get()?.requestLayout() }
             }
             releaseAttempt(failures) {
                 onEvent(
