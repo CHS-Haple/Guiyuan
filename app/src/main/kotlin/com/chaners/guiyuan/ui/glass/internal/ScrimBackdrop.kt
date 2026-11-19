@@ -1,7 +1,7 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package top.yukonga.miuix.kmp.glass.internal
+package com.chaners.guiyuan.ui.glass.internal
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
