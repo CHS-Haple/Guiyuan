@@ -174,6 +174,23 @@ class DiagReportExportTest {
     }
 
     @Test
+    fun detailedReportPreservesBoundedPreviousGenerationWithoutPollutingCurrent() {
+        val previous = recordLines(255)
+        val output =
+            report(
+                lines = listOf("current-event"),
+                previousSessionLines = previous,
+            )
+        assertTrue(output.contains("[Previous runtime session]"))
+        assertTrue(output.contains("scope=preceding-systemui-generation"))
+        assertTrue(output.contains("omittedEarlierLines=5"))
+        assertFalse(output.contains("\nrecord-5\n"))
+        assertTrue(output.contains("\nrecord-6\n"))
+        assertTrue(output.contains("\nrecord-255\n"))
+        assertTrue(output.contains("\ncurrent-event\n"))
+    }
+
+    @Test
     fun reportLineLimitIsDisclosedOnlyWhenEarlierSessionLinesAreOmitted() {
         val limit = DiagReport.exportLineLimit(DiagLevel.Detailed)
         val exactlyAtLimit = report(recordLines(limit))
@@ -263,6 +280,7 @@ private fun report(
     collection: RootShell.Result? = null,
     level: DiagLevel = DiagLevel.Detailed,
     clearedAt: LocalDateTime? = null,
+    previousSessionLines: List<String> = emptyList(),
 ): String {
     val recorded = lines
     return DiagReport.build(
@@ -284,6 +302,7 @@ private fun report(
                 result = collection ?: RootShell.Result(0, recorded.joinToString("\n"), false, null, truncated),
                 lines = recorded,
                 sessionLines = recorded,
+                previousSessionLines = previousSessionLines,
                 clearedAt = clearedAt,
             ),
             runtimeEvents = RuntimeEventSnapshot.fromLines(recorded),
