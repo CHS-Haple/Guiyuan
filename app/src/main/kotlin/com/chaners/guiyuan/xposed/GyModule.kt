@@ -3916,7 +3916,7 @@ class GyModule : XposedModule() {
             // without producing an intermediate unmasked native layout pass.
             // The next generation requests the compact native layout itself.
             restoredViews = SysUiPresentationOwner.releaseGenerationForHotReload(
-                requestLayout = false,
+                homeRequestLayout = false,
             )
         }
         release { NativeStatusObserver.deactivate() }
