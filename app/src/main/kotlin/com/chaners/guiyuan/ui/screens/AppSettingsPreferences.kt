@@ -26,7 +26,7 @@ import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import com.chaners.guiyuan.ui.components.dialogActionGap
-import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
+import com.chaners.guiyuan.ui.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 // Shared with the normal Settings page and first-run OOBE. SettingsEntryPrefs

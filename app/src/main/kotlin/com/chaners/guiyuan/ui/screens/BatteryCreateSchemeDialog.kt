@@ -22,7 +22,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.limitCustomSchemeName
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
-import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
+import com.chaners.guiyuan.ui.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.basic.TextField
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 

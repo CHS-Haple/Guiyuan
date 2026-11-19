@@ -44,7 +44,7 @@ import top.yukonga.miuix.kmp.basic.HsvValueSlider
 import top.yukonga.miuix.kmp.basic.Text
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
-import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
+import com.chaners.guiyuan.ui.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TextFieldDefaults
 import top.yukonga.miuix.kmp.color.api.toHsv
