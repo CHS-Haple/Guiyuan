@@ -113,8 +113,8 @@ import kotlinx.coroutines.flow.first
 import com.chaners.guiyuan.ui.glass.glassPopupAnchor
 import com.chaners.guiyuan.ui.glass.glassPopupAnchorContent
 import com.chaners.guiyuan.ui.glass.rememberGlassPopupAnchor
-import com.chaners.guiyuan.ui.glass.GlassPopupDefaults
-import com.chaners.guiyuan.ui.glass.GlassPopupItem
+import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
+import top.yukonga.miuix.kmp.glass.GlassPopupItem
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.DialogLayout
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme

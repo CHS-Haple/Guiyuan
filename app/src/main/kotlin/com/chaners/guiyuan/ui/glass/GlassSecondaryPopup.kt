@@ -3,6 +3,10 @@
 
 package com.chaners.guiyuan.ui.glass
 
+import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
+import top.yukonga.miuix.kmp.glass.GlassPopupSizing
+import top.yukonga.miuix.kmp.glass.GlassPopupVisuals
+
 import top.yukonga.miuix.kmp.glass.GlassMotion
 
 import androidx.compose.animation.core.MutableTransitionState

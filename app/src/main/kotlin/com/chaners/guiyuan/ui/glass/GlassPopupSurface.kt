@@ -5,6 +5,10 @@
 
 package com.chaners.guiyuan.ui.glass
 
+import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
+import top.yukonga.miuix.kmp.glass.GlassPopupSizing
+import top.yukonga.miuix.kmp.glass.GlassPopupVisuals
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -67,42 +71,6 @@ import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.material.GlassShadow
-
-/**
- * Size limits and window margin for a glass popup.
- *
- * @property minWidth Minimum panel width.
- * @property maxWidth Maximum panel width.
- * @property maxHeight Maximum panel height before content scrolls.
- * @property safeMargin Minimum margin from the window's safe area and the popup host edges.
- */
-@Immutable
-data class GlassPopupSizing(
-    val minWidth: Dp = GlassPopupDefaults.MinWidth,
-    val maxWidth: Dp = GlassPopupDefaults.MaxWidth,
-    val maxHeight: Dp = GlassPopupDefaults.MaxHeight,
-    val safeMargin: Dp = GlassPopupDefaults.SafeMargin,
-)
-
-/**
- * Surface appearance of a glass popup.
- *
- * @property style Glass style supplying blur and rim geometry; glass shading is disabled.
- * @property alpha Material opacity multiplier.
- * @property stroke Optional bloom stroke.
- * @property shadow Optional panel shadow.
- * @property material Panel material.
- * @property containerColor Opaque fill used without a backdrop; stroke and shadow remain.
- */
-@Immutable
-data class GlassPopupVisuals(
-    val style: GlassStyle,
-    val alpha: Float,
-    val stroke: EdgeStroke?,
-    val shadow: GlassShadow?,
-    val material: GlassMaterial?,
-    val containerColor: Color,
-)
 
 /** Panel bounds and corner radius for an animation frame. */
 @Immutable
