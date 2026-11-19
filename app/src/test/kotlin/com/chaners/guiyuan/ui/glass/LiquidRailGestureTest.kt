@@ -12,6 +12,13 @@ class LiquidRailGestureTest {
         assertEquals(RailGestureDecision.Pending, liquidRailGestureDecision(3f, 4f, 8f, false))
     }
 
+    @Test fun overflowingExpandedLiquidYieldsVerticalDragToNativeScroll() {
+        assertEquals(RailGestureDecision.Cancel, liquidRailGestureDecision(1f, 16f, 8f, false, verticalScrollAvailable = true))
+        assertEquals(RailGestureDecision.Drag, liquidRailGestureDecision(1f, 16f, 8f, false, verticalScrollAvailable = false))
+        assertEquals(RailGestureDecision.Pending, liquidRailGestureDecision(1f, 2f, 8f, false, verticalScrollAvailable = true))
+        assertEquals(RailGestureDecision.Cancel, liquidRailGestureDecision(16f, 1f, 8f, false, verticalScrollAvailable = true))
+    }
+
     @Test fun bothDragDirectionsAreAcceptedOnTheirOwnAxis() {
         assertEquals(RailGestureDecision.Drag, liquidRailGestureDecision(-16f, 1f, 8f, true))
         assertEquals(RailGestureDecision.Drag, liquidRailGestureDecision(16f, 1f, 8f, true))

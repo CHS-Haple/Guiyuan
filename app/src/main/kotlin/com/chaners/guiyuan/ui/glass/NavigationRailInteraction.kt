@@ -51,10 +51,13 @@ internal fun liquidRailGestureDecision(
     movementY: Float,
     touchSlop: Float,
     horizontal: Boolean,
+    verticalScrollAvailable: Boolean = false,
 ): RailGestureDecision {
     if (horizontal) return railGestureDecision(movementX, movementY, touchSlop, true)
     if (abs(movementX) > touchSlop && abs(movementX) > abs(movementY)) return RailGestureDecision.Cancel
-    if (abs(movementY) > touchSlop && abs(movementY) > abs(movementX)) return RailGestureDecision.Drag
+    if (abs(movementY) > touchSlop && abs(movementY) > abs(movementX)) {
+        return if (verticalScrollAvailable) RailGestureDecision.Cancel else RailGestureDecision.Drag
+    }
     return RailGestureDecision.Pending
 }
 
@@ -205,6 +208,7 @@ private class RailGestureControl(
     val headerBottom: State<() -> Float>,
     val onSelect: State<(Int) -> Unit>,
     val liquid: Boolean,
+    val verticalScrollAvailable: State<Boolean>,
 )
 
 /** One touch's mutable coordinates; the global indicator still belongs to NavigationRailInteraction. */
@@ -231,8 +235,9 @@ internal fun Modifier.navigationRailGestures(
     headerBottom: State<() -> Float>,
     onSelect: State<(Int) -> Unit>,
     liquid: Boolean = false,
+    verticalScrollAvailable: State<Boolean>,
 ): Modifier = pointerInput(interaction, layoutDirection, liquid) {
-    val control = RailGestureControl(interaction, layoutDirection, expanded, headerBottom, onSelect, liquid)
+    val control = RailGestureControl(interaction, layoutDirection, expanded, headerBottom, onSelect, liquid, verticalScrollAvailable)
     awaitEachGesture { performRailGesture(control, viewConfiguration.touchSlop) }
 }
 
@@ -303,7 +308,10 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.tra
         }
         if (!run.dragging) {
             val decision = if (control.liquid) {
-                liquidRailGestureDecision(run.movementX, run.movementY, touchSlop, run.horizontal)
+                liquidRailGestureDecision(
+                    run.movementX, run.movementY, touchSlop, run.horizontal,
+                    verticalScrollAvailable = control.verticalScrollAvailable.value,
+                )
             } else railGestureDecision(run.movementX, run.movementY, touchSlop, run.horizontal)
             when (decision) {
                 RailGestureDecision.Cancel -> break

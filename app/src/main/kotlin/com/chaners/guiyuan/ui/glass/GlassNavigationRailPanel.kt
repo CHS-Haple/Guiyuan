@@ -440,6 +440,9 @@ private fun RailPanelScroll(
     val state = context.state
     val contentHeight = RailExpandedRowTop + RailRowPitch * context.selection.items.lastIndex +
         RailExpandedRowHeight + GlassNavigationRailDefaults.Margin
+    // A scrollable, overflowing rail yields vertical drag to its parent ScrollState.
+    // Keep this as a read-only State: no second gesture/scroll writer and no pointer restart.
+    val verticalScrollAvailable = rememberUpdatedState(pointer.scrollEnabled && context.scrollState.maxValue > 0)
     Box(
         Modifier
             .fillMaxSize()
@@ -462,6 +465,7 @@ private fun RailPanelScroll(
                     headerBottom = pointer.headerBottom,
                     onSelect = pointer.onSelect,
                     liquid = colors.indicator.liquidPaint != null,
+                    verticalScrollAvailable = verticalScrollAvailable,
                 ),
         ) {
             RailPanelRows(context, geometry, motion, colors, pointer)
