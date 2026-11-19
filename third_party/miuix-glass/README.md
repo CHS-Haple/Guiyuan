@@ -9,8 +9,8 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 - The active source and Maven graph uses the successfully published MIUIX
   snapshot `0.9.5-5ff41ba9-SNAPSHOT` at full revision
-  `5ff41ba90d963e48c3db1f3b28eb8dbebc9391f9`. The upstream publication completed in
-  [run #44571884911](https://github.com/compose-miuix-ui/miuix/actions/runs/44476825158).
+  `5ff41ba90d963e48c3db1f3b28eb8dbebc9391f9`. The upstream Maven publish step succeeded in
+  [run #44571884911](https://github.com/compose-miuix-ui/miuix/actions/runs/44571884911).
   Upstream `v0.9.5-beta01` is a pre-release, not a `v0.9.5` stable
   release. The exact source-pinned snapshot is identified separately by
   upstream's `0.9.5-<short SHA>-SNAPSHOT` Maven convention.
