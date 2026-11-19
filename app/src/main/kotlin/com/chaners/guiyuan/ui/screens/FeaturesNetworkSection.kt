@@ -47,7 +47,6 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSectio
                 value = visual.mobileTypeWeight,
                 onValueChange = visualRepo::setMobileTypeWeight,
                 weight = weight,
-                enabled = enabled,
                 dialogOpen = weightDialogOpen,
                 onOpenDialog = onOpenWeightDialog,
             )

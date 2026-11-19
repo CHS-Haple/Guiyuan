@@ -15,6 +15,7 @@ import top.yukonga.miuix.kmp.preference.SliderPreference
 
 internal data class FeatureWeightUi(
     val row: NativeWeightRow,
+    val enabled: Boolean,
     val verifiedRange: IntRange?,
     val valueRange: ClosedFloatingPointRange<Float>,
     val points: List<Float>?,
@@ -23,7 +24,7 @@ internal data class FeatureWeightUi(
 )
 
 @Composable
-internal fun featureWeightUi(axis: NativeFontAxis.State, fallbackRange: IntRange, row: NativeWeightRow): FeatureWeightUi {
+internal fun featureWeightUi(axis: NativeFontAxis.State, fallbackRange: IntRange, row: NativeWeightRow, enabled: Boolean): FeatureWeightUi {
     val verified = axis.verifiedWeightRange()
     val valueRange = (verified?.first ?: fallbackRange.first).toFloat()..
         (verified?.last ?: fallbackRange.last).toFloat()
@@ -33,6 +34,7 @@ internal fun featureWeightUi(axis: NativeFontAxis.State, fallbackRange: IntRange
     }
     return FeatureWeightUi(
         row = row,
+        enabled = enabled,
         verifiedRange = verified,
         valueRange = valueRange,
         points = points,
@@ -69,7 +71,6 @@ internal fun NativeWeightSlider(
     value: Int,
     onValueChange: (Int) -> Unit,
     weight: FeatureWeightUi,
-    enabled: Boolean,
     dialogOpen: Boolean,
     onOpenDialog: () -> Unit,
 ) {
@@ -83,7 +84,7 @@ internal fun NativeWeightSlider(
             if (weight.pending) R.string.font_weight_pending else R.string.font_weight_unverified,
         ),
         startAction = {
-            SemanticLeadingIcon(weight.row.iconRes, enabled, R.drawable.ic_material_symbol_line_weight)
+            SemanticLeadingIcon(weight.row.iconRes, weight.enabled, R.drawable.ic_material_symbol_line_weight)
         },
         valueText = stringResource(
             R.string.integer_value,
@@ -98,7 +99,7 @@ internal fun NativeWeightSlider(
         magnetThreshold = weight.verifiedRange?.let(::weightSnapThreshold) ?: 0f,
         hapticEffect = SliderDefaults.SliderHapticEffect.Step,
         holdDownState = dialogOpen,
-        enabled = enabled && weight.verifiedRange != null,
+        enabled = weight.enabled && weight.verifiedRange != null,
         onClick = onOpenDialog,
     )
 }

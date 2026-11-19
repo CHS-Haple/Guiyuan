@@ -144,7 +144,6 @@ private fun ColumnScope.batteryTopReadout(
                 value = visual.topTextWeight,
                 onValueChange = visualRepo::setTopTextWeight,
                 weight = weight,
-                enabled = enabled,
                 dialogOpen = weightDialogOpen,
                 onOpenDialog = onOpenWeightDialog,
             )
