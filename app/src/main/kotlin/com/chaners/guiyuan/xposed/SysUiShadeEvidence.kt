@@ -1,12 +1,14 @@
 package com.chaners.guiyuan.xposed
 
 import android.content.Context
+import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.util.ArrayDeque
+import java.lang.ref.WeakReference
 
 /**
  * Diagnostic-only observation of the native Notification Shade header callback.
@@ -67,7 +69,7 @@ internal object SysUiShadeEvidence {
                             SysUiCcSource.dispatchRuntimeCallback(
                                 callback = {
                                     val controller = outer.get(chain.thisObject)
-                                    val selectedHeader = headerLazy.get(controller)?.let(lazyGet::invoke)
+                                    val selectedHeader = headerLazy.get(controller)?.let { lazyGet.invoke(it) }
                                     val appContext = context.get(controller) as? Context
                                     val nativeVertical =
                                         appContext?.let { verticalMode.invoke(null, it) as? Boolean }
@@ -76,6 +78,13 @@ internal object SysUiShadeEvidence {
                                     val root = selectedHeader?.let { headerRoot.get(it) as? View }
                                     val carrierView = selectedHeader?.let { carrier.get(it) as? View }
                                     val home = SysUiHostRegistry.current() as? View
+                                    if (Looper.myLooper() !== Looper.getMainLooper()) {
+                                        onEvent(
+                                            "shadeEvidence phase=" + phase +
+                                                " state=unavailable reason=non-main-native-callback",
+                                        )
+                                        return@dispatchRuntimeCallback
+                                    }
                                     onEvent(
                                         "shadeEvidence phase=" + phase +
                                             " fraction=" + fraction +
@@ -87,6 +96,7 @@ internal object SysUiShadeEvidence {
                                             " notification={" + viewState(notification) + "}" +
                                             " notificationRoot={" + viewState(root) + "}" +
                                             " carrier={" + viewState(carrierView) + "}" +
+                                            " notificationIconNodes=[" + findIconNodes(notification) + "]" +
                                             " headerIconNodes=[" + findIconNodes(root) + "]" +
                                             " ccFake=" + (CcRenderSession.visualState() ?: "none"),
                                     )
@@ -147,14 +157,14 @@ internal object SysUiShadeEvidence {
 }
 
 internal class ShadeEvidenceGate(private val maxReports: Int = 24) {
-    private var owner: Any? = null
+    private var ownerRef: WeakReference<Any>? = null
     private var previousStage = -1
     private var previousFraction = Float.NaN
     private var reports = 0
 
     @Synchronized
     fun reset() {
-        owner = null
+        ownerRef = null
         previousStage = -1
         previousFraction = Float.NaN
         reports = 0
@@ -163,8 +173,8 @@ internal class ShadeEvidenceGate(private val maxReports: Int = 24) {
     @Synchronized
     fun observe(candidate: Any?, fraction: Float): String? {
         if (!fraction.isFinite() || fraction < 0f || fraction > 1f) return null
-        if (owner !== candidate) {
-            owner = candidate
+        if (ownerRef?.get() !== candidate) {
+            ownerRef = candidate?.let(::WeakReference)
             previousStage = -1
             previousFraction = Float.NaN
         }
