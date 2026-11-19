@@ -16,13 +16,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
@@ -71,65 +73,35 @@ private fun BatteryPagerIndicator(
     onPageSelect: (Int) -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
-    val navigate by rememberUpdatedState(onPageSelect)
+    val navigate = rememberUpdatedState(onPageSelect)
     val centers = remember(pages.size) { FloatArray(pages.size) }
-    var pressedPage by remember { mutableIntStateOf(-1) }
+    val pressedPage = remember { mutableIntStateOf(-1) }
     val dotSpring = remember {
         spring<Dp>(stiffness = Spring.StiffnessMedium, dampingRatio = 0.85f)
     }
     val gap by animateDpAsState(
-        targetValue = if (pressedPage >= 0) 10.dp else 8.dp,
+        targetValue = if (pressedPage.intValue >= 0) 10.dp else 8.dp,
         animationSpec = dotSpring,
         label = "battery-scheme-gap",
     )
     val switchMargin = with(LocalDensity.current) { 3.dp.toPx() }
 
     Row(
-        modifier = Modifier.pointerInput(pages.size, haptic) {
-            awaitEachGesture {
-                fun nearest(x: Float): Int =
-                    centers.indices.minByOrNull { abs(x - centers[it]) } ?: -1
-
-                val down = awaitFirstDown(
-                    requireUnconsumed = false,
-                    pass = PointerEventPass.Initial,
-                )
-                var selected = nearest(down.position.x)
-                if (selected >= 0) {
-                    pressedPage = selected
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    down.consume()
-                    navigate(selected)
-                    try {
-                        while (true) {
-                            val event = awaitPointerEvent(PointerEventPass.Initial)
-                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                            val next = nearest(change.position.x)
-                            if (next >= 0 && next != selected &&
-                                abs(change.position.x - centers[next]) + switchMargin <
-                                abs(change.position.x - centers[selected])
-                            ) {
-                                selected = next
-                                pressedPage = next
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                navigate(next)
-                            }
-                            event.changes.forEach { it.consume() }
-                            if (!change.pressed) break
-                        }
-                    } finally {
-                        pressedPage = -1
-                    }
-                }
-            }
-        },
+        modifier =
+            Modifier.batteryPagerTouch(
+                centers = centers,
+                haptic = haptic,
+                navigate = navigate,
+                pressedPage = pressedPage,
+                switchMargin = switchMargin,
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val currentPage = pagerState.currentPage
         val pagePosition =
             (currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, pages.lastIndex.toFloat())
         val scrolling = pagerState.isScrollInProgress
-        val highlightedPage = pressedPage.takeIf { it >= 0 } ?: targetPage.takeIf { it >= 0 }
+        val highlightedPage = pressedPage.intValue.takeIf { it >= 0 } ?: targetPage.takeIf { it >= 0 }
         pages.forEachIndexed { index, page ->
             val name = when (page) {
                 is BatterySchemePage.BuiltIn -> batteryBuiltInName(page.scheme)
@@ -144,7 +116,7 @@ private fun BatteryPagerIndicator(
                     (1f - abs(index - pagePosition)).coerceIn(0f, 1f)
                 }
             val width by animateDpAsState(
-                targetValue = 8.dp + (if (pressedPage == index) 16.dp else 13.dp) * progress,
+                targetValue = 8.dp + (if (pressedPage.intValue == index) 16.dp else 13.dp) * progress,
                 animationSpec =
                     if (scrolling && highlightedPage == null) snap() else dotSpring,
                 label = "battery-scheme-indicator",
@@ -176,6 +148,51 @@ private fun BatteryPagerIndicator(
                             progress,
                         ),
                 ) {}
+            }
+        }
+    }
+}
+
+private fun Modifier.batteryPagerTouch(
+    centers: FloatArray,
+    haptic: HapticFeedback,
+    navigate: State<(Int) -> Unit>,
+    pressedPage: MutableIntState,
+    switchMargin: Float,
+): Modifier = pointerInput(centers.size, haptic) {
+    awaitEachGesture {
+        fun nearest(x: Float): Int =
+            centers.indices.minByOrNull { abs(x - centers[it]) } ?: -1
+
+        val down = awaitFirstDown(
+            requireUnconsumed = false,
+            pass = PointerEventPass.Initial,
+        )
+        var selected = nearest(down.position.x)
+        if (selected >= 0) {
+            pressedPage.intValue = selected
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            down.consume()
+            navigate.value(selected)
+            try {
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                    val next = nearest(change.position.x)
+                    if (next >= 0 && next != selected &&
+                        abs(change.position.x - centers[next]) + switchMargin <
+                        abs(change.position.x - centers[selected])
+                    ) {
+                        selected = next
+                        pressedPage.intValue = next
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        navigate.value(next)
+                    }
+                    event.changes.forEach { it.consume() }
+                    if (!change.pressed) break
+                }
+            } finally {
+                pressedPage.intValue = -1
             }
         }
     }
