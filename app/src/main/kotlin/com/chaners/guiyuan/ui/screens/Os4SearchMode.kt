@@ -25,7 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.State
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.material.GlassShadows
-import top.yukonga.miuix.kmp.glass.popupShadowOutsets
+import com.chaners.guiyuan.ui.glass.popupShadowOutsets
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.BlurEffect

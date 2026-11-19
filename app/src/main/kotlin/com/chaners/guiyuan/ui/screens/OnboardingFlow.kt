@@ -103,8 +103,8 @@ import top.yukonga.miuix.kmp.nav.transition.navGraphicsTransition
 import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
-import top.yukonga.miuix.kmp.glass.GlassTopAppBar
-import top.yukonga.miuix.kmp.glass.GlassIconButton
+import com.chaners.guiyuan.ui.glass.GlassTopAppBar
+import com.chaners.guiyuan.ui.glass.GlassIconButton
 import com.chaners.guiyuan.system.RootShell
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
@@ -142,7 +142,7 @@ import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.squircle.squircleClip
 import top.yukonga.miuix.kmp.squircle.squircleSurface
-import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
+import com.chaners.guiyuan.ui.glass.GlassDialogButtonRole
 
 // Guide steps are peers, not push-overlay destinations. Share MIUIX's motion and
 // gesture driver while both pages translate the entire width in opposite directions.

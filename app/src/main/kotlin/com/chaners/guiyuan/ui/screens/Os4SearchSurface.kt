@@ -17,11 +17,11 @@ import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.GlassShadows
-import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
+import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.material.GlassDefaults
-import top.yukonga.miuix.kmp.glass.GlassMotion
-import top.yukonga.miuix.kmp.glass.glassOnActionBar
-import top.yukonga.miuix.kmp.glass.glassShadow
+import com.chaners.guiyuan.ui.glass.GlassMotion
+import com.chaners.guiyuan.ui.glass.glassOnActionBar
+import com.chaners.guiyuan.ui.glass.glassShadow
 import top.yukonga.miuix.kmp.material.withUnderlayBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
