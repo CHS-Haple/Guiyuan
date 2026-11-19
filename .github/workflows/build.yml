@@ -310,6 +310,12 @@ jobs:
             RUN_CANARY=true
           fi
 
+          # Debug unit tests still compile the Debug variant. For an explicit
+          # non-debuggable Canary checkpoint, avoid assembling a second APK.
+          if [[ "$RUN_CANARY" == "true" ]]; then
+            RUN_DEBUG=false
+          fi
+
           echo "scope=$SCOPE" >> "$GITHUB_OUTPUT"
           echo "reason=$REASON" >> "$GITHUB_OUTPUT"
           echo "run_android=$RUN_ANDROID" >> "$GITHUB_OUTPUT"
@@ -369,13 +375,47 @@ jobs:
         uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
           cache-provider: enhanced
-          # Only the reviewed main branch seeds reusable Gradle state.
-          # PR and dev builds may restore it but cannot overwrite it.
-          cache-read-only: ${{ github.event_name != 'push' || github.ref != 'refs/heads/main' }}
+          # Only trusted protected main/dev pushes may seed branch-scoped cache entries.
+          # PRs, forks and manual runs restore only; GitHub branch cache isolation
+          # prevents dev writers from publishing caches into the main branch.
+          cache-read-only: ${{ github.event_name != 'push' || (github.ref != 'refs/heads/main' && github.ref != 'refs/heads/dev') }}
 
       - name: Verify pinned HyperOS target profile
         if: steps.scope.outputs.run_android == 'true'
         run: python3 tools/verify_target_profile.py
+
+      # Only trusted same-repo PRs may use the job's packages:read token.
+      # Fail fast on unpublished API before source-composite APK compilation.
+      # This invocation deliberately omits the source-composite flags, while
+      # the later source task owns the single Debug unit-test execution.
+      - name: Verify pinned MIUIX Maven API without source substitution
+        if: github.event_name == 'pull_request' && steps.scope.outputs.run_android == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+          # Cache policy and Build identity edits must not trigger unrelated
+          # published-Maven checks. Compare only the pinned MIUIX coordinates
+          # and the source/API paths that may change their ABI usage.
+          baseline_props="$(git show "$base:gradle.properties")"
+          current_props="$(cat gradle.properties)"
+          baseline_miuix="$(grep -E '^miuix\.(version|revision|upstream\.revision)=' <<< "$baseline_props" || true)"
+          current_miuix="$(grep -E '^miuix\.(version|revision|upstream\.revision)=' <<< "$current_props" || true)"
+          if [[ "$baseline_miuix" == "$current_miuix" ]] &&
+             git diff --quiet "$base" "$HEAD_SHA" -- app/build.gradle.kts app/src/main/kotlin/com/chaners/guiyuan/ui/glass app/src/main/kotlin/com/chaners/guiyuan/ui/components/UiOverlayDialog.kt app/src/main/kotlin/com/chaners/guiyuan/ui/components/UiOverlayBottomSheet.kt; then
+            echo "MIUIX published coordinates and ABI surfaces unchanged; skip Maven preflight."
+            exit 0
+          fi
+          test -z "${GY_OS4_MIUIXDIR:-}"
+          # The pinned 8-char SHA in the Maven coordinate identifies an immutable
+          # published snapshot; forced metadata refresh adds network flakiness.
+          ./gradlew :app:compileDebugKotlin \
+            --no-daemon --max-workers=3 --stacktrace
 
       - name: Test and build required APK variants
         if: steps.scope.outputs.run_android == 'true'
@@ -457,27 +497,6 @@ jobs:
             exit 1
           fi
 
-      # Only trusted same-repo PRs may use the job's packages:read token.
-      # This build deliberately omits the source-composite flags to verify Maven ABI and artifacts.
-      - name: Verify pinned MIUIX Maven API without source substitution
-        if: github.event_name == 'pull_request' && steps.scope.outputs.run_android == 'true' && github.event.pull_request.head.repo.full_name == github.repository
-        shell: bash
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ github.token }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
-          if git diff --quiet "$base" "$HEAD_SHA" -- gradle.properties app/build.gradle.kts app/src/main/kotlin/com/chaners/guiyuan/ui/glass app/src/main/kotlin/com/chaners/guiyuan/ui/components/UiOverlayDialog.kt app/src/main/kotlin/com/chaners/guiyuan/ui/components/UiOverlayBottomSheet.kt; then
-            echo "MIUIX dependencies and Glass surfaces unchanged; skip published ABI check."
-            exit 0
-          fi
-          test -z "${GY_OS4_MIUIXDIR:-}"
-          ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest \
-            --refresh-dependencies --no-daemon --max-workers=3 --stacktrace
-
       - name: Record exact source Build identity
         id: identity
         if: steps.scope.outputs.run_canary == 'true'
@@ -557,6 +576,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             tools/setup_haple_signing.sh
+            tools/verify_signed_apk.sh
 
       - name: Download unsigned source-built Canary
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -607,15 +627,8 @@ jobs:
           "$signer" sign --ks "$HAPLE_KEYSTORE_PATH" --ks-key-alias "$HAPLE_KEY_ALIAS" \
             --ks-pass env:HAPLE_KEYSTORE_PASSWORD --key-pass env:HAPLE_KEYSTORE_PASSWORD \
             --out "$apk" "$source"
-          "$signer" verify --verbose --print-certs "$apk"
-          cert="$("$signer" verify --print-certs "$apk" | awk -F': ' '/certificate SHA-256 digest:/ {print $NF; exit}' | tr '[:upper:]' '[:lower:]')"
-          test "$cert" = "$HAPLE_CERT_SHA256"
-          package="$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk" | sed -n "s/.*package: name='\([^']*\)'.*/\1/p" | head -n 1)"
-          test "$package" = com.chaners.guiyuan
-          version_in_apk="$(sed -n "s/.*versionName='\\([^']*\\)'.*/\\1/p" <<< "$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk")" | head -n 1)"
-          test "$version_in_apk" = "$version"
-          APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
-          test "$("$APKANALYZER" manifest debuggable "$apk")" = false
+          SIGNED_APK_PATH="$apk" EXPECTED_VERSION_NAME="$version" \
+            bash tools/verify_signed_apk.sh
           echo "APK_NAME=$(basename "$apk")" >> "$GITHUB_ENV"
           sha256sum "$apk" >> "$GITHUB_STEP_SUMMARY"
 
