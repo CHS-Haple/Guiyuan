@@ -3,6 +3,9 @@
 
 package top.yukonga.miuix.kmp.glass
 
+import com.chaners.guiyuan.ui.components.glass.GlassNavigationRail
+import com.chaners.guiyuan.ui.components.glass.RailLiquidLensLink
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
