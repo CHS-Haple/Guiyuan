@@ -308,21 +308,22 @@ class GyModule : XposedModule() {
             "controlCenterCompactReady" to prepared.controlCenterCompactReady,
         )
 
-        // Suppress intermediate expanded layout only for an existing,
-        // complete Home presentation that can be transferred.
-        val compactHomeHandoff =
-            SysUiHotReload.shouldPrearmHome(
-                transferEligible =
-                    SysUiCcSource.currentHomeEligibility() == true &&
-                        SysUiPresentationOwner.homeClaimed(),
-                featureEnabled = FeaturePrefsOwner.current().enabled,
-                mobileReady = SysUiNetworkRuntime.mobileReady,
-                batteryReady = StatusStateStore.snapshot().battery != null,
-            )
-        // The old module cannot outlive this API 102 callback with View listeners.
+        // Take the compact-layout eligibility snapshot on the same SystemUI
+        // main-thread turn that retires Home ownership. A scene transition
+        // between callback entry and posted teardown must not reuse a stale
+        // decision about suppressing native relayout.
         val retired =
             runCatching {
                 SysUiHotReload.retireOnMain {
+                    val compactHomeHandoff =
+                        SysUiHotReload.shouldPrearmHome(
+                            transferEligible =
+                                SysUiCcSource.currentHomeEligibility() == true &&
+                                    SysUiPresentationOwner.homeClaimed(),
+                            featureEnabled = FeaturePrefsOwner.current().enabled,
+                            mobileReady = SysUiNetworkRuntime.mobileReady,
+                            batteryReady = StatusStateStore.snapshot().battery != null,
+                        )
                     teardownOldGeneration(compactHomeHandoff)
                 }
             }.onFailure { error ->
