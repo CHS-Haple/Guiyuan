@@ -182,7 +182,6 @@ internal fun RailToggle(
 @Composable
 private fun RailToggleGlyph(
     iconSize: Dp,
-                iconSize = iconSize,
     tint: Color,
     topBarAlpha: () -> Float,
     sideBarAlpha: () -> Float,
