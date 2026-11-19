@@ -153,6 +153,55 @@ class PresentationCapacityLeaseTest {
     }
 
     @Test
+    fun settledLandscapeOverhangReplacesHiddenPortraitLeaseWithoutParentWidthWrite() {
+        // B1879 captured: native portrait lease 587 -> 826, followed by
+        // SystemUI's landscape carrier 1362 over end-anchored parent 1309.
+        assertEquals(
+            FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.ADOPT_HIDDEN_NATIVE,
+            FakeCarrierCapacityLeasePolicy.resolveExistingLeaseAction(
+                visibleCycleActive = false,
+                liveWidthPx = 1362,
+                appliedWidthPx = 826,
+                currentParentContentWidthPx = 1309,
+                leasedParentContentWidthPx = 826,
+                verifiedNativeOverhang = true,
+            ),
+        )
+    }
+
+    @Test
+    fun unverifiedOrVisibleNativeOverhangNeverSupersedesLease() {
+        for ((visible, verified) in listOf(
+            true to true,
+            true to false,
+            false to false,
+        )) {
+            assertEquals(
+                FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.FAIL_WRITER_CONFLICT,
+                FakeCarrierCapacityLeasePolicy.resolveExistingLeaseAction(
+                    visibleCycleActive = visible,
+                    liveWidthPx = 1362,
+                    appliedWidthPx = 826,
+                    currentParentContentWidthPx = 1309,
+                    leasedParentContentWidthPx = 826,
+                    verifiedNativeOverhang = verified,
+                ),
+            )
+        }
+        assertEquals(
+            FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.FAIL_WRITER_CONFLICT,
+            FakeCarrierCapacityLeasePolicy.resolveExistingLeaseAction(
+                visibleCycleActive = false,
+                liveWidthPx = 826,
+                appliedWidthPx = 826,
+                currentParentContentWidthPx = 1309,
+                leasedParentContentWidthPx = 826,
+                verifiedNativeOverhang = true,
+            ),
+        )
+    }
+
+    @Test
     fun fakeCarrierCapacityLeaseUsesOnlyVerifiedParentContentWidth() {
         assertEquals(
             250,
