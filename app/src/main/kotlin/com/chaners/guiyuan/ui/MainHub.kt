@@ -144,7 +144,7 @@ import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
-import com.chaners.guiyuan.ui.glass.GlassDialogButtonRole
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import com.chaners.guiyuan.ui.components.UiOverlayDialog

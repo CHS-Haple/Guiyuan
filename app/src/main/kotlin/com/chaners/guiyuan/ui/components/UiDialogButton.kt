@@ -9,8 +9,8 @@ import com.chaners.guiyuan.ui.LocalUiStyle
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import com.chaners.guiyuan.ui.glass.GlassDialogButton
-import com.chaners.guiyuan.ui.glass.GlassDialogButtonRole
+import top.yukonga.miuix.kmp.glass.GlassDialogButton
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** Keep dialog actions in one style policy; MIUIX owns modal dismissal and geometry. */
