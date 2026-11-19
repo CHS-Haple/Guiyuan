@@ -4,7 +4,7 @@
 package com.chaners.guiyuan.ui.glass
 
 import top.yukonga.miuix.kmp.glass.GlassMotion
-import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassIconButton as UpstreamGlassIconButton
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
@@ -139,7 +139,7 @@ internal fun RailToggle(
         label = "railSideBarIconAlpha",
     )
     if (expanded) {
-        GlassIconButton(
+        UpstreamGlassIconButton(
             onClick = onClick,
             inheritTopBarMaterial = false,
             size = size,
