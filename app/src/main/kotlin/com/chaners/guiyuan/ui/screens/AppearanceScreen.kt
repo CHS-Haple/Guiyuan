@@ -414,19 +414,7 @@ internal fun MiniNavigationPreview(
                     .matchParentSize()
                     .layerBackdrop(miuixBackdrop),
             ) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MiuixTheme.colorScheme.surface,
-                ) {}
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 22.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(5.dp),
-                ) {
-                    MiniTextBar(width = 92.dp, role = MiniTextRole.Body1)
-                    MiniTextBar(width = 58.dp, role = MiniTextRole.Body2)
-                }
+                MiniPreviewBackdropContent()
             }
             Column(modifier = Modifier.fillMaxWidth()) {
                 Spacer(modifier = Modifier.height(20.dp))
@@ -476,20 +464,7 @@ internal fun MiniNavigationPreview(
                         },
                     ),
         ) {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MiuixTheme.colorScheme.surface,
-            ) {}
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 22.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp),
-            ) {
-                MiniTextBar(width = 92.dp, role = MiniTextRole.Body1)
-                MiniTextBar(width = 58.dp, role = MiniTextRole.Body2)
-            }
+            MiniPreviewBackdropContent()
         }
 
         if (!standardNav) {
@@ -645,5 +620,22 @@ private fun RowScope.MiniStandardNavigationItem(
                 role = MiniTextRole.Body2,
             )
         }
+    }
+}
+
+@Composable
+private fun MiniPreviewBackdropContent() {
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MiuixTheme.colorScheme.surface,
+    ) {}
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 22.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        MiniTextBar(width = 92.dp, role = MiniTextRole.Body1)
+        MiniTextBar(width = 58.dp, role = MiniTextRole.Body2)
     }
 }
