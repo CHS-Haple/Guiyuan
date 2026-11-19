@@ -560,113 +560,49 @@ internal fun PreviewSandboxScreen(
                         }
 
                         AnimatedPreferenceGroup(visible = state.mobileOptionsVisible && state.sim1Active) {
-                            UiDropdownPreference(
-                                title = stringResource(
-                                    if (state.simCards == PreviewSimCards.BOTH) R.string.home_preview_sim1_network_title
+                            SandboxMobileNetworkDropdown(
+                                titleRes = if (state.simCards == PreviewSimCards.BOTH) R.string.home_preview_sim1_network_title
                                     else R.string.home_preview_mobile_network_title,
-                                ),
-                                startAction = {
-                                    SemanticLeadingIcon(
-                                        iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
-                                        detailRes = R.drawable.ic_material_symbol_category_w500,
-                                    )
-                                },
-                                items = mobileNetworkOptions,
-                                selectedIndex =
-                                    mobileNetworkChoices.indexOfFirst {
-                                        it.first == state.mobileNetwork
-                                    }.coerceAtLeast(0),
-                                onSelectedIndexChange = { index ->
-                                    mobileNetworkChoices.getOrNull(index)
-                                        ?.first
-                                        ?.let { network ->
-                                            onMobileNetworkChange(network)
-                                        }
-                                },
-                                insideMargin = SandboxPreferenceInsideMargin,
-                                maxHeight = 360.dp,
-                                modifier = Modifier.padding(top = 4.dp),
+                                choices = mobileNetworkChoices,
+                                options = mobileNetworkOptions,
+                                network = state.mobileNetwork,
+                                onChange = onMobileNetworkChange,
                             )
                         }
                         AnimatedPreferenceGroup(visible = state.sim1Active || !state.hasSim) {
-                            SliderPreference(
-                                value = state.mobileSignalLevel.toFloat(),
-                                onValueChange = { value ->
-                                    if (state.mobileControlsEnabled && state.sim1Active) {
-                                        onMobileSignalLevelChange(value.roundToInt().coerceIn(0, 4))
-                                    }
-                                },
-                                title = stringResource(
-                                    if (state.simCards == PreviewSimCards.BOTH) R.string.home_preview_sim1_signal_title
+                            SandboxMobileSignalSlider(
+                                titleRes = if (state.simCards == PreviewSimCards.BOTH) R.string.home_preview_sim1_signal_title
                                     else R.string.home_preview_mobile_signal_title,
-                                ),
+                                level = state.mobileSignalLevel,
+                                enabled = state.mobileControlsEnabled && state.sim1Active,
                                 summary = when {
                                     state.airplaneMode -> stringResource(R.string.home_preview_mobile_disabled_airplane)
                                     !state.sim1Active -> stringResource(R.string.home_preview_mobile_disabled_no_sim)
                                     else -> null
                                 },
-                                enabled = state.mobileControlsEnabled && state.sim1Active,
-                                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt) },
-                                valueText = signalValueText(state.mobileSignalLevel),
-                                insideMargin = SandboxPreferenceInsideMargin,
-                                valueRange = 0f..4f,
-                                steps = 3,
-                                showKeyPoints = true,
-                                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                                keyPoints = listOf(0f, 1f, 2f, 3f, 4f),
+                                onChange = onMobileSignalLevelChange,
                             )
                         }
                         AnimatedPreferenceGroup(visible = state.sim2Active) {
                             AnimatedPreferenceGroup(visible = state.mobileOptionsVisible && state.sim2Active) {
-                                UiDropdownPreference(
-                                    title = stringResource(R.string.home_preview_sim2_network_title),
-                                    startAction = {
-                                        SemanticLeadingIcon(
-                                            iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
-                                            detailRes = R.drawable.ic_material_symbol_category_w500,
-                                        )
-                                    },
-                                    items = mobileNetworkOptions,
-                                    selectedIndex =
-                                        mobileNetworkChoices.indexOfFirst {
-                                            it.first == state.sim2MobileNetwork
-                                        }.coerceAtLeast(0),
-                                    onSelectedIndexChange = { index ->
-                                        mobileNetworkChoices.getOrNull(index)
-                                            ?.first
-                                            ?.let { network ->
-                                                onSim2NetworkChange(network)
-                                            }
-                                    },
-                                    insideMargin = SandboxPreferenceInsideMargin,
-                                    maxHeight = 360.dp,
-                                    modifier = Modifier.padding(top = 4.dp),
+                                SandboxMobileNetworkDropdown(
+                                    titleRes = R.string.home_preview_sim2_network_title,
+                                    choices = mobileNetworkChoices,
+                                    options = mobileNetworkOptions,
+                                    network = state.sim2MobileNetwork,
+                                    onChange = onSim2NetworkChange,
                                 )
                             }
-                            SliderPreference(
-                                value = state.sim2SignalLevel.toFloat(),
-                                onValueChange = { value ->
-                                    if (state.mobileControlsEnabled && state.sim2Active) {
-                                        onSim2SignalLevelChange(value.roundToInt().coerceIn(0, 4))
-                                    }
-                                },
-                                title = stringResource(R.string.home_preview_sim2_signal_title),
+                            SandboxMobileSignalSlider(
+                                titleRes = R.string.home_preview_sim2_signal_title,
+                                level = state.sim2SignalLevel,
+                                enabled = state.mobileControlsEnabled && state.sim2Active,
                                 summary = when {
                                     state.airplaneMode -> stringResource(R.string.home_preview_mobile_disabled_airplane)
                                     !state.sim2Active -> stringResource(R.string.home_preview_mobile_disabled_no_sim)
                                     else -> null
                                 },
-                                enabled = state.mobileControlsEnabled && state.sim2Active,
-                                startAction = {
-                                    SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt)
-                                },
-                                valueText = signalValueText(state.sim2SignalLevel),
-                                insideMargin = SandboxPreferenceInsideMargin,
-                                valueRange = 0f..4f,
-                                steps = 3,
-                                showKeyPoints = true,
-                                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                                keyPoints = listOf(0f, 1f, 2f, 3f, 4f),
+                                onChange = onSim2SignalLevelChange,
                             )
                         }
                         UiDropdownPreference(
