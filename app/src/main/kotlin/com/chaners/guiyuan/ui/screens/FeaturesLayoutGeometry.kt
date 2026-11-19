@@ -29,6 +29,18 @@ internal fun ColumnScope.featureLayoutOffsetsAndScale(
     visualRepo: VisualRepo,
     enabled: Boolean,
 ) {
+    featureBatteryCenteredOffsets(search, visual, visualRepo, enabled)
+    featureRelativePositionOffsets(search, visual, visualRepo, enabled)
+    featureLayoutSizeAndWeight(search, visual, visualRepo, enabled)
+}
+
+@Composable
+private fun ColumnScope.featureBatteryCenteredOffsets(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+) {
     AnimatedPreferenceGroup(visible = visual.layout == ContentLayout.BATTERY_CENTER) {
         if (search.matches(R.string.wifi_vertical_offset)) {
             SliderPreference(
@@ -75,6 +87,15 @@ internal fun ColumnScope.featureLayoutOffsetsAndScale(
             )
         }
     }
+}
+
+@Composable
+private fun ColumnScope.featureRelativePositionOffsets(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+) {
     AnimatedPreferenceGroup(visible = visual.layout != ContentLayout.BATTERY_CENTER) {
         val topInfoVerticalOffsetUi =
             topOffsetYUi(
@@ -130,6 +151,15 @@ internal fun ColumnScope.featureLayoutOffsetsAndScale(
             )
         }
     }
+}
+
+@Composable
+private fun ColumnScope.featureLayoutSizeAndWeight(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+) {
     if (search.matches(R.string.combined_size)) {
         SliderPreference(
             value = visual.combinedScale,
