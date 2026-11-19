@@ -47,6 +47,17 @@ private fun ColumnScope.featureLayoutChoices(
     enabled: Boolean,
     bothSidesSearch: Boolean,
 ) {
+    featureLayoutSelection(search, visual, visualRepo, enabled)
+    featureSignalRowChoices(search, visual, visualRepo, enabled, bothSidesSearch)
+}
+
+@Composable
+private fun ColumnScope.featureLayoutSelection(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+) {
     val searching = search.filtering
     // Display order is deliberately independent of the persisted ContentLayout enum.
     val layoutChoices = listOf(
@@ -54,12 +65,6 @@ private fun ColumnScope.featureLayoutChoices(
         ContentLayout.MOBILE_CENTER to stringResource(R.string.content_layout_mobile_center),
         ContentLayout.BATTERY_CENTER to stringResource(R.string.content_layout_battery_center),
     )
-    val signalDotArrangements = listOf(
-        stringResource(R.string.signal_dot_arrangement_curved),
-        stringResource(R.string.signal_dot_arrangement_horizontal),
-    )
-    val dualSignalDotArrangements = signalDotArrangements +
-        stringResource(R.string.signal_dot_arrangement_both_sides)
     if (search.matches(R.string.content_layout_title) ||
         (searching && visual.layout != ContentLayout.BATTERY_CENTER &&
             search.any(R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset)) ||
@@ -87,6 +92,23 @@ private fun ColumnScope.featureLayoutChoices(
             },
         )
     }
+}
+
+@Composable
+private fun ColumnScope.featureSignalRowChoices(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+    bothSidesSearch: Boolean,
+) {
+    val searching = search.filtering
+    val signalDotArrangements = listOf(
+        stringResource(R.string.signal_dot_arrangement_curved),
+        stringResource(R.string.signal_dot_arrangement_horizontal),
+    )
+    val dualSignalDotArrangements = signalDotArrangements +
+        stringResource(R.string.signal_dot_arrangement_both_sides)
     if (search.matches(R.string.dual_signal_title) ||
         (searching && !visual.dualSignal &&
             (search.any(R.string.dual_row_signal_dot_arrangement_title,
@@ -158,12 +180,20 @@ private fun ColumnScope.featureLayoutSignalAdjustments(
     visualRepo: VisualRepo,
     enabled: Boolean,
 ) {
-    val lowerOpeningOptions = listOf(
-        stringResource(R.string.battery_lower_opening_follow),
-        stringResource(R.string.battery_lower_opening_fixed),
-    )
     val activeDotArrangement =
         if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement
+    featureDotOffsets(search, visual, visualRepo, enabled, activeDotArrangement)
+    featureLowerOpening(search, visual, visualRepo, enabled, activeDotArrangement)
+}
+
+@Composable
+private fun ColumnScope.featureDotOffsets(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+    activeDotArrangement: SignalDotArrangement,
+) {
     listOf(
         SignalDotArrangement.CURVED to R.string.curved_signal_dot_vertical_offset,
         SignalDotArrangement.HORIZONTAL to R.string.horizontal_signal_dot_vertical_offset,
@@ -197,6 +227,20 @@ private fun ColumnScope.featureLayoutSignalAdjustments(
             }
         }
     }
+}
+
+@Composable
+private fun ColumnScope.featureLowerOpening(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+    activeDotArrangement: SignalDotArrangement,
+) {
+    val lowerOpeningOptions = listOf(
+        stringResource(R.string.battery_lower_opening_follow),
+        stringResource(R.string.battery_lower_opening_fixed),
+    )
     AnimatedPreferenceGroup(visible = activeDotArrangement != SignalDotArrangement.BOTH_SIDES) {
         if (search.matches(R.string.battery_lower_opening_title)) {
             UiDropdownPreference(
