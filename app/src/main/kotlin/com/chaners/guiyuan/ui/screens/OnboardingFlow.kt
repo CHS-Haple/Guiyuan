@@ -1,7 +1,5 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,19 +37,13 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.LinkInteractionListener
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
@@ -87,23 +79,15 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Badge
-import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.VerticalScrollBar
-import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
-import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
@@ -138,7 +122,6 @@ private enum class PermissionWarningPhase {
 
 // The guide owns only temporary navigation state; existing preferences and
 // framework services remain the authoritative writers for settings and scope.
-@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun OnboardingFlow(
     lang: AppLang,
@@ -529,114 +512,22 @@ internal fun OnboardingFlow(
                                 modifier = Modifier.widthIn(max = 440.dp).fillMaxWidth()
                                     .weight(1f).padding(horizontal = 4.dp),
                             ) {
-                                Card(modifier = Modifier.fillMaxWidth()) {
-                                    BasicComponent(
-                                        title = stringResource(R.string.terms_title),
-                                        summary = stringResource(R.string.about_terms_summary),
-                                        startAction = {
-                                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_contract)
-                                        },
-                                        endActions = {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            ) {
-                                                if (requiredReading.terms && !termsViewed) Badge(modifier = Modifier.size(8.dp))
-                                                Icon(
-                                                    imageVector = MiuixIcons.Regular.ChevronForward,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(20.dp),
-                                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                )
-                                            }
-                                        },
-                                        onClickLabel = if (requiredReading.terms && !termsViewed) {
-                                            stringResource(R.string.guide_open_required_document)
-                                        } else null,
-                                        onClick = { showAgreement(AgreementDocument.Terms) },
-                                    )
-                                }
-                                Spacer(Modifier.height(12.dp))
-                                Card(modifier = Modifier.fillMaxWidth()) {
-                                    BasicComponent(
-                                        title = stringResource(R.string.privacy_title),
-                                        summary = stringResource(R.string.about_privacy_summary),
-                                        startAction = {
-                                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_policy)
-                                        },
-                                        endActions = {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            ) {
-                                                if (requiredReading.privacy && !privacyViewed) Badge(modifier = Modifier.size(8.dp))
-                                                Icon(
-                                                    imageVector = MiuixIcons.Regular.ChevronForward,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(20.dp),
-                                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                )
-                                            }
-                                        },
-                                        onClickLabel = if (requiredReading.privacy && !privacyViewed) {
-                                            stringResource(R.string.guide_open_required_document)
-                                        } else null,
-                                        onClick = { showAgreement(AgreementDocument.Privacy) },
-                                    )
-                                }
-                                Spacer(Modifier.height(24.dp))
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
-                                Spacer(Modifier.height(20.dp))
-                                Text(
-                                    text = stringResource(R.string.guide_important_note),
-                                    modifier = Modifier.padding(horizontal = 12.dp)
-                                        .semantics { heading() },
-                                    style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.SemiBold),
-                                    color = MiuixTheme.colorScheme.onSurface,
+                                GuideAgreementCard(
+                                    titleRes = R.string.terms_title,
+                                    summaryRes = R.string.about_terms_summary,
+                                    iconRes = R.drawable.ic_material_symbol_contract,
+                                    required = requiredReading.terms && !termsViewed,
+                                    onClick = { showAgreement(AgreementDocument.Terms) },
                                 )
-                                Spacer(Modifier.height(16.dp))
-                                Box(
-                                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                                ) {
-                                    Column(
-                                        modifier = Modifier.fillMaxSize()
-                                            .verticalScroll(importantScroll)
-                                            .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
-                                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                                    ) {
-                                        listOf(
-                                            R.string.guide_privacy_brief,
-                                            R.string.guide_privacy_note_scope,
-                                            R.string.guide_privacy_note_root,
-                                            R.string.guide_privacy_note_diagnostics,
-                                            R.string.guide_privacy_note_sharing,
-                                        ).forEach { note ->
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                verticalAlignment = Alignment.Top,
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            ) {
-                                                Text(
-                                                    text = "•",
-                                                    style = MiuixTheme.textStyles.body2,
-                                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                )
-                                                Text(
-                                                    text = stringResource(note),
-                                                    modifier = Modifier.weight(1f),
-                                                    style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.5f.em),
-                                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                )
-                                            }
-                                        }
-                                    }
-                                    // The accepted MIUIX scrollbar uses this ScrollState,
-                                    // appears during a scroll and auto-fades afterwards.
-                                    VerticalScrollBar(
-                                        adapter = rememberScrollBarAdapter(importantScroll),
-                                        modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                                    )
-                                }
+                                Spacer(Modifier.height(12.dp))
+                                GuideAgreementCard(
+                                    titleRes = R.string.privacy_title,
+                                    summaryRes = R.string.about_privacy_summary,
+                                    iconRes = R.drawable.ic_material_symbol_policy,
+                                    required = requiredReading.privacy && !privacyViewed,
+                                    onClick = { showAgreement(AgreementDocument.Privacy) },
+                                )
+                                GuidePrivacyNotes(importantScroll)
                             }
                         }
                         3 -> {
@@ -655,55 +546,11 @@ internal fun OnboardingFlow(
                     if (step != 2) Spacer(Modifier.height(24.dp))
                 }
                 if (step == 2) {
-                    Row(
-                        modifier = Modifier.widthIn(max = 440.dp).fillMaxWidth()
-                            .toggleable(
-                                value = policyAccepted,
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                role = Role.Checkbox,
-                                onValueChange = ::requestAcknowledgment,
-                            )
-                            .padding(horizontal = 20.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Checkbox(
-                            state = ToggleableState(policyAccepted),
-                            onClick = null,
-                        )
-                        val acknowledgment = stringResource(R.string.guide_privacy_ack)
-                        val terms = stringResource(R.string.guide_terms_link_text)
-                        val privacy = stringResource(R.string.guide_policy_link_text)
-                        val linkedAcknowledgment = buildAnnotatedString {
-                            append(acknowledgment)
-                            listOf(
-                                Triple(terms, AgreementDocument.Terms, "terms"),
-                                Triple(privacy, AgreementDocument.Privacy, "privacy"),
-                            ).forEach { (label, document, tag) ->
-                                val start = acknowledgment.indexOf(label)
-                                if (start >= 0) {
-                                    addLink(
-                                        LinkAnnotation.Clickable(
-                                            tag = tag,
-                                            linkInteractionListener = LinkInteractionListener {
-                                                showAgreement(document)
-                                            },
-                                        ),
-                                        start,
-                                        start + label.length,
-                                    )
-                                }
-                            }
-                        }
-                        Text(
-                            text = linkedAcknowledgment,
-                            modifier = Modifier.weight(1f),
-                            style = MiuixTheme.textStyles.body2.copy(lineHeight = 1.4f.em),
-                            color = MiuixTheme.colorScheme.onSurface,
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
+                    GuidePrivacyAcknowledgment(
+                        accepted = policyAccepted,
+                        onCheckedChange = ::requestAcknowledgment,
+                        onOpenDocument = ::showAgreement,
+                    )
                 }
                 TextButton(
                     text = stringResource(
