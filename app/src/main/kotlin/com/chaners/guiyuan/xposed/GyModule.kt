@@ -4125,12 +4125,12 @@ class GyModule : XposedModule() {
             try {
                 HomeRenderSession.attach(
                     host = host,
-                onEvent = ::logRuntimeEvent,
-                onLatencySample = ::onRenderLatencySample,
-                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
-                initialNativeHandoffActive = true,
-                initialTintState = rendererInitialTintState,
-                allowLiveTintSeed = allowLiveTintSeed,
+                    onEvent = ::logRuntimeEvent,
+                    onLatencySample = ::onRenderLatencySample,
+                    isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                    initialNativeHandoffActive = true,
+                    initialTintState = rendererInitialTintState,
+                    allowLiveTintSeed = allowLiveTintSeed,
                     onPresentationReadinessChanged = { ready ->
                         rendererReadyOnAttach = ready
                         onHomeReadyChanged(host, ready, source)
