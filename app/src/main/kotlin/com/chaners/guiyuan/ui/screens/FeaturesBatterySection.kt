@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -113,30 +115,12 @@ private fun ColumnScope.batteryTopReadout(
                 visual.topTextScale,
             )
         if (search.matches(R.string.battery_top_text_size)) {
-            SliderPreference(
+            BatteryTopScaleSlider(
+                row = BatteryTopScaleRow.TEXT,
                 value = textUiScale,
-                onValueChange = visualRepo::setTopTextScale,
-                title = stringResource(R.string.battery_top_text_size),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, enabled, R.drawable.ic_material_symbol_open_in_full) },
-                valueText =
-                    stringResource(
-                        R.string.battery_top_scale_value,
-                        (textUiScale * 100f).roundToInt(),
-                    ),
-                valueRange =
-                    BATTERY_TOP_TEXT_UI_SCALE_MIN..
-                        BATTERY_TOP_TEXT_UI_SCALE_MAX,
-                steps = 23,
-                showKeyPoints = true,
-                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                keyPoints =
-                    listOf(
-                        topTextUiScaleDefault(
-                            visual.layout,
-                        ),
-                    ),
-                magnetThreshold = 0.035f,
+                defaultValue = topTextUiScaleDefault(visual.layout),
                 enabled = enabled,
+                onValueChange = visualRepo::setTopTextScale,
             )
         }
         if (search.matches(R.string.battery_top_text_weight)) {
@@ -190,31 +174,12 @@ private fun ColumnScope.batteryChargingIcon(
                 visual.topChargingIconScale,
             )
         if (search.matches(R.string.battery_top_charging_icon_size)) {
-            SliderPreference(
+            BatteryTopScaleSlider(
+                row = BatteryTopScaleRow.CHARGING_ICON,
                 value = chargingIconUiScale,
-                onValueChange = visualRepo::setTopChargingIconScale,
-                title = stringResource(R.string.battery_top_charging_icon_size),
-                summary = stringResource(R.string.battery_charging_size_summary),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, enabled, R.drawable.ic_material_symbol_open_in_full) },
-                valueText =
-                    stringResource(
-                        R.string.battery_top_scale_value,
-                        (chargingIconUiScale * 100f).roundToInt(),
-                    ),
-                valueRange =
-                    BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN..
-                        BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX,
-                steps = 23,
-                showKeyPoints = true,
-                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                keyPoints =
-                    listOf(
-                        topChargingIconUiScaleDefault(
-                            visual.layout,
-                        ),
-                    ),
-                magnetThreshold = 0.035f,
+                defaultValue = topChargingIconUiScaleDefault(visual.layout),
                 enabled = enabled,
+                onValueChange = visualRepo::setTopChargingIconScale,
             )
         }
         if (search.matches(R.string.charging_icon_follow_battery_color)) {
@@ -229,4 +194,54 @@ private fun ColumnScope.batteryChargingIcon(
             )
         }
     }
+}
+
+private enum class BatteryTopScaleRow(
+    @StringRes val titleRes: Int,
+    @DrawableRes val iconRes: Int,
+    @StringRes val summaryRes: Int?,
+    val range: ClosedFloatingPointRange<Float>,
+) {
+    TEXT(
+        R.string.battery_top_text_size,
+        R.drawable.ic_material_symbol_battery_5_bar,
+        null,
+        BATTERY_TOP_TEXT_UI_SCALE_MIN..BATTERY_TOP_TEXT_UI_SCALE_MAX,
+    ),
+    CHARGING_ICON(
+        R.string.battery_top_charging_icon_size,
+        R.drawable.ic_material_symbol_bolt,
+        R.string.battery_charging_size_summary,
+        BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN..BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX,
+    ),
+}
+
+@Composable
+private fun BatteryTopScaleSlider(
+    row: BatteryTopScaleRow,
+    value: Float,
+    defaultValue: Float,
+    enabled: Boolean,
+    onValueChange: (Float) -> Unit,
+) {
+    SliderPreference(
+        value = value,
+        onValueChange = onValueChange,
+        title = stringResource(row.titleRes),
+        summary = row.summaryRes?.let { stringResource(it) },
+        startAction = {
+            SemanticLeadingIcon(row.iconRes, enabled, R.drawable.ic_material_symbol_open_in_full)
+        },
+        valueText = stringResource(
+            R.string.battery_top_scale_value,
+            (value * 100f).roundToInt(),
+        ),
+        valueRange = row.range,
+        steps = 23,
+        showKeyPoints = true,
+        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+        keyPoints = listOf(defaultValue),
+        magnetThreshold = 0.035f,
+        enabled = enabled,
+    )
 }
