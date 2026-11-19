@@ -308,10 +308,35 @@ class GyModule : XposedModule() {
             "controlCenterCompactReady" to prepared.controlCenterCompactReady,
         )
 
-        // The old module cannot outlive this API 102 callback with View listeners.
+        // Take the compact-layout eligibility snapshot on the same SystemUI
+        // main-thread turn that retires Home ownership. A scene transition
+        // between callback entry and posted teardown must not reuse a stale
+        // decision about suppressing native relayout.
         val retired =
             runCatching {
-                SysUiHotReload.retireOnMain(::teardownOldGeneration)
+                SysUiHotReload.retireOnMain {
+                    // API 102 retires the old clip masks and renderer before
+                    // the new module may attach. In landscape, restoring the
+                    // native slot layout now is essential: otherwise visible
+                    // native peers inherit the old compact targets until the
+                    // next generation finally requests its own layout.
+                    val compactHomeHandoff =
+                        SysUiHotReload.shouldRetainCompactHomeLayoutOnRetire(
+                            SysUiHotReload.shouldPrearmHome(
+                                transferEligible =
+                                    SysUiCcSource.currentHomeEligibility() == true &&
+                                        SysUiPresentationOwner.homeClaimed(),
+                                featureEnabled = FeaturePrefsOwner.current().enabled,
+                                mobileReady = SysUiNetworkRuntime.mobileReady,
+                                batteryReady = StatusStateStore.snapshot().battery != null,
+                            ),
+                            isLandscape =
+                                (prepared.host as? android.view.View)
+                                    ?.resources?.configuration?.orientation ==
+                                    android.content.res.Configuration.ORIENTATION_LANDSCAPE,
+                        )
+                    teardownOldGeneration(compactHomeHandoff)
+                }
             }.onFailure { error ->
                 SysUiHotReload.rethrowFatal(error)
                 log(Log.ERROR, TAG, "Hot reload old-generation retirement failed", error)
@@ -376,6 +401,7 @@ class GyModule : XposedModule() {
 
         if (takeover == null) {
             val unhookFailed = SysUiHotReload.releaseOldHooks(param)
+            SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(restored.host)
             Log.w(TAG, "Hot Reload hook takeover unavailable; restart SystemUI")
             logDiagnostic(
                 level = Log.ERROR,
@@ -394,6 +420,7 @@ class GyModule : XposedModule() {
         val capture = SysUiHostRegistry.restore(restored.host)
         val hostView = capture?.host as? android.view.View
         if (capture == null || hostView?.isAttachedToWindow != true) {
+            SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(restored.host)
             logDiagnostic(
                 level = Log.WARN,
                 event = "hotReload.complete",
@@ -525,6 +552,7 @@ class GyModule : XposedModule() {
                     }
                 }
             if (!restoreScheduled) {
+                SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(capture.host)
                 logDiagnostic(
                     level = Log.ERROR,
                     event = "hotReload.complete",
@@ -546,6 +574,7 @@ class GyModule : XposedModule() {
                 "restartScope" to false,
             )
         }.onFailure { error ->
+            SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(capture.host)
             reportHotReloadFailure(error)
             log(Log.ERROR, TAG, "Hot reload failed restartScope=true", error)
         }
@@ -626,6 +655,7 @@ class GyModule : XposedModule() {
                         "reason" to "legacy-participant-removed-native-mask-state-untrusted",
                         "restartScope" to true,
                     )
+                    SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(capture.host)
                     return@runCatching
                 }
                 is SysUiPresentationOwner.LegacyCleanupResult.Failure -> {
@@ -637,6 +667,7 @@ class GyModule : XposedModule() {
                         "reason" to legacy.reason,
                         "restartScope" to true,
                     )
+                    SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(capture.host)
                     return@runCatching
                 }
             }
@@ -672,6 +703,7 @@ class GyModule : XposedModule() {
                 initialTintState = transferredTint,
                 allowLiveTintSeed = false,
                 deferProbe = true,
+                prearmHome = restored.controlCenterHomeEligible == true,
             )
 
             logDiagnostic(
@@ -716,6 +748,7 @@ class GyModule : XposedModule() {
             )
         }.onFailure { error ->
             retireFailedHostAttach(capture.host, error)
+            SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(capture.host)
             SysUiHostRegistry.discardIfCurrent(capture.host)
             reportHotReloadFailure(error)
             log(Log.ERROR, TAG, "Hot reload main-thread restore failed", error)
@@ -3823,7 +3856,7 @@ class GyModule : XposedModule() {
         )
     }
 
-    private fun teardownOldGeneration() {
+    private fun teardownOldGeneration(compactHomeHandoff: Boolean) {
         retiredForHotReload = true
         clearHotReloadSceneState()
         homeAodTargetPrearmPending = false
@@ -3846,12 +3879,19 @@ class GyModule : XposedModule() {
 
         release { CcTransitionOwner.detach("hotReload-oldGeneration") }
         release { CcRenderSession.detach(source = "hotReload-oldGeneration") }
-        release { HomeRenderSession.detach() }
+        // Preserve compact native layout only when the generation transfer
+        // can safely skip the native fallback. Landscape always restores the
+        // native slot layout before the next module generation is ready.
+        release {
+            HomeRenderSession.detach(notifyReadinessOnStop = !compactHomeHandoff)
+        }
         release { KeyguardRenderSession.detach() }
         release { KeyguardRenderSession.detachAod() }
         var restoredViews: Int? = null
         release {
-            restoredViews = SysUiPresentationOwner.releaseGenerationForHotReload()
+            restoredViews = SysUiPresentationOwner.releaseGenerationForHotReload(
+                homeRequestLayout = !compactHomeHandoff,
+            )
         }
         release { NativeStatusObserver.deactivate() }
         release { StatusBarStableSession.detach() }
@@ -3886,6 +3926,7 @@ class GyModule : XposedModule() {
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
         deferProbe: Boolean = false,
+        prearmHome: Boolean = false,
     ) {
         val hostContext = (host as? android.view.View)?.context
         val coreRuntime =
@@ -4052,19 +4093,74 @@ class GyModule : XposedModule() {
                 )
             }
 
-        val renderFailure =
-            HomeRenderSession.attach(
-                host = host,
-                onEvent = ::logRuntimeEvent,
-                onLatencySample = ::onRenderLatencySample,
-                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
-                initialNativeHandoffActive = true,
-                initialTintState = rendererInitialTintState,
-                allowLiveTintSeed = allowLiveTintSeed,
-                onPresentationReadinessChanged = { ready ->
-                    onHomeReadyChanged(host, ready, source)
-                },
+        // Native layout must see the represented Home slots excluded before
+        // the renderer's first layout probe, not only after ownerReady=true.
+        val homePrearmed =
+            if (
+                SysUiHotReload.shouldPrearmHome(
+                    transferEligible = prearmHome,
+                    featureEnabled = FeaturePrefsOwner.current().enabled,
+                    mobileReady = SysUiNetworkRuntime.mobileReady,
+                    batteryReady = StatusStateStore.snapshot().battery != null,
+                )
+            ) {
+                when (
+                    SysUiPresentationOwner.activate(
+                        host = host,
+                        requestNativeStatusIconLayout =
+                            (host as? android.view.View)
+                                ?.resources?.configuration?.orientation ==
+                                android.content.res.Configuration.ORIENTATION_LANDSCAPE,
+                    )
+                ) {
+                    is SysUiPresentationOwner.Result.Active -> true
+                    else -> {
+                        SysUiPresentationOwner.deactivate("hotReload-prearm-failed")
+                        false
+                    }
+                }
+            } else {
+                false
+            }
+        if (prearmHome) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "homeLayoutPrearm",
+                component = "homePresentation",
+                state = if (homePrearmed) "ready" else "native",
+                "source" to source,
+                "owner" to if (homePrearmed) "before-renderer-native-layout" else "native",
             )
+        }
+        var rendererReadyOnAttach = false
+        val renderFailure =
+            try {
+                HomeRenderSession.attach(
+                    host = host,
+                    onEvent = ::logRuntimeEvent,
+                    onLatencySample = ::onRenderLatencySample,
+                    isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                    initialNativeHandoffActive = true,
+                    initialTintState = rendererInitialTintState,
+                    allowLiveTintSeed = allowLiveTintSeed,
+                    onPresentationReadinessChanged = { ready ->
+                        rendererReadyOnAttach = ready
+                        onHomeReadyChanged(host, ready, source)
+                    },
+                )
+            } catch (error: Throwable) {
+                // Roll back before propagating the attachment error, without
+                // discarding the original cause if native cleanup also fails.
+                if (homePrearmed) {
+                    try {
+                        SysUiPresentationOwner.deactivate("hotReload-prearm-attach-failed")
+                    } catch (cleanup: Throwable) {
+                        SysUiHotReload.rethrowFatal(cleanup)
+                        if (cleanup !== error) error.addSuppressed(cleanup)
+                    }
+                }
+                throw error
+            }
         if (renderFailure == null) {
             // Native icon Tint can arrive before Home attaches during Hot Reload.
             if (!allowLiveTintSeed && rendererInitialTintState == null) {
@@ -4088,6 +4184,15 @@ class GyModule : XposedModule() {
                 "reason" to renderFailure,
                 "source" to source,
             )
+        }
+
+        // If the new renderer is not ready, restore the native layout.
+        if (prearmHome && !rendererReadyOnAttach) {
+            if (homePrearmed) {
+                SysUiPresentationOwner.deactivate("hotReload-prearm-renderer-not-ready")
+            } else {
+                SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(host)
+            }
         }
 
         try {
