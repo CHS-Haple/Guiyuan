@@ -3,6 +3,7 @@ package com.chaners.guiyuan.xposed
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import android.view.ViewGroup
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
@@ -162,6 +163,53 @@ internal object SysUiHotReload {
             removedHooks = removed,
             classLoader = classLoader,
         )
+    }
+
+    // Preserve native for any incomplete in-place Home transfer; never prearm
+    // outside an eligible Hot Reload or when native replacement is unavailable.
+    internal fun shouldPrearmHome(
+        transferEligible: Boolean,
+        featureEnabled: Boolean,
+        mobileReady: Boolean,
+        batteryReady: Boolean,
+    ): Boolean =
+        transferEligible && featureEnabled && mobileReady && batteryReady
+
+    // API 102 drops the outgoing renderer and native masks before the new
+    // generation can attach. In landscape, skipping the native fallback
+    // relayout exposes restored mobile/battery glyphs at compact-layout
+    // positions during that gap. Keep a native-only, correctly laid-out fallback.
+    internal fun shouldRetainCompactHomeLayoutOnRetire(
+        eligible: Boolean,
+        isLandscape: Boolean,
+    ): Boolean = eligible && !isLandscape
+
+    // Failure-only native fallback. Ordinary same-host transfer must not
+    // add a second native relayout after the new presentation is ready.
+    fun requestNativeHomeRelayoutAfterFailedTransfer(host: Any?) {
+        val view = host as? ViewGroup ?: return
+        val reflow = {
+            if (view.isAttachedToWindow) {
+                val battery =
+                    (0 until view.childCount)
+                        .map(view::getChildAt)
+                        .firstOrNull {
+                            it.javaClass.name ==
+                                "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer"
+                        } as? ViewGroup
+                val icons =
+                    battery?.let { parent ->
+                        (0 until parent.childCount)
+                            .map(parent::getChildAt)
+                            .firstOrNull {
+                                it.javaClass.name ==
+                                    "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
+                            }
+                    }
+                (icons ?: view).requestLayout()
+            }
+        }
+        if (Looper.myLooper() === Looper.getMainLooper()) reflow() else view.post(reflow)
     }
 
     fun restoreTransfer(param: HotReloadedParam): HotReloadTransfer.Restored? =
