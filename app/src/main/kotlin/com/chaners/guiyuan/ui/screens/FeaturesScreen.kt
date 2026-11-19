@@ -42,7 +42,6 @@ import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.launch
 
@@ -161,43 +160,26 @@ internal fun FeaturesScreen(
         searchInNavigationBar = searchInNavigationBar,
         overlay = {
             val selectedImport = pendingImport
-            UiOverlayDialog(
-                title = stringResource(R.string.config_restore_title),
-                summary = stringResource(R.string.config_restore_confirm),
+            FeaturesConfirmationDialog(
+                kind = FeaturesConfirmationKind.RESTORE_CONFIG,
                 show = selectedImport != null,
-                onDismissRequest = { if (!ioBusy) pendingImport = null },
-            ) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    UiDialogButton(
-                        text = stringResource(R.string.cancel),
-                        modifier = Modifier.weight(1f),
-                        enabled = !ioBusy,
-                        onClick = { pendingImport = null },
-                    )
-                    Spacer(Modifier.width(dialogActionGap()))
-                    UiDialogButton(
-                        text = stringResource(R.string.restore),
-                        modifier = Modifier.weight(1f),
-                        enabled = !ioBusy,
-                        role = GlassDialogButtonRole.Primary,
-                        onClick = {
-                            val selected = selectedImport
-                            if (selected != null && !ioBusy) {
-                                ioBusy = true
-                                scope.launch {
-                                    val result = runCatching { backupFiles.restore(selected) }
-                                    pendingImport = null
-                                    ioBusy = false
-                                    snackbarState.showSnackbar(
-                                        if (result.getOrNull() == true) restoredMsg
-                                        else restoreError,
-                                    )
-                                }
-                            }
-                        },
-                    )
-                }
-            }
+                enabled = !ioBusy,
+                onDismiss = { pendingImport = null },
+                onConfirm = {
+                    val selected = selectedImport
+                    if (selected != null && !ioBusy) {
+                        ioBusy = true
+                        scope.launch {
+                            val result = runCatching { backupFiles.restore(selected) }
+                            pendingImport = null
+                            ioBusy = false
+                            snackbarState.showSnackbar(
+                                if (result.getOrNull() == true) restoredMsg else restoreError,
+                            )
+                        }
+                    }
+                },
+            )
             BatteryColorBottomSheet(
                 show = showBatteryColorSheet,
                 library = schemeLibrary,
@@ -240,79 +222,20 @@ internal fun FeaturesScreen(
                     }
                 },
             )
-            UiOverlayDialog(
-                title = stringResource(R.string.restore_feature_defaults),
-                summary = stringResource(R.string.restore_feature_defaults_dialog_summary),
+            FeaturesConfirmationDialog(
+                kind = FeaturesConfirmationKind.RESET_FEATURES,
                 show = showResetDialog,
-                onDismissRequest = { showResetDialog = false },
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    UiDialogButton(
-                        text = stringResource(R.string.cancel),
-                        modifier = Modifier.weight(1f),
-                        onClick = { showResetDialog = false },
-                    )
-                    Spacer(Modifier.width(dialogActionGap()))
-                    UiDialogButton(
-                        text = stringResource(R.string.restore),
-                        modifier = Modifier.weight(1f),
-                        role = GlassDialogButtonRole.Primary,
-                        onClick = {
-                            showResetDialog = false
-                            featureRepo.reset()
-                            visualRepo.resetToDefaults()
-                        },
-                    )
-                }
-            }
+                onDismiss = { showResetDialog = false },
+                onConfirm = {
+                    showResetDialog = false
+                    featureRepo.reset()
+                    visualRepo.resetToDefaults()
+                },
+            )
         },
     ) {
         if (displayMatches) {
-            Section(R.string.section_display_transition) {
-                if (search.matches(R.string.keyguard_combined_status_title)) {
-                    SwitchPreference(
-                        title = stringResource(R.string.keyguard_combined_status_title),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_lock, featureCfg.enabled) },
-                        summary = stringResource(R.string.keyguard_combined_status_summary),
-                        checked = featureCfg.keyguard,
-                        enabled = featureCfg.enabled,
-                        onCheckedChange = featureRepo::setKeyguard,
-                    )
-                }
-                if (search.matches(R.string.aod_combined_status_title)) {
-                    SwitchPreference(
-                        title = stringResource(R.string.aod_combined_status_title),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bedtime, featureCfg.enabled) },
-                        summary = stringResource(R.string.aod_combined_status_summary),
-                        checked = featureCfg.aod,
-                        enabled = featureCfg.enabled,
-                        onCheckedChange = featureRepo::setAod,
-                    )
-                }
-                if (search.matches(R.string.control_center_tint_transition)) {
-                    SwitchPreference(
-                        title = stringResource(R.string.control_center_tint_transition),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_contrast, featureCfg.enabled) },
-                        summary = stringResource(R.string.control_center_tint_transition_summary),
-                        checked = visual.ccTintTransition,
-                        enabled = featureCfg.enabled,
-                        onCheckedChange = visualRepo::setCcTintTransition,
-                    )
-                }
-                if (search.matches(R.string.battery_fill_follow_retract)) {
-                    SwitchPreference(
-                        title = stringResource(R.string.battery_fill_follow_retract),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled) },
-                        summary = stringResource(R.string.battery_fill_follow_retract_summary),
-                        checked = visual.fillFollowsRetract,
-                        enabled = featureCfg.enabled,
-                        onCheckedChange = visualRepo::setFillFollowsRetract,
-                    )
-                }
-            }
+            featureDisplaySection(search, featureCfg, featureRepo, visual, visualRepo)
         }
         if (layoutMatches) {
             featureLayoutSection(
@@ -396,6 +319,47 @@ internal fun FeaturesScreen(
                     )
                 }
             }
+        }
+    }
+}
+
+private enum class FeaturesConfirmationKind(
+    val titleRes: Int,
+    val summaryRes: Int,
+) {
+    RESTORE_CONFIG(R.string.config_restore_title, R.string.config_restore_confirm),
+    RESET_FEATURES(R.string.restore_feature_defaults, R.string.restore_feature_defaults_dialog_summary),
+}
+
+@Composable
+private fun FeaturesConfirmationDialog(
+    kind: FeaturesConfirmationKind,
+    show: Boolean,
+    enabled: Boolean = true,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    UiOverlayDialog(
+        title = stringResource(kind.titleRes),
+        summary = stringResource(kind.summaryRes),
+        show = show,
+        onDismissRequest = { if (enabled) onDismiss() },
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            UiDialogButton(
+                text = stringResource(R.string.cancel),
+                modifier = Modifier.weight(1f),
+                enabled = enabled,
+                onClick = onDismiss,
+            )
+            Spacer(Modifier.width(dialogActionGap()))
+            UiDialogButton(
+                text = stringResource(R.string.restore),
+                modifier = Modifier.weight(1f),
+                enabled = enabled,
+                role = GlassDialogButtonRole.Primary,
+                onClick = onConfirm,
+            )
         }
     }
 }
