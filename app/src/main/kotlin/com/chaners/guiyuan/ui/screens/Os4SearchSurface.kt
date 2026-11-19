@@ -19,7 +19,7 @@ import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.GlassShadows
 import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.material.GlassDefaults
-import com.chaners.guiyuan.ui.glass.GlassMotion
+import top.yukonga.miuix.kmp.glass.GlassMotion
 import com.chaners.guiyuan.ui.glass.glassOnActionBar
 import com.chaners.guiyuan.ui.glass.glassShadow
 import top.yukonga.miuix.kmp.material.withUnderlayBlur

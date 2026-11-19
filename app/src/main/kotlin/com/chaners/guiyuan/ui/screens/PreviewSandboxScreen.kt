@@ -92,7 +92,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import com.chaners.guiyuan.ui.glass.GlassTopAppBar
 import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
 import com.chaners.guiyuan.ui.glass.GlassIconButton
-import com.chaners.guiyuan.ui.glass.GlassMotion
+import top.yukonga.miuix.kmp.glass.GlassMotion
 import com.chaners.guiyuan.ui.glass.GlassSegmentedTabRow
 import com.chaners.guiyuan.ui.glass.GlassSegmentedTabRowDefaults
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
