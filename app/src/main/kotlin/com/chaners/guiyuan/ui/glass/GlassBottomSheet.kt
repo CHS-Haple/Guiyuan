@@ -3,6 +3,9 @@
 
 package com.chaners.guiyuan.ui.glass
 
+import top.yukonga.miuix.kmp.glass.GlassBottomSheetDefaults
+import top.yukonga.miuix.kmp.glass.glassBottomSheetSurface
+
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color

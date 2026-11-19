@@ -8,8 +8,8 @@ import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.LocalUiStyle
 import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
-import com.chaners.guiyuan.ui.glass.GlassDropdownPreference
-import com.chaners.guiyuan.ui.glass.GlassPopupSizing
+import top.yukonga.miuix.kmp.glass.GlassDropdownPreference
+import top.yukonga.miuix.kmp.glass.GlassPopupSizing
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 
 @Composable
