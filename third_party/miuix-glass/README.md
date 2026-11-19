@@ -7,13 +7,22 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- This source graph uses MIUIX `0.9.4-3a980f7c-SNAPSHOT` at full revision
-  `3a980f7c509c62c6d315f71ac28b40ecc8d31f3b`.
+- The active source and Maven graph uses the successfully published MIUIX
+  snapshot `0.9.5-d27cbb0b-SNAPSHOT` at full revision
+  `d27cbb0b375912cdf42670553fdb564d8ff7fc23`. The upstream publication completed in
+  [run #44476825158](https://github.com/compose-miuix-ui/miuix/actions/runs/44476825158).
+  Upstream `v0.9.5-beta01` is a pre-release, not a `v0.9.5` stable
+  release. The exact source-pinned snapshot is identified separately by
+  upstream's `0.9.5-<short SHA>-SNAPSHOT` Maven convention.
+  The source-pinned `d27cbb0b` graph includes the upstream progressive-blur
+  caching/shader refinements and dynamic palette support. Guiyuan keeps its
+  adapted glass, search and navigation ownership while migrating applicable
+  defaults; this source update requires its own CI and device evidence.
   The prior Material integration is documented in
   [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
   The stable `main` line must be checked separately; do not treat a `dev`
   pin as a stable-release upgrade.
-- `app/src/main/kotlin/top/yukonga/miuix/kmp/glass/` contains an adapted,
+- `app/src/main/kotlin/com/chaners/guiyuan/ui/glass/` contains an adapted,
   app-compiled subset of the upstream
   [MIUIX Glass implementation](https://github.com/compose-miuix-ui/miuix/pull/423).
   Its earlier source was reconciled at `45645854cd46c32275c5666e3aafa9980d8f104e`;
@@ -29,8 +38,8 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Single published-API source
 
-The pinned MIUIX `3a980f7c` Maven artifacts expose `DialogSurfaceScope`,
-`BottomSheetSurfaceScope` and `BlurTopAppBar`. Both former source choices
+The pinned MIUIX snapshot Maven artifacts expose `DialogSurfaceScope`,
+`BottomSheetSurfaceScope` and `TopAppBarLayout`. Both former source choices
 compiled against published Maven without composite-source substitution in
 [PR #1521](https://github.com/CHS-Haple/Guiyuan/pull/1521). The obsolete
 source forks and `gy.os4.dialogSurfaces` property are retired. The one
@@ -42,14 +51,16 @@ paths, not separate compiled source trees.
 ## Material model ownership
 
 The pinned MIUIX Material graph owns the canonical shape, style, colour layers,
-material, shadow and stroke presets. `GlassMaterialBridge.kt` delegates the
-existing call sites to published upstream Material definitions and functions.
-`GlassStroke.kt` aliases the upstream `EdgeStroke` and `GlassEdgeStrokes`.
+material, shadow and stroke presets. Adapted Glass components import published MIUIX Material shape, style,
+stroke and shadow definitions directly; local Material type/factory bridges
+and stroke aliases have been retired.
 The app renders strokes, rim, masks and shadows via Material; the accepted
 #479 fused edge pass runs only when shading, positive stroke width and additive
-blend mode allow it. App-specific backdrop refraction/color blending and
-popup/Back lifecycles stay locally owned. Do not copy upstream shader sources
-back into this package or add a second Material model.
+blend mode allow it. Refraction now embeds upstream `MaterialAgsl` silhouette
+and rim fragments and delegates shape uniforms to `setSilhouetteUniforms`;
+no local copy of either shared implementation remains. App-specific backdrop
+refraction/color blending and popup/Back lifecycles stay locally owned. Do not
+copy shared shaders into the app or add a second Material model.
 
 ## Live app-specific boundaries
 
@@ -57,9 +68,15 @@ back into this package or add a second Material model.
   single-owner backdrop/scrim and any necessary host/Sheet separation.
   `GlassIconButton` has Guiyuan-used long-press, hold-down and enabled APIs;
   upstream source equivalence alone cannot replace them.
-- `UiNativeTitleBar` retains the accepted `BlurTopAppBar` (now available
-  through pinned published MIUIX), title-local clipping and measured unclipped
-  navigation/action controls. The old `TopAppBar` fallback is retired.
+- `UiNativeTitleBar` uses the upstream `TopAppBarLayout` with native title
+  blur, retaining accepted title-local clipping and measured unclipped
+  navigation/action controls. The old parallel fallback is retired.
+- Search top-bar fade/scale/blur now uses the published MIUIX
+  `rememberGlassSearchBarAlpha` and `glassSearchBarTransition` functions directly;
+  the duplicate app-local copy is retired. `PageSearch` retains query and result ownership,
+  while its own search geometry still uses the source-matched easing curve. Native
+  `TopAppBarLayout` still clips actions, so the measured outer shadow slot
+  remains until upstream provides an equivalent unclipped API.
 - Navigation retains noninteractive preview behavior, touch-safe bottom
   extension and exact native icon/material semantics. Do not replace a
   caller-owned touch or animation boundary with a similar-looking upstream
@@ -73,13 +90,28 @@ back into this package or add a second Material model.
 
 ## Migration and verification
 
-Dialog, BottomSheet, title and edge drawing now use one published MIUIX API
-contract. Remaining local source implements adapted backdrop/refraction and
-Guiyuan-specific UI and lifecycle ownership.
-A whole-module `miuix-glass-android` swap must atomically remove conflicting
-same-package local declarations; linking it alongside the local bridge causes
-duplicate classes and can expose `internal` visibility/ABI failures. Do not
-modify the upstream checkout during CI to bypass these issues.
+The published MIUIX Glass module is now linked directly. The app uses its
+`GlassDialog`, `GlassBottomSheet`, `glassDialogSurface`, `glassBottomSheetSurface`,
+`GlassDropdownPreference`, `GlassDialogButton`, `GlassMotion`, `glassPressScale`,
+and `glassPanel` APIs instead of maintaining corresponding component copies.
+Its published material, edge and shader APIs also remain authoritative.
+The preview sandbox's segmented Glass tabs use the published upstream `GlassSegmentedTabRow` and defaults; the app-local `GlassTabRow.kt` source copy is retired.
+Navigation destinations and `GlassNavigationBarDefaults` now also use the upstream public types; local navigation/rail still owns only Guiyuan-specific gestures, geometry and hit-area extension.
+The identical `GlassNavigationRailDefaults` object is likewise taken from upstream; app-specific rail state remains local because it uses a private morph clock and supports a trailing action absent from the public upstream Rail API.
+The public glass surface and constant-alpha shadow modifiers now resolve to MIUIX's published API; only app-specific action-bar underlay and state-driven shadow helpers remain local.
+Integer and scheme-rename dialogs use published `GlassTextField` in OS4, retaining native `TextField` for OS3. Card-embedded numeric/hex fields keep their existing non-Glass presentation.
+The remaining app-local Glass files preserve the accepted navigation/rail,
+noninteractive preview and touch exclusion, controlled search, popup anchor
+and Back lifecycle, long-press/held-state button, title slots and custom
+refraction/material ownership where upstream does not expose an equivalent
+public entrypoint. These are app-specific adapters, not a second complete MIUIX
+module implementation.
+The work-branch trial links the published `miuix-glass-android` module and
+source-substitutes it from the same pinned upstream revision, after relocating
+adapted local components to `com.chaners.guiyuan.ui.glass`. This resolves
+same-package JVM class collisions but does not itself prove public API parity,
+correct upstream runtime behavior, or safe removal of app-owned interaction
+and lifecycle implementations. Do not modify upstream source in CI.
 
 For later upstream alignment, preserve adapted backdrop/refraction and
 popup, Back/scrim and navigation ownership. Validate both source-matched and
@@ -93,3 +125,5 @@ Dated integration evidence is in
 [PR #1370](https://github.com/CHS-Haple/Guiyuan/pull/1370) and repository
 history. The previous long-form conformance/audit investigations remain
 accessible in Git history, not in active documentation.
+
+The `d27cbb0b` published revision adds upstream progressive blur/graphics-layer resource gating and a drag badge clipping fix; Guiyuan's app-owned top bar/button and navigation adapters mirror these affected layout and backdrop-consumer contracts while retaining Guiyuan-only ownership. Source and Maven parity must pass on this new revision before delivery.

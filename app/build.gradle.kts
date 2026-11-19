@@ -51,7 +51,7 @@ android {
 
     compileSdk {
         version = release(37) {
-            minorApiLevel = 0
+            minorApiLevel = 2
         }
     }
 
@@ -169,6 +169,7 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion")
     // Both OS4 UI source sets reuse the same upstream Glass icons from the pinned dependency.
     implementation("top.yukonga.miuix.kmp:miuix-glass-icons-android:$miuixVersion")
+    implementation("top.yukonga.miuix.kmp:miuix-glass-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-material-android:$miuixVersion")

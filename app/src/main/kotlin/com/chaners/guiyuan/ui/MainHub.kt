@@ -3,11 +3,16 @@ package com.chaners.guiyuan.ui
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -17,9 +22,11 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
@@ -34,6 +41,10 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +61,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -67,6 +84,7 @@ import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.system.RestartTarget
 import com.chaners.guiyuan.system.ScopeRestart
@@ -77,31 +95,49 @@ import com.chaners.guiyuan.ui.components.measuredNavTouchExtension
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
-import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
+import com.chaners.guiyuan.ui.components.liquid.LiquidNavPressLink
+import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
+import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
+import com.chaners.guiyuan.ui.components.liquid.liquidRailSelectedSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
-import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
 import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.FeaturesScreen
+import com.chaners.guiyuan.ui.screens.PageSearch
+import com.chaners.guiyuan.ui.screens.rememberPageSearch
 import com.chaners.guiyuan.ui.screens.HomeScreen
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
 import com.chaners.guiyuan.ui.screens.SemanticLeadingIcon
+import com.chaners.guiyuan.ui.icons.Os4GlassSearch
+import com.chaners.guiyuan.ui.icons.Os4GlassRefresh
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.job
-import top.yukonga.miuix.kmp.glass.GlassNavigationBar
-import top.yukonga.miuix.kmp.glass.GlassNavigationRail
-import top.yukonga.miuix.kmp.glass.GlassRailDestinations
+import com.chaners.guiyuan.ui.glass.GlassNavigationBar
+import com.chaners.guiyuan.ui.glass.GlassNavigationBarLayout
+import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
+import com.chaners.guiyuan.ui.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassMotion
+import com.chaners.guiyuan.ui.glass.GlassNavigationRail
+import com.chaners.guiyuan.ui.glass.GlassRailDestinations
+import com.chaners.guiyuan.ui.glass.RailLiquidPaint
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
-import top.yukonga.miuix.kmp.glass.rememberGlassNavigationRailState
+import com.chaners.guiyuan.ui.glass.rememberGlassNavigationRailState
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.basic.NavigationBarDisplayMode
+import top.yukonga.miuix.kmp.basic.NavigationRail
+import top.yukonga.miuix.kmp.basic.NavigationRailState
+import top.yukonga.miuix.kmp.basic.NavigationRailDefaults
+import top.yukonga.miuix.kmp.basic.NavigationRailItem
+import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
@@ -113,6 +149,7 @@ import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -142,6 +179,36 @@ internal fun canPlaceGlassRail(
         GlassNavigationRailDefaults.Margin * 2 + startInset
     return windowSize.width >= occupiedWidth + endInset + 360.dp &&
         windowSize.height >= verticalInsets + 320.dp
+}
+
+/** Native rail replaces the current bottom bar only when the whole page still fits. */
+internal fun canPlaceNativeRail(
+    window: DpSize,
+    startInset: Dp,
+    endInset: Dp,
+    verticalInsets: Dp,
+): Boolean = window.width >= NavigationRailDefaults.ExpandedWidth + startInset + endInset + 360.dp &&
+    window.height >= verticalInsets + 320.dp
+
+/** A style-level policy with no orientation or device-brand assumptions. */
+internal fun useNativeRailFor(
+    appearance: Appearance,
+    glassBackdropAvailable: Boolean,
+    window: DpSize,
+    safePadding: PaddingValues,
+    direction: LayoutDirection,
+): Boolean {
+    if (!appearance.navEnabled) return false
+    // OS4 Glass and Liquid share the original GlassRail layout; OS3 uses native Rail.
+    if (appearance.uiStyle == UiStyle.OS4 && glassBackdropAvailable &&
+        (appearance.navStyle == NavStyle.Glass || appearance.navStyle == NavStyle.Liquid)
+    ) return false
+    return canPlaceNativeRail(
+        window,
+        safePadding.calculateStartPadding(direction),
+        safePadding.calculateEndPadding(direction),
+        safePadding.calculateTopPadding() + safePadding.calculateBottomPadding(),
+    )
 }
 
 /**
@@ -210,6 +277,160 @@ private data class MainNavItem(
     val icon: ImageVector,
 )
 
+/** Map app destinations to the MIUIX-native rail; no parallel press or selected lens. */
+@Composable
+private fun HubNativeRail(
+    state: NavigationRailState,
+    items: List<MainNavItem>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+) {
+    NavigationRail(state = state, modifier = Modifier.fillMaxHeight()) {
+        items.forEachIndexed { index, item ->
+            NavigationRailItem(
+                selected = selectedIndex == index,
+                onClick = { onSelect(index) },
+                icon = item.icon,
+                label = item.label,
+            )
+        }
+    }
+}
+
+/** Both page actions share one callback owner and the same busy-state checks. */
+private class NavigationActionSurface(
+    val backdrop: Backdrop,
+    val liquidMode: LiquidMode?,
+    val dark: Boolean,
+    val size: Dp,
+)
+
+private class NavigationActionControls(
+    val hotReloadEnabled: Boolean,
+    val hotReloadInProgress: Boolean,
+    val onHotReload: () -> Unit,
+    val onSearch: () -> Unit,
+)
+
+/**
+ * OS4 Liquid keeps its own optical surface and interaction; MIUIX owns action layout/transition.
+ * This is a separate button, never another destination or a second pager writer.
+ */
+@Composable
+private fun LiquidNavigationAction(
+    action: NavigationAction,
+    surface: NavigationActionSurface,
+    mode: LiquidMode,
+    controls: NavigationActionControls,
+    pressLink: LiquidNavPressLink? = null,
+) {
+    val isReload = action == NavigationAction.HotReload
+    val label = stringResource(if (isReload) R.string.hot_reload else R.string.feature_search)
+    val icon = if (isReload) Os4GlassRefresh else Os4GlassSearch
+    val enabled = !isReload || controls.hotReloadEnabled
+    val holdDown = isReload && controls.hotReloadInProgress
+    val onClick = if (isReload) controls.onHotReload else controls.onSearch
+    val direction = LocalLayoutDirection.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val pointerPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pointerPressed || holdDown) 0.9f else 1f,
+        // Follow the published MIUIX floating action's press/release timing,
+        // retaining Guiyuan's Liquid surface rather than its primary-tinted material.
+        animationSpec = GlassMotion.springOf(
+            damping = 1f, response = if (pointerPressed || holdDown) 0.15f else 0.3f,
+        ),
+        label = "liquidNavigationActionPressScale",
+    )
+    Box(
+        modifier = Modifier
+            // Portrait uses the 64dp Liquid capsule; a Rail action follows Rail's height.
+            .size(surface.size)
+            .then(
+                if (pressLink != null) Modifier.offset {
+                    // Read the same lens, panel and drag frame as the nav bar;
+                    // the link owns no extra animation or gesture writer.
+                    val offset = pressLink.actionOffsetX(
+                        LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
+                        LiquidNavSpec.contentPadding.toPx(), direction,
+                    )
+                    IntOffset(offset.roundToInt(), 0)
+                } else Modifier
+            )
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .dropShadow(
+                shape = CircleShape,
+                shadow = Shadow(
+                    radius = 10.dp,
+                    color = Color.Black,
+                    alpha = if (surface.dark) 0.20f else 0.10f,
+                ),
+            )
+            .liquidRailSurface(surface.backdrop, CircleShape, mode)
+            .clickable(
+                enabled = enabled && !holdDown,
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            )
+            .semantics { role = Role.Button },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (enabled) MiuixTheme.colorScheme.onBackground
+                else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
+        )
+    }
+}
+
+/** The one navigation action slot is shared by Home and Features. */
+@Composable
+private fun NavigationTrailingAction(
+    action: NavigationAction,
+    surface: NavigationActionSurface,
+    controls: NavigationActionControls,
+    pressLink: LiquidNavPressLink? = null,
+) {
+    val reload = action == NavigationAction.HotReload
+    val label = stringResource(if (reload) R.string.hot_reload else R.string.feature_search)
+    val icon = if (reload) Os4GlassRefresh else Os4GlassSearch
+    val enabled = !reload || controls.hotReloadEnabled
+    val holdDown = reload && controls.hotReloadInProgress
+    val onClick = if (reload) controls.onHotReload else controls.onSearch
+    TooltipBox(text = label) {
+        val mode = surface.liquidMode
+        if (mode != null) {
+            LiquidNavigationAction(
+                action = action,
+                surface = surface,
+                mode = mode,
+                controls = controls,
+                pressLink = pressLink,
+            )
+        } else {
+            GlassIconButton(
+                onClick = { if (enabled && !holdDown) onClick() },
+                backdrop = surface.backdrop,
+                size = surface.size,
+                enabled = enabled,
+                holdDownState = holdDown,
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = label,
+                    tint = if (enabled) MiuixTheme.colorScheme.onSurface
+                        else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
+                )
+            }
+        }
+    }
+}
+
 @Composable
 internal fun MainHub(
     appearance: Appearance,
@@ -227,6 +448,8 @@ internal fun MainHub(
     val featureSnackbarState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val pageSelection = remember(pagerState, scope) { HubPagerSelection(pagerState, scope) }
+    // One search owner for both the Features page and its optional OS4 navigation action.
+    val featureSearch = rememberPageSearch()
     LaunchedEffect(pagerState.currentPage) { pageSelection.syncActualPage() }
     val context = LocalContext.current
     var restartPickerOpen by remember { mutableStateOf(false) }
@@ -269,7 +492,7 @@ internal fun MainHub(
     val liquidMaterialActive =
         appearance.navEnabled &&
             appearance.navStyle == NavStyle.Liquid &&
-            liquidNavSupported()
+            isRuntimeShaderSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
     // The root dialog needs a clean page source even with native/hidden navigation.
     val miuixBackdrop =
@@ -290,21 +513,54 @@ internal fun MainHub(
         .asPaddingValues()
     val railStartInset = railSafePadding.calculateStartPadding(LocalLayoutDirection.current)
     val railEndInset = railSafePadding.calculateEndPadding(LocalLayoutDirection.current)
-    val railVerticalInsets = railSafePadding.calculateTopPadding() + railSafePadding.calculateBottomPadding()
+    val railTopInset = railSafePadding.calculateTopPadding()
+    val railBottomInset = railSafePadding.calculateBottomPadding()
+    val railVerticalInsets = railTopInset + railBottomInset
     val railContentWidth = GlassNavigationRailDefaults.ExpandedWidth +
         GlassNavigationRailDefaults.Margin * 2 + railStartInset
-    val useGlassRail = os4Glass && navBackdrop != null &&
-        canPlaceGlassRail(LocalWindowInfo.current.containerDpSize, railStartInset, railEndInset, railVerticalInsets)
+    val liquidBackdrop =
+        if (liquidMaterialActive) rememberLiquidNavBackdrop(surfaceColor) else null
+    val railBackdrop = if (os4Glass) navBackdrop else if (os4) liquidBackdrop else null
+    // The UI style owns geometry. Liquid changes only the material of that style's rail.
+    val useGlassRail = railBackdrop != null && canPlaceGlassRail(
+        LocalWindowInfo.current.containerDpSize, railStartInset, railEndInset, railVerticalInsets,
+    )
+    val useNativeRail = useNativeRailFor(
+        appearance = appearance,
+        glassBackdropAvailable = navBackdrop != null || liquidBackdrop != null,
+        window = LocalWindowInfo.current.containerDpSize,
+        safePadding = railSafePadding,
+        direction = LocalLayoutDirection.current,
+    )
+    val actionInRail = hasOs4RailActionSlot(appearance, useGlassRail)
+    val actionInBottomNav = hasOs4NavigationActionSlot(
+        appearance = appearance,
+        glassBackdropAvailable = navBackdrop != null,
+        liquidBackdropAvailable = liquidBackdrop != null,
+        glassRailActive = useGlassRail,
+        nativeRailActive = useNativeRail,
+    )
+    val navigationActionSlot = actionInBottomNav || actionInRail
+    val navigationAction = navigationActionFor(
+        slotAvailable = navigationActionSlot,
+        selectedPage = pageSelection.selectedPage,
+        searchActive = featureSearch.active,
+    )
+    val hotReloadEnabled = !restartInProgress && !scopeRequestInProgress && !scopeBusy
+    val requestHotReload: () -> Unit = {
+        if (hotReloadEnabled && !hotReloadInProgress) onHotReload()
+    }
+    val actionControls = NavigationActionControls(
+        hotReloadEnabled,
+        hotReloadInProgress,
+        requestHotReload,
+        featureSearch::open,
+    )
+    val nativeRailState = rememberNavigationRailState()
     val railState = rememberGlassNavigationRailState()
     val railProgress = remember(useGlassRail, railState) {
         { if (useGlassRail) railState.progress else 1f }
     }
-    val liquidBackdrop =
-        if (liquidMaterialActive) {
-            rememberLiquidNavBackdrop(surfaceColor)
-        } else {
-            null
-        }
 
     val homeLabel = stringResource(R.string.nav_home)
     val featuresLabel = stringResource(R.string.nav_features)
@@ -340,7 +596,7 @@ internal fun MainHub(
         snackbarHost = { SnackbarHost(state = featureSnackbarState) },
         bottomBar = {
             when {
-                useGlassRail -> Unit
+                useGlassRail || useNativeRail -> Unit
                 os4Glass && navBackdrop != null -> {
                     val selectedPage = pageSelection.selectedPage
                     val includeLabels = appearance.activeNavContent == NavContent.IconAndText
@@ -359,6 +615,28 @@ internal fun MainHub(
                         onSelect = ::selectPage,
                         backdrop = navBackdrop,
                         touchExtension = appearance.navTouchExtension,
+                        // Exclude the measured 54dp action and 12dp native MIUIX gap.
+                        trailingActionTouchExclusion = if (navigationAction != null) {
+                            GlassNavigationBarDefaults.Height + GlassNavigationBarDefaults.ActionSpacing
+                        } else 0.dp,
+                        trailingActionTouchSize = if (navigationAction != null) {
+                            GlassNavigationBarDefaults.Height
+                        } else 0.dp,
+                        onTrailingActionTouch = navigationAction?.let { action ->
+                            if (action == NavigationAction.HotReload) actionControls.onHotReload
+                            else actionControls.onSearch
+                        },
+                        trailingAction = navigationAction?.let { action ->
+                            {
+                                NavigationTrailingAction(
+                                    action = action,
+                                    surface = NavigationActionSurface(
+                                        navBackdrop, null, dark, GlassNavigationBarDefaults.Height,
+                                    ),
+                                    controls = actionControls,
+                                )
+                            }
+                        },
                         modifier = Modifier
                             .padding(start = 24.dp, end = 24.dp, top = 20.dp),
                     )
@@ -386,6 +664,7 @@ internal fun MainHub(
                 }
 
                 liquidBackdrop != null -> {
+                    val liquidPressLink = remember { LiquidNavPressLink() }
                     Column(
                         modifier =
                             Modifier
@@ -399,6 +678,16 @@ internal fun MainHub(
                                             itemCount = items.size,
                                             rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
                                             onSelect = ::selectPage,
+                                            trailingActionWidth = if (navigationAction != null) {
+                                                LiquidNavSpec.height + GlassNavigationBarDefaults.ActionSpacing
+                                            } else 0.dp,
+                                            trailingActionSize = if (navigationAction != null) {
+                                                LiquidNavSpec.height
+                                            } else 0.dp,
+                                            onTrailingAction = navigationAction?.let { action ->
+                                                if (action == NavigationAction.HotReload) actionControls.onHotReload
+                                                else actionControls.onSearch
+                                            },
                                         )
                                     } else {
                                         Modifier
@@ -406,23 +695,49 @@ internal fun MainHub(
                                 )
                                 .padding(bottom = liquidBottomPadding),
                     ) {
-                        LiquidNavBar(
-                            selectedIndex = { pageSelection.selectedPage },
-                            onSelected = ::selectPage,
-                            backdrop = liquidBackdrop,
-                            tabsCount = items.size,
-                            dark = dark,
-                            mode = appearance.liquidMode,
-                            modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
-                        ) {
-                            items.forEachIndexed { index, item ->
-                                LiquidNavEntry(
-                                    contentMode = appearance.activeNavContent,
-                                    onClick = { selectPage(index) },
-                                    icon = item.icon,
-                                    label = item.label,
-                                )
+                        val liquidBar: @Composable () -> Unit = {
+                            LiquidNavBar(
+                                selectedIndex = { pageSelection.selectedPage },
+                                onSelected = ::selectPage,
+                                backdrop = liquidBackdrop,
+                                tabsCount = items.size,
+                                dark = dark,
+                                mode = appearance.liquidMode,
+                                pressLink = if (os4) liquidPressLink else null,
+                                // OS4's shared layout owns the outer margin; OS3 keeps its original.
+                                modifier = if (os4) Modifier else Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
+                            ) {
+                                items.forEachIndexed { index, item ->
+                                    LiquidNavEntry(
+                                        contentMode = appearance.activeNavContent,
+                                        selected = pageSelection.selectedPage == index,
+                                        onClick = { selectPage(index) },
+                                        icon = item.icon,
+                                        label = item.label,
+                                    )
+                                }
                             }
+                        }
+                        if (os4) {
+                            GlassNavigationBarLayout(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = LiquidNavSpec.sidePadding),
+                                trailingAction = navigationAction?.let { action ->
+                                    {
+                                        NavigationTrailingAction(
+                                            action = action,
+                                            surface = NavigationActionSurface(
+                                                liquidBackdrop, appearance.liquidMode, dark, LiquidNavSpec.height,
+                                            ),
+                                            controls = actionControls,
+                                            pressLink = liquidPressLink,
+                                        )
+                                    }
+                                },
+                            ) { liquidBar() }
+                        } else {
+                            liquidBar()
                         }
                     }
                 }
@@ -502,8 +817,19 @@ internal fun MainHub(
             }
         },
     ) { innerPadding ->
-        // The native MIUIX rail must be outside the page's recorded blur backdrop.
-        Box(Modifier.fillMaxSize()) {
+        // The weighted page occupies a stable Compose slot even when the rail becomes visible
+        // or disappears during rotation and split-screen resizing.
+        Row(Modifier.fillMaxSize()) {
+            if (useNativeRail) {
+                // OS3 wide Liquid follows the native rail, not a second lens/press layer.
+                HubNativeRail(
+                    state = nativeRailState,
+                    items = items,
+                    selectedIndex = pageSelection.selectedPage,
+                    onSelect = ::selectPage,
+                )
+            }
+            Box(Modifier.weight(1f).fillMaxHeight()) {
         Box(
             modifier =
                 Modifier
@@ -516,8 +842,8 @@ internal fun MainHub(
                         },
                     )
                     .then(
-                        if (liquidBackdrop != null) {
-                            Modifier.liquidNavBackdropSource(liquidBackdrop)
+                        if (liquidBackdrop != null && !useNativeRail) {
+                            Modifier.layerBackdrop(liquidBackdrop)
                         } else {
                             Modifier
                         },
@@ -544,6 +870,9 @@ internal fun MainHub(
                 pagerState = pagerState,
                 bottomPadding = innerPadding,
                 featureSnackbarState = featureSnackbarState,
+                selectedPage = pageSelection.selectedPage,
+                featureSearch = featureSearch,
+                searchInNavigationBar = navigationActionSlot,
                 lang = lang,
                 iconHidden = iconHidden,
                 swipeBackEnabled = appearance.swipeBack,
@@ -567,13 +896,8 @@ internal fun MainHub(
                         }
                     }
                 },
-                onHotReload = {
-                    if (!hotReloadInProgress && !restartInProgress && !scopeRequestInProgress &&
-                        !scopeBusy
-                    ) {
-                        onHotReload()
-                    }
-                },
+                onHotReload = requestHotReload,
+                hotReloadInNavigation = navigationActionSlot,
                 onLangChange = onLangChange,
                 onIconHiddenChange = onIconHiddenChange,
                 onSwipeBackChange = onSwipeBackChange,
@@ -583,6 +907,7 @@ internal fun MainHub(
             }
             }
         }
+        // The rail is not recorded into the backdrop it samples.
         if (useGlassRail) {
             // Wide rails use labeled destinations, independent of compact bottom-bar preference.
             val railItems = remember(items) {
@@ -600,12 +925,46 @@ internal fun MainHub(
                     selectedIndex = pageSelection.selectedPage,
                     onSelect = ::selectPage,
                 ),
-                backdrop = navBackdrop,
+                backdrop = railBackdrop,
                 state = railState,
                 showToggle = true,
+                trailingAction = if (actionInRail) navigationAction?.let { action ->
+                    {
+                        railBackdrop?.let { backdrop ->
+                            NavigationTrailingAction(
+                                action = action,
+                                surface = NavigationActionSurface(
+                                    backdrop,
+                                    appearance.liquidMode.takeIf {
+                                        appearance.navStyle == NavStyle.Liquid
+                                    },
+                                    dark,
+                                    GlassNavigationRailDefaults.CollapsedHeight,
+                                ),
+                                controls = actionControls,
+                            )
+                        }
+                    }
+                } else null,
+                // Keep upstream OS4 rail motion and indicator; substitute only the panel surface.
+                materialOverride = if (appearance.navStyle == NavStyle.Liquid) {
+                    RailLiquidPaint(
+                        panel = { backdrop, shape ->
+                            Modifier.liquidRailSurface(backdrop, shape, appearance.liquidMode)
+                        },
+                        indicator = { selectedBackdrop, pressed ->
+                            Modifier.liquidRailSelectedSurface(
+                                backdrop = selectedBackdrop,
+                                shape = RoundedCornerShape(percent = 50),
+                                pressed = pressed,
+                            )
+                        },
+                    )
+                } else null,
                 modifier = Modifier.fillMaxSize(),
             )
         }
+            }
         }
 
         // Popups are hosted outside this page's backdrop recording.
@@ -787,6 +1146,9 @@ private fun TopLevelPager(
     pagerState: PagerState,
     bottomPadding: PaddingValues,
     featureSnackbarState: SnackbarHostState,
+    selectedPage: Int,
+    featureSearch: PageSearch,
+    searchInNavigationBar: Boolean,
     lang: AppLang,
     iconHidden: Boolean,
     swipeBackEnabled: Boolean,
@@ -796,6 +1158,7 @@ private fun TopLevelPager(
     onRestart: () -> Unit,
     onRequestScope: () -> Unit,
     onHotReload: () -> Unit,
+    hotReloadInNavigation: Boolean,
     onLangChange: (AppLang) -> Unit,
     onIconHiddenChange: (Boolean) -> Unit,
     onSwipeBackChange: (Boolean) -> Unit,
@@ -832,12 +1195,15 @@ private fun TopLevelPager(
                 onRequestScope = onRequestScope,
                 previewState = previewState,
                 onHotReload = onHotReload,
+                hotReloadInNavigation = hotReloadInNavigation,
                 onOpenPreviewSandbox = { onNavigate(AppRoute.PreviewSandbox) },
             )
             1 -> FeaturesScreen(
                 bottomContentPadding = bottom,
-                visible = pagerState.currentPage == 1,
+                visible = selectedPage == 1,
                 snackbarState = featureSnackbarState,
+                search = featureSearch,
+                searchInNavigationBar = searchInNavigationBar,
                 onNavigate = onNavigate,
             )
             2 -> SettingsHubScreen(

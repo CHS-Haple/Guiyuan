@@ -7,10 +7,10 @@ runs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: compose-miuix-ui/miuix
-        ref: 3a980f7c509c62c6d315f71ac28b40ecc8d31f3b
+        ref: d27cbb0b375912cdf42670553fdb564d8ff7fc23
         path: miuix-upstream
         persist-credentials: false
-    - name: Verify exact source revision and dialog dependencies
+    - name: Verify exact source revision and Glass integration files
       shell: bash
       run: |
         set -euo pipefail
@@ -24,8 +24,8 @@ runs:
         test -f miuix-upstream/miuix-preference/build.gradle.kts
         test -f miuix-upstream/miuix-glass/build.gradle.kts
         test -f miuix-upstream/miuix-glass-icons/build.gradle.kts
-        test -f app/src/main/kotlin/top/yukonga/miuix/kmp/glass/GlassDialog.kt
-        test -f app/src/main/kotlin/top/yukonga/miuix/kmp/glass/internal/ScrimBackdrop.kt
+        test -f app/src/main/kotlin/com/chaners/guiyuan/ui/glass/GlassNavigationBar.kt
+        test -f app/src/main/kotlin/com/chaners/guiyuan/ui/glass/GlassIconButton.kt
         echo "MIUIX_SOURCE_REVISION=$expected" >> "$GITHUB_ENV"
         echo "MIUIX_SOURCE_DIR=miuix-upstream" >> "$GITHUB_ENV"
 

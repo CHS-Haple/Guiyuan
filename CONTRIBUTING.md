@@ -21,7 +21,7 @@ Contributions intentionally submitted for inclusion are licensed under
 Local baseline:
 
 - JDK 21;
-- Android SDK 37 / Build Tools 37.0.0;
+- Android compile SDK 37.2 / Build Tools 37.0.0;
 - Modern Xposed API 102;
 - checked-in Gradle Wrapper;
 - MIUIX revision pinned by project build files.
