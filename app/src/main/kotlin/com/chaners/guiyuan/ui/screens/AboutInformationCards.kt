@@ -91,86 +91,99 @@ internal fun AboutEnvironmentCard(
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp),
     ) {
-        val unavailable = stringResource(R.string.about_value_unavailable)
-        val deviceSummary =
-            listOf(
-                env.device.trim(),
-                env.model
-                    .trim()
-                    .takeIf { model ->
-                        model.isNotBlank() &&
-                            !model.equals(env.device.trim(), ignoreCase = true)
-                    },
-            )
-                .filterNotNull()
-                .filter(String::isNotBlank)
-                .ifEmpty { listOf(unavailable) }
-                .joinToString(separator = ABOUT_VALUE_SEPARATOR)
-        val androidSummary =
-            if (env.androidVersion.isNotBlank()) {
-                buildString {
-                    append("Android ")
-                    append(env.androidVersion)
-                    append(ABOUT_VALUE_SEPARATOR)
-                    append("API ")
-                    append(env.sdk)
-                }
-            } else {
-                unavailable
-            }
-
-        BasicComponent(
-            title = stringResource(R.string.device_name_label),
-            summary = deviceSummary,
-            startAction = {
-                SemanticLeadingIcon(
-                    iconRes = R.drawable.ic_material_symbol_smartphone,
-                )
-            },
-        )
-        BasicComponent(
-            title = stringResource(R.string.android_version_label),
-            summary = androidSummary,
-            startAction = {
-                SemanticLeadingIcon(
-                    iconRes = R.drawable.ic_material_symbol_android,
-                )
-            },
-        )
-        BasicComponent(
-            title = stringResource(R.string.os_version_label),
-            summary = env.osVersion.ifBlank { unavailable },
-            startAction = {
-                SemanticLeadingIcon(
-                    iconRes = R.drawable.ic_material_symbol_layers,
-                )
-            },
-        )
-        val serviceSummary = when (val status = xposedStatus) {
-            is XposedStatus.Connected ->
-                stringResource(R.string.runtime_service_connected, status.apiVersion)
-            XposedStatus.Checking -> stringResource(R.string.runtime_service_checking)
-            XposedStatus.FrameworkUnavailable -> stringResource(R.string.runtime_service_disconnected)
-            XposedStatus.QueryUnavailable -> stringResource(R.string.runtime_service_query_unavailable)
-        }
-        BasicComponent(
-            title = stringResource(R.string.runtime_service_title),
-            summary = serviceSummary,
-            startAction = {
-                SemanticLeadingIcon(
-                    iconRes = R.drawable.ic_material_symbol_extension,
-                )
-            },
-        )
-        ArrowPreference(
-            title = stringResource(R.string.runtime_scope_title),
-            summary = stringResource(R.string.static_scope_entry_summary),
-            startAction = {
-                SemanticLeadingIcon(
-                    iconRes = R.drawable.ic_material_symbol_target,
-                )
-            },
-            onClick = onOpenScopes,
-        )
+        AboutDeviceDetails(env)
+        AboutRuntimeDetails(xposedStatus, onOpenScopes)
     }
+}
+
+@Composable
+private fun AboutDeviceDetails(env: RuntimeEnv) {
+    val unavailable = stringResource(R.string.about_value_unavailable)
+    val deviceSummary =
+        listOf(
+            env.device.trim(),
+            env.model
+                .trim()
+                .takeIf { model ->
+                    model.isNotBlank() &&
+                        !model.equals(env.device.trim(), ignoreCase = true)
+                },
+        )
+            .filterNotNull()
+            .filter(String::isNotBlank)
+            .ifEmpty { listOf(unavailable) }
+            .joinToString(separator = ABOUT_VALUE_SEPARATOR)
+    val androidSummary =
+        if (env.androidVersion.isNotBlank()) {
+            buildString {
+                append("Android ")
+                append(env.androidVersion)
+                append(ABOUT_VALUE_SEPARATOR)
+                append("API ")
+                append(env.sdk)
+            }
+        } else {
+            unavailable
+        }
+
+    BasicComponent(
+        title = stringResource(R.string.device_name_label),
+        summary = deviceSummary,
+        startAction = {
+            SemanticLeadingIcon(
+                iconRes = R.drawable.ic_material_symbol_smartphone,
+            )
+        },
+    )
+    BasicComponent(
+        title = stringResource(R.string.android_version_label),
+        summary = androidSummary,
+        startAction = {
+            SemanticLeadingIcon(
+                iconRes = R.drawable.ic_material_symbol_android,
+            )
+        },
+    )
+    BasicComponent(
+        title = stringResource(R.string.os_version_label),
+        summary = env.osVersion.ifBlank { unavailable },
+        startAction = {
+            SemanticLeadingIcon(
+                iconRes = R.drawable.ic_material_symbol_layers,
+            )
+        },
+    )
+}
+
+@Composable
+private fun AboutRuntimeDetails(
+    xposedStatus: XposedStatus,
+    onOpenScopes: () -> Unit,
+) {
+    val serviceSummary = when (val status = xposedStatus) {
+        is XposedStatus.Connected ->
+            stringResource(R.string.runtime_service_connected, status.apiVersion)
+        XposedStatus.Checking -> stringResource(R.string.runtime_service_checking)
+        XposedStatus.FrameworkUnavailable -> stringResource(R.string.runtime_service_disconnected)
+        XposedStatus.QueryUnavailable -> stringResource(R.string.runtime_service_query_unavailable)
+    }
+    BasicComponent(
+        title = stringResource(R.string.runtime_service_title),
+        summary = serviceSummary,
+        startAction = {
+            SemanticLeadingIcon(
+                iconRes = R.drawable.ic_material_symbol_extension,
+            )
+        },
+    )
+    ArrowPreference(
+        title = stringResource(R.string.runtime_scope_title),
+        summary = stringResource(R.string.static_scope_entry_summary),
+        startAction = {
+            SemanticLeadingIcon(
+                iconRes = R.drawable.ic_material_symbol_target,
+            )
+        },
+        onClick = onOpenScopes,
+    )
 }
