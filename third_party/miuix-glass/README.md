@@ -73,8 +73,7 @@ copy shared shaders into the app or add a second Material model.
   navigation/action controls. The old parallel fallback is retired.
 - Search top-bar fade/scale/blur helpers mirror the published MIUIX
   `GlassSearchOverlay` source from the exact pinned SHA; this app-local source
-  is required only because the full `miuix-glass` module conflicts with the
-  adapted package. `PageSearch` retains query and result ownership. Native
+  now lives in the app namespace to avoid collisions with the native module. `PageSearch` retains query and result ownership. Native
   `TopAppBarLayout` still clips actions, so the measured outer shadow slot
   remains until upstream provides an equivalent unclipped API.
 - Navigation retains noninteractive preview behavior, touch-safe bottom
@@ -90,9 +89,17 @@ copy shared shaders into the app or add a second Material model.
 
 ## Migration and verification
 
-Dialog, BottomSheet, title and edge drawing now use one published MIUIX API
-contract. Remaining local source implements adapted backdrop/refraction and
-Guiyuan-specific UI and lifecycle ownership.
+The published MIUIX Glass module is now linked directly. The app uses its
+`GlassDialog`, `GlassBottomSheet`, `glassDialogSurface`, `glassBottomSheetSurface`,
+`GlassDropdownPreference`, `GlassDialogButton`, `GlassMotion`, `glassPressScale`,
+and `glassPanel` APIs instead of maintaining corresponding component copies.
+Its published material, edge and shader APIs also remain authoritative.
+The remaining app-local Glass files preserve the accepted navigation/rail,
+noninteractive preview and touch exclusion, controlled search, popup anchor
+and Back lifecycle, long-press/held-state button, title slots and custom
+refraction/material ownership where upstream does not expose an equivalent
+public entrypoint. These are app-specific adapters, not a second complete MIUIX
+module implementation.
 The work-branch trial links the published `miuix-glass-android` module and
 source-substitutes it from the same pinned upstream revision, after relocating
 adapted local components to `com.chaners.guiyuan.ui.glass`. This resolves

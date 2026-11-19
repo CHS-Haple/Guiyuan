@@ -470,7 +470,7 @@ jobs:
         run: |
           set -euo pipefail
           base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
-          if git diff --quiet "$base" "$HEAD_SHA" -- gradle.properties app/build.gradle.kts app/src/main/kotlin/top/yukonga/miuix/kmp/glass app/src/main/kotlin/com/chaners/guiyuan/ui/components/UiOverlayDialog.kt app/src/main/kotlin/com/chaners/guiyuan/ui/components/UiOverlayBottomSheet.kt; then
+          if git diff --quiet "$base" "$HEAD_SHA" -- gradle.properties app/build.gradle.kts app/src/main/kotlin/com/chaners/guiyuan/ui/glass app/src/main/kotlin/com/chaners/guiyuan/ui/components/UiOverlayDialog.kt app/src/main/kotlin/com/chaners/guiyuan/ui/components/UiOverlayBottomSheet.kt; then
             echo "MIUIX dependencies and Glass surfaces unchanged; skip published ABI check."
             exit 0
           fi

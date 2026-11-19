@@ -10,7 +10,7 @@ runs:
         ref: 670cf5975c157b64d625d94deca7e7c21bd4a7b6
         path: miuix-upstream
         persist-credentials: false
-    - name: Verify exact source revision and dialog dependencies
+    - name: Verify exact source revision and Glass integration files
       shell: bash
       run: |
         set -euo pipefail
