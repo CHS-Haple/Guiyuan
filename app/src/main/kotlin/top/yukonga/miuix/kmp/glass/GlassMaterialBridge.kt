@@ -3,8 +3,6 @@
 
 package top.yukonga.miuix.kmp.glass
 
-import androidx.compose.ui.unit.Dp
-
 // Use the pinned MIUIX Material models without keeping app-owned copies of their state and tokens.
 // Adapted backdrop rendering and popup/dismissal behavior remain app-owned.
 typealias GlassColorBlendMode = top.yukonga.miuix.kmp.material.GlassColorBlendMode
@@ -25,15 +23,3 @@ typealias GlassBackground = top.yukonga.miuix.kmp.material.GlassBackground
 typealias GlassBlur = top.yukonga.miuix.kmp.material.GlassBlur
 typealias GlassShadow = top.yukonga.miuix.kmp.material.GlassShadow
 typealias GlassShadows = top.yukonga.miuix.kmp.material.GlassShadows
-
-// The upstream factories live in the material package; retain the local call sites unchanged.
-fun GlassShape(cornerRadius: Dp, smoothing: Float = GlassDefaults.Smoothing): GlassShape =
-    top.yukonga.miuix.kmp.material.GlassShape(cornerRadius, smoothing)
-
-fun GlassShape(
-    topStart: Dp,
-    topEnd: Dp,
-    bottomEnd: Dp,
-    bottomStart: Dp,
-    smoothing: Float = GlassDefaults.Smoothing,
-): GlassShape = top.yukonga.miuix.kmp.material.GlassShape(topStart, topEnd, bottomEnd, bottomStart, smoothing)

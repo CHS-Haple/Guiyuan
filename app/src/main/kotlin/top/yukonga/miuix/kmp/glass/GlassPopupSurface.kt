@@ -61,6 +61,7 @@ import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.material.drawEdgeStroke
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import kotlin.math.roundToInt
+import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.EdgeStroke
 
 /**
