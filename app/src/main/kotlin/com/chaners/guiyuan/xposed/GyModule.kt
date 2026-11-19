@@ -704,6 +704,10 @@ class GyModule : XposedModule() {
                     (restored.controlCenterHomeEligible ?: "unknown"),
                 "controlCenterFakePrearm" to controlCenterFakeRestore,
                 "tintTransfer" to if (transferredTint != null) "restored" else "native-fallback",
+                "homeGeometry" to
+                    if (deepDiagnosticsEnabled) HomeRenderSession.geometryDiagnostic() else null,
+                "ccGeometry" to
+                    if (deepDiagnosticsEnabled) CcRenderSession.geometryDiagnostic() else null,
             )
             logDiagnostic(
                 level = Log.INFO,
