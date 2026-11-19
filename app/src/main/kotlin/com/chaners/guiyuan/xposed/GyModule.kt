@@ -680,6 +680,7 @@ class GyModule : XposedModule() {
                 initialTintState = transferredTint,
                 allowLiveTintSeed = false,
                 deferProbe = true,
+                prearmHome = restored.controlCenterHomeEligible == true,
             )
 
             logDiagnostic(
@@ -3953,6 +3954,7 @@ class GyModule : XposedModule() {
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
         deferProbe: Boolean = false,
+        prearmHome: Boolean = false,
     ) {
         val hostContext = (host as? android.view.View)?.context
         val coreRuntime =
@@ -4119,6 +4121,38 @@ class GyModule : XposedModule() {
                 )
             }
 
+        // During an in-place Hot Reload, the first native layout must already
+        // see the compact Home slot exclusion. The renderer can report readiness
+        // only after its own native layout probe, which otherwise runs too late.
+        // The same main-thread attach either commits the renderer or rolls back.
+        val homePrearmed =
+            if (
+                prearmHome &&
+                FeaturePrefsOwner.current().enabled &&
+                SysUiNetworkRuntime.mobileReady &&
+                StatusStateStore.snapshot().battery != null
+            ) {
+                when (SysUiPresentationOwner.activate(host)) {
+                    is SysUiPresentationOwner.Result.Active -> true
+                    else -> {
+                        SysUiPresentationOwner.deactivate("hotReload-prearm-failed")
+                        false
+                    }
+                }
+            } else {
+                false
+            }
+        if (prearmHome) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "homeLayoutPrearm",
+                component = "homePresentation",
+                state = if (homePrearmed) "ready" else "native",
+                "source" to source,
+                "owner" to if (homePrearmed) "before-renderer-native-layout" else "native",
+            )
+        }
+        var rendererReadyOnAttach = false
         val renderFailure =
             HomeRenderSession.attach(
                 host = host,
@@ -4129,6 +4163,7 @@ class GyModule : XposedModule() {
                 initialTintState = rendererInitialTintState,
                 allowLiveTintSeed = allowLiveTintSeed,
                 onPresentationReadinessChanged = { ready ->
+                    rendererReadyOnAttach = ready
                     onHomeReadyChanged(host, ready, source)
                 },
             )
@@ -4155,6 +4190,12 @@ class GyModule : XposedModule() {
                 "reason" to renderFailure,
                 "source" to source,
             )
+        }
+
+        // If no presentation is committed within this same main-thread attach,
+        // never leave a prearmed native mask without a rendered replacement.
+        if (homePrearmed && !rendererReadyOnAttach) {
+            SysUiPresentationOwner.deactivate("hotReload-prearm-renderer-not-ready")
         }
 
         try {
