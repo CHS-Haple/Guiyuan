@@ -2,9 +2,24 @@ package com.chaners.guiyuan.ui.screens
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNull
+import com.chaners.guiyuan.settings.FontWeightAxis
+import com.chaners.guiyuan.settings.NativeFontAxis
 import org.junit.Test
 
 class WeightSnapTest {
+    @Test
+    fun verifiedAxisRoundsInwardAndDoesNotInventUnavailableBounds() {
+        val fractional = NativeFontAxis.State.Variable(FontWeightAxis(251.2f, 400f, 749.8f))
+        assertEquals(252..749, fractional.verifiedWeightRange())
+        assertNull(NativeFontAxis.State.Pending.verifiedWeightRange())
+        assertNull(NativeFontAxis.State.Unavailable.verifiedWeightRange())
+
+        // The native axis can exist but have no full integer range usable by the slider.
+        val tooNarrow = NativeFontAxis.State.Variable(FontWeightAxis(400.2f, 400.5f, 400.8f))
+        assertNull(tooNarrow.verifiedWeightRange())
+    }
+
     @Test
     fun buildsAnchorsOnlyInsideVerifiedFontAxis() {
         assertEquals((150..700 step 50).map(Int::toFloat), weightSnapPoints(150..700))
