@@ -3,6 +3,7 @@ package com.chaners.guiyuan.xposed
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import android.view.ViewGroup
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
@@ -162,6 +163,34 @@ internal object SysUiHotReload {
             removedHooks = removed,
             classLoader = classLoader,
         )
+    }
+
+    // Failure-only native fallback. The ordinary same-host transfer must not
+    // cause an intermediate expanded native layout/Folme move.
+    fun requestNativeHomeRelayoutAfterFailedTransfer(host: Any?) {
+        val view = host as? ViewGroup ?: return
+        val reflow = {
+            if (view.isAttachedToWindow) {
+                val battery =
+                    (0 until view.childCount)
+                        .map(view::getChildAt)
+                        .firstOrNull {
+                            it.javaClass.name ==
+                                "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer"
+                        } as? ViewGroup
+                val icons =
+                    battery?.let { parent ->
+                        (0 until parent.childCount)
+                            .map(parent::getChildAt)
+                            .firstOrNull {
+                                it.javaClass.name ==
+                                    "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
+                            }
+                    }
+                (icons ?: view).requestLayout()
+            }
+        }
+        if (Looper.myLooper() === Looper.getMainLooper()) reflow() else view.post(reflow)
     }
 
     fun restoreTransfer(param: HotReloadedParam): HotReloadTransfer.Restored? =

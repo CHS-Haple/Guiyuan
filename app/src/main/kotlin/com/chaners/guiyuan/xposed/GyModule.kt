@@ -377,6 +377,7 @@ class GyModule : XposedModule() {
 
         if (takeover == null) {
             val unhookFailed = SysUiHotReload.releaseOldHooks(param)
+            SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(restored.host)
             Log.w(TAG, "Hot Reload hook takeover unavailable; restart SystemUI")
             logDiagnostic(
                 level = Log.ERROR,
@@ -395,6 +396,7 @@ class GyModule : XposedModule() {
         val capture = SysUiHostRegistry.restore(restored.host)
         val hostView = capture?.host as? android.view.View
         if (capture == null || hostView?.isAttachedToWindow != true) {
+            SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(restored.host)
             logDiagnostic(
                 level = Log.WARN,
                 event = "hotReload.complete",
@@ -527,6 +529,7 @@ class GyModule : XposedModule() {
                     }
                 }
             if (!restoreScheduled) {
+                SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(capture.host)
                 logDiagnostic(
                     level = Log.ERROR,
                     event = "hotReload.complete",
@@ -548,6 +551,7 @@ class GyModule : XposedModule() {
                 "restartScope" to false,
             )
         }.onFailure { error ->
+            SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(capture.host)
             reportHotReloadFailure(error)
             log(Log.ERROR, TAG, "Hot reload failed restartScope=true", error)
         }
@@ -628,6 +632,7 @@ class GyModule : XposedModule() {
                         "reason" to "legacy-participant-removed-native-mask-state-untrusted",
                         "restartScope" to true,
                     )
+                    SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(capture.host)
                     return@runCatching
                 }
                 is SysUiPresentationOwner.LegacyCleanupResult.Failure -> {
@@ -639,6 +644,7 @@ class GyModule : XposedModule() {
                         "reason" to legacy.reason,
                         "restartScope" to true,
                     )
+                    SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(capture.host)
                     return@runCatching
                 }
             }
