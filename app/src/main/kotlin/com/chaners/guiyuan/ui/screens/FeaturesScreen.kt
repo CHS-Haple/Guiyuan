@@ -34,13 +34,6 @@ import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_UI_SCALE_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_UI_SCALE_MIN
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MIN
-import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_UI_MAX
-import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_UI_MIN
-import com.chaners.guiyuan.settings.NETWORK_TOP_OFFSET_MIN
-import com.chaners.guiyuan.settings.NETWORK_TOP_OFFSET_MAX
-import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
-import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
-import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.AIRPLANE_WEIGHT_DEFAULT
@@ -50,12 +43,6 @@ import com.chaners.guiyuan.settings.AIRPLANE_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.MOBILE_TYPE_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.NativeFontAxis
-import com.chaners.guiyuan.settings.BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT
-import com.chaners.guiyuan.settings.BOTH_SIDES_BOTTOM_INFO_SCALE_MIN
-import com.chaners.guiyuan.settings.BOTH_SIDES_BOTTOM_INFO_SCALE_MAX
-import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_DEFAULT
-import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_MAX
-import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_MIN
 import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN
@@ -66,8 +53,6 @@ import com.chaners.guiyuan.settings.WIFI_WEIGHT_DEFAULT
 import com.chaners.guiyuan.settings.WIFI_WEIGHT_MIN
 import com.chaners.guiyuan.settings.WIFI_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BatterySchemeRepo
-import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.settings.ConfigBackup
 import com.chaners.guiyuan.settings.ConfigBackupFiles
 import com.chaners.guiyuan.settings.FeatureRepo
@@ -79,7 +64,6 @@ import com.chaners.guiyuan.settings.topChargingIconUiScale
 import com.chaners.guiyuan.settings.topChargingIconUiScaleDefault
 import com.chaners.guiyuan.settings.topTextUiScale
 import com.chaners.guiyuan.settings.topTextUiScaleDefault
-import com.chaners.guiyuan.settings.topOffsetYUi
 import com.chaners.guiyuan.settings.mobileTypeScaleDefault
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import kotlin.math.ceil
@@ -164,22 +148,6 @@ internal fun FeaturesScreen(
         schemeRepo.library.collectAsState(
             initial = schemeRepo.current(),
         )
-    // Display order is deliberately independent of the persisted ContentLayout enum.
-    val layoutChoices = listOf(
-        ContentLayout.NETWORK_CENTER to stringResource(R.string.content_layout_network_center),
-        ContentLayout.MOBILE_CENTER to stringResource(R.string.content_layout_mobile_center),
-        ContentLayout.BATTERY_CENTER to stringResource(R.string.content_layout_battery_center),
-    )
-    val signalDotArrangements = listOf(
-        stringResource(R.string.signal_dot_arrangement_curved),
-        stringResource(R.string.signal_dot_arrangement_horizontal),
-    )
-    val dualSignalDotArrangements = signalDotArrangements +
-        stringResource(R.string.signal_dot_arrangement_both_sides)
-    val lowerOpeningOptions = listOf(
-        stringResource(R.string.battery_lower_opening_follow),
-        stringResource(R.string.battery_lower_opening_fixed),
-    )
     val backupFiles = remember(context.applicationContext) {
         ConfigBackupFiles(context.applicationContext)
     }
@@ -228,17 +196,10 @@ internal fun FeaturesScreen(
         if (!visible) search.close()
     }
     val searching = search.filtering
-    val bothSidesActivitySearch = searching && search.any(
-        R.string.both_sides_activity_title,
-        R.string.both_sides_idle_activity_title,
-        R.string.both_sides_activity_size,
-        R.string.both_sides_activity_vertical_offset,
-    )
     val bothSidesChargingSearch = searching && search.any(
         R.string.both_sides_charging_title,
         R.string.both_sides_charging_vertical_offset,
     )
-    val bothSidesSearch = bothSidesActivitySearch || bothSidesChargingSearch
     val displayMatches = search.anyFrom(FeatureSearchIds.display)
     val layoutMatches = search.anyFrom(FeatureSearchIds.layout)
     val networkMatches = search.anyFrom(FeatureSearchIds.network)
@@ -407,426 +368,13 @@ internal fun FeaturesScreen(
             }
         }
         if (layoutMatches) {
-            Section(R.string.section_layout_size) {
-                if (search.matches(R.string.content_layout_title) ||
-                    (searching && visual.layout != ContentLayout.BATTERY_CENTER &&
-                        search.any(R.string.wifi_vertical_offset, R.string.mobile_type_vertical_offset)) ||
-                    (searching && visual.layout == ContentLayout.BATTERY_CENTER &&
-                        search.matches(R.string.top_info_vertical_offset)) ||
-                    (searching && visual.centeredMobileSignal &&
-                        search.any(R.string.curved_signal_dot_vertical_offset,
-                            R.string.horizontal_signal_dot_vertical_offset))) {
-                    UiDropdownPreference(
-                        items = layoutChoices.map { it.second },
-                        selectedIndex = layoutChoices.indexOfFirst { it.first == visual.layout },
-                        title = stringResource(R.string.content_layout_title),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_dashboard, featureCfg.enabled) },
-                        summary = stringResource(
-                            when (visual.layout) {
-                                ContentLayout.NETWORK_CENTER -> R.string.content_layout_network_center_summary
-                                ContentLayout.BATTERY_CENTER -> R.string.content_layout_battery_center_summary
-                                ContentLayout.MOBILE_CENTER -> R.string.content_layout_mobile_center_summary
-                            },
-                        ),
-                        showValue = true,
-                        enabled = featureCfg.enabled,
-                        onSelectedIndexChange = { index ->
-                            layoutChoices.getOrNull(index)?.first?.let(visualRepo::setLayout)
-                        },
-                    )
-                }
-                if (search.matches(R.string.dual_signal_title) ||
-                    (searching && !visual.dualSignal &&
-                        (search.any(R.string.dual_row_signal_dot_arrangement_title,
-                            R.string.curved_signal_dot_vertical_offset,
-                            R.string.horizontal_signal_dot_vertical_offset) || bothSidesSearch))) {
-                    SwitchPreference(
-                        title = stringResource(R.string.dual_signal_title),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                R.drawable.ic_material_symbol_sim_cards,
-                                featureCfg.enabled,
-                            )
-                        },
-                        summary = stringResource(R.string.dual_signal_summary),
-                        checked = visual.dualSignal,
-                        enabled = featureCfg.enabled,
-                        onCheckedChange = visualRepo::setDualSignal,
-                    )
-                }
-                if (search.matches(R.string.single_row_signal_dot_arrangement_title)) {
-                    UiDropdownPreference(
-                        title = stringResource(R.string.single_row_signal_dot_arrangement_title),
-                        summary = stringResource(R.string.outer_signal_dots_only_summary),
-                        items = signalDotArrangements,
-                        selectedIndex = visual.singleRowDotArrangement.ordinal,
-                        showValue = true,
-                        enabled = featureCfg.enabled,
-                        startAction = {
-                            SemanticLeadingIcon(
-                                R.drawable.ic_material_symbol_sim_card,
-                                featureCfg.enabled,
-                                R.drawable.ic_material_symbol_layers,
-                            )
-                        },
-                        onSelectedIndexChange = { index ->
-                            SignalDotArrangement.entries.getOrNull(index)?.let(visualRepo::setSingleRowDotArrangement)
-                        },
-                    )
-                }
-                AnimatedPreferenceGroup(visible = visual.dualSignal) {
-                    if (search.matches(R.string.dual_row_signal_dot_arrangement_title) ||
-                        (bothSidesSearch && visual.dualRowDotArrangement != SignalDotArrangement.BOTH_SIDES)) {
-                        UiDropdownPreference(
-                            title = stringResource(R.string.dual_row_signal_dot_arrangement_title),
-                            summary = stringResource(R.string.outer_signal_dots_only_summary),
-                            items = dualSignalDotArrangements,
-                            selectedIndex = visual.dualRowDotArrangement.ordinal,
-                            showValue = true,
-                            enabled = featureCfg.enabled,
-                            startAction = {
-                                SemanticLeadingIcon(
-                                    R.drawable.ic_material_symbol_sim_cards,
-                                    featureCfg.enabled,
-                                    R.drawable.ic_material_symbol_layers,
-                                )
-                            },
-                            onSelectedIndexChange = { index ->
-                                SignalDotArrangement.entries.getOrNull(index)?.let(visualRepo::setDualRowDotArrangement)
-                            },
-                        )
-                    }
-                }
-                val activeDotArrangement =
-                    if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement
-                listOf(
-                    SignalDotArrangement.CURVED to R.string.curved_signal_dot_vertical_offset,
-                    SignalDotArrangement.HORIZONTAL to R.string.horizontal_signal_dot_vertical_offset,
-                ).forEach { (style, dotOffsetTitle) ->
-                    AnimatedPreferenceGroup(visible = activeDotArrangement == style) {
-                        if (search.matches(dotOffsetTitle)) {
-                            SliderPreference(
-                                value = visual.activeSignalDotOffsetY,
-                                onValueChange = visualRepo::setSignalDotOffsetY,
-                                title = stringResource(dotOffsetTitle),
-                                summary = stringResource(R.string.outer_signal_dots_only_summary),
-                                startAction = {
-                                    SemanticLeadingIcon(
-                                        R.drawable.ic_material_symbol_signal_cellular_alt,
-                                        featureCfg.enabled,
-                                        R.drawable.ic_material_symbol_height_w500,
-                                    )
-                                },
-                                valueText = stringResource(
-                                    R.string.battery_top_offset_value,
-                                    visual.activeSignalDotOffsetY.roundToInt(),
-                                ),
-                                valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                                steps = 19,
-                                showKeyPoints = true,
-                                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                                keyPoints = listOf(0f),
-                                magnetThreshold = 0.035f,
-                                enabled = featureCfg.enabled,
-                            )
-                        }
-                    }
-                }
-                AnimatedPreferenceGroup(visible = activeDotArrangement != SignalDotArrangement.BOTH_SIDES) {
-                    if (search.matches(R.string.battery_lower_opening_title)) {
-                        UiDropdownPreference(
-                            title = stringResource(R.string.battery_lower_opening_title),
-                            summary = stringResource(R.string.battery_lower_opening_summary),
-                            items = lowerOpeningOptions,
-                            selectedIndex = if (visual.fixedLowerOpening) 1 else 0,
-                            showValue = true,
-                            enabled = featureCfg.enabled,
-                            startAction = {
-                                SemanticLeadingIcon(
-                                    R.drawable.ic_battery_ring_opening,
-                                    featureCfg.enabled,
-                                )
-                            },
-                            onSelectedIndexChange = { index ->
-                                if (index in lowerOpeningOptions.indices) {
-                                    visualRepo.setFixedLowerOpening(index == 1)
-                                }
-                            },
-                        )
-                    }
-                }
-                val bothSidesArrangement = visual.dualSignal &&
-                    visual.dualRowDotArrangement == SignalDotArrangement.BOTH_SIDES
-                if (search.matches(R.string.both_sides_activity_title) ||
-                    (bothSidesActivitySearch && !visual.bothSidesShowActivity)) {
-                    SwitchPreference(
-                        title = stringResource(R.string.both_sides_activity_title),
-                        summary = stringResource(
-                            if (bothSidesArrangement) R.string.both_sides_activity_summary
-                            else R.string.both_sides_activity_unavailable_summary,
-                        ),
-                        checked = visual.bothSidesShowActivity,
-                        enabled = featureCfg.enabled && bothSidesArrangement,
-                        startAction = {
-                            SemanticLeadingIcon(R.drawable.ic_guiyuan_network_activity_triangles, featureCfg.enabled && bothSidesArrangement)
-                        },
-                        onCheckedChange = visualRepo::setBothSidesShowActivity,
-                    )
-                }
-                AnimatedPreferenceGroup(visible = bothSidesArrangement) {
-                    AnimatedPreferenceGroup(visible = visual.bothSidesShowActivity) {
-                        if (search.matches(R.string.both_sides_idle_activity_title)) {
-                            SwitchPreference(
-                                title = stringResource(R.string.both_sides_idle_activity_title),
-                                summary = stringResource(R.string.both_sides_idle_activity_summary),
-                                checked = visual.bothSidesHideIdleActivity,
-                                enabled = featureCfg.enabled,
-                                startAction = {
-                                    SemanticLeadingIcon(
-                                        R.drawable.ic_guiyuan_network_activity_triangles,
-                                        featureCfg.enabled,
-                                        R.drawable.ic_material_symbol_visibility_off,
-                                    )
-                                },
-                                onCheckedChange = visualRepo::setBothSidesHideIdleActivity,
-                            )
-                        }
-                        if (search.matches(R.string.both_sides_activity_size)) {
-                            SliderPreference(
-                                value = visual.bothSidesActivityScale,
-                                onValueChange = visualRepo::setBothSidesActivityScale,
-                                title = stringResource(R.string.both_sides_activity_size),
-                                startAction = {
-                                    SemanticLeadingIcon(
-                                        R.drawable.ic_guiyuan_network_activity_triangles,
-                                        featureCfg.enabled,
-                                        R.drawable.ic_material_symbol_open_in_full,
-                                    )
-                                },
-                                valueText = stringResource(
-                                    R.string.percent_value,
-                                    (visual.bothSidesActivityScale * 100f).roundToInt(),
-                                ),
-                                valueRange = BOTH_SIDES_BOTTOM_INFO_SCALE_MIN..BOTH_SIDES_BOTTOM_INFO_SCALE_MAX,
-                                steps = 9,
-                                showKeyPoints = true,
-                                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                                keyPoints = listOf(BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT),
-                                magnetThreshold = 0.035f,
-                                enabled = featureCfg.enabled,
-                            )
-                        }
-                        if (search.matches(R.string.both_sides_activity_vertical_offset)) {
-                            SliderPreference(
-                                value = visual.bothSidesActivityOffsetY,
-                                onValueChange = visualRepo::setBothSidesActivityOffsetY,
-                                title = stringResource(R.string.both_sides_activity_vertical_offset),
-                                startAction = {
-                                    SemanticLeadingIcon(
-                                        R.drawable.ic_guiyuan_network_activity_triangles,
-                                        featureCfg.enabled,
-                                        R.drawable.ic_material_symbol_height_w500,
-                                    )
-                                },
-                                valueText = stringResource(
-                                    R.string.battery_top_offset_value,
-                                    visual.bothSidesActivityOffsetY.roundToInt(),
-                                ),
-                                valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                                steps = 19,
-                                showKeyPoints = true,
-                                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                                keyPoints = listOf(0f),
-                                magnetThreshold = 0.035f,
-                                enabled = featureCfg.enabled,
-                            )
-                        }
-                    }
-                    if (search.matches(R.string.both_sides_charging_title) ||
-                        (bothSidesChargingSearch && !visual.bothSidesBottomCharging)) {
-                        SwitchPreference(
-                            title = stringResource(R.string.both_sides_charging_title),
-                            summary = stringResource(R.string.both_sides_charging_summary),
-                            checked = visual.bothSidesBottomCharging,
-                            enabled = featureCfg.enabled && visual.showChargingIcon,
-                            startAction = {
-                                SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled)
-                            },
-                            onCheckedChange = visualRepo::setBothSidesBottomCharging,
-                        )
-                    }
-                    AnimatedPreferenceGroup(visible = visual.bothSidesBottomCharging && visual.showChargingIcon) {
-                        if (search.matches(R.string.both_sides_charging_vertical_offset)) {
-                            SliderPreference(
-                                value = visual.bothSidesChargingOffsetY,
-                                onValueChange = visualRepo::setBothSidesChargingOffsetY,
-                                title = stringResource(R.string.both_sides_charging_vertical_offset),
-                                startAction = {
-                                    SemanticLeadingIcon(
-                                        R.drawable.ic_material_symbol_bolt,
-                                        featureCfg.enabled,
-                                        R.drawable.ic_material_symbol_height_w500,
-                                )
-                            },
-                            valueText = stringResource(
-                                R.string.battery_top_offset_value,
-                                visual.bothSidesChargingOffsetY.roundToInt(),
-                            ),
-                            valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                            steps = 19,
-                            showKeyPoints = true,
-                            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                            keyPoints = listOf(0f),
-                            magnetThreshold = 0.035f,
-                            enabled = featureCfg.enabled,
-                            )
-                        }
-                    }
-                }
-                AnimatedPreferenceGroup(visible = visual.layout == ContentLayout.BATTERY_CENTER) {
-                    if (search.matches(R.string.wifi_vertical_offset)) {
-                        SliderPreference(
-                            value = visual.wifiOffsetY,
-                            onValueChange = visualRepo::setWifiOffsetY,
-                            title = stringResource(R.string.wifi_vertical_offset),
-                            startAction = {
-                                SemanticLeadingIcon(
-                                    R.drawable.ic_material_symbol_wifi,
-                                    featureCfg.enabled,
-                                    R.drawable.ic_material_symbol_height_w500,
-                                )
-                            },
-                            valueText = stringResource(R.string.battery_top_offset_value, visual.wifiOffsetY.roundToInt()),
-                            valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                            steps = 19,
-                            showKeyPoints = true,
-                            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                            keyPoints = listOf(0f),
-                            magnetThreshold = 0.035f,
-                            enabled = featureCfg.enabled,
-                        )
-                    }
-                    if (search.matches(R.string.mobile_type_vertical_offset)) {
-                        SliderPreference(
-                            value = visual.mobileTypeOffsetY,
-                            onValueChange = visualRepo::setMobileTypeOffsetY,
-                            title = stringResource(R.string.mobile_type_vertical_offset),
-                            startAction = {
-                                SemanticLeadingIcon(
-                                    R.drawable.ic_material_symbol_5g,
-                                    featureCfg.enabled,
-                                    R.drawable.ic_material_symbol_height_w500,
-                                )
-                            },
-                            valueText = stringResource(R.string.battery_top_offset_value, visual.mobileTypeOffsetY.roundToInt()),
-                            valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                            steps = 19,
-                            showKeyPoints = true,
-                            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                            keyPoints = listOf(0f),
-                            magnetThreshold = 0.035f,
-                            enabled = featureCfg.enabled,
-                        )
-                    }
-                }
-                AnimatedPreferenceGroup(visible = visual.layout != ContentLayout.BATTERY_CENTER) {
-                    val topInfoVerticalOffsetUi =
-                        topOffsetYUi(
-                            visual.topOffsetY,
-                        )
-                    if (search.matches(R.string.top_info_vertical_offset)) {
-                        SliderPreference(
-                            value = topInfoVerticalOffsetUi,
-                            onValueChange = visualRepo::setTopOffsetY,
-                            title = stringResource(R.string.top_info_vertical_offset),
-                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_height, featureCfg.enabled) },
-                            valueText =
-                                stringResource(
-                                    R.string.battery_top_offset_value,
-                                    topInfoVerticalOffsetUi.roundToInt(),
-                                ),
-                            valueRange =
-                                BATTERY_TOP_VERTICAL_OFFSET_UI_MIN..
-                                    BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
-                            steps = 19,
-                            showKeyPoints = true,
-                            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                            keyPoints = listOf(0f),
-                            magnetThreshold = 0.035f,
-                            enabled = featureCfg.enabled,
-                        )
-                    }
-                }
-                AnimatedPreferenceGroup(visible = visual.centeredMobileSignal) {
-                    if (search.matches(R.string.mobile_type_bottom_offset)) {
-                        SliderPreference(
-                            value = visual.mobileTypeBottomOffsetY,
-                            onValueChange = visualRepo::setMobileTypeBottomOffsetY,
-                            title = stringResource(R.string.mobile_type_bottom_offset),
-                            startAction = {
-                                SemanticLeadingIcon(
-                                    R.drawable.ic_material_symbol_5g,
-                                    featureCfg.enabled,
-                                    R.drawable.ic_material_symbol_height_w500,
-                                )
-                            },
-                            valueText = stringResource(
-                                R.string.battery_top_offset_value,
-                                visual.mobileTypeBottomOffsetY.roundToInt(),
-                            ),
-                            valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                            steps = 19,
-                            showKeyPoints = true,
-                            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                            keyPoints = listOf(0f),
-                            magnetThreshold = 0.035f,
-                            enabled = featureCfg.enabled,
-                        )
-                    }
-                }
-                if (search.matches(R.string.combined_size)) {
-                    SliderPreference(
-                        value = visual.combinedScale,
-                        onValueChange = visualRepo::setCombinedScale,
-                        title = stringResource(R.string.combined_size),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_battery_ring_outline, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
-                        valueText =
-                            stringResource(
-                                R.string.percent_value,
-                                (visual.combinedScale * 100f).roundToInt(),
-                            ),
-                        valueRange = COMBINED_SCALE_MIN..COMBINED_SCALE_MAX,
-                        steps = 7,
-                        showKeyPoints = true,
-                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                        keyPoints = listOf(COMBINED_SCALE_DEFAULT),
-                        magnetThreshold = 0.035f,
-                        enabled = featureCfg.enabled,
-                    )
-                }
-                if (search.matches(R.string.outer_weight)) {
-                    SliderPreference(
-                        value = visual.outerWeightScale,
-                        onValueChange = visualRepo::setOuterWeightScale,
-                        title = stringResource(R.string.outer_weight),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_battery_ring_outline, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
-                        summary = stringResource(R.string.outer_weight_summary),
-                        valueText =
-                            stringResource(
-                                R.string.percent_value,
-                                (visual.outerWeightScale * 100f).roundToInt(),
-                            ),
-                        valueRange = OUTER_WEIGHT_SCALE_MIN..OUTER_WEIGHT_SCALE_MAX,
-                        steps = 11,
-                        showKeyPoints = true,
-                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                        keyPoints = listOf(OUTER_WEIGHT_SCALE_DEFAULT),
-                        magnetThreshold = 0.035f,
-                        enabled = featureCfg.enabled,
-                    )
-                }
-
-            }
+            featureLayoutSection(
+                search = search,
+                visual = visual,
+                visualRepo = visualRepo,
+                enabled = featureCfg.enabled,
+                bothSidesChargingSearch = bothSidesChargingSearch,
+            )
         }
         if (networkMatches) {
             Section(R.string.section_network) {
