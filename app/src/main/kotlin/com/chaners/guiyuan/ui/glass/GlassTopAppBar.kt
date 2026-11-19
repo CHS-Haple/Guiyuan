@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Modified from upstream (2026): compact title, title padding, and unclipped action controls.
 
-package top.yukonga.miuix.kmp.glass
+package com.chaners.guiyuan.ui.glass
 
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.updateTransition

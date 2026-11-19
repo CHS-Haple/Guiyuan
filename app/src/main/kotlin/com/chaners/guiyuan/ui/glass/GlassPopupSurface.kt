@@ -3,7 +3,7 @@
 
 @file:Suppress("ktlint:compose:multiple-emitters-check")
 
-package top.yukonga.miuix.kmp.glass
+package com.chaners.guiyuan.ui.glass
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
