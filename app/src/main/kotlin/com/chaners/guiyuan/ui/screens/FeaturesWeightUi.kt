@@ -34,7 +34,7 @@ internal fun featureWeightUi(axis: NativeFontAxis.State, fallbackRange: IntRange
     )
 }
 
-private fun NativeFontAxis.State.verifiedWeightRange(): IntRange? =
+internal fun NativeFontAxis.State.verifiedWeightRange(): IntRange? =
     (this as? NativeFontAxis.State.Variable)?.axis?.let { axis ->
         ceil(axis.min.toDouble()).toInt()..floor(axis.max.toDouble()).toInt()
     }?.takeIf { it.last > it.first }
