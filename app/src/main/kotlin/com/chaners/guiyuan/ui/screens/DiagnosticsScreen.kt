@@ -502,179 +502,27 @@ internal fun DiagnosticsScreen(
             }
         },
     ) {
-        if (!showRootGuide) {
-            // A changing notice must not insert a new key before the summary and shift the title.
-            item(key = "diagnostics-header") {
-                Column(
-                    modifier = Modifier.graphicsLayer {
-                        val shown = logProgress(rise.value, 0)
-                        translationY = risePx * (1f - shown)
-                        alpha = shown
-                    },
-                ) {
-                    if (filteredEntries.isNotEmpty()) {
-                        Text(
-                            text = stringResource(R.string.diagnostics_events_summary, filteredEntries.size),
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp)
-                                    .padding(top = 6.dp, bottom = 4.dp),
-                            style = MiuixTheme.textStyles.subtitle,
-                            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                        )
-                    }
-                    AnimatedContent(
-                        targetState = detailStatus to detailActive,
-                        transitionSpec = { fadeIn() togetherWith fadeOut() },
-                        label = "diagnostics-detail-status",
-                    ) { (status, active) ->
-                        if (status != null) {
-                            Text(
-                                text = status,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
-                                style = if (active) MiuixTheme.textStyles.footnote1 else MiuixTheme.textStyles.body2,
-                                color = if (active) {
-                                    MiuixTheme.colorScheme.onSurfaceVariantSummary
-                                } else {
-                                    MiuixTheme.colorScheme.onSurfaceSecondary
-                                },
-                            )
-                        }
-                    }
-                    if (integrityNotice.isNotEmpty()) {
-                        Text(
-                            text = integrityNotice,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceSecondary,
-                        )
-                    }
-                }
-            }
-        }
-        when {
-            snapshot == null -> {
-                item(key = "diagnostics-loading") {
-                    if (loading) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(top = 72.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            CircularProgressIndicator()
-                            Spacer(Modifier.height(12.dp))
-                            Text(
-                                text = stringResource(R.string.diagnostics_loading),
-                                style = MiuixTheme.textStyles.body2,
-                                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                            )
-                        }
-                    } else {
-                        LogStateCard(text = stringResource(R.string.diagnostics_events_empty))
-                    }
-                }
-            }
-            filteredEntries.isNotEmpty() -> {
-                itemsIndexed(
-                    items = filteredEntries,
-                    key = { index, entry -> logRowKey(entry, index) },
-                ) { index, entry ->
-                    val rowKey = logRowKey(entry, index)
-                    LogCard(
-                        context = context,
-                        entry = entry,
-                        expanded = expandedKey == rowKey,
-                        onToggle = {
-                            expandedKey =
-                                if (expandedKey == rowKey) {
-                                    null
-                                } else {
-                                    rowKey
-                                }
-                        },
-                        modifier =
-                            Modifier
-                                .animateItem(
-                                    fadeInSpec = null,
-                                    placementSpec = placementSpec,
-                                    fadeOutSpec = null,
-                                )
-                                .graphicsLayer {
-                                    val shown = logProgress(rise.value, index)
-                                    translationY = risePx * (1f - shown)
-                                    alpha = shown
-                                },
-                    )
-                }
-                item(key = "diagnostics-history-end") {
-                    Text(
-                        text = stringResource(
-                            when {
-                                captureTruncated && filterActive -> R.string.diagnostics_events_end_truncated_filtered
-                                captureTruncated -> R.string.diagnostics_events_end_truncated
-                                filterActive -> R.string.diagnostics_events_end_filtered
-                                else -> R.string.diagnostics_events_end
-                            },
-                        ),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-            }
-            showRootGuide -> {
-                item(key = "diagnostics-root-unavailable") {
-                    LogEmptyGuide(
-                        title = stringResource(R.string.diagnostics_root_unavailable_title),
-                        description = stringResource(R.string.diagnostics_root_unavailable_message),
-                        note = listOfNotNull(
-                            stringResource(R.string.diagnostics_root_unavailable_export),
-                            integrityNotice.takeIf(String::isNotEmpty),
-                        ).joinToString("\n"),
-                        icon = MiuixIcons.Medium.Report,
-                        busy = loading,
-                        onRetry = ::refresh,
-                        modifier = Modifier.fillParentMaxSize(),
-                    )
-                }
-            }
-            entries.isEmpty() && filterActive -> {
-                item(key = "diagnostics-state-filter-empty") {
-                    LogStateCard(text = stringResource(R.string.diagnostics_filter_empty))
-                }
-            }
-            entries.isEmpty() -> {
-                item(key = "diagnostics-no-events") {
-                    LogEmptyGuide(
-                        title = stringResource(R.string.diagnostics_events_empty),
-                        description = stringResource(
-                            if (snapshot?.log?.clearedAt != null) {
-                                R.string.diagnostics_history_empty
-                            } else {
-                                R.string.diagnostics_no_events_hint
-                            },
-                        ),
-                        note = null,
-                        icon = MiuixIcons.Info,
-                        busy = loading,
-                        onRetry = ::refresh,
-                        modifier = Modifier.fillParentMaxSize(),
-                    )
-                }
-            }
-            else -> {
-                item(key = "diagnostics-state-empty") {
-                    LogStateCard(text = stringResource(R.string.diagnostics_filter_empty))
-                }
-            }
-        }
+        diagnosticsLogItems(
+            view = DiagnosticsLogPresentation(
+                snapshot = snapshot,
+                entries = entries,
+                filteredEntries = filteredEntries,
+                showRootGuide = showRootGuide,
+                loading = loading,
+                filterActive = filterActive,
+                captureTruncated = captureTruncated,
+                detailStatus = detailStatus,
+                detailActive = detailActive,
+                integrityNotice = integrityNotice,
+                expandedKey = expandedKey,
+                rise = rise,
+                risePx = risePx,
+                placementSpec = placementSpec,
+            ),
+            context = context,
+            onToggle = { rowKey -> expandedKey = if (expandedKey == rowKey) null else rowKey },
+            onRetry = ::refresh,
+        )
     }
 
-}
-
-private fun logProgress(progress: Float, index: Int): Float {
-    // Off-screen rows share the last visible row's start.
-    val start = index.coerceAtMost(7) * 0.07f
-    return ((progress - start) / (1f - start)).coerceIn(0f, 1f)
 }
