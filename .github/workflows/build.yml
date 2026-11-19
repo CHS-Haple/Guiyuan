@@ -581,6 +581,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             tools/setup_haple_signing.sh
+            tools/verify_signed_apk.sh
 
       - name: Download unsigned source-built Canary
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -631,15 +632,8 @@ jobs:
           "$signer" sign --ks "$HAPLE_KEYSTORE_PATH" --ks-key-alias "$HAPLE_KEY_ALIAS" \
             --ks-pass env:HAPLE_KEYSTORE_PASSWORD --key-pass env:HAPLE_KEYSTORE_PASSWORD \
             --out "$apk" "$source"
-          "$signer" verify --verbose --print-certs "$apk"
-          cert="$("$signer" verify --print-certs "$apk" | awk -F': ' '/certificate SHA-256 digest:/ {print $NF; exit}' | tr '[:upper:]' '[:lower:]')"
-          test "$cert" = "$HAPLE_CERT_SHA256"
-          package="$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk" | sed -n "s/.*package: name='\([^']*\)'.*/\1/p" | head -n 1)"
-          test "$package" = com.chaners.guiyuan
-          version_in_apk="$(sed -n "s/.*versionName='\\([^']*\\)'.*/\\1/p" <<< "$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk")" | head -n 1)"
-          test "$version_in_apk" = "$version"
-          APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
-          test "$("$APKANALYZER" manifest debuggable "$apk")" = false
+          SIGNED_APK_PATH="$apk" EXPECTED_VERSION_NAME="$version" \\
+            bash tools/verify_signed_apk.sh
           echo "APK_NAME=$(basename "$apk")" >> "$GITHUB_ENV"
           sha256sum "$apk" >> "$GITHUB_STEP_SUMMARY"
 

@@ -230,6 +230,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             tools/setup_haple_signing.sh
+            tools/verify_signed_apk.sh
             gradle.properties
             CHANGELOG.md
 
@@ -291,16 +292,9 @@ jobs:
               --ks "$HAPLE_KEYSTORE_PATH" --ks-key-alias "$HAPLE_KEY_ALIAS" \
               --ks-pass env:HAPLE_KEYSTORE_PASSWORD --key-pass env:HAPLE_KEYSTORE_PASSWORD \
               --out "$apk" "$source"
-            "$signer" verify --verbose --print-certs "$apk"
-            cert="$("$signer" verify --print-certs "$apk" | awk -F': ' '/certificate SHA-256 digest:/ {print $NF; exit}' | tr '[:upper:]' '[:lower:]')"
-            test "$cert" = "$HAPLE_CERT_SHA256"
-            badging="$("$SDK_ROOT/build-tools/37.0.0/aapt" dump badging "$apk")"
-            package="$(sed -n "s/.*package: name='\([^']*\)'.*/\1/p" <<< "$badging" | head -n 1)"
-            version="$(sed -n "s/.*versionName='\([^']*\)'.*/\1/p" <<< "$badging" | head -n 1)"
-            test "$package" = com.chaners.guiyuan
-            test "$version" = "$VERSION_NAME"
-            APKANALYZER="$(find "$SDK_ROOT/cmdline-tools" -type f -name apkanalyzer | sort -V | tail -n 1)"
-            test "$("$APKANALYZER" manifest debuggable "$apk")" = false
+          SIGNED_APK_PATH="$apk" EXPECTED_VERSION_NAME="$VERSION_NAME" \\
+            EXPECTED_VERSION_CODE="$(sed -n 's/^combinedStatus.versionCode=//p' gradle.properties)" \\
+            bash tools/verify_signed_apk.sh
           echo "Signed Release / main SHA $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
           sha256sum "$apk" >> "$GITHUB_STEP_SUMMARY"
           echo "APK_NAME=Guiyuan-${VERSION_NAME}-HyperOS-${BUILD_ID}-release.apk" >> "$GITHUB_ENV"
