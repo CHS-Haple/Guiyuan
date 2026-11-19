@@ -1974,7 +1974,9 @@ internal object SysUiPresentationOwner {
             val explicitLayoutRequest =
                 requestLayout && ignoreScope == IgnoreScope.CALL
             if (explicitLayoutRequest) {
-                releaseAttempt(failures) { batteryContainer.get()?.requestLayout() }
+                // This native group owns ignored-slot layout and icon positions.
+                // Its own layout pass must run after the Home masks are released.
+                releaseAttempt(failures) { statusIcons.get()?.requestLayout() }
             }
             releaseAttempt(failures) {
                 onEvent(
