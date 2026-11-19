@@ -74,38 +74,40 @@ internal object SysUiShadeEvidence {
                         if (phase != null) {
                             SysUiCcSource.dispatchRuntimeCallback(
                                 callback = {
-                                    val controller = outer.get(chain.thisObject)
-                                    val selectedHeader = headerLazy.get(controller)?.let { lazyGet.invoke(it) }
-                                    val appContext = context.get(controller) as? Context
-                                    val nativeVertical =
-                                        appContext?.let { verticalMode.invoke(null, it) as? Boolean }
-                                    val notification =
-                                        selectedHeader?.let { notificationHeader.get(it) as? View }
-                                    val root = selectedHeader?.let { headerRoot.get(it) as? View }
-                                    val carrierView = selectedHeader?.let { carrier.get(it) as? View }
-                                    val home = SysUiHostRegistry.current() as? View
                                     if (Looper.myLooper() !== Looper.getMainLooper()) {
                                         onEvent(
                                             "shadeEvidence phase=" + phase +
                                                 " state=unavailable reason=non-main-native-callback",
                                         )
-                                        return@dispatchRuntimeCallback
+                                    } else {
+                                        val controller = outer.get(chain.thisObject)
+                                        val selectedHeader =
+                                            headerLazy.get(controller)?.let { lazyGet.invoke(it) }
+                                        val appContext = context.get(controller) as? Context
+                                        val nativeVertical =
+                                            appContext?.let { verticalMode.invoke(null, it) as? Boolean }
+                                        val notification =
+                                            selectedHeader?.let { notificationHeader.get(it) as? View }
+                                        val root = selectedHeader?.let { headerRoot.get(it) as? View }
+                                        val carrierView =
+                                            selectedHeader?.let { carrier.get(it) as? View }
+                                        val home = SysUiHostRegistry.current() as? View
+                                        onEvent(
+                                            "shadeEvidence phase=" + phase +
+                                                " fraction=" + fraction +
+                                                " verticalMode=" + (nativeVertical ?: "unavailable") +
+                                                " orientation=" +
+                                                (appContext?.resources?.configuration?.orientation ?: "unavailable") +
+                                                " home={" + viewState(home) + "}" +
+                                                " homeOverlayShown=" + HomeRenderSession.isOverlayShown() +
+                                                " notification={" + viewState(notification) + "}" +
+                                                " notificationRoot={" + viewState(root) + "}" +
+                                                " carrier={" + viewState(carrierView) + "}" +
+                                                " notificationIconNodes=[" + findIconNodes(notification) + "]" +
+                                                " headerIconNodes=[" + findIconNodes(root) + "]" +
+                                                " ccFake=" + (CcRenderSession.visualState() ?: "none"),
+                                        )
                                     }
-                                    onEvent(
-                                        "shadeEvidence phase=" + phase +
-                                            " fraction=" + fraction +
-                                            " verticalMode=" + (nativeVertical ?: "unavailable") +
-                                            " orientation=" +
-                                            (appContext?.resources?.configuration?.orientation ?: "unavailable") +
-                                            " home={" + viewState(home) + "}" +
-                                            " homeOverlayShown=" + HomeRenderSession.isOverlayShown() +
-                                            " notification={" + viewState(notification) + "}" +
-                                            " notificationRoot={" + viewState(root) + "}" +
-                                            " carrier={" + viewState(carrierView) + "}" +
-                                            " notificationIconNodes=[" + findIconNodes(notification) + "]" +
-                                            " headerIconNodes=[" + findIconNodes(root) + "]" +
-                                            " ccFake=" + (CcRenderSession.visualState() ?: "none"),
-                                    )
                                 },
                                 onFailure = { error ->
                                     SysUiCcSource.dispatchRuntimeCallback(
