@@ -24,7 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.State
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.glass.GlassShadows
+import top.yukonga.miuix.kmp.material.GlassShadows
 import top.yukonga.miuix.kmp.glass.SearchModeEasing
 import top.yukonga.miuix.kmp.glass.popupShadowOutsets
 import androidx.compose.ui.Alignment

@@ -16,9 +16,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.material.GlassShape
-import top.yukonga.miuix.kmp.glass.GlassShadows
+import top.yukonga.miuix.kmp.material.GlassShadows
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
-import top.yukonga.miuix.kmp.glass.GlassDefaults
+import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.glassOnActionBar
 import top.yukonga.miuix.kmp.glass.glassShadow

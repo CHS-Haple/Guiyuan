@@ -51,9 +51,9 @@ paths, not separate compiled source trees.
 ## Material model ownership
 
 The pinned MIUIX Material graph owns the canonical shape, style, colour layers,
-material, shadow and stroke presets. `GlassMaterialBridge.kt` delegates the
-existing call sites to published upstream Material definitions and functions.
-`GlassStroke.kt` aliases the upstream `EdgeStroke` and `GlassEdgeStrokes`.
+material, shadow and stroke presets. Adapted Glass components import published MIUIX Material shape, style,
+stroke and shadow definitions directly; local Material type/factory bridges
+and stroke aliases have been retired.
 The app renders strokes, rim, masks and shadows via Material; the accepted
 #479 fused edge pass runs only when shading, positive stroke width and additive
 blend mode allow it. Refraction now embeds upstream `MaterialAgsl` silhouette

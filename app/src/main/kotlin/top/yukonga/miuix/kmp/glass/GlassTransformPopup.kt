@@ -42,6 +42,8 @@ import androidx.compose.ui.util.lerp
 import top.yukonga.miuix.kmp.blur.Backdrop
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.material.EdgeStroke
+import top.yukonga.miuix.kmp.material.GlassMaterial
+import top.yukonga.miuix.kmp.material.GlassStyle
 
 /**
  * Anchor geometry and appearance for a [GlassTransformPopup] or [GlassDropdownPopup].
