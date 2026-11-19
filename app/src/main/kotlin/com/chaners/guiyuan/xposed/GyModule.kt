@@ -238,6 +238,7 @@ class GyModule : XposedModule() {
                 classLoader = param.classLoader,
                 source = "coldStart",
             )
+            installShadeEvidence(param.classLoader, "coldStart")
             installIslandSource(
                 classLoader = param.classLoader,
                 source = "coldStart",
@@ -484,6 +485,7 @@ class GyModule : XposedModule() {
                 classLoader = classLoader,
                 source = "hotReload",
             )
+            installShadeEvidence(classLoader, "hotReload")
             installIslandSource(
                 classLoader = classLoader,
                 source = "hotReload",
@@ -977,6 +979,39 @@ class GyModule : XposedModule() {
                 "source" to source,
             )
             log(Log.ERROR, TAG, "Island motion source installation failed", error)
+        }
+    }
+
+    private fun installShadeEvidence(classLoader: ClassLoader, source: String) {
+        runCatching {
+            SysUiShadeEvidence.install(
+                module = this,
+                classLoader = classLoader,
+                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                onEvent = { event ->
+                    if (!retiredForHotReload) logRuntimeEvent(event)
+                },
+            )
+        }.onSuccess {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "source.install",
+                component = "shadeEvidence",
+                state = "ready",
+                "source" to source,
+                "behavior" to "read-only-bounded-notification-header",
+            )
+        }.onFailure { error ->
+            SysUiHotReload.rethrowFatal(error)
+            logDiagnostic(
+                level = Log.WARN,
+                event = "source.install",
+                component = "shadeEvidence",
+                state = "unavailable",
+                "source" to source,
+                "reason" to (error.message ?: error.javaClass.simpleName),
+                "fallback" to "native-unchanged",
+            )
         }
     }
 
@@ -1609,12 +1644,23 @@ class GyModule : XposedModule() {
 
     private fun onCcProjectionReadyChanged(ready: Boolean) {
         CcTransitionOwner.onProjectionReadinessChanged(ready)
-        if (!controlCenterSceneVisible) {
-            return
+        if (controlCenterSceneVisible) {
+            // Projected owner is already visible when ready=true. On the reverse
+            // edge Home is restored before the projected owner is removed.
+            HomeRenderSession.onControlCenterAuthorityChanged(!ready)
         }
-        // Projected owner is already visible when ready=true. On the reverse
-        // edge Home is restored before the projected owner is removed.
-        HomeRenderSession.onControlCenterAuthorityChanged(!ready)
+        if (deepDiagnosticsEnabled) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "projection.readinessSnapshot",
+                component = "controlCenterProjection",
+                state = if (ready) "ready" else "native",
+                "ccVisible" to controlCenterSceneVisible,
+                "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
+                "fakeGeometry" to CcRenderSession.geometryDiagnostic(),
+                "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
+            )
+        }
     }
 
     private fun onCcRuntimeFailure(error: Throwable) {
@@ -3862,6 +3908,7 @@ class GyModule : XposedModule() {
         release { PresentationStore.reset() }
         release { SysUiIslandSource.resetRuntimeState() }
         release { SysUiCcSource.resetRuntimeState() }
+        release { SysUiShadeEvidence.resetRuntimeState() }
         release {
             logDiagnostic(
                 level = if (errors.isEmpty()) Log.INFO else Log.ERROR,
