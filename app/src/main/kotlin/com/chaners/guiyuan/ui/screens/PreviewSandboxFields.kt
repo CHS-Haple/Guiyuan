@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -19,6 +21,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -31,16 +34,25 @@ import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+internal enum class SandboxField(
+    @StringRes val titleRes: Int,
+    @DrawableRes val iconRes: Int,
+    @DrawableRes val detailRes: Int? = null,
+) {
+    Sim(R.string.home_preview_sim_title, R.drawable.ic_material_symbol_sim_card),
+    BatteryMode(R.string.home_preview_battery_mode_title, R.drawable.ic_material_symbol_battery_5_bar, R.drawable.ic_material_symbol_tune),
+    ChargingState(R.string.home_preview_charging_state_title, R.drawable.ic_material_symbol_bolt),
+}
+
 @Composable
 internal fun SandboxSegmentedField(
-    title: String,
-    @DrawableRes iconRes: Int,
-    @DrawableRes detailRes: Int? = null,
+    field: SandboxField,
     options: List<String>,
     selectedIndex: Int,
     onSelected: (Int) -> Unit,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val title = stringResource(field.titleRes)
         val glass = LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()
         val requiredWidth = if (glass) sandboxSegmentedRequiredWidth(options) else 0
 
@@ -50,7 +62,7 @@ internal fun SandboxSegmentedField(
                 items = options,
                 selectedIndex = selectedIndex,
                 title = title,
-                startAction = { SemanticLeadingIcon(iconRes, detailRes = detailRes) },
+                startAction = { SemanticLeadingIcon(field.iconRes, detailRes = field.detailRes) },
                 onSelectedIndexChange = onSelected,
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = SandboxPreferenceInsideMargin,
@@ -58,7 +70,7 @@ internal fun SandboxSegmentedField(
         } else {
             BasicComponent(
                 title = title,
-                startAction = { SemanticLeadingIcon(iconRes, detailRes = detailRes) },
+                startAction = { SemanticLeadingIcon(field.iconRes, detailRes = field.detailRes) },
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = SandboxPreferenceInsideMargin,
                 bottomAction = {

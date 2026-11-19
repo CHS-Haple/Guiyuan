@@ -496,8 +496,7 @@ internal fun PreviewSandboxScreen(
                                 .padding(bottom = 12.dp),
                     ) {
                         SandboxSegmentedField(
-                            title = stringResource(R.string.home_preview_sim_title),
-                            iconRes = R.drawable.ic_material_symbol_sim_card,
+                            field = SandboxField.Sim,
                             options = dualSimOptions,
                             selectedIndex = state.simCards.ordinal,
                             onSelected = { index ->
@@ -731,9 +730,7 @@ internal fun PreviewSandboxScreen(
                             valueRange = 0f..100f,
                         )
                         SandboxSegmentedField(
-                            title = stringResource(R.string.home_preview_battery_mode_title),
-                            iconRes = R.drawable.ic_material_symbol_battery_5_bar,
-                            detailRes = R.drawable.ic_material_symbol_tune,
+                            field = SandboxField.BatteryMode,
                             options = batteryModeOptions,
                             selectedIndex = state.batteryMode.ordinal,
                             onSelected = { index ->
@@ -741,8 +738,7 @@ internal fun PreviewSandboxScreen(
                             },
                         )
                         SandboxSegmentedField(
-                            title = stringResource(R.string.home_preview_charging_state_title),
-                            iconRes = R.drawable.ic_material_symbol_bolt,
+                            field = SandboxField.ChargingState,
                             options = chargingOptions,
                             selectedIndex = state.chargingState.ordinal,
                             onSelected = { index ->
