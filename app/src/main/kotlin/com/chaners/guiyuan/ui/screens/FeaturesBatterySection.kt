@@ -140,35 +140,14 @@ private fun ColumnScope.batteryTopReadout(
             )
         }
         if (search.matches(R.string.battery_top_text_weight)) {
-            SliderPreference(
-                value = visual.topTextWeight.toFloat().coerceIn(
-                    weight.valueRange.start, weight.valueRange.endInclusive,
-                ),
-                onValueChange = { value ->
-                    visualRepo.setTopTextWeight(value.roundToInt())
-                },
-                title = stringResource(R.string.battery_top_text_weight),
-                summary = weight.rangeText
-                    ?: stringResource(
-                        if (weight.pending) R.string.font_weight_pending
-                        else R.string.font_weight_unverified,
-                    ),
-                startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, enabled, R.drawable.ic_material_symbol_line_weight) },
-                valueText = stringResource(
-                    R.string.integer_value,
-                    visual.topTextWeight.coerceIn(
-                        weight.valueRange.start.roundToInt(),
-                        weight.valueRange.endInclusive.roundToInt(),
-                    ),
-                ),
-                valueRange = weight.valueRange,
-                steps = 0,
-                keyPoints = weight.points,
-                magnetThreshold = weight.verifiedRange?.let(::weightSnapThreshold) ?: 0f,
-                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                holdDownState = weightDialogOpen,
-                enabled = enabled && weight.verifiedRange != null,
-                onClick = { onOpenWeightDialog() },
+            NativeWeightSlider(
+                row = NativeWeightRow.BATTERY,
+                value = visual.topTextWeight,
+                onValueChange = visualRepo::setTopTextWeight,
+                weight = weight,
+                enabled = enabled,
+                dialogOpen = weightDialogOpen,
+                onOpenDialog = onOpenWeightDialog,
             )
         }
         if (search.matches(R.string.battery_text_follow_battery_color)) {

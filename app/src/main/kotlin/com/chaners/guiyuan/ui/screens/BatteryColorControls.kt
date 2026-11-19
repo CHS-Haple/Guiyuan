@@ -367,44 +367,54 @@ internal fun BatteryColorBottomSheet(
             },
         )
 
-        val deleting = deleteRequest
-        UiOverlayDialog(
-            title = stringResource(R.string.battery_custom_scheme_delete),
-            summary =
-                deleting?.let {
-                    stringResource(
-                        R.string.battery_custom_scheme_delete_summary,
-                        it.name,
-                    )
-                },
-            show = deleting?.visible == true,
-            onDismissRequest = { deleteRequest = deleteRequest?.copy(visible = false) },
+        BatteryDeleteSchemeDialog(
+            request = deleteRequest,
+            onDismiss = { deleteRequest = deleteRequest?.copy(visible = false) },
             onDismissFinished = {
                 if (deleteRequest?.visible == false) deleteRequest = null
             },
+            onDelete = {
+                val request = deleteRequest?.takeIf { it.visible }
+                deleteRequest = deleteRequest?.copy(visible = false)
+                request?.let { repository.deleteCustom(it.id) }
+            },
+        )
+    }
+}
+
+@Composable
+private fun BatteryDeleteSchemeDialog(
+    request: DeleteRequest?,
+    onDismiss: () -> Unit,
+    onDismissFinished: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    UiOverlayDialog(
+        title = stringResource(R.string.battery_custom_scheme_delete),
+        summary = request?.let {
+            stringResource(R.string.battery_custom_scheme_delete_summary, it.name)
+        },
+        show = request?.visible == true,
+        onDismissRequest = onDismiss,
+        onDismissFinished = onDismissFinished,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                UiDialogButton(
-                    text = stringResource(R.string.cancel),
-                    modifier = Modifier.weight(1f),
-                    onClick = { deleteRequest = deleteRequest?.copy(visible = false) },
-                )
-                Spacer(Modifier.width(dialogActionGap()))
-                UiDialogButton(
-                    text = stringResource(R.string.battery_custom_scheme_delete),
-                    modifier = Modifier.weight(1f),
-                    enabled = deleting?.visible == true,
-                    role = GlassDialogButtonRole.Destructive,
-                    onClick = {
-                        val request = deleteRequest?.takeIf { it.visible }
-                        deleteRequest = deleteRequest?.copy(visible = false)
-                        request?.let { repository.deleteCustom(it.id) }
-                    },
-                )
-            }
+            UiDialogButton(
+                text = stringResource(R.string.cancel),
+                modifier = Modifier.weight(1f),
+                onClick = onDismiss,
+            )
+            Spacer(Modifier.width(dialogActionGap()))
+            UiDialogButton(
+                text = stringResource(R.string.battery_custom_scheme_delete),
+                modifier = Modifier.weight(1f),
+                enabled = request?.visible == true,
+                role = GlassDialogButtonRole.Destructive,
+                onClick = onDelete,
+            )
         }
     }
 }
