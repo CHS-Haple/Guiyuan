@@ -2,7 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Modified from upstream (2026): preview interactivity and bottom hit-area extension.
 
-package top.yukonga.miuix.kmp.glass
+package com.chaners.guiyuan.ui.components.glass
+
+import top.yukonga.miuix.kmp.glass.GlassMotion
+import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.dynamicGlassMaterial
+import top.yukonga.miuix.kmp.glass.glassPanel
+import top.yukonga.miuix.kmp.glass.navigationIndicatorBounds
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
