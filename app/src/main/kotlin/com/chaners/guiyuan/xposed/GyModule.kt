@@ -315,14 +315,25 @@ class GyModule : XposedModule() {
         val retired =
             runCatching {
                 SysUiHotReload.retireOnMain {
+                    // API 102 retires the old clip masks and renderer before
+                    // the new module may attach. In landscape, restoring the
+                    // native slot layout now is essential: otherwise visible
+                    // native peers inherit the old compact targets until the
+                    // next generation finally requests its own layout.
                     val compactHomeHandoff =
-                        SysUiHotReload.shouldPrearmHome(
-                            transferEligible =
-                                SysUiCcSource.currentHomeEligibility() == true &&
-                                    SysUiPresentationOwner.homeClaimed(),
-                            featureEnabled = FeaturePrefsOwner.current().enabled,
-                            mobileReady = SysUiNetworkRuntime.mobileReady,
-                            batteryReady = StatusStateStore.snapshot().battery != null,
+                        SysUiHotReload.shouldRetainCompactHomeLayoutOnRetire(
+                            SysUiHotReload.shouldPrearmHome(
+                                transferEligible =
+                                    SysUiCcSource.currentHomeEligibility() == true &&
+                                        SysUiPresentationOwner.homeClaimed(),
+                                featureEnabled = FeaturePrefsOwner.current().enabled,
+                                mobileReady = SysUiNetworkRuntime.mobileReady,
+                                batteryReady = StatusStateStore.snapshot().battery != null,
+                            ),
+                            isLandscape =
+                                (prepared.host as? android.view.View)
+                                    ?.resources?.configuration?.orientation ==
+                                    android.content.res.Configuration.ORIENTATION_LANDSCAPE,
                         )
                     teardownOldGeneration(compactHomeHandoff)
                 }
