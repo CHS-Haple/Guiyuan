@@ -153,7 +153,7 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureBatterySectio
                 )
             }
         }
-    
+
         if (search.matches(R.string.battery_charging_icon) ||
             (search.filtering && !visual.showChargingIcon &&
                 (search.any(R.string.battery_top_charging_icon_size,

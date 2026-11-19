@@ -397,4 +397,3 @@ internal fun FeaturesScreen(
         }
     }
 }
-
