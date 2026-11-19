@@ -37,58 +37,8 @@ import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.GlassStyle
-import top.yukonga.miuix.kmp.material.GlassStyles
 import top.yukonga.miuix.kmp.material.GlassDefaults
-import top.yukonga.miuix.kmp.material.GlassInner
 import top.yukonga.miuix.kmp.material.GlassShadow
-import top.yukonga.miuix.kmp.material.GlassShadows
-
-/**
- * Renders this composable as a sheet of glass over [backdrop].
- *
- * @param backdrop The content behind the glass. This composable must sit *outside* the subtree the
- *   backdrop records — inside it the two form a cycle.
- * @param shape The silhouette. Drives the clip, the [stroke] and the shader, so all three agree.
- * @param style The material. Pick one from [GlassStyles] or start from [GlassDefaults.style].
- * @param alpha Opacity multiplier for the colour layers, shading and stroke.
- * @param tint Overrides [GlassInner.tint]; its alpha replaces the style's tint strength.
- *   [Color.Unspecified] keeps the style's own tint.
- * @param material The panel's own body: a blur radius plus the colour layers over it. It overrides
- *   the blur radius [style] asks for. `null` leaves the blurred backdrop as the whole body.
- * @param noiseCoefficient Noise dithering for the backdrop blur, which prevents banding over large
- *   flat areas. 0 disables it.
- * @param stroke Optional bloom stroke along the rim. `null` skips it.
- * @param contentBlendMode How this composable's content composites over the glass.
- * @param enabled Whether the material is active. When false the content draws on its own.
- * @param shading Whether the surface refracts and shades what it stands on. `true` for a control,
- *   `false` for a bar or a menu whose body is [material] alone.
- */
-fun Modifier.glass(
-    backdrop: Backdrop,
-    shape: GlassShape,
-    style: GlassStyle = GlassDefaults.Style,
-    alpha: Float = 1f,
-    tint: Color = Color.Unspecified,
-    material: GlassMaterial? = null,
-    noiseCoefficient: Float = GlassDefaults.NoiseCoefficient,
-    stroke: EdgeStroke? = null,
-    contentBlendMode: BlendMode = BlendMode.SrcOver,
-    enabled: Boolean = true,
-    shading: Boolean = true,
-): Modifier = glassImpl(
-    backdrop = backdrop,
-    shape = shape,
-    style = style,
-    alpha = alpha,
-    tint = tint,
-    material = material,
-    underlayMaterial = null,
-    noiseCoefficient = noiseCoefficient,
-    stroke = stroke,
-    contentBlendMode = contentBlendMode,
-    enabled = enabled,
-    shading = shading,
-)
 
 /** Applies a child material over the action bar's already blurred and colour-treated surface. */
 internal fun Modifier.glassOnActionBar(
@@ -227,19 +177,6 @@ private data class GlassPipeline(
     }
 
 }
-
-/**
- * Casts [shadow] under this composable, in the shape of [shape].
- *
- * @param shape The silhouette casting the shadow. Use the same one [glass] gets.
- * @param shadow The shadow. Pick one from [GlassShadows]. `null` skips it.
- * @param alpha Opacity multiplier, to fade the shadow with the surface it belongs to.
- */
-fun Modifier.glassShadow(
-    shape: GlassShape,
-    shadow: GlassShadow? = GlassShadows.Regular,
-    alpha: Float = 1f,
-): Modifier = glassShadow(shape, shadow) { alpha }
 
 internal fun Modifier.glassShadow(
     shape: GlassShape,
