@@ -40,9 +40,7 @@ import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
-import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
-import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
 import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import kotlin.math.roundToInt
@@ -371,7 +369,7 @@ internal fun MiniNavigationPreview(
         floating && style.requiresTextureBackdrop && isRuntimeShaderSupported()
     val liquidMaterialActive =
         floating && style == NavStyle.Liquid &&
-            liquidNavSupported()
+            isRuntimeShaderSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
     val miuixBackdrop =
         if (miuixMaterialActive) {
@@ -472,7 +470,7 @@ internal fun MiniNavigationPreview(
                     )
                     .then(
                         if (liquidBackdrop != null) {
-                            Modifier.liquidNavBackdropSource(liquidBackdrop)
+                            Modifier.layerBackdrop(liquidBackdrop)
                         } else {
                             Modifier
                         },
