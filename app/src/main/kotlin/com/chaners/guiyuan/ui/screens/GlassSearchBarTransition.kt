@@ -1,7 +1,7 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package top.yukonga.miuix.kmp.glass
+package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
@@ -33,8 +33,8 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 // The published MIUIX glass module cannot coexist with Guiyuan's adapted glass
-// namespace. These source-identical search top-bar helpers are scoped here until
-// direct module adoption can preserve the accepted host/rail contracts.
+// namespace. Guiyuan owns this source-matched transition until direct module
+// adoption can preserve the accepted host/rail contracts.
 private const val SEARCH_TOP_BAR_BLUR_RADIUS = 50f
 
 // Map one second of spring motion onto the 400ms search transition.

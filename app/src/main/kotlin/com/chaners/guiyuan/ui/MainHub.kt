@@ -97,11 +97,9 @@ import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavPressLink
 import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
-import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSelectedSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
-import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
 import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import com.chaners.guiyuan.ui.navigation.AppRoute
@@ -494,7 +492,7 @@ internal fun MainHub(
     val liquidMaterialActive =
         appearance.navEnabled &&
             appearance.navStyle == NavStyle.Liquid &&
-            liquidNavSupported()
+            isRuntimeShaderSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
     // The root dialog needs a clean page source even with native/hidden navigation.
     val miuixBackdrop =
@@ -845,7 +843,7 @@ internal fun MainHub(
                     )
                     .then(
                         if (liquidBackdrop != null && !useNativeRail) {
-                            Modifier.liquidNavBackdropSource(liquidBackdrop)
+                            Modifier.layerBackdrop(liquidBackdrop)
                         } else {
                             Modifier
                         },

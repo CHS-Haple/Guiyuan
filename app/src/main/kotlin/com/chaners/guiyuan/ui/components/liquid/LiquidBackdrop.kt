@@ -30,11 +30,7 @@ import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.blur.BackdropEffectScope
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.colorControls
-import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
-import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-
-internal fun liquidNavSupported(): Boolean = isRuntimeShaderSupported()
 
 @Composable
 internal fun rememberLiquidNavBackdrop(surfaceColor: Color): LayerBackdrop =
@@ -42,9 +38,6 @@ internal fun rememberLiquidNavBackdrop(surfaceColor: Color): LayerBackdrop =
         drawRect(surfaceColor)
         drawContent()
     }
-
-internal fun Modifier.liquidNavBackdropSource(backdrop: LayerBackdrop): Modifier =
-    layerBackdrop(backdrop)
 
 internal fun BackdropEffectScope.vibrancy() {
     colorControls(brightness = 0f, contrast = 1f, saturation = 1.5f)
