@@ -26,10 +26,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX
-import com.chaners.guiyuan.settings.BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN
-import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_UI_SCALE_MAX
-import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_UI_SCALE_MIN
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MIN
 import com.chaners.guiyuan.settings.NativeFontAxis
@@ -37,24 +33,15 @@ import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.ConfigBackup
 import com.chaners.guiyuan.settings.ConfigBackupFiles
 import com.chaners.guiyuan.settings.FeatureRepo
-import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_MIN
-import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_MAX
-import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
 import com.chaners.guiyuan.settings.VisualRepo
-import com.chaners.guiyuan.settings.topChargingIconUiScale
-import com.chaners.guiyuan.settings.topChargingIconUiScaleDefault
-import com.chaners.guiyuan.settings.topTextUiScale
-import com.chaners.guiyuan.settings.topTextUiScaleDefault
 import com.chaners.guiyuan.ui.navigation.AppRoute
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
-import top.yukonga.miuix.kmp.basic.SliderDefaults
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
-import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.launch
@@ -346,184 +333,20 @@ internal fun FeaturesScreen(
             )
         }
         if (batteryMatches) {
-            Section(R.string.section_battery) {
-                if (search.matches(R.string.battery_colors)) {
-                BatteryColorPreference(
-                    library = schemeLibrary,
-                    enabled = featureCfg.enabled,
-                    holdDownState = showBatteryColorSheet,
-                    onClick = {
-                        showBatteryColorSheet = true
-                    },
-                )
-                }
-                if (search.matches(R.string.low_battery_threshold)) {
-                    SliderPreference(
-                        value = featureCfg.lowBatteryThreshold.toFloat(),
-                        onValueChange = { featureRepo.setLowBatteryThreshold(it.roundToInt()) },
-                        title = stringResource(R.string.low_battery_threshold),
-                        summary = stringResource(R.string.low_battery_threshold_summary),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_alert, featureCfg.enabled) },
-                        valueText = stringResource(R.string.percent_value, featureCfg.lowBatteryThreshold),
-                        valueRange = LOW_BATTERY_THRESHOLD_MIN.toFloat()..LOW_BATTERY_THRESHOLD_MAX.toFloat(),
-                        steps = LOW_BATTERY_THRESHOLD_MAX - LOW_BATTERY_THRESHOLD_MIN - 1,
-                        showKeyPoints = true,
-                        keyPoints = listOf(LOW_BATTERY_THRESHOLD_DEFAULT.toFloat()),
-                        magnetThreshold = 0f,
-                        hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                        enabled = featureCfg.enabled,
-                    )
-                }
-                if (search.matches(R.string.battery_top_readout) ||
-                    (searching && !visual.showTopReadout &&
-                        search.any(R.string.battery_top_text_size, R.string.battery_top_text_weight,
-                            R.string.battery_text_follow_battery_color))) {
-                    SwitchPreference(
-                        title = stringResource(R.string.battery_top_readout),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled) },
-                        summary = stringResource(R.string.battery_top_readout_summary),
-                        checked = visual.showTopReadout,
-                        enabled = featureCfg.enabled,
-                        onCheckedChange = visualRepo::setTopReadout,
-                    )
-                }
-                AnimatedPreferenceGroup(visible = visual.showTopReadout) {
-                    val textUiScale =
-                        topTextUiScale(
-                            visual.topTextScale,
-                        )
-                    if (search.matches(R.string.battery_top_text_size)) {
-                        SliderPreference(
-                            value = textUiScale,
-                            onValueChange = visualRepo::setTopTextScale,
-                            title = stringResource(R.string.battery_top_text_size),
-                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
-                            valueText =
-                                stringResource(
-                                    R.string.battery_top_scale_value,
-                                    (textUiScale * 100f).roundToInt(),
-                                ),
-                            valueRange =
-                                BATTERY_TOP_TEXT_UI_SCALE_MIN..
-                                    BATTERY_TOP_TEXT_UI_SCALE_MAX,
-                            steps = 23,
-                            showKeyPoints = true,
-                            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                            keyPoints =
-                                listOf(
-                                    topTextUiScaleDefault(
-                                        visual.layout,
-                                    ),
-                                ),
-                            magnetThreshold = 0.035f,
-                            enabled = featureCfg.enabled,
-                        )
-                    }
-                    if (search.matches(R.string.battery_top_text_weight)) {
-                        SliderPreference(
-                            value = visual.topTextWeight.toFloat().coerceIn(
-                                batteryWeight.valueRange.start, batteryWeight.valueRange.endInclusive,
-                            ),
-                            onValueChange = { value ->
-                                visualRepo.setTopTextWeight(value.roundToInt())
-                            },
-                            title = stringResource(R.string.battery_top_text_weight),
-                            summary = batteryWeight.rangeText
-                                ?: stringResource(
-                                    if (batteryWeight.pending) R.string.font_weight_pending
-                                    else R.string.font_weight_unverified,
-                                ),
-                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_line_weight) },
-                            valueText = stringResource(
-                                R.string.integer_value,
-                                visual.topTextWeight.coerceIn(
-                                    batteryWeight.valueRange.start.roundToInt(),
-                                    batteryWeight.valueRange.endInclusive.roundToInt(),
-                                ),
-                            ),
-                            valueRange = batteryWeight.valueRange,
-                            steps = 0,
-                            keyPoints = batteryWeight.points,
-                            magnetThreshold = batteryWeight.verifiedRange?.let(::weightSnapThreshold) ?: 0f,
-                            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                            holdDownState = showBatteryWeightDialog,
-                            enabled = featureCfg.enabled && batteryWeight.verifiedRange != null,
-                            onClick = { showBatteryWeightDialog = true },
-                        )
-                    }
-                    if (search.matches(R.string.battery_text_follow_battery_color)) {
-                        SwitchPreference(
-                            title = stringResource(R.string.battery_text_follow_battery_color),
-                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar, featureCfg.enabled, R.drawable.ic_material_symbol_colorize) },
-                            summary = stringResource(R.string.battery_text_follow_battery_color_summary),
-                            checked = visual.topTextFollowsBatteryColor,
-                            enabled = featureCfg.enabled,
-                            onCheckedChange = visualRepo::setTopTextFollowsBatteryColor,
-                        )
-                    }
-                }
-
-                if (search.matches(R.string.battery_charging_icon) ||
-                    (searching && !visual.showChargingIcon &&
-                        (search.any(R.string.battery_top_charging_icon_size,
-                            R.string.charging_icon_follow_battery_color) || bothSidesChargingSearch))) {
-                    SwitchPreference(
-                        title = stringResource(R.string.battery_charging_icon),
-                        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled) },
-                        summary = stringResource(R.string.battery_charging_icon_summary),
-                        checked = visual.showChargingIcon,
-                        enabled = featureCfg.enabled,
-                        onCheckedChange = visualRepo::setChargingIcon,
-                    )
-                }
-                AnimatedPreferenceGroup(
-                    visible = visual.showChargingIcon,
-                ) {
-                    val chargingIconUiScale =
-                        topChargingIconUiScale(
-                            visual.topChargingIconScale,
-                        )
-                    if (search.matches(R.string.battery_top_charging_icon_size)) {
-                        SliderPreference(
-                            value = chargingIconUiScale,
-                            onValueChange = visualRepo::setTopChargingIconScale,
-                            title = stringResource(R.string.battery_top_charging_icon_size),
-                            summary = stringResource(R.string.battery_charging_size_summary),
-                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled, R.drawable.ic_material_symbol_open_in_full) },
-                            valueText =
-                                stringResource(
-                                    R.string.battery_top_scale_value,
-                                    (chargingIconUiScale * 100f).roundToInt(),
-                                ),
-                            valueRange =
-                                BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN..
-                                    BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX,
-                            steps = 23,
-                            showKeyPoints = true,
-                            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                            keyPoints =
-                                listOf(
-                                    topChargingIconUiScaleDefault(
-                                        visual.layout,
-                                    ),
-                                ),
-                            magnetThreshold = 0.035f,
-                            enabled = featureCfg.enabled,
-                        )
-                    }
-                    if (search.matches(R.string.charging_icon_follow_battery_color)) {
-                        SwitchPreference(
-                            title = stringResource(R.string.charging_icon_follow_battery_color),
-                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bolt, featureCfg.enabled, R.drawable.ic_material_symbol_colorize) },
-                            summary = stringResource(R.string.charging_icon_follow_battery_color_summary),
-                            checked = visual.topChargingIconFollowsBatteryColor,
-                            enabled = featureCfg.enabled,
-                            onCheckedChange =
-                                visualRepo::setTopChargingIconFollowsBatteryColor,
-                        )
-                    }
-                }
-            }
+            featureBatterySection(
+                search = search,
+                visual = visual,
+                visualRepo = visualRepo,
+                featureCfg = featureCfg,
+                featureRepo = featureRepo,
+                schemeLibrary = schemeLibrary,
+                weight = batteryWeight,
+                colorSheetOpen = showBatteryColorSheet,
+                onOpenColorSheet = { showBatteryColorSheet = true },
+                weightDialogOpen = showBatteryWeightDialog,
+                onOpenWeightDialog = { showBatteryWeightDialog = true },
+                bothSidesChargingSearch = bothSidesChargingSearch,
+            )
         }
         if (managementMatches) {
             Section(R.string.section_management) {
