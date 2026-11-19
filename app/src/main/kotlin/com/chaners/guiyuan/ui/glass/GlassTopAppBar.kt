@@ -25,6 +25,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -234,6 +235,7 @@ internal data class GlassTopAppBarContext(
     val fill: Color,
     val stroke: EdgeStroke?,
     val shadow: GlassShadow?,
+    val onButtonBackdropConsumerChange: ((Int) -> Unit)? = null,
 )
 
 internal val LocalGlassTopAppBarContext = staticCompositionLocalOf<GlassTopAppBarContext?> { null }
@@ -417,6 +419,11 @@ fun GlassTopAppBar(
     val rawBackdrop = backdrop?.takeIf { isRuntimeShaderSupported() }
     val underlayMaterial = GlassTopAppBarDefaults.actionBarUnderlayMaterial().takeIf { keepMaterial && rawBackdrop != null }
     var backgroundCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var buttonBackdropConsumers by remember { mutableIntStateOf(0) }
+    val hasButtonBackdropConsumers = buttonBackdropConsumers > 0
+    val onButtonBackdropConsumerChange: (Int) -> Unit = remember {
+        { delta -> buttonBackdropConsumers = (buttonBackdropConsumers + delta).coerceAtLeast(0) }
+    }
     val progressiveBackdrop = if (progressiveBlur && rawBackdrop != null) {
         rememberLayerBackdrop {
             val coordinates = backgroundCoordinates?.takeIf { it.isAttached }
@@ -454,6 +461,25 @@ fun GlassTopAppBar(
                 listOf(BlendColorEntry(surfaceColor.copy(alpha = 0.3f)))
             }
             val blurColors = BlurDefaults.blurColors(blendColors = blendColors)
+            val currentVisualOffset by rememberUpdatedState(visualContentOffset)
+            val currentBgAlpha by rememberUpdatedState(backgroundAlpha)
+            val rampDistancePx = with(LocalDensity.current) {
+                GlassTopAppBarDefaults.ProgressiveBlurRampDistance.toPx()
+            }
+            val bandActive by remember(scrollBehavior, maskProgress, rampDistancePx) {
+                derivedStateOf {
+                    val offset = currentVisualOffset?.invoke() ?: scrollBehavior?.state?.visualContentOffset
+                    val rampVal = offset?.let { (-it / rampDistancePx).coerceIn(0f, 1f) } ?: maskProgress.value
+                    rampVal * currentBgAlpha().coerceIn(0f, 1f) > 0.001f
+                }
+            }
+            val backdropCaptureModifier = if (hasButtonBackdropConsumers) {
+                Modifier
+                    .onGloballyPositioned { backgroundCoordinates = it }
+                    .layerBackdrop(progressiveBackdrop)
+            } else {
+                Modifier
+            }
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -466,8 +492,7 @@ fun GlassTopAppBar(
                         val placeable = measurable.measure(constraints.copy(minHeight = height, maxHeight = height))
                         layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(0, 0) }
                     }
-                    .onGloballyPositioned { backgroundCoordinates = it }
-                    .layerBackdrop(progressiveBackdrop)
+                    .then(backdropCaptureModifier)
                     .graphicsLayer {
                         val offset = visualContentOffset?.invoke() ?: scrollBehavior?.state?.visualContentOffset
                         val ramp = offset?.let {
@@ -481,6 +506,7 @@ fun GlassTopAppBar(
                         gradient = ProgressiveBlur.Top.copy(curve = 0.25f),
                         blurRadius = GlassTopAppBarDefaults.ProgressiveBlurRadius.value,
                         colors = blurColors,
+                        enabled = bandActive,
                     ),
             )
         } else {
@@ -532,6 +558,7 @@ fun GlassTopAppBar(
                 fill = fill,
                 stroke = stroke,
                 shadow = buttonShadow,
+                onButtonBackdropConsumerChange = if (progressiveBackdrop != null) onButtonBackdropConsumerChange else null,
             ),
         ) {
             // The published/native API keeps its legacy clip; PR423 provides native title blur.
