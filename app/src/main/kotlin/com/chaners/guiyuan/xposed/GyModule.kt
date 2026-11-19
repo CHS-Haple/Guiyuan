@@ -4095,7 +4095,10 @@ class GyModule : XposedModule() {
                 when (
                     SysUiPresentationOwner.activate(
                         host = host,
-                        requestNativeStatusIconLayout = true,
+                        requestNativeStatusIconLayout =
+                            (host as? android.view.View)
+                                ?.resources?.configuration?.orientation ==
+                                android.content.res.Configuration.ORIENTATION_LANDSCAPE,
                     )
                 ) {
                     is SysUiPresentationOwner.Result.Active -> true
