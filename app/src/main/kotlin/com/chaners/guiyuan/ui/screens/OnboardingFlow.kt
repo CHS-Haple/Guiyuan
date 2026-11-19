@@ -142,7 +142,7 @@ import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.squircle.squircleClip
 import top.yukonga.miuix.kmp.squircle.squircleSurface
-import com.chaners.guiyuan.ui.glass.GlassDialogButtonRole
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 
 // Guide steps are peers, not push-overlay destinations. Share MIUIX's motion and
 // gesture driver while both pages translate the entire width in opposite directions.

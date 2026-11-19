@@ -152,7 +152,7 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SliderDefaults
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
-import com.chaners.guiyuan.ui.glass.GlassDialogButtonRole
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import com.chaners.guiyuan.ui.glass.GlassTopAppBar
 import com.chaners.guiyuan.ui.glass.GlassMotion
 import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
