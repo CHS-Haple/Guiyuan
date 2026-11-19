@@ -2752,6 +2752,7 @@ internal object SysUiPresentationOwner {
                 laidOutCarrierWidthPx = hostView.width,
                 attached = hostView.isAttachedToWindow,
                 endAnchored = isFakeCarrierEndAnchored(hostView, parent),
+                layoutSettled = !hostView.isLayoutRequested && !parent.isLayoutRequested,
             )
         }
 
