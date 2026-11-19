@@ -181,6 +181,60 @@ class PresentationCapacityLeaseTest {
     }
 
     @Test
+    fun verifiedNativeEndOverhangPreservesSystemUiWidthWithoutCarrierLease() {
+        // Observed target geometry: fake status area 1365px, narrower
+        // end-anchored native root 1309px. No parent-width mutation is owned.
+        assertTrue(
+            FakeCarrierCapacityLeasePolicy.mayInheritNativeOverhang(
+                nativeCarrierWidthPx = 1365,
+                parentContentWidthPx = 1309,
+                laidOutCarrierWidthPx = 1365,
+                attached = true,
+                endAnchored = true,
+            ),
+        )
+        assertFalse(
+            FakeCarrierCapacityLeasePolicy.mayInheritNativeOverhang(
+                nativeCarrierWidthPx = 1365,
+                parentContentWidthPx = 1309,
+                laidOutCarrierWidthPx = 1309,
+                attached = true,
+                endAnchored = true,
+            ),
+        )
+        for ((attached, endAnchored) in listOf(false to true, true to false)) {
+            assertFalse(
+                FakeCarrierCapacityLeasePolicy.mayInheritNativeOverhang(
+                    nativeCarrierWidthPx = 1365,
+                    parentContentWidthPx = 1309,
+                    laidOutCarrierWidthPx = 1365,
+                    attached = attached,
+                    endAnchored = endAnchored,
+                ),
+            )
+        }
+        assertFalse(
+            FakeCarrierCapacityLeasePolicy.mayInheritNativeOverhang(
+                nativeCarrierWidthPx = 1309,
+                parentContentWidthPx = 1309,
+                laidOutCarrierWidthPx = 1309,
+                attached = true,
+                endAnchored = true,
+            ),
+        )
+    }
+
+    @Test
+    fun overhangDoesNotBypassMeasuredPeerEndReservationCapacity() {
+        assertFalse(EndReservationPolicy.fitsFakeNativePeerRow(
+            rowWidthPx = 1230, contentWidthPx = 1190, targetPaddingEndPx = 105,
+        ))
+        assertTrue(EndReservationPolicy.fitsFakeNativePeerRow(
+            rowWidthPx = 1230, contentWidthPx = 900, targetPaddingEndPx = 105,
+        ))
+    }
+
+    @Test
     fun lateEligibleControlCenterCanAdoptAlreadyCompletedNativeLayout() {
         assertTrue(
             VisualMaskPolicy.shouldAdoptExistingNativeLayout(
