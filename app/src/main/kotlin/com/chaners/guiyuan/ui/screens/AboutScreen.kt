@@ -18,7 +18,6 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.Modifier
@@ -35,14 +34,9 @@ import com.chaners.guiyuan.BuildConfig
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.system.RuntimeEnv
-import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.screens.about.GyBgEffect
-import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.Text
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
@@ -50,12 +44,10 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val ABOUT_PROJECT_URL = "https://github.com/CHS-Haple/Guiyuan"
 private const val ABOUT_LICENSE_URL = "https://github.com/CHS-Haple/Guiyuan/blob/main/LICENSE"
 private const val GPL_LICENSE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
-private const val ABOUT_VALUE_SEPARATOR = "｜"
 @Composable
 internal fun AboutScreen(
     onBack: () -> Unit,
@@ -228,158 +220,24 @@ internal fun AboutScreen(
         }
         item(key = "aboutContent") {
             Column(Modifier.fillMaxWidth().heightIn(min = contentMinHeight)) {
-                Card(
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
-                ) {
-                    ArrowPreference(
-                        title = stringResource(R.string.about_project_home_title),
-                        summary = stringResource(R.string.about_project_home_summary),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_folder_code,
-                            )
-                        },
-                        onClick = {
-                            if (BuildConfig.REPO_LINK_ENABLED) {
-                                uriHandler.openUri(ABOUT_PROJECT_URL)
-                            } else {
-                                showRepoUnavailable = true
-                            }
-                        },
-                    )
-                    ArrowPreference(
-                        title = stringResource(R.string.terms_title),
-                        summary = stringResource(R.string.about_terms_summary),
-                        startAction = {
-                            SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_contract)
-                        },
-                        onClick = onOpenTerms,
-                    )
-                    ArrowPreference(
-                        title = stringResource(R.string.privacy_title),
-                        summary = stringResource(R.string.about_privacy_summary),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_policy,
-                            )
-                        },
-                        onClick = onOpenPrivacy,
-                    )
-                    ArrowPreference(
-                        title = stringResource(R.string.about_open_source_license_title),
-                        summary = stringResource(R.string.about_open_source_license_summary),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_license,
-                            )
-                        },
-                        onClick = {
-                            uriHandler.openUri(
-                                if (BuildConfig.REPO_LINK_ENABLED) ABOUT_LICENSE_URL else GPL_LICENSE_URL,
-                            )
-                        },
-                    )
-                    ArrowPreference(
-                        title = stringResource(R.string.about_third_party_title),
-                        summary = stringResource(R.string.about_third_party_summary),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_account_tree,
-                            )
-                        },
-                        onClick = onOpenThirdParty,
-                    )
-                }
-                SmallTitle(stringResource(R.string.section_device_system))
-                Card(
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
-                ) {
-                    val unavailable = stringResource(R.string.about_value_unavailable)
-                    val deviceSummary =
-                        listOf(
-                            env.device.trim(),
-                            env.model
-                                .trim()
-                                .takeIf { model ->
-                                    model.isNotBlank() &&
-                                        !model.equals(env.device.trim(), ignoreCase = true)
-                                },
-                        )
-                            .filterNotNull()
-                            .filter(String::isNotBlank)
-                            .ifEmpty { listOf(unavailable) }
-                            .joinToString(separator = ABOUT_VALUE_SEPARATOR)
-                    val androidSummary =
-                        if (env.androidVersion.isNotBlank()) {
-                            buildString {
-                                append("Android ")
-                                append(env.androidVersion)
-                                append(ABOUT_VALUE_SEPARATOR)
-                                append("API ")
-                                append(env.sdk)
-                            }
+                AboutLinksCard(
+                    onOpenProject = {
+                        if (BuildConfig.REPO_LINK_ENABLED) {
+                            uriHandler.openUri(ABOUT_PROJECT_URL)
                         } else {
-                            unavailable
+                            showRepoUnavailable = true
                         }
-
-                    BasicComponent(
-                        title = stringResource(R.string.device_name_label),
-                        summary = deviceSummary,
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_smartphone,
-                            )
-                        },
-                    )
-                    BasicComponent(
-                        title = stringResource(R.string.android_version_label),
-                        summary = androidSummary,
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_android,
-                            )
-                        },
-                    )
-                    BasicComponent(
-                        title = stringResource(R.string.os_version_label),
-                        summary = env.osVersion.ifBlank { unavailable },
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_layers,
-                            )
-                        },
-                    )
-                    val serviceSummary = when (val status = xposedStatus) {
-                        is XposedStatus.Connected ->
-                            stringResource(R.string.runtime_service_connected, status.apiVersion)
-                        XposedStatus.Checking -> stringResource(R.string.runtime_service_checking)
-                        XposedStatus.FrameworkUnavailable -> stringResource(R.string.runtime_service_disconnected)
-                        XposedStatus.QueryUnavailable -> stringResource(R.string.runtime_service_query_unavailable)
-                    }
-                    BasicComponent(
-                        title = stringResource(R.string.runtime_service_title),
-                        summary = serviceSummary,
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_extension,
-                            )
-                        },
-                    )
-                    ArrowPreference(
-                        title = stringResource(R.string.runtime_scope_title),
-                        summary = stringResource(R.string.static_scope_entry_summary),
-                        startAction = {
-                            SemanticLeadingIcon(
-                                iconRes = R.drawable.ic_material_symbol_target,
-                            )
-                        },
-                        onClick = onOpenScopes,
-                    )
-                }
+                    },
+                    onOpenTerms = onOpenTerms,
+                    onOpenPrivacy = onOpenPrivacy,
+                    onOpenLicense = {
+                        uriHandler.openUri(
+                            if (BuildConfig.REPO_LINK_ENABLED) ABOUT_LICENSE_URL else GPL_LICENSE_URL,
+                        )
+                    },
+                    onOpenThirdParty = onOpenThirdParty,
+                )
+                AboutEnvironmentCard(env, xposedStatus, onOpenScopes)
             }
         }
     }
