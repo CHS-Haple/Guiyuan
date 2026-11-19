@@ -3896,12 +3896,22 @@ class GyModule : XposedModule() {
 
         release { CcTransitionOwner.detach("hotReload-oldGeneration") }
         release { CcRenderSession.detach(source = "hotReload-oldGeneration") }
-        release { HomeRenderSession.detach() }
+        // A verified same-host Hot Reload must not briefly reflow native
+        // network icons into the expanded layout: native onLayout drives a
+        // Folme MOVE that can outlive the next generation's compact cutover.
+        // The presentation owner is still retired below; this only avoids
+        // its duplicate readiness-loss layout request during the handoff.
+        release { HomeRenderSession.detach(notifyReadinessOnStop = false) }
         release { KeyguardRenderSession.detach() }
         release { KeyguardRenderSession.detachAod() }
         var restoredViews: Int? = null
         release {
-            restoredViews = SysUiPresentationOwner.releaseGenerationForHotReload()
+            // Restore the owned clip/padding state and retire every listener,
+            // without producing an intermediate unmasked native layout pass.
+            // The next generation requests the compact native layout itself.
+            restoredViews = SysUiPresentationOwner.releaseGenerationForHotReload(
+                requestLayout = false,
+            )
         }
         release { NativeStatusObserver.deactivate() }
         release { StatusBarStableSession.detach() }
