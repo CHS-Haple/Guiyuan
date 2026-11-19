@@ -4136,9 +4136,13 @@ class GyModule : XposedModule() {
             )
         }
 
-        // No renderer means no native mask can survive the same main-thread attach.
-        if (homePrearmed && !rendererReadyOnAttach) {
-            SysUiPresentationOwner.deactivate("hotReload-prearm-renderer-not-ready")
+        // If the new renderer is not ready, restore the native layout.
+        if (prearmHome && !rendererReadyOnAttach) {
+            if (homePrearmed) {
+                SysUiPresentationOwner.deactivate("hotReload-prearm-renderer-not-ready")
+            } else {
+                SysUiHotReload.requestNativeHomeRelayoutAfterFailedTransfer(host)
+            }
         }
 
         try {
