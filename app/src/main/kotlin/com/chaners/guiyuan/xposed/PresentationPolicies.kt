@@ -56,11 +56,12 @@ internal object FakeCarrierCapacityLeasePolicy {
         laidOutCarrierWidthPx: Int,
         attached: Boolean,
         endAnchored: Boolean,
+        layoutSettled: Boolean,
     ): Boolean =
         nativeCarrierWidthPx > parentContentWidthPx &&
             parentContentWidthPx > 0 &&
             laidOutCarrierWidthPx == nativeCarrierWidthPx &&
-            attached && endAnchored
+            attached && endAnchored && layoutSettled
 
     enum class ExistingLeaseAction {
         REUSE,
