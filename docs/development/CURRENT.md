@@ -21,9 +21,9 @@ execution ownership is in [architecture](../architecture/README.md).
   compare their exact commits rather than assuming source equivalence.
 - **Current `dev` build identity:** read `combinedStatus.versionName`,
   `combinedStatus.versionCode` and `combinedStatus.buildId` directly from
-  `gradle.properties`. The accepted MIUIX source/dependency pin is
-  `19b5b831` via [#1619](https://github.com/CHS-Haple/Guiyuan/pull/1619);
-  CI and the upstream checkout must use the same full revision.
+  `gradle.properties`. The active source and published MIUIX dependency
+  coordinates must resolve to its same exact full revision; a newer upstream
+  Git commit alone is not proof that matching Maven artifacts are published.
 - **Branches:** work enters `dev` through reviewed PRs, then `main` through
   stable promotion. Retired `it` is historical only. A source-only change does
   not consume a Build; installable/signing gates are defined in
