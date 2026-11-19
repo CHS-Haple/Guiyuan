@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package com.chaners.guiyuan.ui.glass
+import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
 
@@ -86,42 +87,6 @@ import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 import com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale
 import kotlin.math.ceil
 import kotlin.math.roundToInt
-
-/** Default values for [GlassNavigationRail]. */
-object GlassNavigationRailDefaults {
-
-    /** Panel width while expanded. */
-    val ExpandedWidth: Dp = 250.dp
-
-    /** Distance between the expanded panel and the window edges. */
-    val Margin: Dp = 12.dp
-
-    /** Height of the collapsed capsule. */
-    val CollapsedHeight: Dp = GlassTopAppBarDefaults.ButtonSize
-
-    /** Top offset of the collapsed capsule, centered on the collapsed top bar. */
-    val CollapsedTop: Dp = (TopAppBarDefaults.CollapsedHeight - CollapsedHeight) / 2
-
-    /** The default content description of the built-in toggle while the rail is collapsed. */
-    val ExpandContentDescription: String = "Expand navigation rail"
-
-    /** The default content description of the built-in toggle while the rail is expanded. */
-    val CollapseContentDescription: String = "Collapse navigation rail"
-
-    /** The panel's rim. */
-    @Composable
-    fun stroke(): EdgeStroke = GlassEdgeStrokes.forTheme(
-        isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
-    )
-
-    /** The panel's body. */
-    @Composable
-    fun material(): GlassMaterial = dynamicGlassMaterial(
-        GlassMaterials.puredThinGlass(
-            isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
-        ),
-    )
-}
 
 /**
  * State of a [GlassNavigationRail].

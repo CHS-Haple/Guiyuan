@@ -124,7 +124,7 @@ import top.yukonga.miuix.kmp.glass.GlassMotion
 import com.chaners.guiyuan.ui.glass.GlassNavigationRail
 import com.chaners.guiyuan.ui.glass.GlassRailDestinations
 import com.chaners.guiyuan.ui.glass.RailLiquidPaint
-import com.chaners.guiyuan.ui.glass.GlassNavigationRailDefaults
+import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import com.chaners.guiyuan.ui.glass.rememberGlassNavigationRailState
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
