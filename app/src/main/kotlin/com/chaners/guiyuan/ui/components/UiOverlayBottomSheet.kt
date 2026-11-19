@@ -9,7 +9,7 @@ import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.LocalUiStyle
-import top.yukonga.miuix.kmp.glass.GlassBottomSheet
+import com.chaners.guiyuan.ui.glass.GlassBottomSheet
 
 /** Only this source variant links PR423's native BottomSheetSurfaceScope ABI. */
 @Composable
