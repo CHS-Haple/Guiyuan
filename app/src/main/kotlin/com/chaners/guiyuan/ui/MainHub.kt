@@ -3,16 +3,12 @@ package com.chaners.guiyuan.ui
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -45,10 +41,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.draw.dropShadow
-import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
@@ -67,8 +59,6 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.asImageBitmap
@@ -88,7 +78,6 @@ import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.system.RestartTarget
 import com.chaners.guiyuan.system.ScopeRestart
@@ -100,7 +89,6 @@ import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavPressLink
-import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSelectedSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
@@ -114,8 +102,6 @@ import com.chaners.guiyuan.ui.screens.HomeScreen
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
 import com.chaners.guiyuan.ui.screens.SemanticLeadingIcon
-import com.chaners.guiyuan.ui.icons.Os4GlassSearch
-import com.chaners.guiyuan.ui.icons.Os4GlassRefresh
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -123,8 +109,6 @@ import kotlinx.coroutines.job
 import com.chaners.guiyuan.ui.glass.GlassNavigationBar
 import com.chaners.guiyuan.ui.glass.GlassNavigationBarLayout
 import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
-import com.chaners.guiyuan.ui.glass.GlassIconButton
-import top.yukonga.miuix.kmp.glass.GlassMotion
 import com.chaners.guiyuan.ui.glass.GlassNavigationRail
 import com.chaners.guiyuan.ui.glass.GlassRailDestinations
 import com.chaners.guiyuan.ui.glass.RailLiquidPaint
@@ -134,8 +118,6 @@ import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.basic.NavigationBarDisplayMode
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailState
@@ -153,7 +135,6 @@ import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
-import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -301,139 +282,6 @@ private fun HubNativeRail(
     }
 }
 
-/** Both page actions share one callback owner and the same busy-state checks. */
-private class NavigationActionSurface(
-    val backdrop: Backdrop,
-    val liquidMode: LiquidMode?,
-    val dark: Boolean,
-    val size: Dp,
-)
-
-private class NavigationActionControls(
-    val hotReloadEnabled: Boolean,
-    val hotReloadInProgress: Boolean,
-    val onHotReload: () -> Unit,
-    val onSearch: () -> Unit,
-)
-
-/**
- * OS4 Liquid keeps its own optical surface and interaction; MIUIX owns action layout/transition.
- * This is a separate button, never another destination or a second pager writer.
- */
-@Composable
-private fun LiquidNavigationAction(
-    action: NavigationAction,
-    surface: NavigationActionSurface,
-    mode: LiquidMode,
-    controls: NavigationActionControls,
-    pressLink: LiquidNavPressLink? = null,
-) {
-    val isReload = action == NavigationAction.HotReload
-    val label = stringResource(if (isReload) R.string.hot_reload else R.string.feature_search)
-    val icon = if (isReload) Os4GlassRefresh else Os4GlassSearch
-    val enabled = !isReload || controls.hotReloadEnabled
-    val holdDown = isReload && controls.hotReloadInProgress
-    val onClick = if (isReload) controls.onHotReload else controls.onSearch
-    val direction = LocalLayoutDirection.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val pointerPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pointerPressed || holdDown) 0.9f else 1f,
-        // Follow the published MIUIX floating action's press/release timing,
-        // retaining Guiyuan's Liquid surface rather than its primary-tinted material.
-        animationSpec = GlassMotion.springOf(
-            damping = 1f, response = if (pointerPressed || holdDown) 0.15f else 0.3f,
-        ),
-        label = "liquidNavigationActionPressScale",
-    )
-    Box(
-        modifier = Modifier
-            // Portrait uses the 64dp Liquid capsule; a Rail action follows Rail's height.
-            .size(surface.size)
-            .then(
-                if (pressLink != null) Modifier.offset {
-                    // Read the same lens, panel and drag frame as the nav bar;
-                    // the link owns no extra animation or gesture writer.
-                    val offset = pressLink.actionOffsetX(
-                        LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
-                        LiquidNavSpec.contentPadding.toPx(), direction,
-                    )
-                    IntOffset(offset.roundToInt(), 0)
-                } else Modifier
-            )
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .dropShadow(
-                shape = CircleShape,
-                shadow = Shadow(
-                    radius = 10.dp,
-                    color = Color.Black,
-                    alpha = if (surface.dark) 0.20f else 0.10f,
-                ),
-            )
-            .liquidRailSurface(surface.backdrop, CircleShape, mode)
-            .clickable(
-                enabled = enabled && !holdDown,
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick,
-            )
-            .semantics { role = Role.Button },
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = if (enabled) MiuixTheme.colorScheme.onBackground
-                else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
-        )
-    }
-}
-
-/** The one navigation action slot is shared by Home and Features. */
-@Composable
-private fun NavigationTrailingAction(
-    action: NavigationAction,
-    surface: NavigationActionSurface,
-    controls: NavigationActionControls,
-    pressLink: LiquidNavPressLink? = null,
-) {
-    val reload = action == NavigationAction.HotReload
-    val label = stringResource(if (reload) R.string.hot_reload else R.string.feature_search)
-    val icon = if (reload) Os4GlassRefresh else Os4GlassSearch
-    val enabled = !reload || controls.hotReloadEnabled
-    val holdDown = reload && controls.hotReloadInProgress
-    val onClick = if (reload) controls.onHotReload else controls.onSearch
-    TooltipBox(text = label) {
-        val mode = surface.liquidMode
-        if (mode != null) {
-            LiquidNavigationAction(
-                action = action,
-                surface = surface,
-                mode = mode,
-                controls = controls,
-                pressLink = pressLink,
-            )
-        } else {
-            GlassIconButton(
-                onClick = { if (enabled && !holdDown) onClick() },
-                backdrop = surface.backdrop,
-                size = surface.size,
-                enabled = enabled,
-                holdDownState = holdDown,
-            ) {
-                Icon(
-                    icon,
-                    contentDescription = label,
-                    tint = if (enabled) MiuixTheme.colorScheme.onSurface
-                        else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
-                )
-            }
-        }
-    }
-}
 
 @Composable
 internal fun MainHub(
