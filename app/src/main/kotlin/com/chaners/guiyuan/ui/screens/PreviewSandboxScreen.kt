@@ -157,47 +157,6 @@ internal fun PreviewSandboxScreen(
     var nativeBarHeightPx by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val dockHeight = with(density) { dockHeightPx.toDp() }
-    val backAction: @Composable () -> Unit = {
-        TooltipBox(text = stringResource(R.string.back)) {
-            if (os4) {
-                GlassIconButton(onClick = onBack) {
-                    Icon(Os4GlassBack, contentDescription = stringResource(R.string.back))
-                }
-            } else {
-                IconButton(onClick = onBack) {
-                    Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.back))
-                }
-            }
-        }
-    }
-    val barActions: @Composable RowScope.() -> Unit = {
-        val title = stringResource(
-            if (dark) R.string.home_preview_switch_light
-            else R.string.home_preview_switch_dark,
-        )
-        TooltipBox(text = title) {
-            if (os4) {
-                GlassIconButton(onClick = onToggleTheme) {
-                    Image(
-                        painter = painterResource(if (dark) R.drawable.ic_material_symbol_light_mode else R.drawable.ic_material_symbol_dark_mode),
-                        contentDescription = title,
-                        modifier = Modifier.size(24.dp),
-                        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-                    )
-                }
-            } else IconButton(onClick = onToggleTheme) {
-                Image(
-                    painter = painterResource(
-                        if (dark) R.drawable.ic_material_symbol_light_mode
-                        else R.drawable.ic_material_symbol_dark_mode,
-                    ),
-                    contentDescription = title,
-                    modifier = Modifier.size(24.dp),
-                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-                )
-            }
-        }
-    }
     val dock: @Composable () -> Unit = {
         SandboxFloatingDock(
             display = SandboxDockDisplay(showDock, os4, renderModel, visual, topBarBackdrop),
@@ -211,36 +170,17 @@ internal fun PreviewSandboxScreen(
     CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
         Scaffold(
             topBar = {
-              Box(Modifier.onSizeChanged { nativeBarHeightPx = it.height }) {
-                if (os4) {
-                    GlassTopAppBar(
-                        progressiveBlur = LocalTopBarProgressiveBlur.current,
-                        isContentScrolled = listState.canScrollBackward,
-                        title = stringResource(R.string.home_preview_sandbox_title),
-                        backdrop = topBarBackdrop,
-                        scrollBehavior = scrollBehavior,
-                        bandOverhang = GlassTopAppBarDefaults.BandOverhang + dockHeight,
-                        navigationIcon = backAction,
-                        actions = barActions,
-                        unclippedNavigationIcon = true,
-                        unclippedActions = true,
-                    )
-                } else {
-                    MiuixBlurredTopBar(
-                        backdrop = topBarBackdrop,
-                        scrollBehavior = scrollBehavior,
-                        fadeExtension = dockHeight,
-                    ) { barColor ->
-                        SmallTopAppBar(
-                            title = stringResource(R.string.home_preview_sandbox_title),
-                            color = barColor,
-                            scrollBehavior = scrollBehavior,
-                            navigationIcon = backAction,
-                            actions = barActions,
-                        )
-                    }
-                }
-              }
+                PreviewSandboxTopBar(
+                    frame = SandboxTopBarFrame(
+                        os4, topBarBackdrop, scrollBehavior, listState, dockHeight,
+                    ),
+                    actions = SandboxTopBarActions(
+                        dark = dark,
+                        onBack = onBack,
+                        onToggleTheme = onToggleTheme,
+                    ),
+                    onHeightChanged = { nativeBarHeightPx = it },
+                )
             },
             // Retain MIUIX's one native popup host; it draws above this dock.
             popupHost = {
