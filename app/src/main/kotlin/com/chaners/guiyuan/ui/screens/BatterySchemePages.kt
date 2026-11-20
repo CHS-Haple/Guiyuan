@@ -326,6 +326,20 @@ private fun BatterySchemeIndicatorRail(
     }
 }
 
+private data class BatteryIndicatorGesture(
+    val centers: FloatArray,
+    val pressed: androidx.compose.runtime.MutableIntState,
+    val navigate: androidx.compose.runtime.State<(Int) -> Unit>,
+    val switchMargin: Float,
+)
+
+private data class BatteryIndicatorLayout(
+    val pager: PagerState,
+    val targetPage: Int,
+    val gap: Dp,
+    val spring: androidx.compose.animation.core.SpringSpec<Dp>,
+)
+
 @Composable
 private fun BatteryPagerIndicator(
     pages: List<BatterySchemePage>,
@@ -334,112 +348,132 @@ private fun BatteryPagerIndicator(
     onPageSelect: (Int) -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
-    val navigate by rememberUpdatedState(onPageSelect)
+    val navigate = rememberUpdatedState(onPageSelect)
     val centers = remember(pages.size) { FloatArray(pages.size) }
-    var pressedPage by remember { mutableIntStateOf(-1) }
+    val pressedPage = remember { mutableIntStateOf(-1) }
     val dotSpring = remember {
         spring<Dp>(stiffness = Spring.StiffnessMedium, dampingRatio = 0.85f)
     }
     val gap by animateDpAsState(
-        targetValue = if (pressedPage >= 0) 10.dp else 8.dp,
+        targetValue = if (pressedPage.intValue >= 0) 10.dp else 8.dp,
         animationSpec = dotSpring,
         label = "battery-scheme-gap",
     )
-    val switchMargin = with(LocalDensity.current) { 3.dp.toPx() }
-
+    val gesture = BatteryIndicatorGesture(
+        centers = centers,
+        pressed = pressedPage,
+        navigate = navigate,
+        switchMargin = with(LocalDensity.current) { 3.dp.toPx() },
+    )
+    val layout = BatteryIndicatorLayout(pagerState, targetPage, gap, dotSpring)
     Row(
-        modifier = Modifier.pointerInput(pages.size, haptic) {
-            awaitEachGesture {
-                fun nearest(x: Float): Int =
-                    centers.indices.minByOrNull { abs(x - centers[it]) } ?: -1
-
-                val down = awaitFirstDown(
-                    requireUnconsumed = false,
-                    pass = PointerEventPass.Initial,
-                )
-                var selected = nearest(down.position.x)
-                if (selected >= 0) {
-                    pressedPage = selected
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    down.consume()
-                    navigate(selected)
-                    try {
-                        while (true) {
-                            val event = awaitPointerEvent(PointerEventPass.Initial)
-                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                            val next = nearest(change.position.x)
-                            if (next >= 0 && next != selected &&
-                                abs(change.position.x - centers[next]) + switchMargin <
-                                abs(change.position.x - centers[selected])
-                            ) {
-                                selected = next
-                                pressedPage = next
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                navigate(next)
-                            }
-                            event.changes.forEach { it.consume() }
-                            if (!change.pressed) break
-                        }
-                    } finally {
-                        pressedPage = -1
-                    }
-                }
-            }
-        },
+        modifier = Modifier.batteryIndicatorGestures(gesture, haptic),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val currentPage = pagerState.currentPage
-        val pagePosition =
-            (currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, pages.lastIndex.toFloat())
-        val scrolling = pagerState.isScrollInProgress
-        val highlightedPage = pressedPage.takeIf { it >= 0 } ?: targetPage.takeIf { it >= 0 }
-        pages.forEachIndexed { index, page ->
-            val name = when (page) {
-                is BatterySchemePage.BuiltIn -> batteryBuiltInName(page.scheme)
-                is BatterySchemePage.Custom -> customSchemeName(page.scheme)
-                BatterySchemePage.Add -> stringResource(R.string.battery_custom_scheme_add_page_title)
-            }
-            val isCurrent = index == currentPage
-            val progress =
-                if (highlightedPage != null) {
-                    if (index == highlightedPage) 1f else 0f
-                } else {
-                    (1f - abs(index - pagePosition)).coerceIn(0f, 1f)
+        BatteryIndicatorDots(pages, layout, gesture)
+    }
+}
+
+private fun Modifier.batteryIndicatorGestures(
+    gesture: BatteryIndicatorGesture,
+    haptic: androidx.compose.ui.hapticfeedback.HapticFeedback,
+): Modifier = pointerInput(gesture.centers.size, haptic) {
+    awaitEachGesture {
+        fun nearest(x: Float): Int =
+            gesture.centers.indices.minByOrNull { abs(x - gesture.centers[it]) } ?: -1
+
+        val down = awaitFirstDown(
+            requireUnconsumed = false,
+            pass = PointerEventPass.Initial,
+        )
+        var selected = nearest(down.position.x)
+        if (selected >= 0) {
+            gesture.pressed.intValue = selected
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            down.consume()
+            gesture.navigate.value(selected)
+            try {
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                    val next = nearest(change.position.x)
+                    if (next >= 0 && next != selected &&
+                        abs(change.position.x - gesture.centers[next]) + gesture.switchMargin <
+                        abs(change.position.x - gesture.centers[selected])
+                    ) {
+                        selected = next
+                        gesture.pressed.intValue = next
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        gesture.navigate.value(next)
+                    }
+                    event.changes.forEach { it.consume() }
+                    if (!change.pressed) break
                 }
-            val width by animateDpAsState(
-                targetValue = 8.dp + (if (pressedPage == index) 16.dp else 13.dp) * progress,
-                animationSpec =
-                    if (scrolling && highlightedPage == null) snap() else dotSpring,
-                label = "battery-scheme-indicator",
-            )
-            Box(
-                modifier = Modifier
-                    .width(width + gap).height(28.dp)
-                    .onGloballyPositioned { centers[index] = it.positionInParent().x + it.size.width / 2f }
-                    .clickable(
-                        interactionSource = null,
-                        indication = null,
-                        role = Role.Tab,
-                        onClickLabel = stringResource(R.string.battery_scheme_go_to, name),
-                        onClick = { onPageSelect(index) },
-                    )
-                    .semantics {
-                        contentDescription = name
-                        selected = isCurrent
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Surface(
-                    modifier = Modifier.width(width).height(8.dp),
-                    shape = CircleShape,
-                    color =
-                        lerp(
-                            MiuixTheme.colorScheme.disabledOnSecondaryVariant,
-                            MiuixTheme.colorScheme.primary,
-                            progress,
-                        ),
-                ) {}
+            } finally {
+                gesture.pressed.intValue = -1
             }
+        }
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.BatteryIndicatorDots(
+    pages: List<BatterySchemePage>,
+    layout: BatteryIndicatorLayout,
+    gesture: BatteryIndicatorGesture,
+) {
+    val currentPage = layout.pager.currentPage
+    val pagePosition =
+        (currentPage + layout.pager.currentPageOffsetFraction).coerceIn(0f, pages.lastIndex.toFloat())
+    val scrolling = layout.pager.isScrollInProgress
+    val pressed = gesture.pressed.intValue
+    val highlightedPage = pressed.takeIf { it >= 0 } ?: layout.targetPage.takeIf { it >= 0 }
+    pages.forEachIndexed { index, page ->
+        val name = when (page) {
+            is BatterySchemePage.BuiltIn -> batteryBuiltInName(page.scheme)
+            is BatterySchemePage.Custom -> customSchemeName(page.scheme)
+            BatterySchemePage.Add -> stringResource(R.string.battery_custom_scheme_add_page_title)
+        }
+        val isCurrent = index == currentPage
+        val progress =
+            if (highlightedPage != null) {
+                if (index == highlightedPage) 1f else 0f
+            } else {
+                (1f - abs(index - pagePosition)).coerceIn(0f, 1f)
+            }
+        val width by animateDpAsState(
+            targetValue = 8.dp + (if (pressed == index) 16.dp else 13.dp) * progress,
+            animationSpec = if (scrolling && highlightedPage == null) snap() else layout.spring,
+            label = "battery-scheme-indicator",
+        )
+        Box(
+            modifier = Modifier
+                .width(width + layout.gap).height(28.dp)
+                .onGloballyPositioned {
+                    gesture.centers[index] = it.positionInParent().x + it.size.width / 2f
+                }
+                .clickable(
+                    interactionSource = null,
+                    indication = null,
+                    role = Role.Tab,
+                    onClickLabel = stringResource(R.string.battery_scheme_go_to, name),
+                    onClick = { gesture.navigate.value(index) },
+                )
+                .semantics {
+                    contentDescription = name
+                    selected = isCurrent
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Surface(
+                modifier = Modifier.width(width).height(8.dp),
+                shape = CircleShape,
+                color = lerp(
+                    MiuixTheme.colorScheme.disabledOnSecondaryVariant,
+                    MiuixTheme.colorScheme.primary,
+                    progress,
+                ),
+            ) {}
         }
     }
 }
