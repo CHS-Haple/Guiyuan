@@ -152,69 +152,76 @@ internal object DiagLogReader {
             }
             .toList()
 
+    private data class TaggedSessions(
+        val events: List<Pair<Int, DiagEvent>>,
+        val firstIndex: Map<String, Int>,
+    )
+
     internal fun latestSession(lines: List<String>): List<String> {
-        if (lines.isEmpty()) {
-            return lines
+        if (lines.isEmpty()) return lines
+        val tagged = collectTaggedSessions(lines)
+        val sessionId = selectLatestSessionId(tagged)
+        return if (sessionId != null) {
+            retainLatestTaggedSession(lines, tagged, sessionId)
+        } else {
+            latestSessionFromLegacyMarkers(lines)
         }
+    }
 
-        // The new generation can fail before module.reloaded; old teardown may log later.
-        val tagged =
-            lines.mapIndexedNotNull { index, line ->
-                if ("sessionId=" in line) {
-                    DiagProtocol.parse(line)
-                        ?.takeIf { event -> event.fields[SESSION_ID_FIELD] != null }
-                        ?.let { event -> index to event }
-                } else {
-                    null
-                }
-            }
-        // Reuse the earliest event index for each generation while inspecting
-        // failed reloads and selecting the current session.
-        val firstIndexBySession = mutableMapOf<String, Int>()
-        tagged.forEach { (index, event) ->
+    private fun collectTaggedSessions(lines: List<String>): TaggedSessions {
+        val events = lines.mapIndexedNotNull { index, line ->
+            if ("sessionId=" in line) {
+                DiagProtocol.parse(line)
+                    ?.takeIf { event -> event.fields[SESSION_ID_FIELD] != null }
+                    ?.let { event -> index to event }
+            } else null
+        }
+        val firstIndex = mutableMapOf<String, Int>()
+        events.forEach { (index, event) ->
             event.fields[SESSION_ID_FIELD]?.let { id ->
-                firstIndexBySession.getOrPut(id) { index }
+                firstIndex.getOrPut(id) { index }
             }
         }
-        val latestStart =
-            tagged.lastOrNull { (_, event) ->
-                event.event == "module.loaded" || event.event == "module.reloaded"
-            }
-        val failedNewGeneration =
-            tagged.lastOrNull { (_, event) ->
-                if (
-                    event.event != "hotReload.complete" ||
-                    (event.state != "error" && event.state != "unavailable")
-                ) {
-                    false
-                } else {
-                    val first = event.fields[SESSION_ID_FIELD]?.let { id -> firstIndexBySession[id] }
-                    first != null && (latestStart == null || first > latestStart.first)
-                }
-            }
-        val sessionId =
-            (failedNewGeneration ?: latestStart ?: tagged.lastOrNull())
-                ?.second
-                ?.fields
-                ?.get(SESSION_ID_FIELD)
-        if (sessionId != null) {
-            val start = firstIndexBySession[sessionId] ?: return lines
-            val stale =
-                tagged.asSequence()
-                    .filter { (index, event) ->
-                        index >= start && event.fields[SESSION_ID_FIELD] != sessionId
-                    }
-                    .map { it.first }
-                    .toSet()
-            val pid = pidOf(lines[start])
-            return lines
-                .subList(start, lines.size)
-                .filterIndexed { index, line ->
-                    index + start !in stale && (pid == null || pidOf(line) == pid)
-                }
-        }
+        return TaggedSessions(events, firstIndex)
+    }
 
-        return latestSessionFromLegacyMarkers(lines)
+    private fun selectLatestSessionId(tagged: TaggedSessions): String? {
+        // A failed new generation may precede module.reloaded and old teardown can arrive later.
+        val latestStart = tagged.events.lastOrNull { (_, event) ->
+            event.event == "module.loaded" || event.event == "module.reloaded"
+        }
+        val failedNewGeneration = tagged.events.lastOrNull { (_, event) ->
+            if (
+                event.event != "hotReload.complete" ||
+                (event.state != "error" && event.state != "unavailable")
+            ) {
+                false
+            } else {
+                val first = event.fields[SESSION_ID_FIELD]?.let { id -> tagged.firstIndex[id] }
+                first != null && (latestStart == null || first > latestStart.first)
+            }
+        }
+        return (failedNewGeneration ?: latestStart ?: tagged.events.lastOrNull())
+            ?.second?.fields?.get(SESSION_ID_FIELD)
+    }
+
+    private fun retainLatestTaggedSession(
+        lines: List<String>,
+        tagged: TaggedSessions,
+        sessionId: String,
+    ): List<String> {
+        val start = tagged.firstIndex[sessionId] ?: return lines
+        val stale = tagged.events.asSequence()
+            .filter { (index, event) ->
+                index >= start && event.fields[SESSION_ID_FIELD] != sessionId
+            }
+            .map { it.first }
+            .toSet()
+        val pid = pidOf(lines[start])
+        return lines.subList(start, lines.size)
+            .filterIndexed { index, line ->
+                index + start !in stale && (pid == null || pidOf(line) == pid)
+            }
     }
 
     private fun latestSessionFromLegacyMarkers(lines: List<String>): List<String> {
