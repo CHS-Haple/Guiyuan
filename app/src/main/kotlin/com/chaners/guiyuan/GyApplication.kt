@@ -108,41 +108,25 @@ class GyApplication :
             }
         }
 
-    private val diagListener =
-        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (isDiagKey(key)) {
-                xposedService?.let(::syncRuntime)
+    private val runtimePrefsListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+            val runtimeKey = when {
+                prefs === diagPrefs -> isDiagKey(key)
+                prefs === featurePrefs -> isFeatureKey(key)
+                prefs === visualPrefs -> isVisualPreferenceKey(key)
+                prefs === settingsPrefs -> isSettingsEntryKey(key)
+                else -> false
             }
-        }
-
-    private val featListener =
-        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (isFeatureKey(key)) {
-                xposedService?.let(::syncRuntime)
-            }
-        }
-
-    private val visualListener =
-        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (isVisualPreferenceKey(key)) {
-                xposedService?.let(::syncRuntime)
-            }
-        }
-
-    private val settingsListener =
-        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (isSettingsEntryKey(key)) {
-                xposedService?.let(::syncRuntime)
-            }
+            if (runtimeKey) xposedService?.let(::syncRuntime)
         }
 
     override fun onCreate() {
         super.onCreate()
         migrateVisualPrefsIfNeeded(visualPrefs)
-        diagPrefs.registerOnSharedPreferenceChangeListener(diagListener)
-        featurePrefs.registerOnSharedPreferenceChangeListener(featListener)
-        visualPrefs.registerOnSharedPreferenceChangeListener(visualListener)
-        settingsPrefs.registerOnSharedPreferenceChangeListener(settingsListener)
+        diagPrefs.registerOnSharedPreferenceChangeListener(runtimePrefsListener)
+        featurePrefs.registerOnSharedPreferenceChangeListener(runtimePrefsListener)
+        visualPrefs.registerOnSharedPreferenceChangeListener(runtimePrefsListener)
+        settingsPrefs.registerOnSharedPreferenceChangeListener(runtimePrefsListener)
         XposedServiceHelper.registerListener(this)
         handler.postDelayed(
             bindTimeout,
@@ -181,10 +165,10 @@ class GyApplication :
 
     override fun onTerminate() {
         sandbox.stop()
-        diagPrefs.unregisterOnSharedPreferenceChangeListener(diagListener)
-        featurePrefs.unregisterOnSharedPreferenceChangeListener(featListener)
-        visualPrefs.unregisterOnSharedPreferenceChangeListener(visualListener)
-        settingsPrefs.unregisterOnSharedPreferenceChangeListener(settingsListener)
+        diagPrefs.unregisterOnSharedPreferenceChangeListener(runtimePrefsListener)
+        featurePrefs.unregisterOnSharedPreferenceChangeListener(runtimePrefsListener)
+        visualPrefs.unregisterOnSharedPreferenceChangeListener(runtimePrefsListener)
+        settingsPrefs.unregisterOnSharedPreferenceChangeListener(runtimePrefsListener)
         handler.removeCallbacks(bindTimeout)
         xposedService = null
         lastMirror = null
@@ -225,7 +209,7 @@ class GyApplication :
 
     private fun requestScope(pkg: String, onComplete: (Boolean) -> Unit): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102 || pendingScope.value != null || pendingReload.value != null || ScopeRestart.isRunning) return false
+        if (service.apiVersion < 102 || !canRestartScopes()) return false
 
         val inScope = runCatching { pkg in service.scope }
             .getOrElse { return false }
@@ -278,7 +262,7 @@ class GyApplication :
 
     fun hotReloadSysUi(): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102 || pendingReload.value != null || pendingScope.value != null || ScopeRestart.isRunning) return false
+        if (service.apiVersion < 102 || !canRestartScopes()) return false
 
         val target =
             runCatching {
