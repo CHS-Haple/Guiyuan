@@ -70,9 +70,10 @@ internal fun Modifier.navTouchExtension(
                 val bounds = left to right
                 val reserved = trailingActionWidth.toPx()
                 val actionSize = trailingActionSize.toPx()
-                val startIndex = navTouchIndex(
-                    start.x, left, right, contentPadding.toPx(), itemCount, rtl,
+                val geometry = NavTouchIndexGeometry(
+                    left, right, contentPadding.toPx(), itemCount, rtl,
                 )
+                val startIndex = navTouchIndex(start.x, geometry)
                 val startedOnAction = trailingTap.value != null &&
                     navTouchActionHit(start.x, bounds, reserved, actionSize, rtl)
                 if (startIndex != null || startedOnAction) {
@@ -85,9 +86,7 @@ internal fun Modifier.navTouchExtension(
                                     action()
                                 }
                             }
-                        } else if (startIndex != null && navTouchIndex(
-                                up.position.x, left, right, contentPadding.toPx(), itemCount, rtl,
-                            ) == startIndex
+                        } else if (startIndex != null && navTouchIndex(up.position.x, geometry) == startIndex
                         ) {
                             up.consume()
                             select.value(startIndex)
@@ -134,14 +133,16 @@ internal fun navTouchActionHit(
 internal fun navTouchExtensionHeight(bottomPadding: Dp, gestureInset: Dp): Dp =
     (bottomPadding - gestureInset - 4.dp).coerceIn(0.dp, 12.dp)
 
-internal fun navTouchIndex(
-    x: Float,
-    left: Float,
-    right: Float,
-    contentPadding: Float,
-    count: Int,
-    rtl: Boolean,
-): Int? {
+internal data class NavTouchIndexGeometry(
+    val left: Float,
+    val right: Float,
+    val contentPadding: Float,
+    val count: Int,
+    val rtl: Boolean,
+)
+
+internal fun navTouchIndex(x: Float, geometry: NavTouchIndexGeometry): Int? {
+    val (left, right, contentPadding, count, rtl) = geometry
     val width = right - left - contentPadding * 2f
     if (count <= 0 || x < left || x >= right || width <= 0f) return null
     val relative = if (rtl) right - contentPadding - x else x - left - contentPadding
