@@ -4,7 +4,6 @@ import android.app.BroadcastOptions
 import android.content.Intent
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.view.View
 import com.chaners.guiyuan.settings.FontAxes
 import com.chaners.guiyuan.settings.FontWeightAxis
@@ -1942,7 +1941,6 @@ class GyModule : XposedModule() {
         networkType: NativePresentationResolver.NetworkType?,
         force: Boolean = false,
     ) {
-        if (Build.VERSION.SDK_INT < 34) return
         val host = SysUiHostRegistry.current() as? View ?: return
         val face = networkType?.typeface
         val batteryFont = SysUiBatterySource.readHostNumberFont(host)
