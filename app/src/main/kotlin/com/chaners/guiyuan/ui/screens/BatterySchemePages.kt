@@ -72,6 +72,33 @@ import top.yukonga.miuix.kmp.utils.PagerNavigationSpringSpec
 import top.yukonga.miuix.kmp.utils.pagerGestureOverride
 import top.yukonga.miuix.kmp.utils.springAnimateToPage
 
+private data class SchemeDeckCreation(
+    val enabled: Boolean,
+    val nextName: String?,
+    val settingsCardHeight: androidx.compose.runtime.MutableIntState,
+)
+
+private data class SchemeDeckContext(
+    val library: BatteryColorSchemeLibrary,
+    val pages: List<BatterySchemePage>,
+    val pager: PagerState,
+    val scope: kotlinx.coroutines.CoroutineScope,
+    val creation: SchemeDeckCreation,
+)
+
+private data class SchemeNavigation(
+    val onApply: (String) -> Unit,
+    val onBuiltInSlot: (BatteryBuiltInColorScheme, BatteryColorSlot) -> Unit,
+    val onCustomSlot: (Int, BatteryColorSlot) -> Unit,
+)
+
+private data class SchemeCatalog(
+    val onAdd: () -> Unit,
+    val onRename: (Int) -> Unit,
+    val onCopy: (BatteryCustomColorScheme) -> Unit,
+    val onDelete: (Int) -> Unit,
+)
+
 @Composable
 internal fun BatterySchemeOverview(
     library: BatteryColorSchemeLibrary,
@@ -87,59 +114,30 @@ internal fun BatterySchemeOverview(
     onCopyCustom: (BatteryCustomColorScheme) -> Unit,
     onDeleteCustom: (Int) -> Unit,
 ) {
-    val pages =
-        remember(library.customSchemes) {
-            buildList {
-                add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS))
-                add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.IOS))
-                add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.LOW_SATURATION))
-                library.customSchemes.forEach { add(BatterySchemePage.Custom(it)) }
-                add(BatterySchemePage.Add)
-            }
+    val pages = remember(library.customSchemes) {
+        buildList {
+            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS))
+            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.IOS))
+            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.LOW_SATURATION))
+            library.customSchemes.forEach { add(BatterySchemePage.Custom(it)) }
+            add(BatterySchemePage.Add)
         }
+    }
     val pageKeys = remember(pages) { pages.map { it.key } }
-    val initial =
-        pages.indexOfFirst { it.key == library.activeSchemeKey }
-            .takeIf { it >= 0 }
-            ?: 0
-    val pagerState =
-        rememberPagerState(
-            initialPage = initial,
-            pageCount = { pages.size },
-        )
+    val initial = pages.indexOfFirst { it.key == library.activeSchemeKey }.takeIf { it >= 0 } ?: 0
+    val pagerState = rememberPagerState(initialPage = initial, pageCount = { pages.size })
     val scope = rememberCoroutineScope()
-    var dotTarget by remember { mutableIntStateOf(-1) }
-    var settingsCardHeightPx by remember { mutableIntStateOf(0) }
-    val flingBehavior =
-        PagerDefaults.flingBehavior(
-            state = pagerState,
-            snapAnimationSpec = PagerNavigationSpringSpec,
-        )
-
-    LaunchedEffect(requestedSchemeKey, pageKeys) {
-        val requested = requestedSchemeKey
-        if (requested != null) {
-            val target = pages.indexOfFirst { it.key == requested }
-            if (target >= 0) {
-                if (target != pagerState.currentPage) {
-                    pagerState.springAnimateToPage(target)
-                }
-                onRequestedSchemeHandled()
-            }
-        }
+    val target = remember { mutableIntStateOf(-1) }
+    val settingsHeight = remember { mutableIntStateOf(0) }
+    SchemeRequestedPageEffect(requestedSchemeKey, pageKeys, pages, pagerState, onRequestedSchemeHandled)
+    SchemeDotNavigationEffect(target.intValue, pagerState) {
+        if (target.intValue == it) target.intValue = -1
     }
-
-    LaunchedEffect(dotTarget) {
-        val target = dotTarget
-        if (target >= 0) {
-            try {
-                pagerState.springAnimateToPage(target)
-            } finally {
-                if (dotTarget == target) dotTarget = -1
-            }
-        }
-    }
-
+    val context = SchemeDeckContext(
+        library, pages, pagerState, scope, SchemeDeckCreation(canCreateCustom, nextCustomName, settingsHeight),
+    )
+    val navigation = SchemeNavigation(onApplyScheme, onOpenBuiltInSlot, onOpenCustomSlot)
+    val catalog = SchemeCatalog(onAdd, onRenameCustom, onCopyCustom, onDeleteCustom)
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -147,85 +145,134 @@ internal fun BatterySchemeOverview(
         BatterySchemeIndicatorRail(
             pages = pages,
             pagerState = pagerState,
-            targetPage = dotTarget,
-            onPageSelect = { target ->
-                if (target != pagerState.currentPage || dotTarget >= 0 || pagerState.isScrollInProgress) {
-                    dotTarget = target
+            targetPage = target.intValue,
+            onPageSelect = { next ->
+                if (next != pagerState.currentPage || target.intValue >= 0 || pagerState.isScrollInProgress) {
+                    target.intValue = next
                 }
             },
         )
-        HorizontalPager(
-            state = pagerState,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .clipToBounds()
-                    .pagerGestureOverride(
-                        pagerState = pagerState,
-                        flingBehavior = flingBehavior,
-                    ),
-            userScrollEnabled = false,
-            flingBehavior = flingBehavior,
-            pageNestedScrollConnection = PagerGestureNestedScrollConnection,
-            contentPadding =
-                PaddingValues(
-                    horizontal = BottomSheetDefaults.insideMargin.width,
-                ),
-            pageSpacing = 12.dp,
-            verticalAlignment = Alignment.Top,
-        ) { index ->
-            when (val page = pages[index]) {
-                is BatterySchemePage.BuiltIn, is BatterySchemePage.Custom ->
-                    BatterySchemePageContent(
-                        page = page,
-                        isActive = library.activeSchemeKey == page.key,
-                        canCreateCustom = canCreateCustom,
-                        onApply = { onApplyScheme(page.key) },
-                        onSlotClick = { slot ->
-                            when (page) {
-                                is BatterySchemePage.BuiltIn ->
-                                    scope.launch {
-                                        val addPage = pages.lastIndex
-                                        if (pagerState.currentPage != addPage) {
-                                            pagerState.springAnimateToPage(addPage)
-                                        }
-                                        onOpenBuiltInSlot(page.scheme, slot)
-                                    }
-                                is BatterySchemePage.Custom ->
-                                    onOpenCustomSlot(page.scheme.id, slot)
-                                BatterySchemePage.Add -> Unit
-                            }
-                        },
-                        onSettingsCardMeasured = { height ->
-                            if (height > 0) settingsCardHeightPx = height
-                        },
-                        manageMenu =
-                            if (page is BatterySchemePage.Custom) {
-                                {
-                                    BatterySchemeManageMenu(
-                                        canCopy = canCreateCustom,
-                                        onRename = { onRenameCustom(page.scheme.id) },
-                                        onCopy = { onCopyCustom(page.scheme) },
-                                        onDelete = { onDeleteCustom(page.scheme.id) },
-                                    )
-                                }
-                            } else {
-                                null
-                            },
-                    )
-                BatterySchemePage.Add ->
-                    BatteryAddSchemePage(
-                        count = library.customSchemes.size,
-                        enabled = canCreateCustom,
-                        name =
-                            nextCustomName
-                                ?: stringResource(R.string.battery_custom_scheme_add_page_title),
-                        settingsCardHeightPx = settingsCardHeightPx,
-                        onClick = onAdd,
-                    )
+        BatterySchemeDeck(context, navigation, catalog)
+    }
+}
+
+@Composable
+private fun SchemeRequestedPageEffect(
+    requestedSchemeKey: String?,
+    pageKeys: List<String>,
+    pages: List<BatterySchemePage>,
+    pager: PagerState,
+    onHandled: () -> Unit,
+) {
+    LaunchedEffect(requestedSchemeKey, pageKeys) {
+        val requested = requestedSchemeKey
+        if (requested != null) {
+            val target = pages.indexOfFirst { it.key == requested }
+            if (target >= 0) {
+                if (target != pager.currentPage) pager.springAnimateToPage(target)
+                onHandled()
             }
         }
+    }
+}
+
+@Composable
+private fun SchemeDotNavigationEffect(
+    target: Int,
+    pager: PagerState,
+    onSettled: (Int) -> Unit,
+) {
+    LaunchedEffect(target) {
+        if (target >= 0) {
+            try {
+                pager.springAnimateToPage(target)
+            } finally {
+                onSettled(target)
+            }
+        }
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.ColumnScope.BatterySchemeDeck(
+    context: SchemeDeckContext,
+    navigation: SchemeNavigation,
+    catalog: SchemeCatalog,
+) {
+    val pager = context.pager
+    val flingBehavior = PagerDefaults.flingBehavior(
+        state = pager,
+        snapAnimationSpec = PagerNavigationSpringSpec,
+    )
+    HorizontalPager(
+        state = pager,
+        modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f)
+            .clipToBounds()
+            .pagerGestureOverride(pagerState = pager, flingBehavior = flingBehavior),
+        userScrollEnabled = false,
+        flingBehavior = flingBehavior,
+        pageNestedScrollConnection = PagerGestureNestedScrollConnection,
+        contentPadding = PaddingValues(horizontal = BottomSheetDefaults.insideMargin.width),
+        pageSpacing = 12.dp,
+        verticalAlignment = Alignment.Top,
+    ) { index ->
+        BatterySchemeDeckPage(context.pages[index], context, navigation, catalog)
+    }
+}
+
+@Composable
+private fun BatterySchemeDeckPage(
+    page: BatterySchemePage,
+    context: SchemeDeckContext,
+    navigation: SchemeNavigation,
+    catalog: SchemeCatalog,
+) {
+    when (page) {
+        is BatterySchemePage.BuiltIn, is BatterySchemePage.Custom ->
+            BatterySchemePageContent(
+                page = page,
+                isActive = context.library.activeSchemeKey == page.key,
+                canCreateCustom = context.creation.enabled,
+                onApply = { navigation.onApply(page.key) },
+                onSlotClick = { slot ->
+                    when (page) {
+                        is BatterySchemePage.BuiltIn ->
+                            context.scope.launch {
+                                val addPage = context.pages.lastIndex
+                                if (context.pager.currentPage != addPage) {
+                                    context.pager.springAnimateToPage(addPage)
+                                }
+                                navigation.onBuiltInSlot(page.scheme, slot)
+                            }
+                        is BatterySchemePage.Custom ->
+                            navigation.onCustomSlot(page.scheme.id, slot)
+                        BatterySchemePage.Add -> Unit
+                    }
+                },
+                onSettingsCardMeasured = { height ->
+                    if (height > 0) context.creation.settingsCardHeight.intValue = height
+                },
+                manageMenu = if (page is BatterySchemePage.Custom) {
+                    {
+                        BatterySchemeManageMenu(
+                            canCopy = context.creation.enabled,
+                            onRename = { catalog.onRename(page.scheme.id) },
+                            onCopy = { catalog.onCopy(page.scheme) },
+                            onDelete = { catalog.onDelete(page.scheme.id) },
+                        )
+                    }
+                } else null,
+            )
+        BatterySchemePage.Add ->
+            BatteryAddSchemePage(
+                count = context.library.customSchemes.size,
+                enabled = context.creation.enabled,
+                name = context.creation.nextName ?: stringResource(R.string.battery_custom_scheme_add_page_title),
+                settingsCardHeightPx = context.creation.settingsCardHeight.intValue,
+                onClick = catalog.onAdd,
+            )
     }
 }
 
