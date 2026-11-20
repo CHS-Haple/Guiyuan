@@ -260,7 +260,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorHsvPanel(
             )
         }
         if (hsv != null) {
-            BatteryColorHueRow(state, hsv, onColorChange)
+            BatteryColorHueRow(state, onColorChange)
             BatteryColorSaturationRow(state, hsv, onColorChange)
             BatteryColorBrightnessRow(state, hsv, onColorChange)
         } else {
@@ -276,7 +276,6 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorHsvPanel(
 @Composable
 private fun BatteryColorHueRow(
     state: ColorEditorState,
-    hsv: Hsv,
     onColorChange: (Int) -> Unit,
 ) {
     BatteryHsvAdjustmentRow(
