@@ -57,25 +57,44 @@ internal object ScenePolicy {
         RECLAIM,
     }
 
-    fun resolveKeyguardAodProjection(
-        featureEnabled: Boolean,
-        keyguardEnabled: Boolean,
-        aodEnabled: Boolean,
-        toAod: Boolean,
-        isAodAnimate: Boolean,
-        steadySourceScene: SourceScene = SourceScene.UNKNOWN,
-        lastStableFamilyScene: StableKeyguardAodScene = StableKeyguardAodScene.UNKNOWN,
-        homePresentationOwned: Boolean = false,
-        keyguardStatusIconsAlpha: Float? = null,
-        nativeToLockScreenTarget: Boolean? = null,
-        fullAodTargetSourceReady: Boolean = false,
-        fullAodTargetPending: Boolean = false,
-        fullAodVisualBoundary: Boolean = false,
-        outgoingAodOwned: Boolean = false,
-        homeAodTransitionOrigin: Boolean = false,
-        homeAodTargetPrearm: Boolean = false,
-        homeNativeAodFallbackActive: Boolean = false,
-    ): KeyguardAodProjection {
+    internal data class KeyguardAodProjectionInputs(
+        val featureEnabled: Boolean,
+        val keyguardEnabled: Boolean,
+        val aodEnabled: Boolean,
+        val toAod: Boolean,
+        val isAodAnimate: Boolean,
+        val steadySourceScene: SourceScene = SourceScene.UNKNOWN,
+        val lastStableFamilyScene: StableKeyguardAodScene = StableKeyguardAodScene.UNKNOWN,
+        val homePresentationOwned: Boolean = false,
+        val keyguardStatusIconsAlpha: Float? = null,
+        val nativeToLockScreenTarget: Boolean? = null,
+        val fullAodTargetSourceReady: Boolean = false,
+        val fullAodTargetPending: Boolean = false,
+        val fullAodVisualBoundary: Boolean = false,
+        val outgoingAodOwned: Boolean = false,
+        val homeAodTransitionOrigin: Boolean = false,
+        val homeAodTargetPrearm: Boolean = false,
+        val homeNativeAodFallbackActive: Boolean = false,
+    )
+
+    fun resolveKeyguardAodProjection(input: KeyguardAodProjectionInputs): KeyguardAodProjection {
+        val featureEnabled = input.featureEnabled
+        val keyguardEnabled = input.keyguardEnabled
+        val aodEnabled = input.aodEnabled
+        val toAod = input.toAod
+        val isAodAnimate = input.isAodAnimate
+        val steadySourceScene = input.steadySourceScene
+        val lastStableFamilyScene = input.lastStableFamilyScene
+        val homePresentationOwned = input.homePresentationOwned
+        val keyguardStatusIconsAlpha = input.keyguardStatusIconsAlpha
+        val nativeToLockScreenTarget = input.nativeToLockScreenTarget
+        val fullAodTargetSourceReady = input.fullAodTargetSourceReady
+        val fullAodTargetPending = input.fullAodTargetPending
+        val fullAodVisualBoundary = input.fullAodVisualBoundary
+        val outgoingAodOwned = input.outgoingAodOwned
+        val homeAodTransitionOrigin = input.homeAodTransitionOrigin
+        val homeAodTargetPrearm = input.homeAodTargetPrearm
+        val homeNativeAodFallbackActive = input.homeNativeAodFallbackActive
         if (!featureEnabled) return KeyguardAodProjection.NATIVE
         if (
             homeNativeAodFallbackActive &&

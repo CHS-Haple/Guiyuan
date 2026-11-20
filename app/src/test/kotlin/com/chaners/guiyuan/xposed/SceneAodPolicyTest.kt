@@ -23,14 +23,16 @@ class SceneAodPolicyTest {
     fun homeAodPrearmUsesLiveProjectionDecision() {
         fun projected(feature: Boolean, aod: Boolean, prearmed: Boolean) =
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = feature,
-                keyguardEnabled = false,
-                aodEnabled = aod,
-                toAod = false,
-                isAodAnimate = false,
-                steadySourceScene = SourceScene.HOME,
-                lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.UNKNOWN,
-                homeAodTargetPrearm = prearmed,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    featureEnabled = feature,
+                    keyguardEnabled = false,
+                    aodEnabled = aod,
+                    toAod = false,
+                    isAodAnimate = false,
+                    steadySourceScene = SourceScene.HOME,
+                    lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    homeAodTargetPrearm = prearmed,
+                ),
             )
 
         assertEquals(ScenePolicy.KeyguardAodProjection.AOD, projected(true, true, true))
@@ -49,12 +51,14 @@ class SceneAodPolicyTest {
             source: SourceScene,
         ) =
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = feature,
-                keyguardEnabled = keyguard,
-                aodEnabled = aod,
-                toAod = toAod,
-                isAodAnimate = false,
-                steadySourceScene = source,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    featureEnabled = feature,
+                    keyguardEnabled = keyguard,
+                    aodEnabled = aod,
+                    toAod = toAod,
+                    isAodAnimate = false,
+                    steadySourceScene = source,
+                ),
             )
 
         assertEquals(
@@ -88,53 +92,61 @@ class SceneAodPolicyTest {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.AOD,
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = true,
-                toAod = false,
-                isAodAnimate = true,
-                steadySourceScene = SourceScene.KEYGUARD,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    featureEnabled = true,
+                    keyguardEnabled = true,
+                    aodEnabled = true,
+                    toAod = false,
+                    isAodAnimate = true,
+                    steadySourceScene = SourceScene.KEYGUARD,
+                    lastStableFamilyScene =
+                        ScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                ),
             ),
         )
         assertEquals(
             ScenePolicy.KeyguardAodProjection.AOD,
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = true,
-                toAod = true,
-                isAodAnimate = true,
-                steadySourceScene = SourceScene.KEYGUARD,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    featureEnabled = true,
+                    keyguardEnabled = true,
+                    aodEnabled = true,
+                    toAod = true,
+                    isAodAnimate = true,
+                    steadySourceScene = SourceScene.KEYGUARD,
+                    lastStableFamilyScene =
+                        ScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                ),
             ),
         )
         assertEquals(
             ScenePolicy.KeyguardAodProjection.KEYGUARD,
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = true,
-                toAod = true,
-                isAodAnimate = true,
-                steadySourceScene = SourceScene.KEYGUARD,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.AOD,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    featureEnabled = true,
+                    keyguardEnabled = true,
+                    aodEnabled = true,
+                    toAod = true,
+                    isAodAnimate = true,
+                    steadySourceScene = SourceScene.KEYGUARD,
+                    lastStableFamilyScene =
+                        ScenePolicy.StableKeyguardAodScene.AOD,
+                ),
             ),
         )
         assertEquals(
             ScenePolicy.KeyguardAodProjection.KEYGUARD,
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = true,
-                toAod = false,
-                isAodAnimate = true,
-                steadySourceScene = SourceScene.KEYGUARD,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.AOD,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    featureEnabled = true,
+                    keyguardEnabled = true,
+                    aodEnabled = true,
+                    toAod = false,
+                    isAodAnimate = true,
+                    steadySourceScene = SourceScene.KEYGUARD,
+                    lastStableFamilyScene =
+                        ScenePolicy.StableKeyguardAodScene.AOD,
+                ),
             ),
         )
     }
@@ -144,29 +156,33 @@ class SceneAodPolicyTest {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.NATIVE,
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = true,
-                toAod = false,
-                isAodAnimate = true,
-                steadySourceScene = SourceScene.HOME,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.AOD,
-                homePresentationOwned = true,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    featureEnabled = true,
+                    keyguardEnabled = true,
+                    aodEnabled = true,
+                    toAod = false,
+                    isAodAnimate = true,
+                    steadySourceScene = SourceScene.HOME,
+                    lastStableFamilyScene =
+                        ScenePolicy.StableKeyguardAodScene.AOD,
+                    homePresentationOwned = true,
+                ),
             ),
         )
         assertEquals(
             ScenePolicy.KeyguardAodProjection.AOD,
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = true,
-                toAod = true,
-                isAodAnimate = true,
-                steadySourceScene = SourceScene.HOME,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
-                homePresentationOwned = true,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    featureEnabled = true,
+                    keyguardEnabled = true,
+                    aodEnabled = true,
+                    toAod = true,
+                    isAodAnimate = true,
+                    steadySourceScene = SourceScene.HOME,
+                    lastStableFamilyScene =
+                        ScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    homePresentationOwned = true,
+                ),
             ),
         )
     }
@@ -188,18 +204,20 @@ class SceneAodPolicyTest {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.AOD,
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = false,
-                aodEnabled = true,
-                toAod = false,
-                isAodAnimate = false,
-                steadySourceScene = SourceScene.KEYGUARD,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
-                homePresentationOwned = false,
-                nativeToLockScreenTarget = false,
-                fullAodTargetSourceReady = true,
-                homeAodTargetPrearm = true,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    featureEnabled = true,
+                    keyguardEnabled = false,
+                    aodEnabled = true,
+                    toAod = false,
+                    isAodAnimate = false,
+                    steadySourceScene = SourceScene.KEYGUARD,
+                    lastStableFamilyScene =
+                        ScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    homePresentationOwned = false,
+                    nativeToLockScreenTarget = false,
+                    fullAodTargetSourceReady = true,
+                    homeAodTargetPrearm = true,
+                ),
             ),
         )
     }
@@ -209,29 +227,33 @@ class SceneAodPolicyTest {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.NATIVE,
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = false,
-                aodEnabled = true,
-                toAod = false,
-                isAodAnimate = false,
-                steadySourceScene = SourceScene.KEYGUARD,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
-                homePresentationOwned = true,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    featureEnabled = true,
+                    keyguardEnabled = false,
+                    aodEnabled = true,
+                    toAod = false,
+                    isAodAnimate = false,
+                    steadySourceScene = SourceScene.KEYGUARD,
+                    lastStableFamilyScene =
+                        ScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    homePresentationOwned = true,
+                ),
             ),
         )
         assertEquals(
             ScenePolicy.KeyguardAodProjection.AOD,
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = false,
-                aodEnabled = true,
-                toAod = false,
-                isAodAnimate = true,
-                steadySourceScene = SourceScene.KEYGUARD,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
-                homePresentationOwned = true,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    featureEnabled = true,
+                    keyguardEnabled = false,
+                    aodEnabled = true,
+                    toAod = false,
+                    isAodAnimate = true,
+                    steadySourceScene = SourceScene.KEYGUARD,
+                    lastStableFamilyScene =
+                        ScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    homePresentationOwned = true,
+                ),
             ),
         )
     }
