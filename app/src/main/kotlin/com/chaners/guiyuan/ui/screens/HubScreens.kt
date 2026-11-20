@@ -84,20 +84,28 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+internal data class SettingsHubSnapshot(
+    val lang: AppLang,
+    val iconHidden: Boolean,
+    val swipeBackEnabled: Boolean,
+    val runtimeBusy: Boolean,
+)
+
+internal data class SettingsHubActions(
+    val onRestart: () -> Unit,
+    val onLangChange: (AppLang) -> Unit,
+    val onIconHiddenChange: (Boolean) -> Unit,
+    val onSwipeBackChange: (Boolean) -> Unit,
+    val onNavigate: (AppRoute) -> Unit,
+)
+
 @Composable
 internal fun SettingsHubScreen(
     bottomContentPadding: Dp,
-    lang: AppLang,
-    iconHidden: Boolean,
-    swipeBackEnabled: Boolean,
-    runtimeBusy: Boolean,
-    onRestart: () -> Unit,
-    onLangChange: (AppLang) -> Unit,
-    onIconHiddenChange: (Boolean) -> Unit,
-    onSwipeBackChange: (Boolean) -> Unit,
-    onNavigate: (AppRoute) -> Unit,
+    snapshot: SettingsHubSnapshot,
+    actions: SettingsHubActions,
 ) {
-    val entryState = rememberAppSettingsEntryState(runtimeBusy)
+    val entryState = rememberAppSettingsEntryState(snapshot.runtimeBusy)
     HubPage(
         title = stringResource(R.string.settings_title),
         bottomContentPadding = bottomContentPadding,
@@ -112,7 +120,7 @@ internal fun SettingsHubScreen(
                     )
                 },
                 summary = stringResource(R.string.appearance_summary),
-                onClick = { onNavigate(AppRoute.Appearance) },
+                onClick = { actions.onNavigate(AppRoute.Appearance) },
             )
             SwitchPreference(
                 title = stringResource(R.string.swipe_back),
@@ -122,20 +130,20 @@ internal fun SettingsHubScreen(
                     )
                 },
                 summary = stringResource(R.string.swipe_back_summary),
-                checked = swipeBackEnabled,
-                onCheckedChange = onSwipeBackChange,
+                checked = snapshot.swipeBackEnabled,
+                onCheckedChange = actions.onSwipeBackChange,
             )
         }
         Section(R.string.section_app) {
             AppSettingsRows(
-                lang = lang,
-                iconHidden = iconHidden,
-                onLangChange = onLangChange,
-                onIconHiddenChange = onIconHiddenChange,
+                lang = snapshot.lang,
+                iconHidden = snapshot.iconHidden,
+                onLangChange = actions.onLangChange,
+                onIconHiddenChange = actions.onIconHiddenChange,
                 entryState = entryState,
             )
         }
-        settingsHubMaintenanceSection(entryState, onRestart, onNavigate)
+        settingsHubMaintenanceSection(entryState, actions.onRestart, actions.onNavigate)
     }
 }
 

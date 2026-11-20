@@ -34,7 +34,6 @@ import com.chaners.guiyuan.settings.ConfigBackup
 import com.chaners.guiyuan.settings.ConfigBackupFiles
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualRepo
-import com.chaners.guiyuan.ui.navigation.AppRoute
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import com.chaners.guiyuan.ui.components.UiDialogButton
@@ -51,7 +50,6 @@ internal fun FeaturesScreen(
     snackbarState: SnackbarHostState,
     search: PageSearch,
     searchInNavigationBar: Boolean,
-    onNavigate: (AppRoute) -> Unit,
 ) {
     val context = LocalContext.current
     val featureRepo =

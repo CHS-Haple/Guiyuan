@@ -93,6 +93,8 @@ import com.chaners.guiyuan.ui.screens.rememberPageSearch
 import com.chaners.guiyuan.ui.screens.HomeScreen
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
+import com.chaners.guiyuan.ui.screens.SettingsHubSnapshot
+import com.chaners.guiyuan.ui.screens.SettingsHubActions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -953,19 +955,22 @@ private fun TopLevelPager(
                 snackbarState = featureSnackbarState,
                 search = featureSearch,
                 searchInNavigationBar = searchInNavigationBar,
-                onNavigate = onNavigate,
             )
             2 -> SettingsHubScreen(
                 bottomContentPadding = bottom,
-                lang = lang,
-                iconHidden = iconHidden,
-                swipeBackEnabled = swipeBackEnabled,
-                runtimeBusy = restartInProgress || hotReloadInProgress || scopeRequestInProgress,
-                onRestart = onRestart,
-                onLangChange = onLangChange,
-                onIconHiddenChange = onIconHiddenChange,
-                onSwipeBackChange = onSwipeBackChange,
-                onNavigate = onNavigate,
+                snapshot = SettingsHubSnapshot(
+                    lang = lang,
+                    iconHidden = iconHidden,
+                    swipeBackEnabled = swipeBackEnabled,
+                    runtimeBusy = restartInProgress || hotReloadInProgress || scopeRequestInProgress,
+                ),
+                actions = SettingsHubActions(
+                    onRestart = onRestart,
+                    onLangChange = onLangChange,
+                    onIconHiddenChange = onIconHiddenChange,
+                    onSwipeBackChange = onSwipeBackChange,
+                    onNavigate = onNavigate,
+                ),
             )
         }
     }
