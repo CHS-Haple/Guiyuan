@@ -426,18 +426,26 @@ internal fun LogEmptyGuide(
                     textAlign = TextAlign.Start,
                 )
             }
-            Spacer(Modifier.height(32.dp))
-            Button(
-                onClick = onRetry,
-                enabled = !busy,
-                modifier = Modifier.widthIn(min = 176.dp),
-                colors = ButtonDefaults.buttonColorsPrimary(),
-            ) {
-                Text(
-                    text = stringResource(R.string.diagnostics_retry_logs),
-                    style = MiuixTheme.textStyles.button,
-                )
-            }
+            LogEmptyRetryAction(busy = busy, onRetry = onRetry)
         }
+    }
+}
+
+@Composable
+private fun LogEmptyRetryAction(
+    busy: Boolean,
+    onRetry: () -> Unit,
+) {
+    Spacer(Modifier.height(32.dp))
+    Button(
+        onClick = onRetry,
+        enabled = !busy,
+        modifier = Modifier.widthIn(min = 176.dp),
+        colors = ButtonDefaults.buttonColorsPrimary(),
+    ) {
+        Text(
+            text = stringResource(R.string.diagnostics_retry_logs),
+            style = MiuixTheme.textStyles.button,
+        )
     }
 }

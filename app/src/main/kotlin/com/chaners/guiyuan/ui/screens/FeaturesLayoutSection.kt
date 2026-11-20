@@ -102,13 +102,26 @@ private fun ColumnScope.featureSignalRowChoices(
     enabled: Boolean,
     bothSidesSearch: Boolean,
 ) {
-    val searching = search.filtering
     val signalDotArrangements = listOf(
         stringResource(R.string.signal_dot_arrangement_curved),
         stringResource(R.string.signal_dot_arrangement_horizontal),
     )
     val dualSignalDotArrangements = signalDotArrangements +
         stringResource(R.string.signal_dot_arrangement_both_sides)
+    featureDualSignalToggle(search, visual, visualRepo, enabled, bothSidesSearch)
+    featureSingleRowSignalDots(search, visual, visualRepo, enabled, signalDotArrangements)
+    featureDualRowSignalDots(search, visual, visualRepo, enabled, dualSignalDotArrangements)
+}
+
+@Composable
+private fun ColumnScope.featureDualSignalToggle(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+    bothSidesSearch: Boolean,
+) {
+    val searching = search.filtering
     if (search.matches(R.string.dual_signal_title) ||
         (searching && !visual.dualSignal &&
             (search.any(R.string.dual_row_signal_dot_arrangement_title,
@@ -128,6 +141,16 @@ private fun ColumnScope.featureSignalRowChoices(
             onCheckedChange = visualRepo::setDualSignal,
         )
     }
+}
+
+@Composable
+private fun ColumnScope.featureSingleRowSignalDots(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+    signalDotArrangements: List<String>,
+) {
     if (search.matches(R.string.single_row_signal_dot_arrangement_title)) {
         UiDropdownPreference(
             title = stringResource(R.string.single_row_signal_dot_arrangement_title),
@@ -148,6 +171,16 @@ private fun ColumnScope.featureSignalRowChoices(
             },
         )
     }
+}
+
+@Composable
+private fun ColumnScope.featureDualRowSignalDots(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+    dualSignalDotArrangements: List<String>,
+) {
     AnimatedPreferenceGroup(visible = visual.dualSignal) {
         if (search.matches(R.string.dual_row_signal_dot_arrangement_title) ||
             (bothSidesSearch && visual.dualRowDotArrangement != SignalDotArrangement.BOTH_SIDES)) {

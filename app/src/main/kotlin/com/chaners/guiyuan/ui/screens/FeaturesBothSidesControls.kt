@@ -58,6 +58,19 @@ private fun ColumnScope.featureBothSidesActivityOptions(
     enabled: Boolean,
 ) {
     AnimatedPreferenceGroup(visible = visual.bothSidesShowActivity) {
+        featureBothSidesIdleActivity(search, visual, visualRepo, enabled)
+        featureBothSidesActivityScale(search, visual, visualRepo, enabled)
+        featureBothSidesActivityVerticalOffset(search, visual, visualRepo, enabled)
+    }
+}
+
+@Composable
+private fun ColumnScope.featureBothSidesIdleActivity(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+) {
         if (search.matches(R.string.both_sides_idle_activity_title)) {
             SwitchPreference(
                 title = stringResource(R.string.both_sides_idle_activity_title),
@@ -74,6 +87,15 @@ private fun ColumnScope.featureBothSidesActivityOptions(
                 onCheckedChange = visualRepo::setBothSidesHideIdleActivity,
             )
         }
+}
+
+@Composable
+private fun ColumnScope.featureBothSidesActivityScale(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+) {
         if (search.matches(R.string.both_sides_activity_size)) {
             SliderPreference(
                 value = visual.bothSidesActivityScale,
@@ -99,6 +121,15 @@ private fun ColumnScope.featureBothSidesActivityOptions(
                 enabled = enabled,
             )
         }
+}
+
+@Composable
+private fun ColumnScope.featureBothSidesActivityVerticalOffset(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+) {
         if (search.matches(R.string.both_sides_activity_vertical_offset)) {
             SliderPreference(
                 value = visual.bothSidesActivityOffsetY,
@@ -124,7 +155,6 @@ private fun ColumnScope.featureBothSidesActivityOptions(
                 enabled = enabled,
             )
         }
-    }
 }
 
 @Composable

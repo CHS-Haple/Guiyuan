@@ -144,22 +144,9 @@ internal fun Os4SearchMode(
     )
 
     val density = LocalDensity.current
-    val direction = LocalLayoutDirection.current
     val keyboard = LocalSoftwareKeyboardController.current
-    val cancelInteraction = remember { MutableInteractionSource() }
-    val cancelPressed = cancelInteraction.collectIsPressedAsState()
     val statusInset = WindowInsets.statusBars.getTop(density)
     val shadowOutsets = remember(density) { with(density) { popupShadowOutsets(GlassShadows.Regular) } }
-    val cancelOutsets = remember(density, shadowOutsets) {
-        // Match PR423's three-radius allowance for its Cancel blur.
-        val halo = with(density) { (CANCEL_BLUR_PX * 3f).toDp() }
-        LayerOutsets(
-            left = shadowOutsets.left + halo,
-            top = shadowOutsets.top + halo,
-            right = shadowOutsets.right + halo,
-            bottom = shadowOutsets.bottom + halo,
-        )
-    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -199,51 +186,78 @@ internal fun Os4SearchMode(
             }
             Spacer(Modifier.width(54.dp * motion.progress.coerceIn(0f, 1f)))
         }
-        val label = stringResource(R.string.cancel)
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .graphicsLayer {
-                    outsets = cancelOutsets
-                    val scale = motion.progress.coerceIn(0f, 1f)
-                    scaleX = scale
-                    scaleY = scale
-                    alpha = motion.cancelAlpha
-                    val blur = CANCEL_BLUR_PX * (1f - motion.cancelAlpha.coerceIn(0f, 1f))
-                    renderEffect = if (blur > 0.5f) {
-                        BlurEffect(blur, blur, TileMode.Decal)
-                    } else null
-                    translationX = 66.dp.toPx() * (1f - scale) *
-                        (if (direction == LayoutDirection.Ltr) 1f else -1f)
-                },
-        ) {
-            TooltipBox(text = label) {
-                Os4SearchSurface(
-                    modifier = Modifier.size(44.dp),
-                    backdrop = backdrop,
-                    materialProgress = materialProgress,
-                    shadowProgress = shadowProgress,
-                    pressed = cancelPressed,
+        Os4SearchCancelAction(motion, expanded, backdrop, materialProgress, shadowProgress, onClose)
+    }
+}
+
+@Composable
+private fun Os4SearchCancelAction(
+    motion: Os4SearchMotion,
+    expanded: Boolean,
+    backdrop: Backdrop?,
+    materialProgress: State<Float>,
+    shadowProgress: State<Float>,
+    onClose: () -> Unit,
+) {
+    val density = LocalDensity.current
+    val direction = LocalLayoutDirection.current
+    val cancelInteraction = remember { MutableInteractionSource() }
+    val cancelPressed = cancelInteraction.collectIsPressedAsState()
+    val shadowOutsets = remember(density) { with(density) { popupShadowOutsets(GlassShadows.Regular) } }
+    val cancelOutsets = remember(density, shadowOutsets) {
+        // Match PR423's three-radius allowance for its Cancel blur.
+        val halo = with(density) { (CANCEL_BLUR_PX * 3f).toDp() }
+        LayerOutsets(
+            left = shadowOutsets.left + halo,
+            top = shadowOutsets.top + halo,
+            right = shadowOutsets.right + halo,
+            bottom = shadowOutsets.bottom + halo,
+        )
+    }
+    val label = stringResource(R.string.cancel)
+    Box(
+        modifier = Modifier
+            .align(Alignment.CenterEnd)
+            .graphicsLayer {
+                outsets = cancelOutsets
+                val scale = motion.progress.coerceIn(0f, 1f)
+                scaleX = scale
+                scaleY = scale
+                alpha = motion.cancelAlpha
+                val blur = CANCEL_BLUR_PX * (1f - motion.cancelAlpha.coerceIn(0f, 1f))
+                renderEffect = if (blur > 0.5f) {
+                    BlurEffect(blur, blur, TileMode.Decal)
+                } else null
+                translationX = 66.dp.toPx() * (1f - scale) *
+                    (if (direction == LayoutDirection.Ltr) 1f else -1f)
+            },
+    ) {
+        TooltipBox(text = label) {
+            Os4SearchSurface(
+                modifier = Modifier.size(44.dp),
+                backdrop = backdrop,
+                materialProgress = materialProgress,
+                shadowProgress = shadowProgress,
+                pressed = cancelPressed,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable(
+                            enabled = expanded,
+                            role = Role.Button,
+                            interactionSource = cancelInteraction,
+                            indication = null,
+                            onClick = onClose,
+                        ),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .clickable(
-                                enabled = expanded,
-                                role = Role.Button,
-                                interactionSource = cancelInteraction,
-                                indication = null,
-                                onClick = onClose,
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            Os4GlassClose,
-                            contentDescription = label,
-                            modifier = Modifier.size(28.dp),
-                            tint = MiuixTheme.colorScheme.onSurface,
-                        )
-                    }
+                    Icon(
+                        Os4GlassClose,
+                        contentDescription = label,
+                        modifier = Modifier.size(28.dp),
+                        tint = MiuixTheme.colorScheme.onSurface,
+                    )
                 }
             }
         }
