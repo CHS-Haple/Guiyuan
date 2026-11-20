@@ -3,6 +3,7 @@ package com.chaners.guiyuan.ui.screens
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -186,7 +187,7 @@ private fun GlassManageMenuTrigger(
 @Composable
 private fun GlassManageMenuRoot(
     state: GlassManageMenuState,
-    content: @Composable () -> Unit,
+    content: @Composable BoxScope.() -> Unit,
 ) {
     if (state.mounted.value) {
         DialogLayout(
