@@ -1,7 +1,5 @@
 package com.chaners.guiyuan.ui.screens
 
-import android.content.ClipData
-import android.content.Intent
 import com.chaners.guiyuan.BuildConfig
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -302,39 +300,9 @@ internal fun DiagnosticsScreen(
                 },
                 onLongClick = {
                     withReport { report ->
-                        val prepared =
-                            DiagFiles.prepare(
-                                context = context,
-                                report = report,
-                            )
-                        if (prepared == null) {
+                        if (!shareDiagnosticReport(context, report, shareTitle)) {
                             snackbarHostState.showSnackbar(shareFailMsg)
-                            return@withReport
                         }
-                        val sendIntent =
-                            Intent(Intent.ACTION_SEND).apply {
-                                type = DiagFiles.MIME_TYPE
-                                putExtra(Intent.EXTRA_STREAM, prepared.uri)
-                                clipData =
-                                    ClipData.newUri(
-                                        context.contentResolver,
-                                        shareTitle,
-                                        prepared.uri,
-                                    )
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                        DiagFiles.logIntent(sendIntent, prepared.uri)
-                        val chooserIntent =
-                            Intent.createChooser(sendIntent, shareTitle).apply {
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                        runCatching { context.startActivity(chooserIntent) }
-                            .onSuccess { DiagFiles.logChooser() }
-                            .onFailure { error ->
-                                DiagFiles.logChooser(error)
-                                DiagFiles.discard(context, prepared)
-                                snackbarHostState.showSnackbar(shareFailMsg)
-                            }
                     }
                 },
                 longClickLabel = shareTitle,
