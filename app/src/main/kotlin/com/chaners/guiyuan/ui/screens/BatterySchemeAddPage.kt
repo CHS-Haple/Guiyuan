@@ -47,7 +47,6 @@ internal fun BatteryAddSchemePage(
     settingsCardHeightPx: Int,
     onClick: () -> Unit,
 ) {
-    val density = LocalDensity.current
     Column(
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -64,44 +63,52 @@ internal fun BatteryAddSchemePage(
                 name = name,
                 previewPage = BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS),
             )
-            BatterySchemeActionArea {
-                TextButton(
-                    text =
-                        stringResource(
-                            if (enabled) {
-                                R.string.battery_custom_scheme_add_page_title
-                            } else {
-                                R.string.battery_custom_scheme_limit
-                            },
-                        ),
-                    onClick = onClick,
-                    enabled = enabled,
-                    minWidth = 26.dp,
-                    minHeight = 26.dp,
-                    cornerRadius = SnackbarDefaults.ActionCornerRadius,
-                    insideMargin = SnackbarDefaults.ActionInsideMargin,
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                    textStyle = TextStyle(fontSize = 15.sp),
-                )
-            }
-            Card(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .then(
-                            if (settingsCardHeightPx > 0) {
-                                Modifier.height(with(density) { settingsCardHeightPx.toDp() })
-                            } else {
-                                Modifier.heightIn(min = 400.dp)
-                            },
-                        ),
-                pressFeedbackType =
-                    if (enabled) PressFeedbackType.Sink else PressFeedbackType.None,
-                onClick = if (enabled) onClick else null,
-            ) {
-                BatteryAddSchemeCardBody(count, enabled)
-            }
+            BatteryAddSchemeAction(enabled, onClick)
+            BatteryAddSchemePlaceholder(count, enabled, settingsCardHeightPx, onClick)
         }
+    }
+}
+
+@Composable
+private fun BatteryAddSchemeAction(enabled: Boolean, onClick: () -> Unit) {
+    BatterySchemeActionArea {
+        TextButton(
+            text = stringResource(
+                if (enabled) R.string.battery_custom_scheme_add_page_title
+                else R.string.battery_custom_scheme_limit,
+            ),
+            onClick = onClick,
+            enabled = enabled,
+            minWidth = 26.dp,
+            minHeight = 26.dp,
+            cornerRadius = SnackbarDefaults.ActionCornerRadius,
+            insideMargin = SnackbarDefaults.ActionInsideMargin,
+            colors = ButtonDefaults.textButtonColorsPrimary(),
+            textStyle = TextStyle(fontSize = 15.sp),
+        )
+    }
+}
+
+@Composable
+private fun BatteryAddSchemePlaceholder(
+    count: Int,
+    enabled: Boolean,
+    settingsCardHeightPx: Int,
+    onClick: () -> Unit,
+) {
+    val density = LocalDensity.current
+    Card(
+        modifier = Modifier.fillMaxWidth().then(
+            if (settingsCardHeightPx > 0) {
+                Modifier.height(with(density) { settingsCardHeightPx.toDp() })
+            } else {
+                Modifier.heightIn(min = 400.dp)
+            },
+        ),
+        pressFeedbackType = if (enabled) PressFeedbackType.Sink else PressFeedbackType.None,
+        onClick = if (enabled) onClick else null,
+    ) {
+        BatteryAddSchemeCardBody(count, enabled)
     }
 }
 
