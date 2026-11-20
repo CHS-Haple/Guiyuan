@@ -3195,33 +3195,41 @@ class GyModule : XposedModule() {
                 ?: return null
         return ScenePolicy.resolveKeyguardAodProjection(
             ScenePolicy.KeyguardAodProjectionInputs(
-                featureEnabled = settings.enabled,
-                keyguardEnabled = settings.keyguard,
-                aodEnabled = settings.aod,
-                toAod = aodState.toAod,
-                isAodAnimate = aodState.isAodAnimate,
-                steadySourceScene = steadyStatusSourceScene,
-                lastStableFamilyScene = stableFamilyScene,
-                homePresentationOwned =
-                    SysUiPresentationOwner
-                        .homeSlots()
-                        .isNotEmpty(),
-                keyguardStatusIconsAlpha =
-                    SysUiKeyguardHostResolver
-                        .statusIconsPresentationAlpha(resolved),
-                nativeToLockScreenTarget =
-                    SysUiKeyguardHostResolver
-                        .nativeToLockScreenTarget(resolved),
-                fullAodTargetSourceReady =
-                    SysUiPresentationRuntime.keyguardFullAodReady,
-                fullAodTargetPending = aodWindow?.boundaryPending == true,
-                fullAodVisualBoundary = fullAodVisualBoundary,
-                outgoingAodOwned =
-                    (aodWindow as? AodWindow.Waiting)?.toLockScreen == true &&
-                        SysUiPresentationOwner.aodClaimed(resolved),
-                homeAodTransitionOrigin = homeAodOriginPending,
-                homeAodTargetPrearm = homeAodTargetPrearmPending,
-                homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),
+                feature = ScenePolicy.AodFeatureFlags(
+        featureEnabled = settings.enabled,
+        keyguardEnabled = settings.keyguard,
+        aodEnabled = settings.aod,
+        toAod = aodState.toAod,
+        isAodAnimate = aodState.isAodAnimate,
+                ),
+                scene = ScenePolicy.AodSceneEvidence(
+        steadySourceScene = steadyStatusSourceScene,
+        lastStableFamilyScene = stableFamilyScene,
+        homePresentationOwned =
+            SysUiPresentationOwner
+                .homeSlots()
+                .isNotEmpty(),
+                ),
+                boundary = ScenePolicy.AodNativeBoundaryEvidence(
+        keyguardStatusIconsAlpha =
+            SysUiKeyguardHostResolver
+                .statusIconsPresentationAlpha(resolved),
+        nativeToLockScreenTarget =
+            SysUiKeyguardHostResolver
+                .nativeToLockScreenTarget(resolved),
+        fullAodTargetSourceReady =
+            SysUiPresentationRuntime.keyguardFullAodReady,
+        fullAodTargetPending = aodWindow?.boundaryPending == true,
+        fullAodVisualBoundary = fullAodVisualBoundary,
+        outgoingAodOwned =
+            (aodWindow as? AodWindow.Waiting)?.toLockScreen == true &&
+                SysUiPresentationOwner.aodClaimed(resolved),
+                ),
+                home = ScenePolicy.AodHomeEvidence(
+        homeAodTransitionOrigin = homeAodOriginPending,
+        homeAodTargetPrearm = homeAodTargetPrearmPending,
+        homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),
+                ),
             ),
         )
     }
