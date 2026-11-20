@@ -68,16 +68,20 @@ internal fun AppearanceScreen(
         overlay = {
             IntegerInputDialog(
                 show = scaleState.dialogOpen.value,
-                title = stringResource(R.string.ui_scale_title),
-                summary = "80% - 110%",
-                value = appearance.uiScalePercent,
-                range = 80..110,
-                suffix = "%",
-                onDismiss = { scaleState.dialogOpen.value = false },
-                onConfirm = { percent ->
-                    scaleState.dialogOpen.value = false
-                    if (percent != appearance.uiScalePercent) visualActions.style.onUiScaleChange(percent)
-                },
+                model = IntegerInputModel(
+                    title = stringResource(R.string.ui_scale_title),
+                    summary = "80% - 110%",
+                    value = appearance.uiScalePercent,
+                    range = 80..110,
+                    suffix = "%",
+                ),
+                callbacks = IntegerInputCallbacks(
+                    onDismiss = { scaleState.dialogOpen.value = false },
+                    onConfirm = { percent ->
+                        scaleState.dialogOpen.value = false
+                        if (percent != appearance.uiScalePercent) visualActions.style.onUiScaleChange(percent)
+                    },
+                ),
             )
         },
     ) {
