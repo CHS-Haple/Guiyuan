@@ -108,12 +108,13 @@ private fun LazyListScope.featureScreenDisplayLayoutNetwork(
     if (matches.network) {
         featureNetworkSection(
             search = search,
-            visual = visual,
+            state = NetworkFeatureState(
+                visual = visual,
+                enabled = featureCfg.enabled,
+                weight = resources.mobileWeight,
+            ),
             visualRepo = visualRepo,
-            enabled = featureCfg.enabled,
-            weight = resources.mobileWeight,
-            weightDialogOpen = ui.mobileWeightOpen,
-            onOpenWeightDialog = actions.openMobileWeight,
+            weightDialog = NetworkWeightDialog(ui.mobileWeightOpen, actions.openMobileWeight),
         )
     }
 }
