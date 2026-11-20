@@ -316,7 +316,7 @@ fun GlassTopAppBar(
     val isContentScrolled by remember(scrollBehavior) {
         derivedStateOf {
             val offset = scrollBehavior?.state?.contentOffset ?: currentOffset?.invoke()
-            offset?.let { it < 0f } ?: true
+            offset?.let { it < -1f } ?: true
         }
     }
     GlassTopAppBar(
@@ -404,20 +404,10 @@ fun GlassTopAppBar(
         }
     }
     val transition = updateTransition(contentScrolled, label = "glassTopBarFloat")
-    val maskProgress = transition.animateFloat(
-        transitionSpec = { GlassMotion.topBarMask() },
-        label = "glassTopBarMask",
-    ) { if (it) 1f else 0f }
-    val scrolledMaterialProgress = transition.animateFloat(
+    val materialProgress = transition.animateFloat(
         transitionSpec = { GlassMotion.topBarButtonFloat() },
         label = "glassTopBarMaterial",
     ) { if (it) 1f else 0f }
-    val materialProgress = remember(scrolledMaterialProgress, scrollBehavior, ramp) {
-        derivedStateOf {
-            val elasticProgress = if (scrollBehavior != null && scrollBehavior.state.overscrollOffset != 0f) ramp.value else 0f
-            maxOf(scrolledMaterialProgress.value, elasticProgress)
-        }
-    }
     val keepMaterial by remember(contentScrolled, materialProgress) {
         derivedStateOf { contentScrolled || materialProgress.value > 0f }
     }
@@ -466,16 +456,10 @@ fun GlassTopAppBar(
                 listOf(BlendColorEntry(surfaceColor.copy(alpha = 0.3f)))
             }
             val blurColors = BlurDefaults.blurColors(blendColors = blendColors)
-            val currentVisualOffset by rememberUpdatedState(visualContentOffset)
             val currentBgAlpha by rememberUpdatedState(backgroundAlpha)
-            val rampDistancePx = with(LocalDensity.current) {
-                GlassTopAppBarDefaults.ProgressiveBlurRampDistance.toPx()
-            }
-            val bandActive by remember(scrollBehavior, maskProgress, rampDistancePx) {
+            val bandActive by remember(contentScrolled) {
                 derivedStateOf {
-                    val offset = currentVisualOffset?.invoke() ?: scrollBehavior?.state?.visualContentOffset
-                    val rampVal = offset?.let { (-it / rampDistancePx).coerceIn(0f, 1f) } ?: maskProgress.value
-                    rampVal * currentBgAlpha().coerceIn(0f, 1f) > 0.001f
+                    contentScrolled && currentBgAlpha().coerceIn(0f, 1f) > 0.001f
                 }
             }
             val backdropCaptureModifier = if (hasButtonBackdropConsumers && (keepMaterial || bandActive)) {
@@ -499,11 +483,7 @@ fun GlassTopAppBar(
                     }
                     .then(backdropCaptureModifier)
                     .graphicsLayer {
-                        val offset = visualContentOffset?.invoke() ?: scrollBehavior?.state?.visualContentOffset
-                        val ramp = offset?.let {
-                            (-it / GlassTopAppBarDefaults.ProgressiveBlurRampDistance.toPx()).coerceIn(0f, 1f)
-                        } ?: maskProgress.value
-                        this.alpha = ramp * backgroundAlpha().coerceIn(0f, 1f)
+                        this.alpha = if (contentScrolled) backgroundAlpha().coerceIn(0f, 1f) else 0f
                     }
                     .progressiveTextureBlur(
                         backdrop = rawBackdrop,
@@ -529,8 +509,7 @@ fun GlassTopAppBar(
                         layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(0, 0) }
                     }
                     .graphicsLayer {
-                        val progress = if (visualContentOffset != null || scrollBehavior != null) ramp.value else maskProgress.value
-                        this.alpha = progress * backgroundAlpha().coerceIn(0f, 1f)
+                        this.alpha = if (contentScrolled) backgroundAlpha().coerceIn(0f, 1f) else 0f
                         transformOrigin = TransformOrigin(0.5f, 0f)
                         scaleY = if (bandBrush !is TopAppBarBandBrush && size.height > 0f) (size.height + overhangPx) / size.height else 1f
                     }
