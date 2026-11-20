@@ -1,15 +1,10 @@
 package com.chaners.guiyuan.ui
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
@@ -52,8 +47,6 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.LayoutDirection
@@ -61,7 +54,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
@@ -101,7 +93,6 @@ import com.chaners.guiyuan.ui.screens.rememberPageSearch
 import com.chaners.guiyuan.ui.screens.HomeScreen
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
-import com.chaners.guiyuan.ui.screens.SemanticLeadingIcon
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -128,11 +119,8 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import com.chaners.guiyuan.ui.components.UiDialogButton
-import com.chaners.guiyuan.ui.components.dialogActionGap
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
-import top.yukonga.miuix.kmp.preference.CheckboxLocation
-import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -231,29 +219,6 @@ private class HubPagerSelection(
         if (navigationJob == null && selectedPage != pagerState.currentPage) {
             selectedPage = pagerState.currentPage
         }
-    }
-}
-
-// Use the same installed-package artwork the scope manager displays.
-@Composable
-private fun RestartAppIcon(pkg: String, fallback: Int) {
-    val ctx = LocalContext.current
-    val density = LocalDensity.current
-    val config = LocalConfiguration.current
-    val icon = remember(ctx, pkg, density.density, config) {
-        runCatching {
-            val side = with(density) { 48.dp.roundToPx() }
-            val drawable = ctx.packageManager.getApplicationIcon(pkg)
-            val bitmap = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
-            drawable.setBounds(0, 0, side, side)
-            drawable.draw(Canvas(bitmap))
-            bitmap.asImageBitmap()
-        }.getOrNull()
-    }
-    if (icon != null) {
-        Image(bitmap = icon, contentDescription = null, modifier = Modifier.size(24.dp))
-    } else {
-        SemanticLeadingIcon(fallback)
     }
 }
 
@@ -856,88 +821,16 @@ internal fun MainHub(
                 }
             },
         ) {
-            Column {
-                if (RestartTarget.SYS_UI in availableTargets) {
-                    CheckboxPreference(
-                        title = stringResource(R.string.restart_scope_sysui),
-                        summary = RestartTarget.SYS_UI.pkg,
-                        checked = RestartTarget.SYS_UI in selectedTargets,
-                        onCheckedChange = { checked ->
-                            selectedTargets =
-                                if (checked) selectedTargets + RestartTarget.SYS_UI
-                                else selectedTargets - RestartTarget.SYS_UI
-                        },
-                        checkboxLocation = CheckboxLocation.End,
-                        startAction = {
-                            RestartAppIcon(
-                                RestartTarget.SYS_UI.pkg,
-                                R.drawable.ic_material_symbol_dashboard,
-                            )
-                        },
-                    )
-                }
-                if (RestartTarget.SETTINGS in availableTargets) {
-                    CheckboxPreference(
-                        title = stringResource(R.string.restart_scope_settings),
-                        summary = RestartTarget.SETTINGS.pkg,
-                        checked = RestartTarget.SETTINGS in selectedTargets,
-                        onCheckedChange = { checked ->
-                            selectedTargets =
-                                if (checked) selectedTargets + RestartTarget.SETTINGS
-                                else selectedTargets - RestartTarget.SETTINGS
-                        },
-                        checkboxLocation = CheckboxLocation.End,
-                        startAction = {
-                            RestartAppIcon(
-                                RestartTarget.SETTINGS.pkg,
-                                R.drawable.ic_material_symbol_settings_applications,
-                            )
-                        },
-                    )
-                }
-                if (availableTargets.isNotEmpty()) {
-                    Spacer(Modifier.height(12.dp))
-                }
-                if (availableTargets.isEmpty()) {
-                    UiDialogButton(
-                        text = stringResource(R.string.confirm),
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { restartPickerOpen = false },
-                    )
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        UiDialogButton(
-                            text = stringResource(
-                                if (selectedTargets == availableTargets) {
-                                    R.string.restart_scope_clear_all
-                                } else {
-                                    R.string.restart_scope_select_all
-                                },
-                            ),
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                selectedTargets =
-                                    if (selectedTargets == availableTargets) emptySet()
-                                    else availableTargets
-                            },
-                        )
-                        Spacer(Modifier.width(dialogActionGap()))
-                        UiDialogButton(
-                            text = stringResource(R.string.restart),
-                            modifier = Modifier.weight(1f),
-                            enabled = selectedTargets.isNotEmpty(),
-                            role = GlassDialogButtonRole.Primary,
-                            onClick = {
-                                queuedRestart = selectedTargets intersect availableTargets
-                                restartPickerOpen = false
-                            },
-                        )
-                    }
-                }
-            }
+            RestartScopeSelection(
+                availableTargets = availableTargets,
+                selectedTargets = selectedTargets,
+                onSelectionChange = { selectedTargets = it },
+                onClose = { restartPickerOpen = false },
+                onRestart = {
+                    queuedRestart = selectedTargets intersect availableTargets
+                    restartPickerOpen = false
+                },
+            )
         }
 
         UiOverlayDialog(
