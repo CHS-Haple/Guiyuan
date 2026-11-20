@@ -250,16 +250,14 @@ internal fun GyApp(
         ) {
             entry<AppRoute.Home> {
                 MainHub(
-                    appearance = appearance,
-                    dark = dark,
-                    lang = lang,
-                    iconHidden = iconHidden,
-                    onHotReload = onHotReload,
-                    onLangChange = onLangChange,
-                    onIconHiddenChange = onIconHiddenChange,
-                    onSwipeBackChange = onSwipeBackChange,
-                    previewState = previewState,
-                    onNavigate = ::navigate,
+                    inputs = MainHubInputs(appearance, dark, lang, iconHidden, previewState),
+                    callbacks = MainHubCallbacks(
+                        onHotReload = onHotReload,
+                        onLangChange = onLangChange,
+                        onIconHiddenChange = onIconHiddenChange,
+                        onSwipeBackChange = onSwipeBackChange,
+                        onNavigate = ::navigate,
+                    ),
                 )
             }
             entry<AppRoute.Appearance>(swipeDismiss = swipeBackDirection) {
