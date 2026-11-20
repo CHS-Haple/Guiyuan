@@ -308,61 +308,19 @@ internal fun OnboardingFlow(
         val scroll = rememberScrollState()
         val importantScroll = rememberScrollState()
         val topBarBackdrop = rememberTopBarBackdrop()
-        val os4 = LocalUiStyle.current == UiStyle.OS4
-        val refreshAction: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {
-            if (step == 1) {
-                val label = stringResource(R.string.guide_refresh_status)
-                TooltipBox(text = label) {
-                    if (os4) {
-                        GlassIconButton(onClick = ::refreshPermissionStatus) {
-                            Icon(
-                                imageVector = Os4GlassRefresh,
-                                contentDescription = label,
-                            )
-                        }
-                    } else {
-                        IconButton(onClick = ::refreshPermissionStatus) {
-                            Icon(
-                                imageVector = MiuixIcons.Regular.Refresh,
-                                contentDescription = label,
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        // Match the in-app Settings top bar instead of mixing a glass back control
-        // into the OS3 bar. The guide has its own content heading, hence compact.
         CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
             Scaffold(
                 topBar = {
-                    if (os4) {
-                        GlassTopAppBar(
-                            progressiveBlur = LocalTopBarProgressiveBlur.current,
-                            title = "",
-                            isContentScrolled = step != 2 && scroll.value > 0,
+                    GuideStageTopBar(
+                        frame = GuideStageBarFrame(
+                            step = step,
+                            contentScrolled = step != 2 && scroll.value > 0,
                             backdrop = topBarBackdrop,
                             scrollBehavior = scrollBehavior,
-                            compact = true,
-                            navigationIcon = { UiTopBarNavigationIcon(onBack = ::back) },
-                            actions = refreshAction,
-                            unclippedNavigationIcon = true,
-                            unclippedActions = step == 1,
-                        )
-                    } else {
-                        MiuixBlurredTopBar(
-                            backdrop = topBarBackdrop,
-                            scrollBehavior = scrollBehavior,
-                        ) { barColor ->
-                            SmallTopAppBar(
-                                title = "",
-                                color = barColor,
-                                scrollBehavior = scrollBehavior,
-                                navigationIcon = { UiTopBarNavigationIcon(onBack = ::back) },
-                                actions = refreshAction,
-                            )
-                        }
-                    }
+                        ),
+                        onBack = ::back,
+                        onRefresh = ::refreshPermissionStatus,
+                    )
                 },
             ) { scaffoldPadding ->
             Column(
