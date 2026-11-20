@@ -133,7 +133,6 @@ internal fun Os4SearchMode(
     query: String,
     backdrop: Backdrop?,
     materialProgress: State<Float>,
-    shadowProgress: State<Float>,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
     onClose: () -> Unit,
@@ -182,7 +181,6 @@ internal fun Os4SearchMode(
                     active = expanded,
                     backdrop = backdrop,
                     materialProgress = materialProgress,
-                    shadowProgress = shadowProgress,
                 )
             }
             Spacer(Modifier.width(54.dp * motion.progress.coerceIn(0f, 1f)))
@@ -191,7 +189,6 @@ internal fun Os4SearchMode(
             motion = motion,
             backdrop = backdrop,
             materialProgress = materialProgress,
-            shadowProgress = shadowProgress,
             action = SearchCancelAction(enabled = expanded, onClick = onClose),
         )
     }
@@ -204,7 +201,6 @@ private fun BoxScope.Os4SearchCancelAction(
     motion: Os4SearchMotion,
     backdrop: Backdrop?,
     materialProgress: State<Float>,
-    shadowProgress: State<Float>,
     action: SearchCancelAction,
 ) {
     val direction = LocalLayoutDirection.current
@@ -222,8 +218,7 @@ private fun BoxScope.Os4SearchCancelAction(
                 modifier = Modifier.size(44.dp),
                 backdrop = backdrop,
                 materialProgress = materialProgress,
-                shadowProgress = shadowProgress,
-                pressed = cancelPressed,
+                    pressed = cancelPressed,
             ) {
                 Box(
                     modifier = Modifier
