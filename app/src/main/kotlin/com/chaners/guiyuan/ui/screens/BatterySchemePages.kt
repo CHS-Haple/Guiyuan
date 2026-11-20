@@ -60,34 +60,41 @@ private data class SchemeDeckContext(
     val creation: SchemeDeckCreation,
 )
 
-private data class SchemeNavigation(
+internal data class SchemeNavigation(
     val onApply: (String) -> Unit,
     val onBuiltInSlot: (BatteryBuiltInColorScheme, BatteryColorSlot) -> Unit,
     val onCustomSlot: (Int, BatteryColorSlot) -> Unit,
 )
 
-private data class SchemeCatalog(
+internal data class SchemeCatalog(
     val onAdd: () -> Unit,
     val onRename: (Int) -> Unit,
     val onCopy: (BatteryCustomColorScheme) -> Unit,
     val onDelete: (Int) -> Unit,
 )
 
+internal data class BatterySchemeOverviewModel(
+    val library: BatteryColorSchemeLibrary,
+    val requestedSchemeKey: String?,
+    val canCreateCustom: Boolean,
+    val nextCustomName: String?,
+)
+
+internal data class BatterySchemeOverviewActions(
+    val onRequestedSchemeHandled: () -> Unit,
+    val navigation: SchemeNavigation,
+    val catalog: SchemeCatalog,
+)
+
 @Composable
 internal fun BatterySchemeOverview(
-    library: BatteryColorSchemeLibrary,
-    requestedSchemeKey: String?,
-    onRequestedSchemeHandled: () -> Unit,
-    canCreateCustom: Boolean,
-    nextCustomName: String?,
-    onApplyScheme: (String) -> Unit,
-    onOpenBuiltInSlot: (BatteryBuiltInColorScheme, BatteryColorSlot) -> Unit,
-    onOpenCustomSlot: (Int, BatteryColorSlot) -> Unit,
-    onAdd: () -> Unit,
-    onRenameCustom: (Int) -> Unit,
-    onCopyCustom: (BatteryCustomColorScheme) -> Unit,
-    onDeleteCustom: (Int) -> Unit,
+    model: BatterySchemeOverviewModel,
+    actions: BatterySchemeOverviewActions,
 ) {
+    val (library, requestedSchemeKey, canCreateCustom, nextCustomName) = model
+    val onRequestedSchemeHandled = actions.onRequestedSchemeHandled
+    val navigation = actions.navigation
+    val catalog = actions.catalog
     val pages = remember(library.customSchemes) {
         buildList {
             add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS))
@@ -110,8 +117,6 @@ internal fun BatterySchemeOverview(
     val context = SchemeDeckContext(
         library, pages, pagerState, scope, SchemeDeckCreation(canCreateCustom, nextCustomName, settingsHeight),
     )
-    val navigation = SchemeNavigation(onApplyScheme, onOpenBuiltInSlot, onOpenCustomSlot)
-    val catalog = SchemeCatalog(onAdd, onRenameCustom, onCopyCustom, onDeleteCustom)
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
