@@ -44,6 +44,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.PI
 
+private data class MarkOrbitMotion(
+    val speed: State<Float>,
+    val rotation: State<Float>,
+)
+
 private class MarkPressState {
     var boosted by mutableStateOf(false)
     var pressed by mutableStateOf(false)
@@ -71,7 +76,7 @@ internal fun GuiyuanAnimatedIdentityMark(
         label = "aboutLogoPress",
     )
     val rotation = rememberMarkRotation(active, speed)
-    TriggerMarkWave(wave, press.boosted, active, speed, rotation, onWaveRelease)
+    TriggerMarkWave(wave, press.boosted, active, MarkOrbitMotion(speed, rotation), onWaveRelease)
 
     val pressModifier = if (interactive) {
         Modifier.pointerInput(Unit) {
@@ -123,16 +128,15 @@ private fun TriggerMarkWave(
     wave: Animatable<Float, AnimationVector1D>,
     boosted: Boolean,
     active: Boolean,
-    speed: State<Float>,
-    rotation: State<Float>,
+    orbit: MarkOrbitMotion,
     onWaveRelease: (Float) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     LaunchedEffect(boosted, active) {
         if (boosted && active) {
-            snapshotFlow { speed.value }.first { it >= 19f }
-            onWaveRelease(rotation.value * (PI / 180).toFloat())
+            snapshotFlow { orbit.speed.value }.first { it >= 19f }
+            onWaveRelease(orbit.rotation.value * (PI / 180).toFloat())
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
             scope.launch {
                 wave.snapTo(0f)
