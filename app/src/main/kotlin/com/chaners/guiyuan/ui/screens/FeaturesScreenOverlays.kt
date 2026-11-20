@@ -3,7 +3,7 @@ package com.chaners.guiyuan.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MIN
