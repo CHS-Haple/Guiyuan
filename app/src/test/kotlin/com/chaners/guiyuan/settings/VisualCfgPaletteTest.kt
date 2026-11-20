@@ -112,6 +112,18 @@ class VisualCfgPaletteTest {
     }
 
     @Test
+    fun opaqueArgbPreservesRgbAndIsIdempotentForEveryAlpha() {
+        val rgb = 0x123456
+        for (alpha in listOf(0x00, 0x40, 0x7F, 0xFF)) {
+            val source = (alpha shl 24) or rgb
+            val opaque = source.opaqueArgb()
+            assertEquals(0xFF123456.toInt(), opaque)
+            assertEquals(opaque, opaque.opaqueArgb())
+        }
+        assertEquals(0xFF000000.toInt(), 0.opaqueArgb())
+    }
+
+    @Test
     fun customColorOverridesAreForcedOpaque() {
         val overrides =
             BatteryColorOverrides().withColor(
