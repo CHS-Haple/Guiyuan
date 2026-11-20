@@ -87,17 +87,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun HomeScreen(
-    bottomContentPadding: Dp,
-    hotReloadInProgress: Boolean,
-    restartInProgress: Boolean,
-    scopeRequestInProgress: Boolean,
-    onRestart: () -> Unit,
-    onRequestScope: () -> Unit,
-    previewState: PreviewSandboxUiState,
-    onHotReload: () -> Unit,
-    hotReloadInNavigation: Boolean,
-    onOpenPreviewSandbox: () -> Unit,
+    layout: HomeScreenLayout,
+    runtime: HomeScreenRuntime,
+    actions: HomeScreenActions,
 ) {
+    val (bottomContentPadding, previewState) = layout
+    val (hotReloadInProgress, restartInProgress, scopeRequestInProgress, hotReloadInNavigation) = runtime
+    val (onRestart, onRequestScope, onHotReload, onOpenPreviewSandbox) = actions
     val context = LocalContext.current
     val application =
         remember(context.applicationContext) {
