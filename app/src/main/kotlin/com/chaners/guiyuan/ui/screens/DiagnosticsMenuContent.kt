@@ -391,11 +391,6 @@ internal fun DiagMenu(
     DiagToolbarMenu(title = title, entries = entries, content = icon)
 }
 
-private data class LogEmptyCopy(
-    val description: String,
-    val note: String?,
-)
-
 @Composable
 internal fun LogEmptyGuide(
     title: String,
@@ -415,7 +410,7 @@ internal fun LogEmptyGuide(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             LogEmptyGuideHeader(icon, title)
-            LogEmptyGuideBody(LogEmptyCopy(description, note))
+            LogEmptyGuideBody(description, note)
             LogEmptyRetryAction(busy = busy, onRetry = onRetry)
         }
     }
@@ -447,16 +442,16 @@ private fun LogEmptyGuideHeader(icon: ImageVector, title: String) {
 }
 
 @Composable
-private fun LogEmptyGuideBody(copy: LogEmptyCopy) {
+private fun LogEmptyGuideBody(description: String, note: String?) {
     Spacer(Modifier.height(20.dp))
     Text(
-        text = copy.description,
+        text = description,
         modifier = Modifier.fillMaxWidth(),
         style = MiuixTheme.textStyles.body1,
         color = MiuixTheme.colorScheme.onSurfaceSecondary,
         textAlign = TextAlign.Start,
     )
-    copy.note?.let {
+    note?.let {
         Spacer(Modifier.height(16.dp))
         Text(
             text = it,
