@@ -75,17 +75,21 @@ internal fun FeaturesWeightDialog(
     val weight = model.weight
     IntegerInputDialog(
         show = show && weight.verifiedRange != null,
-        title = stringResource(model.titleRes),
-        summary = weight.rangeText.orEmpty(),
-        value = model.currentValue.coerceIn(
-            weight.valueRange.start.roundToInt(),
-            weight.valueRange.endInclusive.roundToInt(),
+        model = IntegerInputModel(
+            title = stringResource(model.titleRes),
+            summary = weight.rangeText.orEmpty(),
+            value = model.currentValue.coerceIn(
+                weight.valueRange.start.roundToInt(),
+                weight.valueRange.endInclusive.roundToInt(),
+            ),
+            range = weight.verifiedRange ?: model.fallbackRange,
         ),
-        range = weight.verifiedRange ?: model.fallbackRange,
-        onDismiss = onDismiss,
-        onConfirm = { value ->
-            onDismiss()
-            weight.verifiedRange?.let { range -> onConfirmed(value.coerceIn(range)) }
-        },
+        callbacks = IntegerInputCallbacks(
+            onDismiss = onDismiss,
+            onConfirm = { value ->
+                onDismiss()
+                weight.verifiedRange?.let { range -> onConfirmed(value.coerceIn(range)) }
+            },
+        ),
     )
 }
