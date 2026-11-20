@@ -2,6 +2,9 @@ package com.chaners.guiyuan.settings
 
 import kotlinx.serialization.Serializable
 
+// Battery color slots and persisted overrides always use opaque ARGB.
+internal fun Int.opaqueArgb(): Int = this or 0xFF000000.toInt()
+
 @Serializable
 internal enum class BatteryBuiltInColorScheme(
     val key: String,
@@ -62,7 +65,7 @@ internal data class BatteryColorSchemeEntry(
     val customColor: Int? = null,
 ) {
     fun normalized(): BatteryColorSchemeEntry =
-        copy(customColor = customColor?.or(0xFF000000.toInt()))
+        copy(customColor = customColor?.opaqueArgb())
 }
 
 @Serializable
