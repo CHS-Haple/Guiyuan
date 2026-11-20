@@ -70,19 +70,7 @@ internal object NativePresentationResolver {
                 .takeIf { subscriptionId -> subscriptionId >= 0 }
                 ?: activeBindingSubIds.firstOrNull()
 
-        val target =
-            when (mode) {
-                Mode.DUAL_AGGREGATED,
-                Mode.SINGLE,
-                -> visible.firstOrNull()
-
-                Mode.DUAL_SEPARATE ->
-                    visible.firstOrNull { binding ->
-                        binding.subscriptionId == effectiveDataSubscriptionId
-                    } ?: visible.firstOrNull()
-
-                Mode.UNKNOWN -> visible.firstOrNull()
-            }
+        val target = selectNativePresentationRoot(mode, visible, effectiveDataSubscriptionId)
 
         val networkTypeSubscriptionId =
             NativeSubscriptionPolicy.selectNetworkTypeSubscriptionId(
@@ -90,23 +78,9 @@ internal object NativePresentationResolver {
                 presentationRootSubscriptionId = target?.subscriptionId,
                 boundSubscriptionIds = activeBindingSubIds,
             )
-        val networkTypeTarget =
-            networkTypeSubscriptionId?.let { subscriptionId ->
-                activeBindings.firstOrNull { binding ->
-                    binding.subscriptionId == subscriptionId
-                }
-            }
-        val networkType =
-            networkTypeTarget?.let { binding ->
-                NativeMobileTypePresentation.resolveNetworkType(
-                    root = binding.root,
-                    pendingMobileTypeDrawable = pendingMobileTypeDrawable,
-                )
-            } ?: if (bindings.isEmpty()) {
-                resolveUnboundNativeType(pendingMobileTypeDrawable)
-            } else {
-                null
-            }
+        val networkType = resolvePresentedNetworkType(
+            networkTypeSubscriptionId, activeBindings, pendingMobileTypeDrawable, bindings.isEmpty(),
+        )
 
         return Snapshot(
             mode = mode,
@@ -122,6 +96,40 @@ internal object NativePresentationResolver {
             networkTypeSubscriptionId = networkTypeSubscriptionId,
             networkType = networkType,
         )
+    }
+
+    private fun selectNativePresentationRoot(
+        mode: Mode,
+        visible: List<SysUiNetworkSource.MobilePresentationBinding>,
+        effectiveDataSubscriptionId: Int?,
+    ): SysUiNetworkSource.MobilePresentationBinding? =
+        when (mode) {
+            Mode.DUAL_AGGREGATED, Mode.SINGLE -> visible.firstOrNull()
+            Mode.DUAL_SEPARATE -> visible.firstOrNull {
+                it.subscriptionId == effectiveDataSubscriptionId
+            } ?: visible.firstOrNull()
+            Mode.UNKNOWN -> visible.firstOrNull()
+        }
+
+    private fun resolvePresentedNetworkType(
+        subscriptionId: Int?,
+        activeBindings: List<SysUiNetworkSource.MobilePresentationBinding>,
+        pendingMobileTypeDrawable: Drawable?,
+        noNativeBindings: Boolean,
+    ): NetworkType? {
+        val target = subscriptionId?.let { id ->
+            activeBindings.firstOrNull { it.subscriptionId == id }
+        }
+        return target?.let { binding ->
+            NativeMobileTypePresentation.resolveNetworkType(
+                root = binding.root,
+                pendingMobileTypeDrawable = pendingMobileTypeDrawable,
+            )
+        } ?: if (noNativeBindings) {
+            resolveUnboundNativeType(pendingMobileTypeDrawable)
+        } else {
+            null
+        }
     }
 
     // Binder callbacks are not replayed for an existing SystemUI icon after Hot Reload.
