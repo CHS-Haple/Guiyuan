@@ -116,4 +116,3 @@ internal fun AboutPageContent(
     )
     AboutEnvironmentCard(env, xposedStatus, actions.onOpenScopes)
 }
-
