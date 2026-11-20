@@ -25,6 +25,8 @@ import com.chaners.guiyuan.ui.navigation.AppRoute
 import com.chaners.guiyuan.ui.screens.AboutScreen
 import com.chaners.guiyuan.ui.screens.AboutThirdPartyScreen
 import com.chaners.guiyuan.ui.screens.OnboardingFlow
+import com.chaners.guiyuan.ui.screens.OnboardingConfig
+import com.chaners.guiyuan.ui.screens.OnboardingHandlers
 import com.chaners.guiyuan.ui.screens.PrivacyPolicyScreen
 import com.chaners.guiyuan.ui.screens.TermsOfUseScreen
 import com.chaners.guiyuan.ui.screens.StaticScopeScreen
@@ -104,18 +106,17 @@ internal fun GyApp(
         var guideDone by remember(context) { mutableStateOf(!OnboardingPrefs.needsOnboarding(context)) }
         if (!guideDone) {
             OnboardingFlow(
-                lang = lang,
-                onLangChange = onLangChange,
-                iconHidden = iconHidden,
-                onIconHiddenChange = onIconHiddenChange,
-                swipeBackEnabled = appearance.swipeBack,
-                agreementReviewOnly = agreementReviewOnly,
-                onComplete = {
-                    OnboardingPrefs.completeOnboarding(context)
-                    guideDone = true
-                },
-                // Declining acknowledgment exits without writing agreement versions.
-                onExit = { hostActivity?.finish() },
+                config = OnboardingConfig(lang, iconHidden, appearance.swipeBack, agreementReviewOnly),
+                handlers = OnboardingHandlers(
+                    onLangChange = onLangChange,
+                    onIconHiddenChange = onIconHiddenChange,
+                    onComplete = {
+                        OnboardingPrefs.completeOnboarding(context)
+                        guideDone = true
+                    },
+                    // Declining acknowledgment exits without writing agreement versions.
+                    onExit = { hostActivity?.finish() },
+                ),
             )
             return@GyTheme
         }
@@ -371,13 +372,13 @@ internal fun GyApp(
             }
             entry<AppRoute.Onboarding>(swipeDismiss = swipeBackDirection) {
                 OnboardingFlow(
-                    lang = lang,
-                    onLangChange = onLangChange,
-                    iconHidden = iconHidden,
-                    onIconHiddenChange = onIconHiddenChange,
-                    swipeBackEnabled = appearance.swipeBack,
-                    onComplete = ::navigateBack,
-                    onExit = ::navigateBack,
+                    config = OnboardingConfig(lang, iconHidden, appearance.swipeBack),
+                    handlers = OnboardingHandlers(
+                        onLangChange = onLangChange,
+                        onIconHiddenChange = onIconHiddenChange,
+                        onComplete = ::navigateBack,
+                        onExit = ::navigateBack,
+                    ),
                 )
             }
             entry<AppRoute.PrivacyPolicy>(swipeDismiss = swipeBackDirection) {
