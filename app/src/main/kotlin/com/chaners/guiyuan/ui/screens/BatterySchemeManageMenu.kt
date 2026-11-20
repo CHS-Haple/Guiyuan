@@ -272,42 +272,41 @@ private fun BatterySchemeNativeEntry(
     onDelete: () -> Unit,
 ) =
     DropdownEntry(
-            items =
-                listOf(
-                    DropdownItem(
-                        text = stringResource(R.string.battery_custom_scheme_rename),
-                        icon = { modifier ->
-                            Icon(
-                                imageVector = MiuixIcons.Edit,
-                                contentDescription = null,
-                                modifier = modifier,
-                            )
-                        },
-                        onClick = onRename,
-                    ),
-                    DropdownItem(
-                        text = stringResource(R.string.battery_custom_scheme_copy),
-                        icon = { modifier ->
-                            Icon(
-                                imageVector = MiuixIcons.Copy,
-                                contentDescription = null,
-                                modifier = modifier,
-                            )
-                        },
-                        enabled = canCopy,
-                        onClick = onCopy,
-                    ),
-                    DropdownItem(
-                        text = stringResource(R.string.battery_custom_scheme_delete),
-                        icon = { modifier ->
-                            Icon(
-                                imageVector = MiuixIcons.Delete,
-                                contentDescription = null,
-                                modifier = modifier,
-                            )
-                        },
-                        onClick = onDelete,
-                    ),
+        items =
+            listOf(
+                DropdownItem(
+                    text = stringResource(R.string.battery_custom_scheme_rename),
+                    icon = { modifier ->
+                        Icon(
+                            imageVector = MiuixIcons.Edit,
+                            contentDescription = null,
+                            modifier = modifier,
+                        )
+                    },
+                    onClick = onRename,
                 ),
+                DropdownItem(
+                    text = stringResource(R.string.battery_custom_scheme_copy),
+                    icon = { modifier ->
+                        Icon(
+                            imageVector = MiuixIcons.Copy,
+                            contentDescription = null,
+                            modifier = modifier,
+                        )
+                    },
+                    enabled = canCopy,
+                    onClick = onCopy,
+                ),
+                DropdownItem(
+                    text = stringResource(R.string.battery_custom_scheme_delete),
+                    icon = { modifier ->
+                        Icon(
+                            imageVector = MiuixIcons.Delete,
+                            contentDescription = null,
+                            modifier = modifier,
+                        )
+                    },
+                    onClick = onDelete,
+                ),
+            ),
         )
-
