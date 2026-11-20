@@ -63,6 +63,34 @@ internal fun BatterySchemeManageMenu(
     }
 }
 
+private class GlassManageMenuState {
+    var expanded by mutableStateOf(false)
+    val mounted = mutableStateOf(false)
+    var hasExpanded by mutableStateOf(false)
+    var pendingAction by mutableStateOf<(() -> Unit)?>(null)
+
+    fun toggle(onOpen: () -> Unit) {
+        if (expanded) {
+            expanded = false
+        } else {
+            pendingAction = null
+            if (mounted.value) {
+                hasExpanded = true
+                expanded = true
+            } else {
+                mounted.value = true
+            }
+            onOpen()
+        }
+    }
+
+    fun select(action: () -> Unit, afterDismissal: Boolean = false) {
+        pendingAction = action.takeIf { afterDismissal }
+        expanded = false
+        if (!afterDismissal) action()
+    }
+}
+
 @Composable
 private fun BatterySchemeGlassManageMenu(
     modifier: Modifier,
@@ -71,63 +99,98 @@ private fun BatterySchemeGlassManageMenu(
     onCopy: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    // Capture at the sheet caller: the root-hosted overlay may not inherit this local.
+    // The sheet's backdrop must be captured before entering the root-hosted popup.
     val backdrop = LocalGlassBackdrop.current
     val haptic = LocalHapticFeedback.current
-    var expanded by remember { mutableStateOf(false) }
-    val mounted = remember { mutableStateOf(false) }
+    val state = remember { GlassManageMenuState() }
     val anchor = rememberGlassPopupAnchor()
-    var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
-    var hasExpanded by remember { mutableStateOf(false) }
-    // Keep the root host until the upstream transform releases its anchor.
-    LaunchedEffect(mounted.value, expanded) {
-        if (mounted.value && hasExpanded && !expanded) {
-            // An immediate close need not ever hide the anchor.
-            snapshotFlow { anchor.contentHidden }.first { !it }
-            if (!expanded) {
-                mounted.value = false
-                hasExpanded = false
-                val action = pendingAction
-                pendingAction = null
+    GlassManageMenuExitEffect(state) { anchor.contentHidden }
+    GlassManageMenuTrigger(
+        modifier = modifier.glassPopupAnchor(
+            anchor, cornerRadius = GlassTopAppBarDefaults.ButtonSize / 2, floating = true,
+        ),
+        anchorContent = Modifier.glassPopupAnchorContent(anchor),
+        onClick = { state.toggle { haptic.performHapticFeedback(HapticFeedbackType.ContextClick) } },
+    )
+    GlassManageMenuRoot(state) {
+        GlassTransformPopup(
+            show = state.expanded,
+            onDismissRequest = { state.expanded = false },
+            anchor = anchor,
+            backdrop = backdrop,
+            anchorContent = {
+                Icon(imageVector = Os4GlassMore, contentDescription = null)
+            },
+        ) {
+            GlassManageMenuItems(
+                canCopy = canCopy,
+                onRename = {
+                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                    state.select(onRename)
+                },
+                onCopy = {
+                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                    state.select(onCopy, afterDismissal = true)
+                },
+                onDelete = {
+                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                    state.select(onDelete)
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun GlassManageMenuExitEffect(
+    state: GlassManageMenuState,
+    anchorHidden: () -> Boolean,
+) {
+    // Keep the dialog host until the upstream transform restores its anchor.
+    LaunchedEffect(state.mounted.value, state.expanded) {
+        if (state.mounted.value && state.hasExpanded && !state.expanded) {
+            snapshotFlow { anchorHidden() }.first { !it }
+            if (!state.expanded) {
+                state.mounted.value = false
+                state.hasExpanded = false
+                val action = state.pendingAction
+                state.pendingAction = null
                 action?.invoke()
             }
         }
     }
+}
 
+@Composable
+private fun GlassManageMenuTrigger(
+    modifier: Modifier,
+    anchorContent: Modifier,
+    onClick: () -> Unit,
+) {
     TooltipBox(text = stringResource(R.string.battery_custom_scheme_manage)) {
         GlassIconButton(
-            onClick = {
-                if (expanded) {
-                    expanded = false
-                } else {
-                    pendingAction = null
-                    if (mounted.value) {
-                        hasExpanded = true
-                        expanded = true
-                    } else {
-                        mounted.value = true
-                    }
-                    haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
-                }
-            },
-            modifier = modifier.glassPopupAnchor(anchor, cornerRadius = GlassTopAppBarDefaults.ButtonSize / 2, floating = true),
-            // The sheet records the button itself in sheetBackdrop. Do not sample that same
-            // layer from the button: it creates a recursive HWUI RenderNode dependency.
-            // Retain the native fallback used before this migration; the popup is root-hosted.
+            onClick = onClick,
+            modifier = modifier,
+            // The sheet records this button in its own backdrop. Do not sample
+            // that same layer from the button (recursive HWUI RenderNode).
         ) {
             Icon(
                 imageVector = Os4GlassMore,
                 contentDescription = stringResource(R.string.battery_custom_scheme_manage),
-                modifier = Modifier.glassPopupAnchorContent(anchor),
+                modifier = anchorContent,
             )
         }
     }
+}
 
-    if (mounted.value) {
-        // A dialog host preserves the menu's native exit while allowing a newly
-        // requested Rename/Delete dialog to draw above it in the same host queue.
+@Composable
+private fun GlassManageMenuRoot(
+    state: GlassManageMenuState,
+    content: @Composable () -> Unit,
+) {
+    if (state.mounted.value) {
         DialogLayout(
-            visible = mounted,
+            visible = state.mounted,
             enableWindowDim = false,
             enableAutoLargeScreen = false,
             enterTransition = EnterTransition.None,
@@ -135,65 +198,47 @@ private fun BatterySchemeGlassManageMenu(
             renderInRootScaffold = true,
         ) {
             Box(Modifier.fillMaxSize()) {
-                // Compose upstream popup closed first, then let its own transition open.
                 LaunchedEffect(Unit) {
-                    // Record the opening request before publishing its visible state.
-                    hasExpanded = true
-                    expanded = true
+                    // Publish visible only after the root-hosted anchor is ready.
+                    state.hasExpanded = true
+                    state.expanded = true
                 }
-                GlassTransformPopup(
-                    show = expanded,
-                    onDismissRequest = { expanded = false },
-                    anchor = anchor,
-                    backdrop = backdrop,
-                    anchorContent = {
-                        Icon(
-                            imageVector = Os4GlassMore,
-                            contentDescription = null,
-                        )
-                    },
-                ) {
-                    GlassPopupItem(
-                        text = stringResource(R.string.battery_custom_scheme_rename),
-                        icon = Os4GlassEdit,
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                            pendingAction = null
-                            expanded = false
-                            onRename()
-                        },
-                    )
-                    GlassPopupItem(
-                        text = stringResource(R.string.battery_custom_scheme_copy),
-                        icon = Os4GlassCopy,
-                        enabled = canCopy,
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                            pendingAction = onCopy
-                            expanded = false
-                        },
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(
-                            horizontal = GlassPopupDefaults.DividerPaddingHorizontal,
-                            vertical = GlassPopupDefaults.DividerPaddingVertical,
-                        ),
-                        thickness = GlassPopupDefaults.DividerThickness,
-                    )
-                    GlassPopupItem(
-                        text = stringResource(R.string.battery_custom_scheme_delete),
-                        icon = Os4GlassDelete,
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                            pendingAction = null
-                            expanded = false
-                            onDelete()
-                        },
-                    )
-                }
+                content()
             }
         }
     }
+}
+
+@Composable
+private fun GlassManageMenuItems(
+    canCopy: Boolean,
+    onRename: () -> Unit,
+    onCopy: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    GlassPopupItem(
+        text = stringResource(R.string.battery_custom_scheme_rename),
+        icon = Os4GlassEdit,
+        onClick = onRename,
+    )
+    GlassPopupItem(
+        text = stringResource(R.string.battery_custom_scheme_copy),
+        icon = Os4GlassCopy,
+        enabled = canCopy,
+        onClick = onCopy,
+    )
+    HorizontalDivider(
+        modifier = Modifier.padding(
+            horizontal = GlassPopupDefaults.DividerPaddingHorizontal,
+            vertical = GlassPopupDefaults.DividerPaddingVertical,
+        ),
+        thickness = GlassPopupDefaults.DividerThickness,
+    )
+    GlassPopupItem(
+        text = stringResource(R.string.battery_custom_scheme_delete),
+        icon = Os4GlassDelete,
+        onClick = onDelete,
+    )
 }
 
 @Composable
