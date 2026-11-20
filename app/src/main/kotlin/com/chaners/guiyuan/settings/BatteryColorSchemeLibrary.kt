@@ -154,7 +154,7 @@ internal class BatterySchemeRepo(private val preferences: SharedPreferences) {
                         slot,
                         BatteryColorSchemeEntry(
                             source = BatteryColorSchemeSource.CUSTOM,
-                            customColor = color or 0xFF000000.toInt(),
+                            customColor = color.opaqueArgb(),
                         ),
                     ),
             )
@@ -290,7 +290,7 @@ private object BatterySchemePersistence {
             val colorKey = customColorKey(id, slot)
             val color =
                 if (preferences.contains(colorKey)) {
-                    preferences.getInt(colorKey, 0).or(0xFF000000.toInt())
+                    preferences.getInt(colorKey, 0).opaqueArgb()
                 } else {
                     batteryBuiltInColor(base, slot)
                 }
@@ -350,7 +350,7 @@ private object BatterySchemePersistence {
             editor.putString(batteryColorModeKey(slot), mode.persistedValue)
             val colorKey = batteryColorOverrideKey(slot)
             if (mode == BatteryColorMode.CUSTOM && resolvedColor != null) {
-                editor.putInt(colorKey, resolvedColor.or(0xFF000000.toInt()))
+                editor.putInt(colorKey, resolvedColor.opaqueArgb())
             } else {
                 editor.remove(colorKey)
             }
@@ -406,7 +406,7 @@ internal fun writeBatterySchemeLibrary(
             if (entry.customColor == null) {
                 editor.remove(colorKey)
             } else {
-                editor.putInt(colorKey, entry.customColor.or(0xFF000000.toInt()))
+                editor.putInt(colorKey, entry.customColor.opaqueArgb())
             }
         }
     }
