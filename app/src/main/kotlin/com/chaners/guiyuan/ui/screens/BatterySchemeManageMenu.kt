@@ -250,8 +250,28 @@ private fun BatterySchemeNativeManageMenu(
     onCopy: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val entry =
-        DropdownEntry(
+    val entry = BatterySchemeNativeEntry(canCopy, onRename, onCopy, onDelete)
+
+    TooltipBox(text = stringResource(R.string.battery_custom_scheme_manage)) {
+        OverlayIconDropdownMenu(
+            entry = entry,
+            modifier = modifier,
+        ) {
+            Icon(
+                imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassMore else MiuixIcons.More,
+                contentDescription = stringResource(R.string.battery_custom_scheme_manage),
+            )
+        }
+    }
+}
+@Composable
+private fun BatterySchemeNativeEntry(
+    canCopy: Boolean,
+    onRename: () -> Unit,
+    onCopy: () -> Unit,
+    onDelete: () -> Unit,
+) =
+    DropdownEntry(
             items =
                 listOf(
                     DropdownItem(
@@ -291,15 +311,3 @@ private fun BatterySchemeNativeManageMenu(
                 ),
         )
 
-    TooltipBox(text = stringResource(R.string.battery_custom_scheme_manage)) {
-        OverlayIconDropdownMenu(
-            entry = entry,
-            modifier = modifier,
-        ) {
-            Icon(
-                imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassMore else MiuixIcons.More,
-                contentDescription = stringResource(R.string.battery_custom_scheme_manage),
-            )
-        }
-    }
-}
