@@ -11,29 +11,35 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
+private const val DETAIL_SOURCE = "source"
+private const val DETAIL_REASON = "reason"
+private const val DETAIL_TRACE_ID = "traceId"
+private const val DETAIL_OWNER = "owner"
+private const val DETAIL_FALSE = "false"
+
 class DiagnosticsLogDetailTest {
     @Test
     fun batteryReconcileDetailsPreferOriginalChargingFields() {
         val entry = diagTestStructuredEvent(
             "battery.reconcile",
             linkedMapOf(
-                "source" to "hotReloadNativeIcon",
-                "reason" to "native-read",
-                "traceId" to "a7",
-                "owner" to "SystemUI",
+                DETAIL_SOURCE to "hotReloadNativeIcon",
+                DETAIL_REASON to "native-read",
+                DETAIL_TRACE_ID to "a7",
+                DETAIL_OWNER to "SystemUI",
                 "extra" to "extra",
                 "transferredCharging" to "true",
-                "nativeCharging" to "false",
+                "nativeCharging" to DETAIL_FALSE,
                 "nativePercent" to "82",
             ),
         )
         val details = logDetailFields(entry)
         assertEquals(5, details.size)
         assertEquals(
-            listOf("transferredCharging", "nativeCharging", "nativePercent", "source", "reason"),
+            listOf("transferredCharging", "nativeCharging", "nativePercent", DETAIL_SOURCE, DETAIL_REASON),
             details.map { it.first },
         )
-        assertEquals(listOf("true", "false", "82"), details.take(3).map { it.second })
+        assertEquals(listOf("true", DETAIL_FALSE, "82"), details.take(3).map { it.second })
         assertTrue(entry.raw.contains("traceId=a7"))
     }
 
@@ -43,14 +49,14 @@ class DiagnosticsLogDetailTest {
             "hotReload.complete",
             mapOf(
                 "alpha" to "1", "beta" to "2", "gamma" to "3",
-                "delta" to "4", "owner" to "sysui", "source" to "reload",
-                "reason" to "native-transition", "traceId" to "trace-7",
-                "sequence" to "45", "sessionId" to "build-session", "healthSnapshot" to "false",
+                "delta" to "4", DETAIL_OWNER to "sysui", DETAIL_SOURCE to "reload",
+                DETAIL_REASON to "native-transition", DETAIL_TRACE_ID to "trace-7",
+                "sequence" to "45", "sessionId" to "build-session", "healthSnapshot" to DETAIL_FALSE,
             ),
         )
         val fields = logDetailFields(entry)
         assertEquals(5, fields.size)
-        assertEquals(listOf("reason", "source", "traceId", "owner", "alpha"), fields.map { it.first })
+        assertEquals(listOf(DETAIL_REASON, DETAIL_SOURCE, DETAIL_TRACE_ID, DETAIL_OWNER, "alpha"), fields.map { it.first })
         assertFalse(fields.any { it.first == "sessionId" || it.first == "healthSnapshot" })
         assertTrue(entry.raw.contains("sessionId=build-session"))
         assertTrue(entry.raw.contains("gamma=3"))

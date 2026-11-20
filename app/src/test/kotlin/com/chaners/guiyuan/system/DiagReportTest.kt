@@ -8,6 +8,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private const val EXPECTED_RUNTIME_DETAILED = "runtimeLevel=detailed"
 private const val FIELD_SESSION_ID = "sessionId"
 private const val COMPONENT_DIAGNOSTICS = "diagnostics"
 private const val EVENT_DIAGNOSTICS_BIND = "diagnostics.bind"
@@ -92,7 +93,7 @@ class DiagReportTest {
                 fields = mapOf(FIELD_LEVEL to LEVEL_DETAILED, FIELD_SESSION_ID to SESSION_TEST),
             ),
         )
-        assertTrue(report.contains("runtimeLevel=detailed"))
+        assertTrue(report.contains(EXPECTED_RUNTIME_DETAILED))
         assertTrue(report.contains("runtimeBinding=unavailable"))
     }
 
@@ -130,7 +131,7 @@ class DiagReportTest {
                 fields = mapOf(FIELD_LEVEL to LEVEL_DETAILED, FIELD_SESSION_ID to SESSION_CURRENT),
             ),
         )
-        assertTrue(report.contains("runtimeLevel=detailed"))
+        assertTrue(report.contains(EXPECTED_RUNTIME_DETAILED))
         assertTrue(report.contains("runtimeBinding=ready"))
     }
 
@@ -149,7 +150,7 @@ class DiagReportTest {
                 fields = mapOf(FIELD_LEVEL to LEVEL_DETAILED, FIELD_SESSION_ID to SESSION_CURRENT),
             ),
         )
-        assertTrue(report.contains("runtimeLevel=detailed"))
+        assertTrue(report.contains(EXPECTED_RUNTIME_DETAILED))
         assertTrue(report.contains("runtimeBinding=not-observed"))
     }
 }
