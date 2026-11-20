@@ -526,11 +526,13 @@ fun GlassNavigationBar(
                                     )
                                 }
                                 item.label?.let { label ->
+                                    val baseLabelStyle = MiuixTheme.textStyles.footnote2
+                                    val labelTextStyle = remember(baseLabelStyle, labelSize) {
+                                        baseLabelStyle.copy(fontSize = labelSize)
+                                    }
                                     Text(
                                         text = label,
-                                        style = remember(MiuixTheme.textStyles.footnote2, labelSize) {
-                                            MiuixTheme.textStyles.footnote2.copy(fontSize = labelSize)
-                                        },
+                                        style = labelTextStyle,
                                         color = tintProducer,
                                         textAlign = TextAlign.Center,
                                         maxLines = 2,
