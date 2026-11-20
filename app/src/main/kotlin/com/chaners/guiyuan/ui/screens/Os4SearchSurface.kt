@@ -30,7 +30,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun Os4SearchSurface(
     backdrop: Backdrop?,
     materialProgress: State<Float>,
-    shadowProgress: State<Float>,
     pressed: State<Boolean>? = null,
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit,
@@ -50,7 +49,7 @@ internal fun Os4SearchSurface(
     val material = GlassTopAppBarDefaults.buttonMaterial().withUnderlayBlur(underlayMaterial)
     Box(
         modifier = modifier
-            .glassShadow(shape, GlassShadows.Regular) { shadowProgress.value }
+            .glassShadow(shape, GlassShadows.Regular) { materialProgress.value }
             .clip(CircleShape),
     ) {
         Box(Modifier.matchParentSize().background(MiuixTheme.colorScheme.surfaceContainerHigh))

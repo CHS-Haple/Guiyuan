@@ -9,6 +9,8 @@ import top.yukonga.miuix.kmp.glass.GlassMotion
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.computedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,7 +58,10 @@ internal fun GlassNavigationBarLayout(
     SideEffect {
         if (trailingAction != null || actionProgress.value == 0f) retainedAction.value = trailingAction
     }
-    val presentedAction = trailingAction ?: retainedAction.value.takeIf { actionProgress.value > 0f }
+    val showRetainedAction by remember(actionProgress) {
+        computedStateOf { actionProgress.value > 0f }
+    }
+    val presentedAction = trailingAction ?: retainedAction.value.takeIf { showRetainedAction }
     Layout(
         modifier = modifier,
         content = {
