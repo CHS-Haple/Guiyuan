@@ -712,22 +712,22 @@ internal fun MainHub(
                     ),
                     runtimeActions = TopLevelPagerRuntimeActions(
                         restart = onRestart,
-                requestScope = {
-                    if (!scopeRequestInProgress && !restartInProgress && !hotReloadInProgress &&
-                        !scopeBusy
-                    ) {
-                        scopeRequestInProgress = true
-                        val accepted =
-                            (context.applicationContext as? GyApplication)?.requestSysUiScope { granted ->
-                                scopeRequestInProgress = false
-                                if (!granted) scopeRequestFailed = true
-                            } ?: false
-                        if (!accepted) {
-                            scopeRequestInProgress = false
-                            scopeRequestFailed = true
-                        }
-                    }
-                },
+                        requestScope = {
+                            if (!scopeRequestInProgress && !restartInProgress && !hotReloadInProgress &&
+                                !scopeBusy
+                            ) {
+                                scopeRequestInProgress = true
+                                val accepted =
+                                    (context.applicationContext as? GyApplication)?.requestSysUiScope { granted ->
+                                        scopeRequestInProgress = false
+                                        if (!granted) scopeRequestFailed = true
+                                    } ?: false
+                                if (!accepted) {
+                                    scopeRequestInProgress = false
+                                    scopeRequestFailed = true
+                                }
+                            }
+                        },
                         hotReload = requestHotReload,
                     ),
                     settingsActions = TopLevelPagerSettingsActions(
