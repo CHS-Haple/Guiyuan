@@ -27,36 +27,52 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
+internal data class BatteryFeatureSnapshot(
+    val visual: VisualCfg,
+    val cfg: FeatureCfg,
+    val library: BatteryColorSchemeLibrary,
+    val weight: FeatureWeightUi,
+)
+
+internal data class BatteryFeatureRepositories(
+    val visual: VisualRepo,
+    val feature: FeatureRepo,
+)
+
+internal data class BatteryFeatureDialogs(
+    val colorOpen: Boolean,
+    val onOpenColor: () -> Unit,
+    val weightOpen: Boolean,
+    val onOpenWeight: () -> Unit,
+)
+
 internal fun androidx.compose.foundation.lazy.LazyListScope.featureBatterySection(
     search: PageSearch,
-    visual: VisualCfg,
-    visualRepo: VisualRepo,
-    featureCfg: FeatureCfg,
-    featureRepo: FeatureRepo,
-    schemeLibrary: BatteryColorSchemeLibrary,
-    weight: FeatureWeightUi,
-    colorSheetOpen: Boolean,
-    onOpenColorSheet: () -> Unit,
-    weightDialogOpen: Boolean,
-    onOpenWeightDialog: () -> Unit,
+    state: BatteryFeatureSnapshot,
+    repositories: BatteryFeatureRepositories,
+    dialogs: BatteryFeatureDialogs,
     bothSidesChargingSearch: Boolean,
 ) {
     Section(R.string.section_battery) {
-        batteryColorAndThreshold(search, featureCfg, featureRepo, schemeLibrary, colorSheetOpen, onOpenColorSheet)
-        batteryTopReadout(search, visual, visualRepo, featureCfg.enabled, weight, weightDialogOpen, onOpenWeightDialog)
-        batteryChargingIcon(search, visual, visualRepo, featureCfg.enabled, bothSidesChargingSearch)
+        batteryColorAndThreshold(search, state, repositories, dialogs)
+        batteryTopReadout(search, state, repositories, dialogs)
+        batteryChargingIcon(search, state, repositories, bothSidesChargingSearch)
     }
 }
 
 @Composable
 private fun ColumnScope.batteryColorAndThreshold(
     search: PageSearch,
-    featureCfg: FeatureCfg,
-    featureRepo: FeatureRepo,
-    schemeLibrary: BatteryColorSchemeLibrary,
-    colorSheetOpen: Boolean,
-    onOpenColorSheet: () -> Unit,
+    state: BatteryFeatureSnapshot,
+    repositories: BatteryFeatureRepositories,
+    dialogs: BatteryFeatureDialogs,
 ) {
+    val featureCfg = state.cfg
+    val featureRepo = repositories.feature
+    val schemeLibrary = state.library
+    val colorSheetOpen = dialogs.colorOpen
+    val onOpenColorSheet = dialogs.onOpenColor
+
     if (search.matches(R.string.battery_colors)) {
     BatteryColorPreference(
         library = schemeLibrary,
@@ -89,13 +105,17 @@ private fun ColumnScope.batteryColorAndThreshold(
 @Composable
 private fun ColumnScope.batteryTopReadout(
     search: PageSearch,
-    visual: VisualCfg,
-    visualRepo: VisualRepo,
-    enabled: Boolean,
-    weight: FeatureWeightUi,
-    weightDialogOpen: Boolean,
-    onOpenWeightDialog: () -> Unit,
+    state: BatteryFeatureSnapshot,
+    repositories: BatteryFeatureRepositories,
+    dialogs: BatteryFeatureDialogs,
 ) {
+    val visual = state.visual
+    val visualRepo = repositories.visual
+    val enabled = state.cfg.enabled
+    val weight = state.weight
+    val weightDialogOpen = dialogs.weightOpen
+    val onOpenWeightDialog = dialogs.onOpenWeight
+
     if (search.matches(R.string.battery_top_readout) ||
         (search.filtering && !visual.showTopReadout &&
             search.any(R.string.battery_top_text_size, R.string.battery_top_text_weight,
@@ -148,11 +168,14 @@ private fun ColumnScope.batteryTopReadout(
 @Composable
 private fun ColumnScope.batteryChargingIcon(
     search: PageSearch,
-    visual: VisualCfg,
-    visualRepo: VisualRepo,
-    enabled: Boolean,
+    state: BatteryFeatureSnapshot,
+    repositories: BatteryFeatureRepositories,
     bothSidesChargingSearch: Boolean,
 ) {
+    val visual = state.visual
+    val visualRepo = repositories.visual
+    val enabled = state.cfg.enabled
+
     if (search.matches(R.string.battery_charging_icon) ||
         (search.filtering && !visual.showChargingIcon &&
             (search.any(R.string.battery_top_charging_icon_size,
