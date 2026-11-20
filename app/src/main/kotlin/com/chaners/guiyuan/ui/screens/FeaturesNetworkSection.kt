@@ -31,15 +31,26 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
+internal data class NetworkFeatureState(
+    val visual: VisualCfg,
+    val enabled: Boolean,
+    val weight: FeatureWeightUi,
+)
+
+internal data class NetworkWeightDialog(
+    val open: Boolean,
+    val onOpen: () -> Unit,
+)
+
 internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSection(
     search: PageSearch,
-    visual: VisualCfg,
+    state: NetworkFeatureState,
     visualRepo: VisualRepo,
-    enabled: Boolean,
-    weight: FeatureWeightUi,
-    weightDialogOpen: Boolean,
-    onOpenWeightDialog: () -> Unit,
+    weightDialog: NetworkWeightDialog,
 ) {
+    val visual = state.visual
+    val enabled = state.enabled
+    val weight = state.weight
     Section(R.string.section_network) {
         networkSizesAndWeights(search, visual, visualRepo, enabled)
         if (search.matches(R.string.mobile_type_weight)) {
@@ -47,8 +58,8 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSectio
                 value = visual.mobileTypeWeight,
                 onValueChange = visualRepo::setMobileTypeWeight,
                 weight = weight,
-                dialogOpen = weightDialogOpen,
-                onOpenDialog = onOpenWeightDialog,
+                dialogOpen = weightDialog.open,
+                onOpenDialog = weightDialog.onOpen,
             )
         }
         networkFollowBatteryColor(search, visual, visualRepo, enabled)
