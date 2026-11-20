@@ -34,8 +34,6 @@ val gradleVersion = gradle.gradleVersion
 val booleanBuildConfigType = "boolean"
 val deepDiagnosticsBuildField = "DEEP_DIAGNOSTICS"
 val os4DebugSuffix = providers.gradleProperty("gy.os4.debugSuffix").orNull
-// The marker exists only on the protected IT branch and is blocked from public PR targets.
-val projectLinkEnabled = !rootProject.file("it-only/RESTRICT_PROJECT_LINK").isFile
 val hapleKeystorePath = providers.environmentVariable("HAPLE_KEYSTORE_PATH").orNull
 val hapleKeystorePassword = providers.environmentVariable("HAPLE_KEYSTORE_PASSWORD").orNull
 val hapleKeyAlias = providers.environmentVariable("HAPLE_KEY_ALIAS").orNull
@@ -76,7 +74,6 @@ android {
         buildConfigField("String", "GRADLE_VERSION", "\"$gradleVersion\"")
         // Shared by debug, release and canary: avoid per-build-type overrides.
         buildConfigField(booleanBuildConfigType, "RUNTIME_DIAGNOSTICS", "true")
-        buildConfigField(booleanBuildConfigType, "REPO_LINK_ENABLED", projectLinkEnabled.toString())
     }
 
     signingConfigs {
