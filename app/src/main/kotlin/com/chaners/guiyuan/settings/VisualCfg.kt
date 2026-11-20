@@ -399,4 +399,3 @@ private fun VisualCfg.normalizedSymbolDimensions(): VisualCfg =
             mobileTypeWeight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX),
         batteryColorOverrides = batteryColorOverrides.normalized(),
     )
-
