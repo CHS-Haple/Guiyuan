@@ -58,23 +58,27 @@ private fun ColumnScope.GuideFrameworkPermission(
     val expandedPermission = actions.expandedPermission
                             Card(modifier = Modifier.fillMaxWidth()) {
                                 GuidePermissionItem(
-                                    iconRes = R.drawable.ic_material_symbol_extension,
-                                    title = stringResource(R.string.guide_framework),
-                                    purpose = stringResource(R.string.guide_framework_purpose),
-                                    status = when (framework) {
-                                        XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
-                                        XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_offline)
-                                        XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_failed)
-                                        is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
-                                    },
-                                    checked = connected != null,
-                                    expanded = expandedPermission == 1,
-                                    onToggleDetails = { actions.onToggleExpanded(1) },
-                                    guidance = when (framework) {
-                                        XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_help)
-                                        XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_help)
-                                        else -> null
-                                    },
+                                    display = GuidePermissionDisplay(
+                                        iconRes = R.drawable.ic_material_symbol_extension,
+                                        title = stringResource(R.string.guide_framework),
+                                        status = when (framework) {
+                                            XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
+                                            XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_offline)
+                                            XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_failed)
+                                            is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
+                                        },
+                                        purpose = stringResource(R.string.guide_framework_purpose),
+                                        checked = connected != null,
+                                        guidance = when (framework) {
+                                            XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_help)
+                                            XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_help)
+                                            else -> null
+                                        },
+                                    ),
+                                    disclosure = GuidePermissionDisclosure(
+                                        expanded = expandedPermission == 1,
+                                        onToggleDetails = { actions.onToggleExpanded(1) },
+                                    ),
                                 )
                             }
                             Spacer(Modifier.height(12.dp))
@@ -94,28 +98,32 @@ private fun ColumnScope.GuideScopePermission(
     val expandedPermission = actions.expandedPermission
                             Card(modifier = Modifier.fillMaxWidth()) {
                                 GuidePermissionItem(
-                                    iconRes = R.drawable.ic_material_symbol_target,
-                                    title = stringResource(R.string.guide_sysui_scope),
-                                    purpose = stringResource(R.string.guide_sysui_scope_purpose),
-                                    status = when {
-                                        sysUiInScope -> stringResource(R.string.runtime_scope_authorized)
-                                        framework == XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
-                                        framework == XposedStatus.QueryUnavailable -> stringResource(R.string.guide_scope_read_failed)
-                                        connected == null -> stringResource(R.string.guide_scope_wait_framework)
-                                        scopeBusy -> stringResource(R.string.guide_scope_requesting)
-                                        else -> stringResource(R.string.runtime_scope_disabled)
-                                    },
-                                    checked = sysUiInScope,
-                                    expanded = expandedPermission == 2,
-                                    onToggleDetails = { actions.onToggleExpanded(2) },
-                                    guidance = when {
-                                        sysUiInScope -> null
-                                        framework == XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_help)
-                                        connected == null -> stringResource(R.string.guide_scope_help_offline)
-                                        connected.apiVersion < 102 -> stringResource(R.string.guide_scope_help_api)
-                                        !canRequestScope -> stringResource(R.string.guide_scope_help_busy)
-                                        else -> stringResource(R.string.guide_scope_help_request)
-                                    },
+                                    display = GuidePermissionDisplay(
+                                        iconRes = R.drawable.ic_material_symbol_target,
+                                        title = stringResource(R.string.guide_sysui_scope),
+                                        status = when {
+                                            sysUiInScope -> stringResource(R.string.runtime_scope_authorized)
+                                            framework == XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
+                                            framework == XposedStatus.QueryUnavailable -> stringResource(R.string.guide_scope_read_failed)
+                                            connected == null -> stringResource(R.string.guide_scope_wait_framework)
+                                            scopeBusy -> stringResource(R.string.guide_scope_requesting)
+                                            else -> stringResource(R.string.runtime_scope_disabled)
+                                        },
+                                        purpose = stringResource(R.string.guide_sysui_scope_purpose),
+                                        checked = sysUiInScope,
+                                        guidance = when {
+                                            sysUiInScope -> null
+                                            framework == XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_help)
+                                            connected == null -> stringResource(R.string.guide_scope_help_offline)
+                                            connected.apiVersion < 102 -> stringResource(R.string.guide_scope_help_api)
+                                            !canRequestScope -> stringResource(R.string.guide_scope_help_busy)
+                                            else -> stringResource(R.string.guide_scope_help_request)
+                                        },
+                                    ),
+                                    disclosure = GuidePermissionDisclosure(
+                                        expanded = expandedPermission == 2,
+                                        onToggleDetails = { actions.onToggleExpanded(2) },
+                                    ),
                                 )
                                 if (!sysUiInScope) {
                                     TextButton(
@@ -145,19 +153,23 @@ private fun ColumnScope.GuideRootPermission(
                             SmallTitle(text = stringResource(R.string.guide_permission_later))
                             Card(modifier = Modifier.fillMaxWidth()) {
                                 GuidePermissionItem(
-                                    iconRes = R.drawable.ic_material_symbol_admin_panel_settings,
-                                    title = stringResource(R.string.guide_root_title),
-                                    purpose = stringResource(R.string.guide_root_purpose),
-                                    status = when {
-                                        rootChecking -> stringResource(R.string.guide_root_checking)
-                                        rootAccess == true -> stringResource(R.string.guide_root_granted)
-                                        rootAccess == false -> stringResource(R.string.guide_root_unavailable)
-                                        else -> stringResource(R.string.guide_root_not_checked)
-                                    },
-                                    checked = rootAccess == true,
-                                    expanded = expandedPermission == 3,
-                                    onToggleDetails = { actions.onToggleExpanded(3) },
-                                    guidance = if (rootAccess == false) stringResource(R.string.guide_root_help) else null,
+                                    display = GuidePermissionDisplay(
+                                        iconRes = R.drawable.ic_material_symbol_admin_panel_settings,
+                                        title = stringResource(R.string.guide_root_title),
+                                        status = when {
+                                            rootChecking -> stringResource(R.string.guide_root_checking)
+                                            rootAccess == true -> stringResource(R.string.guide_root_granted)
+                                            rootAccess == false -> stringResource(R.string.guide_root_unavailable)
+                                            else -> stringResource(R.string.guide_root_not_checked)
+                                        },
+                                        purpose = stringResource(R.string.guide_root_purpose),
+                                        checked = rootAccess == true,
+                                        guidance = if (rootAccess == false) stringResource(R.string.guide_root_help) else null,
+                                    ),
+                                    disclosure = GuidePermissionDisclosure(
+                                        expanded = expandedPermission == 3,
+                                        onToggleDetails = { actions.onToggleExpanded(3) },
+                                    ),
                                 )
                             }
                             if (scopeBusy || scopeRequestFailed) {

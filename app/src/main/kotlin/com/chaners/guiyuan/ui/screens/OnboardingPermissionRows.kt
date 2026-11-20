@@ -33,70 +33,90 @@ import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.extended.Help
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+internal data class GuidePermissionDisplay(
+    @DrawableRes val iconRes: Int,
+    val title: String,
+    val status: String,
+    val purpose: String,
+    val checked: Boolean,
+    val guidance: String? = null,
+)
+
+internal data class GuidePermissionDisclosure(
+    val expanded: Boolean,
+    val onToggleDetails: () -> Unit,
+)
+
 @Composable
 internal fun GuidePermissionItem(
-    @DrawableRes iconRes: Int,
-    title: String,
-    status: String,
-    purpose: String,
-    checked: Boolean,
-    expanded: Boolean,
-    onToggleDetails: () -> Unit,
-    guidance: String? = null,
+    display: GuidePermissionDisplay,
+    disclosure: GuidePermissionDisclosure,
 ) {
-    val detailsLabel = stringResource(R.string.guide_permission_details)
     BasicComponent(
-        startAction = { SemanticLeadingIcon(iconRes = iconRes) },
-        endActions = {
-            if (checked) {
-                Icon(
-                    imageVector = MiuixIcons.Basic.Check,
-                    contentDescription = status,
-                    modifier = Modifier.size(26.dp),
-                    tint = MiuixTheme.colorScheme.primary,
-                )
-            } else {
-                Text(
-                    text = status,
-                    style = MiuixTheme.textStyles.body2,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
-        },
+        startAction = { SemanticLeadingIcon(iconRes = display.iconRes) },
+        endActions = { GuidePermissionStatus(display.checked, display.status) },
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = title,
-                modifier = Modifier.weight(1f, fill = false),
-                style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
-                color = MiuixTheme.colorScheme.onBackground,
-            )
-            TooltipBox(text = detailsLabel) {
-                Box(
-                    modifier = Modifier.size(40.dp),
-                    contentAlignment = Alignment.Center,
+        GuidePermissionTitle(display.title, disclosure.onToggleDetails)
+    }
+    GuidePermissionDetails(
+        expanded = disclosure.expanded,
+        purpose = display.purpose,
+        guidance = display.guidance,
+    )
+}
+
+@Composable
+private fun GuidePermissionStatus(checked: Boolean, status: String) {
+    if (checked) {
+        Icon(
+            imageVector = MiuixIcons.Basic.Check,
+            contentDescription = status,
+            modifier = Modifier.size(26.dp),
+            tint = MiuixTheme.colorScheme.primary,
+        )
+    } else {
+        Text(
+            text = status,
+            style = MiuixTheme.textStyles.body2,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+    }
+}
+
+@Composable
+private fun GuidePermissionTitle(title: String, onToggleDetails: () -> Unit) {
+    val detailsLabel = stringResource(R.string.guide_permission_details)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f, fill = false),
+            style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
+            color = MiuixTheme.colorScheme.onBackground,
+        )
+        TooltipBox(text = detailsLabel) {
+            Box(
+                modifier = Modifier.size(40.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                IconButton(
+                    onClick = onToggleDetails,
+                    modifier = Modifier.size(32.dp),
+                    minWidth = 32.dp,
+                    minHeight = 32.dp,
+                    cornerRadius = 16.dp,
                 ) {
-                    IconButton(
-                        onClick = onToggleDetails,
-                        modifier = Modifier.size(32.dp),
-                        minWidth = 32.dp,
-                        minHeight = 32.dp,
-                        cornerRadius = 16.dp,
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Regular.Help,
-                            contentDescription = detailsLabel,
-                            modifier = Modifier.size(20.dp),
-                            tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                        )
-                    }
+                    Icon(
+                        imageVector = MiuixIcons.Regular.Help,
+                        contentDescription = detailsLabel,
+                        modifier = Modifier.size(20.dp),
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
                 }
             }
         }
     }
-    GuidePermissionDetails(expanded = expanded, purpose = purpose, guidance = guidance)
 }
 
 @Composable
