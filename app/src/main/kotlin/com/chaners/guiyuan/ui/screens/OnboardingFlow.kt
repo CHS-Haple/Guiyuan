@@ -470,10 +470,8 @@ internal fun OnboardingFlow(
             // Navigation keeps covered entries alive. Only the top stage hosts popups.
             if (pages.lastOrNull() == page) {
                 when (step) {
-                    1 -> UiOverlayDialog(
-                        show = permissionWarning == PermissionWarningPhase.Visible,
-                        title = stringResource(R.string.guide_permission_warning_title),
-                        summary = stringResource(R.string.guide_permission_warning_summary),
+                    1 -> GuidePermissionWarningDialog(
+                        phase = permissionWarning,
                         onDismissRequest = {
                             permissionWarning = PermissionWarningPhase.Dismissing
                         },
@@ -482,35 +480,16 @@ internal fun OnboardingFlow(
                             permissionWarning = PermissionWarningPhase.Hidden
                             if (proceed) advanceFrom(page)
                         },
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            UiDialogButton(
-                                text = stringResource(R.string.guide_permission_return),
-                                modifier = Modifier.weight(1f),
-                                role = GlassDialogButtonRole.Primary,
-                                onClick = {
-                                    permissionWarning = PermissionWarningPhase.Dismissing
-                                },
-                            )
-                            Spacer(Modifier.width(dialogActionGap()))
-                            UiDialogButton(
-                                text = stringResource(R.string.guide_permission_continue),
-                                modifier = Modifier.weight(1f),
-                                onClick = {
-                                    permissionWarning = PermissionWarningPhase.Advancing
-                                },
-                            )
-                        }
-                    }
-                    2 -> UiOverlayBottomSheet(
-                        show = documentVisible,
-                        modifier = Modifier.fillMaxHeight(0.85f),
-                        title = stringResource((openDocument ?: AgreementDocument.Privacy).titleRes()),
-                        backgroundColor = MiuixTheme.colorScheme.background,
-                        insideMargin = DpSize(0.dp, 0.dp),
+                        onReturn = {
+                            permissionWarning = PermissionWarningPhase.Dismissing
+                        },
+                        onContinue = {
+                            permissionWarning = PermissionWarningPhase.Advancing
+                        },
+                    )
+                    2 -> GuidePolicyDocumentSheet(
+                        visible = documentVisible,
+                        document = openDocument,
                         onDismissRequest = {
                             if (documentVisible) {
                                 documentDismissing = true
@@ -521,9 +500,7 @@ internal fun OnboardingFlow(
                             // Keep the rendered document stable while MIUIX retires its popup host.
                             documentDismissing = false
                         },
-                    ) {
-                        openDocument?.let { AgreementSheetBody(it) }
-                    }
+                    )
                     3 -> AppSettingsEntryDialogs(entryState)
                     else -> Unit
                 }
@@ -531,5 +508,60 @@ internal fun OnboardingFlow(
         }
         }
         }
+    }
+}
+
+@Composable
+private fun GuidePermissionWarningDialog(
+    phase: PermissionWarningPhase,
+    onDismissRequest: () -> Unit,
+    onDismissFinished: () -> Unit,
+    onReturn: () -> Unit,
+    onContinue: () -> Unit,
+) {
+    UiOverlayDialog(
+        show = phase == PermissionWarningPhase.Visible,
+        title = stringResource(R.string.guide_permission_warning_title),
+        summary = stringResource(R.string.guide_permission_warning_summary),
+        onDismissRequest = onDismissRequest,
+        onDismissFinished = onDismissFinished,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            UiDialogButton(
+                text = stringResource(R.string.guide_permission_return),
+                modifier = Modifier.weight(1f),
+                role = GlassDialogButtonRole.Primary,
+                onClick = onReturn,
+            )
+            Spacer(Modifier.width(dialogActionGap()))
+            UiDialogButton(
+                text = stringResource(R.string.guide_permission_continue),
+                modifier = Modifier.weight(1f),
+                onClick = onContinue,
+            )
+        }
+    }
+}
+
+@Composable
+private fun GuidePolicyDocumentSheet(
+    visible: Boolean,
+    document: AgreementDocument?,
+    onDismissRequest: () -> Unit,
+    onDismissFinished: () -> Unit,
+) {
+    UiOverlayBottomSheet(
+        show = visible,
+        modifier = Modifier.fillMaxHeight(0.85f),
+        title = stringResource((document ?: AgreementDocument.Privacy).titleRes()),
+        backgroundColor = MiuixTheme.colorScheme.background,
+        insideMargin = DpSize(0.dp, 0.dp),
+        onDismissRequest = onDismissRequest,
+        onDismissFinished = onDismissFinished,
+    ) {
+        document?.let { AgreementSheetBody(it) }
     }
 }
