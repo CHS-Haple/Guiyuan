@@ -3210,13 +3210,15 @@ class GyModule : XposedModule() {
                             .homeSlots()
                             .isNotEmpty(),
                 ),
-                boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                signal = ScenePolicy.AodNativeSignalEvidence(
                     keyguardStatusIconsAlpha =
                         SysUiKeyguardHostResolver
                             .statusIconsPresentationAlpha(resolved),
                     nativeToLockScreenTarget =
                         SysUiKeyguardHostResolver
                             .nativeToLockScreenTarget(resolved),
+                ),
+                boundary = ScenePolicy.AodNativeBoundaryEvidence(
                     fullAodTargetSourceReady =
                         SysUiPresentationRuntime.keyguardFullAodReady,
                     fullAodTargetPending = aodWindow?.boundaryPending == true,
@@ -3225,6 +3227,7 @@ class GyModule : XposedModule() {
                         (aodWindow as? AodWindow.Waiting)?.toLockScreen == true &&
                             SysUiPresentationOwner.aodClaimed(resolved),
                 ),
+
                 home = ScenePolicy.AodHomeEvidence(
                     homeAodTransitionOrigin = homeAodOriginPending,
                     homeAodTargetPrearm = homeAodTargetPrearmPending,

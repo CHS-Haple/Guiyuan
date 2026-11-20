@@ -35,8 +35,11 @@ class SceneAodPolicyTest {
                         steadySourceScene = SourceScene.HOME,
                         lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                     ),
+                    signal = ScenePolicy.AodNativeSignalEvidence(
+                    ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
                     ),
+
                     home = ScenePolicy.AodHomeEvidence(
                         homeAodTargetPrearm = prearmed,
                     ),
@@ -70,8 +73,11 @@ class SceneAodPolicyTest {
                     scene = ScenePolicy.AodSceneEvidence(
                         steadySourceScene = source,
                     ),
+                    signal = ScenePolicy.AodNativeSignalEvidence(
+                    ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
                     ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -121,8 +127,11 @@ class SceneAodPolicyTest {
                         lastStableFamilyScene =
                             ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                     ),
+                    signal = ScenePolicy.AodNativeSignalEvidence(
+                    ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
                     ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -144,8 +153,11 @@ class SceneAodPolicyTest {
                         lastStableFamilyScene =
                             ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                     ),
+                    signal = ScenePolicy.AodNativeSignalEvidence(
+                    ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
                     ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -167,8 +179,11 @@ class SceneAodPolicyTest {
                         lastStableFamilyScene =
                             ScenePolicy.StableKeyguardAodScene.AOD,
                     ),
+                    signal = ScenePolicy.AodNativeSignalEvidence(
+                    ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
                     ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -190,8 +205,11 @@ class SceneAodPolicyTest {
                         lastStableFamilyScene =
                             ScenePolicy.StableKeyguardAodScene.AOD,
                     ),
+                    signal = ScenePolicy.AodNativeSignalEvidence(
+                    ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
                     ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -218,8 +236,11 @@ class SceneAodPolicyTest {
                             ScenePolicy.StableKeyguardAodScene.AOD,
                         homePresentationOwned = true,
                     ),
+                    signal = ScenePolicy.AodNativeSignalEvidence(
+                    ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
                     ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -242,8 +263,11 @@ class SceneAodPolicyTest {
                             ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                         homePresentationOwned = true,
                     ),
+                    signal = ScenePolicy.AodNativeSignalEvidence(
+                    ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
                     ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -282,10 +306,13 @@ class SceneAodPolicyTest {
                             ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                         homePresentationOwned = false,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    signal = ScenePolicy.AodNativeSignalEvidence(
                         nativeToLockScreenTarget = false,
+                    ),
+                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
                         fullAodTargetSourceReady = true,
                     ),
+
                     home = ScenePolicy.AodHomeEvidence(
                         homeAodTargetPrearm = true,
                     ),
@@ -313,8 +340,11 @@ class SceneAodPolicyTest {
                             ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                         homePresentationOwned = true,
                     ),
+                    signal = ScenePolicy.AodNativeSignalEvidence(
+                    ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
                     ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -337,8 +367,11 @@ class SceneAodPolicyTest {
                             ScenePolicy.StableKeyguardAodScene.UNKNOWN,
                         homePresentationOwned = true,
                     ),
+                    signal = ScenePolicy.AodNativeSignalEvidence(
+                    ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
                     ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),

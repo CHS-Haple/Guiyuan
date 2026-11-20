@@ -79,14 +79,17 @@ class SceneAodNativeBoundaryTest {
                     // Rapid reversal may never produce a stable AOD callback.
                     lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                 ),
-                boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                signal = ScenePolicy.AodNativeSignalEvidence(
                     keyguardStatusIconsAlpha = alpha,
                     nativeToLockScreenTarget = target,
+                ),
+                boundary = ScenePolicy.AodNativeBoundaryEvidence(
                     fullAodTargetSourceReady = ready,
                     fullAodTargetPending = false,
                     fullAodVisualBoundary = true,
                     outgoingAodOwned = owned,
                 ),
+
                 home = ScenePolicy.AodHomeEvidence(
                 ),
             ),
@@ -126,9 +129,12 @@ class SceneAodNativeBoundaryTest {
                         lastStableFamilyScene =
                             ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 1f,
                     ),
+                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -150,9 +156,12 @@ class SceneAodNativeBoundaryTest {
                         lastStableFamilyScene =
                             ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0.99f,
                     ),
+                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -174,9 +183,12 @@ class SceneAodNativeBoundaryTest {
                         lastStableFamilyScene =
                             ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0f,
                     ),
+                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -202,9 +214,12 @@ class SceneAodNativeBoundaryTest {
                         lastStableFamilyScene =
                             ScenePolicy.StableKeyguardAodScene.AOD,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0f,
                     ),
+                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -226,9 +241,12 @@ class SceneAodNativeBoundaryTest {
                         lastStableFamilyScene =
                             ScenePolicy.StableKeyguardAodScene.AOD,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0.005f,
                     ),
+                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -254,9 +272,12 @@ class SceneAodNativeBoundaryTest {
                         lastStableFamilyScene =
                             ScenePolicy.StableKeyguardAodScene.AOD,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0f,
                     ),
+                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -278,9 +299,12 @@ class SceneAodNativeBoundaryTest {
                         lastStableFamilyScene =
                             ScenePolicy.StableKeyguardAodScene.AOD,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0.01f,
                     ),
+                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -302,9 +326,12 @@ class SceneAodNativeBoundaryTest {
                         lastStableFamilyScene =
                             ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 1f,
                     ),
+                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),
@@ -326,9 +353,12 @@ class SceneAodNativeBoundaryTest {
                         lastStableFamilyScene =
                             ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0.99f,
                     ),
+                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                    ),
+
                     home = ScenePolicy.AodHomeEvidence(
                     ),
                 ),

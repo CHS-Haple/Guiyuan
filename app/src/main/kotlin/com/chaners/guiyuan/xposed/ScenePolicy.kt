@@ -71,9 +71,12 @@ internal object ScenePolicy {
         val homePresentationOwned: Boolean = false,
     )
 
-    internal data class AodNativeBoundaryEvidence(
+    internal data class AodNativeSignalEvidence(
         val keyguardStatusIconsAlpha: Float? = null,
         val nativeToLockScreenTarget: Boolean? = null,
+    )
+
+    internal data class AodNativeBoundaryEvidence(
         val fullAodTargetSourceReady: Boolean = false,
         val fullAodTargetPending: Boolean = false,
         val fullAodVisualBoundary: Boolean = false,
@@ -89,6 +92,7 @@ internal object ScenePolicy {
     internal data class KeyguardAodProjectionInputs(
         val feature: AodFeatureFlags,
         val scene: AodSceneEvidence = AodSceneEvidence(),
+        val signal: AodNativeSignalEvidence = AodNativeSignalEvidence(),
         val boundary: AodNativeBoundaryEvidence = AodNativeBoundaryEvidence(),
         val home: AodHomeEvidence = AodHomeEvidence(),
     )
@@ -102,8 +106,8 @@ internal object ScenePolicy {
         val steadySourceScene = input.scene.steadySourceScene
         val lastStableFamilyScene = input.scene.lastStableFamilyScene
         val homePresentationOwned = input.scene.homePresentationOwned
-        val keyguardStatusIconsAlpha = input.boundary.keyguardStatusIconsAlpha
-        val nativeToLockScreenTarget = input.boundary.nativeToLockScreenTarget
+        val keyguardStatusIconsAlpha = input.signal.keyguardStatusIconsAlpha
+        val nativeToLockScreenTarget = input.signal.nativeToLockScreenTarget
         val fullAodTargetSourceReady = input.boundary.fullAodTargetSourceReady
         val fullAodTargetPending = input.boundary.fullAodTargetPending
         val fullAodVisualBoundary = input.boundary.fullAodVisualBoundary
