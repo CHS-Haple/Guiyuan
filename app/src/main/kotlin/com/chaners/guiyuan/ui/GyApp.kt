@@ -42,6 +42,15 @@ import com.chaners.guiyuan.ui.screens.PreviewMobileNetwork
 import com.chaners.guiyuan.ui.screens.PreviewNetworkMode
 import com.chaners.guiyuan.ui.screens.PreviewNetworkActivity
 import com.chaners.guiyuan.ui.screens.PreviewSandboxScreen
+import com.chaners.guiyuan.ui.screens.PreviewSandboxBatteryActions
+import com.chaners.guiyuan.ui.screens.PreviewSandboxSimSelectionActions
+import com.chaners.guiyuan.ui.screens.PreviewSandboxSim2Actions
+import com.chaners.guiyuan.ui.screens.PreviewSandboxSim1Actions
+import com.chaners.guiyuan.ui.screens.PreviewSandboxSimActions
+import com.chaners.guiyuan.ui.screens.PreviewSandboxNetworkActions
+import com.chaners.guiyuan.ui.screens.PreviewSandboxUiActions
+import com.chaners.guiyuan.ui.screens.PreviewSandboxActions
+import com.chaners.guiyuan.ui.screens.PreviewSandboxDisplay
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.PreviewWifiState
 import com.chaners.guiyuan.ui.theme.GyTheme
@@ -301,51 +310,53 @@ internal fun GyApp(
                     paletteStyle = appearance.paletteStyle,
                 ) {
                     PreviewSandboxScreen(
-                        state = previewState,
-                        parasiteActive = sandboxActive,
-                        onParasiteChange = { enabled, snapshot -> onSandboxToggle(enabled, snapshot) },
-                        onAirplaneModeChange = { previewAirplaneMode = it },
-                        onNetworkModeChange = {
-                            if (
-                                it == PreviewNetworkMode.MOBILE &&
-                                previewMobileNetworkIndex == PreviewMobileNetwork.NONE.ordinal
-                            ) {
-                                previewMobileNetworkIndex = PreviewMobileNetwork.FIVE_G.ordinal
-                            }
-                            previewNetworkModeIndex = it.ordinal
-                        },
-                        onMobileNetworkChange = {
-                            previewMobileNetworkIndex = it.ordinal
-                        },
-                        onMobileSignalLevelChange = {
-                            previewMobileSignalLevel = it
-                        },
-                        onSim2SignalLevelChange = { previewSim2SignalLevel = it },
-                        onSim2NetworkChange = { previewSim2NetworkIndex = it.ordinal },
-                        onDataSimChange = { previewDataSimIndex = it.ordinal },
-                        onSimCardsChange = { previewSimCardsIndex = it.ordinal },
-                        onWifiStateChange = {
-                            previewWifiStateIndex = it.ordinal
-                        },
-                        onWifiSignalLevelChange = {
-                            previewWifiSignalLevel = it
-                        },
-                        onNetworkActivityChange = { previewNetworkActivityIndex = it.ordinal },
-                        onBatteryPercentChange = {
-                            previewBatteryPercent = it
-                        },
-                        onBatteryModeChange = {
-                            previewBatteryModeIndex = it.ordinal
-                        },
-                        onChargingStateChange = {
-                            previewChargingStateIndex = it.ordinal
-                        },
-                        dark = previewDark,
-                        onToggleTheme = { sandboxDark = !previewDark },
-                        onBack = {
-                            onSandboxStop()
-                            navigateBack()
-                        },
+                        display = PreviewSandboxDisplay(previewState, sandboxActive, previewDark),
+                        actions = PreviewSandboxActions(
+                            ui = PreviewSandboxUiActions(
+                                onParasiteChange = { enabled, snapshot ->
+                                    onSandboxToggle(enabled, snapshot)
+                                },
+                                onToggleTheme = { sandboxDark = !previewDark },
+                                onBack = {
+                                    onSandboxStop()
+                                    navigateBack()
+                                },
+                            ),
+                            network = PreviewSandboxNetworkActions(
+                                onAirplaneModeChange = { previewAirplaneMode = it },
+                                onNetworkModeChange = {
+                                    if (
+                                        it == PreviewNetworkMode.MOBILE &&
+                                        previewMobileNetworkIndex == PreviewMobileNetwork.NONE.ordinal
+                                    ) {
+                                        previewMobileNetworkIndex = PreviewMobileNetwork.FIVE_G.ordinal
+                                    }
+                                    previewNetworkModeIndex = it.ordinal
+                                },
+                                onWifiStateChange = { previewWifiStateIndex = it.ordinal },
+                                onWifiSignalLevelChange = { previewWifiSignalLevel = it },
+                                onNetworkActivityChange = { previewNetworkActivityIndex = it.ordinal },
+                            ),
+                            sims = PreviewSandboxSimActions(
+                                first = PreviewSandboxSim1Actions(
+                                    onMobileNetworkChange = { previewMobileNetworkIndex = it.ordinal },
+                                    onMobileSignalLevelChange = { previewMobileSignalLevel = it },
+                                ),
+                                second = PreviewSandboxSim2Actions(
+                                    onSim2SignalLevelChange = { previewSim2SignalLevel = it },
+                                    onSim2NetworkChange = { previewSim2NetworkIndex = it.ordinal },
+                                ),
+                                selection = PreviewSandboxSimSelectionActions(
+                                    onDataSimChange = { previewDataSimIndex = it.ordinal },
+                                    onSimCardsChange = { previewSimCardsIndex = it.ordinal },
+                                ),
+                            ),
+                            battery = PreviewSandboxBatteryActions(
+                                onBatteryPercentChange = { previewBatteryPercent = it },
+                                onBatteryModeChange = { previewBatteryModeIndex = it.ordinal },
+                                onChargingStateChange = { previewChargingStateIndex = it.ordinal },
+                            ),
+                        ),
                     )
                 }
             }
