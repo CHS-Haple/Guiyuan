@@ -5,6 +5,7 @@ import com.chaners.guiyuan.settings.BatteryColorSchemeEntry
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
+import com.chaners.guiyuan.settings.opaqueArgb
 
 internal fun schemePageForKey(
     library: BatteryColorSchemeLibrary,
@@ -28,7 +29,7 @@ internal fun batteryColorFromHex(value: String): Int? {
     if (normalized.length != 6) return null
     return normalized.toLongOrNull(16)
         ?.toInt()
-        ?.or(0xFF000000.toInt())
+        ?.opaqueArgb()
 }
 
 internal fun batteryColorRgb(color: Int): Triple<Int, Int, Int> =
@@ -46,5 +47,5 @@ internal fun batteryColorFromRgb(
     val r = red.toIntOrNull()?.takeIf { it in 0..255 } ?: return null
     val g = green.toIntOrNull()?.takeIf { it in 0..255 } ?: return null
     val b = blue.toIntOrNull()?.takeIf { it in 0..255 } ?: return null
-    return 0xFF000000.toInt() or (r shl 16) or (g shl 8) or b
+    return ((r shl 16) or (g shl 8) or b).opaqueArgb()
 }
