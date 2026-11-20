@@ -128,7 +128,7 @@ internal data class BatteryColorOverrides(
         slot: BatteryColorSlot,
         color: Int?,
     ): BatteryColorOverrides {
-        val opaque = color?.let { it or 0xFF000000.toInt() }
+        val opaque = color?.opaqueArgb()
         return when (slot) {
             BatteryColorSlot.NORMAL -> copy(normal = opaque)
             BatteryColorSlot.POWER_SAVE -> copy(powerSave = opaque)
@@ -138,6 +138,16 @@ internal data class BatteryColorOverrides(
             BatteryColorSlot.LOW -> copy(low = opaque)
         }
     }
+
+    fun normalized(): BatteryColorOverrides =
+        copy(
+            normal = normal?.opaqueArgb(),
+            powerSave = powerSave?.opaqueArgb(),
+            performance = performance?.opaqueArgb(),
+            superPowerSave = superPowerSave?.opaqueArgb(),
+            charging = charging?.opaqueArgb(),
+            low = low?.opaqueArgb(),
+        )
 }
 
 internal object RecommendedBatteryPalette {
@@ -374,13 +384,5 @@ internal fun VisualCfg.normalized(): VisualCfg =
             ),
         mobileTypeWeight =
             mobileTypeWeight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX),
-        batteryColorOverrides =
-            batteryColorOverrides.copy(
-                normal = batteryColorOverrides.normal?.or(0xFF000000.toInt()),
-                powerSave = batteryColorOverrides.powerSave?.or(0xFF000000.toInt()),
-                performance = batteryColorOverrides.performance?.or(0xFF000000.toInt()),
-                superPowerSave = batteryColorOverrides.superPowerSave?.or(0xFF000000.toInt()),
-                charging = batteryColorOverrides.charging?.or(0xFF000000.toInt()),
-                low = batteryColorOverrides.low?.or(0xFF000000.toInt()),
-            ),
+        batteryColorOverrides = batteryColorOverrides.normalized(),
     )
