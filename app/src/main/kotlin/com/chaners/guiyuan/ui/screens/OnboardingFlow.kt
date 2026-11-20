@@ -294,16 +294,6 @@ internal fun OnboardingFlow(
             swipeDismiss = if (documentVisible || documentDismissing) NavSwipeDirection.None else swipeBackDirection,
         ) { page ->
         val step = page.number
-        val title = when (step) {
-            1 -> stringResource(R.string.guide_permissions_title)
-            2 -> stringResource(R.string.guide_privacy_title)
-            else -> stringResource(R.string.guide_basic_title)
-        }
-        val illustration = when (step) {
-            1 -> R.drawable.ic_material_symbol_security
-            2 -> R.drawable.ic_material_symbol_balance
-            else -> R.drawable.ic_material_symbol_settings
-        }
         val scrollBehavior = MiuixScrollBehavior()
         val scroll = rememberScrollState()
         val importantScroll = rememberScrollState()
@@ -334,32 +324,7 @@ internal fun OnboardingFlow(
                         else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).verticalScroll(scroll),
                     ),
                 ) {
-                    Spacer(Modifier.height(10.dp))
-                    Box(
-                        modifier = Modifier.fillMaxWidth().height(82.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(illustration),
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MiuixTheme.colorScheme.primary,
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 42.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = title,
-                            modifier = Modifier.semantics { heading() },
-                            style = MiuixTheme.textStyles.title1.copy(fontWeight = FontWeight.Bold),
-                            textAlign = TextAlign.Center,
-                            color = MiuixTheme.colorScheme.onBackground,
-                        )
-                    }
-                    Spacer(Modifier.height(30.dp))
+                    GuideStageHeading(step)
                     when (step) {
                         1 -> GuidePermissionStage(
                             status = GuideFrameworkSnapshot(
@@ -397,21 +362,12 @@ internal fun OnboardingFlow(
                         onOpenDocument = ::showAgreement,
                     )
                 }
-                TextButton(
-                    text = stringResource(
-                        if (step == 2) R.string.guide_agree_continue else R.string.guide_continue,
-                    ),
-                    modifier = Modifier.widthIn(max = 336.dp).fillMaxWidth().heightIn(min = 50.dp),
-                    cornerRadius = 16.dp,
-                    textStyle = MiuixTheme.textStyles.button,
-                    colors = if (step == 1 && !sysUiInScope) {
-                        ButtonDefaults.textButtonColors()
-                    } else {
-                        ButtonDefaults.textButtonColorsPrimary()
-                    },
-                    enabled = step != 2 || policyAccepted,
-                    onClick = {
-                        // A covered page's retained click handler must not act on the new top.
+                GuideStageContinueButton(
+                    step = step,
+                    canContinue = step != 2 || policyAccepted,
+                    showSecondary = step == 1 && !sysUiInScope,
+                    onContinue = {
+                        // A retained covered page cannot move the current top page.
                         if (pages.lastOrNull() == page) {
                             if (step == 1 && !sysUiInScope) {
                                 permissionWarning = PermissionWarningPhase.Visible
