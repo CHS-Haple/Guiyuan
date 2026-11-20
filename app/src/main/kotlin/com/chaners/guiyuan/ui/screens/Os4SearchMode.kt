@@ -200,21 +200,10 @@ private fun BoxScope.Os4SearchCancelAction(
     shadowProgress: State<Float>,
     onClose: () -> Unit,
 ) {
-    val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
     val cancelInteraction = remember { MutableInteractionSource() }
     val cancelPressed = cancelInteraction.collectIsPressedAsState()
-    val shadowOutsets = remember(density) { with(density) { popupShadowOutsets(GlassShadows.Regular) } }
-    val cancelOutsets = remember(density, shadowOutsets) {
-        // Match PR423's three-radius allowance for its Cancel blur.
-        val halo = with(density) { (CANCEL_BLUR_PX * 3f).toDp() }
-        LayerOutsets(
-            left = shadowOutsets.left + halo,
-            top = shadowOutsets.top + halo,
-            right = shadowOutsets.right + halo,
-            bottom = shadowOutsets.bottom + halo,
-        )
-    }
+    val cancelOutsets = rememberOs4CancelOutsets()
     val label = stringResource(R.string.cancel)
     Box(
         modifier = Modifier
@@ -250,6 +239,22 @@ private fun BoxScope.Os4SearchCancelAction(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun rememberOs4CancelOutsets(): LayerOutsets {
+    val density = LocalDensity.current
+    val shadowOutsets = remember(density) { with(density) { popupShadowOutsets(GlassShadows.Regular) } }
+    return remember(density, shadowOutsets) {
+        // Match PR423's three-radius allowance for its Cancel blur.
+        val halo = with(density) { (CANCEL_BLUR_PX * 3f).toDp() }
+        LayerOutsets(
+            left = shadowOutsets.left + halo,
+            top = shadowOutsets.top + halo,
+            right = shadowOutsets.right + halo,
+            bottom = shadowOutsets.bottom + halo,
+        )
     }
 }
 
