@@ -124,15 +124,11 @@ private enum class PermissionWarningPhase {
 // framework services remain the authoritative writers for settings and scope.
 @Composable
 internal fun OnboardingFlow(
-    lang: AppLang,
-    onLangChange: (AppLang) -> Unit,
-    iconHidden: Boolean,
-    onIconHiddenChange: (Boolean) -> Unit,
-    swipeBackEnabled: Boolean,
-    onComplete: () -> Unit,
-    onExit: (() -> Unit)? = null,
-    agreementReviewOnly: Boolean = false,
+    config: OnboardingConfig,
+    handlers: OnboardingHandlers,
 ) {
+    val (lang, iconHidden, swipeBackEnabled, agreementReviewOnly) = config
+    val (onLangChange, onIconHiddenChange, onComplete, onExit) = handlers
     val context = LocalContext.current.applicationContext
     val app = remember(context) { context as GyApplication }
     val framework by app.xposedStatus.collectAsState()
