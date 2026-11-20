@@ -211,38 +211,42 @@ private fun BatterySchemeDeckPage(
     when (page) {
         is BatterySchemePage.BuiltIn, is BatterySchemePage.Custom ->
             BatterySchemePageContent(
-                page = page,
-                isActive = context.library.activeSchemeKey == page.key,
-                canCreateCustom = context.creation.enabled,
-                onApply = { navigation.onApply(page.key) },
-                onSlotClick = { slot ->
-                    when (page) {
-                        is BatterySchemePage.BuiltIn ->
-                            context.scope.launch {
-                                val addPage = context.pages.lastIndex
-                                if (context.pager.currentPage != addPage) {
-                                    context.pager.springAnimateToPage(addPage)
+                state = BatterySchemePageState(
+                    page = page,
+                    isActive = context.library.activeSchemeKey == page.key,
+                    canCreateCustom = context.creation.enabled,
+                    manageMenu = if (page is BatterySchemePage.Custom) {
+                        {
+                            BatterySchemeManageMenu(
+                                canCopy = context.creation.enabled,
+                                onRename = { catalog.onRename(page.scheme.id) },
+                                onCopy = { catalog.onCopy(page.scheme) },
+                                onDelete = { catalog.onDelete(page.scheme.id) },
+                            )
+                        }
+                    } else null,
+                ),
+                actions = BatterySchemePageActions(
+                    onApply = { navigation.onApply(page.key) },
+                    onSlotClick = { slot ->
+                        when (page) {
+                            is BatterySchemePage.BuiltIn ->
+                                context.scope.launch {
+                                    val addPage = context.pages.lastIndex
+                                    if (context.pager.currentPage != addPage) {
+                                        context.pager.springAnimateToPage(addPage)
+                                    }
+                                    navigation.onBuiltInSlot(page.scheme, slot)
                                 }
-                                navigation.onBuiltInSlot(page.scheme, slot)
-                            }
-                        is BatterySchemePage.Custom ->
-                            navigation.onCustomSlot(page.scheme.id, slot)
-                        BatterySchemePage.Add -> Unit
-                    }
-                },
-                onSettingsCardMeasured = { height ->
-                    if (height > 0) context.creation.settingsCardHeight.intValue = height
-                },
-                manageMenu = if (page is BatterySchemePage.Custom) {
-                    {
-                        BatterySchemeManageMenu(
-                            canCopy = context.creation.enabled,
-                            onRename = { catalog.onRename(page.scheme.id) },
-                            onCopy = { catalog.onCopy(page.scheme) },
-                            onDelete = { catalog.onDelete(page.scheme.id) },
-                        )
-                    }
-                } else null,
+                            is BatterySchemePage.Custom ->
+                                navigation.onCustomSlot(page.scheme.id, slot)
+                            BatterySchemePage.Add -> Unit
+                        }
+                    },
+                    onSettingsCardMeasured = { height ->
+                        if (height > 0) context.creation.settingsCardHeight.intValue = height
+                    },
+                ),
             )
         BatterySchemePage.Add ->
             BatteryAddSchemePage(
@@ -255,16 +259,26 @@ private fun BatterySchemeDeckPage(
     }
 }
 
+private data class BatterySchemePageState(
+    val page: BatterySchemePage,
+    val isActive: Boolean,
+    val canCreateCustom: Boolean,
+    val manageMenu: (@Composable () -> Unit)?,
+)
+
+private data class BatterySchemePageActions(
+    val onApply: () -> Unit,
+    val onSlotClick: (BatteryColorSlot) -> Unit,
+    val onSettingsCardMeasured: (Int) -> Unit,
+)
+
 @Composable
 private fun BatterySchemePageContent(
-    page: BatterySchemePage,
-    isActive: Boolean,
-    canCreateCustom: Boolean,
-    onApply: () -> Unit,
-    onSlotClick: (BatteryColorSlot) -> Unit,
-    onSettingsCardMeasured: (Int) -> Unit,
-    manageMenu: (@Composable () -> Unit)?,
+    state: BatterySchemePageState,
+    actions: BatterySchemePageActions,
 ) {
+    val (page, isActive, canCreateCustom, manageMenu) = state
+    val (onApply, onSlotClick, onSettingsCardMeasured) = actions
     val builtIn = (page as? BatterySchemePage.BuiltIn)?.scheme
     val custom = (page as? BatterySchemePage.Custom)?.scheme
     val name = when (page) {
