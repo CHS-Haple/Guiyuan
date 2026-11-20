@@ -90,8 +90,6 @@ class SceneAodNativeBoundaryTest {
                     outgoingAodOwned = owned,
                 ),
 
-                home = ScenePolicy.AodHomeEvidence(
-                ),
             ),
         )
 
@@ -132,11 +130,7 @@ class SceneAodNativeBoundaryTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 1f,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -159,11 +153,7 @@ class SceneAodNativeBoundaryTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0.99f,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -186,11 +176,7 @@ class SceneAodNativeBoundaryTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0f,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -217,11 +203,7 @@ class SceneAodNativeBoundaryTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0f,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -244,11 +226,7 @@ class SceneAodNativeBoundaryTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0.005f,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -275,11 +253,7 @@ class SceneAodNativeBoundaryTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0f,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -302,11 +276,7 @@ class SceneAodNativeBoundaryTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0.01f,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -329,11 +299,7 @@ class SceneAodNativeBoundaryTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 1f,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -356,11 +322,7 @@ class SceneAodNativeBoundaryTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0.99f,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )

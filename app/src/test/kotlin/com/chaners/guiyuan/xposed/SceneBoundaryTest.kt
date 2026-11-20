@@ -34,8 +34,6 @@ class SceneBoundaryTest {
                         fullAodVisualBoundary = true,
                     ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -63,8 +61,6 @@ class SceneBoundaryTest {
                         fullAodVisualBoundary = true,
                     ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -92,9 +88,6 @@ class SceneBoundaryTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         nativeToLockScreenTarget = false,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
-
                     home = ScenePolicy.AodHomeEvidence(
                         homeAodTransitionOrigin = true,
                     ),
@@ -121,9 +114,6 @@ class SceneBoundaryTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         nativeToLockScreenTarget = false,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
-
                     home = ScenePolicy.AodHomeEvidence(
                         homeAodTransitionOrigin = true,
                     ),
@@ -227,8 +217,6 @@ class SceneBoundaryTest {
                         fullAodVisualBoundary = true,
                     ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -256,8 +244,6 @@ class SceneBoundaryTest {
                         fullAodVisualBoundary = false,
                     ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -463,9 +449,6 @@ class SceneHomeAodFallbackTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 1f,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
-
                     home = ScenePolicy.AodHomeEvidence(
                         homeNativeAodFallbackActive = true,
                     ),

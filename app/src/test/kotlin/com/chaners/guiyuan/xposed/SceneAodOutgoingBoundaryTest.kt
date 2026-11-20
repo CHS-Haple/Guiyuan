@@ -31,8 +31,6 @@ class SceneAodOutgoingBoundaryTest {
                         fullAodVisualBoundary = true,
                     ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -61,8 +59,6 @@ class SceneAodOutgoingBoundaryTest {
                         fullAodVisualBoundary = true,
                     ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -91,8 +87,6 @@ class SceneAodOutgoingBoundaryTest {
                         fullAodVisualBoundary = true,
                     ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -125,8 +119,6 @@ class SceneAodOutgoingBoundaryTest {
                         fullAodVisualBoundary = true,
                     ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -155,8 +147,6 @@ class SceneAodOutgoingBoundaryTest {
                         fullAodVisualBoundary = true,
                     ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -189,8 +179,6 @@ class SceneAodOutgoingBoundaryTest {
                         fullAodTargetPending = true,
                     ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -220,8 +208,6 @@ class SceneAodOutgoingBoundaryTest {
                         fullAodVisualBoundary = true,
                     ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -251,8 +237,6 @@ class SceneAodOutgoingBoundaryTest {
                         fullAodVisualBoundary = true,
                     ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -284,8 +268,6 @@ class SceneAodOutgoingBoundaryTest {
                         fullAodTargetPending = true,
                     ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -314,8 +296,6 @@ class SceneAodOutgoingBoundaryTest {
                         fullAodVisualBoundary = true,
                     ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )

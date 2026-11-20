@@ -3227,7 +3227,6 @@ class GyModule : XposedModule() {
                         (aodWindow as? AodWindow.Waiting)?.toLockScreen == true &&
                             SysUiPresentationOwner.aodClaimed(resolved),
                 ),
-
                 home = ScenePolicy.AodHomeEvidence(
                     homeAodTransitionOrigin = homeAodOriginPending,
                     homeAodTargetPrearm = homeAodTargetPrearmPending,

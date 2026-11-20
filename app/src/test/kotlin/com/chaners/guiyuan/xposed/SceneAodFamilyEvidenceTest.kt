@@ -26,11 +26,7 @@ class SceneAodFamilyEvidenceTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 1f,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -126,11 +122,7 @@ class SceneAodFamilyEvidenceTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = null,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -152,11 +144,7 @@ class SceneAodFamilyEvidenceTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 1f,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -178,11 +166,7 @@ class SceneAodFamilyEvidenceTest {
                     signal = ScenePolicy.AodNativeSignalEvidence(
                         keyguardStatusIconsAlpha = 0f,
                     ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
@@ -207,13 +191,7 @@ class SceneAodFamilyEvidenceTest {
                             ScenePolicy.StableKeyguardAodScene.AOD,
                         homePresentationOwned = true,
                     ),
-                    signal = ScenePolicy.AodNativeSignalEvidence(
-                    ),
-                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
-                    ),
 
-                    home = ScenePolicy.AodHomeEvidence(
-                    ),
                 ),
             ),
         )
