@@ -36,6 +36,7 @@ import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
 import com.chaners.guiyuan.settings.limitCustomSchemeName
+import com.chaners.guiyuan.settings.opaqueArgb
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HsvHueSlider
@@ -77,7 +78,7 @@ internal fun BatteryCustomModeEditor(
     val seed = batteryColorEditorSeed(entry, slot)
 
     var editingColor by remember(custom.id, slot, entry.source, seed) {
-        mutableStateOf(seed?.or(0xFF000000.toInt()))
+        mutableStateOf(seed?.opaqueArgb())
     }
     var selectedHue by remember(custom.id, slot) {
         mutableFloatStateOf(
@@ -111,7 +112,7 @@ internal fun BatteryCustomModeEditor(
     }
 
     fun showColor(color: Int, hue: Float? = null) {
-        val opaque = color or 0xFF000000.toInt()
+        val opaque = color.opaqueArgb()
         editingColor = opaque
         val chosenHsv = Color(opaque).toHsv()
         if (chosenHsv.v > 0.01f) selectedSaturation = chosenHsv.s
@@ -130,7 +131,7 @@ internal fun BatteryCustomModeEditor(
     fun applyColor(color: Int, hue: Float? = null) {
         showColor(color, hue)
         // The repository remains the single writer; choosing a color switches the slot to CUSTOM.
-        onColorChange(color or 0xFF000000.toInt())
+        onColorChange(color.opaqueArgb())
     }
 
     val hsv = editingColor?.let { Color(it).toHsv() }
