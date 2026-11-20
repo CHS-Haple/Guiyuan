@@ -481,8 +481,26 @@ fun GlassTopAppBar(
                     ),
             )
         }
-        CompositionLocalProvider(
-            LocalGlassTopAppBarContext provides GlassTopAppBarContext(
+        val consumerChangeCallback = if (progressiveBackdrop != null) onButtonBackdropConsumerChange else null
+        val topBarContext = remember(
+            rawBackdrop,
+            buttonBackdrop,
+            resolvedMaterial,
+            underlayMaterial,
+            buttonUnderlay,
+            contentScrolled,
+            alpha,
+            materialProgress,
+            keepMaterial,
+            style,
+            buttonSize,
+            buttonShape,
+            fill,
+            stroke,
+            buttonShadow,
+            consumerChangeCallback,
+        ) {
+            GlassTopAppBarContext(
                 backdrop = rawBackdrop,
                 buttonBackdrop = buttonBackdrop,
                 material = resolvedMaterial,
@@ -498,8 +516,11 @@ fun GlassTopAppBar(
                 fill = fill,
                 stroke = stroke,
                 shadow = buttonShadow,
-                onButtonBackdropConsumerChange = if (progressiveBackdrop != null) onButtonBackdropConsumerChange else null,
-            ),
+                onButtonBackdropConsumerChange = consumerChangeCallback,
+            )
+        }
+        CompositionLocalProvider(
+            LocalGlassTopAppBarContext provides topBarContext,
         ) {
             // The published/native API keeps its legacy clip; PR423 provides native title blur.
             UiNativeTitleBar(
