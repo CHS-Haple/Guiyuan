@@ -3,11 +3,6 @@ package com.chaners.guiyuan.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,7 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -29,12 +23,7 @@ import com.chaners.guiyuan.settings.ConfigBackup
 import com.chaners.guiyuan.settings.ConfigBackupFiles
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualRepo
-import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
-import com.chaners.guiyuan.ui.components.UiDialogButton
-import com.chaners.guiyuan.ui.components.dialogActionGap
-import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
-import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import kotlinx.coroutines.launch
 
 @Composable
@@ -139,113 +128,61 @@ internal fun FeaturesScreen(
         searchInNavigationBar = searchInNavigationBar,
         overlay = {
             val selectedImport = pendingImport
-            UiOverlayDialog(
-                title = stringResource(R.string.config_restore_title),
-                summary = stringResource(R.string.config_restore_confirm),
+            FeaturesConfirmationDialog(
                 show = selectedImport != null,
-                onDismissRequest = { if (!ioBusy) pendingImport = null },
-            ) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    UiDialogButton(
-                        text = stringResource(R.string.cancel),
-                        modifier = Modifier.weight(1f),
-                        enabled = !ioBusy,
-                        onClick = { pendingImport = null },
-                    )
-                    Spacer(Modifier.width(dialogActionGap()))
-                    UiDialogButton(
-                        text = stringResource(R.string.restore),
-                        modifier = Modifier.weight(1f),
-                        enabled = !ioBusy,
-                        role = GlassDialogButtonRole.Primary,
-                        onClick = {
-                            val selected = selectedImport
-                            if (selected != null && !ioBusy) {
-                                ioBusy = true
-                                scope.launch {
-                                    val result = runCatching { backupFiles.restore(selected) }
-                                    pendingImport = null
-                                    ioBusy = false
-                                    snackbarState.showSnackbar(
-                                        if (result.getOrNull() == true) restoredMsg
-                                        else restoreError,
-                                    )
-                                }
-                            }
-                        },
-                    )
-                }
-            }
+                titleRes = R.string.config_restore_title,
+                summaryRes = R.string.config_restore_confirm,
+                busy = ioBusy,
+                onDismiss = { pendingImport = null },
+                onConfirm = {
+                    if (selectedImport != null && !ioBusy) {
+                        ioBusy = true
+                        scope.launch {
+                            val result = runCatching { backupFiles.restore(selectedImport) }
+                            pendingImport = null
+                            ioBusy = false
+                            snackbarState.showSnackbar(
+                                if (result.getOrNull() == true) restoredMsg else restoreError,
+                            )
+                        }
+                    }
+                },
+            )
             BatteryColorBottomSheet(
                 show = showBatteryColorSheet,
                 library = schemeLibrary,
                 repository = schemeRepo,
-                onDismiss = {
-                    showBatteryColorSheet = false
-                },
+                onDismiss = { showBatteryColorSheet = false },
             )
-            IntegerInputDialog(
-                show = showWeightDialog && mobileWeight.verifiedRange != null,
-                title = stringResource(R.string.mobile_type_weight),
-                summary = mobileWeight.rangeText.orEmpty(),
-                value = visual.mobileTypeWeight.coerceIn(
-                    mobileWeight.valueRange.start.roundToInt(),
-                    mobileWeight.valueRange.endInclusive.roundToInt(),
+            FeaturesWeightDialog(
+                show = showWeightDialog,
+                model = FeaturesWeightDialogModel(
+                    R.string.mobile_type_weight, mobileWeight, visual.mobileTypeWeight, 200..1000,
                 ),
-                range = mobileWeight.verifiedRange ?: 200..1000,
                 onDismiss = { showWeightDialog = false },
-                onConfirm = { value ->
-                    showWeightDialog = false
-                    mobileWeight.verifiedRange?.let { range ->
-                        visualRepo.setMobileTypeWeight(value.coerceIn(range))
-                    }
-                },
+                onConfirmed = visualRepo::setMobileTypeWeight,
             )
-            IntegerInputDialog(
-                show = showBatteryWeightDialog && batteryWeight.verifiedRange != null,
-                title = stringResource(R.string.battery_top_text_weight),
-                summary = batteryWeight.rangeText.orEmpty(),
-                value = visual.topTextWeight.coerceIn(
-                    batteryWeight.valueRange.start.roundToInt(),
-                    batteryWeight.valueRange.endInclusive.roundToInt(),
+            FeaturesWeightDialog(
+                show = showBatteryWeightDialog,
+                model = FeaturesWeightDialogModel(
+                    R.string.battery_top_text_weight, batteryWeight, visual.topTextWeight,
+                    BATTERY_TOP_TEXT_WEIGHT_MIN..BATTERY_TOP_TEXT_WEIGHT_MAX,
                 ),
-                range = batteryWeight.verifiedRange ?: BATTERY_TOP_TEXT_WEIGHT_MIN..BATTERY_TOP_TEXT_WEIGHT_MAX,
                 onDismiss = { showBatteryWeightDialog = false },
-                onConfirm = { value ->
-                    showBatteryWeightDialog = false
-                    batteryWeight.verifiedRange?.let { range ->
-                        visualRepo.setTopTextWeight(value.coerceIn(range))
-                    }
+                onConfirmed = visualRepo::setTopTextWeight,
+            )
+            FeaturesConfirmationDialog(
+                show = showResetDialog,
+                titleRes = R.string.restore_feature_defaults,
+                summaryRes = R.string.restore_feature_defaults_dialog_summary,
+                busy = false,
+                onDismiss = { showResetDialog = false },
+                onConfirm = {
+                    showResetDialog = false
+                    featureRepo.reset()
+                    visualRepo.resetToDefaults()
                 },
             )
-            UiOverlayDialog(
-                title = stringResource(R.string.restore_feature_defaults),
-                summary = stringResource(R.string.restore_feature_defaults_dialog_summary),
-                show = showResetDialog,
-                onDismissRequest = { showResetDialog = false },
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    UiDialogButton(
-                        text = stringResource(R.string.cancel),
-                        modifier = Modifier.weight(1f),
-                        onClick = { showResetDialog = false },
-                    )
-                    Spacer(Modifier.width(dialogActionGap()))
-                    UiDialogButton(
-                        text = stringResource(R.string.restore),
-                        modifier = Modifier.weight(1f),
-                        role = GlassDialogButtonRole.Primary,
-                        onClick = {
-                            showResetDialog = false
-                            featureRepo.reset()
-                            visualRepo.resetToDefaults()
-                        },
-                    )
-                }
-            }
         },
     ) {
         featureScreenSections(
