@@ -56,6 +56,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorProducer
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
@@ -452,11 +454,12 @@ fun GlassNavigationBar(
                 items.forEachIndexed { position, item ->
                     key(item) {
                         val selected = position == index
-                        val tint by animateColorAsState(
+                        val tintState = animateColorAsState(
                             targetValue = if (selected) selectedColor else unselectedColor,
                             animationSpec = GlassMotion.navContent(),
                             label = "glassNavigationTint",
                         )
+                        val tintProducer = remember { ColorProducer { tintState.value } }
                         val pressAlpha = animateFloatAsState(
                             targetValue = if (position == pressedIndex) {
                                 GlassNavigationBarDefaults.PressedAlpha
@@ -513,17 +516,17 @@ fun GlassNavigationBar(
                             ) {
                                 BadgedBox(badge = { item.badge?.invoke() }) {
                                     Icon(
-                                        imageVector = item.icon,
+                                        painter = rememberVectorPainter(item.icon),
                                         contentDescription = null,
                                         modifier = Modifier.size(GlassNavigationBarDefaults.IconSize),
-                                        tint = tint,
+                                        tint = tintProducer,
                                     )
                                 }
                                 item.label?.let { label ->
                                     Text(
                                         text = label,
                                         style = MiuixTheme.textStyles.footnote2.copy(fontSize = labelSize),
-                                        color = tint,
+                                        color = tintProducer,
                                         textAlign = TextAlign.Center,
                                         maxLines = 2,
                                         overflow = TextOverflow.Ellipsis,
