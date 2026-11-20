@@ -94,7 +94,7 @@ internal object ConfigBackupFormat {
         val root = json.parseToJsonElement(contents).jsonObject
         val schema = root["schemaVersion"]?.jsonPrimitive?.intOrNull
         require(schema == SCHEMA) { "Unsupported schemaVersion: " + schema }
-        val compatibleRoot = upgradeLegacyDualAndIdleSettings(upgradeLegacySingleRowStyle(root))
+        val compatibleRoot = upgradeLegacyProfiles(root)
         requireCanonicalTypes(compatibleRoot, ConfigBackup.serializer().descriptor)
         // Only released 1.0.0 two-layout backups are upgraded. Other
         // profile counts are invalid, never silently filled or truncated.
@@ -122,14 +122,24 @@ internal object ConfigBackupFormat {
         return normalizeImported(upgraded).also(::validate)
     }
 
-    // Missing dual-dot style in older archives meant curved, not the new default.
-    // The retired idle-show preference cannot be interpreted as an opt-in hide.
-    private fun upgradeLegacyDualAndIdleSettings(root: JsonObject): JsonObject {
+    // Preserve the released migration order: single-row booleans depend on the
+    // original dual-dot style before any missing dual styles receive defaults.
+    private fun upgradeLegacyProfiles(root: JsonObject): JsonObject {
         val visual = root[VISUAL_JSON_KEY] as? JsonObject ?: return root
         val profiles = visual[PROFILES_JSON_KEY] as? JsonArray ?: return root
-        if (profiles.none { it is JsonObject &&
-                (DUAL_DOT_STYLE_JSON_KEY !in it || LEGACY_IDLE_ACTIVITY_JSON_KEY in it) }) return root
-        val upgraded = profiles.map(::upgradeLegacyDualProfile)
+        val hasOldSingleRow = profiles.any {
+            it is JsonObject && LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY in it
+        }
+        val hasOldDualOrIdle = profiles.any {
+            it is JsonObject &&
+                (DUAL_DOT_STYLE_JSON_KEY !in it || LEGACY_IDLE_ACTIVITY_JSON_KEY in it)
+        }
+        if (!hasOldSingleRow && !hasOldDualOrIdle) return root
+        val singleRowUpgraded =
+            if (hasOldSingleRow) profiles.map(::upgradeLegacySingleRowProfile) else profiles
+        val upgraded =
+            if (hasOldDualOrIdle) singleRowUpgraded.map(::upgradeLegacyDualProfile)
+            else singleRowUpgraded
         return JsonObject(root + (VISUAL_JSON_KEY to JsonObject(visual +
             (PROFILES_JSON_KEY to JsonArray(upgraded)))))
     }
@@ -153,31 +163,22 @@ internal object ConfigBackupFormat {
             else fields + (DUAL_DOT_STYLE_JSON_KEY to JsonPrimitive("DEFAULT")))
     }
 
-    // Retire the old boolean without changing the V1 backup schema or
-    // accepting conflicting new and legacy representations.
-    private fun upgradeLegacySingleRowStyle(root: JsonObject): JsonObject {
-        val visual = root[VISUAL_JSON_KEY] as? JsonObject ?: return root
-        val profiles = visual[PROFILES_JSON_KEY] as? JsonArray ?: return root
-        if (profiles.none { it is JsonObject && LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY in it }) return root
-        val converted = profiles.map { profile ->
-            if (profile is JsonObject && LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY in profile) {
-                require(SINGLE_ROW_DOT_STYLE_JSON_KEY !in profile) {
-                    "Conflicting single-row styles"
-                }
-                val old = profile[LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY] as? JsonPrimitive
-                require(old != null && !old.isString && old.booleanOrNull != null) {
-                    "Invalid legacy single-row style"
-                }
-                val horizontal = old.booleanOrNull == true &&
-                    (profile[DUAL_DOT_STYLE_JSON_KEY] as? JsonPrimitive)?.content == "DUO"
-                JsonObject(profile.filterKeys { it != LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY } +
-                    (SINGLE_ROW_DOT_STYLE_JSON_KEY to JsonPrimitive(if (horizontal) "DUO" else "DEFAULT")))
-            } else {
-                profile
-            }
+    // Drop retired single-row booleans without accepting conflicts or changing wire types.
+    private fun upgradeLegacySingleRowProfile(profile: JsonElement): JsonElement {
+        if (profile !is JsonObject || LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY !in profile) {
+            return profile
         }
-        return JsonObject(root + (VISUAL_JSON_KEY to JsonObject(visual +
-            (PROFILES_JSON_KEY to JsonArray(converted)))))
+        require(SINGLE_ROW_DOT_STYLE_JSON_KEY !in profile) {
+            "Conflicting single-row styles"
+        }
+        val old = profile[LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY] as? JsonPrimitive
+        require(old != null && !old.isString && old.booleanOrNull != null) {
+            "Invalid legacy single-row style"
+        }
+        val horizontal = old.booleanOrNull == true &&
+            (profile[DUAL_DOT_STYLE_JSON_KEY] as? JsonPrimitive)?.content == "DUO"
+        return JsonObject(profile.filterKeys { it != LEGACY_SINGLE_ROW_FLAT_DOTS_JSON_KEY } +
+            (SINGLE_ROW_DOT_STYLE_JSON_KEY to JsonPrimitive(if (horizontal) "DUO" else "DEFAULT")))
     }
 
     // Preserve wire types: kotlinx serialization may otherwise accept quoted

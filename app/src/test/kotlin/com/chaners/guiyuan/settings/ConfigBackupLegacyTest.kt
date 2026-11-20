@@ -7,6 +7,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ConfigBackupLegacyTest {
+    private fun horizontalDotsBackup(): ConfigBackup =
+        sampleBackup().let { backup ->
+            backup.copy(visual = backup.visual.copy(profiles = backup.visual.profiles.map { profile ->
+                profile.copy(
+                    dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+                    singleRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+                )
+            }))
+        }
+
     @Test fun rejectsConflictingModeWideValues() {
         val source = sampleBackup()
         val first = source.visual.profiles.first()
@@ -71,14 +81,7 @@ class ConfigBackupLegacyTest {
     }
 
     @Test fun legacySingleRowBooleanBackupsUpgradeExactlyAndRejectConflicts() {
-        val original = sampleBackup().let { backup ->
-            backup.copy(visual = backup.visual.copy(profiles = backup.visual.profiles.map { profile ->
-                profile.copy(
-                    dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
-                    singleRowDotArrangement = SignalDotArrangement.HORIZONTAL,
-                )
-            }))
-        }
+        val original = horizontalDotsBackup()
         val encoded = ConfigBackupFormat.encode(original)
         val releasedStyle = "\"singleRowDotStyle\":\"DUO\""
         val oldStyle = "\"singleRowFlatDots\":true"
@@ -91,6 +94,29 @@ class ConfigBackupLegacyTest {
         assertEquals(SignalDotArrangement.CURVED, ConfigBackupFormat.decode(curved).visual.profiles.first().singleRowDotArrangement)
         val invalid = old.replaceFirst(oldStyle, "\"singleRowFlatDots\":\"true\"")
         assertThrows(IllegalArgumentException::class.java) { ConfigBackupFormat.decode(invalid) }
+    }
+
+    @Test fun combinedLegacyFieldsKeepMigrationOrderAndModeNormalization() {
+        val source = horizontalDotsBackup().let { backup ->
+            backup.copy(visual = backup.visual.copy(dualEnabled = false))
+        }
+        val old = ConfigBackupFormat.encode(source)
+            .replace("\"singleRowDotStyle\":\"DUO\"", "\"singleRowFlatDots\":true")
+            .replaceFirst("\"dualDotStyle\":\"DUO\",", "")
+            .replaceFirst("\"leftRightHideIdleActivity\":false", "\"leftRightShowIdleActivity\":true")
+        val restored = ConfigBackupFormat.decode(old)
+        assertEquals(SignalDotArrangement.CURVED, restored.visual.profiles.first().dualRowDotArrangement)
+        assertTrue(restored.visual.profiles.drop(1).all {
+            it.dualRowDotArrangement == SignalDotArrangement.HORIZONTAL
+        })
+        // The active single-row mode is propagated to its corresponding layout profiles.
+        assertTrue(restored.visual.profiles.filter {
+            it.layout == ContentLayout.NETWORK_CENTER
+        }.all { it.singleRowDotArrangement == SignalDotArrangement.CURVED })
+        assertTrue(restored.visual.profiles.filter {
+            it.layout != ContentLayout.NETWORK_CENTER
+        }.all { it.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL })
+        assertFalse(restored.visual.profiles.first().bothSidesHideIdleActivity)
     }
 
     @Test fun legacyArchivesDefaultToOriginalDotStyle() {
