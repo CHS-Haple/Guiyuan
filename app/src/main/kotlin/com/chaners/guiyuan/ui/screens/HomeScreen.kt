@@ -25,7 +25,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -42,7 +41,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -51,21 +49,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
-import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
-import com.chaners.guiyuan.ui.LocalGlassRailProgress
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.settings.FeatureCfg
-import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualCfg
-import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.PreviewSummary
-import com.chaners.guiyuan.ui.components.HotReloadAction
-import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
@@ -78,12 +69,17 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import com.chaners.guiyuan.ui.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+private data class HomeScreenContents(
+    val layout: HomeScreenLayout,
+    val runtime: HomeScreenRuntime,
+    val actions: HomeScreenActions,
+    val sources: HomeScreenSources,
+)
 
 @Composable
 internal fun HomeScreen(
@@ -91,153 +87,103 @@ internal fun HomeScreen(
     runtime: HomeScreenRuntime,
     actions: HomeScreenActions,
 ) {
-    val (bottomContentPadding, previewState) = layout
-    val (hotReloadInProgress, restartInProgress, scopeRequestInProgress, hotReloadInNavigation) = runtime
-    val (onRestart, onRequestScope, onHotReload, onOpenPreviewSandbox) = actions
-    val context = LocalContext.current
-    val application =
-        remember(context.applicationContext) {
-            context.applicationContext as GyApplication
-        }
-    val featureRepository =
-        remember(context.applicationContext) {
-            FeatureRepo(context.applicationContext)
-        }
-    val featureSettings =
-        featureRepository.settings.collectAsState(
-            initial = featureRepository.current(),
-        )
-    val visualRepo =
-        remember(context.applicationContext) {
-            VisualRepo(context.applicationContext)
-        }
-    val visual by
-        visualRepo.settings.collectAsState(
-            initial = visualRepo.current(),
-        )
-    val xposedStatus =
-        application.xposedStatus.collectAsState()
-    val previewResources =
-        remember(context.applicationContext) {
-            PreviewSysUiResources(context.applicationContext)
-        }
-
+    val sources = rememberHomeScreenSources()
     val listState = rememberLazyListState()
-    val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
-    val topBarBackdrop = rememberTopBarBackdrop()
-
-    val os4 = LocalUiStyle.current == UiStyle.OS4
-    val glassOverscroll = os4 && canScroll
-    val onOverscrollChanged: (Float) -> Unit = remember(scrollBehavior) {
-        { offset -> scrollBehavior.state.overscrollOffset = offset }
-    }
-    val actions: @Composable RowScope.() -> Unit = {
-        if (!hotReloadInNavigation) {
-            HotReloadAction(
-                inProgress = hotReloadInProgress,
-                enabled = !restartInProgress && !scopeRequestInProgress,
-                onClick = onHotReload,
+    val backdrop = rememberTopBarBackdrop()
+    val frame = HomeScreenFrame(listState, scrollBehavior, backdrop)
+    CompositionLocalProvider(LocalGlassBackdrop provides backdrop) {
+        Scaffold(
+            topBar = { HomeScreenTopBar(runtime, actions, frame) },
+        ) { padding ->
+            HomeScreenScrollingContent(
+                HomeScreenContents(layout, runtime, actions, sources), frame, padding,
             )
         }
     }
+}
 
-    CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
-    Scaffold(
-        topBar = {
-            if (os4) {
-                GlassTopAppBar(
-                    progressiveBlur = LocalTopBarProgressiveBlur.current,
-                    isContentScrolled = listState.canScrollBackward,
-                    title = stringResource(R.string.home_title),
-                    titleAlpha = LocalGlassRailProgress.current,
-                    backdrop = topBarBackdrop,
-                    scrollBehavior = scrollBehavior,
-                    actions = actions,
-                    unclippedActions = true,
-                )
-            } else {
-                MiuixBlurredTopBar(
-                    backdrop = topBarBackdrop,
-                    scrollBehavior = scrollBehavior,
-                ) { barColor ->
-                    TopAppBar(
-                        title = stringResource(R.string.home_title),
-                        color = barColor,
-                        actions = actions,
-                        scrollBehavior = scrollBehavior,
-                    )
-                }
-            }
-        },
-    ) { paddingValues ->
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .topBarBackdropSource(topBarBackdrop),
+@Composable
+private fun HomeScreenScrollingContent(
+    contents: HomeScreenContents,
+    frame: HomeScreenFrame,
+    padding: PaddingValues,
+) {
+    val canScroll = frame.listState.canScrollBackward || frame.listState.canScrollForward
+    val glassOverscroll = LocalUiStyle.current == UiStyle.OS4 && canScroll
+    val onOverscrollChanged: (Float) -> Unit = remember(frame.scrollBehavior) {
+        { offset -> frame.scrollBehavior.state.overscrollOffset = offset }
+    }
+    Box(Modifier.fillMaxSize().topBarBackdropSource(frame.backdrop)) {
+        LazyColumn(
+            state = frame.listState,
+            overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect(),
+            modifier = Modifier
+                .fillMaxSize()
+                .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
+                .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
+                .nestedScroll(frame.scrollBehavior.nestedScrollConnection),
+            contentPadding = pageContentPadding(
+                innerPadding = padding,
+                outerBottomPadding = contents.layout.bottomContentPadding,
+                extraBottom = 12.dp,
+            ),
         ) {
-            LazyColumn(
-                state = listState,
-                overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect(),
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
-                        .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding =
-                    pageContentPadding(
-                        innerPadding = paddingValues,
-                        outerBottomPadding = bottomContentPadding,
-                        extraBottom = 12.dp,
-                    ),
-            ) {
-                item {
-                    // Observe runtime readiness inside this LazyColumn item, not the full page.
-                    val enabled = featureSettings.value.enabled
-                    val runtimeCardState =
-                        resolveHomeRuntimeCardState(
-                            enabled = enabled,
-                            runtimeStatus = xposedStatus.value,
-                            hotReloadInProgress = hotReloadInProgress,
-                            restartInProgress = restartInProgress,
-                            scopeRequestInProgress = scopeRequestInProgress,
-                        )
-                    // Keep native Tilt on the Card, independent of runtime content.
-                    Card(
-                        modifier = Modifier
-                            .padding(horizontal = 12.dp)
-                            .padding(top = 8.dp, bottom = 24.dp),
-                        pressFeedbackType = PressFeedbackType.Tilt,
-                    ) {
-                        HomeRuntimeCardBody(
-                            state = runtimeCardState,
-                            enabled = enabled,
-                            onRestart = onRestart,
-                            onRequestScope = onRequestScope,
-                            onEnabledChange = featureRepository::setEnabled,
-                        )
-                    }
-                }
-
-                item {
-                    HomePreviewSandboxCard(
-                        state = previewState,
-                        resources = previewResources,
-                        visual = visual,
-                        featureSettings = featureSettings,
-                        onOpen = onOpenPreviewSandbox,
-                        modifier =
-                            Modifier
-                                .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
-                    )
-                }
-            }
+            homeScreenCards(contents)
         }
     }
+}
+
+private fun androidx.compose.foundation.lazy.LazyListScope.homeScreenCards(
+    contents: HomeScreenContents,
+) {
+    item { HomeRuntimeCardEntry(contents.runtime, contents.actions, contents.sources) }
+    item { HomePreviewCardEntry(contents.layout, contents.actions, contents.sources) }
+}
+
+@Composable
+private fun HomeRuntimeCardEntry(
+    runtime: HomeScreenRuntime,
+    actions: HomeScreenActions,
+    sources: HomeScreenSources,
+) {
+    // Keep runtime readiness observed by this list item, not by the full page.
+    val enabled = sources.featureSettings.value.enabled
+    val state = resolveHomeRuntimeCardState(
+        enabled = enabled,
+        runtimeStatus = sources.xposedStatus.value,
+        hotReloadInProgress = runtime.hotReloadInProgress,
+        restartInProgress = runtime.restartInProgress,
+        scopeRequestInProgress = runtime.scopeRequestInProgress,
+    )
+    Card(
+        modifier = Modifier.padding(horizontal = 12.dp).padding(top = 8.dp, bottom = 24.dp),
+        pressFeedbackType = PressFeedbackType.Tilt,
+    ) {
+        HomeRuntimeCardBody(
+            state = state,
+            enabled = enabled,
+            onRestart = actions.onRestart,
+            onRequestScope = actions.onRequestScope,
+            onEnabledChange = sources.featureRepository::setEnabled,
+        )
     }
+}
+
+@Composable
+private fun HomePreviewCardEntry(
+    layout: HomeScreenLayout,
+    actions: HomeScreenActions,
+    sources: HomeScreenSources,
+) {
+    HomePreviewSandboxCard(
+        state = layout.previewState,
+        resources = sources.previewResources,
+        visual = sources.visual.value,
+        featureSettings = sources.featureSettings,
+        onOpen = actions.onOpenPreviewSandbox,
+        modifier = Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp),
+    )
 }
 
 @Composable
