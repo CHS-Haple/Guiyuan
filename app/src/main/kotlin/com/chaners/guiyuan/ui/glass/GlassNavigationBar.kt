@@ -35,6 +35,8 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import com.chaners.guiyuan.ui.components.navTouchExtension
+import com.chaners.guiyuan.ui.components.NavTouchStripGeometry
+import com.chaners.guiyuan.ui.components.NavTouchTrailingAction
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
@@ -271,21 +273,25 @@ fun GlassNavigationBar(
                     (trailingAction == null || trailingActionTouchExclusion > 0.dp)
                 ) {
                     Modifier.navTouchExtension(
-                        bottomPadding = bottomPadding,
-                        horizontalPadding = 0.dp,
-                        contentPadding = GlassNavigationBarDefaults.ContentPaddingHorizontal,
-                        itemCount = items.size,
-                        rtl = layoutDirection == LayoutDirection.Rtl,
+                        geometry = NavTouchStripGeometry(
+                            bottomPadding = bottomPadding,
+                            horizontalPadding = 0.dp,
+                            contentPadding = GlassNavigationBarDefaults.ContentPaddingHorizontal,
+                            itemCount = items.size,
+                            rtl = layoutDirection == LayoutDirection.Rtl,
+                        ),
                         onSelect = onSelect,
-                        trailingActionWidth = if (trailingAction != null) {
-                            trailingActionTouchExclusion
-                        } else 0.dp,
-                        trailingActionSize = if (trailingAction != null) {
-                            trailingActionTouchSize
-                        } else 0.dp,
-                        onTrailingAction = if (trailingAction != null) {
-                            onTrailingActionTouch
-                        } else null,
+                        trailing = NavTouchTrailingAction(
+                            width = if (trailingAction != null) {
+                                trailingActionTouchExclusion
+                            } else 0.dp,
+                            size = if (trailingAction != null) {
+                                trailingActionTouchSize
+                            } else 0.dp,
+                            onTap = if (trailingAction != null) {
+                                onTrailingActionTouch
+                            } else null,
+                        ),
                     )
                 } else {
                     Modifier

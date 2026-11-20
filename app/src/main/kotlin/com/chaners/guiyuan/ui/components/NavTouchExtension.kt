@@ -31,7 +31,6 @@ private fun bottomSystemGestureInset(): Dp =
     )
 
 // The existing empty bottom margin is hit-test space; the bar and system gestures keep their geometry.
-@Composable
 internal data class NavTouchStripGeometry(
     val bottomPadding: Dp,
     val horizontalPadding: Dp,
