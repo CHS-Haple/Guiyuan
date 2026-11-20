@@ -91,6 +91,9 @@ import com.chaners.guiyuan.ui.screens.FeaturesScreen
 import com.chaners.guiyuan.ui.screens.PageSearch
 import com.chaners.guiyuan.ui.screens.rememberPageSearch
 import com.chaners.guiyuan.ui.screens.HomeScreen
+import com.chaners.guiyuan.ui.screens.HomeScreenLayout
+import com.chaners.guiyuan.ui.screens.HomeScreenRuntime
+import com.chaners.guiyuan.ui.screens.HomeScreenActions
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
 import com.chaners.guiyuan.ui.screens.SettingsHubSnapshot
@@ -936,16 +939,19 @@ private fun TopLevelPagerContent(
     val settings = bindings.settingsActions
     when (page) {
         0 -> HomeScreen(
-            bottomContentPadding = bottom,
-            hotReloadInProgress = runtime.hotReloadInProgress,
-            restartInProgress = runtime.restartInProgress,
-            scopeRequestInProgress = runtime.scopeRequestInProgress,
-            onRestart = actions.restart,
-            onRequestScope = actions.requestScope,
-            previewState = user.preview,
-            onHotReload = actions.hotReload,
-            hotReloadInNavigation = runtime.hotReloadInNavigation,
-            onOpenPreviewSandbox = { settings.navigate(AppRoute.PreviewSandbox) },
+            layout = HomeScreenLayout(bottomContentPadding = bottom, previewState = user.preview),
+            runtime = HomeScreenRuntime(
+                hotReloadInProgress = runtime.hotReloadInProgress,
+                restartInProgress = runtime.restartInProgress,
+                scopeRequestInProgress = runtime.scopeRequestInProgress,
+                hotReloadInNavigation = runtime.hotReloadInNavigation,
+            ),
+            actions = HomeScreenActions(
+                onRestart = actions.restart,
+                onRequestScope = actions.requestScope,
+                onHotReload = actions.hotReload,
+                onOpenPreviewSandbox = { settings.navigate(AppRoute.PreviewSandbox) },
+            ),
         )
         1 -> FeaturesScreen(
             bottomContentPadding = bottom,
