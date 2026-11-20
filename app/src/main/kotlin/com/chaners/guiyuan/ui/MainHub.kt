@@ -690,42 +690,53 @@ internal fun MainHub(
             ) {
             CompositionLocalProvider(LocalGlassRailProgress provides railProgress) {
             TopLevelPager(
-                pagerState = pagerState,
-                bottomPadding = innerPadding,
-                featureSnackbarState = featureSnackbarState,
-                selectedPage = pageSelection.selectedPage,
-                featureSearch = featureSearch,
-                searchInNavigationBar = navigationActionSlot,
-                lang = lang,
-                iconHidden = iconHidden,
-                swipeBackEnabled = appearance.swipeBack,
-                hotReloadInProgress = hotReloadInProgress,
-                restartInProgress = restartInProgress,
-                scopeRequestInProgress = scopeRequestInProgress || scopeBusy,
-                onRestart = onRestart,
-                onRequestScope = {
-                    if (!scopeRequestInProgress && !restartInProgress && !hotReloadInProgress &&
-                        !scopeBusy
-                    ) {
-                        scopeRequestInProgress = true
-                        val accepted =
-                            (context.applicationContext as? GyApplication)?.requestSysUiScope { granted ->
-                                scopeRequestInProgress = false
-                                if (!granted) scopeRequestFailed = true
-                            } ?: false
-                        if (!accepted) {
-                            scopeRequestInProgress = false
-                            scopeRequestFailed = true
-                        }
-                    }
-                },
-                onHotReload = requestHotReload,
-                hotReloadInNavigation = navigationActionSlot,
-                onLangChange = onLangChange,
-                onIconHiddenChange = onIconHiddenChange,
-                onSwipeBackChange = onSwipeBackChange,
-                previewState = previewState,
-                onNavigate = onNavigate,
+                bindings = TopLevelPagerBindings(
+                    scope = TopLevelPagerScope(
+                        pagerState = pagerState,
+                        bottomPadding = innerPadding,
+                        snackbar = featureSnackbarState,
+                        selectedPage = pageSelection.selectedPage,
+                        search = TopLevelPageSearch(featureSearch, navigationActionSlot),
+                    ),
+                    user = TopLevelPagerUser(
+                        lang = lang,
+                        iconHidden = iconHidden,
+                        swipeBackEnabled = appearance.swipeBack,
+                        preview = previewState,
+                    ),
+                    runtime = TopLevelPagerRuntime(
+                        hotReloadInProgress = hotReloadInProgress,
+                        restartInProgress = restartInProgress,
+                        scopeRequestInProgress = scopeRequestInProgress || scopeBusy,
+                        hotReloadInNavigation = navigationActionSlot,
+                    ),
+                    runtimeActions = TopLevelPagerRuntimeActions(
+                        restart = onRestart,
+                        requestScope = {
+                            if (!scopeRequestInProgress && !restartInProgress && !hotReloadInProgress &&
+                                !scopeBusy
+                            ) {
+                                scopeRequestInProgress = true
+                                val accepted =
+                                    (context.applicationContext as? GyApplication)?.requestSysUiScope { granted ->
+                                        scopeRequestInProgress = false
+                                        if (!granted) scopeRequestFailed = true
+                                    } ?: false
+                                if (!accepted) {
+                                    scopeRequestInProgress = false
+                                    scopeRequestFailed = true
+                                }
+                            }
+                        },
+                        hotReload = requestHotReload,
+                    ),
+                    settingsActions = TopLevelPagerSettingsActions(
+                        changeLang = onLangChange,
+                        changeIconHidden = onIconHiddenChange,
+                        changeSwipeBack = onSwipeBackChange,
+                        navigate = onNavigate,
+                    ),
+                ),
             )
             }
             }
@@ -893,85 +904,78 @@ private fun TopLevelBackHandler(
 }
 
 @Composable
-private fun TopLevelPager(
-    pagerState: PagerState,
-    bottomPadding: PaddingValues,
-    featureSnackbarState: SnackbarHostState,
-    selectedPage: Int,
-    featureSearch: PageSearch,
-    searchInNavigationBar: Boolean,
-    lang: AppLang,
-    iconHidden: Boolean,
-    swipeBackEnabled: Boolean,
-    hotReloadInProgress: Boolean,
-    restartInProgress: Boolean,
-    scopeRequestInProgress: Boolean,
-    onRestart: () -> Unit,
-    onRequestScope: () -> Unit,
-    onHotReload: () -> Unit,
-    hotReloadInNavigation: Boolean,
-    onLangChange: (AppLang) -> Unit,
-    onIconHiddenChange: (Boolean) -> Unit,
-    onSwipeBackChange: (Boolean) -> Unit,
-    previewState: PreviewSandboxUiState,
-    onNavigate: (AppRoute) -> Unit,
-) {
+private fun TopLevelPager(bindings: TopLevelPagerBindings) {
+    val pagerState = bindings.scope.pagerState
     val flingBehavior = PagerDefaults.flingBehavior(
         state = pagerState,
         snapAnimationSpec = PagerNavigationSpringSpec,
     )
-
     HorizontalPager(
         state = pagerState,
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .pagerGestureOverride(
-                    pagerState = pagerState,
-                    flingBehavior = flingBehavior,
-                ),
+        modifier = Modifier.fillMaxSize().pagerGestureOverride(
+            pagerState = pagerState,
+            flingBehavior = flingBehavior,
+        ),
         verticalAlignment = Alignment.Top,
         userScrollEnabled = false,
         flingBehavior = flingBehavior,
         pageNestedScrollConnection = PagerGestureNestedScrollConnection,
     ) { page ->
-        val bottom = bottomPadding.calculateBottomPadding()
-        when (page) {
-            0 -> HomeScreen(
-                bottomContentPadding = bottom,
-                hotReloadInProgress = hotReloadInProgress,
-                restartInProgress = restartInProgress,
-                scopeRequestInProgress = scopeRequestInProgress,
-                onRestart = onRestart,
-                onRequestScope = onRequestScope,
-                previewState = previewState,
-                onHotReload = onHotReload,
-                hotReloadInNavigation = hotReloadInNavigation,
-                onOpenPreviewSandbox = { onNavigate(AppRoute.PreviewSandbox) },
-            )
-            1 -> FeaturesScreen(
-                bottomContentPadding = bottom,
-                visible = selectedPage == 1,
-                snackbarState = featureSnackbarState,
-                search = featureSearch,
-                searchInNavigationBar = searchInNavigationBar,
-            )
-            2 -> SettingsHubScreen(
-                bottomContentPadding = bottom,
-                snapshot = SettingsHubSnapshot(
-                    lang = lang,
-                    iconHidden = iconHidden,
-                    swipeBackEnabled = swipeBackEnabled,
-                    runtimeBusy = restartInProgress || hotReloadInProgress || scopeRequestInProgress,
-                ),
-                actions = SettingsHubActions(
-                    onRestart = onRestart,
-                    onLangChange = onLangChange,
-                    onIconHiddenChange = onIconHiddenChange,
-                    onSwipeBackChange = onSwipeBackChange,
-                    onNavigate = onNavigate,
-                ),
-            )
-        }
+        TopLevelPagerContent(
+            page = page,
+            bottom = bindings.scope.bottomPadding.calculateBottomPadding(),
+            bindings = bindings,
+        )
+    }
+}
+
+@Composable
+private fun TopLevelPagerContent(
+    page: Int,
+    bottom: Dp,
+    bindings: TopLevelPagerBindings,
+) {
+    val scope = bindings.scope
+    val user = bindings.user
+    val runtime = bindings.runtime
+    val actions = bindings.runtimeActions
+    val settings = bindings.settingsActions
+    when (page) {
+        0 -> HomeScreen(
+            bottomContentPadding = bottom,
+            hotReloadInProgress = runtime.hotReloadInProgress,
+            restartInProgress = runtime.restartInProgress,
+            scopeRequestInProgress = runtime.scopeRequestInProgress,
+            onRestart = actions.restart,
+            onRequestScope = actions.requestScope,
+            previewState = user.preview,
+            onHotReload = actions.hotReload,
+            hotReloadInNavigation = runtime.hotReloadInNavigation,
+            onOpenPreviewSandbox = { settings.navigate(AppRoute.PreviewSandbox) },
+        )
+        1 -> FeaturesScreen(
+            bottomContentPadding = bottom,
+            visible = scope.selectedPage == 1,
+            snackbarState = scope.snackbar,
+            search = scope.search.state,
+            searchInNavigationBar = scope.search.inNavigationBar,
+        )
+        2 -> SettingsHubScreen(
+            bottomContentPadding = bottom,
+            snapshot = SettingsHubSnapshot(
+                lang = user.lang,
+                iconHidden = user.iconHidden,
+                swipeBackEnabled = user.swipeBackEnabled,
+                runtimeBusy = runtime.restartInProgress ||
+                    runtime.hotReloadInProgress || runtime.scopeRequestInProgress,
+            ),
+            actions = SettingsHubActions(
+                onRestart = actions.restart,
+                onLangChange = settings.changeLang,
+                onIconHiddenChange = settings.changeIconHidden,
+                onSwipeBackChange = settings.changeSwipeBack,
+                onNavigate = settings.navigate,
+            ),
+        )
     }
 }
