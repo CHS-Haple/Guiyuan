@@ -14,6 +14,7 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -191,7 +192,7 @@ internal fun Os4SearchMode(
 }
 
 @Composable
-private fun Os4SearchCancelAction(
+private fun BoxScope.Os4SearchCancelAction(
     motion: Os4SearchMotion,
     expanded: Boolean,
     backdrop: Backdrop?,
@@ -218,19 +219,7 @@ private fun Os4SearchCancelAction(
     Box(
         modifier = Modifier
             .align(Alignment.CenterEnd)
-            .graphicsLayer {
-                outsets = cancelOutsets
-                val scale = motion.progress.coerceIn(0f, 1f)
-                scaleX = scale
-                scaleY = scale
-                alpha = motion.cancelAlpha
-                val blur = CANCEL_BLUR_PX * (1f - motion.cancelAlpha.coerceIn(0f, 1f))
-                renderEffect = if (blur > 0.5f) {
-                    BlurEffect(blur, blur, TileMode.Decal)
-                } else null
-                translationX = 66.dp.toPx() * (1f - scale) *
-                    (if (direction == LayoutDirection.Ltr) 1f else -1f)
-            },
+            .os4CancelTransform(motion, cancelOutsets, direction),
     ) {
         TooltipBox(text = label) {
             Os4SearchSurface(
@@ -262,4 +251,24 @@ private fun Os4SearchCancelAction(
             }
         }
     }
+}
+
+private fun Modifier.os4CancelTransform(
+    motion: Os4SearchMotion,
+    cancelOutsets: LayerOutsets,
+    direction: LayoutDirection,
+): Modifier = graphicsLayer {
+
+    outsets = cancelOutsets
+    val scale = motion.progress.coerceIn(0f, 1f)
+    scaleX = scale
+    scaleY = scale
+    alpha = motion.cancelAlpha
+    val blur = CANCEL_BLUR_PX * (1f - motion.cancelAlpha.coerceIn(0f, 1f))
+    renderEffect = if (blur > 0.5f) {
+        BlurEffect(blur, blur, TileMode.Decal)
+    } else null
+    translationX = 66.dp.toPx() * (1f - scale) *
+        (if (direction == LayoutDirection.Ltr) 1f else -1f)
+
 }
