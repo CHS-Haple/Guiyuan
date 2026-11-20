@@ -13,23 +13,23 @@ class SceneBoundaryTest {
             ScenePolicy.resolveKeyguardAodProjection(
                 ScenePolicy.KeyguardAodProjectionInputs(
                     feature = ScenePolicy.AodFeatureFlags(
-        featureEnabled = true,
-        keyguardEnabled = false,
-        aodEnabled = true,
-        toAod = false,
-        isAodAnimate = true,
+                        featureEnabled = true,
+                        keyguardEnabled = false,
+                        aodEnabled = true,
+                        toAod = false,
+                        isAodAnimate = true,
                     ),
                     scene = ScenePolicy.AodSceneEvidence(
-        steadySourceScene = SourceScene.KEYGUARD,
-        lastStableFamilyScene =
-            ScenePolicy.StableKeyguardAodScene.UNKNOWN,
-        homePresentationOwned = true,
+                        steadySourceScene = SourceScene.KEYGUARD,
+                        lastStableFamilyScene =
+                            ScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                        homePresentationOwned = true,
                     ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
-        keyguardStatusIconsAlpha = 1f,
-        nativeToLockScreenTarget = true,
-        fullAodTargetSourceReady = true,
-        fullAodVisualBoundary = true,
+                        keyguardStatusIconsAlpha = 1f,
+                        nativeToLockScreenTarget = true,
+                        fullAodTargetSourceReady = true,
+                        fullAodVisualBoundary = true,
                     ),
                     home = ScenePolicy.AodHomeEvidence(
                     ),
@@ -41,21 +41,21 @@ class SceneBoundaryTest {
             ScenePolicy.resolveKeyguardAodProjection(
                 ScenePolicy.KeyguardAodProjectionInputs(
                     feature = ScenePolicy.AodFeatureFlags(
-        featureEnabled = true,
-        keyguardEnabled = true,
-        aodEnabled = true,
-        toAod = false,
-        isAodAnimate = true,
+                        featureEnabled = true,
+                        keyguardEnabled = true,
+                        aodEnabled = true,
+                        toAod = false,
+                        isAodAnimate = true,
                     ),
                     scene = ScenePolicy.AodSceneEvidence(
-        steadySourceScene = SourceScene.KEYGUARD,
-        lastStableFamilyScene =
-            ScenePolicy.StableKeyguardAodScene.KEYGUARD,
+                        steadySourceScene = SourceScene.KEYGUARD,
+                        lastStableFamilyScene =
+                            ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                     ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
-        nativeToLockScreenTarget = true,
-        fullAodTargetSourceReady = true,
-        fullAodVisualBoundary = true,
+                        nativeToLockScreenTarget = true,
+                        fullAodTargetSourceReady = true,
+                        fullAodVisualBoundary = true,
                     ),
                     home = ScenePolicy.AodHomeEvidence(
                     ),
@@ -71,23 +71,23 @@ class SceneBoundaryTest {
             ScenePolicy.resolveKeyguardAodProjection(
                 ScenePolicy.KeyguardAodProjectionInputs(
                     feature = ScenePolicy.AodFeatureFlags(
-        featureEnabled = true,
-        keyguardEnabled = false,
-        aodEnabled = true,
-        toAod = false,
-        isAodAnimate = false,
+                        featureEnabled = true,
+                        keyguardEnabled = false,
+                        aodEnabled = true,
+                        toAod = false,
+                        isAodAnimate = false,
                     ),
                     scene = ScenePolicy.AodSceneEvidence(
-        steadySourceScene = SourceScene.KEYGUARD,
-        lastStableFamilyScene =
-            ScenePolicy.StableKeyguardAodScene.UNKNOWN,
-        homePresentationOwned = false,
+                        steadySourceScene = SourceScene.KEYGUARD,
+                        lastStableFamilyScene =
+                            ScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                        homePresentationOwned = false,
                     ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
-        nativeToLockScreenTarget = false,
+                        nativeToLockScreenTarget = false,
                     ),
                     home = ScenePolicy.AodHomeEvidence(
-        homeAodTransitionOrigin = true,
+                        homeAodTransitionOrigin = true,
                     ),
                 ),
             ),
@@ -97,23 +97,23 @@ class SceneBoundaryTest {
             ScenePolicy.resolveKeyguardAodProjection(
                 ScenePolicy.KeyguardAodProjectionInputs(
                     feature = ScenePolicy.AodFeatureFlags(
-        featureEnabled = true,
-        keyguardEnabled = true,
-        aodEnabled = false,
-        toAod = false,
-        isAodAnimate = true,
+                        featureEnabled = true,
+                        keyguardEnabled = true,
+                        aodEnabled = false,
+                        toAod = false,
+                        isAodAnimate = true,
                     ),
                     scene = ScenePolicy.AodSceneEvidence(
-        steadySourceScene = SourceScene.KEYGUARD,
-        lastStableFamilyScene =
-            ScenePolicy.StableKeyguardAodScene.UNKNOWN,
-        homePresentationOwned = false,
+                        steadySourceScene = SourceScene.KEYGUARD,
+                        lastStableFamilyScene =
+                            ScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                        homePresentationOwned = false,
                     ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
-        nativeToLockScreenTarget = false,
+                        nativeToLockScreenTarget = false,
                     ),
                     home = ScenePolicy.AodHomeEvidence(
-        homeAodTransitionOrigin = true,
+                        homeAodTransitionOrigin = true,
                     ),
                 ),
             ),
@@ -196,21 +196,21 @@ class SceneBoundaryTest {
             ScenePolicy.resolveKeyguardAodProjection(
                 ScenePolicy.KeyguardAodProjectionInputs(
                     feature = ScenePolicy.AodFeatureFlags(
-        featureEnabled = true,
-        keyguardEnabled = true,
-        aodEnabled = false,
-        toAod = true,
-        isAodAnimate = false,
+                        featureEnabled = true,
+                        keyguardEnabled = true,
+                        aodEnabled = false,
+                        toAod = true,
+                        isAodAnimate = false,
                     ),
                     scene = ScenePolicy.AodSceneEvidence(
-        steadySourceScene = SourceScene.KEYGUARD,
-        lastStableFamilyScene =
-            ScenePolicy.StableKeyguardAodScene.AOD,
+                        steadySourceScene = SourceScene.KEYGUARD,
+                        lastStableFamilyScene =
+                            ScenePolicy.StableKeyguardAodScene.AOD,
                     ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
-        nativeToLockScreenTarget = true,
-        fullAodTargetSourceReady = true,
-        fullAodVisualBoundary = true,
+                        nativeToLockScreenTarget = true,
+                        fullAodTargetSourceReady = true,
+                        fullAodVisualBoundary = true,
                     ),
                     home = ScenePolicy.AodHomeEvidence(
                     ),
@@ -222,21 +222,21 @@ class SceneBoundaryTest {
             ScenePolicy.resolveKeyguardAodProjection(
                 ScenePolicy.KeyguardAodProjectionInputs(
                     feature = ScenePolicy.AodFeatureFlags(
-        featureEnabled = true,
-        keyguardEnabled = true,
-        aodEnabled = false,
-        toAod = true,
-        isAodAnimate = false,
+                        featureEnabled = true,
+                        keyguardEnabled = true,
+                        aodEnabled = false,
+                        toAod = true,
+                        isAodAnimate = false,
                     ),
                     scene = ScenePolicy.AodSceneEvidence(
-        steadySourceScene = SourceScene.KEYGUARD,
-        lastStableFamilyScene =
-            ScenePolicy.StableKeyguardAodScene.AOD,
+                        steadySourceScene = SourceScene.KEYGUARD,
+                        lastStableFamilyScene =
+                            ScenePolicy.StableKeyguardAodScene.AOD,
                     ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
-        nativeToLockScreenTarget = true,
-        fullAodTargetSourceReady = true,
-        fullAodVisualBoundary = false,
+                        nativeToLockScreenTarget = true,
+                        fullAodTargetSourceReady = true,
+                        fullAodVisualBoundary = false,
                     ),
                     home = ScenePolicy.AodHomeEvidence(
                     ),
@@ -431,22 +431,22 @@ class SceneHomeAodFallbackTest {
             ScenePolicy.resolveKeyguardAodProjection(
                 ScenePolicy.KeyguardAodProjectionInputs(
                     feature = ScenePolicy.AodFeatureFlags(
-        featureEnabled = true,
-        keyguardEnabled = true,
-        aodEnabled = false,
-        toAod = true,
-        isAodAnimate = true,
+                        featureEnabled = true,
+                        keyguardEnabled = true,
+                        aodEnabled = false,
+                        toAod = true,
+                        isAodAnimate = true,
                     ),
                     scene = ScenePolicy.AodSceneEvidence(
-        steadySourceScene = SourceScene.KEYGUARD,
-        lastStableFamilyScene =
-            ScenePolicy.StableKeyguardAodScene.AOD,
+                        steadySourceScene = SourceScene.KEYGUARD,
+                        lastStableFamilyScene =
+                            ScenePolicy.StableKeyguardAodScene.AOD,
                     ),
                     boundary = ScenePolicy.AodNativeBoundaryEvidence(
-        keyguardStatusIconsAlpha = 1f,
+                        keyguardStatusIconsAlpha = 1f,
                     ),
                     home = ScenePolicy.AodHomeEvidence(
-        homeNativeAodFallbackActive = true,
+                        homeNativeAodFallbackActive = true,
                     ),
                 ),
             ),
