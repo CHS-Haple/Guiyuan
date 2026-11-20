@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -61,85 +62,86 @@ internal fun RestartScopeSelection(
     onRestart: () -> Unit,
 ) {
     Column {
-        if (RestartTarget.SYS_UI in availableTargets) {
-            CheckboxPreference(
-                title = stringResource(R.string.restart_scope_sysui),
-                summary = RestartTarget.SYS_UI.pkg,
-                checked = RestartTarget.SYS_UI in selectedTargets,
-                onCheckedChange = { checked ->
-                    onSelectionChange(
-                        if (checked) selectedTargets + RestartTarget.SYS_UI
-                        else selectedTargets - RestartTarget.SYS_UI,
-                    )
-                },
-                checkboxLocation = CheckboxLocation.End,
-                startAction = {
-                    RestartAppIcon(
-                        RestartTarget.SYS_UI.pkg,
-                        R.drawable.ic_material_symbol_dashboard,
-                    )
-                },
-            )
+        RestartScopeChoices(availableTargets, selectedTargets, onSelectionChange)
+        RestartScopeActions(availableTargets, selectedTargets, onSelectionChange, onClose, onRestart)
+    }
+}
+
+@Composable
+private fun ColumnScope.RestartScopeChoices(
+    availableTargets: Set<RestartTarget>,
+    selectedTargets: Set<RestartTarget>,
+    onSelectionChange: (Set<RestartTarget>) -> Unit,
+) {
+    for (target in RestartTarget.entries) {
+        if (target !in availableTargets) continue
+        val titleRes = when (target) {
+            RestartTarget.SYS_UI -> R.string.restart_scope_sysui
+            RestartTarget.SETTINGS -> R.string.restart_scope_settings
         }
-        if (RestartTarget.SETTINGS in availableTargets) {
-            CheckboxPreference(
-                title = stringResource(R.string.restart_scope_settings),
-                summary = RestartTarget.SETTINGS.pkg,
-                checked = RestartTarget.SETTINGS in selectedTargets,
-                onCheckedChange = { checked ->
-                    onSelectionChange(
-                        if (checked) selectedTargets + RestartTarget.SETTINGS
-                        else selectedTargets - RestartTarget.SETTINGS,
-                    )
-                },
-                checkboxLocation = CheckboxLocation.End,
-                startAction = {
-                    RestartAppIcon(
-                        RestartTarget.SETTINGS.pkg,
-                        R.drawable.ic_material_symbol_settings_applications,
-                    )
-                },
-            )
+        val iconRes = when (target) {
+            RestartTarget.SYS_UI -> R.drawable.ic_material_symbol_dashboard
+            RestartTarget.SETTINGS -> R.drawable.ic_material_symbol_settings_applications
         }
-        if (availableTargets.isNotEmpty()) {
-            Spacer(Modifier.height(12.dp))
-        }
-        if (availableTargets.isEmpty()) {
+        CheckboxPreference(
+            title = stringResource(titleRes),
+            summary = target.pkg,
+            checked = target in selectedTargets,
+            onCheckedChange = { checked ->
+                onSelectionChange(if (checked) selectedTargets + target else selectedTargets - target)
+            },
+            checkboxLocation = CheckboxLocation.End,
+            startAction = { RestartAppIcon(target.pkg, iconRes) },
+        )
+    }
+}
+
+@Composable
+private fun ColumnScope.RestartScopeActions(
+    availableTargets: Set<RestartTarget>,
+    selectedTargets: Set<RestartTarget>,
+    onSelectionChange: (Set<RestartTarget>) -> Unit,
+    onClose: () -> Unit,
+    onRestart: () -> Unit,
+) {
+    if (availableTargets.isNotEmpty()) {
+        Spacer(Modifier.height(12.dp))
+    }
+    if (availableTargets.isEmpty()) {
+        UiDialogButton(
+            text = stringResource(R.string.confirm),
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onClose,
+        )
+    } else {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
             UiDialogButton(
-                text = stringResource(R.string.confirm),
-                modifier = Modifier.fillMaxWidth(),
-                onClick = onClose,
-            )
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                UiDialogButton(
-                    text = stringResource(
-                        if (selectedTargets == availableTargets) {
-                            R.string.restart_scope_clear_all
-                        } else {
-                            R.string.restart_scope_select_all
-                        },
-                    ),
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        onSelectionChange(
-                            if (selectedTargets == availableTargets) emptySet()
-                            else availableTargets,
-                        )
+                text = stringResource(
+                    if (selectedTargets == availableTargets) {
+                        R.string.restart_scope_clear_all
+                    } else {
+                        R.string.restart_scope_select_all
                     },
-                )
-                Spacer(Modifier.width(dialogActionGap()))
-                UiDialogButton(
-                    text = stringResource(R.string.restart),
-                    modifier = Modifier.weight(1f),
-                    enabled = selectedTargets.isNotEmpty(),
-                    role = GlassDialogButtonRole.Primary,
-                    onClick = onRestart,
-                )
-            }
+                ),
+                modifier = Modifier.weight(1f),
+                onClick = {
+                    onSelectionChange(
+                        if (selectedTargets == availableTargets) emptySet()
+                        else availableTargets,
+                    )
+                },
+            )
+            Spacer(Modifier.width(dialogActionGap()))
+            UiDialogButton(
+                text = stringResource(R.string.restart),
+                modifier = Modifier.weight(1f),
+                enabled = selectedTargets.isNotEmpty(),
+                role = GlassDialogButtonRole.Primary,
+                onClick = onRestart,
+            )
         }
     }
 }
