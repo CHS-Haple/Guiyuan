@@ -153,13 +153,6 @@ internal fun PreviewSandboxScreen(
     val onOverscrollChanged: (Float) -> Unit = remember(scrollBehavior) {
         { offset -> scrollBehavior.state.overscrollOffset = offset }
     }
-    // Match MIUIX's 52dp compact title center plus its 4dp bottom title clearance.
-    val dockPadding = if (os4) {
-        val inset = (TopAppBarDefaults.CollapsedHeight - TopAppBarDefaults.SmallTopAppBarCenterHeight) / 2
-        PaddingValues(top = inset, bottom = inset + TopAppBarDefaults.LargeTitleBottomPadding)
-    } else {
-        PaddingValues(vertical = 6.dp)
-    }
     var dockHeightPx by remember { mutableIntStateOf(0) }
     var nativeBarHeightPx by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
@@ -206,94 +199,13 @@ internal fun PreviewSandboxScreen(
         }
     }
     val dock: @Composable () -> Unit = {
-        AnimatedVisibility(
-            visible = showDock,
-            modifier = Modifier.onSizeChanged { dockHeightPx = it.height },
-            enter = if (os4) {
-                expandVertically(
-                    animationSpec = GlassMotion.barExpand(),
-                    expandFrom = Alignment.Top,
-                    clip = false,
-                )
-            } else fadeIn() + expandVertically(expandFrom = Alignment.Top),
-            exit = if (os4) {
-                shrinkVertically(
-                    animationSpec = GlassMotion.barCollapse(),
-                    shrinkTowards = Alignment.Top,
-                    clip = false,
-                )
-            } else fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
-        ) {
-            // The OS4 button shadow extends outside the animated row; avoid offscreen alpha clipping.
-            val opacityModifier = if (os4) {
-                val opacity by transition.animateFloat(
-                    transitionSpec = {
-                        if (targetState == EnterExitState.Visible) GlassMotion.fadeIn()
-                        else GlassMotion.fadeOut()
-                    },
-                    label = "dockOpacity",
-                ) { state ->
-                    if (state == EnterExitState.Visible) 1f else 0f
-                }
-                Modifier.graphicsLayer {
-                    alpha = opacity
-                    compositingStrategy = CompositingStrategy.ModulateAlpha
-                }
-            } else Modifier
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(opacityModifier)
-                    .padding(dockPadding),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = TopAppBarDefaults.TitlePadding),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_preview_live_title),
-                        style = MiuixTheme.textStyles.title4,
-                        fontWeight = FontWeight.Medium,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                SandboxDockIcon(renderModel, visual)
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = if (os4) GlassTopAppBarDefaults.HorizontalPadding else TopAppBarDefaults.ActionIconPadding),
-                    contentAlignment = Alignment.CenterEnd,
-                ) {
-                    val backTop = stringResource(R.string.diagnostics_scroll_top)
-                    TooltipBox(text = backTop) {
-                        if (os4) {
-                            GlassIconButton(
-                                onClick = scrollToTop,
-                                backdrop = topBarBackdrop,
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
-                                    contentDescription = backTop,
-                                )
-                            }
-                        } else IconButton(
-                            onClick = scrollToTop,
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
-                                contentDescription = backTop,
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        SandboxFloatingDock(
+            display = SandboxDockDisplay(showDock, os4, renderModel, visual, topBarBackdrop),
+            actions = SandboxDockActions(
+                onScrollToTop = scrollToTop,
+                onHeightChanged = { dockHeightPx = it },
+            ),
+        )
     }
 
     CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
