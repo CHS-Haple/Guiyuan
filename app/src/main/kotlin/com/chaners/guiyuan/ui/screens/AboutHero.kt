@@ -63,6 +63,8 @@ internal fun rememberBrandLogoBlend(): List<BlendColorEntry> {
 }
 
 
+private val AboutHeroMarkSize = 100.dp
+
 internal data class AboutHeroMotion(
     val active: Boolean,
     val versionProgress: Float,
@@ -100,7 +102,7 @@ internal fun AboutHero(
     measurements: AboutHeroMeasurements,
 ) {
     val density = LocalDensity.current
-    val markSize = 100.dp
+    val markSize = AboutHeroMarkSize
     val diameter = with(density) { markSize.toPx() }
     val animation = remember { Animatable(0f) }
     var phase by remember { mutableFloatStateOf(0f) }
@@ -124,7 +126,6 @@ internal fun AboutHero(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         AboutHeroMark(
-            size = markSize,
             wave = wave,
             material = material,
             motion = motion,
@@ -138,13 +139,13 @@ internal fun AboutHero(
 
 @Composable
 private fun AboutHeroMark(
-    size: Dp,
     wave: HeroWave,
     material: HeroMaterial,
     motion: AboutHeroMotion,
     onRelease: (Float) -> Unit,
     onBottom: (Float) -> Unit,
 ) {
+    val size = AboutHeroMarkSize
     val active = motion.active && motion.iconProgress < 1f
     Box(
         modifier = Modifier
