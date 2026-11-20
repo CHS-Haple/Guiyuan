@@ -294,16 +294,14 @@ internal fun FeaturesScreen(
         if (batteryMatches) {
             featureBatterySection(
                 search = search,
-                visual = visual,
-                visualRepo = visualRepo,
-                featureCfg = featureCfg,
-                featureRepo = featureRepo,
-                schemeLibrary = schemeLibrary,
-                weight = batteryWeight,
-                colorSheetOpen = showBatteryColorSheet,
-                onOpenColorSheet = { showBatteryColorSheet = true },
-                weightDialogOpen = showBatteryWeightDialog,
-                onOpenWeightDialog = { showBatteryWeightDialog = true },
+                state = BatteryFeatureSnapshot(visual, featureCfg, schemeLibrary, batteryWeight),
+                repositories = BatteryFeatureRepositories(visualRepo, featureRepo),
+                dialogs = BatteryFeatureDialogs(
+                    colorOpen = showBatteryColorSheet,
+                    onOpenColor = { showBatteryColorSheet = true },
+                    weightOpen = showBatteryWeightDialog,
+                    onOpenWeight = { showBatteryWeightDialog = true },
+                ),
                 bothSidesChargingSearch = bothSidesChargingSearch,
             )
         }
