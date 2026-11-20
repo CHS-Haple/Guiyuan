@@ -33,7 +33,7 @@ class DiagLogReaderTest {
 
         assertEquals(
             listOf(currentStart, currentUpdate),
-            DiagLogReader.latestSession(
+            DiagLogSessions.latestSession(
                 listOf(oldStart, oldUpdate, currentStart, delayedOld, currentUpdate),
             ),
         )
@@ -100,7 +100,7 @@ class DiagLogReaderTest {
 
         val selected = DiagLogReader.filterModuleLines(mixed)
         assertEquals(listOf(nativeStart, nativeNetwork), selected)
-        assertEquals(listOf(nativeStart, nativeNetwork), DiagLogReader.latestSession(selected))
+        assertEquals(listOf(nativeStart, nativeNetwork), DiagLogSessions.latestSession(selected))
         assertEquals(listOf(remoteStart), DiagLogReader.filterModuleLines(remoteStart))
     }
 
@@ -166,7 +166,7 @@ class DiagLogReaderSessionTest {
 
         assertEquals(
             listOf(current, currentWithoutSession, latest),
-            DiagLogReader.latestSession(
+            DiagLogSessions.latestSession(
                 listOf(previous, current, delayedPrevious, currentWithoutSession, latest),
             ),
         )
@@ -197,7 +197,7 @@ class DiagLogReaderSessionTest {
 
         assertEquals(
             listOf(newStart, newComplete),
-            DiagLogReader.latestSession(
+            DiagLogSessions.latestSession(
                 listOf(firstStart, newStart, oldTeardown, newComplete, delayedOld),
             ),
         )
@@ -223,7 +223,7 @@ class DiagLogReaderSessionTest {
 
         assertEquals(
             listOf(newStart, legacy, newEvent),
-            DiagLogReader.latestSession(
+            DiagLogSessions.latestSession(
                 DiagLogReader.filterLogcatLines(
                     listOf(oldStart, newStart, oldEvent, legacy, newEvent).joinToString("\n"),
                 ),
@@ -247,7 +247,7 @@ class DiagLogReaderSessionTest {
 
         assertEquals(
             listOf(newStart, untagged),
-            DiagLogReader.latestSession(listOf(oldStart, newStart, lateOld, untagged)),
+            DiagLogSessions.latestSession(listOf(oldStart, newStart, lateOld, untagged)),
         )
     }
 
@@ -275,7 +275,7 @@ class DiagLogReaderSessionTest {
 
         assertEquals(
             listOf(newBind, failedTakeover),
-            DiagLogReader.latestSession(listOf(oldStart, newBind, failedTakeover, delayedOld)),
+            DiagLogSessions.latestSession(listOf(oldStart, newBind, failedTakeover, delayedOld)),
         )
     }
 
@@ -290,7 +290,7 @@ class DiagLogReaderSessionTest {
 
         assertEquals(
             listOf(unavailable),
-            DiagLogReader.latestSession(listOf(oldStart, unavailable, delayedOld)),
+            DiagLogSessions.latestSession(listOf(oldStart, unavailable, delayedOld)),
         )
     }
 
@@ -307,7 +307,7 @@ class DiagLogReaderSessionTest {
 
         assertEquals(
             listOf(newStart, newComplete),
-            DiagLogReader.latestSession(
+            DiagLogSessions.latestSession(
                 listOf(oldStart, oldUnavailable, newStart, delayedOldUnavailable, newComplete),
             ),
         )
@@ -326,7 +326,7 @@ class DiagLogReaderSessionTest {
 
         assertEquals(
             listOf(newStart, newComplete),
-            DiagLogReader.latestSession(
+            DiagLogSessions.latestSession(
                 listOf(oldStart, oldError, newStart, delayedOldError, newComplete),
             ),
         )
@@ -351,7 +351,7 @@ class DiagLogReaderSessionTest {
 
         assertEquals(
             listOf(current, latest),
-            DiagLogReader.latestSession(listOf(old, current, delayedOld, latest)),
+            DiagLogSessions.latestSession(listOf(old, current, delayedOld, latest)),
         )
     }
 }
