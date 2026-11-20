@@ -31,6 +31,7 @@ val dataStorePreferencesVersion = "1.3.0"
 val kotlinxSerializationCoreVersion = "1.13.0"
 val junitVersion = "4.13.2"
 val gradleVersion = gradle.gradleVersion
+val booleanBuildConfigType = "boolean"
 val deepDiagnosticsBuildField = "DEEP_DIAGNOSTICS"
 val os4DebugSuffix = providers.gradleProperty("gy.os4.debugSuffix").orNull
 // The marker exists only on the protected IT branch and is blocked from public PR targets.
@@ -74,8 +75,8 @@ android {
         buildConfigField("String", "JUNIT_VERSION", "\"$junitVersion\"")
         buildConfigField("String", "GRADLE_VERSION", "\"$gradleVersion\"")
         // Shared by debug, release and canary: avoid per-build-type overrides.
-        buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
-        buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
+        buildConfigField(booleanBuildConfigType, "RUNTIME_DIAGNOSTICS", "true")
+        buildConfigField(booleanBuildConfigType, "REPO_LINK_ENABLED", projectLinkEnabled.toString())
     }
 
     signingConfigs {
@@ -108,16 +109,16 @@ android {
                 applicationIdSuffix = os4DebugSuffix
             }
             buildConfigField("String", "BUILD_CHANNEL", "\"debug\"")
-            buildConfigField("boolean", "DEVELOPMENT_PROBES", "true")
-            buildConfigField("boolean", deepDiagnosticsBuildField, "true")
+            buildConfigField(booleanBuildConfigType, "DEVELOPMENT_PROBES", "true")
+            buildConfigField(booleanBuildConfigType, deepDiagnosticsBuildField, "true")
             if (hapleSigningEnabled) {
                 signingConfig = signingConfigs.getByName("haple")
             }
         }
         release {
             buildConfigField("String", "BUILD_CHANNEL", "\"release\"")
-            buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
-            buildConfigField("boolean", deepDiagnosticsBuildField, "false")
+            buildConfigField(booleanBuildConfigType, "DEVELOPMENT_PROBES", "false")
+            buildConfigField(booleanBuildConfigType, deepDiagnosticsBuildField, "false")
             isMinifyEnabled = true
             isShrinkResources = true
             if (hapleSigningEnabled) {
