@@ -15,20 +15,13 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.stringResource
-import com.chaners.guiyuan.BuildConfig
-import com.chaners.guiyuan.R
 import com.chaners.guiyuan.system.RuntimeEnv
 import com.chaners.guiyuan.system.XposedStatus
-import com.chaners.guiyuan.ui.components.UiDialogButton
-import com.chaners.guiyuan.ui.components.UiOverlayDialog
-import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 
 private const val ABOUT_PROJECT_URL = "https://github.com/CHS-Haple/Guiyuan"
 private const val ABOUT_LICENSE_URL = "https://github.com/CHS-Haple/Guiyuan/blob/main/LICENSE"
-private const val GPL_LICENSE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
 
 internal data class AboutPageActions(
     val onOpenThirdParty: () -> Unit,
@@ -112,42 +105,14 @@ internal fun AboutPageContent(
     env: RuntimeEnv,
     xposedStatus: XposedStatus,
     actions: AboutPageActions,
-    onRepoUnavailable: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
     AboutLinksCard(
-        onOpenProject = {
-            if (BuildConfig.REPO_LINK_ENABLED) uriHandler.openUri(ABOUT_PROJECT_URL)
-            else onRepoUnavailable()
-        },
+        onOpenProject = { uriHandler.openUri(ABOUT_PROJECT_URL) },
         onOpenTerms = actions.onOpenTerms,
         onOpenPrivacy = actions.onOpenPrivacy,
-        onOpenLicense = {
-            uriHandler.openUri(
-                if (BuildConfig.REPO_LINK_ENABLED) ABOUT_LICENSE_URL else GPL_LICENSE_URL,
-            )
-        },
+        onOpenLicense = { uriHandler.openUri(ABOUT_LICENSE_URL) },
         onOpenThirdParty = actions.onOpenThirdParty,
     )
     AboutEnvironmentCard(env, xposedStatus, actions.onOpenScopes)
-}
-
-@Composable
-internal fun AboutRepositoryUnavailableDialog(
-    show: Boolean,
-    onDismiss: () -> Unit,
-) {
-    UiOverlayDialog(
-        title = stringResource(R.string.about_repo_unavailable_title),
-        summary = stringResource(R.string.about_repo_unavailable_summary),
-        show = show,
-        onDismissRequest = onDismiss,
-    ) {
-        UiDialogButton(
-            text = stringResource(R.string.confirm),
-            modifier = Modifier.fillMaxWidth(),
-            role = GlassDialogButtonRole.Primary,
-            onClick = onDismiss,
-        )
-    }
 }

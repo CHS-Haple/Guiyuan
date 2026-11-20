@@ -4,11 +4,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
@@ -42,7 +39,6 @@ internal fun AboutScreen(
     val backdrop = rememberLayerBackdrop()
     val blur = remember { isRuntimeShaderSupported() }
     val logoBlend = rememberBrandLogoBlend()
-    var showRepoUnavailable by rememberSaveable { mutableStateOf(false) }
     val env by produceState(initialValue = RuntimeEnv.basic(), key1 = context.applicationContext) {
         value = RuntimeEnv.resolve(context.applicationContext)
     }
@@ -62,12 +58,9 @@ internal fun AboutScreen(
             )
         },
         foreground = { padding -> AboutHeroForeground(scroll, padding, blur, backdrop, logoBlend) },
-        overlay = {
-            AboutRepositoryUnavailableDialog(showRepoUnavailable) { showRepoUnavailable = false }
-        },
     ) {
         aboutPageItems(scroll) {
-            AboutPageContent(env, xposedStatus, actions) { showRepoUnavailable = true }
+            AboutPageContent(env, xposedStatus, actions)
         }
     }
 }
