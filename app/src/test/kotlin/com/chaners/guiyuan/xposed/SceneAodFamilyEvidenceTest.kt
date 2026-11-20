@@ -105,71 +105,34 @@ class SceneAodFamilyEvidenceTest {
 
     @Test
     fun singleEnabledFamilyFallsBackConservativelyWhenVisualEvidenceIsUnavailable() {
-        assertEquals(
-            ScenePolicy.KeyguardAodProjection.KEYGUARD,
-            ScenePolicy.resolveKeyguardAodProjection(
-                ScenePolicy.KeyguardAodProjectionInputs(
-                    feature = ScenePolicy.AodFeatureFlags(
-                        featureEnabled = true,
-                        keyguardEnabled = true,
-                        aodEnabled = false,
-                        toAod = false,
-                        isAodAnimate = true,
-                    ),
-                    scene = ScenePolicy.AodSceneEvidence(
-                        steadySourceScene = SourceScene.KEYGUARD,
-                    ),
-                    signal = ScenePolicy.AodNativeSignalEvidence(
-                        keyguardStatusIconsAlpha = null,
-                    ),
-
-                ),
-            ),
+        data class Case(
+            val keyguard: Boolean,
+            val alpha: Float?,
+            val homeOwned: Boolean,
+            val expected: ScenePolicy.KeyguardAodProjection,
         )
-        assertEquals(
-            ScenePolicy.KeyguardAodProjection.NATIVE,
-            ScenePolicy.resolveKeyguardAodProjection(
-                ScenePolicy.KeyguardAodProjectionInputs(
-                    feature = ScenePolicy.AodFeatureFlags(
-                        featureEnabled = true,
-                        keyguardEnabled = false,
-                        aodEnabled = true,
-                        toAod = false,
-                        isAodAnimate = true,
-                    ),
-                    scene = ScenePolicy.AodSceneEvidence(
-                        steadySourceScene = SourceScene.KEYGUARD,
-                        homePresentationOwned = false,
-                    ),
-                    signal = ScenePolicy.AodNativeSignalEvidence(
-                        keyguardStatusIconsAlpha = 1f,
-                    ),
-
-                ),
-            ),
+        val cases = listOf(
+            Case(true, null, false, ScenePolicy.KeyguardAodProjection.KEYGUARD),
+            Case(false, 1f, false, ScenePolicy.KeyguardAodProjection.NATIVE),
+            Case(false, 0f, true, ScenePolicy.KeyguardAodProjection.AOD),
         )
-        assertEquals(
-            ScenePolicy.KeyguardAodProjection.AOD,
-            ScenePolicy.resolveKeyguardAodProjection(
-                ScenePolicy.KeyguardAodProjectionInputs(
-                    feature = ScenePolicy.AodFeatureFlags(
-                        featureEnabled = true,
-                        keyguardEnabled = false,
-                        aodEnabled = true,
-                        toAod = false,
-                        isAodAnimate = true,
-                    ),
-                    scene = ScenePolicy.AodSceneEvidence(
-                        steadySourceScene = SourceScene.KEYGUARD,
-                        homePresentationOwned = true,
-                    ),
-                    signal = ScenePolicy.AodNativeSignalEvidence(
-                        keyguardStatusIconsAlpha = 0f,
-                    ),
-
+        cases.forEach { (keyguard, alpha, homeOwned, expected) ->
+            val input = ScenePolicy.KeyguardAodProjectionInputs(
+                feature = ScenePolicy.AodFeatureFlags(
+                    featureEnabled = true,
+                    keyguardEnabled = keyguard,
+                    aodEnabled = !keyguard,
+                    toAod = false,
+                    isAodAnimate = true,
                 ),
-            ),
-        )
+                scene = ScenePolicy.AodSceneEvidence(
+                    steadySourceScene = SourceScene.KEYGUARD,
+                    homePresentationOwned = homeOwned,
+                ),
+                signal = ScenePolicy.AodNativeSignalEvidence(keyguardStatusIconsAlpha = alpha),
+            )
+            assertEquals(expected, ScenePolicy.resolveKeyguardAodProjection(input))
+        }
     }
 
     @Test

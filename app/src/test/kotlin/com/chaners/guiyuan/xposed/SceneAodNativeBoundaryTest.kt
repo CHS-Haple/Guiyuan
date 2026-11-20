@@ -111,75 +111,30 @@ class SceneAodNativeBoundaryTest {
 
     @Test
     fun keyguardOnlyProjectionTracksNativeIconBoundary() {
-        assertEquals(
-            ScenePolicy.KeyguardAodProjection.KEYGUARD,
-            ScenePolicy.resolveKeyguardAodProjection(
-                ScenePolicy.KeyguardAodProjectionInputs(
-                    feature = ScenePolicy.AodFeatureFlags(
-                        featureEnabled = true,
-                        keyguardEnabled = true,
-                        aodEnabled = false,
-                        toAod = true,
-                        isAodAnimate = true,
-                    ),
-                    scene = ScenePolicy.AodSceneEvidence(
-                        steadySourceScene = SourceScene.KEYGUARD,
-                        lastStableFamilyScene =
-                            ScenePolicy.StableKeyguardAodScene.KEYGUARD,
-                    ),
-                    signal = ScenePolicy.AodNativeSignalEvidence(
-                        keyguardStatusIconsAlpha = 1f,
-                    ),
-
-                ),
-            ),
+        val flags = ScenePolicy.AodFeatureFlags(
+            featureEnabled = true,
+            keyguardEnabled = true,
+            aodEnabled = false,
+            toAod = true,
+            isAodAnimate = true,
         )
-        assertEquals(
-            ScenePolicy.KeyguardAodProjection.KEYGUARD,
-            ScenePolicy.resolveKeyguardAodProjection(
-                ScenePolicy.KeyguardAodProjectionInputs(
-                    feature = ScenePolicy.AodFeatureFlags(
-                        featureEnabled = true,
-                        keyguardEnabled = true,
-                        aodEnabled = false,
-                        toAod = true,
-                        isAodAnimate = true,
-                    ),
-                    scene = ScenePolicy.AodSceneEvidence(
-                        steadySourceScene = SourceScene.KEYGUARD,
-                        lastStableFamilyScene =
-                            ScenePolicy.StableKeyguardAodScene.KEYGUARD,
-                    ),
-                    signal = ScenePolicy.AodNativeSignalEvidence(
-                        keyguardStatusIconsAlpha = 0.99f,
-                    ),
-
-                ),
-            ),
+        val scene = ScenePolicy.AodSceneEvidence(
+            steadySourceScene = SourceScene.KEYGUARD,
+            lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.KEYGUARD,
         )
-        assertEquals(
-            ScenePolicy.KeyguardAodProjection.NATIVE,
-            ScenePolicy.resolveKeyguardAodProjection(
-                ScenePolicy.KeyguardAodProjectionInputs(
-                    feature = ScenePolicy.AodFeatureFlags(
-                        featureEnabled = true,
-                        keyguardEnabled = true,
-                        aodEnabled = false,
-                        toAod = true,
-                        isAodAnimate = true,
-                    ),
-                    scene = ScenePolicy.AodSceneEvidence(
-                        steadySourceScene = SourceScene.KEYGUARD,
-                        lastStableFamilyScene =
-                            ScenePolicy.StableKeyguardAodScene.KEYGUARD,
-                    ),
-                    signal = ScenePolicy.AodNativeSignalEvidence(
-                        keyguardStatusIconsAlpha = 0f,
-                    ),
-
-                ),
-            ),
+        val cases = listOf(
+            1f to ScenePolicy.KeyguardAodProjection.KEYGUARD,
+            0.99f to ScenePolicy.KeyguardAodProjection.KEYGUARD,
+            0f to ScenePolicy.KeyguardAodProjection.NATIVE,
         )
+        cases.forEach { (alpha, expected) ->
+            val input = ScenePolicy.KeyguardAodProjectionInputs(
+                feature = flags,
+                scene = scene,
+                signal = ScenePolicy.AodNativeSignalEvidence(keyguardStatusIconsAlpha = alpha),
+            )
+            assertEquals(expected, ScenePolicy.resolveKeyguardAodProjection(input))
+        }
     }
 
     @Test
