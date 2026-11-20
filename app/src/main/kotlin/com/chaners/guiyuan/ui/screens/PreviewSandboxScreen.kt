@@ -87,27 +87,17 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun PreviewSandboxScreen(
-    state: PreviewSandboxUiState,
-    parasiteActive: Boolean,
-    onParasiteChange: (Boolean, PreviewSandboxUiState) -> Unit,
-    onAirplaneModeChange: (Boolean) -> Unit,
-    onNetworkModeChange: (PreviewNetworkMode) -> Unit,
-    onMobileNetworkChange: (PreviewMobileNetwork) -> Unit,
-    onMobileSignalLevelChange: (Int) -> Unit,
-    onSim2SignalLevelChange: (Int) -> Unit,
-    onSim2NetworkChange: (PreviewMobileNetwork) -> Unit,
-    onDataSimChange: (PreviewDataSim) -> Unit,
-    onSimCardsChange: (PreviewSimCards) -> Unit,
-    onWifiStateChange: (PreviewWifiState) -> Unit,
-    onWifiSignalLevelChange: (Int) -> Unit,
-    onNetworkActivityChange: (PreviewNetworkActivity) -> Unit,
-    onBatteryPercentChange: (Int) -> Unit,
-    onBatteryModeChange: (PreviewBatteryMode) -> Unit,
-    onChargingStateChange: (PreviewChargingState) -> Unit,
-    dark: Boolean,
-    onToggleTheme: () -> Unit,
-    onBack: () -> Unit,
+    display: PreviewSandboxDisplay,
+    actions: PreviewSandboxActions,
 ) {
+    val (state, parasiteActive, dark) = display
+    val (onParasiteChange, onToggleTheme, onBack) = actions.ui
+    val (onAirplaneModeChange, onNetworkModeChange, onWifiStateChange,
+        onWifiSignalLevelChange, onNetworkActivityChange) = actions.network
+    val (onMobileNetworkChange, onMobileSignalLevelChange) = actions.sims.first
+    val (onSim2SignalLevelChange, onSim2NetworkChange) = actions.sims.second
+    val (onDataSimChange, onSimCardsChange) = actions.sims.selection
+    val (onBatteryPercentChange, onBatteryModeChange, onChargingStateChange) = actions.battery
     val context = LocalContext.current
     val resourceResolver =
         remember(context.applicationContext) {
