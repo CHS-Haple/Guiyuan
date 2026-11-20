@@ -31,8 +31,7 @@ internal fun FeaturesScreenOverlays(
 ) {
     FeaturesConfirmationDialog(
         show = backup.state.pendingImport != null,
-        titleRes = R.string.config_restore_title,
-        summaryRes = R.string.config_restore_confirm,
+        labels = FeaturesConfirmText(R.string.config_restore_title, R.string.config_restore_confirm),
         busy = backup.state.busy,
         onDismiss = { backup.state.pendingImport = null },
         onConfirm = backup.onRestore,
@@ -46,8 +45,10 @@ internal fun FeaturesScreenOverlays(
     FeaturesScreenWeightOverlays(resources, toggles)
     FeaturesConfirmationDialog(
         show = toggles.reset.value,
-        titleRes = R.string.restore_feature_defaults,
-        summaryRes = R.string.restore_feature_defaults_dialog_summary,
+        labels = FeaturesConfirmText(
+            R.string.restore_feature_defaults,
+            R.string.restore_feature_defaults_dialog_summary,
+        ),
         busy = false,
         onDismiss = { toggles.reset.value = false },
         onConfirm = {

@@ -16,19 +16,23 @@ import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import kotlin.math.roundToInt
 
+internal data class FeaturesConfirmText(
+    @StringRes val titleRes: Int,
+    @StringRes val summaryRes: Int,
+)
+
 /** Both restore and reset use the same MIUIX confirm/cancel layout and busy gate. */
 @Composable
 internal fun FeaturesConfirmationDialog(
     show: Boolean,
-    @StringRes titleRes: Int,
-    @StringRes summaryRes: Int,
+    labels: FeaturesConfirmText,
     busy: Boolean,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
     UiOverlayDialog(
-        title = stringResource(titleRes),
-        summary = stringResource(summaryRes),
+        title = stringResource(labels.titleRes),
+        summary = stringResource(labels.summaryRes),
         show = show,
         onDismissRequest = { if (!busy) onDismiss() },
     ) {
