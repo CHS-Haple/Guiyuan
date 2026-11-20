@@ -252,17 +252,11 @@ private fun HubNativeRail(
 
 @Composable
 internal fun MainHub(
-    appearance: Appearance,
-    dark: Boolean,
-    lang: AppLang,
-    iconHidden: Boolean,
-    onHotReload: () -> Unit,
-    onLangChange: (AppLang) -> Unit,
-    onIconHiddenChange: (Boolean) -> Unit,
-    onSwipeBackChange: (Boolean) -> Unit,
-    previewState: PreviewSandboxUiState,
-    onNavigate: (AppRoute) -> Unit,
+    inputs: MainHubInputs,
+    callbacks: MainHubCallbacks,
 ) {
+    val (appearance, dark, lang, iconHidden, previewState) = inputs
+    val (onHotReload, onLangChange, onIconHiddenChange, onSwipeBackChange, onNavigate) = callbacks
     val pagerState = rememberPagerState(pageCount = { TopLevelPageCount })
     val featureSnackbarState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
