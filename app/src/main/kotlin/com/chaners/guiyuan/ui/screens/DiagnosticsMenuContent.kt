@@ -409,48 +409,57 @@ internal fun LogEmptyGuide(
             modifier = Modifier.widthIn(max = 340.dp).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
-                modifier =
-                    Modifier.size(72.dp).background(
-                        color = MiuixTheme.colorScheme.surfaceContainerHighest,
-                        shape = CircleShape,
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp),
-                    tint = MiuixTheme.colorScheme.onSurfaceContainerHighest,
-                )
-            }
-            Spacer(Modifier.height(24.dp))
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.SemiBold),
-                color = MiuixTheme.colorScheme.onSurfaceContainer,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(Modifier.height(20.dp))
-            Text(
-                text = description,
-                modifier = Modifier.fillMaxWidth(),
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurfaceSecondary,
-                textAlign = TextAlign.Start,
-            )
-            note?.let {
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    text = it,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Start,
-                )
-            }
+            LogEmptyGuideHeader(icon, title)
+            LogEmptyGuideBody(description, note)
             LogEmptyRetryAction(busy = busy, onRetry = onRetry)
         }
+    }
+}
+
+@Composable
+private fun LogEmptyGuideHeader(icon: ImageVector, title: String) {
+    Box(
+        modifier = Modifier.size(72.dp).background(
+            color = MiuixTheme.colorScheme.surfaceContainerHighest,
+            shape = CircleShape,
+        ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(40.dp),
+            tint = MiuixTheme.colorScheme.onSurfaceContainerHighest,
+        )
+    }
+    Spacer(Modifier.height(24.dp))
+    Text(
+        text = title,
+        style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.SemiBold),
+        color = MiuixTheme.colorScheme.onSurfaceContainer,
+        textAlign = TextAlign.Center,
+    )
+}
+
+@Composable
+private fun LogEmptyGuideBody(description: String, note: String?) {
+    Spacer(Modifier.height(20.dp))
+    Text(
+        text = description,
+        modifier = Modifier.fillMaxWidth(),
+        style = MiuixTheme.textStyles.body1,
+        color = MiuixTheme.colorScheme.onSurfaceSecondary,
+        textAlign = TextAlign.Start,
+    )
+    note?.let {
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = it,
+            modifier = Modifier.fillMaxWidth(),
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            textAlign = TextAlign.Start,
+        )
     }
 }
 
