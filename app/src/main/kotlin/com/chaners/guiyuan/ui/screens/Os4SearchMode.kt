@@ -218,7 +218,7 @@ private fun BoxScope.Os4SearchCancelAction(
                 modifier = Modifier.size(44.dp),
                 backdrop = backdrop,
                 materialProgress = materialProgress,
-                    pressed = cancelPressed,
+                pressed = cancelPressed,
             ) {
                 Box(
                     modifier = Modifier
