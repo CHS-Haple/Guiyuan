@@ -73,6 +73,9 @@ android {
         buildConfigField("String", "KOTLINX_SERIALIZATION_CORE_VERSION", "\"$kotlinxSerializationCoreVersion\"")
         buildConfigField("String", "JUNIT_VERSION", "\"$junitVersion\"")
         buildConfigField("String", "GRADLE_VERSION", "\"$gradleVersion\"")
+        // Shared by debug, release and canary: avoid per-build-type overrides.
+        buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
+        buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
     }
 
     signingConfigs {
@@ -106,9 +109,7 @@ android {
             }
             buildConfigField("String", "BUILD_CHANNEL", "\"debug\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "true")
-            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
             buildConfigField("boolean", deepDiagnosticsBuildField, "true")
-            buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
             if (hapleSigningEnabled) {
                 signingConfig = signingConfigs.getByName("haple")
             }
@@ -116,9 +117,7 @@ android {
         release {
             buildConfigField("String", "BUILD_CHANNEL", "\"release\"")
             buildConfigField("boolean", "DEVELOPMENT_PROBES", "false")
-            buildConfigField("boolean", "RUNTIME_DIAGNOSTICS", "true")
             buildConfigField("boolean", deepDiagnosticsBuildField, "false")
-            buildConfigField("boolean", "REPO_LINK_ENABLED", projectLinkEnabled.toString())
             isMinifyEnabled = true
             isShrinkResources = true
             if (hapleSigningEnabled) {
