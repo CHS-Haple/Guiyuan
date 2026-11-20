@@ -12,7 +12,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -87,7 +87,7 @@ private fun NativeGlassIndicator(
     appearance: GlassIndicatorAppearance,
 ) {
     val density = LocalDensity.current
-    val scale by animateFloatAsState(
+    val scale = animateFloatAsState(
         targetValue = if (pressed && appearance.scaleOnPress) {
             glassPressScale(with(density) { height.toPx() }, density.density)
         } else {
@@ -104,10 +104,11 @@ private fun NativeGlassIndicator(
     Box(
         modifier = modifier
             .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
+                val currentScale = scale.value
+                scaleX = currentScale
+                scaleY = currentScale
             }
-            .clip(RoundedCornerShape(percent = 50))
+            .clip(CircleShape)
             .drawBehind { drawRect(fill.value) },
     )
 }

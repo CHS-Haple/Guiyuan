@@ -219,10 +219,14 @@ private fun RailNavigationWindow(
     animation: RailAnimationState,
     modifier: Modifier,
 ) {
+    val systemBars = WindowInsets.systemBars
+    val captionBar = WindowInsets.captionBar
+    val displayCutout = WindowInsets.displayCutout
+    val windowInsets = remember(systemBars, captionBar, displayCutout) {
+        systemBars.union(captionBar).union(displayCutout)
+    }
     BoxWithConstraints(
-        modifier = modifier.fillMaxSize().windowInsetsPadding(
-            WindowInsets.systemBars.union(WindowInsets.captionBar).union(WindowInsets.displayCutout),
-        ),
+        modifier = modifier.fillMaxSize().windowInsetsPadding(windowInsets),
     ) {
         val expanded = request.state.expanded
         val capsule = railCapsuleGeometry(maxWidth, widths.slots, request.showToggle)
@@ -263,6 +267,7 @@ private fun RailNavigationWindow(
                 targetChangeSpec = RailMorphDpMotion,
             ) { expanding -> if (expanding) RailMorphDpMotion else RailReboundMotion }
         } else null
+        val iconAlphaProvider = remember(animation.iconAlpha) { { animation.iconAlpha.value } }
         val placement = RailPlacement(
                 geometry = RailPanelGeometry(
                     tabWidths = tabWidths,
@@ -271,7 +276,7 @@ private fun RailNavigationWindow(
                     endpoints = RailPanelEndpoints(currentCollapsedWidth, GlassNavigationRailDefaults.ExpandedWidth,
                         GlassNavigationRailDefaults.CollapsedTop, expandedTop),
                 ),
-                motion = RailPanelMotion(animation.rows, { animation.iconAlpha.value },
+                motion = RailPanelMotion(animation.rows, iconAlphaProvider,
                     {
                         val start = nativePanelStart?.value ?: railLiquidPanelStart(
                             collapsedStart,

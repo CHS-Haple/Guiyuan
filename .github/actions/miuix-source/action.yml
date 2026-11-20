@@ -7,7 +7,7 @@ runs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: compose-miuix-ui/miuix
-        ref: 188f2eb5e378dece35489ac784c57419b95c789d
+        ref: 715ac29a179c6576f7e50f8e72a11c86597c2124
         path: miuix-upstream
         persist-credentials: false
     - name: Verify exact source revision and Glass integration files
@@ -29,9 +29,8 @@ runs:
         echo "MIUIX_SOURCE_REVISION=$expected" >> "$GITHUB_ENV"
         echo "MIUIX_SOURCE_DIR=miuix-upstream" >> "$GITHUB_ENV"
 
-    # Keep the reviewed OS4 implementation pinned; align only the AGP version
-    # catalog used by both the upstream modules and their included build-logic.
-    - name: Align pinned MIUIX build-tool AGP version
+    # Source graph and build tool must agree without editing the upstream checkout.
+    - name: Verify pinned MIUIX Android Gradle plugin parity
       shell: bash
       run: |
         set -euo pipefail
@@ -45,30 +44,15 @@ runs:
           echo "::error::Cannot identify both Android Gradle plugin versions."
           exit 1
         }
-        catalog_patch="none"
-        if [[ "$source_agp" != "$app_agp" ]]; then
-          # Only authorize the build-tool version line; keep all MIUIX UI code identical.
-          [[ "$source_agp" == "9.5.1" && "$app_agp" == "9.5.0" ]] || {
-            echo "::error::Unreviewed MIUIX/app AGP combination: $source_agp / $app_agp"
-            exit 1
-          }
-          test "$(grep -Ec '^agp = "9\.5\.1"$' "$catalog")" = 1
-          sed -i 's/^agp = "9\.5\.1"$/agp = "9.5.0"/' "$catalog"
-          test "$(git -C miuix-upstream diff --name-only)" = "gradle/libs.versions.toml"
-          test "$(git -C miuix-upstream diff --numstat)" = "$(printf '1\t1\tgradle/libs.versions.toml')"
-          git -C miuix-upstream diff --unified=0 -- gradle/libs.versions.toml | grep -Fx -- '-agp = "9.5.1"'
-          git -C miuix-upstream diff --unified=0 -- gradle/libs.versions.toml | grep -Fx -- '+agp = "9.5.0"'
-          catalog_patch="agp:9.5.1->9.5.0"
-        fi
-        test "$(sed -nE 's/^agp = "([^"]+)"$/\1/p' "$catalog")" = "$app_agp"
-        test "$(git -C miuix-upstream rev-parse HEAD)" = "$expected"
-        git -C miuix-upstream diff --check
+        [[ "$source_agp" == "$app_agp" ]] || {
+          echo "::error::MIUIX/app AGP mismatch: $source_agp / $app_agp; do not mutate upstream source."
+          exit 1
+        }
         echo "MIUIX_SOURCE_AGP_VERSION=$app_agp" >> "$GITHUB_ENV"
-        echo "MIUIX_SOURCE_CATALOG_PATCH=$catalog_patch" >> "$GITHUB_ENV"
+        echo "MIUIX_SOURCE_CATALOG_PATCH=none" >> "$GITHUB_ENV"
         {
           echo "### MIUIX composite-build provenance"
-          echo "- Upstream source commit: $expected (unchanged)"
-          echo "- Source code/UI: unchanged"
-          echo "- Build-only version catalog adjustment: $catalog_patch"
-          echo "- Effective AGP in app and MIUIX: $app_agp"
+          echo "- Upstream source commit: $expected"
+          echo "- Source graph and build catalog: unchanged"
+          echo "- Effective matched AGP: $app_agp"
         } >> "$GITHUB_STEP_SUMMARY"
