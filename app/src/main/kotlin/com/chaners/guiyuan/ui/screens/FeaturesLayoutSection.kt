@@ -94,6 +94,8 @@ private fun ColumnScope.featureLayoutSelection(
     }
 }
 
+private data class DualRowOptions(val labels: List<String>, val bothSidesSearch: Boolean)
+
 @Composable
 private fun ColumnScope.featureSignalRowChoices(
     search: PageSearch,
@@ -110,7 +112,10 @@ private fun ColumnScope.featureSignalRowChoices(
         stringResource(R.string.signal_dot_arrangement_both_sides)
     featureDualSignalToggle(search, visual, visualRepo, enabled, bothSidesSearch)
     featureSingleRowSignalDots(search, visual, visualRepo, enabled, signalDotArrangements)
-    featureDualRowSignalDots(search, visual, visualRepo, enabled, dualSignalDotArrangements)
+    featureDualRowSignalDots(
+        search, visual, visualRepo, enabled,
+        DualRowOptions(labels = dualSignalDotArrangements, bothSidesSearch = bothSidesSearch),
+    )
 }
 
 @Composable
@@ -179,15 +184,15 @@ private fun ColumnScope.featureDualRowSignalDots(
     visual: VisualCfg,
     visualRepo: VisualRepo,
     enabled: Boolean,
-    dualSignalDotArrangements: List<String>,
+    options: DualRowOptions,
 ) {
     AnimatedPreferenceGroup(visible = visual.dualSignal) {
         if (search.matches(R.string.dual_row_signal_dot_arrangement_title) ||
-            (bothSidesSearch && visual.dualRowDotArrangement != SignalDotArrangement.BOTH_SIDES)) {
+            (options.bothSidesSearch && visual.dualRowDotArrangement != SignalDotArrangement.BOTH_SIDES)) {
             UiDropdownPreference(
                 title = stringResource(R.string.dual_row_signal_dot_arrangement_title),
                 summary = stringResource(R.string.outer_signal_dots_only_summary),
-                items = dualSignalDotArrangements,
+                items = options.labels,
                 selectedIndex = visual.dualRowDotArrangement.ordinal,
                 showValue = true,
                 enabled = enabled,
