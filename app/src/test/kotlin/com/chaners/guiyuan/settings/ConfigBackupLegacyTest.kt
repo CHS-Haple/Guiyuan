@@ -96,19 +96,26 @@ class ConfigBackupLegacyTest {
         assertThrows(IllegalArgumentException::class.java) { ConfigBackupFormat.decode(invalid) }
     }
 
-    @Test fun combinedLegacyFieldsKeepMigrationOrderAndStrictSchema() {
-        val source = horizontalDotsBackup()
+    @Test fun combinedLegacyFieldsKeepMigrationOrderAndModeNormalization() {
+        val source = horizontalDotsBackup().let { backup ->
+            backup.copy(visual = backup.visual.copy(dualEnabled = false))
+        }
         val old = ConfigBackupFormat.encode(source)
             .replace("\"singleRowDotStyle\":\"DUO\"", "\"singleRowFlatDots\":true")
             .replaceFirst("\"dualDotStyle\":\"DUO\",", "")
             .replaceFirst("\"leftRightHideIdleActivity\":false", "\"leftRightShowIdleActivity\":true")
         val restored = ConfigBackupFormat.decode(old)
         assertEquals(SignalDotArrangement.CURVED, restored.visual.profiles.first().dualRowDotArrangement)
-        assertEquals(SignalDotArrangement.CURVED, restored.visual.profiles.first().singleRowDotArrangement)
         assertTrue(restored.visual.profiles.drop(1).all {
-            it.dualRowDotArrangement == SignalDotArrangement.HORIZONTAL &&
-                it.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL
+            it.dualRowDotArrangement == SignalDotArrangement.HORIZONTAL
         })
+        // The active single-row mode is propagated to its corresponding layout profiles.
+        assertTrue(restored.visual.profiles.filter {
+            it.layout == ContentLayout.NETWORK_CENTER
+        }.all { it.singleRowDotArrangement == SignalDotArrangement.CURVED })
+        assertTrue(restored.visual.profiles.filter {
+            it.layout != ContentLayout.NETWORK_CENTER
+        }.all { it.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL })
         assertFalse(restored.visual.profiles.first().bothSidesHideIdleActivity)
     }
 
