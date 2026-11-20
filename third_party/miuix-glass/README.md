@@ -12,14 +12,15 @@ source checkout in `.github/actions/miuix-source/action.yml`.
   `715ac29a179c6576f7e50f8e72a11c86597c2124`.
   [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/44775822406)
   and its tests passed. This is a source-pinned pre-release snapshot, not a stable
-  `v0.9.5` release. The B1887 (`f3829d3d`) and B1888 (`188f2eb5`)
-  candidates received focused on-device acceptance before merging to `dev`.
-  The latter aligns material and band activation with negative overscroll and
-  removes the older progressive band/mask animation. The current post-B1888
-  cleanup removes the obsolete shadow-distance ramp and lets each button
-  shadow follow its corresponding material transition. This follow-up requires its own
-  focused rendering acceptance; earlier device checks do not cover it.
-  The published 715ac29a revision further restores collapse-fraction band fading and makes Glass press/shadow and navigation rendering draw-phase oriented. Guiyuan follows these public contracts while retaining its independently owned title/action clipping, popup-Back and navigation input boundaries.
+  `v0.9.5` release. The B1890 candidate, on the earlier `188f2eb5`
+  baseline, has owner device acceptance. The `715ac29a` update restores
+  collapse-fraction band fading and improves Glass press/shadow, navigation and
+  blur draw-phase performance. This integration also aligns the app's AGP to
+  upstream 9.5.2 and retires the CI build-catalog rewrite: both source and
+  Maven paths must validate the same unmodified upstream graph.
+  Guiyuan retains required title/action clipping, popup Back, long-press and
+  navigation input boundaries. B1891's runtime changes require separate
+  device acceptance before integration into `dev`.
   The prior Material integration is documented in
   [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
   The stable `main` line must be checked separately; do not treat a `dev`
