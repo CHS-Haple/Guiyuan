@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.os.Build
 import android.provider.Settings
 import java.lang.reflect.InvocationTargetException
 import kotlinx.coroutines.flow.Flow
@@ -126,7 +125,7 @@ internal object NativeFontAxis {
 
 class NativeFontAxisReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (Build.VERSION.SDK_INT < 34 || intent.action != NativeFontAxis.ACTION) return
+        if (intent.action != NativeFontAxis.ACTION) return
         // SystemUI may have its own UID; match the OS-resolved package owner.
         val systemUiUid = runCatching {
             context.packageManager.getPackageUid(NativeFontAxis.SYSTEM_UI, 0)
