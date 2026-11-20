@@ -8,9 +8,9 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 ## Source and licensing
 
 - The active source and Maven graph uses the successfully published MIUIX
-  snapshot `0.9.5-188f2eb5-SNAPSHOT` at full revision
-  `188f2eb5e378dece35489ac784c57419b95c789d`.
-  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/44733938518)
+  snapshot `0.9.5-715ac29a-SNAPSHOT` at full revision
+  `715ac29a179c6576f7e50f8e72a11c86597c2124`.
+  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/44775822406)
   and its tests passed. This is a source-pinned pre-release snapshot, not a stable
   `v0.9.5` release. The B1887 (`f3829d3d`) and B1888 (`188f2eb5`)
   candidates received focused on-device acceptance before merging to `dev`.
@@ -19,7 +19,7 @@ source checkout in `.github/actions/miuix-source/action.yml`.
   cleanup removes the obsolete shadow-distance ramp and lets each button
   shadow follow its corresponding material transition. This follow-up requires its own
   focused rendering acceptance; earlier device checks do not cover it.
-  Guiyuan retains app-owned glass, search, navigation and input boundaries.
+  The published 715ac29a revision further restores collapse-fraction band fading and makes Glass press/shadow and navigation rendering draw-phase oriented. Guiyuan follows these public contracts while retaining its independently owned title/action clipping, popup-Back and navigation input boundaries.
   The prior Material integration is documented in
   [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
   The stable `main` line must be checked separately; do not treat a `dev`
