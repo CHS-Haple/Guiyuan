@@ -22,7 +22,7 @@ import com.chaners.guiyuan.ui.LocalGlassRailProgress
 import com.chaners.guiyuan.ui.components.HotReloadAction
 import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.glass.GlassTopAppBar
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 
@@ -36,7 +36,7 @@ internal data class HomeScreenSources(
 
 internal data class HomeScreenFrame(
     val listState: LazyListState,
-    val scrollBehavior: MiuixScrollBehavior,
+    val scrollBehavior: ScrollBehavior,
     val backdrop: LayerBackdrop?,
 )
 
