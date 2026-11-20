@@ -100,88 +100,33 @@ class SceneAodPolicyTest {
 
     @Test
     fun aodAnimationRoutesFromLatchedStableFamilySceneNotMutableOwnership() {
-        assertEquals(
-            ScenePolicy.KeyguardAodProjection.AOD,
-            ScenePolicy.resolveKeyguardAodProjection(
-                ScenePolicy.KeyguardAodProjectionInputs(
-                    feature = ScenePolicy.AodFeatureFlags(
-                        featureEnabled = true,
-                        keyguardEnabled = true,
-                        aodEnabled = true,
-                        toAod = false,
-                        isAodAnimate = true,
-                    ),
-                    scene = ScenePolicy.AodSceneEvidence(
-                        steadySourceScene = SourceScene.KEYGUARD,
-                        lastStableFamilyScene =
-                            ScenePolicy.StableKeyguardAodScene.KEYGUARD,
-                    ),
-
-                ),
-            ),
+        val keyguard = ScenePolicy.StableKeyguardAodScene.KEYGUARD
+        val aod = ScenePolicy.StableKeyguardAodScene.AOD
+        val projectsAod = ScenePolicy.KeyguardAodProjection.AOD
+        val projectsKeyguard = ScenePolicy.KeyguardAodProjection.KEYGUARD
+        val cases = listOf(
+            Triple(false, keyguard, projectsAod),
+            Triple(true, keyguard, projectsAod),
+            Triple(true, aod, projectsKeyguard),
+            Triple(false, aod, projectsKeyguard),
         )
-        assertEquals(
-            ScenePolicy.KeyguardAodProjection.AOD,
-            ScenePolicy.resolveKeyguardAodProjection(
-                ScenePolicy.KeyguardAodProjectionInputs(
-                    feature = ScenePolicy.AodFeatureFlags(
-                        featureEnabled = true,
-                        keyguardEnabled = true,
-                        aodEnabled = true,
-                        toAod = true,
-                        isAodAnimate = true,
-                    ),
-                    scene = ScenePolicy.AodSceneEvidence(
-                        steadySourceScene = SourceScene.KEYGUARD,
-                        lastStableFamilyScene =
-                            ScenePolicy.StableKeyguardAodScene.KEYGUARD,
-                    ),
-
+        cases.forEach { (toAod, stableScene, expected) ->
+            val input = ScenePolicy.KeyguardAodProjectionInputs(
+                feature = ScenePolicy.AodFeatureFlags(
+                    featureEnabled = true,
+                    keyguardEnabled = true,
+                    aodEnabled = true,
+                    toAod = toAod,
+                    isAodAnimate = true,
                 ),
-            ),
-        )
-        assertEquals(
-            ScenePolicy.KeyguardAodProjection.KEYGUARD,
-            ScenePolicy.resolveKeyguardAodProjection(
-                ScenePolicy.KeyguardAodProjectionInputs(
-                    feature = ScenePolicy.AodFeatureFlags(
-                        featureEnabled = true,
-                        keyguardEnabled = true,
-                        aodEnabled = true,
-                        toAod = true,
-                        isAodAnimate = true,
-                    ),
-                    scene = ScenePolicy.AodSceneEvidence(
-                        steadySourceScene = SourceScene.KEYGUARD,
-                        lastStableFamilyScene =
-                            ScenePolicy.StableKeyguardAodScene.AOD,
-                    ),
-
+                scene = ScenePolicy.AodSceneEvidence(
+                    steadySourceScene = SourceScene.KEYGUARD,
+                    lastStableFamilyScene = stableScene,
                 ),
-            ),
-        )
-        assertEquals(
-            ScenePolicy.KeyguardAodProjection.KEYGUARD,
-            ScenePolicy.resolveKeyguardAodProjection(
-                ScenePolicy.KeyguardAodProjectionInputs(
-                    feature = ScenePolicy.AodFeatureFlags(
-                        featureEnabled = true,
-                        keyguardEnabled = true,
-                        aodEnabled = true,
-                        toAod = false,
-                        isAodAnimate = true,
-                    ),
-                    scene = ScenePolicy.AodSceneEvidence(
-                        steadySourceScene = SourceScene.KEYGUARD,
-                        lastStableFamilyScene =
-                            ScenePolicy.StableKeyguardAodScene.AOD,
-                    ),
-
-                ),
-            ),
-        )
+            )
+            assertEquals(expected, ScenePolicy.resolveKeyguardAodProjection(input))
+        }
     }
-
     @Test
     fun directAodToHomeUnlockCannotReversePrearmAod() {
         assertEquals(
