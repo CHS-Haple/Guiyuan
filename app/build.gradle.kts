@@ -57,7 +57,7 @@ android {
 
     defaultConfig {
         applicationId = "com.chaners.guiyuan"
-        minSdk = 33
+        minSdk = 36
         targetSdk = 37
         versionCode = appVersionCode
         versionName = appVersionName
