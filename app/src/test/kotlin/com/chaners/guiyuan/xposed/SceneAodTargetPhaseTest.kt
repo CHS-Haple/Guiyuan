@@ -8,6 +8,7 @@ class SceneAodTargetPhaseTest {
     fun visualBoundaryWinsPendingTargetAndPreservesKeyguardAlpha() {
         fun project(alpha: Float) =
             ScenePolicy.resolveAnimatingKeyguardAodProjection(
+                ScenePolicy.AnimatingProjectionInputs(
                 keyguardEnabled = true,
                 aodEnabled = false,
                 steadySourceScene = SourceScene.KEYGUARD,
@@ -18,6 +19,8 @@ class SceneAodTargetPhaseTest {
                 fullAodTargetSourceReady = true,
                 fullAodTargetPending = true,
                 fullAodVisualBoundary = true,
+            
+                ),
             )
 
         assertEquals(ScenePolicy.KeyguardAodProjection.NATIVE, project(0f))
@@ -25,6 +28,7 @@ class SceneAodTargetPhaseTest {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.KEYGUARD,
             ScenePolicy.resolveAnimatingKeyguardAodProjection(
+                ScenePolicy.AnimatingProjectionInputs(
                 keyguardEnabled = true,
                 aodEnabled = false,
                 steadySourceScene = SourceScene.KEYGUARD,
@@ -35,6 +39,8 @@ class SceneAodTargetPhaseTest {
                 fullAodTargetSourceReady = true,
                 fullAodTargetPending = true,
                 fullAodVisualBoundary = true,
+            
+                ),
             ),
         )
     }
@@ -43,6 +49,7 @@ class SceneAodTargetPhaseTest {
     fun pendingTargetHoldsStableOriginOnlyWithNativeTargetEvidence() {
         fun projectAod(ready: Boolean, target: Boolean?) =
             ScenePolicy.resolveAnimatingKeyguardAodProjection(
+                ScenePolicy.AnimatingProjectionInputs(
                 keyguardEnabled = false,
                 aodEnabled = true,
                 steadySourceScene = SourceScene.KEYGUARD,
@@ -53,6 +60,8 @@ class SceneAodTargetPhaseTest {
                 fullAodTargetSourceReady = ready,
                 fullAodTargetPending = true,
                 fullAodVisualBoundary = false,
+            
+                ),
             )
 
         assertEquals(ScenePolicy.KeyguardAodProjection.AOD, projectAod(true, true))
@@ -61,6 +70,7 @@ class SceneAodTargetPhaseTest {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.KEYGUARD,
             ScenePolicy.resolveAnimatingKeyguardAodProjection(
+                ScenePolicy.AnimatingProjectionInputs(
                 keyguardEnabled = true,
                 aodEnabled = false,
                 steadySourceScene = SourceScene.KEYGUARD,
@@ -71,6 +81,8 @@ class SceneAodTargetPhaseTest {
                 fullAodTargetSourceReady = true,
                 fullAodTargetPending = true,
                 fullAodVisualBoundary = false,
+            
+                ),
             ),
         )
     }
@@ -79,6 +91,7 @@ class SceneAodTargetPhaseTest {
     fun visualBoundaryRetainsAodOnlyWhenNativeDirectionAllowsIt() {
         fun project(target: Boolean, origin: ScenePolicy.StableKeyguardAodScene) =
             ScenePolicy.resolveAnimatingKeyguardAodProjection(
+                ScenePolicy.AnimatingProjectionInputs(
                 keyguardEnabled = false,
                 aodEnabled = true,
                 steadySourceScene = SourceScene.KEYGUARD,
@@ -89,6 +102,8 @@ class SceneAodTargetPhaseTest {
                 fullAodTargetSourceReady = true,
                 fullAodTargetPending = true,
                 fullAodVisualBoundary = true,
+            
+                ),
             )
 
         assertEquals(
@@ -102,6 +117,7 @@ class SceneAodTargetPhaseTest {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.NATIVE,
             ScenePolicy.resolveAnimatingKeyguardAodProjection(
+                ScenePolicy.AnimatingProjectionInputs(
                 keyguardEnabled = false,
                 aodEnabled = true,
                 steadySourceScene = SourceScene.KEYGUARD,
@@ -112,6 +128,8 @@ class SceneAodTargetPhaseTest {
                 fullAodTargetSourceReady = true,
                 fullAodTargetPending = true,
                 fullAodVisualBoundary = false,
+            
+                ),
             ),
         )
     }
@@ -128,12 +146,15 @@ class SceneAodTargetPhaseTest {
                 "keyguard=${keyguard} origin=${origin} alpha=${alpha}",
                 expected,
                 ScenePolicy.resolveAnimatingKeyguardAodProjection(
+                    ScenePolicy.AnimatingProjectionInputs(
                     keyguardEnabled = keyguard,
                     aodEnabled = !keyguard,
                     steadySourceScene = SourceScene.KEYGUARD,
                     lastStableFamilyScene = origin,
                     homePresentationOwned = false,
                     keyguardStatusIconsAlpha = alpha,
+                
+                    ),
                 ),
             )
         }
