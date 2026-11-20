@@ -74,6 +74,13 @@ import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+private data class HomeScreenContents(
+    val layout: HomeScreenLayout,
+    val runtime: HomeScreenRuntime,
+    val actions: HomeScreenActions,
+    val sources: HomeScreenSources,
+)
+
 @Composable
 internal fun HomeScreen(
     layout: HomeScreenLayout,
@@ -89,17 +96,16 @@ internal fun HomeScreen(
         Scaffold(
             topBar = { HomeScreenTopBar(runtime, actions, frame) },
         ) { padding ->
-            HomeScreenScrollingContent(layout, runtime, actions, sources, frame, padding)
+            HomeScreenScrollingContent(
+                HomeScreenContents(layout, runtime, actions, sources), frame, padding,
+            )
         }
     }
 }
 
 @Composable
 private fun HomeScreenScrollingContent(
-    layout: HomeScreenLayout,
-    runtime: HomeScreenRuntime,
-    actions: HomeScreenActions,
-    sources: HomeScreenSources,
+    contents: HomeScreenContents,
     frame: HomeScreenFrame,
     padding: PaddingValues,
 ) {
@@ -119,23 +125,20 @@ private fun HomeScreenScrollingContent(
                 .nestedScroll(frame.scrollBehavior.nestedScrollConnection),
             contentPadding = pageContentPadding(
                 innerPadding = padding,
-                outerBottomPadding = layout.bottomContentPadding,
+                outerBottomPadding = contents.layout.bottomContentPadding,
                 extraBottom = 12.dp,
             ),
         ) {
-            homeScreenCards(layout, runtime, actions, sources)
+            homeScreenCards(contents)
         }
     }
 }
 
 private fun androidx.compose.foundation.lazy.LazyListScope.homeScreenCards(
-    layout: HomeScreenLayout,
-    runtime: HomeScreenRuntime,
-    actions: HomeScreenActions,
-    sources: HomeScreenSources,
+    contents: HomeScreenContents,
 ) {
-    item { HomeRuntimeCardEntry(runtime, actions, sources) }
-    item { HomePreviewCardEntry(layout, actions, sources) }
+    item { HomeRuntimeCardEntry(contents.runtime, contents.actions, contents.sources) }
+    item { HomePreviewCardEntry(contents.layout, contents.actions, contents.sources) }
 }
 
 @Composable
