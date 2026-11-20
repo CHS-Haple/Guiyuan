@@ -403,106 +403,24 @@ internal fun OnboardingFlow(
                     }
                     Spacer(Modifier.height(30.dp))
                     when (step) {
-                        1 -> {
-                            Card(modifier = Modifier.fillMaxWidth()) {
-                                GuidePermissionItem(
-                                    iconRes = R.drawable.ic_material_symbol_extension,
-                                    title = stringResource(R.string.guide_framework),
-                                    purpose = stringResource(R.string.guide_framework_purpose),
-                                    status = when (framework) {
-                                        XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
-                                        XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_offline)
-                                        XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_failed)
-                                        is XposedStatus.Connected -> stringResource(R.string.guide_framework_connected)
-                                    },
-                                    checked = connected != null,
-                                    expanded = expandedPermission == 1,
-                                    onToggleDetails = {
-                                        expandedPermission = if (expandedPermission == 1) 0 else 1
-                                    },
-                                    guidance = when (framework) {
-                                        XposedStatus.FrameworkUnavailable -> stringResource(R.string.guide_framework_help)
-                                        XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_help)
-                                        else -> null
-                                    },
-                                )
-                            }
-                            Spacer(Modifier.height(12.dp))
-                            Card(modifier = Modifier.fillMaxWidth()) {
-                                GuidePermissionItem(
-                                    iconRes = R.drawable.ic_material_symbol_target,
-                                    title = stringResource(R.string.guide_sysui_scope),
-                                    purpose = stringResource(R.string.guide_sysui_scope_purpose),
-                                    status = when {
-                                        sysUiInScope -> stringResource(R.string.runtime_scope_authorized)
-                                        framework == XposedStatus.Checking -> stringResource(R.string.guide_framework_checking)
-                                        framework == XposedStatus.QueryUnavailable -> stringResource(R.string.guide_scope_read_failed)
-                                        connected == null -> stringResource(R.string.guide_scope_wait_framework)
-                                        scopeBusy -> stringResource(R.string.guide_scope_requesting)
-                                        else -> stringResource(R.string.runtime_scope_disabled)
-                                    },
-                                    checked = sysUiInScope,
-                                    expanded = expandedPermission == 2,
-                                    onToggleDetails = {
-                                        expandedPermission = if (expandedPermission == 2) 0 else 2
-                                    },
-                                    guidance = when {
-                                        sysUiInScope -> null
-                                        framework == XposedStatus.QueryUnavailable -> stringResource(R.string.guide_framework_read_help)
-                                        connected == null -> stringResource(R.string.guide_scope_help_offline)
-                                        connected.apiVersion < 102 -> stringResource(R.string.guide_scope_help_api)
-                                        !canRequestScope -> stringResource(R.string.guide_scope_help_busy)
-                                        else -> stringResource(R.string.guide_scope_help_request)
-                                    },
-                                )
-                                if (!sysUiInScope) {
-                                    TextButton(
-                                        text = stringResource(R.string.guide_scope_request_action),
-                                        modifier = Modifier.fillMaxWidth()
-                                            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
-                                        colors = ButtonDefaults.textButtonColorsPrimary(),
-                                        enabled = canRequestScope,
-                                        onClick = {
-                                            scopeRequestFailed = false
-                                            if (!app.requestSysUiScope { approved ->
-                                                    scopeRequestFailed = !approved
-                                                }) scopeRequestFailed = true
-                                        },
-                                    )
-                                }
-                            }
-                            SmallTitle(text = stringResource(R.string.guide_permission_later))
-                            Card(modifier = Modifier.fillMaxWidth()) {
-                                GuidePermissionItem(
-                                    iconRes = R.drawable.ic_material_symbol_admin_panel_settings,
-                                    title = stringResource(R.string.guide_root_title),
-                                    purpose = stringResource(R.string.guide_root_purpose),
-                                    status = when {
-                                        rootChecking -> stringResource(R.string.guide_root_checking)
-                                        rootAccess == true -> stringResource(R.string.guide_root_granted)
-                                        rootAccess == false -> stringResource(R.string.guide_root_unavailable)
-                                        else -> stringResource(R.string.guide_root_not_checked)
-                                    },
-                                    checked = rootAccess == true,
-                                    expanded = expandedPermission == 3,
-                                    onToggleDetails = {
-                                        expandedPermission = if (expandedPermission == 3) 0 else 3
-                                    },
-                                    guidance = if (rootAccess == false) stringResource(R.string.guide_root_help) else null,
-                                )
-                            }
-                            if (scopeBusy || scopeRequestFailed) {
-                                Text(
-                                    text = stringResource(
-                                        if (scopeBusy) R.string.guide_scope_requesting
-                                        else R.string.guide_scope_request_failed,
-                                    ),
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                                    style = MiuixTheme.textStyles.footnote1,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                )
-                            }
-                        }
+                        1 -> GuidePermissionStage(
+                            status = GuideFrameworkSnapshot(
+                                framework, sysUiInScope, canRequestScope, scopeBusy, scopeRequestFailed,
+                            ),
+                            root = GuideRootSnapshot(rootChecking, rootAccess),
+                            actions = GuidePermissionActions(
+                                expandedPermission = expandedPermission,
+                                onToggleExpanded = { id ->
+                                    expandedPermission = if (expandedPermission == id) 0 else id
+                                },
+                                onRequestScope = {
+                                    scopeRequestFailed = false
+                                    if (!app.requestSysUiScope { approved ->
+                                            scopeRequestFailed = !approved
+                                        }) scopeRequestFailed = true
+                                },
+                            ),
+                        )
                         2 -> {
                             Column(
                                 modifier = Modifier.widthIn(max = 440.dp).fillMaxWidth()
