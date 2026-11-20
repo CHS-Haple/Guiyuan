@@ -61,24 +61,49 @@ internal object NativeOpticalGeometry {
             get() = (opticalBottom - opticalTop).coerceAtLeast(0f)
     }
 
-    fun resolve(
-        currentIntrinsicWidth: Int,
-        currentIntrinsicHeight: Int,
-        currentOpticalLeft: Float,
-        currentOpticalTop: Float,
-        currentOpticalRight: Float,
-        currentOpticalBottom: Float,
-        fitIntrinsicWidth: Int,
-        fitIntrinsicHeight: Int,
-        fitOpticalLeft: Float,
-        fitOpticalTop: Float,
-        fitOpticalRight: Float,
-        fitOpticalBottom: Float,
-        centerX: Float,
-        centerY: Float,
-        maxWidth: Float,
-        maxHeight: Float,
-    ): Resolved? {
+    internal data class OpticalRectangle(
+        val left: Float,
+        val top: Float,
+        val right: Float,
+        val bottom: Float,
+    )
+
+    internal data class OpticalAsset(
+        val intrinsicWidth: Int,
+        val intrinsicHeight: Int,
+        val optical: OpticalRectangle,
+    )
+
+    internal data class OpticalViewport(
+        val centerX: Float,
+        val centerY: Float,
+        val maxWidth: Float,
+        val maxHeight: Float,
+    )
+
+    internal data class OpticalFitInput(
+        val current: OpticalAsset,
+        val reference: OpticalAsset,
+        val viewport: OpticalViewport,
+    )
+
+    fun resolve(input: OpticalFitInput): Resolved? {
+        val currentIntrinsicWidth = input.current.intrinsicWidth
+        val currentIntrinsicHeight = input.current.intrinsicHeight
+        val currentOpticalLeft = input.current.optical.left
+        val currentOpticalTop = input.current.optical.top
+        val currentOpticalRight = input.current.optical.right
+        val currentOpticalBottom = input.current.optical.bottom
+        val fitIntrinsicWidth = input.reference.intrinsicWidth
+        val fitIntrinsicHeight = input.reference.intrinsicHeight
+        val fitOpticalLeft = input.reference.optical.left
+        val fitOpticalTop = input.reference.optical.top
+        val fitOpticalRight = input.reference.optical.right
+        val fitOpticalBottom = input.reference.optical.bottom
+        val centerX = input.viewport.centerX
+        val centerY = input.viewport.centerY
+        val maxWidth = input.viewport.maxWidth
+        val maxHeight = input.viewport.maxHeight
         if (
             currentIntrinsicWidth <= 0 ||
             currentIntrinsicHeight <= 0 ||

@@ -2867,22 +2867,34 @@ internal class StatusPainter(
         val fitAsset = nativeOpticalFitAsset(asset, opticalReferenceResource)
         val resolved =
             NativeOpticalGeometry.resolve(
-                currentIntrinsicWidth = asset.intrinsicWidth,
-                currentIntrinsicHeight = asset.intrinsicHeight,
-                currentOpticalLeft = asset.opticalBounds.left,
-                currentOpticalTop = asset.opticalBounds.top,
-                currentOpticalRight = asset.opticalBounds.right,
-                currentOpticalBottom = asset.opticalBounds.bottom,
-                fitIntrinsicWidth = fitAsset.intrinsicWidth,
-                fitIntrinsicHeight = fitAsset.intrinsicHeight,
-                fitOpticalLeft = fitAsset.opticalBounds.left,
-                fitOpticalTop = fitAsset.opticalBounds.top,
-                fitOpticalRight = fitAsset.opticalBounds.right,
-                fitOpticalBottom = fitAsset.opticalBounds.bottom,
-                centerX = centerX,
-                centerY = centerY,
-                maxWidth = maxWidth,
-                maxHeight = maxHeight,
+                NativeOpticalGeometry.OpticalFitInput(
+                current = NativeOpticalGeometry.OpticalAsset(
+                    intrinsicWidth = asset.intrinsicWidth,
+                    intrinsicHeight = asset.intrinsicHeight,
+                    optical = NativeOpticalGeometry.OpticalRectangle(
+                        left = asset.opticalBounds.left,
+                        top = asset.opticalBounds.top,
+                        right = asset.opticalBounds.right,
+                        bottom = asset.opticalBounds.bottom,
+                    ),
+                ),
+                reference = NativeOpticalGeometry.OpticalAsset(
+                    intrinsicWidth = fitAsset.intrinsicWidth,
+                    intrinsicHeight = fitAsset.intrinsicHeight,
+                    optical = NativeOpticalGeometry.OpticalRectangle(
+                        left = fitAsset.opticalBounds.left,
+                        top = fitAsset.opticalBounds.top,
+                        right = fitAsset.opticalBounds.right,
+                        bottom = fitAsset.opticalBounds.bottom,
+                    ),
+                ),
+                viewport = NativeOpticalGeometry.OpticalViewport(
+                    centerX = centerX,
+                    centerY = centerY,
+                    maxWidth = maxWidth,
+                    maxHeight = maxHeight,
+                ),
+                ),
             ) ?: return null
         val drawLeft = centerX - resolved.drawWidth / 2f
         val drawTop = centerY - resolved.drawHeight / 2f
