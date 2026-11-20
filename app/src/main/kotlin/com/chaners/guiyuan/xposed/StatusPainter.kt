@@ -43,9 +43,7 @@ internal class StatusPainter(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     // Keep 5G font axes separate from other Canvas text.
     private val mobileTypePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val hasFontOverride =
-        Build.VERSION.SDK_INT >= 36 &&
-            Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1
+    private val hasFontOverride = Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1
     private var mobileTextSource: Typeface? = null
     private val mobileTextSamples = BoundedAccessCache<Int, Paint>(128)
     private var airplaneDrawableResolved = false
