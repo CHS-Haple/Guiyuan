@@ -421,41 +421,14 @@ internal fun OnboardingFlow(
                                 },
                             ),
                         )
-                        2 -> {
-                            Column(
-                                modifier = Modifier.widthIn(max = 440.dp).fillMaxWidth()
-                                    .weight(1f).padding(horizontal = 4.dp),
-                            ) {
-                                GuideAgreementCard(
-                                    titleRes = R.string.terms_title,
-                                    summaryRes = R.string.about_terms_summary,
-                                    iconRes = R.drawable.ic_material_symbol_contract,
-                                    required = requiredReading.terms && !termsViewed,
-                                    onClick = { showAgreement(AgreementDocument.Terms) },
-                                )
-                                Spacer(Modifier.height(12.dp))
-                                GuideAgreementCard(
-                                    titleRes = R.string.privacy_title,
-                                    summaryRes = R.string.about_privacy_summary,
-                                    iconRes = R.drawable.ic_material_symbol_policy,
-                                    required = requiredReading.privacy && !privacyViewed,
-                                    onClick = { showAgreement(AgreementDocument.Privacy) },
-                                )
-                                GuidePrivacyNotes(importantScroll)
-                            }
-                        }
-                        3 -> {
-                            SmallTitle(text = stringResource(R.string.section_app))
-                            Card(modifier = Modifier.fillMaxWidth()) {
-                                AppSettingsRows(
-                                    lang = lang,
-                                    iconHidden = iconHidden,
-                                    onLangChange = onLangChange,
-                                    onIconHiddenChange = onIconHiddenChange,
-                                    entryState = entryState,
-                                )
-                            }
-                        }
+                        2 -> GuidePrivacyStage(
+                            requirements = requiredReading,
+                            importantScroll = importantScroll,
+                            termsViewed = termsViewed,
+                            privacyViewed = privacyViewed,
+                            onOpen = ::showAgreement,
+                        )
+                        3 -> GuideAppSettingsStage(config, handlers, entryState)
                     }
                     if (step != 2) Spacer(Modifier.height(24.dp))
                 }
