@@ -219,15 +219,16 @@ fun GlassNavigationBar(
     // The layout owns width; observe it only while settling an explicit destination.
     LaunchedEffect(index, settleGeneration, items.size, contentInset, overhang) {
         snapshotFlow { barWidthState.intValue }.collectLatest { barWidth ->
-            if (dragging.value || barWidth <= contentInset * 2f) return@collectLatest
-            val slotWidth = ((barWidth - contentInset * 2f) / items.size).coerceAtLeast(0f)
-            val targetLeft = contentInset - overhang + index * slotWidth
-            val targetRight = contentInset + overhang + (index + 1) * slotWidth
-            if (right.value <= left.value) {
-                left.snapTo(targetLeft)
-                right.snapTo(targetRight)
-            } else {
-                animateIndicator(targetLeft, targetRight)
+            if (!dragging.value && barWidth > contentInset * 2f) {
+                val slotWidth = ((barWidth - contentInset * 2f) / items.size).coerceAtLeast(0f)
+                val targetLeft = contentInset - overhang + index * slotWidth
+                val targetRight = contentInset + overhang + (index + 1) * slotWidth
+                if (right.value <= left.value) {
+                    left.snapTo(targetLeft)
+                    right.snapTo(targetRight)
+                } else {
+                    animateIndicator(targetLeft, targetRight)
+                }
             }
         }
     }
