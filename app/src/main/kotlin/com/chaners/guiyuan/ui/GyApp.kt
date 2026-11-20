@@ -29,6 +29,10 @@ import com.chaners.guiyuan.ui.screens.PrivacyPolicyScreen
 import com.chaners.guiyuan.ui.screens.TermsOfUseScreen
 import com.chaners.guiyuan.ui.screens.StaticScopeScreen
 import com.chaners.guiyuan.ui.screens.AppearanceScreen
+import com.chaners.guiyuan.ui.screens.AppearanceThemeActions
+import com.chaners.guiyuan.ui.screens.AppearanceStyleActions
+import com.chaners.guiyuan.ui.screens.AppearanceNavigationActions
+import com.chaners.guiyuan.ui.screens.AppearanceVisualActions
 import com.chaners.guiyuan.ui.screens.DiagnosticsScreen
 import com.chaners.guiyuan.ui.screens.PreviewBatteryMode
 import com.chaners.guiyuan.ui.screens.PreviewChargingState
@@ -262,22 +266,26 @@ internal fun GyApp(
                 AppearanceScreen(
                     appearance = appearance,
                     dark = dark,
-                    onUiStyleChange = onUiStyleChange,
-                    onTopBarProgressiveBlurChange = onTopBarProgressiveBlurChange,
-                    onThemeChange = onThemeChange,
-                    onDynamicChange = onDynamicChange,
-                    onColorSpecChange = onColorSpecChange,
-                    onPaletteStyleChange = onPaletteStyleChange,
-                    onNavEnabledChange =
-                        onNavEnabledChange,
-                    onNavStyleChange =
-                        onNavStyleChange,
-                    onNavTouchExtensionChange = onNavTouchExtensionChange,
-                    onNavContentChange =
-                        onNavContentChange,
-                    onLiquidModeChange =
-                        onLiquidModeChange,
-                    onUiScaleChange = onUiScaleChange,
+                    themeActions = AppearanceThemeActions(
+                        onThemeChange = onThemeChange,
+                        onDynamicChange = onDynamicChange,
+                        onColorSpecChange = onColorSpecChange,
+                        onPaletteStyleChange = onPaletteStyleChange,
+                    ),
+                    visualActions = AppearanceVisualActions(
+                        style = AppearanceStyleActions(
+                            onUiStyleChange = onUiStyleChange,
+                            onTopBarProgressiveBlurChange = onTopBarProgressiveBlurChange,
+                            onUiScaleChange = onUiScaleChange,
+                        ),
+                        navigation = AppearanceNavigationActions(
+                            onNavEnabledChange = onNavEnabledChange,
+                            onNavStyleChange = onNavStyleChange,
+                            onNavTouchExtensionChange = onNavTouchExtensionChange,
+                            onNavContentChange = onNavContentChange,
+                            onLiquidModeChange = onLiquidModeChange,
+                        ),
+                    ),
                     onBack = ::navigateBack,
                 )
             }
