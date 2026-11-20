@@ -43,69 +43,40 @@ class NativeOpticalGeometryTest {
 
     @Test
     fun currentOpticalWidthStaysResourceSpecificUnderSharedReferenceFit() {
-        val narrow =
+        fun resolveWithOpticalBounds(left: Float, right: Float) =
             NativeOpticalGeometry.resolve(
                 NativeOpticalGeometry.OpticalFitInput(
-                current = NativeOpticalGeometry.OpticalAsset(
-                    intrinsicWidth = 100,
-                    intrinsicHeight = 100,
-                    optical = NativeOpticalGeometry.OpticalRectangle(
-                        left = 0.35f,
-                        top = 0.20f,
-                        right = 0.65f,
-                        bottom = 0.80f,
+                    current = NativeOpticalGeometry.OpticalAsset(
+                        intrinsicWidth = 100,
+                        intrinsicHeight = 100,
+                        optical = NativeOpticalGeometry.OpticalRectangle(
+                            left = left,
+                            top = 0.20f,
+                            right = right,
+                            bottom = 0.80f,
+                        ),
                     ),
-                ),
-                reference = NativeOpticalGeometry.OpticalAsset(
-                    intrinsicWidth = 100,
-                    intrinsicHeight = 100,
-                    optical = NativeOpticalGeometry.OpticalRectangle(
-                        left = 0.10f,
-                        top = 0.10f,
-                        right = 0.90f,
-                        bottom = 0.90f,
+                    reference = NativeOpticalGeometry.OpticalAsset(
+                        intrinsicWidth = 100,
+                        intrinsicHeight = 100,
+                        optical = NativeOpticalGeometry.OpticalRectangle(
+                            left = 0.10f,
+                            top = 0.10f,
+                            right = 0.90f,
+                            bottom = 0.90f,
+                        ),
                     ),
-                ),
-                viewport = NativeOpticalGeometry.OpticalViewport(
-                    centerX = 60f,
-                    centerY = 58f,
-                    maxWidth = 58f,
-                    maxHeight = 45f,
-                ),
-                ),
-            )
-        val wide =
-            NativeOpticalGeometry.resolve(
-                NativeOpticalGeometry.OpticalFitInput(
-                current = NativeOpticalGeometry.OpticalAsset(
-                    intrinsicWidth = 100,
-                    intrinsicHeight = 100,
-                    optical = NativeOpticalGeometry.OpticalRectangle(
-                        left = 0.20f,
-                        top = 0.20f,
-                        right = 0.80f,
-                        bottom = 0.80f,
+                    viewport = NativeOpticalGeometry.OpticalViewport(
+                        centerX = 60f,
+                        centerY = 58f,
+                        maxWidth = 58f,
+                        maxHeight = 45f,
                     ),
-                ),
-                reference = NativeOpticalGeometry.OpticalAsset(
-                    intrinsicWidth = 100,
-                    intrinsicHeight = 100,
-                    optical = NativeOpticalGeometry.OpticalRectangle(
-                        left = 0.10f,
-                        top = 0.10f,
-                        right = 0.90f,
-                        bottom = 0.90f,
-                    ),
-                ),
-                viewport = NativeOpticalGeometry.OpticalViewport(
-                    centerX = 60f,
-                    centerY = 58f,
-                    maxWidth = 58f,
-                    maxHeight = 45f,
-                ),
                 ),
             )
 
+        val narrow = resolveWithOpticalBounds(left = 0.35f, right = 0.65f)
+        val wide = resolveWithOpticalBounds(left = 0.20f, right = 0.80f)
         assertNotNull(narrow)
         assertNotNull(wide)
         assertEquals(wide!!.drawWidth, narrow!!.drawWidth, 0.0001f)
