@@ -76,6 +76,8 @@ import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.navTouchExtension
+import com.chaners.guiyuan.ui.components.NavTouchStripGeometry
+import com.chaners.guiyuan.ui.components.NavTouchTrailingAction
 import com.chaners.guiyuan.ui.components.measuredNavTouchExtension
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
@@ -492,22 +494,26 @@ internal fun MainHub(
                                 .then(
                                     if (appearance.navTouchExtension) {
                                         Modifier.navTouchExtension(
-                                            bottomPadding = liquidBottomPadding,
-                                            horizontalPadding = LiquidNavSpec.sidePadding,
-                                            contentPadding = 4.dp,
-                                            itemCount = items.size,
-                                            rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
+                                            geometry = NavTouchStripGeometry(
+                                                bottomPadding = liquidBottomPadding,
+                                                horizontalPadding = LiquidNavSpec.sidePadding,
+                                                contentPadding = 4.dp,
+                                                itemCount = items.size,
+                                                rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
+                                            ),
                                             onSelect = ::selectPage,
-                                            trailingActionWidth = if (navigationAction != null) {
-                                                LiquidNavSpec.height + GlassNavigationBarDefaults.ActionSpacing
-                                            } else 0.dp,
-                                            trailingActionSize = if (navigationAction != null) {
-                                                LiquidNavSpec.height
-                                            } else 0.dp,
-                                            onTrailingAction = navigationAction?.let { action ->
-                                                if (action == NavigationAction.HotReload) actionControls.onHotReload
-                                                else actionControls.onSearch
-                                            },
+                                            trailing = NavTouchTrailingAction(
+                                                width = if (navigationAction != null) {
+                                                    LiquidNavSpec.height + GlassNavigationBarDefaults.ActionSpacing
+                                                } else 0.dp,
+                                                size = if (navigationAction != null) {
+                                                    LiquidNavSpec.height
+                                                } else 0.dp,
+                                                onTap = navigationAction?.let { action ->
+                                                    if (action == NavigationAction.HotReload) actionControls.onHotReload
+                                                    else actionControls.onSearch
+                                                },
+                                            ),
                                         )
                                     } else {
                                         Modifier

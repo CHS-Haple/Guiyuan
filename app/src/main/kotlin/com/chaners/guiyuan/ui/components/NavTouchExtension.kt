@@ -32,17 +32,30 @@ private fun bottomSystemGestureInset(): Dp =
 
 // The existing empty bottom margin is hit-test space; the bar and system gestures keep their geometry.
 @Composable
+internal data class NavTouchStripGeometry(
+    val bottomPadding: Dp,
+    val horizontalPadding: Dp,
+    val contentPadding: Dp,
+    val itemCount: Int,
+    val rtl: Boolean,
+)
+
+internal data class NavTouchTrailingAction(
+    val width: Dp = 0.dp,
+    val size: Dp = 0.dp,
+    val onTap: (() -> Unit)? = null,
+)
+
+@Composable
 internal fun Modifier.navTouchExtension(
-    bottomPadding: Dp,
-    horizontalPadding: Dp,
-    contentPadding: Dp,
-    itemCount: Int,
-    rtl: Boolean,
+    geometry: NavTouchStripGeometry,
     onSelect: (Int) -> Unit,
-    trailingActionWidth: Dp = 0.dp,
-    trailingActionSize: Dp = 0.dp,
-    onTrailingAction: (() -> Unit)? = null,
+    trailing: NavTouchTrailingAction = NavTouchTrailingAction(),
 ): Modifier {
+    val (bottomPadding, horizontalPadding, contentPadding, itemCount, rtl) = geometry
+    val trailingActionWidth = trailing.width
+    val trailingActionSize = trailing.size
+    val onTrailingAction = trailing.onTap
     if (itemCount <= 0) return this
 
     val bottomGestureInset = bottomSystemGestureInset()
