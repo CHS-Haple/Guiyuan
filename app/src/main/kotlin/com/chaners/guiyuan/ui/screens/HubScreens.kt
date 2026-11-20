@@ -252,7 +252,7 @@ internal fun HubPage(
         animationSpec = tween(150),
         label = "os3SearchAction",
     )
-    // Search and top bar use one scroll/overscroll material clock; geometry has its own motion.
+    // Search shadow follows its surface material transition; geometry has its own motion.
     val searchMaterial = animateFloatAsState(
         targetValue = if (os4 && (listState.canScrollBackward || scrollBehavior.state.overscrollOffset < -1f)) 1f else 0f,
         animationSpec = GlassMotion.topBarButtonFloat(),

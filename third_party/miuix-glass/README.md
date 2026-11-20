@@ -16,8 +16,8 @@ source checkout in `.github/actions/miuix-source/action.yml`.
   candidates received focused on-device acceptance before merging to `dev`.
   The latter aligns material and band activation with negative overscroll and
   removes the older progressive band/mask animation. The current post-B1888
-  cleanup also removes an obsolete shadow-distance ramp and shares one
-  top-bar/search material-progress clock. This follow-up requires its own
+  cleanup removes the obsolete shadow-distance ramp and lets each button
+  shadow follow its corresponding material transition. This follow-up requires its own
   focused rendering acceptance; earlier device checks do not cover it.
   Guiyuan retains app-owned glass, search, navigation and input boundaries.
   The prior Material integration is documented in
