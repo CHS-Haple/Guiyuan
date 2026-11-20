@@ -3,13 +3,10 @@ package com.chaners.guiyuan.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
-import top.yukonga.miuix.kmp.basic.Text
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -19,12 +16,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MAX
 import com.chaners.guiyuan.settings.BATTERY_TOP_TEXT_WEIGHT_MIN
@@ -40,7 +35,6 @@ import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.launch
 
 @Composable
@@ -138,18 +132,6 @@ internal fun FeaturesScreen(
     LaunchedEffect(visible) {
         if (!visible) search.close()
     }
-    val searching = search.filtering
-    val bothSidesChargingSearch = searching && search.any(
-        R.string.both_sides_charging_title,
-        R.string.both_sides_charging_vertical_offset,
-    )
-    val displayMatches = search.anyFrom(FeatureSearchIds.display)
-    val layoutMatches = search.anyFrom(FeatureSearchIds.layout)
-    val networkMatches = search.anyFrom(FeatureSearchIds.network)
-    val batteryMatches = search.anyFrom(FeatureSearchIds.battery) ||
-        (bothSidesChargingSearch && !visual.showChargingIcon)
-    val managementMatches = search.anyFrom(FeatureSearchIds.management)
-
     HubPage(
         title = stringResource(R.string.features_title),
         bottomContentPadding = bottomContentPadding,
@@ -266,68 +248,23 @@ internal fun FeaturesScreen(
             }
         },
     ) {
-        if (displayMatches) {
-            featureDisplaySection(search, featureCfg, featureRepo, visual, visualRepo)
-        }
-        if (layoutMatches) {
-            featureLayoutSection(
-                search = search,
-                visual = visual,
-                visualRepo = visualRepo,
-                enabled = featureCfg.enabled,
-                bothSidesChargingSearch = bothSidesChargingSearch,
-            )
-        }
-        if (networkMatches) {
-            featureNetworkSection(
-                search = search,
-                visual = visual,
-                visualRepo = visualRepo,
-                enabled = featureCfg.enabled,
-                weight = mobileWeight,
-                weightDialogOpen = showWeightDialog,
-                onOpenWeightDialog = { showWeightDialog = true },
-            )
-        }
-        if (batteryMatches) {
-            featureBatterySection(
-                search = search,
-                state = BatteryFeatureSnapshot(visual, featureCfg, schemeLibrary, batteryWeight),
-                repositories = BatteryFeatureRepositories(visualRepo, featureRepo),
-                dialogs = BatteryFeatureDialogs(
-                    colorOpen = showBatteryColorSheet,
-                    onOpenColor = { showBatteryColorSheet = true },
-                    weightOpen = showBatteryWeightDialog,
-                    onOpenWeight = { showBatteryWeightDialog = true },
-                ),
-                bothSidesChargingSearch = bothSidesChargingSearch,
-            )
-        }
-        if (managementMatches) {
-            featureManagementSection(
-                search = search,
+        featureScreenSections(
+            settings = FeaturesSectionSettings(search, featureCfg, featureRepo, visual, visualRepo),
+            resources = FeaturesSectionResources(mobileWeight, batteryWeight, schemeLibrary),
+            ui = FeaturesSectionUi(
+                mobileWeightOpen = showWeightDialog,
+                batteryWeightOpen = showBatteryWeightDialog,
+                colorSheetOpen = showBatteryColorSheet,
                 ioBusy = ioBusy,
-                onExport = { createDocument.launch(backupFiles.fileName()) },
-                onImport = { openDocument.launch(arrayOf("application/json", "text/plain")) },
-                onReset = { showResetDialog = true },
-            )
-        }
-        if (search.filtering &&
-            !displayMatches && !layoutMatches && !networkMatches &&
-            !batteryMatches && !managementMatches
-        ) {
-            item {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.feature_search_empty),
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    )
-                }
-            }
-        }
+            ),
+            actions = FeaturesSectionActions(
+                openMobileWeight = { showWeightDialog = true },
+                openBatteryWeight = { showBatteryWeightDialog = true },
+                openColorSheet = { showBatteryColorSheet = true },
+                export = { createDocument.launch(backupFiles.fileName()) },
+                import = { openDocument.launch(arrayOf("application/json", "text/plain")) },
+                reset = { showResetDialog = true },
+            ),
+        )
     }
 }
