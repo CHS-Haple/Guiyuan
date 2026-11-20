@@ -20,7 +20,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -61,7 +60,7 @@ internal fun GuiyuanAnimatedIdentityMark(
     effectModifier: Modifier = Modifier,
 ) {
     val press = remember { MarkPressState() }
-    val speed by animateFloatAsState(
+    val speed = animateFloatAsState(
         targetValue = if (press.boosted) 20f else 1f,
         animationSpec = folmeSpring(damping = 1f, response = if (press.boosted) 0.48f else 0.95f),
         label = "aboutOrbitSpeed",
@@ -71,7 +70,7 @@ internal fun GuiyuanAnimatedIdentityMark(
         animationSpec = folmeSpring(damping = 0.85f, response = if (press.pressed) 0.23f else 0.38f),
         label = "aboutLogoPress",
     )
-    val rotation by rememberMarkRotation(active, speed)
+    val rotation = rememberMarkRotation(active, speed)
     TriggerMarkWave(wave, press.boosted, active, speed, rotation, onWaveRelease)
 
     val pressModifier = if (interactive) {
@@ -97,14 +96,13 @@ internal fun GuiyuanAnimatedIdentityMark(
         },
         contentAlignment = Alignment.Center,
     ) {
-        IdentityMarkArtwork(markSize, wave, wavePhase, effectModifier, rotation)
+        IdentityMarkArtwork(markSize, wave, wavePhase, effectModifier, rotation.value)
     }
 }
 
 @Composable
-private fun rememberMarkRotation(active: Boolean, speed: Float): State<Float> {
+private fun rememberMarkRotation(active: Boolean, speed: State<Float>): State<Float> {
     val angle = remember { mutableFloatStateOf(0f) }
-    val currentSpeed by rememberUpdatedState(speed)
     LaunchedEffect(active) {
         if (active) {
             var previous = withFrameNanos { it }
@@ -113,7 +111,7 @@ private fun rememberMarkRotation(active: Boolean, speed: Float): State<Float> {
                 // Paused frames must not create a discontinuous jump on resume.
                 val delta = (now - previous).coerceIn(0L, 50_000_000L) / 1_000_000_000f
                 previous = now
-                angle.floatValue = (angle.floatValue - 18f * currentSpeed * delta) % 360f
+                angle.floatValue = (angle.floatValue - 18f * speed.value * delta) % 360f
             }
         }
     }
@@ -125,16 +123,16 @@ private fun TriggerMarkWave(
     wave: Animatable<Float, AnimationVector1D>,
     boosted: Boolean,
     active: Boolean,
-    speed: Float,
-    rotation: Float,
+    speed: State<Float>,
+    rotation: State<Float>,
     onWaveRelease: (Float) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     LaunchedEffect(boosted, active) {
         if (boosted && active) {
-            snapshotFlow { speed }.first { it >= 19f }
-            onWaveRelease(rotation * (PI / 180).toFloat())
+            snapshotFlow { speed.value }.first { it >= 19f }
+            onWaveRelease(rotation.value * (PI / 180).toFloat())
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
             scope.launch {
                 wave.snapTo(0f)
