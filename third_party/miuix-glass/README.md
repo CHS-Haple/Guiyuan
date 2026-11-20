@@ -12,13 +12,11 @@ source checkout in `.github/actions/miuix-source/action.yml`.
   `188f2eb5e378dece35489ac784c57419b95c789d`.
   [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/44733938518)
   and its tests passed. This is a source-pinned pre-release snapshot, not a stable
-  `v0.9.5` release. The B1887 (`f3829d3d`) and B1888 (`188f2eb5`)
-  candidates received focused on-device acceptance before merging to `dev`.
-  The latter aligns material and band activation with negative overscroll and
-  removes the older progressive band/mask animation. The current post-B1888
-  cleanup also removes an obsolete shadow-distance ramp and shares one
-  top-bar/search material-progress clock. This follow-up requires its own
-  focused rendering acceptance; earlier device checks do not cover it.
+  `v0.9.5` release. The local Glass TopBar retains its native-title and unclipped
+  action slots while aligning background-band and material transitions with
+  upstream, including negative overscroll. The obsolete separate shadow-distance
+  ramp is retired: search and action shadows follow their material clocks.
+  Focused device evidence is still needed for this rendering update.
   Guiyuan retains app-owned glass, search, navigation and input boundaries.
   The prior Material integration is documented in
   [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
