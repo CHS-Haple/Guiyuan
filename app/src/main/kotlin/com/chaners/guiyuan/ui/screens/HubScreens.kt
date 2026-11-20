@@ -136,10 +136,10 @@ internal fun SettingsHubScreen(
         }
         Section(R.string.section_app) {
             AppSettingsRows(
-                snapshot.lang = snapshot.lang,
-                snapshot.iconHidden = snapshot.iconHidden,
-                actions.onLangChange = actions.onLangChange,
-                actions.onIconHiddenChange = actions.onIconHiddenChange,
+                lang = snapshot.lang,
+                iconHidden = snapshot.iconHidden,
+                onLangChange = actions.onLangChange,
+                onIconHiddenChange = actions.onIconHiddenChange,
                 entryState = entryState,
             )
         }
