@@ -21,21 +21,8 @@ internal object NativePresentationResolver {
             SysUiNetworkSource.mobilePresentationBindings()
                 .filter { binding -> binding.root.isAttachedToWindow }
         val semanticActiveSubIds = linkedSetOf<Int>()
-        val boundSubscriptionIds =
-            bindings.map { binding ->
-                val subscriptionId = binding.subscriptionId
-                val signal = state.mobile[subscriptionId]?.signal
-                if (signal != null && signal !is SignalStrength.Unknown) {
-                    semanticActiveSubIds.add(subscriptionId)
-                }
-                subscriptionId
-            }
-        val platformSubscriptions =
-            bindings
-                .firstOrNull()
-                ?.root
-                ?.context
-                ?.let(::activeSubscriptions)
+        val boundSubscriptionIds = collectBoundSubscriptionIds(state, bindings, semanticActiveSubIds)
+        val platformSubscriptions = bindings.firstOrNull()?.root?.context?.let(::activeSubscriptions)
         val platformActive = platformSubscriptions?.mapTo(linkedSetOf<Int>()) { it.first }
         val resolvedActive =
             NativeSubscriptionPolicy.resolveActiveSubIds(
@@ -50,13 +37,8 @@ internal object NativePresentationResolver {
                 activeBindingSubIds,
                 platformSubscriptions,
             )
-        val activeBindings = ArrayList<SysUiNetworkSource.MobilePresentationBinding>()
-        val visible = ArrayList<SysUiNetworkSource.MobilePresentationBinding>()
-        for (binding in bindings) {
-            if (binding.subscriptionId !in activeBindingSubIds) continue
-            activeBindings.add(binding)
-            if (binding.root.visibility == View.VISIBLE) visible.add(binding)
-        }
+        val activeBindings = bindings.filter { it.subscriptionId in activeBindingSubIds }
+        val visible = activeBindings.filter { it.root.visibility == View.VISIBLE }
 
         val mode =
             NativeSubscriptionPolicy.classify(
@@ -96,6 +78,20 @@ internal object NativePresentationResolver {
             networkTypeSubscriptionId = networkTypeSubscriptionId,
             networkType = networkType,
         )
+    }
+
+    /** Retain native binding order while collecting only semantically confirmed SIMs. */
+    private fun collectBoundSubscriptionIds(
+        state: StatusStateStore.Snapshot,
+        bindings: List<SysUiNetworkSource.MobilePresentationBinding>,
+        semanticActiveIds: MutableSet<Int>,
+    ): List<Int> = bindings.map { binding ->
+        val subscriptionId = binding.subscriptionId
+        val signal = state.mobile[subscriptionId]?.signal
+        if (signal != null && signal !is SignalStrength.Unknown) {
+            semanticActiveIds.add(subscriptionId)
+        }
+        subscriptionId
     }
 
     private fun selectNativePresentationRoot(
