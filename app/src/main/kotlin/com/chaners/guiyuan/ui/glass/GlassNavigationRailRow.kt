@@ -32,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorProducer
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -92,7 +94,7 @@ internal class RailRowAppearance(
 )
 
 /** The resolved geometry and tint are shared by the row's frame and its contents. */
-private class RailRowFrame(val geometry: RailRowGeometry, val tint: Color)
+private class RailRowFrame(val geometry: RailRowGeometry, val tint: ColorProducer)
 
 @Composable
 internal fun NavigationRailRow(
@@ -101,11 +103,12 @@ internal fun NavigationRailRow(
     layout: RailRowLayoutSpec,
     appearance: RailRowAppearance,
 ) {
-    val tint by animateColorAsState(
+    val tintState = animateColorAsState(
         targetValue = if (identity.selected) appearance.selectedColor else appearance.unselectedColor,
         animationSpec = GlassMotion.navContent(),
         label = "glassNavigationRailTint",
     )
+    val tintProducer = remember { ColorProducer { tintState.value } }
     val pressAlpha = animateFloatAsState(
         targetValue = if (motion.pressed && !appearance.liquidIndicator) {
             GlassNavigationBarDefaults.PressedAlpha
@@ -113,7 +116,7 @@ internal fun NavigationRailRow(
         animationSpec = GlassMotion.navContentFloat(),
         label = "glassNavigationRailPress",
     )
-    val frame = RailRowFrame(rememberRailRowGeometry(identity, layout), tint)
+    val frame = RailRowFrame(rememberRailRowGeometry(identity, layout), tintProducer)
     Box(
         modifier = Modifier
             .railRowPlacement(identity, motion, layout, frame.geometry)
@@ -241,7 +244,7 @@ private fun RailRowContent(
         ) {
             BadgedBox(badge = { identity.item.badge?.invoke() }) {
                 Icon(
-                    imageVector = identity.item.icon,
+                    painter = rememberVectorPainter(identity.item.icon),
                     contentDescription = null,
                     modifier = Modifier.size(RailIconSize).graphicsLayer {
                         scaleX = liquidScale
