@@ -133,16 +133,16 @@ internal object ScenePolicy {
         if (isAodAnimate) {
             return resolveAnimatingKeyguardAodProjection(
                 AnimatingProjectionInputs(
-                keyguardEnabled = keyguardEnabled,
-                aodEnabled = aodEnabled,
-                steadySourceScene = steadySourceScene,
-                lastStableFamilyScene = lastStableFamilyScene,
-                homePresentationOwned = homePresentationOwned,
-                keyguardStatusIconsAlpha = keyguardStatusIconsAlpha,
-                nativeToLockScreenTarget = nativeToLockScreenTarget,
-                fullAodTargetSourceReady = fullAodTargetSourceReady,
-                fullAodTargetPending = fullAodTargetPending,
-                fullAodVisualBoundary = fullAodVisualBoundary,
+                    keyguardEnabled = keyguardEnabled,
+                    aodEnabled = aodEnabled,
+                    steadySourceScene = steadySourceScene,
+                    lastStableFamilyScene = lastStableFamilyScene,
+                    homePresentationOwned = homePresentationOwned,
+                    keyguardStatusIconsAlpha = keyguardStatusIconsAlpha,
+                    nativeToLockScreenTarget = nativeToLockScreenTarget,
+                    fullAodTargetSourceReady = fullAodTargetSourceReady,
+                    fullAodTargetPending = fullAodTargetPending,
+                    fullAodVisualBoundary = fullAodVisualBoundary,
             
                 ),
             )
