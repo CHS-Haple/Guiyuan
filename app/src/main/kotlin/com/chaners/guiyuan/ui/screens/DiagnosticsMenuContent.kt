@@ -392,7 +392,6 @@ internal fun DiagMenu(
 }
 
 private data class LogEmptyCopy(
-    val title: String,
     val description: String,
     val note: String?,
 )
@@ -416,7 +415,7 @@ internal fun LogEmptyGuide(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             LogEmptyGuideHeader(icon, title)
-            LogEmptyGuideBody(LogEmptyCopy(title, description, note))
+            LogEmptyGuideBody(LogEmptyCopy(description, note))
             LogEmptyRetryAction(busy = busy, onRetry = onRetry)
         }
     }
