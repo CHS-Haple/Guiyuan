@@ -127,4 +127,3 @@ private fun ColumnScope.appearancePaletteStyle(
         )
     }
 }
-
