@@ -187,18 +187,25 @@ internal fun Os4SearchMode(
             }
             Spacer(Modifier.width(54.dp * motion.progress.coerceIn(0f, 1f)))
         }
-        Os4SearchCancelAction(motion, expanded, backdrop, materialProgress, shadowProgress, onClose)
+        Os4SearchCancelAction(
+            motion = motion,
+            backdrop = backdrop,
+            materialProgress = materialProgress,
+            shadowProgress = shadowProgress,
+            action = SearchCancelAction(enabled = expanded, onClick = onClose),
+        )
     }
 }
+
+private data class SearchCancelAction(val enabled: Boolean, val onClick: () -> Unit)
 
 @Composable
 private fun BoxScope.Os4SearchCancelAction(
     motion: Os4SearchMotion,
-    expanded: Boolean,
     backdrop: Backdrop?,
     materialProgress: State<Float>,
     shadowProgress: State<Float>,
-    onClose: () -> Unit,
+    action: SearchCancelAction,
 ) {
     val direction = LocalLayoutDirection.current
     val cancelInteraction = remember { MutableInteractionSource() }
@@ -222,11 +229,11 @@ private fun BoxScope.Os4SearchCancelAction(
                     modifier = Modifier
                         .matchParentSize()
                         .clickable(
-                            enabled = expanded,
+                            enabled = action.enabled,
                             role = Role.Button,
                             interactionSource = cancelInteraction,
                             indication = null,
-                            onClick = onClose,
+                            onClick = action.onClick,
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
