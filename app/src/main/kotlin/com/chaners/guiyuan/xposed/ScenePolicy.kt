@@ -143,7 +143,7 @@ internal object ScenePolicy {
                     fullAodTargetSourceReady = fullAodTargetSourceReady,
                     fullAodTargetPending = fullAodTargetPending,
                     fullAodVisualBoundary = fullAodVisualBoundary,
-            
+
                 ),
             )
         }

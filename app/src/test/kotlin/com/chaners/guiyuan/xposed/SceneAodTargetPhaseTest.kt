@@ -19,7 +19,7 @@ class SceneAodTargetPhaseTest {
                     fullAodTargetSourceReady = true,
                     fullAodTargetPending = true,
                     fullAodVisualBoundary = true,
-            
+
                 ),
             )
 
@@ -39,7 +39,7 @@ class SceneAodTargetPhaseTest {
                     fullAodTargetSourceReady = true,
                     fullAodTargetPending = true,
                     fullAodVisualBoundary = true,
-            
+
                 ),
             ),
         )
@@ -60,7 +60,7 @@ class SceneAodTargetPhaseTest {
                     fullAodTargetSourceReady = ready,
                     fullAodTargetPending = true,
                     fullAodVisualBoundary = false,
-            
+
                 ),
             )
 
@@ -81,7 +81,7 @@ class SceneAodTargetPhaseTest {
                     fullAodTargetSourceReady = true,
                     fullAodTargetPending = true,
                     fullAodVisualBoundary = false,
-            
+
                 ),
             ),
         )
@@ -102,7 +102,7 @@ class SceneAodTargetPhaseTest {
                     fullAodTargetSourceReady = true,
                     fullAodTargetPending = true,
                     fullAodVisualBoundary = true,
-            
+
                 ),
             )
 
@@ -128,7 +128,7 @@ class SceneAodTargetPhaseTest {
                     fullAodTargetSourceReady = true,
                     fullAodTargetPending = true,
                     fullAodVisualBoundary = false,
-            
+
                 ),
             ),
         )
@@ -153,7 +153,7 @@ class SceneAodTargetPhaseTest {
                         lastStableFamilyScene = origin,
                         homePresentationOwned = false,
                         keyguardStatusIconsAlpha = alpha,
-                
+
                     ),
                 ),
             )
