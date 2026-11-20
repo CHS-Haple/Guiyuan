@@ -276,21 +276,22 @@ internal fun DiagnosticsScreen(
         navigationActions = {
             LogFilterMenu(
                 title = filterTitle,
-                levelMask = levelFilter,
-                categoryMask = categoryFilter,
-                onLevelMaskChange = {
-                    levelFilter = it
-                    expandedKey = null
-                },
-                onCategoryMaskChange = {
-                    categoryFilter = it
-                    expandedKey = null
-                },
-                onReset = {
-                    levelFilter = LEVEL_ALL
-                    categoryFilter = CAT_ALL
-                    expandedKey = null
-                },
+                state = LogFilterState(levelFilter, categoryFilter),
+                actions = LogFilterActions(
+                    onLevelMaskChange = {
+                        levelFilter = it
+                        expandedKey = null
+                    },
+                    onCategoryMaskChange = {
+                        categoryFilter = it
+                        expandedKey = null
+                    },
+                    onReset = {
+                        levelFilter = LEVEL_ALL
+                        categoryFilter = CAT_ALL
+                        expandedKey = null
+                    },
+                ),
             )
         },
         actions = {
@@ -347,28 +348,32 @@ internal fun DiagnosticsScreen(
             }
             DiagMenu(
                 title = menuTitle,
-                diagnosticsLevel = selectedLevel,
-                canChangeLevel = !loading && !clearingHistory,
-                canScrollTop = !loading && listState.canScrollBackward,
-                canScrollBottom = !loading && listState.canScrollForward,
-                canClear = !loading && !clearingHistory && !reportBusy && !exportOpen &&
-                    snapshot?.log?.sessionLines?.isNotEmpty() == true,
-                onDiagLevelChange = { level ->
-                    if (!loading && level != diagRepo.current()) {
-                        diagRepo.setLevel(level)
-                        reloadSnapshot()
-                    }
-                },
-                onScrollTop = {
-                    scope.launch { listState.animateScrollToItem(0) }
-                },
-                onScrollBottom = {
-                    scope.launch {
-                        val lastIndex = listState.layoutInfo.totalItemsCount - 1
-                        if (lastIndex >= 0) listState.animateScrollToItem(lastIndex)
-                    }
-                },
-                onClear = { clearConfirmOpen = true },
+                status = DiagMenuStatus(
+                    diagnosticsLevel = selectedLevel,
+                    canChangeLevel = !loading && !clearingHistory,
+                    canScrollTop = !loading && listState.canScrollBackward,
+                    canScrollBottom = !loading && listState.canScrollForward,
+                    canClear = !loading && !clearingHistory && !reportBusy && !exportOpen &&
+                        snapshot?.log?.sessionLines?.isNotEmpty() == true,
+                ),
+                actions = DiagMenuActions(
+                    onDiagLevelChange = { level ->
+                        if (!loading && level != diagRepo.current()) {
+                            diagRepo.setLevel(level)
+                            reloadSnapshot()
+                        }
+                    },
+                    onScrollTop = {
+                        scope.launch { listState.animateScrollToItem(0) }
+                    },
+                    onScrollBottom = {
+                        scope.launch {
+                            val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                            if (lastIndex >= 0) listState.animateScrollToItem(lastIndex)
+                        }
+                    },
+                    onClear = { clearConfirmOpen = true },
+                ),
             )
         },
         listState = listState,
