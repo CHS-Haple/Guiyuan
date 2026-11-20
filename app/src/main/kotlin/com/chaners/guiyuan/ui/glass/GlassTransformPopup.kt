@@ -187,14 +187,6 @@ fun Modifier.glassPopupAnchor(
 fun Modifier.glassPopupAnchorContent(anchor: GlassPopupAnchor): Modifier = this.onGloballyPositioned { anchor.contentBounds = it.boundsInWindow() }
 
 /**
- * Reports row bounds for a [GlassDropdownPopup] without hiding the row.
- *
- * @param anchor The anchor to report to.
- */
-@Stable
-fun Modifier.glassPopupAnchorRow(anchor: GlassPopupAnchor): Modifier = this.onGloballyPositioned { anchor.containerBounds = it.boundsInWindow() }
-
-/**
  * Reports a row's value bounds for dropdown positioning and fades it out while its choices are open.
  *
  * Apply to the value and chevron, not the whole row. After predictive Back completes, the value
