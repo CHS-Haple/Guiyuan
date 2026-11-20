@@ -205,50 +205,58 @@ internal fun BatteryColorBottomSheet(
     ) {
         CompositionLocalProvider(LocalGlassBackdrop provides sheetBackdrop) {
             BatterySchemeOverview(
-                library = library,
-                requestedSchemeKey = requestedSchemeKey,
-                onRequestedSchemeHandled = { requestedSchemeKey = null },
-                canCreateCustom = nextCustomId != null,
-                nextCustomName = nextCustomName,
-                onApplyScheme = repository::activateScheme,
-                onOpenBuiltInSlot = { scheme, slot ->
-                    createRequest =
-                        CreateRequest(
-                            sourceKey = scheme.key,
-                            targetSlot = slot,
-                            nextId = nextCustomId,
-                        )
-                },
-                onOpenCustomSlot = { id, slot ->
-                    detailRequest = DetailRequest(customId = id, slot = slot)
-                    showDetail = true
-                },
-                onAdd = {
-                    createRequest =
-                        CreateRequest(
-                            sourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
-                            targetSlot = null,
-                            nextId = nextCustomId,
-                        )
-                },
-                onRenameCustom = { id ->
-                    library.customById(id)?.let { custom ->
-                        renameRequest = RenameRequest(custom.id, custom.name.ifBlank { context.getString(R.string.battery_custom_scheme_default_name, custom.id) })
-                    }
-                },
-                onCopyCustom = { custom ->
-                    val name = nextCustomName
-                    if (name != null) {
-                        repository.createCustom(name, custom.key)?.let { id ->
-                            requestedSchemeKey = customSchemeKey(id)
-                        }
-                    }
-                },
-                onDeleteCustom = { id ->
-                    library.customById(id)?.let { custom ->
-                        deleteRequest = DeleteRequest(custom.id, custom.name.ifBlank { context.getString(R.string.battery_custom_scheme_default_name, custom.id) })
-                    }
-                },
+                model = BatterySchemeOverviewModel(
+                    library = library,
+                    requestedSchemeKey = requestedSchemeKey,
+                    canCreateCustom = nextCustomId != null,
+                    nextCustomName = nextCustomName,
+                ),
+                actions = BatterySchemeOverviewActions(
+                    onRequestedSchemeHandled = { requestedSchemeKey = null },
+                    navigation = SchemeNavigation(
+                        onApply = repository::activateScheme,
+                        onBuiltInSlot = { scheme, slot ->
+                            createRequest =
+                                CreateRequest(
+                                    sourceKey = scheme.key,
+                                    targetSlot = slot,
+                                    nextId = nextCustomId,
+                                )
+                        },
+                        onCustomSlot = { id, slot ->
+                            detailRequest = DetailRequest(customId = id, slot = slot)
+                            showDetail = true
+                        },
+                    ),
+                    catalog = SchemeCatalog(
+                        onAdd = {
+                            createRequest =
+                                CreateRequest(
+                                    sourceKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+                                    targetSlot = null,
+                                    nextId = nextCustomId,
+                                )
+                        },
+                        onRename = { id ->
+                            library.customById(id)?.let { custom ->
+                                renameRequest = RenameRequest(custom.id, custom.name.ifBlank { context.getString(R.string.battery_custom_scheme_default_name, custom.id) })
+                            }
+                        },
+                        onCopy = { custom ->
+                            val name = nextCustomName
+                            if (name != null) {
+                                repository.createCustom(name, custom.key)?.let { id ->
+                                    requestedSchemeKey = customSchemeKey(id)
+                                }
+                            }
+                        },
+                        onDelete = { id ->
+                            library.customById(id)?.let { custom ->
+                                deleteRequest = DeleteRequest(custom.id, custom.name.ifBlank { context.getString(R.string.battery_custom_scheme_default_name, custom.id) })
+                            }
+                        },
+                    ),
+                ),
             )
         }
     }
