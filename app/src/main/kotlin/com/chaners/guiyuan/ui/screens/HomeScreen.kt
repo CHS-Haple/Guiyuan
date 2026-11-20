@@ -313,6 +313,30 @@ private fun HomePreviewSandboxCard(
         showIndication = true,
         onClick = onOpen,
     ) {
+        HomePreviewSandboxHeader()
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(HomePreviewStageHeight)
+                    .padding(top = 2.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            StatusPreview(
+                model = model,
+                visual = visual,
+                modifier =
+                    Modifier
+                        .width(HomePreviewIconSize)
+                        .height(HomePreviewSurfaceHeight),
+            )
+        }
+        PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.ColumnScope.HomePreviewSandboxHeader() {
         Box(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.home_preview_open_title),
@@ -338,26 +362,8 @@ private fun HomePreviewSandboxCard(
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
         )
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(HomePreviewStageHeight)
-                    .padding(top = 2.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            StatusPreview(
-                model = model,
-                visual = visual,
-                modifier =
-                    Modifier
-                        .width(HomePreviewIconSize)
-                        .height(HomePreviewSurfaceHeight),
-            )
-        }
-        PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
-    }
 }
+
 
 @Composable
 internal fun RuntimeStatusMark(

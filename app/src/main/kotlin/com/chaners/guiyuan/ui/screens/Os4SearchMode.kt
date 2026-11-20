@@ -14,6 +14,7 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -144,22 +145,9 @@ internal fun Os4SearchMode(
     )
 
     val density = LocalDensity.current
-    val direction = LocalLayoutDirection.current
     val keyboard = LocalSoftwareKeyboardController.current
-    val cancelInteraction = remember { MutableInteractionSource() }
-    val cancelPressed = cancelInteraction.collectIsPressedAsState()
     val statusInset = WindowInsets.statusBars.getTop(density)
     val shadowOutsets = remember(density) { with(density) { popupShadowOutsets(GlassShadows.Regular) } }
-    val cancelOutsets = remember(density, shadowOutsets) {
-        // Match PR423's three-radius allowance for its Cancel blur.
-        val halo = with(density) { (CANCEL_BLUR_PX * 3f).toDp() }
-        LayerOutsets(
-            left = shadowOutsets.left + halo,
-            top = shadowOutsets.top + halo,
-            right = shadowOutsets.right + halo,
-            bottom = shadowOutsets.bottom + halo,
-        )
-    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -199,53 +187,100 @@ internal fun Os4SearchMode(
             }
             Spacer(Modifier.width(54.dp * motion.progress.coerceIn(0f, 1f)))
         }
-        val label = stringResource(R.string.cancel)
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .graphicsLayer {
-                    outsets = cancelOutsets
-                    val scale = motion.progress.coerceIn(0f, 1f)
-                    scaleX = scale
-                    scaleY = scale
-                    alpha = motion.cancelAlpha
-                    val blur = CANCEL_BLUR_PX * (1f - motion.cancelAlpha.coerceIn(0f, 1f))
-                    renderEffect = if (blur > 0.5f) {
-                        BlurEffect(blur, blur, TileMode.Decal)
-                    } else null
-                    translationX = 66.dp.toPx() * (1f - scale) *
-                        (if (direction == LayoutDirection.Ltr) 1f else -1f)
-                },
-        ) {
-            TooltipBox(text = label) {
-                Os4SearchSurface(
-                    modifier = Modifier.size(44.dp),
-                    backdrop = backdrop,
-                    materialProgress = materialProgress,
-                    shadowProgress = shadowProgress,
-                    pressed = cancelPressed,
+        Os4SearchCancelAction(
+            motion = motion,
+            backdrop = backdrop,
+            materialProgress = materialProgress,
+            shadowProgress = shadowProgress,
+            action = SearchCancelAction(enabled = expanded, onClick = onClose),
+        )
+    }
+}
+
+private data class SearchCancelAction(val enabled: Boolean, val onClick: () -> Unit)
+
+@Composable
+private fun BoxScope.Os4SearchCancelAction(
+    motion: Os4SearchMotion,
+    backdrop: Backdrop?,
+    materialProgress: State<Float>,
+    shadowProgress: State<Float>,
+    action: SearchCancelAction,
+) {
+    val direction = LocalLayoutDirection.current
+    val cancelInteraction = remember { MutableInteractionSource() }
+    val cancelPressed = cancelInteraction.collectIsPressedAsState()
+    val cancelOutsets = rememberOs4CancelOutsets()
+    val label = stringResource(R.string.cancel)
+    Box(
+        modifier = Modifier
+            .align(Alignment.CenterEnd)
+            .os4CancelTransform(motion, cancelOutsets, direction),
+    ) {
+        TooltipBox(text = label) {
+            Os4SearchSurface(
+                modifier = Modifier.size(44.dp),
+                backdrop = backdrop,
+                materialProgress = materialProgress,
+                shadowProgress = shadowProgress,
+                pressed = cancelPressed,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable(
+                            enabled = action.enabled,
+                            role = Role.Button,
+                            interactionSource = cancelInteraction,
+                            indication = null,
+                            onClick = action.onClick,
+                        ),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .clickable(
-                                enabled = expanded,
-                                role = Role.Button,
-                                interactionSource = cancelInteraction,
-                                indication = null,
-                                onClick = onClose,
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            Os4GlassClose,
-                            contentDescription = label,
-                            modifier = Modifier.size(28.dp),
-                            tint = MiuixTheme.colorScheme.onSurface,
-                        )
-                    }
+                    Icon(
+                        Os4GlassClose,
+                        contentDescription = label,
+                        modifier = Modifier.size(28.dp),
+                        tint = MiuixTheme.colorScheme.onSurface,
+                    )
                 }
             }
         }
     }
+}
+
+@Composable
+private fun rememberOs4CancelOutsets(): LayerOutsets {
+    val density = LocalDensity.current
+    val shadowOutsets = remember(density) { with(density) { popupShadowOutsets(GlassShadows.Regular) } }
+    return remember(density, shadowOutsets) {
+        // Match PR423's three-radius allowance for its Cancel blur.
+        val halo = with(density) { (CANCEL_BLUR_PX * 3f).toDp() }
+        LayerOutsets(
+            left = shadowOutsets.left + halo,
+            top = shadowOutsets.top + halo,
+            right = shadowOutsets.right + halo,
+            bottom = shadowOutsets.bottom + halo,
+        )
+    }
+}
+
+private fun Modifier.os4CancelTransform(
+    motion: Os4SearchMotion,
+    cancelOutsets: LayerOutsets,
+    direction: LayoutDirection,
+): Modifier = graphicsLayer {
+
+    outsets = cancelOutsets
+    val scale = motion.progress.coerceIn(0f, 1f)
+    scaleX = scale
+    scaleY = scale
+    alpha = motion.cancelAlpha
+    val blur = CANCEL_BLUR_PX * (1f - motion.cancelAlpha.coerceIn(0f, 1f))
+    renderEffect = if (blur > 0.5f) {
+        BlurEffect(blur, blur, TileMode.Decal)
+    } else null
+    translationX = 66.dp.toPx() * (1f - scale) *
+        (if (direction == LayoutDirection.Ltr) 1f else -1f)
+
 }
