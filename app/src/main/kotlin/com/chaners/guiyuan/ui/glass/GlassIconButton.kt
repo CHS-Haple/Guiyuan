@@ -100,9 +100,9 @@ fun GlassIconButton(
     }
     val materialContext = topBarContext.takeIf { inheritTopBarMaterial }
     val resolvedSurfaceAlpha = surfaceAlpha * (if (enabled) 1f else 0.38f) * (topBarContext?.alpha ?: 1f)
-    val topBarRamp = topBarContext?.ramp
-    val shadowAlpha = remember(resolvedSurfaceAlpha, topBarRamp) {
-        { resolvedSurfaceAlpha * (topBarRamp?.value ?: 1f) }
+    val topBarProgress = topBarContext?.materialProgress
+    val shadowAlpha = remember(resolvedSurfaceAlpha, topBarProgress) {
+        { resolvedSurfaceAlpha * (topBarProgress?.value ?: 1f) }
     }
     GlassButtonSurface(
         backdrop = materialContext?.buttonBackdrop ?: backdrop ?: topBarContext?.buttonBackdrop,
