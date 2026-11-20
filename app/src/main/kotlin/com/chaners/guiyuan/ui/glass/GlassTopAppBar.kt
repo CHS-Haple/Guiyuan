@@ -29,7 +29,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Rect
@@ -83,15 +83,6 @@ object GlassTopAppBarDefaults {
     /** Start/end inset of the glass controls, aligned with the page's cards and tabs. */
     val HorizontalPadding: Dp = 12.dp
 
-    /** Scroll threshold for the legacy shadow ramp. Material visibility is driven separately. */
-    val RampStart: Dp = 0.dp
-
-    /**
-     * Scroll distance for the retained Compose shadow ramp. The mask and button material use timed
-     * transitions independent of this distance.
-     */
-    val RampDistance: Dp = 32.dp
-
     /** How far the large title blurs out as it collapses. */
     val TitleBlurRadius: Dp = 8.dp
 
@@ -101,32 +92,8 @@ object GlassTopAppBarDefaults {
     /** Maximum radius of the upstream progressive background band. */
     val ProgressiveBlurRadius: Dp = 80.dp
 
-    /** Scroll distance for the upstream progressive band ramp. */
-    val ProgressiveBlurRampDistance: Dp = 48.dp
-
     /** Icon opacity while an action-bar button is held. */
     val PressedContentAlpha: Float = 0.6f
-
-    /**
-     * Visual scroll progress in `[0, 1]`, including elastic displacement.
-     * [visualContentOffset] overrides the behavior's visual offset; without either source it is fully active.
-     */
-    @Composable
-    fun collapseRamp(
-        scrollBehavior: ScrollBehavior?,
-        visualContentOffset: (() -> Float)? = null,
-    ): State<Float> {
-        val density = LocalDensity.current
-        val startPx = with(density) { RampStart.toPx() }
-        val rampPx = with(density) { RampDistance.toPx() }
-        val currentOffset by rememberUpdatedState(visualContentOffset)
-        return remember(scrollBehavior, startPx, rampPx) {
-            derivedStateOf {
-                val offset = currentOffset?.invoke() ?: scrollBehavior?.state?.visualContentOffset
-                if (offset == null) 1f else ((-offset - startPx) / rampPx).coerceIn(0f, 1f)
-            }
-        }
-    }
 
     /** The traditional fill used when backdrop material is unavailable. */
     @Composable
@@ -226,7 +193,6 @@ internal data class GlassTopAppBarContext(
     val buttonUnderlayMaterial: GlassMaterial?,
     val floating: Boolean,
     val alpha: Float,
-    val ramp: State<Float>,
     val materialProgress: State<Float>,
     val keepMaterial: Boolean,
     val style: GlassStyle,
@@ -238,7 +204,7 @@ internal data class GlassTopAppBarContext(
     val onButtonBackdropConsumerChange: ((Int) -> Unit)? = null,
 )
 
-internal val LocalGlassTopAppBarContext = staticCompositionLocalOf<GlassTopAppBarContext?> { null }
+internal val LocalGlassTopAppBarContext = compositionLocalOf<GlassTopAppBarContext?> { null }
 
 /**
  * A top bar the content scrolls *under*, deriving material visibility from [ScrollBehavior].
@@ -253,8 +219,6 @@ internal val LocalGlassTopAppBarContext = staticCompositionLocalOf<GlassTopAppBa
  * @param titleBlurRadius How far the large title blurs out as it collapses.
  * @param scrollBehavior The behavior driving the collapse. Without one the bar stays at full
  *   strength, which is what a bar over non-scrolling content wants.
- * @param visualContentOffset Visual offset in pixels, including elastic displacement.
- *   Affects band and shadow without modifying native title collapse state.
  * @param bandBrush The band that dims the content passing under the bar.
  * @param bandOverhang How far the band reaches past the bottom of the bar.
  * @param progressiveBlur Render the upstream progressive blurred band behind the controls.
@@ -288,7 +252,6 @@ fun GlassTopAppBar(
     largeTitle: String = title,
     subtitle: String = "",
     scrollBehavior: ScrollBehavior? = null,
-    visualContentOffset: (() -> Float)? = null,
     bandBrush: Brush = GlassTopAppBarDefaults.bandBrush(MiuixTheme.colorScheme.surface),
     bandOverhang: Dp = GlassTopAppBarDefaults.BandOverhang,
     titleBlurRadius: Dp = GlassTopAppBarDefaults.TitleBlurRadius,
@@ -312,11 +275,9 @@ fun GlassTopAppBar(
     unclippedNavigationIcon: Boolean = false,
     unclippedActions: Boolean = false,
 ) {
-    val currentOffset by rememberUpdatedState(visualContentOffset)
     val isContentScrolled by remember(scrollBehavior) {
         derivedStateOf {
-            val offset = scrollBehavior?.state?.contentOffset ?: currentOffset?.invoke()
-            offset?.let { it < -1f } ?: true
+            scrollBehavior?.state?.let { it.contentOffset < -1f || it.overscrollOffset < -1f } ?: true
         }
     }
     GlassTopAppBar(
@@ -328,7 +289,6 @@ fun GlassTopAppBar(
         largeTitle = largeTitle,
         subtitle = subtitle,
         scrollBehavior = scrollBehavior,
-        visualContentOffset = visualContentOffset,
         bandBrush = bandBrush,
         bandOverhang = bandOverhang,
         titleBlurRadius = titleBlurRadius,
@@ -360,7 +320,6 @@ fun GlassTopAppBar(
  *
  * @param title The compact title.
  * @param isContentScrolled Actual content overlap, such as `listState.canScrollBackward`.
- * @param visualContentOffset Visual content offset including elastic displacement.
  */
 @Composable
 fun GlassTopAppBar(
@@ -373,7 +332,6 @@ fun GlassTopAppBar(
     largeTitle: String = title,
     subtitle: String = "",
     scrollBehavior: ScrollBehavior? = null,
-    visualContentOffset: (() -> Float)? = null,
     bandBrush: Brush = GlassTopAppBarDefaults.bandBrush(MiuixTheme.colorScheme.surface),
     bandOverhang: Dp = GlassTopAppBarDefaults.BandOverhang,
     titleBlurRadius: Dp = GlassTopAppBarDefaults.TitleBlurRadius,
@@ -397,7 +355,6 @@ fun GlassTopAppBar(
     unclippedNavigationIcon: Boolean = false,
     unclippedActions: Boolean = false,
 ) {
-    val ramp = GlassTopAppBarDefaults.collapseRamp(scrollBehavior, visualContentOffset)
     val contentScrolled by remember(isContentScrolled, scrollBehavior) {
         derivedStateOf {
             isContentScrolled || (scrollBehavior?.state?.overscrollOffset ?: 0f) < -1f
@@ -524,8 +481,26 @@ fun GlassTopAppBar(
                     ),
             )
         }
-        CompositionLocalProvider(
-            LocalGlassTopAppBarContext provides GlassTopAppBarContext(
+        val consumerChangeCallback = if (progressiveBackdrop != null) onButtonBackdropConsumerChange else null
+        val topBarContext = remember(
+            rawBackdrop,
+            buttonBackdrop,
+            resolvedMaterial,
+            underlayMaterial,
+            buttonUnderlay,
+            contentScrolled,
+            alpha,
+            materialProgress,
+            keepMaterial,
+            style,
+            buttonSize,
+            buttonShape,
+            fill,
+            stroke,
+            buttonShadow,
+            consumerChangeCallback,
+        ) {
+            GlassTopAppBarContext(
                 backdrop = rawBackdrop,
                 buttonBackdrop = buttonBackdrop,
                 material = resolvedMaterial,
@@ -533,7 +508,6 @@ fun GlassTopAppBar(
                 buttonUnderlayMaterial = buttonUnderlay,
                 floating = contentScrolled,
                 alpha = alpha,
-                ramp = ramp,
                 materialProgress = materialProgress,
                 keepMaterial = keepMaterial,
                 style = style,
@@ -542,8 +516,11 @@ fun GlassTopAppBar(
                 fill = fill,
                 stroke = stroke,
                 shadow = buttonShadow,
-                onButtonBackdropConsumerChange = if (progressiveBackdrop != null) onButtonBackdropConsumerChange else null,
-            ),
+                onButtonBackdropConsumerChange = consumerChangeCallback,
+            )
+        }
+        CompositionLocalProvider(
+            LocalGlassTopAppBarContext provides topBarContext,
         ) {
             // The published/native API keeps its legacy clip; PR423 provides native title blur.
             UiNativeTitleBar(

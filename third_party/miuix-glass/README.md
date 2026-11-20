@@ -8,18 +8,18 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 ## Source and licensing
 
 - The active source and Maven graph uses the successfully published MIUIX
-  snapshot `0.9.5-5ff41ba9-SNAPSHOT` at full revision
-  `5ff41ba90d963e48c3db1f3b28eb8dbebc9391f9`. The upstream Maven publish step succeeded in
-  [run #44571884911](https://github.com/compose-miuix-ui/miuix/actions/runs/44571884911).
-  Upstream `v0.9.5-beta01` is a pre-release, not a `v0.9.5` stable
-  release. The exact source-pinned snapshot is identified separately by
-  upstream's `0.9.5-<short SHA>-SNAPSHOT` Maven convention.
-  The `5ff41ba9` integration follows upstream system-bars title insets,
-  conditional idle backdrop capture, and horizontal bottom-bar safe insets;
-  it also consumes upstream progressive-blur and scroll behavior refinements
-  through the matched dependency graph. Guiyuan retains its adapted glass,
-  search, navigation and input ownership. Source-Maven parity and focused
-  device validation are required before accepting this candidate.
+  snapshot `0.9.5-188f2eb5-SNAPSHOT` at full revision
+  `188f2eb5e378dece35489ac784c57419b95c789d`.
+  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/44733938518)
+  and its tests passed. This is a source-pinned pre-release snapshot, not a stable
+  `v0.9.5` release. The B1887 (`f3829d3d`) and B1888 (`188f2eb5`)
+  candidates received focused on-device acceptance before merging to `dev`.
+  The latter aligns material and band activation with negative overscroll and
+  removes the older progressive band/mask animation. The current post-B1888
+  cleanup also removes an obsolete shadow-distance ramp and shares one
+  top-bar/search material-progress clock. This follow-up requires its own
+  focused rendering acceptance; earlier device checks do not cover it.
+  Guiyuan retains app-owned glass, search, navigation and input boundaries.
   The prior Material integration is documented in
   [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
   The stable `main` line must be checked separately; do not treat a `dev`
@@ -127,5 +127,3 @@ Dated integration evidence is in
 [PR #1370](https://github.com/CHS-Haple/Guiyuan/pull/1370) and repository
 history. The previous long-form conformance/audit investigations remain
 accessible in Git history, not in active documentation.
-
-The accepted `d27cbb0b` baseline already brought progressive blur/graphics-layer resource gating and drag badge clipping. The `5ff41ba9` candidate retains those contracts and adds the source-matched inset and idle-capture adjustments described above. Source and Maven parity must pass before any device checkpoint.
