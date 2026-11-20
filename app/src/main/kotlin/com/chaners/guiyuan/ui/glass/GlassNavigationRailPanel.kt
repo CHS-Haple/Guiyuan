@@ -66,6 +66,7 @@ import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.GlassShadow
 import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.GlassStyle
+import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.flow.first
 import kotlin.math.abs
@@ -287,7 +288,11 @@ private fun Modifier.railPanelSurfaceModifier(
             stroke = surface.stroke,
             shadow = surface.shadow,
             shading = false,
-            fallback = Modifier.clip(shape).background(MiuixTheme.colorScheme.surfaceContainer),
+            fallback = if (surface.backdrop == null || !isRuntimeShaderSupported()) {
+                Modifier.clip(shape).background(MiuixTheme.colorScheme.surfaceContainer)
+            } else {
+                null
+            },
         )
     }
     return this
@@ -505,8 +510,14 @@ private fun RailPanelRows(
             appearance = colors.indicator,
         )
     }
+    val onSelectState = rememberUpdatedState(context.selection.onSelect)
+    val rowProgress = motion.rowProgress
+    val scrollState = context.scrollState
+    val scrollOffset = remember(scrollState) { { scrollState.value } }
     context.selection.items.forEachIndexed { position, item ->
         key(position, item) {
+            val rowProgressProvider = remember(rowProgress, position) { { rowProgress[position].value } }
+            val onRowClick = remember(onSelectState, position) { { onSelectState.value(position) } }
             NavigationRailRow(
                 identity = RailRowIdentity(
                     item = item,
@@ -514,14 +525,14 @@ private fun RailPanelRows(
                     position = position,
                     slot = interaction.slots[position],
                     interactionSource = interaction.rowInteractions[position],
-                    onClick = { context.selection.onSelect(position) },
+                    onClick = onRowClick,
                 ),
                 motion = RailRowMotion(
                     expanded = context.state.expanded,
                     pressed = pressedIndex == position,
-                    rowProgress = { motion.rowProgress[position].value },
+                    rowProgress = rowProgressProvider,
                     iconAlpha = motion.iconAlpha,
-                    scrollOffset = { context.scrollState.value },
+                    scrollOffset = scrollOffset,
                 ),
                 layout = RailRowLayoutSpec(
                     tabWidths = geometry.tabWidths,
