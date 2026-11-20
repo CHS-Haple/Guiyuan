@@ -127,4 +127,3 @@ Dated integration evidence is in
 [PR #1370](https://github.com/CHS-Haple/Guiyuan/pull/1370) and repository
 history. The previous long-form conformance/audit investigations remain
 accessible in Git history, not in active documentation.
-
