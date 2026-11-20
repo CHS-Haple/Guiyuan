@@ -4,8 +4,6 @@ import com.chaners.guiyuan.BuildConfig
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
@@ -42,16 +40,12 @@ import com.chaners.guiyuan.system.DiagLogReader
 import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.system.DiagReport
 import com.chaners.guiyuan.system.DiagFiles
-import com.chaners.guiyuan.ui.components.UiOverlayDialog
-import com.chaners.guiyuan.ui.components.UiDialogButton
-import com.chaners.guiyuan.ui.components.dialogActionGap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
@@ -172,6 +166,28 @@ internal fun DiagnosticsScreen(
             } finally {
                 reportBusy = false
             }
+        }
+    }
+
+    fun clearHistory() {
+        if (clearingHistory || loading) return
+        scope.launch {
+            clearingHistory = true
+            val cleared = runCatching {
+                DiagLogReader.clearHistory(context.applicationContext)
+            }.getOrDefault(false)
+            clearConfirmOpen = false
+            val feedback =
+                if (cleared) {
+                    loading = true
+                    val refreshed = runCatching { captureSnapshot() }.isSuccess
+                    listState.scrollToItem(0)
+                    if (refreshed) clearedMsg else refreshFailedMsg
+                } else {
+                    clearFailedMsg
+                }
+            clearingHistory = false
+            snackbarHostState.showSnackbar(feedback)
         }
     }
 
@@ -371,52 +387,12 @@ internal fun DiagnosticsScreen(
                 )
             },
         overlay = {
-            UiOverlayDialog(
+            DiagnosticsClearHistoryDialog(
                 show = clearConfirmOpen,
-                title = stringResource(R.string.diagnostics_clear_history),
-                summary = stringResource(R.string.diagnostics_history_clear_confirm),
-                onDismissRequest = { if (!clearingHistory) clearConfirmOpen = false },
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(dialogActionGap()),
-                ) {
-                    UiDialogButton(
-                        text = stringResource(R.string.cancel),
-                        modifier = Modifier.weight(1f),
-                        enabled = !clearingHistory,
-                        onClick = { clearConfirmOpen = false },
-                    )
-                    UiDialogButton(
-                        text = stringResource(R.string.diagnostics_clear_history_action),
-                        modifier = Modifier.weight(1f),
-                        enabled = !clearingHistory,
-                        role = GlassDialogButtonRole.Destructive,
-                        onClick = {
-                            if (!clearingHistory && !loading) {
-                                scope.launch {
-                                    clearingHistory = true
-                                    val cleared = runCatching {
-                                        DiagLogReader.clearHistory(context.applicationContext)
-                                    }.getOrDefault(false)
-                                    clearConfirmOpen = false
-                                    val feedback =
-                                        if (cleared) {
-                                            loading = true
-                                            val refreshed = runCatching { captureSnapshot() }.isSuccess
-                                            listState.scrollToItem(0)
-                                            if (refreshed) clearedMsg else refreshFailedMsg
-                                        } else {
-                                            clearFailedMsg
-                                        }
-                                    clearingHistory = false
-                                    snackbarHostState.showSnackbar(feedback)
-                                }
-                            }
-                        },
-                    )
-                }
-            }
+                busy = clearingHistory,
+                onDismiss = { clearConfirmOpen = false },
+                onClear = ::clearHistory,
+            )
         },
     ) {
         diagnosticsLogItems(
