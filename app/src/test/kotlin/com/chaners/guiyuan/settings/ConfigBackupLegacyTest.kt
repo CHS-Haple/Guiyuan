@@ -93,6 +93,29 @@ class ConfigBackupLegacyTest {
         assertThrows(IllegalArgumentException::class.java) { ConfigBackupFormat.decode(invalid) }
     }
 
+    @Test fun combinedLegacyFieldsKeepMigrationOrderAndStrictSchema() {
+        val source = sampleBackup().let { backup ->
+            backup.copy(visual = backup.visual.copy(profiles = backup.visual.profiles.map { profile ->
+                profile.copy(
+                    dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+                    singleRowDotArrangement = SignalDotArrangement.HORIZONTAL,
+                )
+            }))
+        }
+        val old = ConfigBackupFormat.encode(source)
+            .replace("\"singleRowDotStyle\":\"DUO\"", "\"singleRowFlatDots\":true")
+            .replaceFirst("\"dualDotStyle\":\"DUO\",", "")
+            .replaceFirst("\"leftRightHideIdleActivity\":false", "\"leftRightShowIdleActivity\":true")
+        val restored = ConfigBackupFormat.decode(old)
+        assertEquals(SignalDotArrangement.CURVED, restored.visual.profiles.first().dualRowDotArrangement)
+        assertEquals(SignalDotArrangement.CURVED, restored.visual.profiles.first().singleRowDotArrangement)
+        assertTrue(restored.visual.profiles.drop(1).all {
+            it.dualRowDotArrangement == SignalDotArrangement.HORIZONTAL &&
+                it.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL
+        })
+        assertFalse(restored.visual.profiles.first().bothSidesHideIdleActivity)
+    }
+
     @Test fun legacyArchivesDefaultToOriginalDotStyle() {
         val json = ConfigBackupFormat.encode(sampleBackup())
             .replace("\"dualDotStyle\":\"LEFT_RIGHT\",", "")
