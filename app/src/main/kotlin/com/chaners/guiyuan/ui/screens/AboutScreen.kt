@@ -161,28 +161,32 @@ internal fun AboutScreen(
             ) {
                 AboutHero(
                     topPadding = padding.calculateTopPadding(),
-                    active = visible,
                     backdrop = if (blur) backdrop else null,
                     logoBlend = logoBlend,
-                    versionProgress = collapse.first,
-                    nameProgress = collapse.second,
-                    iconProgress = collapse.third,
-                    onHeight = { if (heroHeight != it) heroHeight = it },
-                    onIconBottom = {
-                        if (listState.firstVisibleItemIndex == 0 &&
-                            listState.firstVisibleItemScrollOffset == 0 && iconBottom != it
-                        ) iconBottom = it
-                    },
-                    onNameBottom = {
-                        if (listState.firstVisibleItemIndex == 0 &&
-                            listState.firstVisibleItemScrollOffset == 0 && nameBottom != it
-                        ) nameBottom = it
-                    },
-                    onVersionBottom = {
-                        if (listState.firstVisibleItemIndex == 0 &&
-                            listState.firstVisibleItemScrollOffset == 0 && versionBottom != it
-                        ) versionBottom = it
-                    },
+                    motion = AboutHeroMotion(
+                        active = visible,
+                        versionProgress = collapse.first,
+                        nameProgress = collapse.second,
+                        iconProgress = collapse.third,
+                    ),
+                    measurements = AboutHeroMeasurements(
+                        onHeight = { if (heroHeight != it) heroHeight = it },
+                        onIconBottom = {
+                            if (listState.firstVisibleItemIndex == 0 &&
+                                listState.firstVisibleItemScrollOffset == 0 && iconBottom != it
+                            ) iconBottom = it
+                        },
+                        onNameBottom = {
+                            if (listState.firstVisibleItemIndex == 0 &&
+                                listState.firstVisibleItemScrollOffset == 0 && nameBottom != it
+                            ) nameBottom = it
+                        },
+                        onVersionBottom = {
+                            if (listState.firstVisibleItemIndex == 0 &&
+                                listState.firstVisibleItemScrollOffset == 0 && versionBottom != it
+                            ) versionBottom = it
+                        },
+                    ),
                 )
             }
         },
