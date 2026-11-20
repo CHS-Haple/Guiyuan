@@ -51,36 +51,36 @@ internal object NativeVectorStroke {
 
     private fun readSource(resources: Resources, resourceId: Int): Source? =
         resources.getXml(resourceId).use { xml ->
-                var depth = 0
-                var viewportWidth = Float.NaN
-                var viewportHeight = Float.NaN
-                val layers = ArrayList<Layer>(5)
-                while (xml.next() != XmlPullParser.END_DOCUMENT) {
-                    when (xml.eventType) {
-                        XmlPullParser.START_TAG -> {
-                            when {
-                                depth == 0 && xml.name == "vector" && onlyKeys(xml, vectorKeys) -> {
-                                    viewportWidth = xml.getAttributeFloatValue(NS, "viewportWidth", Float.NaN)
-                                    viewportHeight = xml.getAttributeFloatValue(NS, "viewportHeight", Float.NaN)
-                                    if (!viewportWidth.isFinite() || !viewportHeight.isFinite() ||
-                                        viewportWidth <= 0f || viewportHeight <= 0f
-                                    ) return null
-                                }
-                                depth == 1 && xml.name == "path" && onlyKeys(xml, pathKeys) -> {
-                                    // Exiting at depth 1 fails the document completeness check.
-                                    if (layers.size >= 12) break
-                                    val layer = readLayer(resources, xml) ?: break
-                                    layers.add(layer)
-                                }
-                                else -> return null
+            var depth = 0
+            var viewportWidth = Float.NaN
+            var viewportHeight = Float.NaN
+            val layers = ArrayList<Layer>(5)
+            while (xml.next() != XmlPullParser.END_DOCUMENT) {
+                when (xml.eventType) {
+                    XmlPullParser.START_TAG -> {
+                        when {
+                            depth == 0 && xml.name == "vector" && onlyKeys(xml, vectorKeys) -> {
+                                viewportWidth = xml.getAttributeFloatValue(NS, "viewportWidth", Float.NaN)
+                                viewportHeight = xml.getAttributeFloatValue(NS, "viewportHeight", Float.NaN)
+                                if (!viewportWidth.isFinite() || !viewportHeight.isFinite() ||
+                                    viewportWidth <= 0f || viewportHeight <= 0f
+                                ) return null
                             }
-                            depth++
+                            depth == 1 && xml.name == "path" && onlyKeys(xml, pathKeys) -> {
+                                // Exiting at depth 1 fails the document completeness check.
+                                if (layers.size >= 12) break
+                                val layer = readLayer(resources, xml) ?: break
+                                layers.add(layer)
+                            }
+                            else -> return null
                         }
-                        XmlPullParser.END_TAG -> depth--
+                        depth++
                     }
+                    XmlPullParser.END_TAG -> depth--
                 }
-                if (depth != 0 || layers.isEmpty()) null
-                else Source(viewportWidth, viewportHeight, layers)
+            }
+            if (depth != 0 || layers.isEmpty()) null
+            else Source(viewportWidth, viewportHeight, layers)
         }
 
     private fun readLayer(
