@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -52,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -89,6 +89,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
 import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -182,7 +183,7 @@ fun GlassNavigationBar(
     val contentInset = with(density) { GlassNavigationBarDefaults.ContentPaddingHorizontal.toPx() }
     val overhang = with(density) { GlassNavigationBarDefaults.IndicatorOverhang.toPx() }
 
-    var barWidth by remember { mutableIntStateOf(0) }
+    val barWidthState = remember { mutableIntStateOf(0) }
     var pressedIndex by remember { mutableIntStateOf(-1) }
     val dragging = remember { mutableStateOf(false) }
     var settleGeneration by remember { mutableIntStateOf(0) }
@@ -215,13 +216,13 @@ fun GlassNavigationBar(
         scope.launch { left.animateTo(newLeft, leftSpring) }
         scope.launch { right.animateTo(newRight, rightSpring) }
     }
-    val slotWidth = ((barWidth - contentInset * 2f) / items.size).coerceAtLeast(0f)
-    val targetLeft = contentInset - overhang + index * slotWidth
-    val targetRight = contentInset + overhang + (index + 1) * slotWidth
-    val hasSlots = barWidth > contentInset * 2f
-
-    LaunchedEffect(index, settleGeneration, targetLeft, targetRight, hasSlots) {
-        if (!dragging.value && hasSlots) {
+    // The layout owns width; observe it only while settling an explicit destination.
+    LaunchedEffect(index, settleGeneration, items.size, contentInset, overhang) {
+        snapshotFlow { barWidthState.intValue }.collectLatest { barWidth ->
+            if (dragging.value || barWidth <= contentInset * 2f) return@collectLatest
+            val slotWidth = ((barWidth - contentInset * 2f) / items.size).coerceAtLeast(0f)
+            val targetLeft = contentInset - overhang + index * slotWidth
+            val targetRight = contentInset + overhang + (index + 1) * slotWidth
             if (right.value <= left.value) {
                 left.snapTo(targetLeft)
                 right.snapTo(targetRight)
@@ -235,10 +236,8 @@ fun GlassNavigationBar(
 
     val onSelectState by rememberUpdatedState(onSelect)
     val bottomPadding = if (defaultWindowInsetsPadding) {
-        val navigationBarBottom = WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)
-            .asPaddingValues().calculateBottomPadding()
-        val captionBarBottom = WindowInsets.captionBar.only(WindowInsetsSides.Bottom)
-            .asPaddingValues().calculateBottomPadding()
+        val navigationBarBottom = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
+        val captionBarBottom = with(density) { WindowInsets.captionBar.getBottom(this).toDp() }
         val animatedCaptionBarHeight by animateDpAsState(
             targetValue = captionBarBottom.coerceAtLeast(0.dp),
             animationSpec = tween(durationMillis = 300),
@@ -256,18 +255,35 @@ fun GlassNavigationBar(
         0.dp
     }
 
+    val horizontalInsetsModifier = if (defaultWindowInsetsPadding) {
+        val cutout = WindowInsets.displayCutout
+        val navigationBars = WindowInsets.navigationBars
+        val horizontalInsets = remember(cutout, navigationBars) {
+            cutout.union(navigationBars).only(WindowInsetsSides.Horizontal)
+        }
+        Modifier.windowInsetsPadding(horizontalInsets)
+    } else {
+        Modifier
+    }
+    val wrappedTrailingAction: (@Composable () -> Unit)? = remember(trailingAction, inputEnabled) {
+        trailingAction?.let { action ->
+            {
+                Box(
+                    modifier = Modifier
+                        .then(if (inputEnabled) Modifier else Modifier.clearAndSetSemantics { })
+                        .layout { measurable, constraints ->
+                            val placeable = measurable.measure(constraints)
+                            layout(placeable.width, placeable.height) {
+                                if (inputEnabled) placeable.placeRelative(0, 0)
+                            }
+                        },
+                ) { action() }
+            }
+        }
+    }
     GlassNavigationBarLayout(
         modifier = Modifier
-            .then(
-                if (defaultWindowInsetsPadding) {
-                    Modifier.windowInsetsPadding(
-                        WindowInsets.displayCutout.union(WindowInsets.navigationBars)
-                            .only(WindowInsetsSides.Horizontal),
-                    )
-                } else {
-                    Modifier
-                },
-            )
+            .then(horizontalInsetsModifier)
             .then(modifier)
             .fillMaxWidth()
             .then(
@@ -310,20 +326,7 @@ fun GlassNavigationBar(
                 val blurPx = ((1f - visibility) * GlassMotion.NAV_HIDE_BLUR_DP).dp.toPx()
                 renderEffect = if (blurPx > 0.5f) BlurEffect(blurPx, blurPx, TileMode.Decal) else null
             },
-        trailingAction = trailingAction?.let { action ->
-            {
-                Box(
-                    modifier = Modifier
-                        .then(if (inputEnabled) Modifier else Modifier.clearAndSetSemantics { })
-                        .layout { measurable, constraints ->
-                            val placeable = measurable.measure(constraints)
-                            layout(placeable.width, placeable.height) {
-                                if (inputEnabled) placeable.placeRelative(0, 0)
-                            }
-                        },
-                ) { action() }
-            }
-        },
+        trailingAction = wrappedTrailingAction,
     ) {
         Box(
             modifier = Modifier
@@ -339,7 +342,7 @@ fun GlassNavigationBar(
                     shadow = shadow,
                     shading = false,
                 )
-                .onSizeChanged { barWidth = it.width }
+                .onSizeChanged { barWidthState.intValue = it.width }
                 .then(
                     if (inputEnabled) {
                         Modifier.pointerInput(items.size, contentInset, overhang, layoutDirection) {
@@ -525,7 +528,9 @@ fun GlassNavigationBar(
                                 item.label?.let { label ->
                                     Text(
                                         text = label,
-                                        style = MiuixTheme.textStyles.footnote2.copy(fontSize = labelSize),
+                                        style = remember(MiuixTheme.textStyles.footnote2, labelSize) {
+                                            MiuixTheme.textStyles.footnote2.copy(fontSize = labelSize)
+                                        },
                                         color = tintProducer,
                                         textAlign = TextAlign.Center,
                                         maxLines = 2,
