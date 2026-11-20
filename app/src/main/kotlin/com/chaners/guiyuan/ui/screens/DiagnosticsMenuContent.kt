@@ -209,21 +209,31 @@ private fun logFilterEntries(
         ),
     )
 
+internal data class LogFilterState(
+    val levelMask: Int,
+    val categoryMask: Int,
+)
+
+internal data class LogFilterActions(
+    val onLevelMaskChange: (Int) -> Unit,
+    val onCategoryMaskChange: (Int) -> Unit,
+    val onReset: () -> Unit,
+)
+
 @Composable
 internal fun LogFilterMenu(
     title: String,
-    levelMask: Int,
-    categoryMask: Int,
-    onLevelMaskChange: (Int) -> Unit,
-    onCategoryMaskChange: (Int) -> Unit,
-    onReset: () -> Unit,
+    state: LogFilterState,
+    actions: LogFilterActions,
 ) {
+    val levelMask = state.levelMask
+    val categoryMask = state.categoryMask
     val filterActive =
         levelMask != LEVEL_ALL ||
             categoryMask != CAT_ALL
-    val levelItems = filterOptionItems(LevelOptions, levelMask, onLevelMaskChange)
-    val categoryItems = filterOptionItems(CategoryOptions, categoryMask, onCategoryMaskChange)
-    val entries = logFilterEntries(levelItems, categoryItems, filterActive, onReset)
+    val levelItems = filterOptionItems(LevelOptions, levelMask, actions.onLevelMaskChange)
+    val categoryItems = filterOptionItems(CategoryOptions, categoryMask, actions.onCategoryMaskChange)
+    val entries = logFilterEntries(levelItems, categoryItems, filterActive, actions.onReset)
 
     val icon: @Composable () -> Unit = {
         BadgedBox(
@@ -315,34 +325,47 @@ private fun diagLevelEntry(
     )
 }
 
+internal data class DiagMenuStatus(
+    val diagnosticsLevel: DiagLevel,
+    val canChangeLevel: Boolean,
+    val canScrollTop: Boolean,
+    val canScrollBottom: Boolean,
+    val canClear: Boolean,
+)
+
+internal data class DiagMenuActions(
+    val onDiagLevelChange: (DiagLevel) -> Unit,
+    val onScrollTop: () -> Unit,
+    val onScrollBottom: () -> Unit,
+    val onClear: () -> Unit,
+)
+
 @Composable
 internal fun DiagMenu(
     title: String,
-    diagnosticsLevel: DiagLevel,
-    canChangeLevel: Boolean,
-    canScrollTop: Boolean,
-    canScrollBottom: Boolean,
-    canClear: Boolean,
-    onDiagLevelChange: (DiagLevel) -> Unit,
-    onScrollTop: () -> Unit,
-    onScrollBottom: () -> Unit,
-    onClear: () -> Unit,
+    status: DiagMenuStatus,
+    actions: DiagMenuActions,
 ) {
+    val diagnosticsLevel = status.diagnosticsLevel
+    val canChangeLevel = status.canChangeLevel
+    val canScrollTop = status.canScrollTop
+    val canScrollBottom = status.canScrollBottom
+    val canClear = status.canClear
     val entries =
         listOf(
-            diagLevelEntry(diagnosticsLevel, canChangeLevel, onDiagLevelChange),
+            diagLevelEntry(diagnosticsLevel, canChangeLevel, actions.onDiagLevelChange),
             DropdownEntry(
                 items =
                     listOf(
                         DropdownItem(
                             text = stringResource(R.string.diagnostics_scroll_top),
                             enabled = canScrollTop,
-                            onClick = onScrollTop,
+                            onClick = actions.onScrollTop,
                         ),
                         DropdownItem(
                             text = stringResource(R.string.diagnostics_scroll_bottom),
                             enabled = canScrollBottom,
-                            onClick = onScrollBottom,
+                            onClick = actions.onScrollBottom,
                         ),
                     ),
             ),
@@ -352,7 +375,7 @@ internal fun DiagMenu(
                         DropdownItem(
                             text = stringResource(R.string.diagnostics_clear_history),
                             enabled = canClear,
-                            onClick = onClear,
+                            onClick = actions.onClear,
                         ),
                     ),
             ),
