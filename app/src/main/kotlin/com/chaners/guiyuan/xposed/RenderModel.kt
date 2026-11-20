@@ -33,81 +33,16 @@ internal data class RenderModel(
         ): RenderModel? {
             val battery = snapshot.battery ?: return null
 
-            val nativeNoSimVisible = presentation.statusIcons.noSimVisible
-            val noSimIcon =
-                presentation.statusIcons.noSimIcon
-                    ?.takeIf { nativeNoSimVisible }
-
-            val preferredDataSubscriptionId =
-                selectDataSubscriptionId(presentation, defaultDataSubscriptionId, dualSignalEnabled)
-
-            val singleDetectedSubId =
-                detectSoleActiveSubscription(presentation, dualSignalEnabled)
-
-            val selectedMobile =
-                selectMobileSignal(
-                    snapshot, nativeNoSimVisible, singleDetectedSubId,
-                    preferredDataSubscriptionId, dualSignalEnabled,
-                )
-
-            val selectedSubscriptionId =
-                if (nativeNoSimVisible) {
-                    -1
-                } else {
-                    selectedMobile?.first
-                        ?: singleDetectedSubId
-                        ?: preferredDataSubscriptionId.takeIf { it >= 0 }
-                        ?: snapshot.mobile.keys.firstOrNull()
-                            ?.takeUnless { dualSignalEnabled }
-                        ?: -1
-                }
-
+            val mobile = selectMobilePresentation(
+                snapshot, presentation, defaultDataSubscriptionId, dualSignalEnabled,
+            )
             val airplaneMode = snapshot.airplaneMode == true
             val mobileRecoveryPending = snapshot.mobileRecoveryPending
+            val nativeNoSimVisible = presentation.statusIcons.noSimVisible
             val nativeMobileWithheld = mobileRecoveryPending || nativeNoSimVisible
-            val selectedSignal = selectedMobile?.second?.signal
-            val nativeMobile = presentation.mobilePresentation
-            // The native aggregate root may belong to a different SIM.
-            val dualTypeMismatch =
-                dualSignalEnabled &&
-                    (nativeMobile?.platformActiveSubscriptionIds?.size ?: 0) > 1 &&
-                    nativeMobile?.networkTypeSubscriptionId != selectedSubscriptionId
-
-            val mobileLevel =
-                resolveMobileLevel(
-                    selectedSignal, airplaneMode, mobileRecoveryPending, nativeNoSimVisible,
-                )
-
-            val centerIndicator =
-                ConnectivityPolicy.resolve(
-                    wifi = snapshot.wifi,
-                    airplaneMode = airplaneMode,
-                    connectivity = presentation.connectivity,
-                    mobileType =
-                        if (nativeMobileWithheld || dualTypeMismatch) {
-                            null
-                        } else {
-                            nativeMobile?.networkType
-                        },
-                    noSimIcon = noSimIcon,
-                )
-                    ?: if (
-                        nativeMobileWithheld ||
-                        (dualTypeMismatch && !presentation.connectivity.known)
-                    ) {
-                        CenterIndicator.Empty
-                    } else {
-                        return null
-                    }
-
-            val mobileUnavailableMark =
-                when {
-                    airplaneMode -> true
-                    nativeNoSimVisible -> true
-                    mobileRecoveryPending -> false
-                    selectedSignal is SignalStrength.Unavailable -> true
-                    else -> false
-                }
+            val centerIndicator = resolveCenterIndicator(
+                snapshot, presentation, mobile.subscriptionId, dualSignalEnabled,
+            ) ?: return null
 
             val dualLevels =
                 resolveDualLevels(
@@ -125,36 +60,97 @@ internal data class RenderModel(
                 lowBatteryThreshold,
             )
 
-            val activitySubscriptionId =
-                resolveActivitySubscriptionId(presentation, selectedSubscriptionId)
-            // A drawable event does not establish that the native activity View
-            // is visible. Only the native visibility collector can authorize it.
-            // Unknown remains hidden until the first verified Home SIM event.
-            val nativeMobileActivityId =
-                snapshot.mobileActivityResIds[activitySubscriptionId]
-                    ?.takeIf { activitySubscriptionId in snapshot.mobileActivityShownIds }
-
             return RenderModel(
                 batteryPercent = batteryPercent,
                 charging = battery.charging,
                 centerIndicator = centerIndicator,
                 chargingIconResId = battery.chargingIconResId,
-                networkActivityResId =
-                    resolveNetworkActivityResource(
-                        centerIndicator = centerIndicator,
-                        wifiActivityResId = snapshot.wifiActivityResId,
-                        nativeMobileActivityId = nativeMobileActivityId,
-                        keepMobileActivityInEmpty =
-                            !airplaneMode && !nativeMobileWithheld &&
-                                !mobileUnavailableMark,
-                    ),
-                mobileLevel = mobileLevel,
-                mobileUnavailableMark = mobileUnavailableMark,
-                effectiveDataSubscriptionId = selectedSubscriptionId,
+                networkActivityResId = resolveNetworkActivityResource(
+                    snapshot = snapshot,
+                    presentation = presentation,
+                    selectedSubscriptionId = mobile.subscriptionId,
+                    centerIndicator = centerIndicator,
+                    keepMobileActivityInEmpty =
+                        !airplaneMode && !nativeMobileWithheld && !mobile.unavailableMark,
+                ),
+                mobileLevel = mobile.level,
+                mobileUnavailableMark = mobile.unavailableMark,
+                effectiveDataSubscriptionId = mobile.subscriptionId,
                 dualMobileLevels = dualLevels,
                 batterySemanticState = batterySemanticState,
                 batterySystemSemanticColor = resolveBatterySystemColor(battery, batterySemanticState),
             )
+        }
+
+
+        private data class MobileSelection(
+            val subscriptionId: Int,
+            val level: Int?,
+            val unavailableMark: Boolean,
+        )
+
+        private fun selectMobilePresentation(
+            snapshot: StatusStateStore.Snapshot,
+            presentation: PresentationStore.Snapshot,
+            defaultDataSubscriptionId: Int,
+            dualSignalEnabled: Boolean,
+        ): MobileSelection {
+            val nativeNoSimVisible = presentation.statusIcons.noSimVisible
+            val preferred = selectDataSubscriptionId(
+                presentation, defaultDataSubscriptionId, dualSignalEnabled,
+            )
+            val sole = detectSoleActiveSubscription(presentation, dualSignalEnabled)
+            val selected = selectMobileSignal(
+                snapshot, nativeNoSimVisible, sole, preferred, dualSignalEnabled,
+            )
+            val subscriptionId = if (nativeNoSimVisible) {
+                -1
+            } else {
+                selected?.first
+                    ?: sole
+                    ?: preferred.takeIf { it >= 0 }
+                    ?: snapshot.mobile.keys.firstOrNull()?.takeUnless { dualSignalEnabled }
+                    ?: -1
+            }
+            val signal = selected?.second?.signal
+            val airplaneMode = snapshot.airplaneMode == true
+            val recoveryPending = snapshot.mobileRecoveryPending
+            return MobileSelection(
+                subscriptionId = subscriptionId,
+                level = resolveMobileLevel(
+                    signal, airplaneMode, recoveryPending, nativeNoSimVisible,
+                ),
+                unavailableMark =
+                    airplaneMode || nativeNoSimVisible ||
+                        (!recoveryPending && signal is SignalStrength.Unavailable),
+            )
+        }
+
+        private fun resolveCenterIndicator(
+            snapshot: StatusStateStore.Snapshot,
+            presentation: PresentationStore.Snapshot,
+            selectedSubscriptionId: Int,
+            dualSignalEnabled: Boolean,
+        ): CenterIndicator? {
+            val nativeNoSimVisible = presentation.statusIcons.noSimVisible
+            val withheld = snapshot.mobileRecoveryPending || nativeNoSimVisible
+            val nativeMobile = presentation.mobilePresentation
+            // A native aggregate root may belong to a different SIM.
+            val typeMismatch =
+                dualSignalEnabled &&
+                    (nativeMobile?.platformActiveSubscriptionIds?.size ?: 0) > 1 &&
+                    nativeMobile?.networkTypeSubscriptionId != selectedSubscriptionId
+            return ConnectivityPolicy.resolve(
+                wifi = snapshot.wifi,
+                airplaneMode = snapshot.airplaneMode == true,
+                connectivity = presentation.connectivity,
+                mobileType = if (withheld || typeMismatch) null else nativeMobile?.networkType,
+                noSimIcon = presentation.statusIcons.noSimIcon?.takeIf { nativeNoSimVisible },
+            ) ?: if (withheld || (typeMismatch && !presentation.connectivity.known)) {
+                CenterIndicator.Empty
+            } else {
+                null
+            }
         }
 
         private fun selectDataSubscriptionId(
@@ -237,22 +233,26 @@ internal data class RenderModel(
         }
 
         private fun resolveNetworkActivityResource(
+            snapshot: StatusStateStore.Snapshot,
+            presentation: PresentationStore.Snapshot,
+            selectedSubscriptionId: Int,
             centerIndicator: CenterIndicator,
-            wifiActivityResId: Int?,
-            nativeMobileActivityId: Int?,
             keepMobileActivityInEmpty: Boolean,
-        ): Int? =
-        when (centerIndicator) {
-            is CenterIndicator.Wifi -> wifiActivityResId
-            is CenterIndicator.MobileType -> nativeMobileActivityId
-            CenterIndicator.Empty ->
-                if (keepMobileActivityInEmpty) {
-                    // Native visibility already accounts for Wi-Fi availability.
-                    // Do not gate a verified mobile activity on Guiyuan's
-                    // independently observed Wi-Fi state during a handoff.
-                    nativeMobileActivityId
-                } else null
-            else -> null
+        ): Int? {
+            val activitySubscriptionId = resolveActivitySubscriptionId(
+                presentation, selectedSubscriptionId,
+            )
+            // Native visibility, not a drawable event, authorizes activity display.
+            val nativeMobileActivityId =
+                snapshot.mobileActivityResIds[activitySubscriptionId]
+                    ?.takeIf { activitySubscriptionId in snapshot.mobileActivityShownIds }
+            return when (centerIndicator) {
+                is CenterIndicator.Wifi -> snapshot.wifiActivityResId
+                is CenterIndicator.MobileType -> nativeMobileActivityId
+                CenterIndicator.Empty ->
+                    if (keepMobileActivityInEmpty) nativeMobileActivityId else null
+                else -> null
+            }
         }
 
         private fun resolveBatterySystemColor(
