@@ -2,9 +2,7 @@ package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
@@ -19,9 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -40,9 +36,6 @@ import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.IconButtonDefaults
-import top.yukonga.miuix.kmp.squircle.squircleSurface
-import com.chaners.guiyuan.ui.glass.GlassIconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -102,45 +95,6 @@ private val CategoryOptions =
         ),
         FilterOption(R.string.diagnostics_filter_other, CAT_OTHER),
     )
-
-@Composable
-internal fun DiagActionButton(
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-    longClickLabel: String,
-    enabled: Boolean,
-    content: @Composable () -> Unit,
-) {
-    if (LocalUiStyle.current == UiStyle.OS4) {
-        GlassIconButton(
-            onClick = onClick,
-            onLongClick = onLongClick,
-            onLongClickLabel = longClickLabel,
-            enabled = enabled,
-            content = content,
-        )
-    } else {
-        // MIUIX's IconButton is click-only; this retains its surface and one gesture owner.
-        Box(
-            modifier = Modifier
-                .defaultMinSize(
-                    minWidth = IconButtonDefaults.MinWidth,
-                    minHeight = IconButtonDefaults.MinHeight,
-                )
-                .squircleSurface(color = Color.Unspecified, cornerRadius = IconButtonDefaults.CornerRadius)
-                .combinedClickable(
-                    enabled = enabled,
-                    role = Role.Button,
-                    onLongClickLabel = longClickLabel,
-                    onLongClick = onLongClick,
-                    onClick = onClick,
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            content()
-        }
-    }
-}
 
 @Composable
 private fun filterOptionItems(
