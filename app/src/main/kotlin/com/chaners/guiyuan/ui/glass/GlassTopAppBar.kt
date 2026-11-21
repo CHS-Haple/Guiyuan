@@ -5,6 +5,7 @@
 package com.chaners.guiyuan.ui.glass
 
 import top.yukonga.miuix.kmp.glass.GlassMotion
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults as UpstreamGlassTopAppBarDefaults
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
@@ -71,7 +72,6 @@ import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.material.withUnderlayBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.material.EdgeStroke
-import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
 import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.GlassMaterials
 import top.yukonga.miuix.kmp.material.GlassShape
@@ -84,32 +84,28 @@ import top.yukonga.miuix.kmp.material.GlassShadows
 object GlassTopAppBarDefaults {
 
     /** Start/end inset of the glass controls, aligned with the page's cards and tabs. */
-    val HorizontalPadding: Dp = 12.dp
+    val HorizontalPadding: Dp = UpstreamGlassTopAppBarDefaults.HorizontalPadding
 
     /** How far the large title blurs out as it collapses. */
-    val TitleBlurRadius: Dp = 8.dp
+    val TitleBlurRadius: Dp = UpstreamGlassTopAppBarDefaults.TitleBlurRadius
 
     /** Diameter of the glass pill behind a bar button. */
-    val ButtonSize: Dp = 44.dp
+    val ButtonSize: Dp = UpstreamGlassTopAppBarDefaults.ButtonSize
 
     /** Maximum radius of the upstream progressive background band. */
-    val ProgressiveBlurRadius: Dp = 80.dp
+    val ProgressiveBlurRadius: Dp = UpstreamGlassTopAppBarDefaults.ProgressiveBlurRadius
 
     /** Icon opacity while an action-bar button is held. */
-    val PressedContentAlpha: Float = 0.6f
+    val PressedContentAlpha: Float = UpstreamGlassTopAppBarDefaults.PressedContentAlpha
 
     /** The traditional fill used when backdrop material is unavailable. */
     @Composable
     @ReadOnlyComposable
-    fun buttonFill(): Color = when {
-        MiuixTheme.isDynamicColor -> MiuixTheme.colorScheme.surfaceContainerHigh
-        isDarkTheme() -> Color(0xFF2C2C2C)
-        else -> Color.White
-    }
+    fun buttonFill(): Color = UpstreamGlassTopAppBarDefaults.buttonFill()
 
     /** The `internal-pured-thin-glass` action-button material. */
     @Composable
-    fun buttonMaterial(): GlassMaterial = dynamicGlassMaterial(GlassMaterials.puredThinGlass(isDarkTheme()))
+    fun buttonMaterial(): GlassMaterial = UpstreamGlassTopAppBarDefaults.buttonMaterial()
 
     /** The parent material applied before child button and tab materials. */
     @Composable
@@ -118,20 +114,12 @@ object GlassTopAppBarDefaults {
     /** The small bloom stroke paired with [buttonMaterial]. */
     @Composable
     @ReadOnlyComposable
-    fun buttonStroke(): EdgeStroke = GlassEdgeStrokes.forTheme(
-        isDark = isDarkTheme(),
-        light = GlassEdgeStrokes.SmallLight,
-        dark = GlassEdgeStrokes.SmallDark,
-    )
+    fun buttonStroke(): EdgeStroke = UpstreamGlassTopAppBarDefaults.buttonStroke()
 
     /** The state overlay painted behind a held action-bar icon. */
     @Composable
     @ReadOnlyComposable
-    fun buttonPressedOverlay(): Color = if (isDarkTheme()) {
-        Color.White.copy(alpha = 0.14f)
-    } else {
-        Color.Black.copy(alpha = 0.10f)
-    }
+    fun buttonPressedOverlay(): Color = UpstreamGlassTopAppBarDefaults.buttonPressedOverlay()
 
     /**
      * The band that dims the content as it passes under the bar: the page's own colour, laid back
@@ -143,7 +131,7 @@ object GlassTopAppBarDefaults {
     fun bandBrush(color: Color): Brush = TopAppBarBandBrush(color)
 
     /** How far the band reaches past the bottom of the bar. */
-    val BandOverhang: Dp = 36.dp
+    val BandOverhang: Dp = UpstreamGlassTopAppBarDefaults.BandOverhang
 
     @Composable
     @ReadOnlyComposable
