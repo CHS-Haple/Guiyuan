@@ -43,8 +43,8 @@ internal object NativeVectorStroke {
         return if (requested < 0f) requested * 0.6f else requested
     }
 
-    fun load(resources: Resources, resourceId: Int): Source? =
-        runCatching {
+    fun load(resources: Resources, resourceId: Int): Source? {
+        return runCatching {
             resources.getXml(resourceId).use { xml ->
                 var depth = 0
                 var viewportWidth = Float.NaN
@@ -59,7 +59,7 @@ internal object NativeVectorStroke {
                                     viewportHeight = xml.getAttributeFloatValue(NS, "viewportHeight", Float.NaN)
                                     if (!viewportWidth.isFinite() || !viewportHeight.isFinite() ||
                                         viewportWidth <= 0f || viewportHeight <= 0f
-                                    ) return@runCatching null
+                                    ) return null
                                 }
                                 depth == 1 && xml.name == "path" && onlyKeys(xml, pathKeys) -> {
                                     // Exiting at depth 1 fails the document completeness check.
@@ -67,7 +67,7 @@ internal object NativeVectorStroke {
                                     val layer = readLayer(resources, xml) ?: break
                                     layers.add(layer)
                                 }
-                                else -> return@runCatching null
+                                else -> return null
                             }
                             depth++
                         }
@@ -78,6 +78,7 @@ internal object NativeVectorStroke {
                 else Source(viewportWidth, viewportHeight, layers)
             }
         }.onFailure { rethrowRenderFatal(it) }.getOrNull()
+    }
 
     private fun readLayer(
         resources: Resources,
