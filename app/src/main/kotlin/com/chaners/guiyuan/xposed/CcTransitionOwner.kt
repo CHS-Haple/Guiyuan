@@ -446,7 +446,7 @@ internal object CcTransitionOwner {
         }
 
         private fun isMobileSlot(view: View): Boolean {
-            val slot = NativeParticipantAccess.slotOf(view)
+            val slot = NativeStatusSlots.slotOf(view)
             return slot == MOBILE_SLOT || slot == STACKED_MOBILE_SLOT
         }
 
@@ -457,7 +457,7 @@ internal object CcTransitionOwner {
                 }
             val signal =
                 root?.let { wifi ->
-                    NativeParticipantAccess.findResourceView(
+                    NativeStatusSlots.findResourceView(
                         root = wifi,
                         entryName = "wifi_signal",
                     )?.takeIf(::isReliableSemanticTarget)
@@ -534,7 +534,7 @@ internal object CcTransitionOwner {
                 "dataSubId=$dataSubId:sourceActivityResId=${sourceId ?: 0}:" +
                 targets.take(4).joinToString(";") { (slot, root) ->
                     val signal =
-                        NativeParticipantAccess.findResourceView(
+                        NativeStatusSlots.findResourceView(
                             root = root,
                             entryName = "mobile_signal_container",
                         ) as? ViewGroup
@@ -552,7 +552,7 @@ internal object CcTransitionOwner {
                                     }
                                 val rows = visual?.dualMobileRowsWithinEnvelope()
                                 val name =
-                                    NativeParticipantAccess.resourceEntryName(child)
+                                    NativeStatusSlots.resourceEntryName(child)
                                         ?: child.javaClass.simpleName
                                 "$name:${child.visibility}:${child.width}x${child.height}:" +
                                     "${visual?.topology ?: "unknown"}:" +
@@ -561,7 +561,7 @@ internal object CcTransitionOwner {
                             }
                         }
                     val rootSubId = readMobileSubId(root)
-                    val activity = NativeParticipantAccess.findResourceView(
+                    val activity = NativeStatusSlots.findResourceView(
                         root = root,
                         entryName = "mobile_left_mobile_inout",
                     ) as? ImageView
@@ -599,7 +599,7 @@ internal object CcTransitionOwner {
             fun viewPos(view: View?): String {
                 if (view == null) return "missing"
                 val geometry = sample(view, root)
-                val name = NativeParticipantAccess.resourceEntryName(view)
+                val name = NativeStatusSlots.resourceEntryName(view)
                     ?: view.javaClass.simpleName
                 return "$name@" +
                     (geometry?.let { "${it[0].roundToInt()},${it[1].roundToInt()}" }
@@ -620,7 +620,7 @@ internal object CcTransitionOwner {
                     .joinToString(",") { index ->
                         val child = group.getChildAt(index)
                         val slot =
-                            readOrNull { NativeParticipantAccess.slotOf(child) } ?: "-"
+                            readOrNull { NativeStatusSlots.slotOf(child) } ?: "-"
                         val clip = child.clipBounds
                         val mask = clip?.let {
                             "${it.left}/${it.top}/${it.right}/${it.bottom}"
@@ -650,7 +650,7 @@ internal object CcTransitionOwner {
                 " final=${viewPos(finalStatusIcons)}" +
                 " fakeWifi=${viewPos(fakeWifi)} finalWifi=${viewPos(finalWifi)}" +
                 " finalWifiSignal=${viewPos(finalWifi?.let { wifi ->
-                    NativeParticipantAccess.findResourceView(wifi, "wifi_signal")
+                    NativeStatusSlots.findResourceView(wifi, "wifi_signal")
                 })}" +
                 " source=${viewPos(source)} finalBattery=${viewPos(finalBattery)}" +
                 " fakePeers=[${peers(fakeStatusIcons)}]" +
@@ -2821,7 +2821,7 @@ internal object CcTransitionOwner {
                         target !is StatusPainter.TransitionTarget.Slots ||
                             (witness.slotView.visibility == View.VISIBLE &&
                                 witness.slotView.parent === finalStatusIcons &&
-                                NativeParticipantAccess.slotOf(witness.slotView) == witness.slot)
+                                NativeStatusSlots.slotOf(witness.slotView) == witness.slot)
                     witness.slotView.isAttachedToWindow &&
                         slotStillSemantic &&
                         (
@@ -2915,7 +2915,7 @@ internal object CcTransitionOwner {
             val nativeOptical =
                 target.preferredChildEntries
                     .firstNotNullOfOrNull { entry ->
-                        NativeParticipantAccess.findResourceView(
+                        NativeStatusSlots.findResourceView(
                             root = slotRoot,
                             entryName = entry,
                         )?.takeIf { optical ->
@@ -2984,7 +2984,7 @@ internal object CcTransitionOwner {
                         target.slotView.visibility == View.VISIBLE &&
                             isUsableSlotView(target.slotView) &&
                             target.slotView.parent === finalStatusIcons &&
-                            NativeParticipantAccess.slotOf(target.slotView) == target.slot &&
+                            NativeStatusSlots.slotOf(target.slotView) == target.slot &&
                             (target.opticalView?.let { optical ->
                                 isReliableSemanticTarget(optical) &&
                                     belongsToSlot(optical, target.slotView)
@@ -3366,7 +3366,7 @@ internal object CcTransitionOwner {
         private fun resolveBatteryNumberTargetWitness(): TargetWitness? {
             val digitalView =
                 readViewField(finalBattery, "mBatteryDigitalView")
-                    ?: NativeParticipantAccess.findResourceView(finalBattery, "battery_icon_container")
+                    ?: NativeStatusSlots.findResourceView(finalBattery, "battery_icon_container")
             // Only the native hollow-number style may borrow the battery body's Paint.
             val visibleBatteryBody =
                 if (readIntField(finalBattery, "mBatteryStyle") == 1) {
@@ -3486,7 +3486,7 @@ internal object CcTransitionOwner {
                     val value = view.text?.toString().orEmpty()
                     val digits = value.filter(Char::isDigit)
                     val entry =
-                        NativeParticipantAccess.resourceEntryName(view)
+                        NativeStatusSlots.resourceEntryName(view)
                             ?.lowercase()
                             .orEmpty()
                     var score = 0
@@ -3694,7 +3694,7 @@ internal object CcTransitionOwner {
 
             fun viewToken(view: View): String {
                 val entry =
-                    NativeParticipantAccess.resourceEntryName(view)
+                    NativeStatusSlots.resourceEntryName(view)
                         ?: "no-id"
                 val base =
                     view.javaClass.simpleName + ":" + entry +
@@ -3716,7 +3716,7 @@ internal object CcTransitionOwner {
             fun collect(view: View, depth: Int) {
                 if (descendants.size >= BATTERY_NUMBER_PROBE_MAX_VIEWS) return
                 val entry =
-                    NativeParticipantAccess.resourceEntryName(view)
+                    NativeStatusSlots.resourceEntryName(view)
                         ?.lowercase()
                         .orEmpty()
                 if (
@@ -3789,8 +3789,8 @@ internal object CcTransitionOwner {
                     fieldName = fieldName,
                 )
             }
-                ?: NativeParticipantAccess.findResourceView(battery, "battery_icon")
-                ?: NativeParticipantAccess.findResourceView(battery, "battery_icon_container")
+                ?: NativeStatusSlots.findResourceView(battery, "battery_icon")
+                ?: NativeStatusSlots.findResourceView(battery, "battery_icon_container")
         }
 
         private fun readViewField(
@@ -3855,7 +3855,7 @@ internal object CcTransitionOwner {
         ): View? {
             if (!preferredChildEntries.contains("mobile_signal")) return null
             val signalContainer =
-                NativeParticipantAccess.findResourceView(
+                NativeStatusSlots.findResourceView(
                     root = slotRoot,
                     entryName = "mobile_signal_container",
                 ) as? ViewGroup ?: return null
@@ -4254,7 +4254,7 @@ internal object CcTransitionOwner {
                 val result = ArrayList<View>()
                 for (index in 0 until group.childCount) {
                     val child = group.getChildAt(index)
-                    if (NativeParticipantAccess.slotOf(child) == slot) {
+                    if (NativeStatusSlots.slotOf(child) == slot) {
                         result += child
                     }
                 }

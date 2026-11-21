@@ -7,6 +7,7 @@ import android.widget.ImageView
 import android.graphics.drawable.Icon
 import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
+import com.chaners.guiyuan.xposed.NativeStatusSlots
 import com.chaners.guiyuan.xposed.PresentationStore
 import com.chaners.guiyuan.xposed.unhookFailed
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
@@ -591,7 +592,7 @@ internal object NativeStatusObserver {
             observedNoSimView
                 ?: (0 until group.childCount).firstNotNullOfOrNull { index ->
                     group.getChildAt(index).takeIf { child ->
-                        NativeParticipantAccess.slotOf(child) == NO_SIM_SLOT
+                        NativeStatusSlots.slotOf(child) == NO_SIM_SLOT
                     }
                 }
         val noSimVisible =
@@ -633,7 +634,7 @@ internal object NativeStatusObserver {
                 "statusIconPresentation source=$source tint=${tintText(presentation.appliedTint)}" +
                     " tintAuthority=$authority locationAwareTint=${tintText(locationAwareTint)}" +
                     " peerTint=${tintText(peerTint)} managerFallbackTint=${tintText(managerFallbackTint)}" +
-                    " tintAnchorSlot=${tintAnchor?.let(NativeParticipantAccess::slotOf) ?: "none"}" +
+                    " tintAnchorSlot=${tintAnchor?.let(NativeStatusSlots::slotOf) ?: "none"}" +
                     " tintAnchorClass=${tintAnchor?.javaClass?.simpleName ?: "none"}" +
                     " noSimVisible=${presentation.noSimVisible}" +
                     " noSimResource=${presentation.noSimIcon?.packageName}:${presentation.noSimIcon?.resourceId}"
@@ -760,7 +761,7 @@ internal object NativeStatusObserver {
             val child = group.getChildAt(index)
             if (
                 isTintAuthorityCandidate(
-                    slot = NativeParticipantAccess.slotOf(child),
+                    slot = NativeStatusSlots.slotOf(child),
                     visible = child.visibility == View.VISIBLE,
                     width = child.width,
                     height = child.height,
@@ -774,7 +775,7 @@ internal object NativeStatusObserver {
 
     private fun isTintAuthorityCandidate(view: View): Boolean =
         isTintAuthorityCandidate(
-            slot = NativeParticipantAccess.slotOf(view),
+            slot = NativeStatusSlots.slotOf(view),
             visible = view.visibility == View.VISIBLE,
             width = view.width,
             height = view.height,

@@ -30,7 +30,7 @@ internal object NativeMobileTypePresentation {
         pendingMobileTypeDrawable: Drawable?,
     ): NetworkType? {
 
-        NativeParticipantAccess.findResourceView(root, MOBILE_TYPE_RESOURCE_ENTRY)
+        NativeStatusSlots.findResourceView(root, MOBILE_TYPE_RESOURCE_ENTRY)
             ?.let { view ->
                 val image = view as? ImageView
                 val drawable = image?.drawable
@@ -57,7 +57,7 @@ internal object NativeMobileTypePresentation {
                 }
             }
 
-        NativeParticipantAccess.findResourceView(root, MOBILE_TYPE_SINGLE_RESOURCE_ENTRY)
+        NativeStatusSlots.findResourceView(root, MOBILE_TYPE_SINGLE_RESOURCE_ENTRY)
             ?.let { view ->
                 val text = (view as? TextView)?.text?.toString()?.trim().orEmpty()
                 if (text.isNotEmpty()) {
