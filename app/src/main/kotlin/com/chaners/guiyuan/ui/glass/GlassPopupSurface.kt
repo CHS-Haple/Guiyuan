@@ -5,6 +5,8 @@
 
 package com.chaners.guiyuan.ui.glass
 
+import top.yukonga.miuix.kmp.glass.GlassPopupFrame
+
 import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
 import top.yukonga.miuix.kmp.glass.glass
 import top.yukonga.miuix.kmp.glass.glassShadow
@@ -73,13 +75,6 @@ import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.material.GlassShadow
-
-/** Panel bounds and corner radius for an animation frame. */
-@Immutable
-data class GlassPopupFrame(
-    val rect: Rect,
-    val cornerRadius: Dp,
-)
 
 /** Final popup bounds and vertical anchor alignment. */
 @Immutable
