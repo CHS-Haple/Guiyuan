@@ -3,6 +3,8 @@
 
 package com.chaners.guiyuan.ui.glass
 
+import top.yukonga.miuix.kmp.glass.GlassPopupFrame
+
 import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
 import top.yukonga.miuix.kmp.glass.GlassPopupSizing
 import top.yukonga.miuix.kmp.glass.GlassPopupVisuals
