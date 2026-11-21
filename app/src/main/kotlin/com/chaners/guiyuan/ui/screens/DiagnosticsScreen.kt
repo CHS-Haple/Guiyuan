@@ -220,6 +220,8 @@ internal fun DiagnosticsScreen(
             !loading &&
             !reportBusy &&
             !exportOpen
+    // The preference write is synchronous; do not wait for the observer flow while switching.
+    val selectedLevel = if (loading) diagRepo.current() else diagSettings.level
     val readout = diagnosticsLogReadout(
         snapshot = snapshot,
         selectedLevel = selectedLevel,

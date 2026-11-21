@@ -54,8 +54,6 @@ internal fun diagnosticsLogReadout(
             entries
         }
     }
-    // The preference write is synchronous; do not wait for the observer flow while switching.
-    val selectedLevel = if (loading) diagRepo.current() else diagSettings.level
     val collectionFailed = snapshot?.log?.result?.isSuccess == false
     val hasCapturedSessionLines = snapshot?.log?.sessionLines?.isNotEmpty() == true
     val captureTruncated = snapshot?.log?.result?.truncated == true && hasCapturedSessionLines
