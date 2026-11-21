@@ -36,6 +36,7 @@ val stringBuildConfigType = "String"
 val buildChannelFieldName = "BUILD_CHANNEL"
 val deepDiagnosticsBuildField = "DEEP_DIAGNOSTICS"
 val os4DebugSuffix = providers.gradleProperty("gy.os4.debugSuffix").orNull
+val hapleSigningConfigName = "haple"
 val hapleKeystorePath = providers.environmentVariable("HAPLE_KEYSTORE_PATH").orNull
 val hapleKeystorePassword = providers.environmentVariable("HAPLE_KEYSTORE_PASSWORD").orNull
 val hapleKeyAlias = providers.environmentVariable("HAPLE_KEY_ALIAS").orNull
@@ -80,7 +81,7 @@ android {
 
     signingConfigs {
         if (hapleSigningEnabled) {
-            create("haple") {
+            create(hapleSigningConfigName) {
                 storeFile = file(requireNotNull(hapleKeystorePath))
                 storePassword = hapleKeystorePassword
                 keyAlias = hapleKeyAlias
@@ -111,7 +112,7 @@ android {
             buildConfigField(booleanBuildConfigType, "DEVELOPMENT_PROBES", "true")
             buildConfigField(booleanBuildConfigType, deepDiagnosticsBuildField, "true")
             if (hapleSigningEnabled) {
-                signingConfig = signingConfigs.getByName("haple")
+                signingConfig = signingConfigs.getByName(hapleSigningConfigName)
             }
         }
         release {
@@ -121,7 +122,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             if (hapleSigningEnabled) {
-                signingConfig = signingConfigs.getByName("haple")
+                signingConfig = signingConfigs.getByName(hapleSigningConfigName)
             }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
