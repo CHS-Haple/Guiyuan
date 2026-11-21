@@ -21,6 +21,10 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
+// Native slot identities are shared by the observer and its tint resolver.
+internal const val AIRPLANE_SLOT = "airplane"
+internal const val NO_SIM_SLOT = "no_sim"
+
 internal object NativeStatusObserver {
 
     private inline fun reportEvent(message: () -> String) {
@@ -38,12 +42,6 @@ internal object NativeStatusObserver {
         "com.android.systemui.statusbar.phone.ui.StatusBarIconControllerImpl"
     private const val STATUS_BAR_ICON_VIEW_CLASS =
         "com.android.systemui.statusbar.StatusBarIconView"
-    private const val DARK_ICON_DISPATCHER_CLASS =
-        "com.android.systemui.plugins.DarkIconDispatcher"
-    private const val DARK_ICON_DISPATCHER_FIELD = "mDarkIconDispatcher"
-    private const val TINT_AREAS_FIELD = "mTintAreas"
-    private const val ICON_TINT_FIELD = "mIconTint"
-    private const val MANAGER_COLOR_FIELD = "mColor"
     private const val HOME_MANAGER_REGISTERED_SOURCE = "homeManagerRegistered"
 
     private const val HOME_ICON_ADDED_HOOK_ID =
@@ -55,9 +53,6 @@ internal object NativeStatusObserver {
         "combinedstatus.nativeNetworkSuppression.airplaneVisibility"
 
     private val observableTargetSlots = setOf("wifi", "mobile", NO_SIM_SLOT)
-    private val representedTintSlots =
-        setOf("combined_status", "wifi", "mobile", "stacked_mobile", NO_SIM_SLOT, AIRPLANE_SLOT)
-
     private val installedHandles = mutableListOf<HookHandle>()
     private var installIncomplete = false
     private val failedObservations = mutableSetOf<String>()
@@ -86,14 +81,6 @@ internal object NativeStatusObserver {
     private val transitionStateAccessorMissing = ConcurrentHashMap.newKeySet<Class<*>>()
     private val transitionStateFieldCache =
         ConcurrentHashMap<Class<*>, TransitionStateFields>()
-
-    // Cache reflective lookups, not the live SystemUI tint values.
-    private val tintFieldNames =
-        setOf(DARK_ICON_DISPATCHER_FIELD, TINT_AREAS_FIELD, ICON_TINT_FIELD, MANAGER_COLOR_FIELD)
-    private val tintFieldsByClass =
-        ConcurrentHashMap<Class<*>, List<Field>>()
-    private val tintMethodByManagerClass =
-        ConcurrentHashMap<Class<*>, Method>()
 
     val installedHookCount: Int
         @Synchronized get() = installedHandles.size
@@ -341,8 +328,7 @@ internal object NativeStatusObserver {
         transitionStateAccessorCache.clear()
         transitionStateAccessorMissing.clear()
         transitionStateFieldCache.clear()
-        tintFieldsByClass.clear()
-        tintMethodByManagerClass.clear()
+        NativeStatusTintResolver.resetCaches()
         lastDelivery = Delivery(PresentationStore.StatusIconPresentation())
     }
 
@@ -565,15 +551,15 @@ internal object NativeStatusObserver {
         val peerTint = group?.let(::resolveAppliedStatusIconTint)
         val resolvedAnchor =
             anchorView
-                ?.takeIf(::isTintAuthorityCandidate)
-                ?: group?.let(::resolveTintAnchorView)
+                ?.takeIf(NativeStatusTintResolver::isTintAuthorityCandidate)
+                ?: group?.let(NativeStatusTintResolver::resolveTintAnchorView)
         val locationAwareTint =
-            resolveLocationAwareManagerTint(
+            NativeStatusTintResolver.resolveLocationAwareManagerTint(
                 manager = activeManager,
                 anchorView = resolvedAnchor,
             )
         val managerFallbackTint =
-            resolveManagerFallbackTint(activeManager)
+            NativeStatusTintResolver.resolveManagerFallbackTint(activeManager)
         return StatusIconTintPolicy.statusIconTint(
             locationAwareTint = locationAwareTint,
             peerAppliedTint = peerTint,
@@ -601,14 +587,14 @@ internal object NativeStatusObserver {
         val noSimIcon =
             noSimView?.takeIf { noSimVisible }?.let(::resolveNativeIconResource)
         val peerTint = resolveAppliedStatusIconTint(group)
-        val tintAnchor = resolveTintAnchorView(group)
+        val tintAnchor = NativeStatusTintResolver.resolveTintAnchorView(group)
         val locationAwareTint =
-            resolveLocationAwareManagerTint(
+            NativeStatusTintResolver.resolveLocationAwareManagerTint(
                 manager = activeManager,
                 anchorView = tintAnchor,
             )
         val managerFallbackTint =
-            resolveManagerFallbackTint(activeManager)
+            NativeStatusTintResolver.resolveManagerFallbackTint(activeManager)
         val appliedTint =
             StatusIconTintPolicy.statusIconTint(
                 locationAwareTint = locationAwareTint,
@@ -698,142 +684,6 @@ internal object NativeStatusObserver {
         )
     }
 
-    private fun resolveLocationAwareManagerTint(
-        manager: Any?,
-        anchorView: View?,
-    ): Int? {
-        manager ?: return null
-        anchorView ?: return null
-
-        val dispatcher =
-            readObjectField(manager, DARK_ICON_DISPATCHER_FIELD)
-                ?: return null
-        val iconTint =
-            readIntField(dispatcher, ICON_TINT_FIELD)
-                ?.takeIf(StatusIconTintPolicy::isVisibleTint)
-                ?: return null
-        val tintAreas =
-            readObjectField(dispatcher, TINT_AREAS_FIELD)
-                as? Collection<*>
-                ?: return null
-
-        return optionalNativeRead {
-            val managerClass = manager.javaClass
-            val getTint =
-                tintMethodByManagerClass[managerClass]
-                    ?: Class.forName(
-                        DARK_ICON_DISPATCHER_CLASS,
-                        false,
-                        managerClass.classLoader,
-                    ).methods.firstOrNull { method ->
-                        method.name == "getTint" &&
-                            method.parameterCount == 3 &&
-                            View::class.java.isAssignableFrom(
-                                method.parameterTypes[1],
-                            ) &&
-                            method.parameterTypes[2] ==
-                                Int::class.javaPrimitiveType
-                    }?.also { tintMethodByManagerClass[managerClass] = it }
-            getTint?.let { method ->
-                (method.invoke(null, tintAreas, anchorView, iconTint) as? Number)
-                    ?.toInt()
-                    ?.takeIf(StatusIconTintPolicy::isVisibleTint)
-            }
-        }
-    }
-
-    private fun resolveManagerFallbackTint(manager: Any?): Int? {
-        manager ?: return null
-
-        readIntField(manager, MANAGER_COLOR_FIELD)
-            ?.takeIf(StatusIconTintPolicy::isVisibleTint)
-            ?.let { return it }
-
-        val dispatcher =
-            readObjectField(manager, DARK_ICON_DISPATCHER_FIELD)
-                ?: return null
-        return readIntField(dispatcher, ICON_TINT_FIELD)
-            ?.takeIf(StatusIconTintPolicy::isVisibleTint)
-    }
-
-    private fun resolveTintAnchorView(group: ViewGroup): View? {
-        for (index in group.childCount - 1 downTo 0) {
-            val child = group.getChildAt(index)
-            if (
-                isTintAuthorityCandidate(
-                    slot = NativeStatusSlots.slotOf(child),
-                    visible = child.visibility == View.VISIBLE,
-                    width = child.width,
-                    height = child.height,
-                )
-            ) {
-                return child
-            }
-        }
-        return null
-    }
-
-    private fun isTintAuthorityCandidate(view: View): Boolean =
-        isTintAuthorityCandidate(
-            slot = NativeStatusSlots.slotOf(view),
-            visible = view.visibility == View.VISIBLE,
-            width = view.width,
-            height = view.height,
-        )
-
-    internal fun isTintAuthorityCandidate(
-        slot: String?,
-        visible: Boolean,
-        width: Int,
-        height: Int,
-    ): Boolean =
-        slot !in representedTintSlots &&
-            visible &&
-            width > 0 &&
-            height > 0
-
-    private fun tintFields(clazz: Class<*>): List<Field> =
-        tintFieldsByClass.computeIfAbsent(clazz) {
-            optionalNativeRead {
-                generateSequence(clazz) { it.superclass }
-                    .flatMap { it.declaredFields.asSequence() }
-                    .filter { it.name in tintFieldNames }
-                    .toList()
-            } ?: emptyList()
-        }
-
-    private fun readObjectField(
-        target: Any,
-        name: String,
-    ): Any? {
-        val field =
-            tintFields(target.javaClass)
-                .firstOrNull { it.name == name }
-                ?: return null
-        return optionalNativeRead {
-            field.isAccessible = true
-            field.get(target)
-        }
-    }
-
-    private fun readIntField(
-        target: Any,
-        name: String,
-    ): Int? {
-        val field =
-            tintFields(target.javaClass)
-                .firstOrNull {
-                    it.name == name &&
-                        (it.type == Int::class.javaPrimitiveType ||
-                            it.type == Int::class.javaObjectType)
-                }
-                ?: return null
-        return optionalNativeRead {
-            field.isAccessible = true
-            (field.get(target) as? Number)?.toInt()
-        }
-    }
-
     private fun resolveStaticDrawableColor(view: View): Int? {
         val accessor = statusIconStaticColorAccessor ?: return null
         if (!accessor.declaringClass.isInstance(view)) {
@@ -851,12 +701,12 @@ internal object NativeStatusObserver {
     private fun resolveAppliedStatusIconTint(group: ViewGroup): Int? {
         for (index in group.childCount - 1 downTo 0) {
             val child = group.getChildAt(index)
-            if (!isTintAuthorityCandidate(child)) continue
+            if (!NativeStatusTintResolver.isTintAuthorityCandidate(child)) continue
             findAppliedTint(child)?.let { return it }
         }
         for (index in group.childCount - 1 downTo 0) {
             val child = group.getChildAt(index)
-            if (!isTintAuthorityCandidate(child)) continue
+            if (!NativeStatusTintResolver.isTintAuthorityCandidate(child)) continue
             resolveStaticDrawableColor(child)?.let { return it }
         }
         return null
@@ -923,6 +773,4 @@ internal object NativeStatusObserver {
         }
     }
 
-    private const val AIRPLANE_SLOT = "airplane"
-    private const val NO_SIM_SLOT = "no_sim"
 }
