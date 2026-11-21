@@ -90,6 +90,24 @@ internal object SceneCcPolicy {
                 SourceScene.KEYGUARD -> keyguardEnabled
                 SourceScene.UNKNOWN -> false
             }
+    fun shouldRetainKeyguardCcLease(
+        leaseActive: Boolean,
+        sourceScene: SourceScene,
+        featureEnabled: Boolean,
+        keyguardEnabled: Boolean,
+        hostAttached: Boolean,
+        aodBlocked: Boolean,
+        incomingBoundaryPresentationReady: Boolean = false,
+        nativeFraction: Float,
+    ): Boolean =
+        leaseActive &&
+            sourceScene == SourceScene.KEYGUARD &&
+            featureEnabled &&
+            keyguardEnabled &&
+            hostAttached &&
+            (!aodBlocked || incomingBoundaryPresentationReady) &&
+            nativeFraction > 0f
+
 }
 
 internal object SceneAodBoundaryPolicy {
@@ -120,6 +138,21 @@ internal object SceneAodBoundaryPolicy {
             null -> AodPeerAction.NONE
         }
     }
+
+    fun shouldArmHomeAodTargetPrearm(
+        featureEnabled: Boolean,
+        aodEnabled: Boolean,
+        steadySourceScene: SourceScene,
+        lastStableFamilyScene: StableKeyguardAodScene,
+        homePresentationOwned: Boolean,
+        nativeToLockScreenTarget: Boolean?,
+    ): Boolean =
+        featureEnabled &&
+            aodEnabled &&
+            steadySourceScene == SourceScene.HOME &&
+            lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN &&
+            homePresentationOwned &&
+            nativeToLockScreenTarget == false
 
     fun shouldArmHomeNativeAodFallbackCandidate(
         featureEnabled: Boolean,

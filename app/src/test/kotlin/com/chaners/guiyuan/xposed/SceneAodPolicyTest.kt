@@ -177,7 +177,7 @@ class SceneAodPolicyTest {
     @Test
     fun nativeAodTargetCanPrearmHomeBeforeAnimationFlagCatchesUp() {
         assertTrue(
-            ScenePolicy.shouldArmHomeAodTargetPrearm(
+            SceneAodBoundaryPolicy.shouldArmHomeAodTargetPrearm(
                 featureEnabled = true,
                 aodEnabled = true,
                 steadySourceScene = SourceScene.HOME,
