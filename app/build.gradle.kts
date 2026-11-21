@@ -33,6 +33,7 @@ val junitVersion = "4.13.2"
 val gradleVersion = gradle.gradleVersion
 val booleanBuildConfigType = "boolean"
 val stringBuildConfigType = "String"
+val buildChannelFieldName = "BUILD_CHANNEL"
 val deepDiagnosticsBuildField = "DEEP_DIAGNOSTICS"
 val os4DebugSuffix = providers.gradleProperty("gy.os4.debugSuffix").orNull
 val hapleKeystorePath = providers.environmentVariable("HAPLE_KEYSTORE_PATH").orNull
@@ -106,7 +107,7 @@ android {
                 }
                 applicationIdSuffix = os4DebugSuffix
             }
-            buildConfigField(stringBuildConfigType, "BUILD_CHANNEL", "\"debug\"")
+            buildConfigField(stringBuildConfigType, buildChannelFieldName, "\"debug\"")
             buildConfigField(booleanBuildConfigType, "DEVELOPMENT_PROBES", "true")
             buildConfigField(booleanBuildConfigType, deepDiagnosticsBuildField, "true")
             if (hapleSigningEnabled) {
@@ -114,7 +115,7 @@ android {
             }
         }
         release {
-            buildConfigField(stringBuildConfigType, "BUILD_CHANNEL", "\"release\"")
+            buildConfigField(stringBuildConfigType, buildChannelFieldName, "\"release\"")
             buildConfigField(booleanBuildConfigType, "DEVELOPMENT_PROBES", "false")
             buildConfigField(booleanBuildConfigType, deepDiagnosticsBuildField, "false")
             isMinifyEnabled = true
@@ -132,7 +133,7 @@ android {
             matchingFallbacks += listOf("release")
             isDebuggable = false
             // Keep routine diagnostics identical to Release; Canary validates candidate code, not extra probes.
-            buildConfigField(stringBuildConfigType, "BUILD_CHANNEL", "\"canary\"")
+            buildConfigField(stringBuildConfigType, buildChannelFieldName, "\"canary\"")
         }
     }
 
