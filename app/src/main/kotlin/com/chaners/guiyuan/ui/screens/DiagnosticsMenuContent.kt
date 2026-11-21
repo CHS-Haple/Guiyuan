@@ -72,17 +72,6 @@ internal const val CAT_ALL =
         CAT_SETTINGS or
         CAT_OTHER
 
-private fun toggleMask(
-    mask: Int,
-    bit: Int,
-    checked: Boolean,
-): Int =
-    if (checked) {
-        mask or bit
-    } else {
-        mask and bit.inv()
-    }
-
 private data class FilterOption(
     @StringRes val titleRes: Int,
     val bit: Int,
@@ -166,11 +155,7 @@ private fun filterOptionItems(
             selected = selected,
             onClick = {
                 onMaskChange(
-                    toggleMask(
-                        mask = mask,
-                        bit = option.bit,
-                        checked = !selected,
-                    ),
+                    if (selected) mask and option.bit.inv() else mask or option.bit,
                 )
             },
         )
