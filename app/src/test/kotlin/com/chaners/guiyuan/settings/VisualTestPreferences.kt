@@ -9,6 +9,11 @@ internal class VisualTestPreferences : SharedPreferences {
     private val listeners = linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
     val listenerCount: Int get() = listeners.size
 
+    // Observability and failure injection for owner-generation lifecycle tests only.
+    var lastRegisteredListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+        private set
+    var unregisterFailure: Throwable? = null
+
     fun notifyPreferenceChanged(key: String?) {
         listeners.toList().forEach { it.onSharedPreferenceChanged(this, key) }
     }
@@ -40,12 +45,16 @@ internal class VisualTestPreferences : SharedPreferences {
     override fun registerOnSharedPreferenceChangeListener(
         listener: SharedPreferences.OnSharedPreferenceChangeListener?,
     ) {
-        if (listener != null) listeners += listener
+        if (listener != null) {
+            listeners += listener
+            lastRegisteredListener = listener
+        }
     }
 
     override fun unregisterOnSharedPreferenceChangeListener(
         listener: SharedPreferences.OnSharedPreferenceChangeListener?,
     ) {
+        unregisterFailure?.let { throw it }
         listeners.remove(listener)
     }
 
