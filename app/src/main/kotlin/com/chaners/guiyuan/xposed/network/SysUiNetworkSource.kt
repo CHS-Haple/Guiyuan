@@ -1046,7 +1046,7 @@ internal object SysUiNetworkSource {
             val root = icons.getChildAt(index) as? ViewGroup ?: continue
             if (
                 root.javaClass.name != HOME_WIFI_VIEW_CLASS_NAME ||
-                NativeParticipantAccess.resourceEntryName(root) != "wifi_combo" ||
+                NativeStatusSlots.resourceEntryName(root) != "wifi_combo" ||
                 !root.isAttachedToWindow
             ) continue
             if (wifi != null) return null
@@ -1676,7 +1676,7 @@ internal object SysUiNetworkSource {
             if (
                 group != null &&
                 group.javaClass.simpleName == "ModernStatusBarWifiView" &&
-                NativeParticipantAccess.resourceEntryName(group) == "wifi_combo"
+                NativeStatusSlots.resourceEntryName(group) == "wifi_combo"
             ) {
                 nativeRoot = group
             }
@@ -1775,8 +1775,8 @@ internal object SysUiNetworkSource {
     private fun nativeHomeMobileSubscription(root: ViewGroup, homeGroup: ViewGroup): Int? {
         if (!isNativeHomeMobileRootIdentity(
                 className = root.javaClass.name,
-                slot = NativeParticipantAccess.slotOf(root),
-                resourceEntry = NativeParticipantAccess.resourceEntryName(root),
+                slot = NativeStatusSlots.slotOf(root),
+                resourceEntry = NativeStatusSlots.resourceEntryName(root),
                 attached = root.isAttachedToWindow,
                 directHomeChild = root.parent === homeGroup,
             )

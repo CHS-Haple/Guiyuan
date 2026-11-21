@@ -1150,7 +1150,7 @@ internal object SysUiPresentationOwner {
         val group =
             NativeParticipantAccess.groupFor(host)
                 ?: return LegacyCleanupResult.Failure("status-icon-group-missing")
-        val legacyView = NativeParticipantAccess.findSlotView(group, LEGACY_SLOT)
+        val legacyView = NativeStatusSlots.findSlotView(group, LEGACY_SLOT)
         val handles =
             when (val resolution = NativeParticipantAccess.resolve(host)) {
                 is NativeParticipantAccess.ResolveResult.Ready -> resolution.handles
@@ -1162,19 +1162,19 @@ internal object SysUiPresentationOwner {
                     }
                 }
             }
-        val holder = NativeParticipantAccess.iconHolder(handles, LEGACY_SLOT)
+        val holder = NativeStatusSlots.iconHolder(handles, LEGACY_SLOT)
         if (legacyView == null && holder == null) {
             return LegacyCleanupResult.NotPresent
         }
         val removal =
-            NativeParticipantAccess.removal(handles.controller.javaClass)
+            NativeStatusSlots.removal(handles.controller.javaClass)
                 ?: return LegacyCleanupResult.Failure("legacy-removal-contract-missing")
         val removed =
             runCatching {
-                NativeParticipantAccess.invokeRemoval(handles, removal, LEGACY_SLOT)
-                NativeParticipantAccess.clearBindableEntries(handles, LEGACY_SLOT)
-                NativeParticipantAccess.findSlotView(group, LEGACY_SLOT) == null &&
-                    NativeParticipantAccess.iconHolder(handles, LEGACY_SLOT) == null
+                NativeStatusSlots.invokeRemoval(handles, removal, LEGACY_SLOT)
+                NativeStatusSlots.clearBindableEntries(handles, LEGACY_SLOT)
+                NativeStatusSlots.findSlotView(group, LEGACY_SLOT) == null &&
+                    NativeStatusSlots.iconHolder(handles, LEGACY_SLOT) == null
             }.getOrElse { error ->
                 rethrowFatal(error)
                 false
@@ -3041,7 +3041,7 @@ internal object SysUiPresentationOwner {
                 buildSet {
                     for (index in 0 until group.childCount) {
                         val child = group.getChildAt(index)
-                        val slot = NativeParticipantAccess.slotOf(child) ?: continue
+                        val slot = NativeStatusSlots.slotOf(child) ?: continue
                         if (slot in representedSlots) continue
                         val state =
                             NativeStatusObserver
@@ -3100,7 +3100,7 @@ internal object SysUiPresentationOwner {
             if (steadyPeerMirrorActive) {
                 for (index in 0 until group.childCount) {
                     val child = group.getChildAt(index)
-                    val slot = NativeParticipantAccess.slotOf(child) ?: continue
+                    val slot = NativeStatusSlots.slotOf(child) ?: continue
                     if (slot !in representedSlots && slot in steadyPeerMirrorHiddenSlots) {
                         targets += child
                     }
@@ -3130,7 +3130,7 @@ internal object SysUiPresentationOwner {
             if (!aodPeersReleased) {
                 for (index in 0 until group.childCount) {
                     val child = group.getChildAt(index)
-                    if (NativeParticipantAccess.slotOf(child) in representedSlots) {
+                    if (NativeStatusSlots.slotOf(child) in representedSlots) {
                         targets += child
                     }
                 }

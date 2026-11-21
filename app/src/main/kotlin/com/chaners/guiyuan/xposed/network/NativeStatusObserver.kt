@@ -591,7 +591,7 @@ internal object NativeStatusObserver {
             observedNoSimView
                 ?: (0 until group.childCount).firstNotNullOfOrNull { index ->
                     group.getChildAt(index).takeIf { child ->
-                        NativeParticipantAccess.slotOf(child) == NO_SIM_SLOT
+                        NativeStatusSlots.slotOf(child) == NO_SIM_SLOT
                     }
                 }
         val noSimVisible =
@@ -760,7 +760,7 @@ internal object NativeStatusObserver {
             val child = group.getChildAt(index)
             if (
                 isTintAuthorityCandidate(
-                    slot = NativeParticipantAccess.slotOf(child),
+                    slot = NativeStatusSlots.slotOf(child),
                     visible = child.visibility == View.VISIBLE,
                     width = child.width,
                     height = child.height,
@@ -774,7 +774,7 @@ internal object NativeStatusObserver {
 
     private fun isTintAuthorityCandidate(view: View): Boolean =
         isTintAuthorityCandidate(
-            slot = NativeParticipantAccess.slotOf(view),
+            slot = NativeStatusSlots.slotOf(view),
             visible = view.visibility == View.VISIBLE,
             width = view.width,
             height = view.height,
