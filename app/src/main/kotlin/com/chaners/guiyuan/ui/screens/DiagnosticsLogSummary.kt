@@ -129,14 +129,18 @@ internal fun logSummary(context: Context, entry: LogEntry): String {
 internal fun joinLogSummaryParts(separator: String, vararg parts: String?): String =
     parts.filterNotNull().filter(String::isNotBlank).joinToString(separator)
 
+// Format the native source witness consistently across compact event summaries.
+private fun logSourceSummary(context: Context, fields: Map<String, String>): String? =
+    fields[LOG_FIELD_SOURCE]?.let { source ->
+        context.getString(R.string.diagnostics_log_summary_source, sourceLabel(context, source))
+    }
+
 // Network observations encode transport and delivery, not session lifecycle.
 private fun logConnectivitySummary(context: Context, entry: LogEntry, separator: String): String? {
     val fields = entry.fields
     if (entry.event == EVENT_CONNECTIVITY_DELIVERY_FAILED) {
         return joinLogSummaryParts(separator,
-            fields[LOG_FIELD_SOURCE]?.let {
-                context.getString(R.string.diagnostics_log_summary_source, sourceLabel(context, it))
-            },
+            logSourceSummary(context, fields),
             fields["type"],
         )
     }
@@ -187,18 +191,14 @@ private fun logRuntimeTelemetrySummary(context: Context, entry: LogEntry, separa
             fields["sourceToDrawUs"]?.toLongOrNull()?.let { micros ->
                 context.getString(R.string.diagnostics_log_summary_total_time, formatMicros(micros))
             },
-            fields[LOG_FIELD_SOURCE]?.let {
-                context.getString(R.string.diagnostics_log_summary_source, sourceLabel(context, it))
-            },
+            logSourceSummary(context, fields),
         )
     }
 
     if (entry.event == EVENT_TINT_COMMIT || entry.event == EVENT_HOME_RENDER_TINT) {
         return joinLogSummaryParts(separator,
             fields["applied"] ?: fields["statusIcon"],
-            fields[LOG_FIELD_SOURCE]?.let {
-                context.getString(R.string.diagnostics_log_summary_source, sourceLabel(context, it))
-            },
+            logSourceSummary(context, fields),
         )
     }
     return null
