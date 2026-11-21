@@ -58,7 +58,13 @@ internal class NavigationActionControls(
     val hotReloadInProgress: Boolean,
     val onHotReload: () -> Unit,
     val onSearch: () -> Unit,
-)
+) {
+    // Button and touch extension share one action callback without another writer.
+    fun callbackFor(action: NavigationAction): () -> Unit = when (action) {
+        NavigationAction.HotReload -> onHotReload
+        NavigationAction.Search -> onSearch
+    }
+}
 
 /**
  * OS4 Liquid keeps its own optical surface and interaction; MIUIX owns action layout/transition.
@@ -77,7 +83,7 @@ private fun LiquidNavigationAction(
     val icon = if (isReload) Os4GlassRefresh else Os4GlassSearch
     val enabled = !isReload || controls.hotReloadEnabled
     val holdDown = isReload && controls.hotReloadInProgress
-    val onClick = if (isReload) controls.onHotReload else controls.onSearch
+    val onClick = controls.callbackFor(action)
     val direction = LocalLayoutDirection.current
     val interactionSource = remember { MutableInteractionSource() }
     val pointerPressed by interactionSource.collectIsPressedAsState()
@@ -149,7 +155,7 @@ internal fun NavigationTrailingAction(
     val icon = if (reload) Os4GlassRefresh else Os4GlassSearch
     val enabled = !reload || controls.hotReloadEnabled
     val holdDown = reload && controls.hotReloadInProgress
-    val onClick = if (reload) controls.onHotReload else controls.onSearch
+    val onClick = controls.callbackFor(action)
     TooltipBox(text = label) {
         val mode = surface.liquidMode
         if (mode != null) {

@@ -440,10 +440,7 @@ internal fun MainHub(
                         trailingActionTouchSize = if (navigationAction != null) {
                             GlassNavigationBarDefaults.Height
                         } else 0.dp,
-                        onTrailingActionTouch = navigationAction?.let { action ->
-                            if (action == NavigationAction.HotReload) actionControls.onHotReload
-                            else actionControls.onSearch
-                        },
+                        onTrailingActionTouch = navigationAction?.let { action -> actionControls.callbackFor(action) },
                         trailingAction = navigationAction?.let { action ->
                             {
                                 NavigationTrailingAction(
@@ -509,10 +506,7 @@ internal fun MainHub(
                                                 size = if (navigationAction != null) {
                                                     LiquidNavSpec.height
                                                 } else 0.dp,
-                                                onTap = navigationAction?.let { action ->
-                                                    if (action == NavigationAction.HotReload) actionControls.onHotReload
-                                                    else actionControls.onSearch
-                                                },
+                                                onTap = navigationAction?.let { action -> actionControls.callbackFor(action) },
                                             ),
                                         )
                                     } else {

@@ -7,9 +7,36 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class NavigationActionPolicyTest {
+    @Test
+    fun sharedCallbackSelectionPreservesOwnersAndDoesNotInvokeActions() {
+        var reloadCalls = 0
+        var searchCalls = 0
+        val reload: () -> Unit = { reloadCalls++ }
+        val search: () -> Unit = { searchCalls++ }
+        val controls = NavigationActionControls(
+            hotReloadEnabled = true,
+            hotReloadInProgress = false,
+            onHotReload = reload,
+            onSearch = search,
+        )
+
+        val selectedReload = controls.callbackFor(NavigationAction.HotReload)
+        val selectedSearch = controls.callbackFor(NavigationAction.Search)
+
+        assertSame(reload, selectedReload)
+        assertSame(search, selectedSearch)
+        assertEquals(0, reloadCalls)
+        assertEquals(0, searchCalls)
+        selectedReload()
+        selectedSearch()
+        assertEquals(1, reloadCalls)
+        assertEquals(1, searchCalls)
+    }
+
     @Test
     fun os4GlassAndLiquidUseTheirExistingBottomNavActionLayout() {
         val appearance = Appearance(uiStyle = UiStyle.OS4, navEnabled = true, navStyle = NavStyle.Glass)
