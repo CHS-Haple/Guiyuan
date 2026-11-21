@@ -140,7 +140,7 @@ internal object NativePresentationResolver {
             val root = group.getChildAt(index)
             if (
                 root.javaClass.simpleName != "ModernStatusBarMobileView" ||
-                NativeParticipantAccess.resourceEntryName(root) != "mobile_combo" ||
+                NativeStatusSlots.resourceEntryName(root) != "mobile_combo" ||
                 root !is ViewGroup ||
                 !root.isAttachedToWindow ||
                 root.visibility != View.VISIBLE

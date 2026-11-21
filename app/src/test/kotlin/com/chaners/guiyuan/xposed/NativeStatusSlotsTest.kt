@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class NativeParticipantAccessTest {
+class NativeStatusSlotsTest {
     @Test
     fun classifiesHyperOsRemoveAllWithPipelineFlag() {
         val method =
@@ -15,8 +15,8 @@ class NativeParticipantAccessTest {
             )
 
         assertEquals(
-            NativeParticipantAccess.RemovalMode.REMOVE_ALL_SLOT_PIPELINE_FLAG,
-            NativeParticipantAccess.classifyRemoval(method),
+            NativeStatusSlots.RemovalMode.REMOVE_ALL_SLOT_PIPELINE_FLAG,
+            NativeStatusSlots.classifyRemoval(method),
         )
     }
 
@@ -30,8 +30,8 @@ class NativeParticipantAccessTest {
             )
 
         assertEquals(
-            NativeParticipantAccess.RemovalMode.REMOVE_TAGGED,
-            NativeParticipantAccess.classifyRemoval(method),
+            NativeStatusSlots.RemovalMode.REMOVE_TAGGED,
+            NativeStatusSlots.classifyRemoval(method),
         )
     }
 
@@ -46,20 +46,20 @@ class NativeParticipantAccessTest {
             String::class.java,
         )
         assertEquals(
-            NativeParticipantAccess.RemovalMode.REMOVE_ALL_SLOT,
-            NativeParticipantAccess.classifyRemoval(removeAll),
+            NativeStatusSlots.RemovalMode.REMOVE_ALL_SLOT,
+            NativeStatusSlots.classifyRemoval(removeAll),
         )
         assertEquals(
-            NativeParticipantAccess.RemovalMode.REMOVE_SLOT,
-            NativeParticipantAccess.classifyRemoval(removeSlot),
+            NativeStatusSlots.RemovalMode.REMOVE_SLOT,
+            NativeStatusSlots.classifyRemoval(removeSlot),
         )
     }
 
     @Test
     fun selectsNativePipelineRemovalBeforeFallbacks() {
         assertEquals(
-            NativeParticipantAccess.RemovalMode.REMOVE_ALL_SLOT_PIPELINE_FLAG,
-            NativeParticipantAccess.removal(Fixture::class.java)?.mode,
+            NativeStatusSlots.RemovalMode.REMOVE_ALL_SLOT_PIPELINE_FLAG,
+            NativeStatusSlots.removal(Fixture::class.java)?.mode,
         )
     }
 
@@ -72,7 +72,7 @@ class NativeParticipantAccessTest {
             )
 
         assertNull(
-            NativeParticipantAccess.classifyRemoval(method),
+            NativeStatusSlots.classifyRemoval(method),
         )
     }
 
