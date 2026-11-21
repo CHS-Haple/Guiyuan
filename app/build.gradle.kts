@@ -32,6 +32,8 @@ val kotlinxSerializationCoreVersion = "1.13.0"
 val junitVersion = "4.13.2"
 val gradleVersion = gradle.gradleVersion
 val booleanBuildConfigType = "boolean"
+val stringBuildConfigType = "String"
+val buildChannelFieldName = "BUILD_CHANNEL"
 val deepDiagnosticsBuildField = "DEEP_DIAGNOSTICS"
 val os4DebugSuffix = providers.gradleProperty("gy.os4.debugSuffix").orNull
 val hapleKeystorePath = providers.environmentVariable("HAPLE_KEYSTORE_PATH").orNull
@@ -61,17 +63,17 @@ android {
         versionCode = appVersionCode
         versionName = appVersionName
 
-        buildConfigField("String", "BUILD_ID", "\"$buildId\"")
-        buildConfigField("String", "MIUIX_VERSION", "\"$miuixDisplayVersion\"")
-        buildConfigField("String", "MIUIX_REVISION", "\"$miuixDisplayRevision\"")
-        buildConfigField("String", "LIBXPOSED_VERSION", "\"$libxposedVersion\"")
-        buildConfigField("String", "ANDROIDX_CORE_VERSION", "\"$coreVersion\"")
-        buildConfigField("String", "ACTIVITY_COMPOSE_VERSION", "\"$activityComposeVersion\"")
-        buildConfigField("String", "NAVIGATION_EVENT_COMPOSE_VERSION", "\"$navigationEventComposeVersion\"")
-        buildConfigField("String", "DATASTORE_PREFERENCES_VERSION", "\"$dataStorePreferencesVersion\"")
-        buildConfigField("String", "KOTLINX_SERIALIZATION_CORE_VERSION", "\"$kotlinxSerializationCoreVersion\"")
-        buildConfigField("String", "JUNIT_VERSION", "\"$junitVersion\"")
-        buildConfigField("String", "GRADLE_VERSION", "\"$gradleVersion\"")
+        buildConfigField(stringBuildConfigType, "BUILD_ID", "\"$buildId\"")
+        buildConfigField(stringBuildConfigType, "MIUIX_VERSION", "\"$miuixDisplayVersion\"")
+        buildConfigField(stringBuildConfigType, "MIUIX_REVISION", "\"$miuixDisplayRevision\"")
+        buildConfigField(stringBuildConfigType, "LIBXPOSED_VERSION", "\"$libxposedVersion\"")
+        buildConfigField(stringBuildConfigType, "ANDROIDX_CORE_VERSION", "\"$coreVersion\"")
+        buildConfigField(stringBuildConfigType, "ACTIVITY_COMPOSE_VERSION", "\"$activityComposeVersion\"")
+        buildConfigField(stringBuildConfigType, "NAVIGATION_EVENT_COMPOSE_VERSION", "\"$navigationEventComposeVersion\"")
+        buildConfigField(stringBuildConfigType, "DATASTORE_PREFERENCES_VERSION", "\"$dataStorePreferencesVersion\"")
+        buildConfigField(stringBuildConfigType, "KOTLINX_SERIALIZATION_CORE_VERSION", "\"$kotlinxSerializationCoreVersion\"")
+        buildConfigField(stringBuildConfigType, "JUNIT_VERSION", "\"$junitVersion\"")
+        buildConfigField(stringBuildConfigType, "GRADLE_VERSION", "\"$gradleVersion\"")
         // Shared by debug, release and canary: avoid per-build-type overrides.
         buildConfigField(booleanBuildConfigType, "RUNTIME_DIAGNOSTICS", "true")
     }
@@ -105,7 +107,7 @@ android {
                 }
                 applicationIdSuffix = os4DebugSuffix
             }
-            buildConfigField("String", "BUILD_CHANNEL", "\"debug\"")
+            buildConfigField(stringBuildConfigType, buildChannelFieldName, "\"debug\"")
             buildConfigField(booleanBuildConfigType, "DEVELOPMENT_PROBES", "true")
             buildConfigField(booleanBuildConfigType, deepDiagnosticsBuildField, "true")
             if (hapleSigningEnabled) {
@@ -113,7 +115,7 @@ android {
             }
         }
         release {
-            buildConfigField("String", "BUILD_CHANNEL", "\"release\"")
+            buildConfigField(stringBuildConfigType, buildChannelFieldName, "\"release\"")
             buildConfigField(booleanBuildConfigType, "DEVELOPMENT_PROBES", "false")
             buildConfigField(booleanBuildConfigType, deepDiagnosticsBuildField, "false")
             isMinifyEnabled = true
@@ -131,7 +133,7 @@ android {
             matchingFallbacks += listOf("release")
             isDebuggable = false
             // Keep routine diagnostics identical to Release; Canary validates candidate code, not extra probes.
-            buildConfigField("String", "BUILD_CHANNEL", "\"canary\"")
+            buildConfigField(stringBuildConfigType, buildChannelFieldName, "\"canary\"")
         }
     }
 
