@@ -634,7 +634,7 @@ internal object NativeStatusObserver {
                 "statusIconPresentation source=$source tint=${tintText(presentation.appliedTint)}" +
                     " tintAuthority=$authority locationAwareTint=${tintText(locationAwareTint)}" +
                     " peerTint=${tintText(peerTint)} managerFallbackTint=${tintText(managerFallbackTint)}" +
-                    " tintAnchorSlot=${tintAnchor?.let(NativeParticipantAccess::slotOf) ?: "none"}" +
+                    " tintAnchorSlot=${tintAnchor?.let(NativeStatusSlots::slotOf) ?: "none"}" +
                     " tintAnchorClass=${tintAnchor?.javaClass?.simpleName ?: "none"}" +
                     " noSimVisible=${presentation.noSimVisible}" +
                     " noSimResource=${presentation.noSimIcon?.packageName}:${presentation.noSimIcon?.resourceId}"
