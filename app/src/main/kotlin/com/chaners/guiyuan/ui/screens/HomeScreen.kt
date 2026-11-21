@@ -129,16 +129,19 @@ private fun HomeScreenScrollingContent(
                 extraBottom = 12.dp,
             ),
         ) {
-            homeScreenCards(contents)
+            item { HomeRuntimeCardEntry(contents.runtime, contents.actions, contents.sources) }
+            item {
+                HomePreviewSandboxCard(
+                    state = contents.layout.previewState,
+                    resources = contents.sources.previewResources,
+                    visual = contents.sources.visual.value,
+                    featureSettings = contents.sources.featureSettings,
+                    onOpen = contents.actions.onOpenPreviewSandbox,
+                    modifier = Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp),
+                )
+            }
         }
     }
-}
-
-private fun androidx.compose.foundation.lazy.LazyListScope.homeScreenCards(
-    contents: HomeScreenContents,
-) {
-    item { HomeRuntimeCardEntry(contents.runtime, contents.actions, contents.sources) }
-    item { HomePreviewCardEntry(contents.layout, contents.actions, contents.sources) }
 }
 
 @Composable
@@ -168,22 +171,6 @@ private fun HomeRuntimeCardEntry(
             onEnabledChange = sources.featureRepository::setEnabled,
         )
     }
-}
-
-@Composable
-private fun HomePreviewCardEntry(
-    layout: HomeScreenLayout,
-    actions: HomeScreenActions,
-    sources: HomeScreenSources,
-) {
-    HomePreviewSandboxCard(
-        state = layout.previewState,
-        resources = sources.previewResources,
-        visual = sources.visual.value,
-        featureSettings = sources.featureSettings,
-        onOpen = actions.onOpenPreviewSandbox,
-        modifier = Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp),
-    )
 }
 
 @Composable
