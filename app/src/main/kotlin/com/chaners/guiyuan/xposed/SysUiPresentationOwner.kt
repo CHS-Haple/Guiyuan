@@ -2206,9 +2206,7 @@ internal object SysUiPresentationOwner {
                             live.addAll(target)
                         }
                     }
-                    val after =
-                        nativeIgnoredSlotsList(group)
-                            ?: return@runCatching false
+                    val after = nativeIgnoredSlotsList(group)
                     after == target
                 }.onFailure(::rethrowFatal).getOrDefault(false)
             if (restored) {
