@@ -86,7 +86,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 import com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale
 import kotlin.math.ceil
-import kotlin.math.roundToInt
+import androidx.compose.ui.util.fastCoerceIn
+import androidx.compose.ui.util.fastRoundToInt
 
 /**
  * State of a [GlassNavigationRail].
@@ -334,13 +335,13 @@ private fun RailWindowTrailingAction(
                 .size(actionSize)
                 .offset {
                     with(density) {
-                        railTrailingActionOffset(state.progress.coerceIn(0f, 1f), placement, actionSize, liquid)
+                        railTrailingActionOffset(state.progress.fastCoerceIn(0f, 1f), placement, actionSize, liquid)
                     }
                 }
                 .focusProperties { canFocus = action != null }
                 .graphicsLayer {
                     outsets = shadowOutsets
-                    val fraction = actionProgress.value.coerceIn(0f, 1f)
+                    val fraction = actionProgress.value.fastCoerceIn(0f, 1f)
                     alpha = fraction
                     scaleX = 0.85f + fraction * 0.15f
                     scaleY = 0.85f + fraction * 0.15f
@@ -369,7 +370,7 @@ private fun Density.railCollapsedVisualCenterOffset(
     panelHeight: Dp,
     liquid: RailLiquidMotion?,
 ): Dp {
-    val fraction = progress.coerceIn(0f, 1f)
+    val fraction = progress.fastCoerceIn(0f, 1f)
     val collapsed = 1f - fraction
     val reserve = (GlassNavigationBarDefaults.ActionSpacing + GlassNavigationRailDefaults.CollapsedHeight).toPx()
     val groupShift = railCollapsedActionGroupShift(reserve, actionFraction, collapsed)
@@ -390,11 +391,11 @@ private fun Density.railCollapsedVisualCenterOffset(
 
 /** Reserve the independent action inside the same visual centre as the capsule. */
 internal fun railCollapsedActionGroupShift(reservedWidthPx: Float, actionFraction: Float, collapsedFraction: Float): Float =
-    -reservedWidthPx * actionFraction.coerceIn(0f, 1f) * collapsedFraction.coerceIn(0f, 1f) / 2f
+    -reservedWidthPx * actionFraction.fastCoerceIn(0f, 1f) * collapsedFraction.fastCoerceIn(0f, 1f) / 2f
 
 /** One right-overhanging lens must not move the centre of the capsule-action group. */
 internal fun railLiquidGroupCenterCorrection(endOverhangPx: Float, collapsedFraction: Float): Float =
-    -endOverhangPx.coerceAtLeast(0f) * collapsedFraction.coerceIn(0f, 1f) / 2f
+    -endOverhangPx.coerceAtLeast(0f) * collapsedFraction.fastCoerceIn(0f, 1f) / 2f
 
 /** Render the action next to the existing rail panel at its physical press edge. */
 private fun Density.railTrailingActionOffset(
@@ -413,7 +414,7 @@ private fun Density.railTrailingActionOffset(
     val x = (panelStart + railSearchActionSideOffset(panelWidth, progress, actionSize)).toPx()
     val y = (GlassNavigationRailDefaults.CollapsedTop + RailExpandedToggleTop * progress).toPx()
 
-    val press = if (liquid) placement.motion.liquid.press.value.coerceIn(0f, 1f) else 0f
+    val press = if (liquid) placement.motion.liquid.press.value.fastCoerceIn(0f, 1f) else 0f
     val scale = if (liquid) {
         liquidPanelPressScale(
             panelWidthPx, panelHeightPx, LiquidFeedbackSpec.PressedPanelGrowth.toPx(), press,
@@ -427,12 +428,12 @@ private fun Density.railTrailingActionOffset(
         x = (x + railSearchActionPlannedShift(
             x + actionSizePx / 2f - panelStart.toPx() - panelWidthPx / 2f,
             panelWidthPx / 2f, scale, 1f - progress, lensOverhang,
-        )).roundToInt(),
+        )).fastRoundToInt(),
         y = (y + railSearchActionPressShift(
             y + actionSizePx / 2f,
             GlassNavigationRailDefaults.CollapsedTop.toPx() + panelHeightPx / 2f,
             scale,
-        )).roundToInt(),
+        )).fastRoundToInt(),
     )
 }
 
@@ -450,12 +451,12 @@ internal fun railSearchActionPlannedShift(
 ): Float {
     val nativeShift = distanceFromPanelCenter * (scale - 1f)
     val visibleEndShift = panelHalfWidthPx * (scale - 1f) + lensOverhangPx
-    return lerp(nativeShift, visibleEndShift, collapsedFraction.coerceIn(0f, 1f))
+    return lerp(nativeShift, visibleEndShift, collapsedFraction.fastCoerceIn(0f, 1f))
 }
 
 /** Logical end of the capsule when collapsed; right-side header slot when expanded. */
 internal fun railSearchActionSideOffset(panelWidth: Dp, progress: Float, actionSize: Dp): Dp {
-    val fraction = progress.coerceIn(0f, 1f)
+    val fraction = progress.fastCoerceIn(0f, 1f)
     return panelWidth + GlassNavigationBarDefaults.ActionSpacing * (1f - fraction) -
         (RailExpandedToggleStart + actionSize) * fraction
 }
@@ -545,13 +546,13 @@ internal fun railCapsuleGeometry(
 
 /** The Liquid panel's physical X follows its width's morph clock in both directions. */
 internal fun railLiquidPanelStart(collapsed: Dp, expanded: Dp, progress: Float): Dp =
-    collapsed + (expanded - collapsed) * progress.coerceIn(0f, 1f)
+    collapsed + (expanded - collapsed) * progress.fastCoerceIn(0f, 1f)
 
 /** A corner that eases from the capsule's half-height to the panel's radius as [progress] rises. */
 @Stable
 internal class RailMorphCorner(private val progress: () -> Float) : CornerSize {
     override fun toPx(shapeSize: Size, density: Density): Float = with(density) {
-        lerp(RailCollapsedCornerRadius.toPx(), RailExpandedCornerRadius.toPx(), progress().coerceIn(0f, 1f))
+        lerp(RailCollapsedCornerRadius.toPx(), RailExpandedCornerRadius.toPx(), progress().fastCoerceIn(0f, 1f))
     }
 }
 

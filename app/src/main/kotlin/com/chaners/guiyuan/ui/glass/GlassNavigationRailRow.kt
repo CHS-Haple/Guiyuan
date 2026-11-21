@@ -56,7 +56,8 @@ import androidx.compose.ui.util.lerp
 import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
-import kotlin.math.roundToInt
+import androidx.compose.ui.util.fastCoerceIn
+import androidx.compose.ui.util.fastRoundToInt
 
 /** A row's selection, press source and click callback, retained by its caller. */
 internal class RailRowIdentity(
@@ -144,7 +145,7 @@ private fun rememberRailRowGeometry(
             RailRowGeometry(
                 slotStart = slotStart.toFloat(),
                 slotWidth = slotWidth.toFloat(),
-                sourceStart = (slotStart + ((slotWidth - labelPx) / 2f).roundToInt() - labelStart).toFloat(),
+                sourceStart = (slotStart + ((slotWidth - labelPx) / 2f).fastRoundToInt() - labelStart).toFloat(),
                 sourceWidth = (labelStart + labelPx + padding).toFloat(),
                 expandedTop = (RailExpandedRowTop + RailRowPitch * identity.position).toPx(),
                 labelMinWidth = if (layout.labelWidth.roundToPx() > slotWidth) minOf(labelPx, expandedLabelWidth) else expandedLabelWidth,
@@ -160,14 +161,14 @@ private fun Modifier.railRowPlacement(
     spec: RailRowLayoutSpec,
     geometry: RailRowGeometry,
 ): Modifier = this.layout { measurable, constraints ->
-    val fraction = motion.rowProgress().coerceIn(0f, 1f)
-    val width = lerp(geometry.slotWidth, spec.itemWidth.toPx(), fraction).roundToInt().coerceAtLeast(0)
+    val fraction = motion.rowProgress().fastCoerceIn(0f, 1f)
+    val width = lerp(geometry.slotWidth, spec.itemWidth.toPx(), fraction).fastRoundToInt().coerceAtLeast(0)
     val height = (RailCollapsedRowHeight + RailRowGrowth * fraction).roundToPx()
-    val x = lerp(geometry.slotStart, RailItemHorizontalMargin.toPx(), fraction).roundToInt()
+    val x = lerp(geometry.slotStart, RailItemHorizontalMargin.toPx(), fraction).fastRoundToInt()
     val y = if (fraction == 1f) {
-        geometry.expandedTop.roundToInt()
+        geometry.expandedTop.fastRoundToInt()
     } else {
-        lerp(RailRowTop.toPx() + motion.scrollOffset(), geometry.expandedTop, fraction).roundToInt()
+        lerp(RailRowTop.toPx() + motion.scrollOffset(), geometry.expandedTop, fraction).fastRoundToInt()
     }
     identity.slot.left = x.toFloat()
     identity.slot.top = y.toFloat()
@@ -228,10 +229,10 @@ private fun RailRowContent(
     Row(
         modifier = Modifier
             .layout { measurable, constraints ->
-                val fraction = motion.rowProgress().coerceIn(0f, 1f)
-                val width = lerp(frame.geometry.sourceWidth, spec.itemWidth.toPx(), fraction).roundToInt().coerceAtLeast(0)
+                val fraction = motion.rowProgress().fastCoerceIn(0f, 1f)
+                val width = lerp(frame.geometry.sourceWidth, spec.itemWidth.toPx(), fraction).fastRoundToInt().coerceAtLeast(0)
                 val placeable = measurable.measure(Constraints.fixed(width, constraints.maxHeight))
-                val x = lerp(frame.geometry.sourceStart - frame.geometry.slotStart, 0f, fraction).roundToInt()
+                val x = lerp(frame.geometry.sourceStart - frame.geometry.slotStart, 0f, fraction).fastRoundToInt()
                 layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(x, 0) }
             }
             .padding(horizontal = RailItemContentPadding),
@@ -304,7 +305,7 @@ internal fun NavigationRailIndicator(
         height = RailCollapsedRowHeight,
         appearance = appearance,
         modifier = Modifier.layout { measurable, constraints ->
-            val fraction = motion.progress().coerceIn(0f, 1f)
+            val fraction = motion.progress().fastCoerceIn(0f, 1f)
             val width: Int
             val x: Float
             val y: Float
@@ -322,7 +323,7 @@ internal fun NavigationRailIndicator(
                     selection.interaction.contentStart,
                     selection.interaction.endPadding,
                 )
-                width = lerp(bounds.y - bounds.x, motion.expandedItemWidth.toPx(), fraction).roundToInt().coerceAtLeast(0)
+                width = lerp(bounds.y - bounds.x, motion.expandedItemWidth.toPx(), fraction).fastRoundToInt().coerceAtLeast(0)
                 x = lerp(bounds.x, RailItemHorizontalMargin.toPx(), fraction)
                 y = lerp(RailRowTop.toPx() + motion.scrollOffset(), expandedY, fraction)
             }
@@ -332,7 +333,7 @@ internal fun NavigationRailIndicator(
             val drawY = if (motion.outsideScrollViewport) y - motion.scrollOffset() else y
             val placeable = measurable.measure(Constraints.fixed(width, height))
             layout(constraints.maxWidth, constraints.maxHeight) {
-                placeable.placeRelative(x.roundToInt(), drawY.roundToInt())
+                placeable.placeRelative(x.fastRoundToInt(), drawY.fastRoundToInt())
             }
         },
     )

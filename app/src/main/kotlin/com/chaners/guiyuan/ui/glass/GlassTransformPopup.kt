@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.blur.Backdrop
-import kotlin.math.roundToInt
+import androidx.compose.ui.util.fastRoundToInt
 import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.GlassStyle
@@ -445,14 +445,14 @@ fun BoxScope.GlassTransformPopup(
                 .layout { measurable, constraints ->
                     val placeable = measurable.measure(
                         Constraints.fixed(
-                            width = iconRect.width.roundToInt().coerceAtLeast(0),
-                            height = iconRect.height.roundToInt().coerceAtLeast(0),
+                            width = iconRect.width.fastRoundToInt().coerceAtLeast(0),
+                            height = iconRect.height.fastRoundToInt().coerceAtLeast(0),
                         ),
                     )
                     layout(constraints.maxWidth, constraints.maxHeight) {
                         placeable.place(
-                            (iconRect.left - hostOrigin.value.x).roundToInt(),
-                            (iconRect.top - hostOrigin.value.y).roundToInt(),
+                            (iconRect.left - hostOrigin.value.x).fastRoundToInt(),
+                            (iconRect.top - hostOrigin.value.y).fastRoundToInt(),
                         )
                     }
                 }

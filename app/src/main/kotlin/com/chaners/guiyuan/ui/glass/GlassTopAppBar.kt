@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastRoundToInt
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -329,11 +330,13 @@ fun GlassTopAppBar(
                 modifier = Modifier
                     .matchParentSize()
                     .layout { measurable, constraints ->
-                        val barHeight = topInsets.getTop(this) + TopAppBarDefaults.CollapsedHeight.toPx()
-                        // External overlay rows extend the sampled band without changing the bar's layout height.
-                        val extraOverhang = (bandOverhang - GlassTopAppBarDefaults.BandOverhang)
-                            .coerceAtLeast(0.dp).toPx()
-                        val height = ((barHeight + 20.dp.toPx()) * 1.2f + extraOverhang).roundToInt()
+                        // Track the actual native title layout, including compact and bottom-content rows.
+                        // The upstream blur band uses the measured height plus its gradient overhang.
+                        val coveredHeight = maxOf(
+                            constraints.maxHeight.toFloat(),
+                            topInsets.getTop(this) + TopAppBarDefaults.CollapsedHeight.toPx(),
+                        )
+                        val height = (coveredHeight + bandOverhang.toPx().coerceAtLeast(0f)).fastRoundToInt()
                         val placeable = measurable.measure(constraints.copy(minHeight = height, maxHeight = height))
                         layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(0, 0) }
                     }

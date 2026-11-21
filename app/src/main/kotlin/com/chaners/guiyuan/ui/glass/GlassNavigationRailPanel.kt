@@ -70,7 +70,8 @@ import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.flow.first
 import kotlin.math.abs
-import kotlin.math.roundToInt
+import androidx.compose.ui.util.fastCoerceIn
+import androidx.compose.ui.util.fastRoundToInt
 
 /** Single selected-page owner and the interaction contract, independent of surface animation. */
 internal class RailPanelSelection(
@@ -297,8 +298,8 @@ private fun Modifier.railPanelSurfaceModifier(
     }
     return this
         .layout { measurable, _ ->
-            val fraction = state.progress.coerceIn(0f, 1f)
-            val width = lerp(geometry.endpoints.collapsedWidth.toPx(), geometry.endpoints.expandedWidth.toPx(), fraction).roundToInt()
+            val fraction = state.progress.fastCoerceIn(0f, 1f)
+            val width = lerp(geometry.endpoints.collapsedWidth.toPx(), geometry.endpoints.expandedWidth.toPx(), fraction).fastRoundToInt()
             val height = motion.panelHeight().roundToPx().coerceAtLeast(0)
             val placeable = measurable.measure(Constraints.fixed(width, height))
             layout(width, height) { placeable.place(0, 0) }
@@ -306,7 +307,7 @@ private fun Modifier.railPanelSurfaceModifier(
         .offset {
             IntOffset(
                 x = motion.panelStart().roundToPx(),
-                y = lerp(geometry.endpoints.collapsedTop.toPx(), geometry.endpoints.expandedTop.toPx(), state.progress).roundToInt(),
+                y = lerp(geometry.endpoints.collapsedTop.toPx(), geometry.endpoints.expandedTop.toPx(), state.progress).fastRoundToInt(),
             )
         }
         // Scale only the placed panel. An outer layer would scale its X offset as well.
@@ -425,7 +426,7 @@ private fun railLensTracking(
     val density = LocalDensity.current
     return RailLensTracking(motion.liquid.lensEdge) {
         with(density) {
-            val fraction = motion.rowProgress[index].value.coerceIn(0f, 1f)
+            val fraction = motion.rowProgress[index].value.fastCoerceIn(0f, 1f)
             val bounds = navigationIndicatorBounds(
                 interaction.left.value, interaction.right.value, interaction.width,
                 interaction.contentStart, interaction.endPadding,
@@ -563,8 +564,8 @@ private fun RailPanelToggle(
             .offset {
                 val fraction = state.progress
                 IntOffset(
-                    x = lerp(RailCollapsedToggleBoxStart.toPx(), RailExpandedToggleStart.toPx(), fraction).roundToInt(),
-                    y = lerp(0f, RailExpandedToggleTop.toPx(), fraction).roundToInt(),
+                    x = lerp(RailCollapsedToggleBoxStart.toPx(), RailExpandedToggleStart.toPx(), fraction).fastRoundToInt(),
+                    y = lerp(0f, RailExpandedToggleTop.toPx(), fraction).fastRoundToInt(),
                 )
             }
             .size(RailToggleBoxSize),

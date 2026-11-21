@@ -7,24 +7,19 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- The active source and Maven graph uses the successfully published MIUIX
-  snapshot `0.9.5-715ac29a-SNAPSHOT` at full revision
-  `715ac29a179c6576f7e50f8e72a11c86597c2124`.
-  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/44775822406)
-  and its tests passed. This is a source-pinned pre-release snapshot, not a stable
-  `v0.9.5` release. The B1890 candidate, on the earlier `188f2eb5`
-  baseline, has owner device acceptance. The `715ac29a` update restores
-  collapse-fraction band fading and improves Glass press/shadow, navigation and
-  blur draw-phase performance. This integration also aligns the app's AGP to
-  upstream 9.5.2 and retires the CI build-catalog rewrite: both source and
-  Maven paths must validate the same unmodified upstream graph.
-  Guiyuan retains required title/action clipping, popup Back, long-press and
-  navigation input boundaries. B1891's runtime changes require separate
-  device acceptance before integration into `dev`.
-  The prior Material integration is documented in
-  [PR #1440](https://github.com/CHS-Haple/Guiyuan/pull/1440).
-  The stable `main` line must be checked separately; do not treat a `dev`
-  pin as a stable-release upgrade.
+- The active source and Maven graph use the successfully published MIUIX
+  snapshot `0.9.5-c83aacd8-SNAPSHOT` at full revision
+  `c83aacd8ee737c44e0f98747b68091317d747eec`.
+  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/44919198318)
+  and [tests](https://github.com/compose-miuix-ui/miuix/actions/runs/44919198367)
+  passed. This is an exact source-pinned pre-release snapshot, **not** a stable
+  v0.9.5 release. Previously device-accepted B1892 used `715ac29a`;
+  `c83aacd8` contains progressive blur/noise/padding fixes and Glass top-bar
+  coverage correction. The B1893 candidate requires its own on-device check
+  of OS4 glass blur, navigation and title bar before integration into `dev`.
+  Keep source checkout and published Maven graph on the same exact revision.
+  Guiyuan-specific Back, long-press, touch-extension and title clip boundaries
+  remain locally owned.
 - `app/src/main/kotlin/com/chaners/guiyuan/ui/glass/` contains an adapted,
   app-compiled subset of the upstream
   [MIUIX Glass implementation](https://github.com/compose-miuix-ui/miuix/pull/423).
@@ -128,3 +123,11 @@ Dated integration evidence is in
 [PR #1370](https://github.com/CHS-Haple/Guiyuan/pull/1370) and repository
 history. The previous long-form conformance/audit investigations remain
 accessible in Git history, not in active documentation.
+
+The B1893 Glass alignment replaces the obsolete approximate
+`(barHeight + 20.dp) * 1.2f` band geometry with the measured title height
+plus the configured gradient overhang, matching upstream's correction.
+Adapted internal popup, navigation and rail layouts use upstream-aligned
+Compose fast rounding/clamping utilities. The new blur shader, kernel,
+noise-layer and padding fixes are consumed from published `miuix-blur`,
+not copied into the app. The OS3 UI style retains its native MIUIX path.
