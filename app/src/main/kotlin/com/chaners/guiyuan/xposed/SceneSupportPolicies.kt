@@ -6,6 +6,24 @@ import com.chaners.guiyuan.xposed.ScenePolicy.StableKeyguardAodScene
 
 // Stateless eligibility and AOD boundary decisions; ScenePolicy owns the main projection.
 internal object SceneCcPolicy {
+    fun shouldRetainKeyguardCcLease(
+        leaseActive: Boolean,
+        sourceScene: SourceScene,
+        featureEnabled: Boolean,
+        keyguardEnabled: Boolean,
+        hostAttached: Boolean,
+        aodBlocked: Boolean,
+        incomingBoundaryPresentationReady: Boolean = false,
+        nativeFraction: Float,
+    ): Boolean =
+        leaseActive &&
+            sourceScene == SourceScene.KEYGUARD &&
+            featureEnabled &&
+            keyguardEnabled &&
+            hostAttached &&
+            (!aodBlocked || incomingBoundaryPresentationReady) &&
+            nativeFraction > 0f
+
     fun shouldAcquireKeyguardCcLease(
         sourceScene: SourceScene,
         keyguardPresentationReady: Boolean,
@@ -120,6 +138,21 @@ internal object SceneAodBoundaryPolicy {
             null -> AodPeerAction.NONE
         }
     }
+
+    fun shouldArmHomeAodTargetPrearm(
+        featureEnabled: Boolean,
+        aodEnabled: Boolean,
+        steadySourceScene: SourceScene,
+        lastStableFamilyScene: StableKeyguardAodScene,
+        homePresentationOwned: Boolean,
+        nativeToLockScreenTarget: Boolean?,
+    ): Boolean =
+        featureEnabled &&
+            aodEnabled &&
+            steadySourceScene == SourceScene.HOME &&
+            lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN &&
+            homePresentationOwned &&
+            nativeToLockScreenTarget == false
 
     fun shouldArmHomeNativeAodFallbackCandidate(
         featureEnabled: Boolean,

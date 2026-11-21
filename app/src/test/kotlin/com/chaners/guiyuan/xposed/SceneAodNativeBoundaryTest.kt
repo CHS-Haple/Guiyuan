@@ -8,7 +8,7 @@ class SceneAodNativeBoundaryTest {
     @Test
     fun homeAodTargetPrearmRejectsReverseOrKnownFamilyOrigin() {
         assertFalse(
-            ScenePolicy.shouldArmHomeAodTargetPrearm(
+            SceneAodBoundaryPolicy.shouldArmHomeAodTargetPrearm(
                 featureEnabled = true,
                 aodEnabled = true,
                 steadySourceScene = SourceScene.HOME,
@@ -19,7 +19,7 @@ class SceneAodNativeBoundaryTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldArmHomeAodTargetPrearm(
+            SceneAodBoundaryPolicy.shouldArmHomeAodTargetPrearm(
                 featureEnabled = true,
                 aodEnabled = true,
                 steadySourceScene = SourceScene.HOME,

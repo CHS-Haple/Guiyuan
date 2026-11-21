@@ -54,7 +54,7 @@ class SceneControlCenterTest {
     @Test
     fun keyguardControlCenterLeaseRejectsEveryIndependentInvalidBoundary() {
         val base =
-            ScenePolicy.shouldRetainKeyguardCcLease(
+            SceneCcPolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -66,7 +66,7 @@ class SceneControlCenterTest {
         assertTrue(base)
 
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardCcLease(
+            SceneCcPolicy.shouldRetainKeyguardCcLease(
                 leaseActive = false,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -77,7 +77,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardCcLease(
+            SceneCcPolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = false,
@@ -88,7 +88,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardCcLease(
+            SceneCcPolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -99,7 +99,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardCcLease(
+            SceneCcPolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -204,7 +204,7 @@ class SceneControlCenterTest {
     @Test
     fun keyguardControlCenterLeaseMaySpanIncomingBoundaryBeforeStableFamily() {
         assertTrue(
-            ScenePolicy.shouldRetainKeyguardCcLease(
+            SceneCcPolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -216,7 +216,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardCcLease(
+            SceneCcPolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -250,7 +250,7 @@ class SceneControlCenterTest {
     @Test
     fun keyguardCcLeaseRetainsOnlyWhileNativeOwnerIsEligible() {
         assertTrue(
-            ScenePolicy.shouldRetainKeyguardCcLease(
+            SceneCcPolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -261,7 +261,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardCcLease(
+            SceneCcPolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.HOME,
                 featureEnabled = true,
@@ -272,7 +272,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardCcLease(
+            SceneCcPolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,
@@ -283,7 +283,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.shouldRetainKeyguardCcLease(
+            SceneCcPolicy.shouldRetainKeyguardCcLease(
                 leaseActive = true,
                 sourceScene = SourceScene.KEYGUARD,
                 featureEnabled = true,

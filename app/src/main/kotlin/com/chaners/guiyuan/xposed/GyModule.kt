@@ -1443,7 +1443,7 @@ class GyModule : XposedModule() {
                 ?: true
         val incomingBoundaryReady =
             incomingKeyguardReadyForCc()
-        return ScenePolicy.shouldRetainKeyguardCcLease(
+        return SceneCcPolicy.shouldRetainKeyguardCcLease(
             leaseActive = keyguardCcLeaseActive,
             sourceScene = controlCenterSourceScene,
             featureEnabled = settings.enabled,
@@ -2735,7 +2735,7 @@ class GyModule : XposedModule() {
         }
 
         val currentOriginEligible =
-            ScenePolicy.shouldArmHomeAodTargetPrearm(
+            SceneAodBoundaryPolicy.shouldArmHomeAodTargetPrearm(
                 featureEnabled = settings.enabled,
                 aodEnabled = settings.aod,
                 steadySourceScene = steadyStatusSourceScene,
