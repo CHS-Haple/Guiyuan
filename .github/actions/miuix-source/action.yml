@@ -3,11 +3,23 @@ description: Checkout and verify the pinned MIUIX graph shared by OS3 and OS4 va
 runs:
   using: composite
   steps:
+    - name: Resolve the single source-pinned MIUIX SHA
+      id: pinned
+      shell: bash
+      run: |
+        set -euo pipefail
+        revision="$(sed -n 's/^miuix.upstream.revision=//p' gradle.properties)"
+        if [[ ! "$revision" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "::error::Expected exactly one full lowercase MIUIX revision in gradle.properties."
+          exit 1
+        fi
+        echo "revision=$revision" >> "$GITHUB_OUTPUT"
+
     - name: Checkout exact pinned MIUIX source
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: compose-miuix-ui/miuix
-        ref: 715ac29a179c6576f7e50f8e72a11c86597c2124
+        ref: ${{ steps.pinned.outputs.revision }}
         path: miuix-upstream
         persist-credentials: false
     - name: Verify exact source revision and Glass integration files
