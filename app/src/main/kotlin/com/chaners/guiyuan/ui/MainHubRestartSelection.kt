@@ -16,11 +16,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
@@ -37,7 +37,7 @@ import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 
-/** Owns pending restart selection until the native dialog exit animation completes. */
+/** Commit a queued restart only after the selection dialog has exited. */
 internal class RestartScopeDialogState {
     var pickerOpen by mutableStateOf(false)
         private set
