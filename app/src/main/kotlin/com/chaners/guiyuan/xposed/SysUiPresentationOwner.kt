@@ -1694,7 +1694,7 @@ internal object SysUiPresentationOwner {
             return clipStates
                 .mapNotNull { state ->
                     state.view.get()
-                        ?.let(NativeParticipantAccess::slotOf)
+                        ?.let(NativeStatusSlots::slotOf)
                         ?.takeIf(representedSlots::contains)
                 }
                 .toSet()

@@ -7,6 +7,7 @@ import android.widget.ImageView
 import android.graphics.drawable.Icon
 import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
+import com.chaners.guiyuan.xposed.NativeStatusSlots
 import com.chaners.guiyuan.xposed.PresentationStore
 import com.chaners.guiyuan.xposed.unhookFailed
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime

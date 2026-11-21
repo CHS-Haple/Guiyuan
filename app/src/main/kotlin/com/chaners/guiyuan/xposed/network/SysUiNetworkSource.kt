@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
+import com.chaners.guiyuan.xposed.NativeStatusSlots
 import com.chaners.guiyuan.xposed.NativeStatusIdentity
 import com.chaners.guiyuan.xposed.SysUiHostRegistry
 import com.chaners.guiyuan.xposed.StatusStateStore
