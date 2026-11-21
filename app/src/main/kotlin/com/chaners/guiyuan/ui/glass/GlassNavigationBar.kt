@@ -96,7 +96,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
-import kotlin.math.roundToInt
+import androidx.compose.ui.util.fastRoundToInt
 import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
 import top.yukonga.miuix.kmp.material.GlassMaterial
@@ -437,8 +437,8 @@ fun GlassNavigationBar(
                             constraints.maxWidth.toFloat(),
                             contentInset - overhang,
                         )
-                        val start = bounds.x.roundToInt()
-                        val width = (bounds.y.roundToInt() - start).coerceAtLeast(0)
+                        val start = bounds.x.fastRoundToInt()
+                        val width = (bounds.y.fastRoundToInt() - start).coerceAtLeast(0)
                         val placeable = measurable.measure(
                             constraints.copy(minWidth = width, maxWidth = width),
                         )
