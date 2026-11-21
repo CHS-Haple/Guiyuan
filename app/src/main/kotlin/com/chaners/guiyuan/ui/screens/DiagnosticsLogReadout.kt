@@ -11,15 +11,15 @@ import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.system.LogCategory
 import com.chaners.guiyuan.system.LogEntry
 
-/**
- * Read-only log presentation values, derived from the current snapshot and UI filters.
- * Snapshot capture, navigation synchronization, filtering preferences and export actions
- * stay owned by DiagnosticsScreen.
- */
-internal class DiagnosticsLogReadout(
+/** Filtered diagnostic rows. The screen continues to own the user's filter choices. */
+internal class DiagnosticsFilteredLog(
     val entries: List<LogEntry>,
     val filteredEntries: List<LogEntry>,
     val filterActive: Boolean,
+)
+
+/** Capture completeness and detail availability, derived without writing snapshot state. */
+internal class DiagnosticsCaptureStatus(
     val showRootGuide: Boolean,
     val captureTruncated: Boolean,
     val detailStatus: String?,
@@ -28,13 +28,11 @@ internal class DiagnosticsLogReadout(
 )
 
 @Composable
-internal fun diagnosticsLogReadout(
+internal fun diagnosticsFilteredLog(
     snapshot: DiagSnapshot?,
-    selectedLevel: DiagLevel,
-    loading: Boolean,
     levelFilter: Int,
     categoryFilter: Int,
-): DiagnosticsLogReadout {
+): DiagnosticsFilteredLog {
     val focusedCategory =
         when (categoryFilter) {
             CAT_PERF -> LogCategory.Performance
@@ -54,6 +52,19 @@ internal fun diagnosticsLogReadout(
             entries
         }
     }
+    return DiagnosticsFilteredLog(
+        entries = entries,
+        filteredEntries = filteredEntries,
+        filterActive = filterActive,
+    )
+}
+
+@Composable
+internal fun diagnosticsCaptureStatus(
+    snapshot: DiagSnapshot?,
+    selectedLevel: DiagLevel,
+    loading: Boolean,
+): DiagnosticsCaptureStatus {
     val collectionFailed = snapshot?.log?.result?.isSuccess == false
     val hasCapturedSessionLines = snapshot?.log?.sessionLines?.isNotEmpty() == true
     val captureTruncated = snapshot?.log?.result?.truncated == true && hasCapturedSessionLines
@@ -91,10 +102,7 @@ internal fun diagnosticsLogReadout(
                 else -> null
             },
         ).joinToString("\n")
-    return DiagnosticsLogReadout(
-        entries = entries,
-        filteredEntries = filteredEntries,
-        filterActive = filterActive,
+    return DiagnosticsCaptureStatus(
         showRootGuide = showRootGuide,
         captureTruncated = captureTruncated,
         detailStatus = detailStatus,

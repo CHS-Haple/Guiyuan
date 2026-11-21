@@ -222,17 +222,20 @@ internal fun DiagnosticsScreen(
             !exportOpen
     // The preference write is synchronous; do not wait for the observer flow while switching.
     val selectedLevel = if (loading) diagRepo.current() else diagSettings.level
-    val readout = diagnosticsLogReadout(
+    val filteredLog = diagnosticsFilteredLog(
+        snapshot = snapshot,
+        levelFilter = levelFilter,
+        categoryFilter = categoryFilter,
+    )
+    val captureStatus = diagnosticsCaptureStatus(
         snapshot = snapshot,
         selectedLevel = selectedLevel,
         loading = loading,
-        levelFilter = levelFilter,
-        categoryFilter = categoryFilter,
     )
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
-        keepCompactTitle = readout.showRootGuide,
+        keepCompactTitle = captureStatus.showRootGuide,
         titlePadding = if (LocalUiStyle.current == UiStyle.OS4) TopAppBarDefaults.TitlePadding else 0.dp,
         glassActions = true,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
@@ -313,7 +316,7 @@ internal fun DiagnosticsScreen(
         // Use MIUIX's auto-fading scrollbar for the potentially long diagnostic log.
         // Keep the Root failure guide non-scrollable and free of decorative controls.
         foreground = { padding ->
-            if (!readout.showRootGuide) {
+            if (!captureStatus.showRootGuide) {
                 VerticalScrollBar(
                     adapter = rememberScrollBarAdapter(listState),
                     modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(
@@ -323,10 +326,10 @@ internal fun DiagnosticsScreen(
                 )
             }
         },
-        userScrollEnabled = !readout.showRootGuide,
+        userScrollEnabled = !captureStatus.showRootGuide,
         // The Root failure guide has a retry action; no pull gesture in this state.
         pullToRefresh =
-            if (readout.showRootGuide) {
+            if (captureStatus.showRootGuide) {
                 null
             } else {
                 SettingsPullToRefresh(
@@ -347,15 +350,15 @@ internal fun DiagnosticsScreen(
         diagnosticsLogItems(
             view = DiagnosticsLogPresentation(
                 snapshot = snapshot,
-                entries = readout.entries,
-                filteredEntries = readout.filteredEntries,
-                showRootGuide = readout.showRootGuide,
+                entries = filteredLog.entries,
+                filteredEntries = filteredLog.filteredEntries,
+                showRootGuide = captureStatus.showRootGuide,
                 loading = loading,
-                filterActive = readout.filterActive,
-                captureTruncated = readout.captureTruncated,
-                detailStatus = readout.detailStatus,
-                detailActive = readout.detailActive,
-                integrityNotice = readout.integrityNotice,
+                filterActive = filteredLog.filterActive,
+                captureTruncated = captureStatus.captureTruncated,
+                detailStatus = captureStatus.detailStatus,
+                detailActive = captureStatus.detailActive,
+                integrityNotice = captureStatus.integrityNotice,
                 expandedKey = expandedKey,
                 rise = rise,
                 risePx = risePx,
