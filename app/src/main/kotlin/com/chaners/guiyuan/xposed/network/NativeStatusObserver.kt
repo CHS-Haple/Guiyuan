@@ -21,6 +21,10 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
+// Native slot identities are shared by the observer and its tint resolver.
+internal const val AIRPLANE_SLOT = "airplane"
+internal const val NO_SIM_SLOT = "no_sim"
+
 internal object NativeStatusObserver {
 
     private inline fun reportEvent(message: () -> String) {
@@ -547,8 +551,8 @@ internal object NativeStatusObserver {
         val peerTint = group?.let(::resolveAppliedStatusIconTint)
         val resolvedAnchor =
             anchorView
-                ?.takeIf(::isTintAuthorityCandidate)
-                ?: group?.let(::resolveTintAnchorView)
+                ?.takeIf(NativeStatusTintResolver::isTintAuthorityCandidate)
+                ?: group?.let(NativeStatusTintResolver::resolveTintAnchorView)
         val locationAwareTint =
             NativeStatusTintResolver.resolveLocationAwareManagerTint(
                 manager = activeManager,
@@ -769,6 +773,4 @@ internal object NativeStatusObserver {
         }
     }
 
-    private const val AIRPLANE_SLOT = "airplane"
-    private const val NO_SIM_SLOT = "no_sim"
 }
