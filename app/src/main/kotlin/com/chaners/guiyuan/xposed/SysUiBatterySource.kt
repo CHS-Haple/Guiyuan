@@ -334,16 +334,18 @@ internal object SysUiBatterySource {
                     .intercept(
                         Hooker { chain ->
                             val result = chain.proceed()
-                            if (!hooksReady) return@Hooker result
-                            val meterView = optionalNativeRead { chain.thisObject as? View }
-                                ?: return@Hooker result
-                            try {
-                                publishChargingGlyph(
-                                    meterView = meterView,
-                                    sourceMethod = updateChargeAndTextMethod.name,
-                                )
-                            } catch (error: Throwable) {
-                                fallback("charging-glyph", error)
+                            if (hooksReady) {
+                                val meterView = optionalNativeRead { chain.thisObject as? View }
+                                if (meterView != null) {
+                                    try {
+                                        publishChargingGlyph(
+                                            meterView = meterView,
+                                            sourceMethod = updateChargeAndTextMethod.name,
+                                        )
+                                    } catch (error: Throwable) {
+                                        fallback("charging-glyph", error)
+                                    }
+                                }
                             }
                             result
                         },
