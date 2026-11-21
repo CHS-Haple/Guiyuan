@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.ui.screens
 
-import com.chaners.guiyuan.BuildConfig
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
@@ -35,7 +34,6 @@ import com.chaners.guiyuan.ui.icons.Os4GlassShare
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.DiagSettings
 import com.chaners.guiyuan.settings.DiagRepo
-import com.chaners.guiyuan.system.LogCategory
 import com.chaners.guiyuan.system.DiagLogReader
 import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.system.DiagReport
@@ -222,68 +220,17 @@ internal fun DiagnosticsScreen(
             !loading &&
             !reportBusy &&
             !exportOpen
-    val focusedCategory =
-        when (categoryFilter) {
-            CAT_PERF -> LogCategory.Performance
-            CAT_DISPLAY -> LogCategory.Display
-            else -> null
-        }
-    val entries = remember(snapshot, focusedCategory) {
-        snapshot?.entries.orEmpty().asReversed().filter { isRuntimeLog(it, focusedCategory) }
-    }
-    val filterActive =
-        levelFilter != LEVEL_ALL ||
-            categoryFilter != CAT_ALL
-    val filteredEntries = remember(entries, levelFilter, categoryFilter) {
-        if (filterActive) {
-            entries.filter { matchesFilter(it, levelFilter, categoryFilter) }
-        } else {
-            entries
-        }
-    }
-    // The preference write is synchronous; do not wait for the observer flow while switching.
-    val selectedLevel = if (loading) diagRepo.current() else diagSettings.level
-    val collectionFailed = snapshot?.log?.result?.isSuccess == false
-    val hasCapturedSessionLines = snapshot?.log?.sessionLines?.isNotEmpty() == true
-    val captureTruncated = snapshot?.log?.result?.truncated == true && hasCapturedSessionLines
-    val omittedEarlierLines = snapshot?.let(DiagReport::omittedEarlierLines) ?: 0
-    val detailedConfirmed = remember(snapshot) { snapshot?.isRuntimeDetailConfirmed() == true }
-    val showRootGuide = !hasCapturedSessionLines && collectionFailed
-    val detailStatus =
-        if (selectedLevel == DiagLevel.Detailed) {
-            stringResource(
-                when {
-                    !BuildConfig.RUNTIME_DIAGNOSTICS -> R.string.diagnostics_detail_unavailable
-                    loading -> R.string.diagnostics_detail_pending
-                    snapshot?.level == DiagLevel.Detailed && detailedConfirmed ->
-                        R.string.diagnostics_detail_confirmed
-                    else -> R.string.diagnostics_detail_unconfirmed
-                },
-            )
-        } else {
-            null
-        }
-    val detailActive = detailStatus != null && !loading &&
-        snapshot?.level == DiagLevel.Detailed && detailedConfirmed && BuildConfig.RUNTIME_DIAGNOSTICS
-    val integrityNotice =
-        listOfNotNull(
-            if (collectionFailed && hasCapturedSessionLines) {
-                stringResource(R.string.diagnostics_collection_incomplete)
-            } else null,
-            when {
-                captureTruncated && omittedEarlierLines > 0 ->
-                    stringResource(R.string.diagnostics_capture_and_report_limited, omittedEarlierLines)
-                captureTruncated ->
-                    stringResource(R.string.diagnostics_capture_truncated)
-                omittedEarlierLines > 0 ->
-                    stringResource(R.string.diagnostics_report_lines_omitted, omittedEarlierLines)
-                else -> null
-            },
-        ).joinToString("\n")
+    val readout = diagnosticsLogReadout(
+        snapshot = snapshot,
+        selectedLevel = selectedLevel,
+        loading = loading,
+        levelFilter = levelFilter,
+        categoryFilter = categoryFilter,
+    )
     SettingsPage(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
-        keepCompactTitle = showRootGuide,
+        keepCompactTitle = readout.showRootGuide,
         titlePadding = if (LocalUiStyle.current == UiStyle.OS4) TopAppBarDefaults.TitlePadding else 0.dp,
         glassActions = true,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
@@ -364,7 +311,7 @@ internal fun DiagnosticsScreen(
         // Use MIUIX's auto-fading scrollbar for the potentially long diagnostic log.
         // Keep the Root failure guide non-scrollable and free of decorative controls.
         foreground = { padding ->
-            if (!showRootGuide) {
+            if (!readout.showRootGuide) {
                 VerticalScrollBar(
                     adapter = rememberScrollBarAdapter(listState),
                     modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(
@@ -374,10 +321,10 @@ internal fun DiagnosticsScreen(
                 )
             }
         },
-        userScrollEnabled = !showRootGuide,
+        userScrollEnabled = !readout.showRootGuide,
         // The Root failure guide has a retry action; no pull gesture in this state.
         pullToRefresh =
-            if (showRootGuide) {
+            if (readout.showRootGuide) {
                 null
             } else {
                 SettingsPullToRefresh(
@@ -398,15 +345,15 @@ internal fun DiagnosticsScreen(
         diagnosticsLogItems(
             view = DiagnosticsLogPresentation(
                 snapshot = snapshot,
-                entries = entries,
-                filteredEntries = filteredEntries,
-                showRootGuide = showRootGuide,
+                entries = readout.entries,
+                filteredEntries = readout.filteredEntries,
+                showRootGuide = readout.showRootGuide,
                 loading = loading,
-                filterActive = filterActive,
-                captureTruncated = captureTruncated,
-                detailStatus = detailStatus,
-                detailActive = detailActive,
-                integrityNotice = integrityNotice,
+                filterActive = readout.filterActive,
+                captureTruncated = readout.captureTruncated,
+                detailStatus = readout.detailStatus,
+                detailActive = readout.detailActive,
+                integrityNotice = readout.integrityNotice,
                 expandedKey = expandedKey,
                 rise = rise,
                 risePx = risePx,
