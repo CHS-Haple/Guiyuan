@@ -15,7 +15,6 @@ internal object SysUiKeyguardHostResolver {
         "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer"
     private const val BATTERY_VIEW_CLASS =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
-    private const val TO_LOCK_SCREEN_FIELD = "mToLockScreen"
 
     // SystemUI may replace the Keyguard host; don't keep the old source alive.
     private var lastSourceView: WeakReference<View>? = null
@@ -57,35 +56,6 @@ internal object SysUiKeyguardHostResolver {
     ): Boolean =
         surface == SysUiSceneSource.Surface.KEYGUARD ||
             surface == SysUiSceneSource.Surface.SHADE_LOCKED
-
-    internal fun nativeToLockScreenTarget(
-        resolved: ResolvedHost,
-    ): Boolean? =
-        findField(resolved.host.javaClass, TO_LOCK_SCREEN_FIELD)
-            ?.let { field ->
-                SysUiPresentationRuntime.optionalNativeRead { field.get(resolved.host) as? Boolean }
-            }
-
-    internal fun statusIconsPresentationAlpha(
-        resolved: ResolvedHost,
-    ): Float? {
-        val statusIcons = resolved.statusIcons
-        if (!statusIcons.isAttachedToWindow) return null
-        return resolveStatusIconsPresentationAlpha(
-            visible = statusIcons.visibility == View.VISIBLE,
-            alpha = statusIcons.alpha,
-        )
-    }
-
-    internal fun resolveStatusIconsPresentationAlpha(
-        visible: Boolean,
-        alpha: Float,
-    ): Float =
-        if (visible) {
-            alpha.coerceIn(0f, 1f)
-        } else {
-            0f
-        }
 
     @Synchronized
     fun resetRuntimeState() {

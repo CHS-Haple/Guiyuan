@@ -16,25 +16,25 @@ class SysUiKeyguardHostResolverTest {
     @Test
     fun keyguardStatusIconsAlphaUsesOnlyLocalNativeStatusIconLayer() {
         assertTrue(
-            SysUiKeyguardHostResolver.resolveStatusIconsPresentationAlpha(
+            SysUiKeyguardNativeSignals.resolveStatusIconsPresentationAlpha(
                 visible = true,
                 alpha = 1f,
             ) == 1f,
         )
         assertTrue(
-            SysUiKeyguardHostResolver.resolveStatusIconsPresentationAlpha(
+            SysUiKeyguardNativeSignals.resolveStatusIconsPresentationAlpha(
                 visible = true,
                 alpha = 0.005f,
             ) == 0.005f,
         )
         assertTrue(
-            SysUiKeyguardHostResolver.resolveStatusIconsPresentationAlpha(
+            SysUiKeyguardNativeSignals.resolveStatusIconsPresentationAlpha(
                 visible = false,
                 alpha = 1f,
             ) == 0f,
         )
         assertTrue(
-            SysUiKeyguardHostResolver.resolveStatusIconsPresentationAlpha(
+            SysUiKeyguardNativeSignals.resolveStatusIconsPresentationAlpha(
                 visible = true,
                 alpha = 2f,
             ) == 1f,

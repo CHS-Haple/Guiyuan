@@ -2159,7 +2159,7 @@ class GyModule : XposedModule() {
             (resolution as? SysUiKeyguardHostResolver.ResolveResult.Ready)
                 ?.host
                 ?.let { resolved ->
-                    SysUiKeyguardHostResolver.nativeToLockScreenTarget(resolved)
+                    SysUiKeyguardNativeSignals.nativeToLockScreenTarget(resolved)
                 }
 
         val holdNativeBattery =
@@ -2278,7 +2278,7 @@ class GyModule : XposedModule() {
         val aodState =
             SysUiKeyguardAodSource.currentState(resolution.host.battery)
         val target =
-            SysUiKeyguardHostResolver.nativeToLockScreenTarget(resolution.host)
+            SysUiKeyguardNativeSignals.nativeToLockScreenTarget(resolution.host)
 
         val prearmed =
             armHomeAodPrearm(
@@ -2333,7 +2333,7 @@ class GyModule : XposedModule() {
                     null
                 },
             "statusIconsAlpha" to
-                SysUiKeyguardHostResolver.statusIconsPresentationAlpha(
+                SysUiKeyguardNativeSignals.statusIconsPresentationAlpha(
                     resolution.host,
                 ),
             "authority" to "native-status-icon-animation",
@@ -2456,7 +2456,7 @@ class GyModule : XposedModule() {
     ) {
         val settings = FeaturePrefsOwner.current()
         val statusIconsAlphaAtArm =
-            SysUiKeyguardHostResolver.statusIconsPresentationAlpha(
+            SysUiKeyguardNativeSignals.statusIconsPresentationAlpha(
                 resolution.host,
             )
         val battery = resolution.host.battery
@@ -2475,7 +2475,7 @@ class GyModule : XposedModule() {
                 aodEnabled = settings.aod,
                 lastStableFamilyScene = stableFamilyScene,
                 nativeToLockScreenTarget =
-                    SysUiKeyguardHostResolver.nativeToLockScreenTarget(
+                    SysUiKeyguardNativeSignals.nativeToLockScreenTarget(
                         resolution.host,
                     ),
                 statusIconsPresentationAlpha = statusIconsAlphaAtArm,
@@ -2800,7 +2800,7 @@ class GyModule : XposedModule() {
                     as? SysUiKeyguardHostResolver.ResolveResult.Ready
             if (
                 resolved != null && resolved.host.battery === update.sourceView &&
-                SysUiKeyguardHostResolver.nativeToLockScreenTarget(resolved.host) == true
+                SysUiKeyguardNativeSignals.nativeToLockScreenTarget(resolved.host) == true
             ) {
                 SysUiPresentationOwner.releaseAodBatteryMask(resolved.host)
             }
@@ -3176,7 +3176,7 @@ class GyModule : XposedModule() {
             aodEnabled = cfg.aod,
             sourceScene = steadyStatusSourceScene,
             nativeToLockScreenTarget =
-                SysUiKeyguardHostResolver.nativeToLockScreenTarget(host),
+                SysUiKeyguardNativeSignals.nativeToLockScreenTarget(host),
             batteryInAodMode = nativeBattery.toAod,
             nativeHandoffActive =
                 aodWindow is AodWindow.Running || waiting?.toLockScreen == false,
