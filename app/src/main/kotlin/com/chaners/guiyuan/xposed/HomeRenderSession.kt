@@ -141,6 +141,9 @@ internal object HomeRenderSession {
     fun isOverlayShown(): Boolean = current?.isOverlayShown() == true
 
     @Synchronized
+    fun ownsRenderView(view: View): Boolean = current?.ownsRenderView(view) == true
+
+    @Synchronized
     fun setNativeHandoffActive(active: Boolean) {
         current?.setNativeHandoffActive(active)
     }
@@ -443,6 +446,8 @@ internal object HomeRenderSession {
         }
 
         fun isOverlayShown(): Boolean = probeView.isShown
+
+        fun ownsRenderView(view: View): Boolean = probeView === view
 
         fun setFeatureEnabled(enabled: Boolean) {
             if (Looper.myLooper() !== Looper.getMainLooper()) {
