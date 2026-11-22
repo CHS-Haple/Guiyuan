@@ -564,13 +564,13 @@ private fun androidx.compose.foundation.layout.RowScope.GlassNavigationBarItemCo
                     modifier = Modifier.size(GlassNavigationBarDefaults.IconSize),
                 )
             }
-            if (item.label != null) {
+            item.label?.let { label ->
                 val baseLabelStyle = MiuixTheme.textStyles.footnote2
                 val labelTextStyle = remember(baseLabelStyle, labelSize) {
                     baseLabelStyle.copy(fontSize = labelSize)
                 }
                 Text(
-                    text = item.label,
+                    text = label,
                     color = tintProducer,
                     style = labelTextStyle,
                     textAlign = TextAlign.Center,
