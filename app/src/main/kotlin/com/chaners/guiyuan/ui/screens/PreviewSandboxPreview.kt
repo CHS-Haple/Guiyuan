@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -20,6 +22,24 @@ import com.chaners.guiyuan.ui.components.PreviewSummary
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+// Both Home and Sandbox must invalidate native-resource previews on configuration changes.
+@Composable
+internal fun rememberPreviewRenderModel(
+    state: PreviewSandboxUiState,
+    visual: VisualCfg,
+    resources: PreviewSysUiResources,
+    lowBatteryThreshold: Int,
+): RenderModel {
+    val configuration = LocalConfiguration.current
+    return remember(state, visual.dualSignal, resources, lowBatteryThreshold, configuration) {
+        state.toRenderModel(
+            resources,
+            dualSignalEnabled = visual.dualSignal,
+            lowBatteryThreshold = lowBatteryThreshold,
+        )
+    }
+}
 
 @Composable
 internal fun SandboxFullPreview(

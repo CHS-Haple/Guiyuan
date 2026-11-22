@@ -39,7 +39,6 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -111,13 +110,12 @@ internal fun PreviewSandboxScreen(
         FeatureRepo(context.applicationContext)
     }
     val feature by featureRepo.settings.collectAsState(initial = featureRepo.current())
-    val renderModel = remember(state, visual.dualSignal, feature.lowBatteryThreshold, resourceResolver, LocalConfiguration.current) {
-        state.toRenderModel(
-            resourceResolver,
-            dualSignalEnabled = visual.dualSignal,
-            lowBatteryThreshold = feature.lowBatteryThreshold,
-        )
-    }
+    val renderModel = rememberPreviewRenderModel(
+        state = state,
+        visual = visual,
+        resources = resourceResolver,
+        lowBatteryThreshold = feature.lowBatteryThreshold,
+    )
 
     val choices = previewSandboxOptions()
 

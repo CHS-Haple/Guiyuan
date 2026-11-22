@@ -40,7 +40,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -227,13 +226,12 @@ private fun HomePreviewSandboxCard(
     modifier: Modifier = Modifier,
 ) {
     val lowBatteryThreshold = featureSettings.value.lowBatteryThreshold
-    val model = remember(state, visual.dualSignal, resources, lowBatteryThreshold, LocalConfiguration.current) {
-        state.toRenderModel(
-            resources,
-            dualSignalEnabled = visual.dualSignal,
-            lowBatteryThreshold = lowBatteryThreshold,
-        )
-    }
+    val model = rememberPreviewRenderModel(
+        state = state,
+        visual = visual,
+        resources = resources,
+        lowBatteryThreshold = lowBatteryThreshold,
+    )
 
     Card(
         modifier = modifier,
