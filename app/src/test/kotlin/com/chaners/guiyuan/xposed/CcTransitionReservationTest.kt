@@ -42,8 +42,8 @@ class CcTransitionReservationTest {
         val chargingRow = floatArrayOf(1522f, 0f, 1f, 0f, 0f, 1f)
         val unpluggedRow = floatArrayOf(1567f, 0f, 1f, 0f, 0f, 1f)
         val offset = chargingRow[0] - root[0]
-        val before = CcTransitionPolicy.rootAnchoredCarrier(chargingRow, root, offset)
-        val after = CcTransitionPolicy.rootAnchoredCarrier(unpluggedRow, root, offset)
+        val before = CcTransitionSpatialPolicy.rootAnchoredCarrier(chargingRow, root, offset)
+        val after = CcTransitionSpatialPolicy.rootAnchoredCarrier(unpluggedRow, root, offset)
         assertEquals(before[0], after[0], 0.0001f)
 
         val held = 0.6f
@@ -69,7 +69,7 @@ class CcTransitionReservationTest {
         )
         target[0] += correction
         for (p in listOf(0.3f, 0.6f, 0.85f, 1f)) {
-            val before = CcTransitionPolicy.dualMobileRowMotionGeometry(
+            val before = CcTransitionMorphPolicy.dualMobileRowMotionGeometry(
                 source = source,
                 target = original,
                 groupTravelX = 100f,
@@ -77,7 +77,7 @@ class CcTransitionReservationTest {
                 progress = p,
                 scalePolicy = StatusPainter.TransitionScalePolicy.SHRINK_ONLY,
             )
-            val after = CcTransitionPolicy.dualMobileRowMotionGeometry(
+            val after = CcTransitionMorphPolicy.dualMobileRowMotionGeometry(
                 source = source,
                 target = target,
                 groupTravelX = 130f + correction,

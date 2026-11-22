@@ -12,16 +12,16 @@ class CcTransitionGeometryTest {
         val normalWifi = floatArrayOf(1195.5f, 240f, 75f, 0f, 0f, 75f)
         val battery = floatArrayOf(1330.5f, 240f, 135f, 0f, 0f, 169f)
         val provisionalWifi = floatArrayOf(1265.5f, 240f, 75f, 0f, 0f, 75f)
-        assertTrue(CcTransitionPolicy.wifiBeforeBattery(normalWifi, battery, false))
-        assertEquals(false, CcTransitionPolicy.wifiBeforeBattery(provisionalWifi, battery, false))
+        assertTrue(CcTransitionSpatialPolicy.wifiBeforeBattery(normalWifi, battery, false))
+        assertEquals(false, CcTransitionSpatialPolicy.wifiBeforeBattery(provisionalWifi, battery, false))
         val movedBattery = battery.copyOf().apply { this[0] += 5f }
-        val carried = CcTransitionPolicy.followBatteryAnchor(
+        val carried = CcTransitionSpatialPolicy.followBatteryAnchor(
             normalWifi, battery, movedBattery,
         )
         assertEquals(1200.5f, carried[0], 0.0001f)
-        assertTrue(CcTransitionPolicy.wifiBeforeBattery(carried, movedBattery, false))
+        assertTrue(CcTransitionSpatialPolicy.wifiBeforeBattery(carried, movedBattery, false))
         assertTrue(
-            CcTransitionPolicy.wifiBeforeBattery(
+            CcTransitionSpatialPolicy.wifiBeforeBattery(
                 floatArrayOf(1300f, 240f, 75f, 0f, 0f, 75f),
                 floatArrayOf(1120f, 240f, 135f, 0f, 0f, 169f),
                 true,
@@ -334,19 +334,19 @@ class CcTransitionCarrierMotionTest {
         val current = transitionGeometry(width = 10f, height = 20f)
         assertEquals(
             2f,
-            CcTransitionPolicy.relativeGeometryWidth(target, current) ?: -1f,
+            CcTransitionSpatialPolicy.relativeGeometryWidth(target, current) ?: -1f,
             0.0001f,
         )
         assertEquals(
             2.5f,
-            CcTransitionPolicy.relativeGeometryHeight(target, current) ?: -1f,
+            CcTransitionSpatialPolicy.relativeGeometryHeight(target, current) ?: -1f,
             0.0001f,
         )
         val zeroWidth = transitionGeometry(width = 0f, height = 20f)
-        assertNull(CcTransitionPolicy.relativeGeometryWidth(target, zeroWidth))
+        assertNull(CcTransitionSpatialPolicy.relativeGeometryWidth(target, zeroWidth))
         assertEquals(
             2.5f,
-            CcTransitionPolicy.relativeGeometryHeight(target, zeroWidth) ?: -1f,
+            CcTransitionSpatialPolicy.relativeGeometryHeight(target, zeroWidth) ?: -1f,
             0.0001f,
         )
     }
@@ -402,23 +402,23 @@ class CcTransitionCarrierMotionTest {
     @Test
     fun missingNativeMobileTextHasNoGuessedSignalSlotEndpoint() {
         assertNull(
-            CcTransitionPolicy.semanticFallbackBounds(
+            CcTransitionClipPolicy.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_type_single", "mobile_type"),
                 isRtl = false,
             ),
         )
         assertNull(
-            CcTransitionPolicy.semanticFallbackBounds(
+            CcTransitionClipPolicy.semanticFallbackBounds(
                 preferredChildEntries = listOf("mobile_type"),
                 isRtl = true,
             ),
         )
 
-        val signal = CcTransitionPolicy.semanticFallbackBounds(
+        val signal = CcTransitionClipPolicy.semanticFallbackBounds(
             preferredChildEntries = listOf("mobile_signal"),
             isRtl = false,
         )
-        val rtlSignal = CcTransitionPolicy.semanticFallbackBounds(
+        val rtlSignal = CcTransitionClipPolicy.semanticFallbackBounds(
             preferredChildEntries = listOf("mobile_signal"),
             isRtl = true,
         )
