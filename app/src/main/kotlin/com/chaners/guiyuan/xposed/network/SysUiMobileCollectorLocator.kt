@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.xposed.network
 
 import android.widget.ImageView
-import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import org.luckypray.dexkit.DexKitBridge
 
 // Only missing compiler-generated classes are searched; stable hooks stay direct.
@@ -29,63 +28,60 @@ internal object SysUiMobileCollectorLocator {
         }
         if (missing.isEmpty()) return emptyMap()
 
-        return try {
-            System.loadLibrary("dexkit")
-            DexKitBridge.create(classLoader, false).use { bridge ->
-                val discovered = buildMap {
-                    for (role in missing) {
-                        val candidates = bridge.findClass {
-                            searchPackages(BINDER_PACKAGE)
-                            matcher {
-                                fields {
-                                    add {
-                                        name = role.viewField
-                                        type = ImageView::class.java.name
-                                    }
-                                    if (role.hasClassId) {
-                                        add {
-                                            name = CLASS_ID_FIELD
-                                            type = "int"
-                                        }
-                                    }
+        // The installing branch already records failures and restores native state.
+        // Keep the real DexKit error instead of disguising it as a missing class.
+        System.loadLibrary("dexkit")
+        return DexKitBridge.create(classLoader, false).use { bridge ->
+            val discovered = buildMap {
+                for (role in missing) {
+                    val candidates = bridge.findClass {
+                        searchPackages(BINDER_PACKAGE)
+                        matcher {
+                            fields {
+                                add {
+                                    name = role.viewField
+                                    type = ImageView::class.java.name
                                 }
-                                methods {
+                                if (role.hasClassId) {
                                     add {
-                                        name = role.methodName
-                                        returnType = "java.lang.Object"
-                                        if (role.methodName == "emit") {
-                                            paramTypes("java.lang.Object", "kotlin.coroutines.Continuation")
-                                        } else {
-                                            paramTypes("java.lang.Object")
-                                        }
+                                        name = CLASS_ID_FIELD
+                                        type = "int"
                                     }
                                 }
                             }
-                        }.mapNotNull { data ->
-                            if (!data.name.startsWith(BINDER_PACKAGE + ".MiuiMobileIconBinder\$bind\$")) {
+                            methods {
+                                add {
+                                    name = role.methodName
+                                    returnType = "java.lang.Object"
+                                    if (role.methodName == "emit") {
+                                        paramTypes("java.lang.Object", "kotlin.coroutines.Continuation")
+                                    } else {
+                                        paramTypes("java.lang.Object")
+                                    }
+                                }
+                            }
+                        }
+                    }.mapNotNull { data ->
+                        if (!data.name.startsWith(BINDER_PACKAGE + ".MiuiMobileIconBinder\$bind\$")) {
+                            null
+                        } else {
+                            try {
+                                Class.forName(data.name, false, classLoader)
+                            } catch (_: ClassNotFoundException) {
                                 null
-                            } else {
-                                try {
-                                    Class.forName(data.name, false, classLoader)
-                                } catch (_: ClassNotFoundException) {
-                                    null
-                                }
                             }
-                        }.filter { candidate -> isVerifiedCandidate(candidate, role, classLoader) }
+                        }
+                    }.filter { candidate -> isVerifiedCandidate(candidate, role, classLoader) }
 
-                        // An ambiguous match must not claim SystemUI ownership.
-                        if (candidates.size == 1) put(role, candidates.single())
-                    }
+                    // An ambiguous match must not claim SystemUI ownership.
+                    if (candidates.size == 1) put(role, candidates.single())
                 }
-                // A generated switch class shared across two roles would install
-                // overlapping Hooks on the same method. Never guess ownership.
-                val originalNames = knownClasses.filterKeys { it !in missing }.values
-                val allNames = originalNames + discovered.values.map(Class<*>::getName)
-                if (hasDistinctOwners(allNames)) discovered else emptyMap()
             }
-        } catch (error: Throwable) {
-            rethrowFatal(error)
-            emptyMap()
+            // A generated switch class shared across two roles would install
+            // overlapping Hooks on the same method. Never guess ownership.
+            val originalNames = knownClasses.filterKeys { it !in missing }.values
+            val allNames = originalNames + discovered.values.map(Class<*>::getName)
+            if (hasDistinctOwners(allNames)) discovered else emptyMap()
         }
     }
 
