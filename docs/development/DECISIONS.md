@@ -293,40 +293,40 @@ the existing native fallback on actual unsafe conditions. Tests cover
 slow-close, late-ready, partial gesture and fast-close/reopen traces.
 Real-device validation still required.
 
-## CC terminal visual exit and Home visibility are separate owners
+## Native Home readiness follows a completed layout, not a child callback
 
-**Decision:** During a confirmed native CC closing gesture from HOME,
-read the actual native fake/final header root visibility. If BOTH roots
-are no longer visible, retire only the temporary QS_FAKE transition
-session and return Home visibility authority to its existing coordinator,
-even if the CC expansion delegate still reports a stale positive fraction.
-Keep the terminal witness latched until the next native visible cycle,
-including across duplicate `visible=true` events. Use existing CC and
-Home pre-draw observation boundaries; do not invent time/alpha thresholds,
-change native geometry or add another Xposed hook.
+**Decision:** Native `onLayout` from a battery/status-icon descendant is a
+provisional geometry observation. If a previously valid Home anchor cannot
+be resolved at that point, preserve the existing scoped Home ownership while
+SystemUI is still laying out the native tree. Recheck the live native carrier
+from the existing Home root pre-draw observer, regardless of whether native
+handoff had been active. Only a detached host/carrier or an anchor that
+remains invalid at a complete native frame is grounds for releasing the
+verified Home layout. No stale host-end approximation, new Hook, timer,
+native alpha or geometry mutation is allowed.
 
-**Evidence:** After CC landscape→portrait, B1902/B1903 device feedback
-showed native Home peer icons before the combined icon returned.
-B1903 follow-up runtime report did not record the actual blank frames.
-A source audit disproved the earlier claim that the transition masks
-the Home RenderView. `CcRenderSession.transitionSourceSnapshot()` supplies
-the **QS_FAKE** RenderView to `CcTransitionOwner`, which clips and restores
-only that source. The Home RenderView is controlled separately by
-`HomeRenderSession.controlCenterAllowsHome`, updated by
-`GyModule.reconcileCcHomeAuthority()`. B1903's CC-only pre-draw
-terminal observer can cease running after the CC root stops drawing,
-even while Home's native row remains visible.
+**Evidence and limits:** B1903 user video on 2026-11-22 shows repeated
+full-swipe exits with a short native mobile/5GA/battery row before the
+combined indicator returns. The B1903 diagnostic does not capture that
+interval (`runtimeLevel=not-observed`); the actual owner change remains
+unmeasured. Source trace establishes a capable failure path:
+`HomeRenderSession.layoutProbe()` immediately revoked `layoutReady`
+on an unresolved native carrier, `GyModule.onHomeReadyChanged(false)`
+then deactivated Home and restored native icons, and the Home
+`OnPreDrawListener` skipped revalidation while native handoff was active.
+A child layout callback may occur before its parent's frame is committed.
+The prior native-CC-header exit predicate (B1903/B1904) is not evidence for
+this mechanism and is removed. Also, `CcTransitionOwner` masks only the
+QS_FAKE transition RenderView; it never directly clips Home's RenderView.
 
-**Consequence:** Reuse Home's existing native pre-draw to check the
-same read-only terminal predicate that CC observes, authenticate that
-the drawing View belongs to the live Home session (NOT the QS_FAKE
-source), and notify one Home visibility coordinator. The scoped
-transition session still restores its QS_FAKE clip, reservation and
-overlay on retirement. A bounded terminal event reports whether the
-witness was `home-pre-draw` or `cc-pre-draw`. The B1904 device test
-must establish that the actual blank interval meets this predicate;
-if not, collect the native visible/fraction/owner state at that exact
-boundary rather than adding speculative fallback.
+**Consequence:** Preserve the last verified layout during provisional
+onLayout, revalidate at the native pre-draw, log an event on deferred,
+recovered or settled-invalid geometry changes and log readiness-driven
+native return in the Home coordinator. Structural detach and a settled
+invalid source still fail native. B1905 remains a source-level correction
+until device logs demonstrate that this exact path corresponds to the
+reported visual gap; otherwise investigate the independent native CC
+visible/fraction/ready handoff without stacking time-based fallbacks.
 
 ## CC frozen source geometry is viewport-scoped
 
