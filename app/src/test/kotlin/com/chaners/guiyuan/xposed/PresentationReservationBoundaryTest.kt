@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.xposed
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -153,6 +152,31 @@ class PresentationReservationBoundaryTest {
         assertEquals(null, EndReservationPolicy.boundedFakeNativeTransitionPadding(
             rowWidthPx = 0, contentWidthPx = 386,
             requestedPaddingEndPx = 69, minimumPaddingEndPx = 0,
+        ))
+    }
+
+    @Test
+    fun boundedNativePeerLaneConstrainsTheWholeTransitionInBothDirections() {
+        // A 17 px native grant reduction makes a corresponding 17 px fence.
+        assertEquals(391f, CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
+            nativeHostCenterX = 293.5f, nativeHostWidthX = 587f,
+            requestedWidthPx = 213, grantedWidthPx = 196, isRtl = false,
+        )!!, 0.0001f)
+        assertEquals(196f, CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
+            nativeHostCenterX = 293.5f, nativeHostWidthX = 587f,
+            requestedWidthPx = 213, grantedWidthPx = 196, isRtl = true,
+        )!!, 0.0001f)
+        assertEquals(null, CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
+            293.5f, 587f, 196, 196, false,
+        ))
+        assertEquals(null, CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
+            293.5f, 587f, 196, 197, false,
+        ))
+        assertEquals(null, CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
+            293.5f, 0f, 196, 180, false,
+        ))
+        assertEquals(null, CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
+            Float.NaN, 587f, 196, 180, false,
         ))
     }
 

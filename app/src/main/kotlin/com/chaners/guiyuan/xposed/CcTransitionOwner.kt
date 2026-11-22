@@ -914,6 +914,7 @@ internal object CcTransitionOwner {
                 finalRootRef.get()
                     ?.let(::endpointAlpha)
                     ?: 0f
+            clipToGrantedNativePeerSide(canvas, rootView)
             val carrierFrames =
                 frozenSource?.let { frozen ->
                     sample(
@@ -2275,6 +2276,31 @@ internal object CcTransitionOwner {
                     currentCarrier = frames.current,
                 )
             } ?: source.copyOf()
+
+        private fun clipToGrantedNativePeerSide(
+            canvas: Canvas,
+            root: ViewGroup,
+        ) {
+            if (!transitionReservationEnabled || nativeBatteryIslandActive) return
+            val requested = lastReservationWidthPx ?: return
+            val granted = SysUiPresentationOwner.appliedCcTransitionReservationWidthPx() ?: return
+            if (granted >= requested) return
+            val nativeFakeHost = fakeStatusIcons.parent as? View ?: return
+            val nativeHostGeometry = sample(nativeFakeHost, root) ?: return
+            val rtl = nativeFakeHost.layoutDirection == View.LAYOUT_DIRECTION_RTL
+            val boundary = CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
+                nativeHostCenterX = nativeHostGeometry[0],
+                nativeHostWidthX = nativeHostGeometry[2],
+                requestedWidthPx = requested,
+                grantedWidthPx = granted,
+                isRtl = rtl,
+            ) ?: return
+            if (rtl) {
+                canvas.clipRect(0f, 0f, boundary, root.height.toFloat())
+            } else {
+                canvas.clipRect(boundary, 0f, root.width.toFloat(), root.height.toFloat())
+            }
+        }
 
         private fun latentRevealVisibleFraction(
             currentGeometry: FloatArray,
@@ -4365,7 +4391,12 @@ internal object CcTransitionOwner {
         private val session = WeakReference(session)
 
         override fun draw(canvas: Canvas) {
-            session.get()?.draw(canvas)
+            val save = canvas.save()
+            try {
+                session.get()?.draw(canvas)
+            } finally {
+                canvas.restoreToCount(save)
+            }
         }
 
         override fun setAlpha(alpha: Int) = Unit

@@ -23,6 +23,24 @@ internal object CcCarrierGeometryPolicy {
         liveHostWidthPx > 0 && !hostLayoutRequested &&
             capturedHostWidthPx != liveHostWidthPx
 
+    // A bounded native reservation limits every projected component on the
+    // peer side while leaving SystemUI's separate FINAL area untouched.
+    fun fakePeerClipBoundaryX(
+        nativeHostCenterX: Float,
+        nativeHostWidthX: Float,
+        requestedWidthPx: Int,
+        grantedWidthPx: Int,
+        isRtl: Boolean,
+    ): Float? {
+        if (!nativeHostCenterX.isFinite() || !nativeHostWidthX.isFinite() ||
+            nativeHostWidthX <= 0f || requestedWidthPx <= 0 ||
+            grantedWidthPx < 0 || grantedWidthPx >= requestedWidthPx
+        ) return null
+        val end = nativeHostCenterX + nativeHostWidthX * (if (isRtl) -0.5f else 0.5f)
+        val boundary = end + grantedWidthPx * (if (isRtl) 1f else -1f)
+        return boundary.takeIf(Float::isFinite)
+    }
+
     fun composeSourceGeometry(
         positionAuthority: FloatArray,
         basisAuthority: FloatArray,
