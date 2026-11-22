@@ -64,19 +64,10 @@ internal object CcTransitionOwner {
     private var sourceScene = SourceScene.UNKNOWN
     private var endpoints: SysUiCcSource.TransitionEndpoints? = null
     private var current: Session? = null
-    private var terminalNativeVisualAbsent = false
-    private var onNativeCloseVisualEnded: ((String) -> Unit)? = null
 
     @Synchronized
-    fun onSourceUpdate(
-        update: SysUiCcSource.Update,
-        onNativeCloseVisualEnded: ((String) -> Unit)? = null,
-    ) {
-        if (onNativeCloseVisualEnded != null) {
-            this.onNativeCloseVisualEnded = onNativeCloseVisualEnded
-        }
+    fun onSourceUpdate(update: SysUiCcSource.Update) {
         update.visible?.let { nextVisible ->
-            if (nextVisible && !visible) terminalNativeVisualAbsent = false
             visible = nextVisible
             if (!nextVisible) {
                 nativeProgress = null
@@ -151,37 +142,6 @@ internal object CcTransitionOwner {
         nativeBatteryIslandActive = null
         sourceScene = SourceScene.UNKNOWN
         endpoints = null
-        terminalNativeVisualAbsent = false
-        onNativeCloseVisualEnded = null
-    }
-
-    // CC's own pre-draw may stop after the CC window exits, while Home's
-    // separate native root is already rendering. Observe the same native
-    // exit contract from Home's existing pre-draw, without adding a hook.
-    @Synchronized
-    fun onHomePreDraw(sourceView: View) {
-        val owner = current ?: return
-        if (sourceScene != SourceScene.HOME ||
-            !owner.nativeCloseCompletedForHome(sourceView)
-        ) return
-        onNativeCloseVisualCompleted(owner, "home-pre-draw")
-    }
-
-    // Retire the QS_FAKE transition clip first, then return Home visibility
-    // authority through the single coordinator. No Home clip is owned here.
-    @Synchronized
-    private fun onNativeCloseVisualCompleted(owner: Session, witness: String) {
-        if (current !== owner || sourceScene != SourceScene.HOME) return
-        terminalNativeVisualAbsent = true
-        current = null
-        try {
-            owner.stop("native-header-visual-end")
-        } catch (error: Throwable) {
-            current = owner // Preserve the unfinished release for the next native event.
-            terminalNativeVisualAbsent = false
-            throw error
-        }
-        onNativeCloseVisualEnded?.invoke(witness)
     }
 
     private fun sync(source: String) {
@@ -189,7 +149,6 @@ internal object CcTransitionOwner {
         val endpoint = endpoints
         val shouldRun =
             visible &&
-                !terminalNativeVisualAbsent &&
                 sceneEligible &&
                 projectionReady &&
                 progress != null &&
@@ -377,7 +336,6 @@ internal object CcTransitionOwner {
         private var progress = 0f
         private var nativeAppearance = false
         private var nativeAppearanceAnimated = false
-        private var nativeCloseObserved = false
         private var started = false
         private var stopping = false
         private var registeredObserver: ViewTreeObserver? = null
@@ -405,32 +363,6 @@ internal object CcTransitionOwner {
         private val sampleValues = FloatArray(9)
         private val boundsMatrix = Matrix()
         private val boundsValues = FloatArray(9)
-        private val nativeVisibleRect = Rect()
-
-        private fun nativeHeaderVisible(view: View?): Boolean =
-            view != null &&
-                view.isAttachedToWindow &&
-                view.isShown &&
-                view.width > 0 && view.height > 0 &&
-                endpointAlpha(view) > 0f &&
-                view.rootView.alpha > 0f &&
-                view.getGlobalVisibleRect(nativeVisibleRect) &&
-                !nativeVisibleRect.isEmpty
-
-        private fun nativeCloseVisualCompleted(): Boolean =
-            started &&
-                CcHomeHandoffPolicy.nativeCloseVisualCompleted(
-                    closing = nativeCloseObserved,
-                    fakeHeaderVisible = nativeHeaderVisible(fakeRootRef.get()),
-                    finalHeaderVisible = nativeHeaderVisible(finalRootRef.get()),
-                )
-
-        // Home has a separate render View from the QS_FAKE transition source.
-        // Authenticate its live session before using the Home-root observer.
-        fun nativeCloseCompletedForHome(homeView: View): Boolean =
-            HomeRenderSession.ownsRenderView(homeView) &&
-                homeView.isAttachedToWindow &&
-                nativeCloseVisualCompleted()
 
         private val preDrawListener =
             ViewTreeObserver.OnPreDrawListener {
@@ -452,26 +384,7 @@ internal object CcTransitionOwner {
                     !source.isAttachedToWindow ||
                     !sourceAnchor.isAttachedToWindow
                 ) {
-                    // A detached CC header can finish its visible lifetime
-                    // before the final fraction callback. Return Home authority
-                    // when both native headers have left the viewport.
-                    if (
-                        source?.isAttachedToWindow == true &&
-                        CcTransitionOwner.sourceScene == SourceScene.HOME &&
-                        nativeCloseVisualCompleted()
-                    ) {
-                        CcTransitionOwner.onNativeCloseVisualCompleted(this, "cc-pre-draw-detached")
-                    } else {
-                        CcTransitionOwner.detach("pre-draw-detached")
-                    }
-                    return@OnPreDrawListener true
-                }
-
-                if (
-                    CcTransitionOwner.sourceScene == SourceScene.HOME &&
-                    nativeCloseVisualCompleted()
-                ) {
-                    CcTransitionOwner.onNativeCloseVisualCompleted(this, "cc-pre-draw")
+                    CcTransitionOwner.detach("pre-draw-detached")
                     return@OnPreDrawListener true
                 }
 
@@ -803,10 +716,7 @@ internal object CcTransitionOwner {
             val appearanceChanged =
                 this.nativeAppearance != nativeAppearance ||
                     this.nativeAppearanceAnimated != nativeAppearanceAnimated
-            val next = progress.coerceIn(0f, 1f)
-            if (next < this.progress) nativeCloseObserved = true
-            if (next > this.progress) nativeCloseObserved = false
-            this.progress = next
+            this.progress = progress.coerceIn(0f, 1f)
             acceptSourceSnapshot(sourceSnapshot)
             this.nativeAppearance = nativeAppearance
             this.nativeAppearanceAnimated = nativeAppearanceAnimated
