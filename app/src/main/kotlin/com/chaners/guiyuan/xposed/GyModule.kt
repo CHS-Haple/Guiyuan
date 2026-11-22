@@ -1712,6 +1712,7 @@ class GyModule : XposedModule() {
             }
         }
         controlCenterSceneEligible = false
+        ccProjectionReadyForHandoff = false
         controlCenterSourceScene = SourceScene.UNKNOWN
         safely("source-scene") {
             SysUiPresentationOwner.updateCcSourceScene(SourceScene.UNKNOWN)
@@ -1726,7 +1727,7 @@ class GyModule : XposedModule() {
             CcRenderSession.setSceneEligible(false)
         }
         safely("home-authority") {
-            HomeRenderSession.onControlCenterAuthorityChanged(true)
+            reconcileCcHomeAuthority("panel-runtime-failure")
         }
         if (!SysUiPresentationOwner.ccReleased()) {
             cleanupFailures += "control-center-retirement-pending"
