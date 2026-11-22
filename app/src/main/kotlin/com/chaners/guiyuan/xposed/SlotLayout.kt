@@ -56,8 +56,8 @@ internal object HomeCarrierAnchorPolicy {
     // The native battery may expand its outer width (e.g. 105 -> 135 px
     // during charging) while the real battery_icon_container stays 105 px.
     // Its left edge is then no longer the right-side compact slot's edge.
-    // Follow the native battery's end for an expanded slot; keep the core
-    // carrier as authority while the outer width is the stable width.
+    // Keep the native battery end as the compact slot's edge while its
+    // outer width and core layout update at different points in the traversal.
     fun resolveExpandedBattery(
         hostWidthPx: Int,
         hostHeightPx: Int,
@@ -72,7 +72,7 @@ internal object HomeCarrierAnchorPolicy {
             carrierWidthPx,
             carrierLeftPx,
         ) ?: return null
-        if (nativeBatteryWidthPx <= carrierWidthPx) return native
+        if (nativeBatteryWidthPx < carrierWidthPx || nativeBatteryRightPx == native.right) return native
         val left = nativeBatteryRightPx.toLong() - carrierWidthPx
         if (left < 0 || nativeBatteryRightPx > hostWidthPx) return null
         return native.copy(left = left.toInt(), right = nativeBatteryRightPx)

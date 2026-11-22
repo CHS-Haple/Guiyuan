@@ -182,6 +182,9 @@ internal object SysUiPresentationOwner {
         current?.isNativeCarrierPresentationVisible() == true
 
     @Synchronized
+    internal fun homeBatteryNativeHidden(): Boolean? = current?.nativeHomeBatteryHidden()
+
+    @Synchronized
     internal fun homePrivacyOccupiesEnd(batteryHost: ViewGroup): Boolean? =
         current
             ?.takeIf { session -> session.ownsBatteryContainer(batteryHost) }
@@ -1743,6 +1746,12 @@ internal object SysUiPresentationOwner {
                         clipStates.isNotEmpty() ||
                         appliedPadding != null
                 )
+
+        fun nativeHomeBatteryHidden(): Boolean? {
+            if (!active || surfaceName != HOME_SURFACE) return null
+            val container = batteryContainer.get() ?: return null
+            return optionalNativeRead { batteryHideField.getBoolean(container) }
+        }
 
         fun nativeHomePrivacyOccupiesEnd(): Boolean? {
             if (!active || surfaceName != HOME_SURFACE) return null

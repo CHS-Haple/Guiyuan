@@ -1682,6 +1682,7 @@ class GyModule : XposedModule() {
                 "nativeFraction" to ccExpansion,
                 "projectionReady" to ccProjectionReadyForHandoff,
                 "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
+                "homeVisibility" to HomeRenderSession.visibilityWitness(),
                 "homeClaimed" to SysUiPresentationOwner.homeClaimed(),
                 "homeCarrierShown" to SysUiPresentationOwner.homeCarrierVisible(),
             )
@@ -4304,9 +4305,9 @@ class GyModule : XposedModule() {
                     initialNativeHandoffActive = true,
                     initialTintState = rendererInitialTintState,
                     allowLiveTintSeed = allowLiveTintSeed,
-                    onPresentationReadinessChanged = { ready ->
+                    onPresentationReadinessChanged = { ready, readinessSource ->
                         rendererReadyOnAttach = ready
-                        onHomeReadyChanged(host, ready, source)
+                        onHomeReadyChanged(host, ready, source, readinessSource)
                     },
                 )
             } catch (error: Throwable) {
@@ -4377,6 +4378,7 @@ class GyModule : XposedModule() {
         host: Any,
         ready: Boolean,
         source: String,
+        readinessSource: String,
     ) {
         if (failNativeGate.suspended || !FeaturePrefsOwner.current().enabled) {
             HomeRenderSession.setNativeHandoffActive(true)
@@ -4394,6 +4396,7 @@ class GyModule : XposedModule() {
                 state = "native",
                 "reason" to "owner-readiness-lost",
                 "source" to source,
+                "readinessSource" to readinessSource,
                 "previouslyClaimed" to previouslyClaimed,
             )
             return

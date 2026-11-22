@@ -257,6 +257,18 @@ class HomeRenderSessionTest {
         )
         assertEquals(normal?.left, charging?.left)
         assertEquals(normal?.right, charging?.right)
+
+        // Native battery width can shrink before its inner carrier moves.
+        val beforeCoreRelayout = HomeCarrierAnchorPolicy.resolveExpandedBattery(
+            hostWidthPx = 600,
+            hostHeightPx = 108,
+            carrierWidthPx = 105,
+            carrierLeftPx = 465,
+            nativeBatteryWidthPx = 105,
+            nativeBatteryRightPx = 600,
+        )
+        assertEquals(charging?.left, beforeCoreRelayout?.left)
+        assertEquals(charging?.right, beforeCoreRelayout?.right)
     }
 
     @Test

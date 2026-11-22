@@ -44,7 +44,7 @@ internal object HomeRenderSession {
         initialNativeHandoffActive: Boolean = false,
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
-        onPresentationReadinessChanged: ((Boolean) -> Unit)? = null,
+        onPresentationReadinessChanged: ((Boolean, String) -> Unit)? = null,
     ): String? {
         if (retirement.pending != null) return "home-render-release-incomplete"
         val hostView = host as? ViewGroup
@@ -139,6 +139,9 @@ internal object HomeRenderSession {
 
     @Synchronized
     fun isOverlayShown(): Boolean = current?.isOverlayShown() == true
+
+    @Synchronized
+    fun visibilityWitness(): String = current?.visibilityWitness() ?: "home-session-unbound"
 
     @Synchronized
     fun setNativeHandoffActive(active: Boolean) {
@@ -256,7 +259,7 @@ internal object HomeRenderSession {
         private val initialTintState: TintState?,
         private val allowLiveTintSeed: Boolean,
         initialFeatureEnabled: Boolean,
-        private val onPresentationReadinessChanged: ((Boolean) -> Unit)?,
+        private val onPresentationReadinessChanged: ((Boolean, String) -> Unit)?,
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
         private val batteryContainer = WeakReference(batteryContainer)
@@ -460,6 +463,17 @@ internal object HomeRenderSession {
         }
 
         fun isOverlayShown(): Boolean = probeView.isShown
+
+        fun visibilityWitness(): String {
+            val root = batteryContainer.get()
+            return "renderVisibility=${probeView.visibility}" +
+                " renderShown=${probeView.isShown}" +
+                " rootShown=${root?.isShown}" +
+                " rootAttached=${root?.isAttachedToWindow}" +
+                " handoff=$nativeHandoffActive" +
+                " homeEligible=$controlCenterAllowsHome" +
+                " layoutReady=$layoutReady"
+        }
 
         fun setFeatureEnabled(enabled: Boolean) {
             if (Looper.myLooper() !== Looper.getMainLooper()) {
@@ -720,7 +734,7 @@ internal object HomeRenderSession {
                     " controlCenterHomeEligible=" + controlCenterAllowsHome +
                     " featureEnabled=" + featureEnabled
             }
-            onPresentationReadinessChanged?.invoke(ownerReady)
+            onPresentationReadinessChanged?.invoke(ownerReady, source)
         }
 
         private inline fun emitEvent(message: () -> String) {
@@ -773,19 +787,31 @@ internal object HomeRenderSession {
                         carrier.width <= 0
                     ) return false
                     val battery = batteryView.get() ?: return false
-                    if (!battery.isAttachedToWindow || battery.width <= 0) return false
+                    if (!battery.isAttachedToWindow) return false
                     carrier.getLocationInWindow(carrierWindowLocation)
-                    battery.getLocationInWindow(batteryWindowLocation)
                     overlayHost.getLocationInWindow(hostWindowLocation)
-                    HomeCarrierAnchorPolicy.resolveExpandedBattery(
-                        hostWidthPx = hostWidth,
-                        hostHeightPx = hostHeight,
-                        carrierWidthPx = baseCarrierWidth,
-                        carrierLeftPx = carrierWindowLocation[0] - hostWindowLocation[0],
-                        nativeBatteryWidthPx = battery.width,
-                        nativeBatteryRightPx =
-                            batteryWindowLocation[0] - hostWindowLocation[0] + battery.width,
-                    )
+                    val carrierLeft = carrierWindowLocation[0] - hostWindowLocation[0]
+                    if (battery.width <= 0) {
+                        // An intentionally hidden native battery need not retire Home's combined visual.
+                        if (SysUiPresentationOwner.homeBatteryNativeHidden() != true) return false
+                        HomeCarrierAnchorPolicy.resolve(
+                            hostWidthPx = hostWidth,
+                            hostHeightPx = hostHeight,
+                            carrierWidthPx = baseCarrierWidth,
+                            carrierLeftPx = carrierLeft,
+                        )
+                    } else {
+                        battery.getLocationInWindow(batteryWindowLocation)
+                        HomeCarrierAnchorPolicy.resolveExpandedBattery(
+                            hostWidthPx = hostWidth,
+                            hostHeightPx = hostHeight,
+                            carrierWidthPx = baseCarrierWidth,
+                            carrierLeftPx = carrierLeft,
+                            nativeBatteryWidthPx = battery.width,
+                            nativeBatteryRightPx =
+                                batteryWindowLocation[0] - hostWindowLocation[0] + battery.width,
+                        )
+                    }
                 } ?: return false
             out.set(resolved.left, 0, resolved.right, hostHeight)
             return out.width() > 0 && out.height() > 0
