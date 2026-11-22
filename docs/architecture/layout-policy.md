@@ -82,7 +82,10 @@ transition owners.
 ### Home carrier width
 
 Home resolves the live `battery_icon_container` under the bound
-`MiuiBatteryMeterView` and uses its stable body width as carrier authority.
+`MiuiBatteryMeterView` for stable body **width**. The independent
+`system_icon_area` host is the Home overlay's position and native island
+motion owner. A charging Battery child can move and fade independently, so
+its translated window edge is **not** Home slot position authority.
 
 The full Battery root width is not a safe replacement-width authority because
 charging presentation can make the root wider than the stable body.

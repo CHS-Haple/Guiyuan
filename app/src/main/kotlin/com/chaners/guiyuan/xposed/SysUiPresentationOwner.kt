@@ -618,7 +618,8 @@ internal object SysUiPresentationOwner {
         }
         nativeLayoutTarget.requestLayout()
         eventSink?.invoke(
-            "homePresentation active carrier=MiuiStatusBatteryContainer.overlay " +
+            "homePresentation active nativeCarrier=MiuiStatusBatteryContainer " +
+                "renderHost=MiuiNotificationStatusContainer.overlay " +
                 LOG_REPRESENTED_SLOTS + representedSlots.joinToString(",") +
                 LOG_MASKED_VIEWS + masked +
                 " slotExclusion=scoped-native-measure-layout " +

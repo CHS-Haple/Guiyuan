@@ -684,7 +684,7 @@ internal object HomeRenderSession {
                             " carrierLeft=" + anchorRect.left +
                             " carrierRight=" + anchorRect.right +
                             " carrierWidth=" + anchorRect.width() +
-                            " hostWidth=" + (batteryContainer.get()?.width ?: -1)
+                            " hostWidth=" + (host.get()?.width ?: -1)
                     }
                 }
             }
@@ -695,9 +695,9 @@ internal object HomeRenderSession {
                 layoutLogged = true
                 emitEvent {
                     "homeRenderProbe attached " +
-                        "slot=homeSystemIconsOverflow anchor=carrierEnd " +
-                        "carrier=MiuiStatusBatteryContainer.child " +
-                        "carrierAuthority=battery_icon_container " +
+                        "slot=homeSystemIconsOverlay anchor=system_icon_area.end " +
+                        "carrier=MiuiNotificationStatusContainer.overlay " +
+                        "widthAuthority=battery_icon_container " +
                         "motion=system-ui-inherited " +
                         "bounds=" + anchorRect.left + "," + anchorRect.top + "-" +
                         anchorRect.right + "," + anchorRect.bottom +
