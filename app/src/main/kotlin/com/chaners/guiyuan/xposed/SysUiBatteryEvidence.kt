@@ -57,10 +57,10 @@ internal object SysUiBatteryEvidence {
     }
 }
 
-internal fun Class<*>.requiredField(name: String): Field =
+internal fun Class<*>.batteryRequiredField(name: String): Field =
     getDeclaredField(name).apply { isAccessible = true }
 
-internal fun Class<*>.optionalField(vararg names: String): Field? =
+internal fun Class<*>.batteryOptionalField(vararg names: String): Field? =
     names.firstNotNullOfOrNull { name ->
         optionalNativeRead {
             getDeclaredField(name).apply { isAccessible = true }

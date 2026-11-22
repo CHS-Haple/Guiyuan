@@ -82,24 +82,24 @@ internal object SysUiBatterySource {
             Class.forName(BATTERY_ICON_VIEW_CLASS_NAME, false, classLoader)
         val meterClass =
             Class.forName(BATTERY_METER_VIEW_CLASS_NAME, false, classLoader)
-        val levelField = iconClass.requiredField("mLevel")
-        val chargingField = iconClass.requiredField("mCharging")
-        val meterIconField = meterClass.requiredField("mBatteryIconView")
+        val levelField = iconClass.batteryRequiredField("mLevel")
+        val chargingField = iconClass.batteryRequiredField("mCharging")
+        val meterIconField = meterClass.batteryRequiredField("mBatteryIconView")
         val progressStatusMethod =
             iconClass.getDeclaredMethod("getProgressStatus")
                 .apply { isAccessible = true }
-        val chargingColorField = iconClass.requiredField("mBatteryChargingColor")
-        val powerSaveColorField = iconClass.requiredField("mBatteryPowerSaveColor")
+        val chargingColorField = iconClass.batteryRequiredField("mBatteryChargingColor")
+        val powerSaveColorField = iconClass.batteryRequiredField("mBatteryPowerSaveColor")
         val superPowerSaveColorField =
-            iconClass.optionalField(
+            iconClass.batteryOptionalField(
                 "mBatterySuperPowerSaveColor",
                 "mBatterySuperSaveColor",
             )
         val performanceColorField =
-            iconClass.requiredField("mBatteryPerformanceModeColor")
-        val lowColorField = iconClass.requiredField("mBatteryLowColor")
+            iconClass.batteryRequiredField("mBatteryPerformanceModeColor")
+        val lowColorField = iconClass.batteryRequiredField("mBatteryLowColor")
         val miuiOptimizationField =
-            iconClass.requiredField("mMiuiOptimizationEnabled")
+            iconClass.batteryRequiredField("mMiuiOptimizationEnabled")
         val chargingIconMethod =
             meterClass.getDeclaredMethod("getHollowChargingIconId")
                 .apply { isAccessible = true }
