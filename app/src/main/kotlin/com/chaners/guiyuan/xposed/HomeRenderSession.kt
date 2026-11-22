@@ -47,6 +47,7 @@ internal object HomeRenderSession {
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
         onPresentationReadinessChanged: ((Boolean, String) -> Unit)? = null,
+        onHomeFrameDrawn: (() -> Unit)? = null,
     ): String? {
         if (retirement.pending != null) return "home-render-release-incomplete"
         val hostView = host as? ViewGroup
@@ -92,6 +93,7 @@ internal object HomeRenderSession {
             initialFeatureEnabled =
                 FeaturePrefsOwner.current().enabled,
             onPresentationReadinessChanged = onPresentationReadinessChanged,
+            onHomeFrameDrawn = onHomeFrameDrawn,
         )
         current = session
         session.start()
@@ -269,6 +271,7 @@ internal object HomeRenderSession {
         private val allowLiveTintSeed: Boolean,
         initialFeatureEnabled: Boolean,
         private val onPresentationReadinessChanged: ((Boolean, String) -> Unit)?,
+        private val onHomeFrameDrawn: (() -> Unit)?,
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
         private val batteryContainer = WeakReference(batteryContainer)
@@ -281,7 +284,23 @@ internal object HomeRenderSession {
                 context = host.context,
                 // Passive draw witness: the Overlay child may report isShown=false
                 // even when the native host actually dispatches its overlay.
-                onDrawn = { lastCompletedDrawElapsedRealtimeMs = SystemClock.elapsedRealtime() },
+                onDrawn = {
+                    lastCompletedDrawElapsedRealtimeMs = SystemClock.elapsedRealtime()
+                    if (
+                        !homeFrameDrawnAfterPanel &&
+                        HomeRenderSession.current === this &&
+                        featureEnabled &&
+                        controlCenterAllowsHome &&
+                        !nativeHandoffActive &&
+                        modelReady &&
+                        tintReady &&
+                        layoutReady &&
+                        host.get()?.isShown == true
+                    ) {
+                        homeFrameDrawnAfterPanel = true
+                        onHomeFrameDrawn?.invoke()
+                    }
+                },
                 onStateRendered = { latencyMs, committedOnMainThread, sample ->
                     if (sample != null && onLatencySample != null) {
                         SysUiPresentationRuntime.emitPassiveDiagnostic {
@@ -311,6 +330,7 @@ internal object HomeRenderSession {
         private var tintReady = false
         private var layoutReady = false
         private var lastPresentationReady = false
+        private var homeFrameDrawnAfterPanel = false
         private val anchorRect = Rect()
         private val observedAnchorRect = Rect()
         private val carrierWindowLocation = IntArray(2)
@@ -462,6 +482,7 @@ internal object HomeRenderSession {
                 return
             }
             controlCenterAllowsHome = homeEligible
+            if (!homeEligible) homeFrameDrawnAfterPanel = false
             if (SandboxHost.active()) update(StatusStateStore.snapshot())
             if (homeEligible) layoutProbe("control-center-return")
             val visible = applyResolvedVisibility()
@@ -485,6 +506,7 @@ internal object HomeRenderSession {
                 tintReady &&
                 layoutReady &&
                 probeView.visibility == View.VISIBLE &&
+                homeFrameDrawnAfterPanel &&
                 host.get()?.isAttachedToWindow == true &&
                 host.get()?.isShown == true
 

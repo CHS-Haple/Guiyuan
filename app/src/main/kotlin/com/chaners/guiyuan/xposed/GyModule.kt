@@ -4343,6 +4343,9 @@ class GyModule : XposedModule() {
                         rendererReadyOnAttach = ready
                         onHomeReadyChanged(host, ready, source, readinessSource)
                     },
+                    onHomeFrameDrawn = {
+                        reconcileCcHomeAuthority("home-frame-drawn")
+                    },
                 )
             } catch (error: Throwable) {
                 // Roll back before propagating the attachment error, without
