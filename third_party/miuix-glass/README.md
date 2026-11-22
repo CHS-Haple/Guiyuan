@@ -157,3 +157,38 @@ and the add-card click feedback. OS3 UI style retains its original MIUIX
 `Card` colors and interactions. The 20 dp GlassCard corner and translucent
 fill are upstream defaults, not local custom material settings; this scoped
 UI change still requires light/dark and editor-sheet device acceptance.
+
+## B1920 source-pinned private API and resource review
+
+The OS4 custom-scheme **More** action inside the outer GlassCard now uses
+published MIUIX `basic.IconButton` instead of a floating glass button.
+The native 40 dp transparent circle retains app-owned popup anchors and
+their Back lifecycle without a second rim/shadow. The card hierarchy,
+blue Apply action and OS3 UI-style fallback are unchanged.
+
+The upstream `c83aacd8..28d45984` change set was reviewed against the
+22 live app-local Glass Kotlin adapters. The updated indication, menu
+recording, popup Modifier Nodes, drawing caches, top-bar fade, and per-item
+pressed-state changes are already included. Two additional applicable
+private-source changes were ported: the selected navigation indicator's
+first-layout bounds before coroutine settlement and the glass shadow's
+ShaderBrushCache for deferred alpha. Upstream's public stroke-provider
+overloads remain in the library; the app-specific action-bar underlay does
+not acquire another duplicate without a real caller.
+
+The separate experimental MIUIX effect PR #321 is still open at
+`73bdd49b4ea965dc7822e276b0a6ce29a5564f54`; all seven
+`app/src/main/kotlin/top/yukonga/miuix/kmp/effect/bg/` files were compared
+against that exact PR source. Four match byte-for-byte. The Background and
+Painter differences are required imports from published MIUIX Material,
+and the Modifier difference is Guiyuan's documented color animation
+restart/cancellation fix. The library remains unpublished and must not
+be replaced with a nonexistent Maven dependency. See
+`third_party/miuix-effect/README.md`.
+
+OS4 regular glass icons already resolve through upstream
+`miuix-glass-icons-android` via `MiuixIcons.Glass.Regular`, rather than
+locally maintained vector paths. No alternate vendor resource pack was
+found in the live app source set. Non-public rail, popup and native-title
+behavior remains adapted because it has no behavior-equivalent published
+entrypoint.

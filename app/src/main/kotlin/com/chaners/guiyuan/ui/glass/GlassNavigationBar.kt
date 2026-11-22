@@ -427,12 +427,23 @@ fun GlassNavigationBar(
                     .layout { measurable, constraints ->
                         // Both edges are clamped on every frame, not just at the target. Keep the
                         // spring alive so the other edge still rebounds.
-                        val bounds = navigationIndicatorBounds(
-                            left.value,
-                            right.value,
-                            constraints.maxWidth.toFloat(),
-                            contentInset - overhang,
-                        )
+                        // Match upstream's first-frame selected slot before springs settle.
+                        val bounds = if (right.value <= left.value && constraints.maxWidth > contentInset * 2f) {
+                            val slotWidth = ((constraints.maxWidth - contentInset * 2f) / items.size).coerceAtLeast(0f)
+                            navigationIndicatorBounds(
+                                contentInset - overhang + index * slotWidth,
+                                contentInset + overhang + (index + 1) * slotWidth,
+                                constraints.maxWidth.toFloat(),
+                                contentInset - overhang,
+                            )
+                        } else {
+                            navigationIndicatorBounds(
+                                left.value,
+                                right.value,
+                                constraints.maxWidth.toFloat(),
+                                contentInset - overhang,
+                            )
+                        }
                         val start = bounds.x.fastRoundToInt()
                         val width = (bounds.y.fastRoundToInt() - start).coerceAtLeast(0)
                         val placeable = measurable.measure(

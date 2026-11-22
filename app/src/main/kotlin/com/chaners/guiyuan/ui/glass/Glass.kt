@@ -6,7 +6,7 @@ package com.chaners.guiyuan.ui.glass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
@@ -214,7 +214,11 @@ internal fun Modifier.glassShadow(
 ): Modifier = if (shadow == null) {
     this
 } else if (isRuntimeShaderSupported()) {
-    this.drawBehind { drawGlassShadow(shape, shadow, alpha()) }
+    // Follow upstream's per-draw-node ShaderBrushCache while retaining live alpha reads.
+    this.drawWithCache {
+        val brushCache = ShaderBrushCache()
+        onDrawBehind { drawGlassShadow(shape, shadow, alpha(), brushCache = brushCache) }
+    }
 } else {
     fallbackGlassShadow(shape, shadow, alpha)
 }
