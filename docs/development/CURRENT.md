@@ -100,34 +100,33 @@ execution ownership is in [architecture](../architecture/README.md).
   temporary transition owner on native root-size change, recapturing the
   current source, native final targets and carrier offsets. A regression
   test covers both orientation directions with identical View identity.
-  B1902 device follow-up narrowed a remaining Home visual gap to closing
-  Control Center after landscape→portrait rotation. Around 19:50:37 Home
-  native peers were visible while the combined icon remained absent for
-  a fraction of a second; portrait→landscape was unaffected. No Fail native
-  appeared. The B1903 device candidate retained the same gap. Its exported
-  20:21:39 diagnostic has `runtimeLevel=not-observed`,
-  `structuredEntries=5`, and only a post-event LSPosed log tail including
-  module OFF–ON. The actual blank frames and terminal witness were not
-  captured, so their exact native fractions and header visibility are
-  unverified.
-  A subsequent full source trace corrected the prior **mistaken clip
-  assumption**: `CcTransitionOwner.Session.start()` masks
-  `CcRenderSession.transitionSourceSnapshot().view`, which is the
-  **QS_FAKE render View**, not `HomeRenderSession.probeView`. The Home icon
-  instead remains GONE whenever `GyModule.reconcileCcHomeAuthority()`
-  still yields to CC based on native visible, positive fraction and CC
-  projection readiness, despite the native Home peer row already drawing.
-  B1903's native-header-completed check runs only on the CC root pre-draw
-  and cannot observe a terminal exit after that root stops drawing.
-  B1904 reuses Home's existing pre-draw to read the same scoped native
-  closing and fake/final-header visibility facts. It authenticates the
-  live Home RenderView identity (distinct from QS_FAKE), retires only the
-  CC transition session and returns Home eligibility via the existing
-  single coordinator. Both CC and Home observers use the same native
-  terminal predicate; the event identifies the witnessing root. No new
-  hook, timer, or geometry/alpha writer is added. The proposed handoff
-  is source-supported but still awaits the first B1904 real-device
-  native-endpoint witness and visual acceptance.
+  B1902/B1903 device clips and the subsequent 20:46 full-swipe video show
+  the combined Home icon briefly replaced by a native mobile/5GA/battery
+  row, then restored without user intervention; the latter demonstrates two
+  repetitions in a 5.5-second recording. The B1903 diagnostic exported at
+  20:21 has `runtimeLevel=not-observed` and no transition-time witness, so
+  there is no proof of the actual native fraction or owner state during the
+  gap. The previous B1903/B1904 terminal-native-header visual predicate was
+  neither supported by such device data nor effective as a verified solution.
+  It is removed from the candidate source rather than retained as a fallback.
+  Corrected source ownership: CcTransitionOwner masks QS_FAKE's transition
+  source RenderView, **not** Home's RenderView; Home visibility belongs to
+  HomeRenderSession and GyModule's eligibility coordinator.
+
+  A separate, deterministic Home lifecycle flaw was found: native child
+  onLayout can run before the whole host's layout is settled. If its carrier
+  position is then temporarily unresolvable, HomeRenderSession used to set
+  `layoutReady=false` immediately, which led GyModule.onHomeReadyChanged(false)
+  to deactivate native masks and reveal original small mobile type/battery
+  icons. The existing Home pre-draw recheck was gated by
+  `!nativeHandoffActive`; once the invalid layout had triggered native
+  handoff, this blocked same-frame re-acquisition until another layout
+  callback. B1905 separates provisional native-layout events from the
+  complete pre-draw boundary and permits recovery even during native
+  handoff. Detached hosts and a genuinely invalid settled native frame still
+  release Home, without width/alpha changes, polling, timers or new hooks.
+  The revised policy and a bounded readiness-driven native-return diagnostic
+  are source-tested; B1905 on-device confirmation remains required.
 
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
