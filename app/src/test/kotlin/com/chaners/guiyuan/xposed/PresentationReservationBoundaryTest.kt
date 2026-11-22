@@ -100,6 +100,32 @@ class PresentationReservationBoundaryTest {
     }
 
     @Test
+    fun measuredFakeCapacityBoundsOnlyOptionalTransitionExpansion() {
+        // B1912 observed 11 small excesses after network switching.
+        assertEquals(62, EndReservationPolicy.boundedFakeNativeTransitionPadding(
+            rowWidthPx = 448, contentWidthPx = 386,
+            requestedPaddingEndPx = 69, minimumPaddingEndPx = 0,
+        ))
+        assertEquals(155, EndReservationPolicy.boundedFakeNativeTransitionPadding(
+            rowWidthPx = 448, contentWidthPx = 293,
+            requestedPaddingEndPx = 156, minimumPaddingEndPx = 0,
+        ))
+        assertEquals(62, EndReservationPolicy.boundedFakeNativeTransitionPadding(
+            rowWidthPx = 448, contentWidthPx = 386,
+            requestedPaddingEndPx = 62, minimumPaddingEndPx = 0,
+        ))
+        // The compact slot cannot be silently shrunk.
+        assertEquals(null, EndReservationPolicy.boundedFakeNativeTransitionPadding(
+            rowWidthPx = 448, contentWidthPx = 386,
+            requestedPaddingEndPx = 150, minimumPaddingEndPx = 105,
+        ))
+        assertEquals(null, EndReservationPolicy.boundedFakeNativeTransitionPadding(
+            rowWidthPx = 0, contentWidthPx = 386,
+            requestedPaddingEndPx = 69, minimumPaddingEndPx = 0,
+        ))
+    }
+
+    @Test
     fun lateEligibleControlCenterCanAdoptAlreadyCompletedNativeLayout() {
         assertTrue(
             VisualMaskPolicy.shouldAdoptExistingNativeLayout(

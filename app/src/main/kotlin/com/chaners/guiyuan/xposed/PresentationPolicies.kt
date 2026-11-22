@@ -110,6 +110,22 @@ internal object EndReservationPolicy {
         }
     }
 
+    // Limit optional transition padding to the available measured native row.
+    // A non-fitting compact baseline still requires native fallback.
+    fun boundedFakeNativeTransitionPadding(
+        rowWidthPx: Int,
+        contentWidthPx: Int,
+        requestedPaddingEndPx: Int,
+        minimumPaddingEndPx: Int,
+    ): Int? {
+        if (rowWidthPx <= 0 || contentWidthPx < 0 ||
+            minimumPaddingEndPx < 0 || requestedPaddingEndPx < minimumPaddingEndPx
+        ) return null
+        val available = rowWidthPx.toLong() - contentWidthPx.toLong()
+        if (available < minimumPaddingEndPx) return null
+        return minOf(requestedPaddingEndPx.toLong(), available).toInt()
+    }
+
     // Native fake host settlement and its status-icon row measure are
     // independent: a cached measureViews list is not authoritative while
     // the peer row itself still requests a layout traversal.

@@ -129,6 +129,15 @@ execution ownership is in [architecture](../architecture/README.md).
   are source-tested; B1906 on-device confirmation remains required.
 
 
+  B1912 on-device Wi-Fi/cellular switching exposed 11 QS_FAKE peer capacity
+  failures: a measured native row of 448 px with content of 293/386 px,
+  while optional transition padding exceeded available space by 1-7 px.
+  The work-branch candidate bounds optional native transition padding
+  to measured peer capacity; unsafe compact rows, missing native
+  evidence and competing native writers still trigger local Fail native.
+  This is source validation only. The separate landscape-to-portrait Home
+  visual disappearance still needs device acceptance.
+
   B1903 screenshot at 00:12 while charging shows the combined ring/readout
   intruding toward adjacent mute/network icons. The accompanying
   2026-11-23 00:11 log proves a separate concrete displacement input:
