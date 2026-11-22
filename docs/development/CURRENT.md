@@ -115,6 +115,24 @@ execution ownership is in [architecture](../architecture/README.md).
   terminal latch survives duplicate visible=true notifications. No timer,
   new Hook, native geometry/alpha write or broad Fail native is introduced.
   The exact event ordering remains subject to B1903 on-device verification.
+  B1903 on-device follow-up confirmed that this visual gap persists.
+  The exported B1903 report at 20:21:39 has
+  `runtimeLevel=not-observed`, `structuredEntries=5`, and only the
+  20:21:13–20:21:35 latest LSPosed log tail, including a module OFF–ON
+  cycle. It therefore does not record the actual visual-gap interval or
+  establish whether B1903's terminal probe fired.
+  A source-lifecycle review found that B1903 observed terminal native
+  fake/final header visibility solely from the Control Center root's
+  `OnPreDraw`. Once that root stops drawing, the observer cannot release
+  a still-clipped Home render source, even when the separate Home root
+  is already drawing its native peer icons. B1904 additionally performs
+  the exact same scoped, read-only terminal check from the Home session's
+  *existing* pre-draw observer. It requires the same original Home
+  render-view identity, native closing direction and BOTH native CC
+  endpoints absent, and reports the witness origin on the single Home
+  ownership handoff. There are no new hooks, timers or native writes;
+  the actual B1904 runtime branch and visual effect remain device
+  acceptance conditions.
 
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
