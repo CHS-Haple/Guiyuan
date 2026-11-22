@@ -42,6 +42,16 @@ internal object CcHomeHandoffPolicy {
             nativeExpansion.isFinite() &&
             nativeExpansion > 0f &&
             projectionReady
+
+    // Actual native endpoint visibility can finish before the delegate's
+    // progress reaches zero after a viewport rotation. Only a confirmed
+    // closing direction and BOTH absent native headers may end the source
+    // mask ahead of that delayed progress callback.
+    fun nativeCloseVisualCompleted(
+        closing: Boolean,
+        fakeHeaderVisible: Boolean,
+        finalHeaderVisible: Boolean,
+    ): Boolean = closing && !fakeHeaderVisible && !finalHeaderVisible
 }
 
 internal object VisualMaskPolicy {
