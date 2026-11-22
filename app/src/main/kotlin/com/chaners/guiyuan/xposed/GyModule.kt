@@ -1349,6 +1349,7 @@ class GyModule : XposedModule() {
         }
         controlCenterSourceScene = sourceScene
         SysUiPresentationOwner.updateCcSourceScene(sourceScene)
+        CcRenderSession.setSourceScene(sourceScene)
         acquireKeyguardCcLease(
             source = "source-scene:" + authority,
         )
@@ -1705,6 +1706,7 @@ class GyModule : XposedModule() {
                 "homeCarrierShown" to SysUiPresentationOwner.homeCarrierVisible(),
                 "ccFakeVisual" to CcRenderSession.visualState(),
                 "ccTransitionVisual" to CcTransitionOwner.visualState(),
+                "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
             )
         }
     }

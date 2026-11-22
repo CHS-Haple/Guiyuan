@@ -306,4 +306,24 @@ class CcTransitionGlyphTintTest {
             ),
         )
     }
+
+    @Test
+    fun homeSourcedFakeProjectionUsesRealHomeTintAndPreservesAlpha() {
+        val home = TintState(appliedTint = 0xbf000000.toInt())
+        val fake = TintState(appliedTint = 0xff000000.toInt())
+
+        assertEquals(home, CcTintPolicy.resolveSourceTint(SourceScene.HOME, home, fake))
+        assertEquals(fake, CcTintPolicy.resolveSourceTint(SourceScene.KEYGUARD, home, fake))
+        assertEquals(fake, CcTintPolicy.resolveSourceTint(SourceScene.UNKNOWN, home, fake))
+        assertEquals(
+            fake,
+            CcTintPolicy.resolveSourceTint(
+                SourceScene.HOME,
+                TintState(appliedTint = 0),
+                fake,
+            ),
+        )
+        assertEquals(fake, CcTintPolicy.resolveSourceTint(SourceScene.HOME, null, fake))
+        assertEquals(null, CcTintPolicy.resolveSourceTint(SourceScene.HOME, null, null))
+    }
 }

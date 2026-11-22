@@ -30,6 +30,7 @@ internal object CcRenderSession {
     private var current: Session? = null
     private var pendingPrearm: PendingPrearm? = null
     private var sceneEligible = false
+    private var sourceScene = SourceScene.UNKNOWN
 
     internal data class AttachFailure(
         val reason: String,
@@ -144,6 +145,7 @@ internal object CcRenderSession {
                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 onProjectionReadinessChanged = onProjectionReadinessChanged,
                 initialSceneEligible = sceneEligible,
+                initialSourceScene = sourceScene,
             )
         current = session
         return try {
@@ -187,6 +189,13 @@ internal object CcRenderSession {
         } else {
             session?.prepareNativePresentation(reused = true)
         }
+    }
+
+    @Synchronized
+    fun setSourceScene(next: SourceScene) {
+        if (sourceScene == next) return
+        sourceScene = next
+        current?.setSourceScene(next)
     }
 
     @Synchronized
@@ -561,6 +570,7 @@ internal object CcRenderSession {
         private val isDetailedDiagnosticsEnabled: () -> Boolean,
         private val onProjectionReadinessChanged: (Boolean) -> Unit,
         initialSceneEligible: Boolean,
+        initialSourceScene: SourceScene,
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
         private val statusBarArea = WeakReference(statusBarArea)
@@ -575,6 +585,7 @@ internal object CcRenderSession {
 
         private var currentModel: RenderModel? = null
         private var currentTint: TintState? = null
+        private var sourceScene = initialSourceScene
         private var visual = VisualPrefsOwner.current()
         private var transitionStateVersion = 0L
         private var cachedTransitionSourceSnapshot: TransitionSourceSnapshot? = null
@@ -704,7 +715,13 @@ internal object CcRenderSession {
                 ":childShown=" + renderView.isShown +
                 ":childAlpha=" + renderView.alpha +
                 ":hostShown=" + (host.get()?.isShown ?: "unavailable") +
-                ":hostAlpha=" + (host.get()?.alpha ?: "unavailable")
+                ":hostAlpha=" + (host.get()?.alpha ?: "unavailable") +
+                ":sourceScene=" + sourceScene +
+                ":effectiveTint=" + (currentTint?.appliedTint?.let(::tintHexDigits) ?: "none") +
+                ":homeTint=" + (HomeRenderSession.currentTintState()?.appliedTint?.let(::tintHexDigits) ?: "none") +
+                ":nativeFakeTint=" + (battery.get()
+                    ?.let(SysUiTintSource::currentState)
+                    ?.appliedTint?.let(::tintHexDigits) ?: "none")
 
         fun setRequestedVisible(visible: Boolean): Boolean {
             if (retired) return false
@@ -860,8 +877,15 @@ internal object CcRenderSession {
 
         fun updateTint(update: SysUiTintSource.TintUpdate) {
             val batteryView = battery.get() ?: return
-            if (update.sourceView !== batteryView) return
-            applyTint(update.state, "battery")
+            // A Home-origin fake must also follow changes on the Home source.
+            if (update.sourceView !== batteryView && sourceScene != SourceScene.HOME) return
+            refreshTint()
+        }
+
+        fun setSourceScene(next: SourceScene) {
+            if (sourceScene == next) return
+            sourceScene = next
+            refreshTint()
         }
 
         fun setSceneEligible(eligible: Boolean) {
@@ -890,8 +914,23 @@ internal object CcRenderSession {
 
         private fun refreshTint() {
             val batteryView = battery.get() ?: return
-            val state = SysUiTintSource.currentState(batteryView) ?: return
-            applyTint(state, "surface")
+            val fakeTint = SysUiTintSource.currentState(batteryView)
+            val homeTint =
+                if (sourceScene == SourceScene.HOME) {
+                    HomeRenderSession.currentTintState()
+                } else {
+                    null
+                }
+            val resolved =
+                CcTintPolicy.resolveSourceTint(
+                    sourceScene = sourceScene,
+                    homeTint = homeTint,
+                    fakeTint = fakeTint,
+                ) ?: return
+            applyTint(
+                resolved,
+                if (resolved === homeTint) "home-source" else "fake-native",
+            )
         }
 
         private fun applyTint(

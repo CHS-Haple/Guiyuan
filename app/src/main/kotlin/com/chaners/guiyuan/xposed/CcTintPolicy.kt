@@ -4,6 +4,20 @@ import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import kotlin.math.roundToInt
 
 internal object CcTintPolicy {
+    // QS_FAKE paints the origin scene. A Home-origin source must inherit the
+    // actual Home battery DarkReceiver's applied tint, not the separately
+    // tinted QS_FAKE native replica.
+    fun resolveSourceTint(
+        sourceScene: SourceScene,
+        homeTint: TintState?,
+        fakeTint: TintState?,
+    ): TintState? =
+        if (sourceScene == SourceScene.HOME && homeTint?.isVisible == true) {
+            homeTint
+        } else {
+            fakeTint?.takeIf { it.isVisible }
+        }
+
     fun selectNativeTransitionTint(
         statusIconPeerTint: Int?,
         cachedTint: Int?,
