@@ -6,14 +6,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.NETWORK_TOP_OFFSET_MAX
-import com.chaners.guiyuan.settings.NETWORK_TOP_OFFSET_MIN
 import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.VisualRepo
-import kotlin.math.roundToInt
-import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 internal fun LazyListScope.featureLayoutSection(
@@ -238,29 +233,13 @@ private fun ColumnScope.featureDotOffsets(
     ).forEach { (style, dotOffsetTitle) ->
         AnimatedPreferenceGroup(visible = activeDotArrangement == style) {
             if (search.matches(dotOffsetTitle)) {
-                SliderPreference(
+                IndicatorVerticalOffsetSlider(
                     value = visual.activeSignalDotOffsetY,
                     onValueChange = visualRepo::setSignalDotOffsetY,
-                    title = stringResource(dotOffsetTitle),
-                    summary = stringResource(R.string.outer_signal_dots_only_summary),
-                    startAction = {
-                        SemanticLeadingIcon(
-                            R.drawable.ic_material_symbol_signal_cellular_alt,
-                            enabled,
-                            R.drawable.ic_material_symbol_height_w500,
-                        )
-                    },
-                    valueText = stringResource(
-                        R.string.battery_top_offset_value,
-                        visual.activeSignalDotOffsetY.roundToInt(),
-                    ),
-                    valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                    steps = 19,
-                    showKeyPoints = true,
-                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                    keyPoints = listOf(0f),
-                    magnetThreshold = 0.035f,
+                    titleRes = dotOffsetTitle,
+                    iconRes = R.drawable.ic_material_symbol_signal_cellular_alt,
                     enabled = enabled,
+                    summary = stringResource(R.string.outer_signal_dots_only_summary),
                 )
             }
         }
