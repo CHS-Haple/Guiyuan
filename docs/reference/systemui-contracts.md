@@ -117,13 +117,13 @@ arbitrary third-party modules. Preserve those limits in future code review and
 
 ## Compiler-generated collector discovery
 
-For the current verified mobile pipeline, directly resolve the known native
-binder and collector class names first and check their reflected contract. Only when a
-generated mobile collector is absent or structurally incompatible may DexKit
-search the host DEX. Require a unique match within
-the mobile binder family, the captured ImageView field and the exact coroutine
-method signature; an absent or ambiguous result keeps the existing mobile-branch
-fail-native behavior. Do not use DexKit for stable host, layout or battery hooks.
+For the current verified mobile pipeline, directly resolve known native
+binder and collector names, then verify their reflected contracts. DexKit may
+search the host DEX only when a generated collector is absent or structurally
+incompatible. Require a unique match in the mobile binder family, the captured
+ImageView field and the exact coroutine method signature. An absent or ambiguous
+match keeps the mobile-branch fail-native behavior. Stable host, layout and
+battery hooks remain on direct reflection.
 
 This search is an adaptation candidate, not proof of native signal semantics or
 HyperOS 5 support. Review changed collector discriminators, writer ownership and
