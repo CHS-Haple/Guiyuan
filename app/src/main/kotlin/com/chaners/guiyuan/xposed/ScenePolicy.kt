@@ -99,75 +99,16 @@ internal object ScenePolicy {
 
     fun resolveKeyguardAodProjection(input: KeyguardAodProjectionInputs): KeyguardAodProjection {
         if (!input.feature.featureEnabled) return KeyguardAodProjection.NATIVE
-        homeAodOverride(input)?.let { return it }
-        nativeAodBoundaryOverride(input)?.let { return it }
+        SceneAodOverridePolicy.homeAodOverride(input)?.let { return it }
+        SceneAodOverridePolicy.nativeAodBoundaryOverride(input)?.let { return it }
         return ongoingKeyguardAodProjection(input)
-    }
-
-    /** Home ownership and prearm checks always precede native AOD handoff evidence. */
-    private fun homeAodOverride(input: KeyguardAodProjectionInputs): KeyguardAodProjection? {
-        val feature = input.feature
-        val home = input.home
-        if (home.homeNativeAodFallbackActive && feature.keyguardEnabled && !feature.aodEnabled) {
-            return KeyguardAodProjection.NATIVE
-        }
-        if (home.homeAodTransitionOrigin &&
-            input.signal.nativeToLockScreenTarget == false &&
-            input.scene.lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN
-        ) {
-            return if (feature.aodEnabled) KeyguardAodProjection.AOD else KeyguardAodProjection.NATIVE
-        }
-        if (home.homeAodTargetPrearm && feature.aodEnabled &&
-            input.scene.lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN
-        ) {
-            // Native target latch may span transient KEYGUARD ancestry until AOD catches up.
-            return KeyguardAodProjection.AOD
-        }
-        return null
-    }
-
-    /** Preserve boundary ordering before steady-state and animation decisions. */
-    private fun nativeAodBoundaryOverride(input: KeyguardAodProjectionInputs): KeyguardAodProjection? {
-        val feature = input.feature
-        val scene = input.scene
-        val boundary = input.boundary
-        val nativeTarget = input.signal.nativeToLockScreenTarget
-        if (boundary.fullAodVisualBoundary && boundary.fullAodTargetSourceReady &&
-            nativeTarget == true && scene.steadySourceScene == SourceScene.KEYGUARD &&
-            scene.lastStableFamilyScene == StableKeyguardAodScene.AOD &&
-            feature.keyguardEnabled && !feature.aodEnabled
-        ) {
-            // Visual-only lease; native ignored-slot and reservation ownership remain deferred.
-            return KeyguardAodProjection.KEYGUARD
-        }
-        if (feature.aodEnabled && !feature.keyguardEnabled &&
-            boundary.outgoingAodOwned && boundary.fullAodTargetSourceReady &&
-            nativeTarget == true && (feature.toAod || feature.isAodAnimate)
-        ) {
-            // A canceled callback can precede the new Keyguard battery mode.
-            return KeyguardAodProjection.AOD
-        }
-        return null
     }
 
     private fun ongoingKeyguardAodProjection(input: KeyguardAodProjectionInputs): KeyguardAodProjection {
         val feature = input.feature
         val scene = input.scene
         if (feature.isAodAnimate) {
-            return resolveAnimatingKeyguardAodProjection(
-                AnimatingProjectionInputs(
-                    keyguardEnabled = feature.keyguardEnabled,
-                    aodEnabled = feature.aodEnabled,
-                    steadySourceScene = scene.steadySourceScene,
-                    lastStableFamilyScene = scene.lastStableFamilyScene,
-                    homePresentationOwned = scene.homePresentationOwned,
-                    keyguardStatusIconsAlpha = input.signal.keyguardStatusIconsAlpha,
-                    nativeToLockScreenTarget = input.signal.nativeToLockScreenTarget,
-                    fullAodTargetSourceReady = input.boundary.fullAodTargetSourceReady,
-                    fullAodTargetPending = input.boundary.fullAodTargetPending,
-                    fullAodVisualBoundary = input.boundary.fullAodVisualBoundary,
-                ),
-            )
+            return resolveAnimatingKeyguardAodProjection(input)
         }
         if (SysUiKeyguardAodSource.isStableAod(feature.toAod, feature.isAodAnimate)) {
             return if (feature.aodEnabled) KeyguardAodProjection.AOD else KeyguardAodProjection.NATIVE
@@ -289,32 +230,19 @@ internal object ScenePolicy {
             keyguardClaimed &&
             animatedBatteryMode
 
-    internal data class AnimatingProjectionInputs(
-        val keyguardEnabled: Boolean,
-        val aodEnabled: Boolean,
-        val steadySourceScene: SourceScene,
-        val lastStableFamilyScene: StableKeyguardAodScene,
-        val homePresentationOwned: Boolean,
-        val keyguardStatusIconsAlpha: Float? = null,
-        val nativeToLockScreenTarget: Boolean? = null,
-        val fullAodTargetSourceReady: Boolean = false,
-        val fullAodTargetPending: Boolean = false,
-        val fullAodVisualBoundary: Boolean = false,
-    )
-
     internal fun resolveAnimatingKeyguardAodProjection(
-        input: AnimatingProjectionInputs,
+        input: KeyguardAodProjectionInputs,
     ): KeyguardAodProjection {
-        val keyguardEnabled = input.keyguardEnabled
-        val aodEnabled = input.aodEnabled
-        val steadySourceScene = input.steadySourceScene
-        val lastStableFamilyScene = input.lastStableFamilyScene
-        val homePresentationOwned = input.homePresentationOwned
-        val keyguardStatusIconsAlpha = input.keyguardStatusIconsAlpha
-        val nativeToLockScreenTarget = input.nativeToLockScreenTarget
-        val fullAodTargetSourceReady = input.fullAodTargetSourceReady
-        val fullAodTargetPending = input.fullAodTargetPending
-        val fullAodVisualBoundary = input.fullAodVisualBoundary
+        val keyguardEnabled = input.feature.keyguardEnabled
+        val aodEnabled = input.feature.aodEnabled
+        val steadySourceScene = input.scene.steadySourceScene
+        val lastStableFamilyScene = input.scene.lastStableFamilyScene
+        val homePresentationOwned = input.scene.homePresentationOwned
+        val keyguardStatusIconsAlpha = input.signal.keyguardStatusIconsAlpha
+        val nativeToLockScreenTarget = input.signal.nativeToLockScreenTarget
+        val fullAodTargetSourceReady = input.boundary.fullAodTargetSourceReady
+        val fullAodTargetPending = input.boundary.fullAodTargetPending
+        val fullAodVisualBoundary = input.boundary.fullAodVisualBoundary
         val homeOrigin =
             SceneAodBoundaryPolicy.resolveAnimatingHomeOrigin(
                 steadySourceScene = steadySourceScene,
