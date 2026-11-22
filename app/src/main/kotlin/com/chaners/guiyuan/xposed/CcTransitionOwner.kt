@@ -417,18 +417,20 @@ internal object CcTransitionOwner {
                 view.getGlobalVisibleRect(nativeVisibleRect) &&
                 !nativeVisibleRect.isEmpty
 
-        // The CC transition masks the QS_FAKE render View, not Home.
-        // Authenticate the separately observed Home render View against
-        // its live steady session before returning Home display authority.
-        fun nativeCloseCompletedForHome(source: View): Boolean =
+        private fun nativeCloseVisualCompleted(): Boolean =
             started &&
-                HomeRenderSession.ownsRenderView(source) &&
-                source.isAttachedToWindow &&
                 CcHomeHandoffPolicy.nativeCloseVisualCompleted(
                     closing = nativeCloseObserved,
                     fakeHeaderVisible = nativeHeaderVisible(fakeRootRef.get()),
                     finalHeaderVisible = nativeHeaderVisible(finalRootRef.get()),
                 )
+
+        // Home has a separate render View from the QS_FAKE transition source.
+        // Authenticate its live session before using the Home-root observer.
+        fun nativeCloseCompletedForHome(homeView: View): Boolean =
+            HomeRenderSession.ownsRenderView(homeView) &&
+                homeView.isAttachedToWindow &&
+                nativeCloseVisualCompleted()
 
         private val preDrawListener =
             ViewTreeObserver.OnPreDrawListener {
@@ -450,14 +452,13 @@ internal object CcTransitionOwner {
                     !source.isAttachedToWindow ||
                     !sourceAnchor.isAttachedToWindow
                 ) {
-                    // During a reverse orientation change the native CC roots
-                    // may be detached before the final zero-fraction callback.
-                    // A proven closing gesture with no visible native header
-                    // must return the clipped Home source, not strand it.
+                    // A detached CC header can finish its visible lifetime
+                    // before the final fraction callback. Return Home authority
+                    // when both native headers have left the viewport.
                     if (
-                        source != null &&
+                        source?.isAttachedToWindow == true &&
                         CcTransitionOwner.sourceScene == SourceScene.HOME &&
-                        nativeCloseCompletedForHome(source)
+                        nativeCloseVisualCompleted()
                     ) {
                         CcTransitionOwner.onNativeCloseVisualCompleted(this, "cc-pre-draw-detached")
                     } else {
@@ -468,7 +469,7 @@ internal object CcTransitionOwner {
 
                 if (
                     CcTransitionOwner.sourceScene == SourceScene.HOME &&
-                    nativeCloseCompletedForHome(source)
+                    nativeCloseVisualCompleted()
                 ) {
                     CcTransitionOwner.onNativeCloseVisualCompleted(this, "cc-pre-draw")
                     return@OnPreDrawListener true
