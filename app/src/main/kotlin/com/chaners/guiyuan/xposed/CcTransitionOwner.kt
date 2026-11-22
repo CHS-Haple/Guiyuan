@@ -2242,8 +2242,18 @@ internal object CcTransitionOwner {
                     baseSlotWidthPx = (frozenSource?.width ?: source.width).coerceAtLeast(0),
                     userScale = currentSnapshot.visual.combinedScale,
                 )
+            // Only the native peer width actually granted may reveal latent
+            // glyphs. Battery Island owns a distinct projected end frame.
             val currentReservation =
-                lastReservationWidthPx ?: compactWidth
+                if (transitionReservationEnabled && !nativeBatteryIslandActive) {
+                    minOf(
+                        lastReservationWidthPx ?: compactWidth,
+                        SysUiPresentationOwner.appliedCcTransitionReservationWidthPx()
+                            ?: compactWidth,
+                    ).coerceAtLeast(compactWidth)
+                } else {
+                    lastReservationWidthPx ?: compactWidth
+                }
             val requiredReservation =
                 reservationWidthForEnvelope(witness)
                     ?: return 0f

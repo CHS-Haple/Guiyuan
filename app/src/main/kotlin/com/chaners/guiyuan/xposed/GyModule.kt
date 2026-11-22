@@ -98,6 +98,7 @@ class GyModule : XposedModule() {
     // onExpansionChanged is intercepted BEFORE SystemUI's native body.
     // The zero handoff must commit AFTER native updates its scene visuals.
     private var ccNativeZeroAwaitingCommit = false
+    private var ccFakeHideAwaitingHomeDraw = false
     // Guiyuan presentation readiness is separate from the latest native readiness callback.
     private var keyguardRuntimeReady = false
     private var aodRendererAttached = false
@@ -1224,8 +1225,25 @@ class GyModule : XposedModule() {
             onCcExpansion(0f)
             ccProjectionReadyForHandoff = false
             reconcileCcHomeAuthority("native-panel-hidden")
-            // Keep the QS_FAKE owner prearmed for the native fake-root lifetime.
-            CcRenderSession.setRequestedVisible(false)
+            // Keep only the temporary FAKE visual until the claimed Home
+            // replacement draws; do not create a second scene owner.
+            ccFakeHideAwaitingHomeDraw = CcHomeHandoffPolicy.retainFakeUntilHomeDraw(
+                panelHidden = true,
+                homeClaimed = SysUiPresentationOwner.homeClaimed(),
+                homeFrameReady = HomeRenderSession.canDrawHome(),
+            )
+            if (ccFakeHideAwaitingHomeDraw) {
+                logDiagnostic(
+                    level = Log.INFO,
+                    event = "presentation.fakeHold",
+                    component = "controlCenterProjection",
+                    state = "await-home-draw",
+                    "homeVisibility" to HomeRenderSession.visibilityWitness(),
+                    "ccFakeVisual" to CcRenderSession.visualState(),
+                )
+            } else {
+                CcRenderSession.setRequestedVisible(false)
+            }
             if (deepDiagnosticsEnabled) {
                 val keyguard =
                     (SysUiKeyguardHostResolver.current()
@@ -1262,6 +1280,7 @@ class GyModule : XposedModule() {
         }
 
         controlCenterSceneVisible = true
+        ccFakeHideAwaitingHomeDraw = false
         ccProjectionReadyForHandoff = false
         if (!CcRenderSession.beginVisibleCycle()) {
             reconcileCcHomeAuthority("native-visible-rearm-failed")
@@ -1727,6 +1746,7 @@ class GyModule : XposedModule() {
 
     private fun onCcRuntimeFailure(error: Throwable) {
         if (retiredForHotReload) return
+        ccFakeHideAwaitingHomeDraw = false
         val cleanupFailures = mutableListOf<String>()
         fun safely(step: String, block: () -> Unit) {
             try {
@@ -4369,6 +4389,10 @@ class GyModule : XposedModule() {
                             )
                         }
                         reconcileCcHomeAuthority("home-frame-drawn")
+                        if (ccFakeHideAwaitingHomeDraw && !controlCenterSceneVisible) {
+                            ccFakeHideAwaitingHomeDraw = false
+                            CcRenderSession.setRequestedVisible(false)
+                        }
                     },
                     onBatteryDrawn = { model, elapsedMs ->
                         if (detailedDiagnosticsEnabled) {
@@ -4454,11 +4478,19 @@ class GyModule : XposedModule() {
         readinessSource: String,
     ) {
         if (failNativeGate.suspended || !FeaturePrefsOwner.current().enabled) {
+            if (ccFakeHideAwaitingHomeDraw) {
+                ccFakeHideAwaitingHomeDraw = false
+                CcRenderSession.setRequestedVisible(false)
+            }
             HomeRenderSession.setNativeHandoffActive(true)
             SysUiPresentationOwner.deactivate("feature-disabled:" + source)
             return
         }
         if (!ready) {
+            if (ccFakeHideAwaitingHomeDraw) {
+                ccFakeHideAwaitingHomeDraw = false
+                CcRenderSession.setRequestedVisible(false)
+            }
             val previouslyClaimed = SysUiPresentationOwner.homeClaimed()
             val visibilityBeforeRelease = HomeRenderSession.visibilityWitness()
             HomeRenderSession.setNativeHandoffActive(true)

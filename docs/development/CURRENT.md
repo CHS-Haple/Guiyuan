@@ -132,11 +132,14 @@ execution ownership is in [architecture](../architecture/README.md).
   B1912 on-device Wi-Fi/cellular switching exposed 11 QS_FAKE peer capacity
   failures: a measured native row of 448 px with content of 293/386 px,
   while optional transition padding exceeded available space by 1-7 px.
-  The work-branch candidate bounds optional native transition padding
-  to measured peer capacity; unsafe compact rows, missing native
-  evidence and competing native writers still trigger local Fail native.
-  This is source validation only. The separate landscape-to-portrait Home
-  visual disappearance still needs device acceptance.
+  B1913 real-device evidence confirmed bounded FAKE padding (8 events, no
+  overflow Fail native), but Wi-Fi/cellular switching still shifted the CC
+  header. The candidate now gates latent reveal on the applied native lease
+  rather than the original semantic request. The native CC hidden callback
+  also drops FAKE before the first Home draw; the candidate retains this
+  temporary visual until an owned Home frame or an unsafe-owner release.
+  Native compositor handoff and orientation-specific behavior are still
+  device-acceptance gates, not implied by these source changes.
 
   B1903 screenshot at 00:12 while charging shows the combined ring/readout
   intruding toward adjacent mute/network icons. The accompanying

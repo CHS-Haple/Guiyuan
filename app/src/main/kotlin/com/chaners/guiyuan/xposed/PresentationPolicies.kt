@@ -32,6 +32,13 @@ internal object SteadyPeerMirrorPolicy {
 // expansion, even if the QS_FAKE projection has locally failed native.
 // Only native fraction zero returns Home ownership.
 internal object CcHomeHandoffPolicy {
+    // The native hidden callback may precede Home's first drawn replacement.
+    fun retainFakeUntilHomeDraw(
+        panelHidden: Boolean,
+        homeClaimed: Boolean,
+        homeFrameReady: Boolean,
+    ): Boolean = panelHidden && homeClaimed && !homeFrameReady
+
     // Repeated native zero callbacks after Home is already restored must not
     // hide and reveal the overlay in the same callback.
     fun awaitNativeZeroCommit(
@@ -125,6 +132,17 @@ internal object EndReservationPolicy {
         if (available < minimumPaddingEndPx) return null
         return minOf(requestedPaddingEndPx.toLong(), available).toInt()
     }
+
+    // A bounded native reservation grants less space than requested by the
+    // transition. Convert the applied padding delta back to slot width.
+    fun appliedTransitionSlotWidth(
+        requestedSlotWidthPx: Int,
+        requestedReservationDeltaPx: Int,
+        appliedReservationDeltaPx: Int,
+    ): Int = (
+        requestedSlotWidthPx.toLong() -
+            (requestedReservationDeltaPx.toLong() - appliedReservationDeltaPx.toLong())
+        ).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
 
     // Native fake host settlement and its status-icon row measure are
     // independent: a cached measureViews list is not authoritative while

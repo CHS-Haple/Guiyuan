@@ -78,4 +78,19 @@ class CcHomeHandoffPolicyTest {
         assertFalse(yieldToCc(visible = true, fraction = Float.NaN))
         assertFalse(yieldToCc(visible = true, fraction = Float.POSITIVE_INFINITY))
     }
+    @Test
+    fun fakeVisualWaitsForHomeDrawOnlyWithAClaimedReplacement() {
+        assertTrue(CcHomeHandoffPolicy.retainFakeUntilHomeDraw(
+            panelHidden = true, homeClaimed = true, homeFrameReady = false,
+        ))
+        assertFalse(CcHomeHandoffPolicy.retainFakeUntilHomeDraw(
+            panelHidden = true, homeClaimed = true, homeFrameReady = true,
+        ))
+        assertFalse(CcHomeHandoffPolicy.retainFakeUntilHomeDraw(
+            panelHidden = true, homeClaimed = false, homeFrameReady = false,
+        ))
+        assertFalse(CcHomeHandoffPolicy.retainFakeUntilHomeDraw(
+            panelHidden = false, homeClaimed = true, homeFrameReady = false,
+        ))
+    }
 }

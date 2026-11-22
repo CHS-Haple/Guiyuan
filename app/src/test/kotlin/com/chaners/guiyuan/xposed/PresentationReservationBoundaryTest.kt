@@ -164,4 +164,22 @@ class PresentationReservationBoundaryTest {
             ),
         )
     }
+    @Test
+    fun nativeBoundedPaddingReportsActualGrantedSlotWidth() {
+        assertEquals(197, EndReservationPolicy.appliedTransitionSlotWidth(
+            requestedSlotWidthPx = 202,
+            requestedReservationDeltaPx = 67,
+            appliedReservationDeltaPx = 62,
+        ))
+        assertEquals(105, EndReservationPolicy.appliedTransitionSlotWidth(
+            requestedSlotWidthPx = 105,
+            requestedReservationDeltaPx = 0,
+            appliedReservationDeltaPx = 0,
+        ))
+        assertEquals(160, EndReservationPolicy.appliedTransitionSlotWidth(
+            requestedSlotWidthPx = 170,
+            requestedReservationDeltaPx = 170,
+            appliedReservationDeltaPx = 160,
+        ))
+    }
 }

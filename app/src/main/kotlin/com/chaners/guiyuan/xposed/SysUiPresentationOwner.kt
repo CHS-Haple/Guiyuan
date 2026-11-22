@@ -1057,6 +1057,10 @@ internal object SysUiPresentationOwner {
             ?: false
 
     @Synchronized
+    fun appliedCcTransitionReservationWidthPx(): Int? =
+        controlCenterCurrent?.appliedCcTransitionSlotWidthPx()
+
+    @Synchronized
     fun clearCcTransitionReservation(source: String): Boolean =
         controlCenterCurrent
             ?.clearTransitionReservation(source)
@@ -1586,6 +1590,12 @@ internal object SysUiPresentationOwner {
         private var nativeLayoutOwnershipDeferred = false
         private var ownedPersistentIgnoredSlots: List<String>? = null
         private var transitionRequestedSlotWidthPx: Int? = null
+        private var appliedTransitionSlotWidthPx: Int? = null
+
+        fun appliedCcTransitionSlotWidthPx(): Int? =
+            if (active && surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
+                !nativeLayoutOwnershipDeferred && statusIcons.get()?.isLayoutRequested == false
+            ) appliedTransitionSlotWidthPx else null
         private val fakePeerMetrics =
             if (
                 surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
@@ -2326,6 +2336,7 @@ internal object SysUiPresentationOwner {
             val normalized = requestedSlotWidthPx.coerceAtLeast(0)
             if (transitionRequestedSlotWidthPx == normalized) return true
             transitionRequestedSlotWidthPx = normalized
+            appliedTransitionSlotWidthPx = null
             return syncEndReservation()
         }
 
@@ -2333,6 +2344,7 @@ internal object SysUiPresentationOwner {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
             if (transitionRequestedSlotWidthPx == null) return true
             transitionRequestedSlotWidthPx = null
+            appliedTransitionSlotWidthPx = null
             val restored = syncEndReservation()
             onEvent(
                 eventPrefix +
@@ -2427,6 +2439,7 @@ internal object SysUiPresentationOwner {
         fun syncEndReservation(): Boolean {
             if (!active || aodPeersReleased) return true
             if (nativeLayoutOwnershipDeferred) {
+                appliedTransitionSlotWidthPx = null
                 return true
             }
             val group = statusIcons.get() ?: run { onFailNative(REASON_STATUS_ICON_GROUP_RELEASED); return false }
@@ -2541,6 +2554,13 @@ internal object SysUiPresentationOwner {
                 return false
             }
             appliedPadding = if (target == baseline) null else target
+            appliedTransitionSlotWidthPx = transitionRequestedSlotWidthPx?.let {
+                EndReservationPolicy.appliedTransitionSlotWidth(
+                    requestedSlotWidthPx = requestedSlotWidthPx,
+                    requestedReservationDeltaPx = requestedReservationDelta,
+                    appliedReservationDeltaPx = reservationDelta,
+                )
+            }
             if (lastReservationDelta != reservationDelta) {
                 lastReservationDelta = reservationDelta
                 val shouldReport =
