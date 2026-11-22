@@ -124,12 +124,12 @@ internal object DiagLogReader {
         val lines =
             output.lineSequence()
                 .filter { line ->
-                    line.contains("$MODULE_PACKAGE") &&
+                    line.contains(MODULE_PACKAGE) &&
                         line.contains(MODULE_LOG_TAG)
                 }
                 .toList()
         val systemUi = lines.filter { line ->
-            DiagLogParser.parse(line).hostPkg == "$SYSTEM_UI_PACKAGE"
+            DiagLogParser.parse(line).hostPkg == SYSTEM_UI_PACKAGE
         }
         return systemUi.ifEmpty { lines }
     }
@@ -140,7 +140,7 @@ internal object DiagLogReader {
             .filter { line ->
                 when {
                     MODULE_LOG_TAG !in line -> false
-                    "$MODULE_PACKAGE" in line -> true
+                    MODULE_PACKAGE in line -> true
                     else -> {
                         val entry = DiagLogParser.parse(line)
                         entry.framework == "logcat" &&
