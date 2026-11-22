@@ -31,6 +31,31 @@ class OuterGeometryTest {
     }
 
     @Test
+    fun followingOpeningClampsExtraBottomReservationWithoutChangingOtherStyles() {
+        val geometry = OuterGeometry.resolve(1f)
+        assertEquals(
+            110f,
+            geometry.followingLowerHalfGap(
+                dual = true,
+                style = SignalDotArrangement.BOTH_SIDES,
+                offsetY = 0f,
+                additionalContentHalfGap = 200f,
+            ),
+            0f,
+        )
+        assertEquals(
+            geometry.followingLowerHalfGap(true, SignalDotArrangement.CURVED, 0f),
+            geometry.followingLowerHalfGap(
+                dual = true,
+                style = SignalDotArrangement.CURVED,
+                offsetY = 0f,
+                additionalContentHalfGap = 200f,
+            ),
+            0f,
+        )
+    }
+
+    @Test
     fun followingOpeningApproximatelyPreservesTheCurvedDefault() {
         val g = OuterGeometry.resolve(1f)
         assertEquals(60f, g.followingLowerHalfGap(false, SignalDotArrangement.CURVED, 0f), 0.1f)
