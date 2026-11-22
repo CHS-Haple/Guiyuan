@@ -64,6 +64,22 @@ execution ownership is in [architecture](../architecture/README.md).
   from the native ViewTreeObserver pre-draw boundary (after measured
   reservations), without owning the native host width. This B1901 correction
   still requires focused real-device acceptance before merge.
+  B1901 device evidence (2026-11-22 19:14) showed CC fake cutover
+  `native-pre-draw-after-complete-layout` and `controlCenterPresentation
+  active`, but closing CC after rotating to landscape exposed a Home
+  positioning fault: original network-speed/Bluetooth/notification icons
+  crossed into the Guiyuan carrier instead of remaining on its leading
+  side. B1901 diagnostics contain no post-rotation native Home geometry
+  snapshot or Fail native. A source audit found HomeRenderSession derived
+  its overlay x solely from BatteryContainer.width, while the native
+  battery_icon_container may move relative to that parent without its
+  dimensions changing. B1902 resolves the Home anchor from the real
+  native carrier window position, observes translation-only changes at
+  native pre-draw without mutating SystemUI geometry, and keeps one
+  per-session observer with attach/detach cleanup. This is an evidence-based
+  correction of the stale-coordinate contract; exact post-rotation
+  measured displacement still needs the B1902 device diagnostic.
+
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
   [dual-SIM work #1205](https://github.com/CHS-Haple/Guiyuan/pull/1205)
