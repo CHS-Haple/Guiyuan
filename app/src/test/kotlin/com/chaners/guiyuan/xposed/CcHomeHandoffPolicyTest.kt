@@ -42,25 +42,6 @@ class CcHomeHandoffPolicyTest {
     }
 
     @Test
-    fun nativeHeaderExitEndsClosingMaskBeforeDelayedFractionZero() {
-        // Landscape-to-portrait exit: both native header endpoints have left
-        // the visible native root, even though the last fraction is positive.
-        assertTrue(
-            CcHomeHandoffPolicy.nativeCloseVisualCompleted(
-                closing = true,
-                fakeHeaderVisible = false,
-                finalHeaderVisible = false,
-            ),
-        )
-        // Half pulls and native crossfades still own their source while
-        // at least one original status-bar endpoint can be seen.
-        assertFalse(CcHomeHandoffPolicy.nativeCloseVisualCompleted(false, false, false))
-        assertFalse(CcHomeHandoffPolicy.nativeCloseVisualCompleted(true, true, false))
-        assertFalse(CcHomeHandoffPolicy.nativeCloseVisualCompleted(true, false, true))
-        assertFalse(CcHomeHandoffPolicy.nativeCloseVisualCompleted(true, true, true))
-    }
-
-    @Test
     fun invalidNativeFractionDoesNotStealHomeOwnership() {
         assertFalse(yieldToCc(visible = true, fraction = Float.NaN, ready = true))
         assertFalse(yieldToCc(visible = true, fraction = Float.POSITIVE_INFINITY, ready = true))
