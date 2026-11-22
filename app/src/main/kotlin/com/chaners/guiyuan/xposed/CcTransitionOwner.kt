@@ -2291,6 +2291,7 @@ internal object CcTransitionOwner {
             val boundary = CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
                 nativeHostCenterX = nativeHostGeometry[0],
                 nativeHostWidthX = nativeHostGeometry[2],
+                nativeHostLocalWidthPx = nativeFakeHost.width,
                 requestedWidthPx = requested,
                 grantedWidthPx = granted,
                 isRtl = rtl,

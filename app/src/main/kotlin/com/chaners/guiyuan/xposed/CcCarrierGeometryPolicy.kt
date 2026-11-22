@@ -28,16 +28,20 @@ internal object CcCarrierGeometryPolicy {
     fun fakePeerClipBoundaryX(
         nativeHostCenterX: Float,
         nativeHostWidthX: Float,
+        nativeHostLocalWidthPx: Int,
         requestedWidthPx: Int,
         grantedWidthPx: Int,
         isRtl: Boolean,
     ): Float? {
         if (!nativeHostCenterX.isFinite() || !nativeHostWidthX.isFinite() ||
-            nativeHostWidthX <= 0f || requestedWidthPx <= 0 ||
+            nativeHostWidthX <= 0f || nativeHostLocalWidthPx <= 0 ||
+            requestedWidthPx <= 0 ||
             grantedWidthPx < 0 || grantedWidthPx >= requestedWidthPx
         ) return null
+        val xScale = nativeHostWidthX / nativeHostLocalWidthPx
+        if (!xScale.isFinite() || xScale <= 0f) return null
         val end = nativeHostCenterX + nativeHostWidthX * (if (isRtl) -0.5f else 0.5f)
-        val boundary = end + grantedWidthPx * (if (isRtl) 1f else -1f)
+        val boundary = end + grantedWidthPx * xScale * (if (isRtl) 1f else -1f)
         return boundary.takeIf(Float::isFinite)
     }
 

@@ -160,23 +160,28 @@ class PresentationReservationBoundaryTest {
         // A 17 px native grant reduction makes a corresponding 17 px fence.
         assertEquals(391f, CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
             nativeHostCenterX = 293.5f, nativeHostWidthX = 587f,
+            nativeHostLocalWidthPx = 587,
             requestedWidthPx = 213, grantedWidthPx = 196, isRtl = false,
         )!!, 0.0001f)
         assertEquals(196f, CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
             nativeHostCenterX = 293.5f, nativeHostWidthX = 587f,
+            nativeHostLocalWidthPx = 587,
             requestedWidthPx = 213, grantedWidthPx = 196, isRtl = true,
         )!!, 0.0001f)
+        assertEquals(195.5f, CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
+            146.75f, 293.5f, 587, 213, 196, false,
+        )!!, 0.0001f)
         assertEquals(null, CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
-            293.5f, 587f, 196, 196, false,
+            293.5f, 587f, 587, 196, 196, false,
         ))
         assertEquals(null, CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
-            293.5f, 587f, 196, 197, false,
+            293.5f, 587f, 587, 196, 197, false,
         ))
         assertEquals(null, CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
-            293.5f, 0f, 196, 180, false,
+            293.5f, 0f, 587, 196, 180, false,
         ))
         assertEquals(null, CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
-            Float.NaN, 587f, 196, 180, false,
+            Float.NaN, 587f, 587, 196, 180, false,
         ))
     }
 
