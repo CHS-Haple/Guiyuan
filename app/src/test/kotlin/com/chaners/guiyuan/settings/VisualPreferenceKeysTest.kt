@@ -40,6 +40,18 @@ class VisualPreferenceKeysTest {
     }
 
     @Test
+    fun batterySlotKeysRetainReleasedOnDiskNames() {
+        val names = listOf(
+            "normal", "power_save", "performance", "super_power_save", "charging", "low",
+        )
+        assertEquals(names.size, BatteryColorSlot.entries.size)
+        BatteryColorSlot.entries.zip(names).forEach { (slot, name) ->
+            assertEquals("battery_color_mode_$name", batteryColorModeKey(slot))
+            assertEquals("battery_color_$name", batteryColorOverrideKey(slot))
+        }
+    }
+
+    @Test
     fun sharedBatteryColorsStayInRuntimeAndBackupKeyScopes() {
         assertEquals(1 + 2 * BatteryColorSlot.entries.size, BATTERY_COLOR_KEYS.size)
         for (key in BATTERY_COLOR_KEYS) {
