@@ -293,6 +293,29 @@ the existing native fallback on actual unsafe conditions. Tests cover
 slow-close, late-ready, partial gesture and fast-close/reopen traces.
 Real-device validation still required.
 
+## CC frozen source geometry is viewport-scoped
+
+**Decision:** A live CC transition session with frozen Home source and
+cached fake-carrier root offset is reusable only inside the same native
+root viewport geometry. A changed portrait/landscape root width/height
+invalidates the old temporary owner, restores its scoped masks and
+reservations, then recaptures the new source/final/carrier coordinates.
+Do not mutate native geometry to force the original root size.
+
+**Evidence:** Previously `CcTransitionOwner.Session.matches()` compared
+only View identities, whereas `FrozenSourceGeometry` and
+`fakeCarrierRootOffsetX` were captured once per session. Native
+SystemUI can retain these Views across orientation, leaving the
+interpolator with a portrait origin and landscape targets. B1901
+device video reproduced a position error after rotating within CC
+before swiping upward; detailed diagnostics did not include the
+post-rotation root coordinates, so device validation remains required.
+
+**Consequence:** Reset the temporary source frame when native root
+dimensions change; the native View tree, final coordinates and
+original interpolation remain authoritative. Unit tests cover
+portrait→landscape and landscape→portrait reuse rejection.
+
 ## Native resource identity is preferred
 
 **Decision:** when a verified native drawable/resource expresses the needed
