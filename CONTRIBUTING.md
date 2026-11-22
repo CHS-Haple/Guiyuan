@@ -327,7 +327,7 @@ when state or legibility warrants them. Do not normalize individual icons
 with ad-hoc scaling, translation, alpha or stroke overrides.
 
 `SemanticLeadingIcon` in
-`app/src/main/kotlin/com/chaners/guiyuan/ui/screens/SettingsScreenLayout.kt`
+`app/src/main/kotlin/com/chaners/guiyuan/ui/screens/SettingsLeadingIcon.kt`
 owns the shared 24 dp optical box and 22 dp main icon. A subordinate detail
 uses the existing 12 dp badge, contour cutout and 1 dp gap. Preserve the
 shared alignment/tint and verify adjacent icons in light and dark themes.
