@@ -4323,6 +4323,11 @@ class GyModule : XposedModule() {
                     onLatencySample = ::onRenderLatencySample,
                     isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
                     initialNativeHandoffActive = true,
+                    // A new Home renderer may attach while Control Center
+                    // still owns the scene (notably during rotation). Copy
+                    // the coordinator's actual state instead of resetting
+                    // the new session to Home-eligible until another CC edge.
+                    initialControlCenterAllowsHome = !ccHomeYieldedToPanel,
                     initialTintState = rendererInitialTintState,
                     allowLiveTintSeed = allowLiveTintSeed,
                     onPresentationReadinessChanged = { ready, readinessSource ->

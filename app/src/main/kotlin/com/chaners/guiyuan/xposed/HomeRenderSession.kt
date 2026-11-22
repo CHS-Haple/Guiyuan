@@ -42,6 +42,7 @@ internal object HomeRenderSession {
         onLatencySample: ((RuntimeRenderLatencySample) -> Unit)? = null,
         isDetailedDiagnosticsEnabled: () -> Boolean = { true },
         initialNativeHandoffActive: Boolean = false,
+        initialControlCenterAllowsHome: Boolean = true,
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
         onPresentationReadinessChanged: ((Boolean, String) -> Unit)? = null,
@@ -84,6 +85,7 @@ internal object HomeRenderSession {
             onLatencySample = onLatencySample,
             isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
             initialNativeHandoffActive = initialNativeHandoffActive,
+            initialControlCenterAllowsHome = initialControlCenterAllowsHome,
             initialTintState = initialTintState,
             allowLiveTintSeed = allowLiveTintSeed,
             initialFeatureEnabled =
@@ -256,6 +258,7 @@ internal object HomeRenderSession {
         private val onLatencySample: ((RuntimeRenderLatencySample) -> Unit)?,
         private val isDetailedDiagnosticsEnabled: () -> Boolean,
         initialNativeHandoffActive: Boolean,
+        initialControlCenterAllowsHome: Boolean,
         private val initialTintState: TintState?,
         private val allowLiveTintSeed: Boolean,
         initialFeatureEnabled: Boolean,
@@ -289,7 +292,7 @@ internal object HomeRenderSession {
         private var nativeTintObserved = false
         // Home eligibility follows native CC ownership independently of the
         // separate QS_FAKE projection readiness.
-        private var controlCenterAllowsHome = true
+        private var controlCenterAllowsHome = initialControlCenterAllowsHome
         private var nativeHandoffActive = initialNativeHandoffActive
         private var featureEnabled = initialFeatureEnabled
         private var modelReady = false
