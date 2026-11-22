@@ -1231,7 +1231,7 @@ class GyModule : XposedModule() {
                     "nativeStatusAlpha" to keyguard?.statusIcons?.alpha,
                     "nativeSystemAlpha" to keyguard?.systemIcons?.alpha,
                     "nativeToLockScreen" to
-                        keyguard?.let(SysUiKeyguardHostResolver::nativeToLockScreenTarget),
+                        keyguard?.let(SysUiKeyguardNativeSignals::nativeToLockScreenTarget),
                     "homeSlots" to SysUiPresentationOwner.homeSlots().size,
                     "aodTarget" to
                         (aodWindow as? AodWindow.Waiting)?.toLockScreen?.let {
@@ -3212,10 +3212,10 @@ class GyModule : XposedModule() {
                 ),
                 signal = ScenePolicy.AodNativeSignalEvidence(
                     keyguardStatusIconsAlpha =
-                        SysUiKeyguardHostResolver
+                        SysUiKeyguardNativeSignals
                             .statusIconsPresentationAlpha(resolved),
                     nativeToLockScreenTarget =
-                        SysUiKeyguardHostResolver
+                        SysUiKeyguardNativeSignals
                             .nativeToLockScreenTarget(resolved),
                 ),
                 boundary = ScenePolicy.AodNativeBoundaryEvidence(
