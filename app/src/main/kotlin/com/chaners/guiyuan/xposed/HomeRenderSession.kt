@@ -270,13 +270,13 @@ internal object HomeRenderSession {
         private val statusIcons = WeakReference(statusIcons)
         private val batteryView = WeakReference(batteryView)
         private val batteryCarrier = WeakReference(batteryCarrier)
-        private var lastCompletedDrawUptimeMs = 0L
+        private var lastCompletedDrawElapsedRealtimeMs = 0L
         private val probeView =
             RenderView(
                 context = host.context,
                 // Passive draw witness: the Overlay child may report isShown=false
                 // even when the native host actually dispatches its overlay.
-                onDrawn = { lastCompletedDrawUptimeMs = SystemClock.uptimeMillis() },
+                onDrawn = { lastCompletedDrawElapsedRealtimeMs = SystemClock.elapsedRealtime() },
                 onStateRendered = { latencyMs, committedOnMainThread, sample ->
                     if (sample != null && onLatencySample != null) {
                         SysUiPresentationRuntime.emitPassiveDiagnostic {
@@ -478,7 +478,11 @@ internal object HomeRenderSession {
             return "renderVisibility=${probeView.visibility}" +
                 " renderShown=${probeView.isShown}" +
                 " renderShownSemantics=overlay-parent-unparented" +
-                " lastCompletedDrawUptimeMs=$lastCompletedDrawUptimeMs" +
+                " lastCompletedDrawElapsedRealtimeMs=$lastCompletedDrawElapsedRealtimeMs" +
+                " lastDrawAgeMs=" +
+                (if (lastCompletedDrawElapsedRealtimeMs > 0L) {
+                    SystemClock.elapsedRealtime() - lastCompletedDrawElapsedRealtimeMs
+                } else "never") +
                 " renderAlpha=${probeView.alpha}" +
                 " renderBounds=${probeView.left}..${probeView.right}" +
                 " overlayParent=${probeView.parent?.javaClass?.simpleName}" +
