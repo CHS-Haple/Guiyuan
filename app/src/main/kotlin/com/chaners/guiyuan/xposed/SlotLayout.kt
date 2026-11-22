@@ -30,6 +30,30 @@ internal object SteadyLayoutResolver {
     }
 }
 
+/**
+ * The battery icon container is the native Home placement authority.
+ * A right-anchored estimate becomes stale when SystemUI repositions its
+ * actual carrier during a rotation without resizing BatteryContainer.
+ */
+internal object HomeCarrierAnchorPolicy {
+    fun resolve(
+        hostWidthPx: Int,
+        hostHeightPx: Int,
+        carrierWidthPx: Int,
+        carrierLeftPx: Int,
+    ): SteadyLayout? {
+        val native = SteadyLayoutResolver.resolve(
+            hostWidthPx = hostWidthPx,
+            hostHeightPx = hostHeightPx,
+            baseCarrierWidthPx = carrierWidthPx,
+            isRtl = false,
+        ) ?: return null
+        val right = carrierLeftPx.toLong() + carrierWidthPx
+        if (carrierLeftPx < 0 || right > hostWidthPx.toLong()) return null
+        return native.copy(left = carrierLeftPx, right = right.toInt())
+    }
+}
+
 /** The exact native Home privacy chip occupies the BatteryContainer end only in two states. */
 internal object HomePrivacyLayoutPolicy {
     fun occupiesEnd(nativeStateName: String?): Boolean =
