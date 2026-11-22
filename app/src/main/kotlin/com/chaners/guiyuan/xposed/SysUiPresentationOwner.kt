@@ -2429,7 +2429,6 @@ internal object SysUiPresentationOwner {
                             (transitionRequestedSlotWidthPx ?: -1) +
                             " requestedPaddingEndDelta=" + requestedReservationDelta +
                             " paddingEndDelta=" + reservationDelta +
-                            " capacityClamped=" + (reservationDelta != requestedReservationDelta) +
                             " basePaddingEnd=" + baseline.end +
                             LOG_APPLIED_PADDING_END + target.end +
                             " nativeFakeCarrierWidth=" + (hostView.layoutParams?.width ?: -1) +
