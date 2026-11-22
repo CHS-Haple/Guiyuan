@@ -81,12 +81,6 @@ class GlassPopupAnchor {
 
     internal var secondaryBackProgressState: State<Float>? by mutableStateOf(null)
 
-    /** Predictive-back progress published by an attached [GlassDropdownPopup]. */
-    internal var dropdownBackProgressState: State<Float>? by mutableStateOf(null)
-
-    /** Keeps the restored value visible while its fade outlives the dropdown's popup host. */
-    internal var dropdownRetainedValueAlpha: Float by mutableFloatStateOf(0f)
-
     /**
      * Secondary predictive-back progress, including cancellation recovery and the retained exit
      * fraction. Read inside a draw/layer callback to make custom arrows follow the menu:
@@ -140,26 +134,6 @@ class GlassPopupAnchor {
             return coordinates.boundsInWindow().also { cachedContentBounds = it }
         }
 
-    internal var dropdownValueCoordinates: LayoutCoordinates? = null
-    internal var cachedDropdownValueBounds: Rect? = null
-    private var dropdownValueTick by mutableIntStateOf(0)
-
-    /** The dropdown's value and chevron bounds in window coordinates. */
-    internal var dropdownValueBounds: Rect?
-        get() {
-            @Suppress("UNUSED_EXPRESSION")
-            dropdownValueTick
-            val cached = cachedDropdownValueBounds
-            if (cached != null) return cached
-            val coordinates = dropdownValueCoordinates?.takeIf { it.isAttached } ?: return null
-            return coordinates.boundsInWindow().also { cachedDropdownValueBounds = it }
-        }
-        set(value) {
-            dropdownValueCoordinates = null
-            cachedDropdownValueBounds = value
-            dropdownValueTick++
-        }
-
     /** Control corner radius used at the collapsed endpoint. */
     internal var cornerRadius: Dp = 0.dp
 
@@ -168,13 +142,6 @@ class GlassPopupAnchor {
 
     /** Hides the whole transform anchor, or only the dropdown value, while the popup is open. */
     internal var contentHidden: Boolean by mutableStateOf(false)
-
-    /** Dropdown value opacity; a [State] so the fade only invalidates draw. */
-    internal var valueAlphaState: State<Float>? by mutableStateOf(null)
-
-    /** Value opacity during predictive-back collapse. */
-    internal val dropdownValueAlpha: Float
-        get() = (dropdownBackProgressState?.value ?: dropdownRetainedValueAlpha).coerceIn(0f, 1f)
 
     internal fun updateContainerCoordinates(coordinates: LayoutCoordinates) {
         containerCoordinates = coordinates
@@ -202,26 +169,7 @@ class GlassPopupAnchor {
         }
     }
 
-    internal fun updateDropdownValueCoordinates(coordinates: LayoutCoordinates) {
-        val wasNull = dropdownValueCoordinates == null
-        dropdownValueCoordinates = coordinates
-        cachedDropdownValueBounds = null
-        if (wasNull || contentHidden) dropdownValueTick++
-    }
 
-    internal fun freezeDropdownValueBounds() {
-        if (dropdownValueCoordinates != null) {
-            cachedDropdownValueBounds = dropdownValueBounds
-            dropdownValueCoordinates = null
-        }
-    }
-
-    internal fun clearDropdownValueCoordinates(coordinates: LayoutCoordinates?) {
-        if (dropdownValueCoordinates === coordinates) {
-            dropdownValueCoordinates = null
-            cachedDropdownValueBounds = null
-        }
-    }
 }
 
 /** The button's sampling and colour treatment at the collapsed endpoint of its menu. */
@@ -338,81 +286,9 @@ private class GlassPopupAnchorContentNode(
     }
 }
 
-private data class GlassPopupAnchorValueElement(
-    val anchor: GlassPopupAnchor,
-    val trackBounds: Boolean,
-) : ModifierNodeElement<GlassPopupAnchorValueNode>() {
-    override fun create(): GlassPopupAnchorValueNode = GlassPopupAnchorValueNode(anchor, trackBounds)
-
-    override fun update(node: GlassPopupAnchorValueNode) {
-        node.update(anchor, trackBounds)
-    }
-
-    override fun InspectorInfo.inspectableProperties() {
-        name = "glassPopupAnchorValue"
-        properties["trackBounds"] = trackBounds
-    }
-}
-
-private class GlassPopupAnchorValueNode(
-    private var anchor: GlassPopupAnchor,
-    private var trackBounds: Boolean,
-) : Modifier.Node(),
-    LayoutModifierNode,
-    GlobalPositionAwareModifierNode {
-    private var lastCoordinates: LayoutCoordinates? = null
-
-    fun update(anchor: GlassPopupAnchor, trackBounds: Boolean) {
-        if (this.anchor !== anchor) {
-            this.anchor.clearDropdownValueCoordinates(lastCoordinates)
-            this.anchor = anchor
-        }
-        val wasTracking = this.trackBounds
-        this.trackBounds = trackBounds
-        if (trackBounds) {
-            lastCoordinates?.takeIf { it.isAttached }?.let { anchor.updateDropdownValueCoordinates(it) }
-        } else if (wasTracking) {
-            anchor.freezeDropdownValueBounds()
-        }
-    }
-
-    override fun onGloballyPositioned(coordinates: LayoutCoordinates) {
-        lastCoordinates = coordinates
-        if (trackBounds) {
-            anchor.updateDropdownValueCoordinates(coordinates)
-        }
-    }
-
-    override fun MeasureScope.measure(measurable: Measurable, constraints: Constraints): MeasureResult {
-        val placeable = measurable.measure(constraints)
-        return layout(placeable.width, placeable.height) {
-            placeable.placeWithLayer(0, 0) {
-                alpha = maxOf(anchor.valueAlphaState?.value ?: 1f, anchor.dropdownValueAlpha)
-            }
-        }
-    }
-
-    override fun onDetach() {
-        anchor.clearDropdownValueCoordinates(lastCoordinates)
-        lastCoordinates = null
-    }
-}
-
-/**
- * Remembers a [GlassPopupAnchor] and its value fade, which must continue after the popup exits.
- */
+/** One anchor owner across the menu's opening and closing lifecycle. */
 @Composable
-fun rememberGlassPopupAnchor(): GlassPopupAnchor {
-    val anchor = remember { GlassPopupAnchor() }
-    val alpha = animateFloatAsState(
-        targetValue = if (anchor.contentHidden) 0f else 1f,
-        animationSpec = GlassMotion.default(),
-        label = "glassPopupAnchorValue",
-    )
-    // Publishing the State itself keeps the caller out of the fade's recomposition scope.
-    SideEffect { anchor.valueAlphaState = alpha }
-    return anchor
-}
+fun rememberGlassPopupAnchor(): GlassPopupAnchor = remember { GlassPopupAnchor() }
 
 /**
  * Reports a control's bounds to [anchor] and hides it while its menu is open.
@@ -441,18 +317,6 @@ fun Modifier.glassPopupAnchor(
  */
 @Stable
 fun Modifier.glassPopupAnchorContent(anchor: GlassPopupAnchor): Modifier = this.then(GlassPopupAnchorContentElement(anchor))
-
-/**
- * Anchors the dropdown to the selected value and fades that value while the popup is open.
- * Apply to the value and chevron, not the whole row.
- *
- * @param anchor The dropdown's anchor.
- */
-@Stable
-fun Modifier.glassPopupAnchorValue(anchor: GlassPopupAnchor): Modifier = glassPopupAnchorValue(anchor, trackBounds = true)
-
-@Stable
-internal fun Modifier.glassPopupAnchorValue(anchor: GlassPopupAnchor, trackBounds: Boolean): Modifier = this.then(GlassPopupAnchorValueElement(anchor, trackBounds))
 
 /**
  * A glass menu that expands from an anchored control with a content crossfade.
