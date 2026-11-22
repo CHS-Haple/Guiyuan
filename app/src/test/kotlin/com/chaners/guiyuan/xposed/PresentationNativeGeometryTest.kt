@@ -44,6 +44,34 @@ class PresentationNativeGeometryTest {
     }
 
     @Test
+    fun nativeParentAndIconRowMustBothCompleteLayoutBeforeVisualCutover() {
+        // B1900: after ignored slots are applied, the already-sized fake host
+        // must not be mistaken for a fully measured icon row. A later native
+        // onMeasure/onLayout and final pre-draw complete the cutover.
+        assertTrue(settled(nativeWidth = 587))
+        assertFalse(
+            VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+                deferVisualMaskUntilLayout = true,
+                laidOut = true,
+                layoutRequested = true,
+                width = 448,
+                height = 108,
+            ),
+        )
+        assertFalse(settled(nativeWidth = 587, layoutRequested = true))
+        assertTrue(settled(nativeWidth = 587))
+        assertTrue(
+            VisualMaskPolicy.shouldAdoptExistingNativeLayout(
+                deferVisualMaskUntilLayout = true,
+                laidOut = true,
+                layoutRequested = false,
+                width = 448,
+                height = 108,
+            ),
+        )
+    }
+
+    @Test
     fun unsupportedOrUnfinishedNativeHostIsNotAdopted() {
         assertFalse(settled(nativeWidth = 0))
         assertFalse(settled(nativeWidth = 587, attached = false))
