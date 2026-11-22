@@ -1695,7 +1695,7 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun onCcNativeCloseVisualEnded() {
+    private fun onCcNativeCloseVisualEnded(witness: String) {
         if (!controlCenterSceneVisible ||
             controlCenterSourceScene != SourceScene.HOME ||
             ccNativeVisualExitObserved
@@ -1709,6 +1709,7 @@ class GyModule : XposedModule() {
             event = "presentation.handoff",
             component = "controlCenterProjection",
             state = "home-native-visual-end",
+            "witness" to witness,
             "nativeFraction" to ccExpansion,
             "nativeVisible" to controlCenterSceneVisible,
             "projectionReady" to ccProjectionReadyForHandoff,
