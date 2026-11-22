@@ -13,7 +13,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.chaners.guiyuan.GyApplication
+import com.chaners.guiyuan.system.ScopeRestart
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
@@ -29,6 +36,125 @@ import com.chaners.guiyuan.ui.screens.SemanticLeadingIcon
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
+
+/** Commit a queued restart only after the selection dialog has exited. */
+internal class RestartScopeDialogState {
+    var pickerOpen by mutableStateOf(false)
+        private set
+    var availableTargets by mutableStateOf(emptySet<RestartTarget>())
+        private set
+    var selectedTargets by mutableStateOf(emptySet<RestartTarget>())
+        private set
+    private var queuedRestart by mutableStateOf(emptySet<RestartTarget>())
+
+    fun openIfAllowed(app: GyApplication, blocked: Boolean) {
+        if (blocked || !app.canRestartScopes()) return
+        val scopes = app.enabledScopes()
+        availableTargets = RestartTarget.entries.filterTo(mutableSetOf()) {
+            scopes != null && it.pkg in scopes
+        }
+        selectedTargets =
+            if (RestartTarget.SYS_UI in availableTargets) setOf(RestartTarget.SYS_UI)
+            else availableTargets
+        queuedRestart = emptySet()
+        pickerOpen = true
+    }
+
+    fun setSelection(targets: Set<RestartTarget>) {
+        selectedTargets = targets
+    }
+
+    fun dismiss() {
+        queuedRestart = emptySet()
+        pickerOpen = false
+    }
+
+    fun close() {
+        pickerOpen = false
+    }
+
+    fun queueRestart() {
+        queuedRestart = selectedTargets intersect availableTargets
+        pickerOpen = false
+    }
+
+    fun finishDismiss(app: GyApplication, restartInProgress: Boolean) {
+        if (queuedRestart.isEmpty() || restartInProgress) return
+        val targets = queuedRestart
+        queuedRestart = emptySet()
+        // The system's active scope may change while the dialog is visible.
+        val liveScopes = app.enabledScopes().orEmpty()
+        if (targets.any { it.pkg !in liveScopes }) {
+            availableTargets = RestartTarget.entries.filterTo(mutableSetOf()) {
+                it.pkg in liveScopes
+            }
+            selectedTargets = targets intersect availableTargets
+            pickerOpen = true
+        } else if (!app.restartScopes(targets)) {
+            pickerOpen = true
+        }
+    }
+}
+
+@Composable
+internal fun RestartScopeDialog(
+    state: RestartScopeDialogState,
+    app: GyApplication,
+    restartInProgress: Boolean,
+) {
+    UiOverlayDialog(
+        title = stringResource(R.string.restart_scope),
+        summary = stringResource(
+            if (state.availableTargets.isEmpty()) R.string.restart_scope_no_targets
+            else R.string.restart_scope_dialog_summary,
+        ),
+        show = state.pickerOpen,
+        onDismissRequest = state::dismiss,
+        onDismissFinished = { state.finishDismiss(app, restartInProgress) },
+    ) {
+        RestartScopeSelection(
+            availableTargets = state.availableTargets,
+            selectedTargets = state.selectedTargets,
+            onSelectionChange = state::setSelection,
+            onClose = state::close,
+            onRestart = state::queueRestart,
+        )
+    }
+}
+
+@Composable
+internal fun RestartFailureDialog(restartState: ScopeRestart.State) {
+    val context = LocalContext.current
+    val failedTargets = (restartState as? ScopeRestart.State.Failed)?.targets
+    var failedTargetsForExit by remember { mutableStateOf(emptySet<RestartTarget>()) }
+    if (failedTargets != null) {
+        SideEffect { failedTargetsForExit = failedTargets }
+    }
+    UiOverlayDialog(
+        title = stringResource(R.string.restart_scope_failed),
+        summary = stringResource(
+            R.string.restart_scope_failed_summary,
+            (failedTargets ?: failedTargetsForExit)
+                .map {
+                    when (it) {
+                        RestartTarget.SYS_UI -> context.getString(R.string.restart_scope_sysui)
+                        RestartTarget.SETTINGS -> context.getString(R.string.restart_scope_settings)
+                    }
+                }
+                .joinToString(", "),
+        ),
+        show = restartState is ScopeRestart.State.Failed,
+        onDismissRequest = ScopeRestart::clearFailure,
+        onDismissFinished = { failedTargetsForExit = emptySet() },
+    ) {
+        UiDialogButton(
+            text = stringResource(R.string.confirm),
+            modifier = Modifier.fillMaxWidth(),
+            role = GlassDialogButtonRole.Primary,
+            onClick = ScopeRestart::clearFailure,
+        )
+    }
+}
 
 // Use the same installed-package artwork the scope manager displays.
 @Composable
