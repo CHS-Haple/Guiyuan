@@ -321,7 +321,7 @@ internal object HomeRenderSession {
             ViewTreeObserver.OnPreDrawListener {
                 if (
                     featureEnabled &&
-                    this@Session.batteryContainer.get()?.isAttachedToWindow == true
+                    host.get()?.isAttachedToWindow == true
                 ) {
                     val resolved = resolveNativeAnchor(observedAnchorRect)
                     // Recheck an interrupted native layout even when the
@@ -336,7 +336,7 @@ internal object HomeRenderSession {
             }
 
         private fun registerNativeDrawListener() {
-            val observer = batteryContainer.get()
+            val observer = host.get()
                 ?.takeIf { it.isAttachedToWindow }
                 ?.viewTreeObserver
                 ?.takeIf { it.isAlive }
@@ -368,23 +368,21 @@ internal object HomeRenderSession {
                 this.batteryCarrier.get() === batteryCarrier
 
         fun start() {
-            host.get() ?: return
-            val overlayHost = batteryContainer.get() ?: return
+            val overlayHost = host.get() ?: return
+            val nativeContainer = batteryContainer.get() ?: return
             val battery = batteryView.get() ?: return
             val carrier = batteryCarrier.get() ?: return
 
             overlayHost.addOnAttachStateChangeListener(this)
             overlayHost.addOnLayoutChangeListener(nativeLayoutListener)
+            nativeContainer.addOnLayoutChangeListener(nativeLayoutListener)
             battery.addOnLayoutChangeListener(nativeLayoutListener)
             carrier.addOnLayoutChangeListener(nativeLayoutListener)
             statusIcons.get()?.addOnLayoutChangeListener(nativeLayoutListener)
             registerNativeDrawListener()
             probeView.visibility = View.GONE
-            (probeView.parent as? ViewGroup)?.removeView(probeView)
-            overlayHost.addView(
-                probeView,
-                ViewGroup.LayoutParams(0, 0),
-            )
+            // Keep the visual outside the native battery child's hide/layout lifecycle.
+            overlayHost.overlay.add(probeView)
             renderController.updateVisualCfg(
                 VisualPrefsOwner.current(),
             )
@@ -407,7 +405,7 @@ internal object HomeRenderSession {
 
         fun transitionSourceWitness(): TransitionSourceWitness? {
             val motion = statusIcons.get() ?: return null
-            return probeView.captureTransitionWitness(motion, batteryContainer) {
+            return probeView.captureTransitionWitness(motion, host) {
                 SysUiPresentationOwner.homeSlots()
             }
         }
@@ -419,13 +417,14 @@ internal object HomeRenderSession {
             layoutReady = false
             releaseAll(
                 { if (notifyReadinessOnStop) dispatchPresentationReadiness("stop") },
-                { batteryContainer.get()?.removeOnAttachStateChangeListener(this) },
+                { host.get()?.removeOnAttachStateChangeListener(this) },
+                { host.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { batteryContainer.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { batteryView.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { batteryCarrier.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { statusIcons.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { unregisterNativeDrawListener() },
-                { if (removeVisual) (probeView.parent as? ViewGroup)?.removeView(probeView) },
+                { if (removeVisual) host.get()?.overlay?.remove(probeView) },
             )
         }
 
@@ -465,11 +464,16 @@ internal object HomeRenderSession {
         fun isOverlayShown(): Boolean = probeView.isShown
 
         fun visibilityWitness(): String {
-            val root = batteryContainer.get()
+            val root = host.get()
+            val nativeContainer = batteryContainer.get()
             return "renderVisibility=${probeView.visibility}" +
                 " renderShown=${probeView.isShown}" +
                 " rootShown=${root?.isShown}" +
                 " rootAttached=${root?.isAttachedToWindow}" +
+                " nativeContainerShown=${nativeContainer?.isShown}" +
+                " nativeContainerSize=${nativeContainer?.width}x${nativeContainer?.height}" +
+                " nativeBatteryWidth=${batteryView.get()?.width}" +
+                " nativeHide=${SysUiPresentationOwner.homeBatteryNativeHidden()}" +
                 " handoff=$nativeHandoffActive" +
                 " homeEligible=$controlCenterAllowsHome" +
                 " layoutReady=$layoutReady"
@@ -744,7 +748,8 @@ internal object HomeRenderSession {
         }
 
         private fun resolveNativeAnchor(out: Rect): Boolean {
-            val overlayHost = batteryContainer.get() ?: return false
+            val overlayHost = host.get() ?: return false
+            val nativeContainer = batteryContainer.get() ?: return false
             val carrier = batteryCarrier.get() ?: return false
             val hostWidth = overlayHost.width
             val hostHeight = overlayHost.height
@@ -764,49 +769,44 @@ internal object HomeRenderSession {
 
             val isRtl = overlayHost.layoutDirection == View.LAYOUT_DIRECTION_RTL
             val privacyOccupiesEnd =
-                SysUiPresentationOwner.homePrivacyOccupiesEnd(overlayHost)
+                SysUiPresentationOwner.homePrivacyOccupiesEnd(nativeContainer)
             val resolved =
                 if (privacyOccupiesEnd == true) {
                     val nativeIcons = statusIcons.get() ?: return false
-                    if (nativeIcons.parent !== overlayHost ||
+                    if (nativeIcons.parent !== nativeContainer ||
                         !nativeIcons.isLaidOut || nativeIcons.width <= 0
                     ) return false
-                    // Privacy occupies the Home end; continue using the
-                    // observed native status-icon edge in that special state.
+                    nativeIcons.getLocationInWindow(carrierWindowLocation)
+                    overlayHost.getLocationInWindow(hostWindowLocation)
+                    val iconStart = carrierWindowLocation[0] - hostWindowLocation[0]
                     HomePrivacyAnchorPolicy.resolve(
                         hostWidthPx = hostWidth,
                         hostHeightPx = hostHeight,
                         baseCarrierWidthPx = baseCarrierWidth,
                         statusIconsEndPx =
-                            if (isRtl) nativeIcons.left else nativeIcons.right,
+                            if (isRtl) iconStart else iconStart + nativeIcons.width,
                         isRtl = isRtl,
                     )
                 } else {
                     if (!overlayHost.isAttachedToWindow ||
+                        !nativeContainer.isAttachedToWindow ||
                         !carrier.isAttachedToWindow ||
                         carrier.width <= 0
                     ) return false
-                    val battery = batteryView.get() ?: return false
-                    if (!battery.isAttachedToWindow) return false
-                    carrier.getLocationInWindow(carrierWindowLocation)
-                    overlayHost.getLocationInWindow(hostWindowLocation)
-                    val carrierLeft = carrierWindowLocation[0] - hostWindowLocation[0]
-                    if (battery.width <= 0) {
-                        // An intentionally hidden native battery need not retire Home's combined visual.
-                        if (SysUiPresentationOwner.homeBatteryNativeHidden() != true) return false
-                        HomeCarrierAnchorPolicy.resolve(
-                            hostWidthPx = hostWidth,
-                            hostHeightPx = hostHeight,
-                            carrierWidthPx = baseCarrierWidth,
-                            carrierLeftPx = carrierLeft,
-                        )
+                    if (SysUiPresentationOwner.homeBatteryNativeHidden() == true) {
+                        // Native battery hide reflows the child, not the system_icon_area.
+                        SteadyLayoutResolver.resolve(hostWidth, hostHeight, baseCarrierWidth, isRtl)
                     } else {
+                        val battery = batteryView.get() ?: return false
+                        if (!battery.isAttachedToWindow || battery.width <= 0) return false
+                        carrier.getLocationInWindow(carrierWindowLocation)
                         battery.getLocationInWindow(batteryWindowLocation)
+                        overlayHost.getLocationInWindow(hostWindowLocation)
                         HomeCarrierAnchorPolicy.resolveExpandedBattery(
                             hostWidthPx = hostWidth,
                             hostHeightPx = hostHeight,
                             carrierWidthPx = baseCarrierWidth,
-                            carrierLeftPx = carrierLeft,
+                            carrierLeftPx = carrierWindowLocation[0] - hostWindowLocation[0],
                             nativeBatteryWidthPx = battery.width,
                             nativeBatteryRightPx =
                                 batteryWindowLocation[0] - hostWindowLocation[0] + battery.width,

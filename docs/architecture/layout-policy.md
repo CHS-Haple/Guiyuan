@@ -18,11 +18,8 @@ The accepted Home path uses the existing native end-side host:
 
 ```text
 MiuiNotificationStatusContainer / system_icon_area
-  -> MiuiStatusBatteryContainer / system_icons
-  -> Guiyuan child
-  -> logical viewport
-  -> SteadyLayoutResolver
-  -> renderer
+  + ViewGroupOverlay -> Guiyuan RenderView -> logical viewport -> renderer
+  + MiuiStatusBatteryContainer / system_icons -> native Battery and status icons
 ```
 
 SystemUI owns:
@@ -36,7 +33,7 @@ SystemUI owns:
 
 Guiyuan owns:
 
-- its child View and renderer;
+- its host-overlay View and renderer;
 - the logical replacement viewport;
 - transparent drawing overflow above that viewport when required;
 - replacement-slot intent;
@@ -126,7 +123,7 @@ Visual suppression is not layout ownership.
 
 ## End reservation
 
-The Guiyuan render child does not participate in native measurement. A narrow,
+The Guiyuan host-overlay View does not participate in native measurement. A narrow,
 reversible `MiuiStatusIconContainer.paddingEnd` reservation exposes the compact
 replacement occupancy to native peer layout.
 
@@ -173,7 +170,7 @@ Current production paths either need no independent Guiyuan motion or keep
 positioning/transition motion under SystemUI. No current scene grants Guiyuan
 ownership of native motion.
 
-Home inherits native end-side motion from its carrier and must not add a second
+Home inherits native end-side motion from system_icon_area and must not add a second
 Battery-translation follower, animator or timing curve.
 
 For Control Center, Guiyuan may read verified native source/target transforms

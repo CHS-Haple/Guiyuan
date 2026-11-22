@@ -66,13 +66,15 @@ internal object HomeCarrierAnchorPolicy {
         nativeBatteryWidthPx: Int,
         nativeBatteryRightPx: Int,
     ): SteadyLayout? {
-        val native = resolve(
-            hostWidthPx,
-            hostHeightPx,
-            carrierWidthPx,
-            carrierLeftPx,
+        val native = SteadyLayoutResolver.resolve(
+            hostWidthPx = hostWidthPx,
+            hostHeightPx = hostHeightPx,
+            baseCarrierWidthPx = carrierWidthPx,
+            isRtl = false,
         ) ?: return null
-        if (nativeBatteryWidthPx < carrierWidthPx || nativeBatteryRightPx == native.right) return native
+        if (nativeBatteryWidthPx < carrierWidthPx) {
+            return resolve(hostWidthPx, hostHeightPx, carrierWidthPx, carrierLeftPx)
+        }
         val left = nativeBatteryRightPx.toLong() - carrierWidthPx
         if (left < 0 || nativeBatteryRightPx > hostWidthPx) return null
         return native.copy(left = left.toInt(), right = nativeBatteryRightPx)

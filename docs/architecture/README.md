@@ -43,10 +43,8 @@ The steady Home hierarchy is:
 
 ```text
 MiuiNotificationStatusContainer / system_icon_area
-  -> MiuiStatusBatteryContainer / system_icons
-  -> Guiyuan child
-  -> logical viewport
-  -> renderer
+  + ViewGroupOverlay -> Guiyuan RenderView -> logical viewport -> renderer
+  + MiuiStatusBatteryContainer / system_icons -> native Battery and status icons
 ```
 
 The logical viewport is independent from transparent drawing overflow. Enlarging

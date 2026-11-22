@@ -272,6 +272,25 @@ class HomeRenderSessionTest {
     }
 
     @Test
+    fun parentOverlayKeepsValidSlotWhenNativeBatteryChildReflows() {
+        // The child can retain a stale core coordinate while the native
+        // system_icon_area and battery endpoint remain settled.
+        val parent = requireNotNull(SteadyLayoutResolver.resolve(600, 108, 105, false))
+        assertEquals(495, parent.left)
+        assertEquals(600, parent.right)
+        val battery = HomeCarrierAnchorPolicy.resolveExpandedBattery(
+            hostWidthPx = 600,
+            hostHeightPx = 108,
+            carrierWidthPx = 105,
+            carrierLeftPx = -30,
+            nativeBatteryWidthPx = 135,
+            nativeBatteryRightPx = 600,
+        )
+        assertEquals(parent.left, battery?.left)
+        assertEquals(parent.right, battery?.right)
+    }
+
+    @Test
     fun expandedChargingBatteryKeepsNativeViewportBoundary() {
         assertEquals(
             null,

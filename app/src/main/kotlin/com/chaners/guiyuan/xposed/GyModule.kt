@@ -4387,6 +4387,7 @@ class GyModule : XposedModule() {
         }
         if (!ready) {
             val previouslyClaimed = SysUiPresentationOwner.homeClaimed()
+            val visibilityBeforeRelease = HomeRenderSession.visibilityWitness()
             HomeRenderSession.setNativeHandoffActive(true)
             SysUiPresentationOwner.deactivate("readiness-lost:" + source)
             logDiagnostic(
@@ -4397,6 +4398,7 @@ class GyModule : XposedModule() {
                 "reason" to "owner-readiness-lost",
                 "source" to source,
                 "readinessSource" to readinessSource,
+                "homeVisibilityBeforeRelease" to visibilityBeforeRelease,
                 "previouslyClaimed" to previouslyClaimed,
             )
             return
