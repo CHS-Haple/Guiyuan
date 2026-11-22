@@ -16,7 +16,7 @@ internal fun VisualCfg.hasFiniteScalars(): Boolean =
     ).all(Float::isFinite)
 
 // One rule applies to both visual overrides and custom scheme colors.
-private fun isOpaqueOrAbsent(color: Int?): Boolean =
+internal fun isOpaqueOrAbsent(color: Int?): Boolean =
     color == null || color ushr 24 == 0xFF
 
 internal object ConfigBackupGuards {

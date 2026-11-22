@@ -96,11 +96,15 @@ internal object ConfigBackupFormat {
         require(schema == SCHEMA) { "Unsupported schemaVersion: " + schema }
         val compatibleRoot = upgradeLegacyProfiles(root)
         requireCanonicalTypes(compatibleRoot, ConfigBackup.serializer().descriptor)
-        // Only released 1.0.0 two-layout backups are upgraded. Other
-        // profile counts are invalid, never silently filled or truncated.
         val decoded = json.decodeFromJsonElement(ConfigBackup.serializer(), compatibleRoot)
+        return normalizeImported(upgradeReleasedTwoLayoutProfiles(decoded)).also(::validate)
+    }
+
+    // Only released 1.0.0 two-layout backups are upgraded. Other
+    // profile counts are invalid, never silently filled or truncated.
+    private fun upgradeReleasedTwoLayoutProfiles(decoded: ConfigBackup): ConfigBackup {
         val profiles = decoded.visual.profiles
-        val upgraded = if (profiles.size == 4 &&
+        return if (profiles.size == 4 &&
             profiles.map { it.layout }.toSet() ==
                 setOf(ContentLayout.NETWORK_CENTER, ContentLayout.BATTERY_CENTER) &&
             profiles.map { it.dualSignal to it.layout }.toSet().size == 4
@@ -119,7 +123,6 @@ internal object ConfigBackupFormat {
         } else {
             decoded
         }
-        return normalizeImported(upgraded).also(::validate)
     }
 
     // Preserve the released migration order: single-row booleans depend on the
@@ -228,7 +231,7 @@ internal object ConfigBackupFormat {
             }
             require(BatteryColorSlot.entries.all { slot ->
                 val color = cfg.batteryColorOverrides.colorFor(slot)
-                color == null || color ushr 24 == 0xFF
+                isOpaqueOrAbsent(color)
             }) { "Invalid visual battery color" }
             require(cfg.hasFiniteScalars()) { "Nonfinite visual setting" }
         }
