@@ -79,6 +79,18 @@ execution ownership is in [architecture](../architecture/README.md).
   per-session observer with attach/detach cleanup. This is an evidence-based
   correction of the stale-coordinate contract; exact post-rotation
   measured displacement still needs the B1902 device diagnostic.
+  The same user narrowed the remaining native-only regression: a half
+  pull stays combined, a fast full upward swipe usually stays combined,
+  but slowly closing to zero reliably exposes native icons. Source tracing
+  found CC→Home visibility followed only native visible/ready callbacks,
+  while CcTransitionOwner already ended motion at native fraction zero.
+  A slow close can therefore leave a ready CC owner hiding Home after
+  motion ends and before onVisibleChanged(false); late ready=true can
+  also re-hide it. B1902 reconciles Home eligibility from native panel
+  visible AND positive fraction AND ready projection at all three
+  callbacks (fraction, visible, ready), then resets state on hidden or
+  runtime retirement. The result still needs first/slow-up-swipe device
+  acceptance and new event evidence.
 
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
