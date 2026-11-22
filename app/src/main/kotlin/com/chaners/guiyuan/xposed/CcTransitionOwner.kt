@@ -655,7 +655,19 @@ internal object CcTransitionOwner {
                 it.visibility == View.VISIBLE && isUsableSlotView(it)
             }
             val fakeFrame = fakeRootRef.get()?.let { sample(it, root) }
-            val liveCarrier = sample(fakeStatusIcons, root)
+            // Compare in the same end-anchored frame used by draw(), not
+            // against the raw full-width status-icon container.
+            val liveCarrier = frozenSource?.let { frozen ->
+                sample(fakeStatusIcons, root)?.let { full ->
+                    CcCarrierGeometryPolicy.endAnchoredMotionCarrierGeometry(
+                        carrierGeometry = full,
+                        carrierWidth = fakeStatusIcons.width,
+                        carrierHeight = fakeStatusIcons.height,
+                        logicalWidth = frozen.motionCarrierWidth,
+                        isRtl = fakeStatusIcons.layoutDirection == View.LAYOUT_DIRECTION_RTL,
+                    )
+                }
+            }
             val liveRootOffsetX =
                 if (fakeFrame != null && liveCarrier != null) {
                     liveCarrier[0] - fakeFrame[0]
