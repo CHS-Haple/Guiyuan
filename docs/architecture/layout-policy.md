@@ -149,23 +149,21 @@ The reservation must:
 - fall back to native presentation if carrier, width, hide state, or writer
   ownership is ambiguous.
 
-## QS_FAKE capacity lease
+## QS_FAKE native width and measured peer capacity
 
-The bounded Control Center bridge may temporarily use otherwise-unused width
-already available inside the verified QS_FAKE parent.
+SystemUI's `ControlCenterFakeViewController.updateFakeStatusIconsSize()`
+owns `QS_FAKE.system_icon_area.layoutParams.width` and updates it from the
+selected `realSystemIcons` on rotation and scene changes. Guiyuan never
+writes, leases or restores this property.
 
-This is a capacity lease, not motion:
-
-- acquire it only from a verified end-anchored carrier with compatible parent
-  geometry;
-- apply it before compact cutover;
-- never animate carrier width as gesture motion;
-- keep `paddingEnd` as the sole per-progress layout reservation writer;
-- release the width lease at the native visible-to-hidden boundary;
-- treat an unexpected live width change as a competing writer and fall back to
-  native presentation.
-
-Transition geometry must not interpret leased capacity as carrier displacement.
+The bridge observes native geometry in either portrait (native area narrower
+than its parent) or landscape (native end-anchored overhang). It waits for the
+native area to finish its own layout before cutover or end-reservation updates.
+Only `MiuiStatusIconContainer.paddingEnd` remains a reversible, owner-scoped
+transition occupancy writer. Reservations beyond the compact slot require a
+verified fit in the native measured peer row; an unverified or overflowing row
+fails its affected Control Center presentation native. No width write, timer,
+motion offset or native FINAL geometry change is an acceptable workaround.
 
 ## Motion ownership
 
