@@ -674,6 +674,10 @@ internal object CcTransitionOwner {
                 } else null
             return "progress=$progress cachedCarrierRootX=$fakeCarrierRootOffsetX" +
                 " liveCarrierRootX=$liveRootOffsetX" +
+                " nativeLayoutPending=${fakeStatusIcons.isLayoutRequested}," +
+                "${finalStatusIcons.isLayoutRequested}" +
+                " frozenReservationLayout=$reservationLayout" +
+                " frozenSpans=${frozenReservationSpans?.take(8)}" +
                 " fakeAlpha=${fakeRootRef.get()?.let(::endpointAlpha)}" +
                 " finalAlpha=${finalRootRef.get()?.let(::endpointAlpha)}" +
                 " semanticWidth=$lastReservationWidthPx peerWidth=$lastNativeReservationWidthPx" +
