@@ -271,7 +271,7 @@ verified_battery_fields = set(verified_fields.get(battery_semantic_class, []))
 if not battery_semantic_fields or not battery_semantic_fields.issubset(verified_battery_fields):
     fail("battery semantic fields are not all verified in the SystemUI APK")
 source_required_fields = set(
-    re.findall(r'requiredField\("([^"]+)"\)', battery_source_text)
+    re.findall(r'\b(?:requiredField|batteryRequiredField)\("([^"]+)"\)', battery_source_text)
 )
 if not battery_semantic_fields.issubset(source_required_fields):
     fail(

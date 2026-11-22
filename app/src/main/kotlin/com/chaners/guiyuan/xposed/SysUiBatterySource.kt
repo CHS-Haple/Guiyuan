@@ -1,10 +1,8 @@
 package com.chaners.guiyuan.xposed
 
-import android.graphics.Paint
 import android.util.Log
 import android.graphics.Typeface
 import android.view.View
-import android.widget.TextView
 import com.chaners.guiyuan.settings.FontWeightAxis
 import android.view.ViewGroup
 import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
@@ -22,7 +20,7 @@ internal object SysUiBatterySource {
         "com.android.systemui.statusbar.views.MiuiBatteryMeterIconView"
     const val BATTERY_METER_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
-    private const val BATTERY_CONTAINER_CLASS_NAME =
+    internal const val BATTERY_CONTAINER_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer"
     const val BATTERY_LEVEL_METHOD_NAME = "onBatteryLevelChanged"
     const val CHARGE_STATE_METHOD_NAME = "onChargeStateChanged"
@@ -84,24 +82,24 @@ internal object SysUiBatterySource {
             Class.forName(BATTERY_ICON_VIEW_CLASS_NAME, false, classLoader)
         val meterClass =
             Class.forName(BATTERY_METER_VIEW_CLASS_NAME, false, classLoader)
-        val levelField = iconClass.requiredField("mLevel")
-        val chargingField = iconClass.requiredField("mCharging")
-        val meterIconField = meterClass.requiredField("mBatteryIconView")
+        val levelField = iconClass.batteryRequiredField("mLevel")
+        val chargingField = iconClass.batteryRequiredField("mCharging")
+        val meterIconField = meterClass.batteryRequiredField("mBatteryIconView")
         val progressStatusMethod =
             iconClass.getDeclaredMethod("getProgressStatus")
                 .apply { isAccessible = true }
-        val chargingColorField = iconClass.requiredField("mBatteryChargingColor")
-        val powerSaveColorField = iconClass.requiredField("mBatteryPowerSaveColor")
+        val chargingColorField = iconClass.batteryRequiredField("mBatteryChargingColor")
+        val powerSaveColorField = iconClass.batteryRequiredField("mBatteryPowerSaveColor")
         val superPowerSaveColorField =
-            iconClass.optionalField(
+            iconClass.batteryOptionalField(
                 "mBatterySuperPowerSaveColor",
                 "mBatterySuperSaveColor",
             )
         val performanceColorField =
-            iconClass.requiredField("mBatteryPerformanceModeColor")
-        val lowColorField = iconClass.requiredField("mBatteryLowColor")
+            iconClass.batteryRequiredField("mBatteryPerformanceModeColor")
+        val lowColorField = iconClass.batteryRequiredField("mBatteryLowColor")
         val miuiOptimizationField =
-            iconClass.requiredField("mMiuiOptimizationEnabled")
+            iconClass.batteryRequiredField("mMiuiOptimizationEnabled")
         val chargingIconMethod =
             meterClass.getDeclaredMethod("getHollowChargingIconId")
                 .apply { isAccessible = true }
@@ -377,38 +375,7 @@ internal object SysUiBatterySource {
     // Verified against the exact SystemUI fingerprint: both native number
     // routes must use the known file-backed faces, not mipro family fallbacks.
     fun readHostNumberFont(host: View): Pair<Typeface, String>? =
-        optionalNativeRead { readNumberFontContract(host) }
-
-    private fun readNumberFontContract(host: View): Pair<Typeface, String>? {
-        val root = host as? ViewGroup ?: return null
-        val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
-            ?: return null
-        val battery = container.directChild(BATTERY_METER_VIEW_CLASS_NAME)
-            ?: return null
-        val loader = battery.javaClass.classLoader ?: return null
-        val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
-        val percentFace = config.getField("sMiproTypefaceWght500").get(null) as? Typeface
-            ?: return null
-        val markFace = config.getField("sMiproTypefaceWght600").get(null) as? Typeface
-            ?: return null
-        val percent = battery.javaClass.getField("mBatteryPercentView").get(battery) as? TextView
-            ?: return null
-        val mark = battery.javaClass.getField("mBatteryPercentMarkView").get(battery) as? TextView
-            ?: return null
-        if (percent.typeface !== percentFace || mark.typeface !== markFace) {
-            return null
-        }
-        val hollow = battery.javaClass.getField("mHollowBatteryIconView").get(battery)
-            ?: return null
-        val hollowPaint = hollow.javaClass.getField("textPaint").get(hollow) as? Paint
-            ?: return null
-        val hollowFace = loader.loadClass("com.android.systemui.statusbar.util.MiuiBatteryUtils")
-            .getField("FONT_WGHT").get(null) as? Typeface ?: return null
-        if (hollowPaint.typeface !== hollowFace) return null
-        val path = config.getField("FONT_MIPRO_PATH").get(null) as? String
-            ?: return null
-        return hollowFace to path
-    }
+        optionalNativeRead { SysUiBatteryEvidence.readNumberFontContract(host) }
 
     // Reconcile the transferred snapshot with the same authority and delivery receipt as hooks.
     fun reconcileHostBatteryState(
@@ -418,7 +385,7 @@ internal object SysUiBatterySource {
         if (!hooksReady) return null
         val readState = nativeStateReader ?: return null
         val priorDelivery = lastDelivery
-        val meter = nativeBatteryMeter(host) as? ViewGroup ?: return null
+        val meter = SysUiBatteryEvidence.nativeBatteryMeter(host) as? ViewGroup ?: return null
         val pending = ArrayDeque<View>()
         pending.add(meter)
         var icon: View? = null
@@ -450,19 +417,12 @@ internal object SysUiBatterySource {
     }
 
     fun readHostChargingIconId(host: Any): Int? {
-        val battery = nativeBatteryMeter(host) ?: return null
+        val battery = SysUiBatteryEvidence.nativeBatteryMeter(host) ?: return null
         return optionalNativeRead {
             battery.javaClass.getDeclaredMethod("getHollowChargingIconId").apply {
                 isAccessible = true
             }.invoke(battery) as? Int
         }?.takeIf { it != 0 }
-    }
-
-    private fun nativeBatteryMeter(host: Any): View? {
-        val root = host as? ViewGroup ?: return null
-        val container = root.directChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
-            ?: return null
-        return container.directChild(BATTERY_METER_VIEW_CLASS_NAME)
     }
 
     // Both deliveries update this receipt only while holding the source monitor.
@@ -472,14 +432,6 @@ internal object SysUiBatterySource {
         } else if (state.chargingIconResId != null) {
             lastChargingIconResId = state.chargingIconResId
         }
-    }
-
-    private fun ViewGroup.directChild(className: String): View? {
-        for (i in 0 until childCount) {
-            val child = getChildAt(i)
-            if (child.javaClass.name == className) return child
-        }
-        return null
     }
 
     private fun semanticColor(
@@ -504,16 +456,6 @@ internal object SysUiBatterySource {
         return optionalNativeRead { field.getInt(icon) }
             ?.takeIf { color -> color ushr 24 != 0 }
     }
-
-    private fun Class<*>.requiredField(name: String): Field =
-        getDeclaredField(name).apply { isAccessible = true }
-
-    private fun Class<*>.optionalField(vararg names: String): Field? =
-        names.firstNotNullOfOrNull { name ->
-            optionalNativeRead {
-                getDeclaredField(name).apply { isAccessible = true }
-            }
-        }
 
     fun matches(handle: HookHandle): Boolean =
         handle.id == LEVEL_HOOK_ID ||
