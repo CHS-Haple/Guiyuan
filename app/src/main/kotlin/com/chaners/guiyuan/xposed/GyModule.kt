@@ -2833,7 +2833,7 @@ class GyModule : XposedModule() {
         }
 
         val stableAod =
-            SysUiKeyguardAodSource.isStableAod(
+            SysUiKeyguardAodPolicy.isStableAod(
                 toAod = update.toAod,
                 isAodAnimate = update.isAodAnimate,
             )
@@ -3080,7 +3080,7 @@ class GyModule : XposedModule() {
         }
         val next =
             when {
-                SysUiKeyguardAodSource.isStableAod(
+                SysUiKeyguardAodPolicy.isStableAod(
                     toAod = update.toAod,
                     isAodAnimate = update.isAodAnimate,
                 ) ->
@@ -3124,7 +3124,7 @@ class GyModule : XposedModule() {
                 if (
                     aodState != null &&
                     !aodState.isAodAnimate &&
-                    !SysUiKeyguardAodSource.isStableAod(
+                    !SysUiKeyguardAodPolicy.isStableAod(
                         toAod = aodState.toAod,
                         isAodAnimate = aodState.isAodAnimate,
                     )

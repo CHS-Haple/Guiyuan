@@ -42,8 +42,8 @@ class CcTransitionReservationTest {
         val chargingRow = floatArrayOf(1522f, 0f, 1f, 0f, 0f, 1f)
         val unpluggedRow = floatArrayOf(1567f, 0f, 1f, 0f, 0f, 1f)
         val offset = chargingRow[0] - root[0]
-        val before = CcTransitionPolicy.rootAnchoredCarrier(chargingRow, root, offset)
-        val after = CcTransitionPolicy.rootAnchoredCarrier(unpluggedRow, root, offset)
+        val before = CcTransitionSpatialPolicy.rootAnchoredCarrier(chargingRow, root, offset)
+        val after = CcTransitionSpatialPolicy.rootAnchoredCarrier(unpluggedRow, root, offset)
         assertEquals(before[0], after[0], 0.0001f)
 
         val held = 0.6f

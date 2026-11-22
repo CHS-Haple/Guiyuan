@@ -3727,7 +3727,7 @@ internal class StatusPainter(
                 targetAxisRatio = targetWidthRatio,
                 outerScale = outerScale,
             )
-            val anchors = CcTransitionPolicy.aggregateAnchors(
+            val anchors = CcTransitionSpatialPolicy.aggregateAnchors(
                 bounds = bounds,
                 rows = aggregateRows,
                 widthCompensation = widthCompensation,
