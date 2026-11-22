@@ -2370,52 +2370,41 @@ internal object SysUiPresentationOwner {
             }?.toInt()
         }
 
-        // Native peer-row capacity remains authoritative. Only the
-        // B1908 measured 1-2px physical rounding overshoot is bounded.
-        private fun ViewGroup.checkedFakeNativePeerPaddingEnd(
+        // Keep native FAKE capacity strict. Our reflected peer measure no
+        // longer double-counts each child's measured insets.
+        private fun ViewGroup.checkedFakeNativePeerCapacity(
             baseline: PaddingState,
             nativeHide: Boolean,
             compactSlotWidthPx: Int,
             requestedReservationDelta: Int,
-        ): Int? {
-            val requestedEnd = baseline.end + requestedReservationDelta
-            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return requestedEnd
+        ): Boolean {
+            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
             val outsideCompact = requestedReservationDelta >
                 if (nativeHide) compactSlotWidthPx else 0
-            if (!outsideCompact) return requestedEnd
+            if (!outsideCompact) return true
             val contentWidth = measuredNativePeerWidth(this)
-                ?: run { onFailNative("fake-native-peer-measure-unavailable"); return null }
-            val boundedEnd = EndReservationPolicy.boundedFakeNativePeerPaddingEnd(
-                rowWidthPx = width,
-                contentWidthPx = contentWidth,
-                targetPaddingEndPx = requestedEnd,
-            ) ?: run {
+                ?: run { onFailNative("fake-native-peer-measure-unavailable"); return false }
+            if (!EndReservationPolicy.fitsFakeNativePeerRow(
+                    rowWidthPx = width,
+                    contentWidthPx = contentWidth,
+                    targetPaddingEndPx = baseline.end + requestedReservationDelta,
+                )
+            ) {
                 emitDiagnostic {
                     onEvent(
                         eventPrefix + " fakePeerCapacity state=overflow" +
                             " rowWidth=" + width +
                             " contentWidth=" + contentWidth +
-                            " requestedPaddingEnd=" + requestedEnd +
+                            " requestedPaddingEnd=" + (baseline.end + requestedReservationDelta) +
                             " nativeHide=" + nativeHide +
                             " compactSlotWidth=" + compactSlotWidthPx +
                             " groupLayoutRequested=" + isLayoutRequested,
                     )
                 }
                 onFailNative("fake-native-peer-row-overflow")
-                return null
+                return false
             }
-            if (boundedEnd != requestedEnd && lastReservationDelta != boundedEnd - baseline.end) {
-                emitDiagnostic {
-                    onEvent(
-                        eventPrefix + " fakePeerCapacity state=bounded-native-slack" +
-                            " rowWidth=" + width +
-                            " contentWidth=" + contentWidth +
-                            " requestedPaddingEnd=" + requestedEnd +
-                            " actualPaddingEnd=" + boundedEnd,
-                    )
-                }
-            }
-            return boundedEnd
+            return true
         }
 
         fun syncEndReservation(): Boolean {
@@ -2514,18 +2503,19 @@ internal object SysUiPresentationOwner {
                     actualBatteryWidthPx = actualBatteryWidthPx,
                     requestedSlotWidthPx = requestedSlotWidthPx,
                 )
-            val boundedPaddingEnd = group.checkedFakeNativePeerPaddingEnd(
-                baseline = baseline,
-                nativeHide = nativeHide,
-                compactSlotWidthPx = compactSlotWidthPx,
-                requestedReservationDelta = requestedReservationDelta,
-            ) ?: return false
-            val reservationDelta = boundedPaddingEnd - baseline.end
+            if (!group.checkedFakeNativePeerCapacity(
+                    baseline = baseline,
+                    nativeHide = nativeHide,
+                    compactSlotWidthPx = compactSlotWidthPx,
+                    requestedReservationDelta = requestedReservationDelta,
+                )
+            ) return false
+            val reservationDelta = requestedReservationDelta
             val target =
                 PaddingState(
                     baseline.start,
                     baseline.top,
-                    boundedPaddingEnd,
+                    baseline.end + reservationDelta,
                     baseline.bottom,
                 )
             if (live != target) {

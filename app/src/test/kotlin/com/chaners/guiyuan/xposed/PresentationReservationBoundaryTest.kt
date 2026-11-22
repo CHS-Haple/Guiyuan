@@ -91,10 +91,10 @@ class PresentationReservationBoundaryTest {
 
     @Test
     fun overhangDoesNotBypassMeasuredPeerEndReservationCapacity() {
-        assertEquals(null, EndReservationPolicy.boundedFakeNativePeerPaddingEnd(
+        assertFalse(EndReservationPolicy.fitsFakeNativePeerRow(
             rowWidthPx = 1230, contentWidthPx = 1190, targetPaddingEndPx = 105,
         ))
-        assertEquals(105, EndReservationPolicy.boundedFakeNativePeerPaddingEnd(
+        assertTrue(EndReservationPolicy.fitsFakeNativePeerRow(
             rowWidthPx = 1230, contentWidthPx = 900, targetPaddingEndPx = 105,
         ))
     }

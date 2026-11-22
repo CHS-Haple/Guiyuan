@@ -118,22 +118,17 @@ internal object EndReservationPolicy {
         peerRowLayoutRequested: Boolean,
     ): Boolean = carrierSettled && !peerRowLayoutRequested
 
-    // B1908 repeated 478px row / 392px peers / 87-88px request;
-    // the excess is 1-2 physical pixels. Clamp only this verified
-    // native rounding difference, never a genuine capacity overflow.
-    private const val MAX_FAKE_PEER_ROUNDING_PX = 2
-
-    fun boundedFakeNativePeerPaddingEnd(
+    // Native FAKE row capacity is strict. Native measuredWidth already
+    // includes child padding, so the corrected peer measure must fit.
+    fun fitsFakeNativePeerRow(
         rowWidthPx: Int,
         contentWidthPx: Int,
         targetPaddingEndPx: Int,
-    ): Int? {
-        if (rowWidthPx <= 0 || contentWidthPx < 0 || targetPaddingEndPx < 0) return null
-        val slack = rowWidthPx.toLong() - contentWidthPx
-        val excess = targetPaddingEndPx.toLong() - slack
-        if (slack < 0 || excess > MAX_FAKE_PEER_ROUNDING_PX) return null
-        return minOf(targetPaddingEndPx.toLong(), slack).toInt()
-    }
+    ): Boolean =
+        rowWidthPx > 0 &&
+            contentWidthPx >= 0 &&
+            targetPaddingEndPx >= 0 &&
+            contentWidthPx.toLong() + targetPaddingEndPx <= rowWidthPx.toLong()
 
 }
 

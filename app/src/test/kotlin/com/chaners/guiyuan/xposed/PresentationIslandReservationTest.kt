@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.xposed
 
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -25,26 +24,20 @@ class PresentationIslandReservationTest {
     @Test
     fun nativeFakePeerRowUsesMeasuredNativeSlackWithoutHostWidthLease() {
         // Synthetic native measure boundaries, not a claim about device pixels.
-        assertEquals(80, EndReservationPolicy.boundedFakeNativePeerPaddingEnd(
+        assertTrue(EndReservationPolicy.fitsFakeNativePeerRow(
             rowWidthPx = 200, contentWidthPx = 120, targetPaddingEndPx = 80,
         ))
-        assertEquals(79, EndReservationPolicy.boundedFakeNativePeerPaddingEnd(
+        assertFalse(EndReservationPolicy.fitsFakeNativePeerRow(
             rowWidthPx = 200, contentWidthPx = 121, targetPaddingEndPx = 80,
         ))
-        assertEquals(86, EndReservationPolicy.boundedFakeNativePeerPaddingEnd(
+        assertFalse(EndReservationPolicy.fitsFakeNativePeerRow(
             rowWidthPx = 478, contentWidthPx = 392, targetPaddingEndPx = 87,
         ))
-        assertEquals(86, EndReservationPolicy.boundedFakeNativePeerPaddingEnd(
-            rowWidthPx = 478, contentWidthPx = 392, targetPaddingEndPx = 88,
+        assertTrue(EndReservationPolicy.fitsFakeNativePeerRow(
+            rowWidthPx = 478, contentWidthPx = 391, targetPaddingEndPx = 87,
         ))
-        assertEquals(null, EndReservationPolicy.boundedFakeNativePeerPaddingEnd(
-            rowWidthPx = 478, contentWidthPx = 392, targetPaddingEndPx = 89,
-        ))
-        assertEquals(null, EndReservationPolicy.boundedFakeNativePeerPaddingEnd(
+        assertFalse(EndReservationPolicy.fitsFakeNativePeerRow(
             rowWidthPx = 0, contentWidthPx = 0, targetPaddingEndPx = 0,
-        ))
-        assertEquals(null, EndReservationPolicy.boundedFakeNativePeerPaddingEnd(
-            rowWidthPx = 200, contentWidthPx = 120, targetPaddingEndPx = -1,
         ))
     }
 
