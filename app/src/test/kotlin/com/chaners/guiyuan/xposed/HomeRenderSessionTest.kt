@@ -182,6 +182,39 @@ class HomeRenderSessionTest {
     }
 
     @Test
+    fun nativeHomeCarrierAnchorFollowsRotationWithoutChangingNativeViews() {
+        val portrait = HomeCarrierAnchorPolicy.resolve(
+            hostWidthPx = 587,
+            hostHeightPx = 108,
+            carrierWidthPx = 105,
+            carrierLeftPx = 482,
+        )
+        assertEquals(482, portrait?.left)
+        assertEquals(587, portrait?.right)
+        assertEquals(105, portrait?.visualWidth)
+
+        // Native SystemUI may move the carrier while keeping its own width.
+        // The old host-end estimate incorrectly stayed at 482 in this case.
+        val reflow = HomeCarrierAnchorPolicy.resolve(
+            hostWidthPx = 760,
+            hostHeightPx = 108,
+            carrierWidthPx = 105,
+            carrierLeftPx = 605,
+        )
+        assertEquals(605, reflow?.left)
+        assertEquals(710, reflow?.right)
+        assertEquals(105, reflow?.visualWidth)
+    }
+
+    @Test
+    fun invalidOrUnfinishedNativeHomeCarrierNeverUsesStaleHostEndEstimate() {
+        assertEquals(null, HomeCarrierAnchorPolicy.resolve(587, 108, 105, -1))
+        assertEquals(null, HomeCarrierAnchorPolicy.resolve(587, 108, 105, 500))
+        assertEquals(null, HomeCarrierAnchorPolicy.resolve(587, 108, 0, 482))
+        assertEquals(null, HomeCarrierAnchorPolicy.resolve(587, 0, 105, 482))
+    }
+
+    @Test
     fun noOverflowPreservesOriginalPhysicalBounds() {
         val resolved =
             VerticalOverflowPolicy.resolve(
