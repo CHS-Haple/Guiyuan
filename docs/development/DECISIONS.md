@@ -217,6 +217,29 @@ a competing Guiyuan owner; preserve independent restoration checks for
 ignored slots, clip masks and end padding. CI checks alone do not establish
 whether the first real-device swipe is visually smooth.
 
+## Native QS_FAKE pre-draw cutover after an explicit icon-row relayout
+
+**Decision:** When a CC session activates ignored slots on an already-sized
+native fake carrier, request the native icon-row layout explicitly and resolve
+visual cutover after the complete native traversal at pre-draw. Do not treat
+a child's `onLayout` as evidence that its parent's `isLayoutRequested`
+flag has already cleared. The one pending pre-draw listener is scoped to the
+session and removed on readiness or cleanup; it does not change native
+width, motion, final CC surface or persistent preferences.
+
+**Evidence:** The B1900 device video showed a persistent native-only
+pressed-header state. Its detailed log recorded
+`preLayoutVisualMask active=false` at 18:47:49 but no `layoutReady`,
+CC activation, or Fail native afterward. B1899 had immediately triggered
+a native icon-row layout by writing fake width; B1900 correctly removed that
+unsafe width writer but did not replace the layout event dependency.
+
+**Consequence:** Keep SystemUI sole width owner. Recover the bounded
+native-layout event, validate native row capacity before masking, and retain
+exact rollback receipts. Unverified native frame geometry still releases
+only its affected presentation. A passing CI is not a claim of device
+acceptance.
+
 ## Native resource identity is preferred
 
 **Decision:** when a verified native drawable/resource expresses the needed
