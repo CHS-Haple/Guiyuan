@@ -100,6 +100,14 @@ internal object EndReservationPolicy {
         }
     }
 
+    // Native fake host settlement and its status-icon row measure are
+    // independent: a cached measureViews list is not authoritative while
+    // the peer row itself still requests a layout traversal.
+    fun fakeNativePeerMeasureReady(
+        carrierSettled: Boolean,
+        peerRowLayoutRequested: Boolean,
+    ): Boolean = carrierSettled && !peerRowLayoutRequested
+
     // Bound the actual peer row; never infer capacity from changing host width.
     fun fitsFakeNativePeerRow(
         rowWidthPx: Int,
