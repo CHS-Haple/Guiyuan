@@ -293,40 +293,40 @@ the existing native fallback on actual unsafe conditions. Tests cover
 slow-close, late-ready, partial gesture and fast-close/reopen traces.
 Real-device validation still required.
 
-## Native header visual exit is a transition ownership boundary
+## CC terminal visual exit and Home visibility are separate owners
 
-**Decision:** During a confirmed native CC closing motion from HOME,
-observe both existing native fake and final status-header roots at the
-transition's already-owned pre-draw boundary. If both are absent from
-the visible native root (including a native orientation detach), retire
-the transient overlay and restore its original Home-source clip before
-handing Home display authority back. The terminal witness remains scoped
-to the same native visible cycle, even if a repeated `visible=true`
-event arrives; a new visible cycle clears it. Do not use a guessed
-time/alpha threshold, rewrite native status-bar geometry, or add a hook.
+**Decision:** During a confirmed native CC closing gesture from HOME,
+read the actual native fake/final header root visibility. If BOTH roots
+are no longer visible, retire only the temporary QS_FAKE transition
+session and return Home visibility authority to its existing coordinator,
+even if the CC expansion delegate still reports a stale positive fraction.
+Keep the terminal witness latched until the next native visible cycle,
+including across duplicate `visible=true` events. Use existing CC and
+Home pre-draw observation boundaries; do not invent time/alpha thresholds,
+change native geometry or add another Xposed hook.
 
-**Evidence:** A B1902 portrait return after rotating inside Control
-Center reproduced a short empty status-header slot while other Home
-status icons were present, then recovered without any Fail native.
-B1902 source clips the Home render surface at transition start, and
-only unclips it on later transition retirement; the supplied runtime
-log subsequently records `transitionReservation cleared` but lacks
-native header occupancy and callback timestamps in the brief gap.
-This identifies a missing source-clip ownership boundary; the exact
-native endpoint state during the gap is still unmeasured.
+**Evidence:** After CC landscape→portrait, B1902/B1903 device feedback
+showed native Home peer icons before the combined icon returned.
+B1903 follow-up runtime report did not record the actual blank frames.
+A source audit disproved the earlier claim that the transition masks
+the Home RenderView. `CcRenderSession.transitionSourceSnapshot()` supplies
+the **QS_FAKE** RenderView to `CcTransitionOwner`, which clips and restores
+only that source. The Home RenderView is controlled separately by
+`HomeRenderSession.controlCenterAllowsHome`, updated by
+`GyModule.reconcileCcHomeAuthority()`. B1903's CC-only pre-draw
+terminal observer can cease running after the CC root stops drawing,
+even while Home's native row remains visible.
 
-**Consequence:** Use read-only, native View visibility/alpha and
-`getGlobalVisibleRect` checks with the observed closing direction,
-then release the existing scoped transition and notify the single Home
-visibility coordinator. The native CC root can stop drawing before its
-delegate posts the final expansion sample; its own pre-draw cannot be
-the *only* terminal observer. Reuse Home's preexisting native pre-draw
-observer to check the same predicate while the Home icon row is
-rendering. Verify the source View identity, session and attached
-lifetime. Emit one bounded terminal event naming the winning observer.
-B1903's sole-CC-root observer did not resolve the real device gap;
-the B1903 report tail does not contain the actual frame's native
-opacity/clip state. Preserve prior scene ownership otherwise.
+**Consequence:** Reuse Home's existing native pre-draw to check the
+same read-only terminal predicate that CC observes, authenticate that
+the drawing View belongs to the live Home session (NOT the QS_FAKE
+source), and notify one Home visibility coordinator. The scoped
+transition session still restores its QS_FAKE clip, reservation and
+overlay on retirement. A bounded terminal event reports whether the
+witness was `home-pre-draw` or `cc-pre-draw`. The B1904 device test
+must establish that the actual blank interval meets this predicate;
+if not, collect the native visible/fraction/owner state at that exact
+boundary rather than adding speculative fallback.
 
 ## CC frozen source geometry is viewport-scoped
 
