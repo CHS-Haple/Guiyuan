@@ -38,6 +38,17 @@ class HomeRenderSessionTest {
     }
 
     @Test
+    fun detachedHomeCarrierCannotBeReady() {
+        assertFalse(HomeRenderSession.resolveOwnerReady(
+            featureEnabled = true,
+            modelReady = true,
+            tintReady = true,
+            layoutReady = true,
+            hostAttached = false,
+        ))
+    }
+
+    @Test
     fun nativeIntermediateLayoutDoesNotDiscardVerifiedHomeOwnership() {
         val retire = HomeRenderSession::shouldRetireUnresolvedAnchor
         assertFalse(retire(true, true, true, false, false))

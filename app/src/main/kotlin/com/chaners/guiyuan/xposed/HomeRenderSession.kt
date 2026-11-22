@@ -527,6 +527,8 @@ internal object HomeRenderSession {
                 probeView.visibility == View.VISIBLE &&
                 homeFrameDrawnAfterPanel &&
                 host.get()?.isAttachedToWindow == true &&
+                batteryContainer.get()?.isAttachedToWindow == true &&
+                batteryCarrier.get()?.isAttachedToWindow == true &&
                 host.get()?.isShown == true
 
         fun visibilityWitness(): String {
@@ -831,6 +833,9 @@ internal object HomeRenderSession {
             val overlayHost = host.get() ?: return false
             val nativeContainer = batteryContainer.get() ?: return false
             val carrier = batteryCarrier.get() ?: return false
+            if (!overlayHost.isAttachedToWindow || !nativeContainer.isAttachedToWindow ||
+                !carrier.isAttachedToWindow
+            ) return false
             val hostWidth = overlayHost.width
             val hostHeight = overlayHost.height
             val baseCarrierWidth =
@@ -854,7 +859,8 @@ internal object HomeRenderSession {
                 if (privacyOccupiesEnd == true) {
                     val nativeIcons = statusIcons.get() ?: return false
                     if (nativeIcons.parent !== nativeContainer ||
-                        !nativeIcons.isLaidOut || nativeIcons.width <= 0
+                        !nativeIcons.isAttachedToWindow || !nativeIcons.isLaidOut ||
+                        nativeIcons.width <= 0
                     ) return false
                     nativeIcons.getLocationInWindow(carrierWindowLocation)
                     overlayHost.getLocationInWindow(hostWindowLocation)
@@ -868,10 +874,6 @@ internal object HomeRenderSession {
                         isRtl = isRtl,
                     )
                 } else {
-                    if (!overlayHost.isAttachedToWindow ||
-                        !nativeContainer.isAttachedToWindow ||
-                        !carrier.isAttachedToWindow
-                    ) return false
                     // Width is already resolved by resolveWidthPx above,
                     // which accepts a valid native measuredWidth while the
                     // battery_icon_container's laid-out width is transiently

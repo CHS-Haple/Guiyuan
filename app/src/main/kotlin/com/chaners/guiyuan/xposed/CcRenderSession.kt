@@ -978,6 +978,9 @@ internal object CcRenderSession {
             val hostView = host.get() ?: return markLayoutUnavailable()
             val statusArea = statusBarArea.get() ?: return markLayoutUnavailable()
             val carrierView = carrier.get() ?: return markLayoutUnavailable()
+            if (!hostView.isAttachedToWindow || !statusArea.isAttachedToWindow ||
+                !carrierView.isAttachedToWindow
+            ) return markLayoutUnavailable()
             val carrierWidth =
                 SysUiCarrierMetrics.resolveWidthPx(carrierView)
                     ?: return markLayoutUnavailable()
@@ -1062,7 +1065,9 @@ internal object CcRenderSession {
                 modelReady = modelReady,
                 tintReady = tintReady,
                 layoutReady = layoutReady,
-                hostAttached = host.get()?.isAttachedToWindow == true,
+                hostAttached = host.get()?.isAttachedToWindow == true &&
+                    statusBarArea.get()?.isAttachedToWindow == true &&
+                    carrier.get()?.isAttachedToWindow == true,
                 nativePresentationReady = nativePresentationReady,
             )
 

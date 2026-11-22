@@ -54,6 +54,19 @@ class CcRenderSessionTest {
     }
 
     @Test
+    fun detachedFakeNativeAnchorCannotRemainProjectionReady() {
+        assertFalse(CcRenderSession.resolveProjectionReady(
+            featureEnabled = true,
+            sceneEligible = true,
+            modelReady = true,
+            tintReady = true,
+            layoutReady = true,
+            hostAttached = false,
+            nativePresentationReady = true,
+        ))
+    }
+
+    @Test
     fun hotReloadRestoreRequiresAttachedLaidOutHostOutsideNativeLayout() {
         assertTrue(
             CcRenderSession
