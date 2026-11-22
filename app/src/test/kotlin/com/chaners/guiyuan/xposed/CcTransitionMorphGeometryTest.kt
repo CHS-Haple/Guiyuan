@@ -27,7 +27,7 @@ class CcTransitionMorphGeometryTest {
 
         for (progress in listOf(0f, 0.15f, 0.30f, 0.435f, 0.57f)) {
             val rows = listOf(top to topTarget, bottom to bottomTarget).map { (source, target) ->
-                CcTransitionMorphPolicy.dualMobileRowMotionGeometry(
+                CcTransitionPolicy.dualMobileRowMotionGeometry(
                     source = source,
                     target = target,
                     groupTravelX = 65f,
@@ -91,7 +91,7 @@ class CcTransitionMorphGeometryTest {
         val bottomTarget = transitionGeometry(centerX = 135f, centerY = 49f, width = 8f, height = 20f)
 
         fun frame(source: FloatArray, target: FloatArray, progress: Float): FloatArray =
-            CcTransitionMorphPolicy.dualMobileRowMotionGeometry(
+            CcTransitionPolicy.dualMobileRowMotionGeometry(
                 source = source,
                 target = target,
                 groupTravelX = 60f,

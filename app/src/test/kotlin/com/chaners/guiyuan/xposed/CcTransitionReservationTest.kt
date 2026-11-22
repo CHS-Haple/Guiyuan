@@ -69,7 +69,7 @@ class CcTransitionReservationTest {
         )
         target[0] += correction
         for (p in listOf(0.3f, 0.6f, 0.85f, 1f)) {
-            val before = CcTransitionMorphPolicy.dualMobileRowMotionGeometry(
+            val before = CcTransitionPolicy.dualMobileRowMotionGeometry(
                 source = source,
                 target = original,
                 groupTravelX = 100f,
@@ -77,7 +77,7 @@ class CcTransitionReservationTest {
                 progress = p,
                 scalePolicy = StatusPainter.TransitionScalePolicy.SHRINK_ONLY,
             )
-            val after = CcTransitionMorphPolicy.dualMobileRowMotionGeometry(
+            val after = CcTransitionPolicy.dualMobileRowMotionGeometry(
                 source = source,
                 target = target,
                 groupTravelX = 130f + correction,
