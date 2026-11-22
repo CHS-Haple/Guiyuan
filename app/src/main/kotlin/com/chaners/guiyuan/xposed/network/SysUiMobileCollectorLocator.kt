@@ -71,7 +71,7 @@ internal object SysUiMobileCollectorLocator {
                                     null
                                 }
                             }
-                        }.filter { candidate -> validCandidate(candidate, role, classLoader) }
+                        }.filter { candidate -> isVerifiedCandidate(candidate, role, classLoader) }
 
                         // An ambiguous match must not claim SystemUI ownership.
                         if (candidates.size == 1) put(role, candidates.single())
@@ -84,7 +84,7 @@ internal object SysUiMobileCollectorLocator {
         }
     }
 
-    private fun validCandidate(
+    internal fun isVerifiedCandidate(
         candidate: Class<*>,
         role: Role,
         classLoader: ClassLoader,
