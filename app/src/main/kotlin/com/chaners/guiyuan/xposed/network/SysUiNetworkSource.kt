@@ -465,7 +465,10 @@ internal object SysUiNetworkSource {
             try {
                 Class.forName(name, false, classLoader)
             } catch (notFound: ClassNotFoundException) {
-                dynamicCollectors[role] ?: throw notFound
+                dynamicCollectors[role] ?: throw ClassNotFoundException(
+                    "dexkit-no-unique-collector role=${role.name} original=$name",
+                    notFound,
+                )
             }
 
         return try {
