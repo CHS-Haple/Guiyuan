@@ -476,17 +476,13 @@ internal object SysUiNetworkSource {
                 "dexkit-no-unique-collector role=${role.name} original=$name direct=" +
                     if (direct == null) "missing" else "incompatible",
             )
-            // One diagnostic per fallback role; no telemetry, listener or signal-path work.
-            if (onEvent != null) {
-                optionalNativeRead {
-                    if (isDetailedDiagnosticsEnabled()) {
-                        onEvent.invoke(
-                            "networkPipeline mobile dexkitCollector role=${role.name}" +
-                                " original=$name chosen=${discovered.name}" +
-                                " direct=" + if (direct == null) "missing" else "incompatible",
-                        )
-                    }
-                }
+            // This rare install-time fallback must also be observable in Canary diagnostics.
+            optionalNativeRead {
+                onEvent?.invoke(
+                    "networkPipeline mobile dexkitCollector role=${role.name}" +
+                        " original=$name chosen=${discovered.name}" +
+                        " direct=" + if (direct == null) "missing" else "incompatible",
+                )
             }
             return discovered
         }
