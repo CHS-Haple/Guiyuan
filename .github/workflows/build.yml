@@ -496,7 +496,7 @@ jobs:
           set -euo pipefail
           if grep -Fq 'implementation("org.luckypray:dexkit:' app/build.gradle.kts; then
             test -s "$CANARY_APK_PATH"
-            unzip -Z -1 "$CANARY_APK_PATH" | grep -Fxq "lib/arm64-v8a/libdexkit.so"
+            unzip -Z -1 "$CANARY_APK_PATH" | grep -Fx "lib/arm64-v8a/libdexkit.so" >/dev/null
             unzip -l "$CANARY_APK_PATH" "lib/*/libdexkit.so"
           fi
 
