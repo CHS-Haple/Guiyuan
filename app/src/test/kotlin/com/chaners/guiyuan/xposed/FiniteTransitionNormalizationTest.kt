@@ -15,7 +15,7 @@ class FiniteTransitionNormalizationTest {
     fun nonfiniteTransitionInputsFollowOriginalFallbacks() {
         for (value in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) {
             assertEquals(0f, CcTransitionPolicy.geometryProgress(value), 0f)
-            assertEquals(0f, CcTransitionPolicy.acceleratedLatentRevealProgress(value), 0f)
+            assertEquals(0f, CcTransitionRevealPolicy.acceleratedLatentRevealProgress(value), 0f)
             assertEquals(0f, BatteryRingTransitionPolicy.transitionProgress(value), 0f)
             assertEquals(1f, BatteryRingTransitionPolicy.remainingFraction(value), 0f)
             assertEquals(0f, MobileSignalStagePolicy.handoffProgress(value), 0f)

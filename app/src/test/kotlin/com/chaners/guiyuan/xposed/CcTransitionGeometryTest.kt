@@ -49,7 +49,7 @@ class CcTransitionGeometryTest {
 
     @Test
     fun missingNativeEndpointUsesOneWholeComponentFadeCurve() {
-        val policy = CcTransitionPolicy
+        val policy = CcTransitionRevealPolicy
         assertEquals(1f, policy.unmatchedExitOpacity(0f), 0f)
         assertEquals(0.125f, policy.unmatchedExitOpacity(0.5f), 0.0001f)
         assertEquals(0f, policy.unmatchedExitOpacity(1f), 0f)
@@ -316,8 +316,7 @@ class CcTransitionCarrierMotionTest {
         val target = transitionGeometry(width = 75f, height = 75f)
 
         val result =
-            CcTransitionPolicy
-                .interpolateSimilarityGeometry(
+            CcTransitionMorphPolicy.interpolateSimilarityGeometry(
                     source = source,
                     target = target,
                     progress = 1f,

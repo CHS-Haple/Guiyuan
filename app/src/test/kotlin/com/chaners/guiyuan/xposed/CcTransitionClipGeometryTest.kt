@@ -78,7 +78,7 @@ class CcTransitionClipGeometryTest {
 
     @Test
     fun horizontalClipKeepsPixelsOpaqueAndAnchorsTowardChosenEdge() {
-        val policy = CcTransitionPolicy
+        val policy = CcTransitionClipPolicy
         val bounds = StatusPainter.TransitionBounds(0f, 10f, 100f, 30f)
         val rightAnchored =
             policy.horizontalClipBounds(

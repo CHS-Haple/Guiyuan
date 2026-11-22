@@ -65,24 +65,20 @@ class CcTransitionLatentRevealTest {
     fun latentRevealAcceleratesAfterOccupancyUnlockWithoutChangingTheGate() {
         assertEquals(
             0f,
-            CcTransitionPolicy
-                .acceleratedLatentRevealProgress(0f),
+            CcTransitionRevealPolicy.acceleratedLatentRevealProgress(0f),
             0.0001f,
         )
         assertTrue(
-            CcTransitionPolicy
-                .acceleratedLatentRevealProgress(0.2f) > 0.5f,
+            CcTransitionRevealPolicy.acceleratedLatentRevealProgress(0.2f) > 0.5f,
         )
         assertEquals(
             1f,
-            CcTransitionPolicy
-                .acceleratedLatentRevealProgress(0.35f),
+            CcTransitionRevealPolicy.acceleratedLatentRevealProgress(0.35f),
             0.0001f,
         )
         assertEquals(
             1f,
-            CcTransitionPolicy
-                .acceleratedLatentRevealProgress(1f),
+            CcTransitionRevealPolicy.acceleratedLatentRevealProgress(1f),
             0.0001f,
         )
     }
