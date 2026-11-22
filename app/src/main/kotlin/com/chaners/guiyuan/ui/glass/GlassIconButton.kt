@@ -8,26 +8,25 @@ import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.glass
 
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
@@ -45,6 +44,11 @@ import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.material.GlassShadow
 import top.yukonga.miuix.kmp.material.GlassShadows
+import top.yukonga.miuix.kmp.interfaces.HoldDownInteraction
+import top.yukonga.miuix.kmp.utils.MiuixIndication
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.withContext
 
 /**
  * A round glass button for a bar's leading or trailing controls.
@@ -89,7 +93,17 @@ fun GlassIconButton(
     content: @Composable () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
+    LaunchedEffect(interactionSource, holdDownState, enabled) {
+        if (holdDownState && enabled) {
+            val hold = HoldDownInteraction.HoldDown()
+            interactionSource.emit(hold)
+            try {
+                awaitCancellation()
+            } finally {
+                withContext(NonCancellable) { interactionSource.emit(HoldDownInteraction.Release(hold)) }
+            }
+        }
+    }
     val topBarContext = LocalGlassTopAppBarContext.current
     val usesTopBarButtonBackdrop = topBarContext?.onButtonBackdropConsumerChange != null &&
         (inheritTopBarMaterial || backdrop == null)
@@ -121,7 +135,7 @@ fun GlassIconButton(
         shadow = shadow,
         sharedProgress = topBarContext?.materialProgress,
         sharedKeepMaterial = topBarContext?.keepMaterial,
-        pressed = pressed || holdDownState,
+        interactionSource = interactionSource,
         modifier = modifier.then(
             if (onLongClick == null) {
                 Modifier.clickable(
@@ -164,7 +178,7 @@ private fun GlassButtonSurface(
     stroke: EdgeStroke?,
     shadow: GlassShadow?,
     modifier: Modifier = Modifier,
-    pressed: Boolean = false,
+    interactionSource: InteractionSource? = null,
     // Retain State for draw-phase reads; the bar owns the shared animation clock.
     sharedProgress: State<Float>? = null,
     sharedKeepMaterial: Boolean? = null,
@@ -204,19 +218,6 @@ private fun GlassButtonSurface(
             popupAnchor.surfaceMaterialAlpha = opacity
             popupAnchor.surfaceFloating = floating
         }
-    }
-    val pressTransition = updateTransition(targetState = pressed, label = "glassTopBarButtonPress")
-    val contentAlpha = pressTransition.animateFloat(
-        transitionSpec = { if (targetState) GlassMotion.pressDown() else GlassMotion.pressUp() },
-        label = "glassTopBarButtonContentAlpha",
-    ) { down ->
-        if (down) GlassTopAppBarDefaults.PressedContentAlpha else 1f
-    }
-    val overlayAlpha = pressTransition.animateFloat(
-        transitionSpec = { if (targetState) GlassMotion.pressDown() else GlassMotion.pressUp() },
-        label = "glassTopBarButtonOverlayAlpha",
-    ) { down ->
-        if (down) 1f else 0f
     }
     val pressedOverlay = GlassTopAppBarDefaults.buttonPressedOverlay()
 
@@ -275,19 +276,21 @@ private fun GlassButtonSurface(
                     },
                 ),
         )
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .clip(shape)
-                .drawBehind {
-                    drawRect(pressedOverlay.copy(alpha = pressedOverlay.alpha * overlayAlpha.value.coerceIn(0f, 1f)))
-                },
-        )
-        Box(
-            modifier = Modifier.graphicsLayer { alpha = contentAlpha.value.coerceIn(0f, 1f) },
-            contentAlignment = Alignment.Center,
-        ) {
-            content()
+        if (interactionSource != null) {
+            val indication = remember(pressedOverlay) {
+                MiuixIndication(
+                    color = pressedOverlay.copy(alpha = 1f),
+                    pressAlpha = pressedOverlay.alpha,
+                    hoverAlpha = 0f,
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(shape)
+                    .indication(interactionSource, indication),
+            )
         }
+        content()
     }
 }
