@@ -534,6 +534,19 @@ internal object SysUiNetworkSource {
                         .getDeclaredMethod("getSubscriptionId")
                         .apply { isAccessible = true }
                 }
+            // DexKit can scan the host DEX; finish discovery before any hook is registered.
+            val activityResourceCollector = atStage("mobile.resolve.activityResourceCollector") {
+                generatedCollector(
+                    MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME,
+                    SysUiMobileCollectorLocator.Role.ACTIVITY_RESOURCE,
+                )
+            }
+            val activityVisibilityCollector = atStage("mobile.resolve.activityVisibilityCollector") {
+                generatedCollector(
+                    MOBILE_ACTIVITY_VISIBILITY_COLLECTOR_CLASS_NAME,
+                    SysUiMobileCollectorLocator.Role.ACTIVITY_VISIBILITY,
+                )
+            }
             created +=
                 atStage("mobile.hook.bind") {
                     module
@@ -585,9 +598,7 @@ internal object SysUiNetworkSource {
             // replacement. If either cannot be hooked, roll back the mobile
             // branch rather than announcing an incomplete native state owner.
             created += atStage("mobile.hook.activityResource") {
-                val collector = generatedCollector(
-                    MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME, SysUiMobileCollectorLocator.Role.ACTIVITY_RESOURCE,
-                )
+                val collector = activityResourceCollector
                 val activityField = collector.getDeclaredField("\$leftInOut").apply { isAccessible = true }
                 val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
                 module.hook(method)
@@ -651,10 +662,7 @@ internal object SysUiNetworkSource {
             // The native visibility collector is independent of getInOutResId().
             // Observe its already-applied View state; do not collect a second Flow.
             created += atStage("mobile.hook.activityVisibility") {
-                val collector = generatedCollector(
-                    MOBILE_ACTIVITY_VISIBILITY_COLLECTOR_CLASS_NAME,
-                    SysUiMobileCollectorLocator.Role.ACTIVITY_VISIBILITY,
-                )
+                val collector = activityVisibilityCollector
                 val imageField = collector.getDeclaredField("\$satellite").apply { isAccessible = true }
                 val classIdField = collector.getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME).apply { isAccessible = true }
                 val method = resolveEmitterMethod(collector, MOBILE_SIGNAL_EMIT_METHOD_NAME)
