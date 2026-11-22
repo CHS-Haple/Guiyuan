@@ -318,9 +318,15 @@ native endpoint state during the gap is still unmeasured.
 **Consequence:** Use read-only, native View visibility/alpha and
 `getGlobalVisibleRect` checks with the observed closing direction,
 then release the existing scoped transition and notify the single Home
-visibility coordinator. Emit one bounded terminal event to verify
-whether this path explains the reverse-rotation gap. Preserve native
-behavior and prior Home/Keyguard/AOD ownership otherwise.
+visibility coordinator. The native CC root can stop drawing before its
+delegate posts the final expansion sample; its own pre-draw cannot be
+the *only* terminal observer. Reuse Home's preexisting native pre-draw
+observer to check the same predicate while the Home icon row is
+rendering. Verify the source View identity, session and attached
+lifetime. Emit one bounded terminal event naming the winning observer.
+B1903's sole-CC-root observer did not resolve the real device gap;
+the B1903 report tail does not contain the actual frame's native
+opacity/clip state. Preserve prior scene ownership otherwise.
 
 ## CC frozen source geometry is viewport-scoped
 
