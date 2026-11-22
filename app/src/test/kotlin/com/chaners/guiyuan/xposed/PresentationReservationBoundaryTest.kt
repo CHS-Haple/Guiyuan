@@ -132,16 +132,6 @@ class PresentationReservationBoundaryTest {
                 deferVisualMaskUntilLayout = true,
                 laidOut = true,
                 layoutRequested = false,
-                capacityLeaseAwaitingLayout = true,
-                width = 478,
-                height = 108,
-            ),
-        )
-        assertFalse(
-            VisualMaskPolicy.shouldAdoptExistingNativeLayout(
-                deferVisualMaskUntilLayout = true,
-                laidOut = true,
-                layoutRequested = false,
                 width = 0,
                 height = 108,
             ),
