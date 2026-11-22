@@ -1,5 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.compose.ui.unit.DpSize
+import com.chaners.guiyuan.ui.components.UiOverlayBottomSheet
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.ScrollState
@@ -195,4 +197,24 @@ internal fun GuidePrivacyAcknowledgment(
         )
     }
     Spacer(Modifier.height(8.dp))
+}
+
+@Composable
+internal fun GuidePolicyDocumentSheet(
+    visible: Boolean,
+    document: AgreementDocument?,
+    onDismissRequest: () -> Unit,
+    onDismissFinished: () -> Unit,
+) {
+    UiOverlayBottomSheet(
+        show = visible,
+        modifier = Modifier.fillMaxHeight(0.85f),
+        title = stringResource((document ?: AgreementDocument.Privacy).titleRes()),
+        backgroundColor = MiuixTheme.colorScheme.background,
+        insideMargin = DpSize(0.dp, 0.dp),
+        onDismissRequest = onDismissRequest,
+        onDismissFinished = onDismissFinished,
+    ) {
+        document?.let { AgreementSheetBody(it) }
+    }
 }

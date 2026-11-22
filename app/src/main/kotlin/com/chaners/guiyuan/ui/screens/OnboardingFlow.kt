@@ -1,19 +1,15 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import android.widget.Toast
@@ -42,7 +38,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
@@ -71,10 +66,6 @@ import com.chaners.guiyuan.ui.glass.GlassIconButton
 import com.chaners.guiyuan.system.RootShell
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
-import com.chaners.guiyuan.ui.components.UiOverlayBottomSheet
-import com.chaners.guiyuan.ui.components.UiOverlayDialog
-import com.chaners.guiyuan.ui.components.UiDialogButton
-import com.chaners.guiyuan.ui.components.dialogActionGap
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
@@ -90,7 +81,6 @@ import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 
 // Guide steps are peers, not push-overlay destinations. Share MIUIX's motion and
 // gesture driver while both pages translate the entire width in opposite directions.
@@ -385,7 +375,7 @@ internal fun OnboardingFlow(
             if (pages.lastOrNull() == page) {
                 when (step) {
                     1 -> GuidePermissionWarningDialog(
-                        phase = permissionWarning,
+                        show = permissionWarning == PermissionWarningPhase.Visible,
                         onDismissRequest = {
                             permissionWarning = PermissionWarningPhase.Dismissing
                         },
@@ -422,60 +412,5 @@ internal fun OnboardingFlow(
         }
         }
         }
-    }
-}
-
-@Composable
-private fun GuidePermissionWarningDialog(
-    phase: PermissionWarningPhase,
-    onDismissRequest: () -> Unit,
-    onDismissFinished: () -> Unit,
-    onReturn: () -> Unit,
-    onContinue: () -> Unit,
-) {
-    UiOverlayDialog(
-        show = phase == PermissionWarningPhase.Visible,
-        title = stringResource(R.string.guide_permission_warning_title),
-        summary = stringResource(R.string.guide_permission_warning_summary),
-        onDismissRequest = onDismissRequest,
-        onDismissFinished = onDismissFinished,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            UiDialogButton(
-                text = stringResource(R.string.guide_permission_return),
-                modifier = Modifier.weight(1f),
-                role = GlassDialogButtonRole.Primary,
-                onClick = onReturn,
-            )
-            Spacer(Modifier.width(dialogActionGap()))
-            UiDialogButton(
-                text = stringResource(R.string.guide_permission_continue),
-                modifier = Modifier.weight(1f),
-                onClick = onContinue,
-            )
-        }
-    }
-}
-
-@Composable
-private fun GuidePolicyDocumentSheet(
-    visible: Boolean,
-    document: AgreementDocument?,
-    onDismissRequest: () -> Unit,
-    onDismissFinished: () -> Unit,
-) {
-    UiOverlayBottomSheet(
-        show = visible,
-        modifier = Modifier.fillMaxHeight(0.85f),
-        title = stringResource((document ?: AgreementDocument.Privacy).titleRes()),
-        backgroundColor = MiuixTheme.colorScheme.background,
-        insideMargin = DpSize(0.dp, 0.dp),
-        onDismissRequest = onDismissRequest,
-        onDismissFinished = onDismissFinished,
-    ) {
-        document?.let { AgreementSheetBody(it) }
     }
 }
