@@ -94,7 +94,7 @@ class GyModule : XposedModule() {
     private var homeAodTargetPrearmPending = false
     private var ccExpansion = 0f
     private var ccProjectionReadyForHandoff = false
-    private var ccHomeYieldedToProjection = false
+    private var ccHomeYieldedToPanel = false
     // Guiyuan presentation readiness is separate from the latest native readiness callback.
     private var keyguardRuntimeReady = false
     private var aodRendererAttached = false
@@ -602,7 +602,7 @@ class GyModule : XposedModule() {
         controlCenterSceneEligible = false
         ccExpansion = 0f
         ccProjectionReadyForHandoff = false
-        ccHomeYieldedToProjection = false
+        ccHomeYieldedToPanel = false
         controlCenterSourceScene = SourceScene.UNKNOWN
         steadyStatusSourceScene = SourceScene.UNKNOWN
         stableFamilyScene = ScenePolicy.StableKeyguardAodScene.UNKNOWN
@@ -1657,17 +1657,16 @@ class GyModule : XposedModule() {
         return failure?.reason
     }
 
-    // Single Home visibility decision shared by native expansion, native
-    // visible, and projected-ready callbacks. All originate on SystemUI's UI
-    // thread; a late ready=true cannot win over a native fraction-zero edge.
+    // Native CC scene authority gates Home, independently of the
+    // QS_FAKE projection's readiness. A local failure cannot release
+    // Home while CC remains expanded.
     private fun reconcileCcHomeAuthority(source: String) {
-        val yielded = CcHomeHandoffPolicy.yieldToProjection(
+        val yielded = CcHomeHandoffPolicy.yieldToNativePanel(
             nativePanelVisible = controlCenterSceneVisible,
             nativeExpansion = ccExpansion,
-            projectionReady = ccProjectionReadyForHandoff,
         )
-        val changed = yielded != ccHomeYieldedToProjection
-        ccHomeYieldedToProjection = yielded
+        val changed = yielded != ccHomeYieldedToPanel
+        ccHomeYieldedToPanel = yielded
         HomeRenderSession.onControlCenterAuthorityChanged(!yielded)
         if (changed) {
             // One record per actual ownership edge, even if detailed diagnostics
@@ -4759,7 +4758,7 @@ class GyModule : XposedModule() {
         keyguardCcLeaseActive = false
         ccExpansion = 0f
         ccProjectionReadyForHandoff = false
-        ccHomeYieldedToProjection = false
+        ccHomeYieldedToPanel = false
         // A failing surface must not prevent sibling native representations from returning.
         val failures = ArrayList<Throwable>(1)
         fun release(action: () -> Unit) {

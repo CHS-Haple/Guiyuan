@@ -30,57 +30,6 @@ internal object SteadyLayoutResolver {
     }
 }
 
-/**
- * The battery icon container is the native Home placement authority.
- * A right-anchored estimate becomes stale when SystemUI repositions its
- * actual carrier during a rotation without resizing BatteryContainer.
- */
-internal object HomeCarrierAnchorPolicy {
-    fun resolve(
-        hostWidthPx: Int,
-        hostHeightPx: Int,
-        carrierWidthPx: Int,
-        carrierLeftPx: Int,
-    ): SteadyLayout? {
-        val native = SteadyLayoutResolver.resolve(
-            hostWidthPx = hostWidthPx,
-            hostHeightPx = hostHeightPx,
-            baseCarrierWidthPx = carrierWidthPx,
-            isRtl = false,
-        ) ?: return null
-        val right = carrierLeftPx.toLong() + carrierWidthPx
-        if (carrierLeftPx < 0 || right > hostWidthPx.toLong()) return null
-        return native.copy(left = carrierLeftPx, right = right.toInt())
-    }
-
-    // The native battery may expand its outer width (e.g. 105 -> 135 px
-    // during charging) while the real battery_icon_container stays 105 px.
-    // Its left edge is then no longer the right-side compact slot's edge.
-    // Keep the native battery end as the compact slot's edge while its
-    // outer width and core layout update at different points in the traversal.
-    fun resolveExpandedBattery(
-        hostWidthPx: Int,
-        hostHeightPx: Int,
-        carrierWidthPx: Int,
-        carrierLeftPx: Int,
-        nativeBatteryWidthPx: Int,
-        nativeBatteryRightPx: Int,
-    ): SteadyLayout? {
-        val native = SteadyLayoutResolver.resolve(
-            hostWidthPx = hostWidthPx,
-            hostHeightPx = hostHeightPx,
-            baseCarrierWidthPx = carrierWidthPx,
-            isRtl = false,
-        ) ?: return null
-        if (nativeBatteryWidthPx < carrierWidthPx) {
-            return resolve(hostWidthPx, hostHeightPx, carrierWidthPx, carrierLeftPx)
-        }
-        val left = nativeBatteryRightPx.toLong() - carrierWidthPx
-        if (left < 0 || nativeBatteryRightPx > hostWidthPx) return null
-        return native.copy(left = left.toInt(), right = nativeBatteryRightPx)
-    }
-}
-
 /** The exact native Home privacy chip occupies the BatteryContainer end only in two states. */
 internal object HomePrivacyLayoutPolicy {
     fun occupiesEnd(nativeStateName: String?): Boolean =

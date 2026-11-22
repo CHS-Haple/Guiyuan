@@ -199,118 +199,22 @@ class HomeRenderSessionTest {
     }
 
     @Test
-    fun nativeHomeCarrierAnchorFollowsRotationWithoutChangingNativeViews() {
-        val portrait = HomeCarrierAnchorPolicy.resolve(
-            hostWidthPx = 587,
-            hostHeightPx = 108,
-            carrierWidthPx = 105,
-            carrierLeftPx = 482,
-        )
-        assertEquals(482, portrait?.left)
-        assertEquals(587, portrait?.right)
-        assertEquals(105, portrait?.visualWidth)
-
-        // Identical parent dimensions but different real carrier coordinates:
-        // the old host-end estimate would always return 655.
-        val before = HomeCarrierAnchorPolicy.resolve(
-            hostWidthPx = 760,
-            hostHeightPx = 108,
-            carrierWidthPx = 105,
-            carrierLeftPx = 655,
-        )
-        val afterNativeTranslation = HomeCarrierAnchorPolicy.resolve(
-            hostWidthPx = 760,
-            hostHeightPx = 108,
-            carrierWidthPx = 105,
-            carrierLeftPx = 605,
-        )
-        assertEquals(655, before?.left)
-        assertEquals(605, afterNativeTranslation?.left)
-        assertEquals(710, afterNativeTranslation?.right)
-        assertEquals(105, afterNativeTranslation?.visualWidth)
+    fun homeParentAnchorDoesNotFollowIndependentChargingBatteryMotion() {
+        val parent = requireNotNull(SteadyLayoutResolver.resolve(587, 108, 105, false))
+        assertEquals(482, parent.left)
+        assertEquals(587, parent.right)
+        assertTrue(610 > parent.right) // B1908 transient native Battery endpoint
+        assertEquals(parent, SteadyLayoutResolver.resolve(587, 108, 105, false))
+        val wide = requireNotNull(SteadyLayoutResolver.resolve(1361, 108, 105, false))
+        assertEquals(1256, wide.left)
+        assertEquals(1361, wide.right)
     }
 
     @Test
-    fun expandedChargingBatteryRetainsCompactVisualAtNativeEnd() {
-        // SystemUI widens its battery object from 105 to 135 px. Anchoring
-        // the compact visual to battery_icon_container.left would shift the
-        // entire ring 30 px toward the previous peer row.
-        val charging = HomeCarrierAnchorPolicy.resolveExpandedBattery(
-            hostWidthPx = 600,
-            hostHeightPx = 108,
-            carrierWidthPx = 105,
-            carrierLeftPx = 465,
-            nativeBatteryWidthPx = 135,
-            nativeBatteryRightPx = 600,
-        )
-        assertEquals(495, charging?.left)
-        assertEquals(600, charging?.right)
-        assertEquals(105, charging?.visualWidth)
-
-        val normal = HomeCarrierAnchorPolicy.resolveExpandedBattery(
-            hostWidthPx = 600,
-            hostHeightPx = 108,
-            carrierWidthPx = 105,
-            carrierLeftPx = 495,
-            nativeBatteryWidthPx = 105,
-            nativeBatteryRightPx = 600,
-        )
-        assertEquals(normal?.left, charging?.left)
-        assertEquals(normal?.right, charging?.right)
-
-        // Native battery width can shrink before its inner carrier moves.
-        val beforeCoreRelayout = HomeCarrierAnchorPolicy.resolveExpandedBattery(
-            hostWidthPx = 600,
-            hostHeightPx = 108,
-            carrierWidthPx = 105,
-            carrierLeftPx = 465,
-            nativeBatteryWidthPx = 105,
-            nativeBatteryRightPx = 600,
-        )
-        assertEquals(charging?.left, beforeCoreRelayout?.left)
-        assertEquals(charging?.right, beforeCoreRelayout?.right)
-    }
-
-    @Test
-    fun parentOverlayKeepsValidSlotWhenNativeBatteryChildReflows() {
-        // The child can retain a stale core coordinate while the native
-        // system_icon_area and battery endpoint remain settled.
-        val parent = requireNotNull(SteadyLayoutResolver.resolve(600, 108, 105, false))
-        assertEquals(495, parent.left)
-        assertEquals(600, parent.right)
-        val battery = HomeCarrierAnchorPolicy.resolveExpandedBattery(
-            hostWidthPx = 600,
-            hostHeightPx = 108,
-            carrierWidthPx = 105,
-            carrierLeftPx = -30,
-            nativeBatteryWidthPx = 135,
-            nativeBatteryRightPx = 600,
-        )
-        assertEquals(parent.left, battery?.left)
-        assertEquals(parent.right, battery?.right)
-    }
-
-    @Test
-    fun expandedChargingBatteryKeepsNativeViewportBoundary() {
-        assertEquals(
-            null,
-            HomeCarrierAnchorPolicy.resolveExpandedBattery(
-                hostWidthPx = 600,
-                hostHeightPx = 108,
-                carrierWidthPx = 105,
-                carrierLeftPx = 465,
-                nativeBatteryWidthPx = 135,
-                nativeBatteryRightPx = 635,
-            ),
-        )
-    }
-
-    @Test
-    fun invalidOrUnfinishedNativeHomeCarrierNeverUsesStaleHostEndEstimate() {
-        assertEquals(null, HomeCarrierAnchorPolicy.resolve(587, 108, 105, -1))
-        assertEquals(null, HomeCarrierAnchorPolicy.resolve(587, 108, 105, 500))
-        assertEquals(null, HomeCarrierAnchorPolicy.resolve(587, 108, 0, 482))
-        assertEquals(null, HomeCarrierAnchorPolicy.resolve(587, 0, 105, 482))
+    fun invalidHomeHostDoesNotClaimTheOverlay() {
+        assertEquals(null, SteadyLayoutResolver.resolve(0, 108, 105, false))
+        assertEquals(null, SteadyLayoutResolver.resolve(587, 0, 105, false))
+        assertEquals(null, SteadyLayoutResolver.resolve(587, 108, 0, false))
     }
 
     @Test

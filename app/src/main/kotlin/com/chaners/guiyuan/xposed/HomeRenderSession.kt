@@ -287,8 +287,8 @@ internal object HomeRenderSession {
         private var deferredStateLogged = false
         private var rejectedTintLogged = false
         private var nativeTintObserved = false
-        // Control Center handoff is coordinator-owned. Source visibility is
-        // diagnostic context only until a projected carrier is ready.
+        // Home eligibility follows native CC ownership independently of the
+        // separate QS_FAKE projection readiness.
         private var controlCenterAllowsHome = true
         private var nativeHandoffActive = initialNativeHandoffActive
         private var featureEnabled = initialFeatureEnabled
@@ -299,7 +299,6 @@ internal object HomeRenderSession {
         private val anchorRect = Rect()
         private val observedAnchorRect = Rect()
         private val carrierWindowLocation = IntArray(2)
-        private val batteryWindowLocation = IntArray(2)
         private val hostWindowLocation = IntArray(2)
         private var nativeDrawObserver: ViewTreeObserver? = null
         private var deferredNativeAnchor = false
@@ -793,25 +792,15 @@ internal object HomeRenderSession {
                         !carrier.isAttachedToWindow ||
                         carrier.width <= 0
                     ) return false
-                    if (SysUiPresentationOwner.homeBatteryNativeHidden() == true) {
-                        // Native battery hide reflows the child, not the system_icon_area.
-                        SteadyLayoutResolver.resolve(hostWidth, hostHeight, baseCarrierWidth, isRtl)
-                    } else {
-                        val battery = batteryView.get() ?: return false
-                        if (!battery.isAttachedToWindow || battery.width <= 0) return false
-                        carrier.getLocationInWindow(carrierWindowLocation)
-                        battery.getLocationInWindow(batteryWindowLocation)
-                        overlayHost.getLocationInWindow(hostWindowLocation)
-                        HomeCarrierAnchorPolicy.resolveExpandedBattery(
-                            hostWidthPx = hostWidth,
-                            hostHeightPx = hostHeight,
-                            carrierWidthPx = baseCarrierWidth,
-                            carrierLeftPx = carrierWindowLocation[0] - hostWindowLocation[0],
-                            nativeBatteryWidthPx = battery.width,
-                            nativeBatteryRightPx =
-                                batteryWindowLocation[0] - hostWindowLocation[0] + battery.width,
-                        )
-                    }
+                    // system_icon_area owns Home placement and island motion.
+                    // Battery child translation/fade on island exit must not
+                    // invalidate or move the independently hosted overlay.
+                    SteadyLayoutResolver.resolve(
+                        hostWidthPx = hostWidth,
+                        hostHeightPx = hostHeight,
+                        baseCarrierWidthPx = baseCarrierWidth,
+                        isRtl = isRtl,
+                    )
                 } ?: return false
             out.set(resolved.left, 0, resolved.right, hostHeight)
             return out.width() > 0 && out.height() > 0

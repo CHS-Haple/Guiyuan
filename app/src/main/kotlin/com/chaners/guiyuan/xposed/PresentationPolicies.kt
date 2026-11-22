@@ -28,20 +28,15 @@ internal object SteadyPeerMirrorPolicy {
         nativeIslandShowing && !steadyMirrorActive
 }
 
-// CC visibility is not the same as its motion fraction. A slow close can
-// reach the zero endpoint before native onVisibleChanged(false) arrives.
-// Home must already be allowed at that native endpoint, and a late CC ready
-// callback must not hide it again while the fraction remains zero.
+// Native Control Center owns the screen while visible with positive
+// expansion, even if the QS_FAKE projection has locally failed native.
+// Only native fraction zero returns Home ownership.
 internal object CcHomeHandoffPolicy {
-    fun yieldToProjection(
+    fun yieldToNativePanel(
         nativePanelVisible: Boolean,
         nativeExpansion: Float,
-        projectionReady: Boolean,
     ): Boolean =
-        nativePanelVisible &&
-            nativeExpansion.isFinite() &&
-            nativeExpansion > 0f &&
-            projectionReady
+        nativePanelVisible && nativeExpansion.isFinite() && nativeExpansion > 0f
 }
 
 internal object VisualMaskPolicy {
@@ -108,16 +103,22 @@ internal object EndReservationPolicy {
         peerRowLayoutRequested: Boolean,
     ): Boolean = carrierSettled && !peerRowLayoutRequested
 
-    // Bound the actual peer row; never infer capacity from changing host width.
-    fun fitsFakeNativePeerRow(
+    // B1908 repeated 478px row / 392px peers / 87-88px request;
+    // the excess is 1-2 physical pixels. Clamp only this verified
+    // native rounding difference, never a genuine capacity overflow.
+    private const val MAX_FAKE_PEER_ROUNDING_PX = 2
+
+    fun boundedFakeNativePeerPaddingEnd(
         rowWidthPx: Int,
         contentWidthPx: Int,
         targetPaddingEndPx: Int,
-    ): Boolean =
-        rowWidthPx > 0 &&
-            contentWidthPx >= 0 &&
-            targetPaddingEndPx >= 0 &&
-            contentWidthPx.toLong() + targetPaddingEndPx <= rowWidthPx.toLong()
+    ): Int? {
+        if (rowWidthPx <= 0 || contentWidthPx < 0 || targetPaddingEndPx < 0) return null
+        val slack = rowWidthPx.toLong() - contentWidthPx
+        val excess = targetPaddingEndPx.toLong() - slack
+        if (slack < 0 || excess > MAX_FAKE_PEER_ROUNDING_PX) return null
+        return minOf(targetPaddingEndPx.toLong(), slack).toInt()
+    }
 
 }
 
