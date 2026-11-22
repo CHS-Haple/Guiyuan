@@ -100,6 +100,27 @@ class PresentationReservationBoundaryTest {
     }
 
     @Test
+    fun nativePeerFootprintMatchesOemPaddingAndNetworkSpeedLayout() {
+        assertEquals(32, EndReservationPolicy.measuredNativePeerFootprint(
+            measuredWidthPx = 22, paddingStartPx = 6, paddingEndPx = 4,
+        ))
+        assertEquals(60, EndReservationPolicy.measuredNativePeerFootprint(
+            measuredWidthPx = 14, paddingStartPx = 6, paddingEndPx = 6,
+            networkSpeedLayoutWidthPx = 60,
+        ))
+        assertEquals(26, EndReservationPolicy.measuredNativePeerFootprint(
+            measuredWidthPx = 14, paddingStartPx = 6, paddingEndPx = 6,
+            networkSpeedLayoutWidthPx = 18,
+        ))
+        assertEquals(null, EndReservationPolicy.measuredNativePeerFootprint(
+            measuredWidthPx = Int.MAX_VALUE, paddingStartPx = 1, paddingEndPx = 1,
+        ))
+        assertEquals(null, EndReservationPolicy.measuredNativePeerFootprint(
+            measuredWidthPx = 20, paddingStartPx = -1, paddingEndPx = 0,
+        ))
+    }
+
+    @Test
     fun measuredFakeCapacityBoundsOnlyOptionalTransitionExpansion() {
         // B1912 observed 11 small excesses after network switching.
         assertEquals(62, EndReservationPolicy.boundedFakeNativeTransitionPadding(
@@ -113,6 +134,16 @@ class PresentationReservationBoundaryTest {
         assertEquals(62, EndReservationPolicy.boundedFakeNativeTransitionPadding(
             rowWidthPx = 448, contentWidthPx = 386,
             requestedPaddingEndPx = 62, minimumPaddingEndPx = 0,
+        ))
+        // A crowded native row can still show its compact projection by
+        // giving up only optional padding. An unsafe required slot cannot.
+        assertEquals(0, EndReservationPolicy.boundedFakeNativeTransitionPadding(
+            rowWidthPx = 448, contentWidthPx = 500,
+            requestedPaddingEndPx = 76, minimumPaddingEndPx = 0,
+        ))
+        assertEquals(null, EndReservationPolicy.boundedFakeNativeTransitionPadding(
+            rowWidthPx = 448, contentWidthPx = 500,
+            requestedPaddingEndPx = 150, minimumPaddingEndPx = 105,
         ))
         // The compact slot cannot be silently shrunk.
         assertEquals(null, EndReservationPolicy.boundedFakeNativeTransitionPadding(

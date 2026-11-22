@@ -141,8 +141,16 @@ execution ownership is in [architecture](../architecture/README.md).
   audit. A native capacity clamp now yields a read-only FAKE/FINAL participant
   geometry witness, including cached and live carrier-root offsets, using the
   existing callback and without additional hooks, timers or layout writers.
-  The exact ROM403 native method body and rotation compositor timing remain
-  independent verification gaps; this diagnostic is not a visual fix.
+  Exact ROM403 D02 APK inspection now confirms a concrete OEM width-contract
+  discrepancy: MiuiStatusIconContainer.onMeasure and onLayout add each peer
+  child’s start/end padding beyond measuredWidth, and NetworkSpeedView has
+  a separate layout footprint for its empty-content state. The candidate
+  mirrors those native width inputs, avoiding the B1914 peer-content
+  undercount; optional animation padding alone can shrink to zero when native
+  peers already overflow, but unsafe mandatory representation still fails
+  locally. The exact native CC header callback also owns FAKE/FINAL alpha and
+  distinct translations, including batteryWidthDiff. Rotation's compositor
+  frame order remains unverified; no visual completion is claimed.
 
   B1903 screenshot at 00:12 while charging shows the combined ring/readout
   intruding toward adjacent mute/network icons. The accompanying

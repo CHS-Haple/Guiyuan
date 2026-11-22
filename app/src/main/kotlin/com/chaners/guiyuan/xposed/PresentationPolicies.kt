@@ -110,6 +110,23 @@ internal object EndReservationPolicy {
         }
     }
 
+    // The pinned Xiaomi MiuiStatusIconContainer.onMeasure adds each child's
+    // start/end padding to measuredWidth. Its onLayout uses a separate
+    // NetworkSpeedView footprint when the speed text is temporarily empty.
+    fun measuredNativePeerFootprint(
+        measuredWidthPx: Int,
+        paddingStartPx: Int,
+        paddingEndPx: Int,
+        networkSpeedLayoutWidthPx: Int? = null,
+    ): Int? {
+        if (measuredWidthPx < 0 || paddingStartPx < 0 || paddingEndPx < 0 ||
+            (networkSpeedLayoutWidthPx != null && networkSpeedLayoutWidthPx < 0)
+        ) return null
+        val measured = measuredWidthPx.toLong() + paddingStartPx + paddingEndPx
+        val footprint = maxOf(measured, (networkSpeedLayoutWidthPx ?: 0).toLong())
+        return footprint.takeIf { it <= Int.MAX_VALUE }?.toInt()
+    }
+
     // Limit optional transition padding to the available measured native row.
     // A non-fitting compact baseline still requires native fallback.
     fun boundedFakeNativeTransitionPadding(
@@ -121,7 +138,10 @@ internal object EndReservationPolicy {
         if (rowWidthPx <= 0 || contentWidthPx < 0 ||
             minimumPaddingEndPx < 0 || requestedPaddingEndPx < minimumPaddingEndPx
         ) return null
-        val available = rowWidthPx.toLong() - contentWidthPx.toLong()
+        // Native underflow already owns peer hiding. Zero optional extension
+        // is safe even if the peer row itself is overfull, but a missing
+        // mandatory compact reservation must still fail native.
+        val available = (rowWidthPx.toLong() - contentWidthPx.toLong()).coerceAtLeast(0L)
         if (available < minimumPaddingEndPx) return null
         return minOf(requestedPaddingEndPx.toLong(), available).toInt()
     }
@@ -145,8 +165,8 @@ internal object EndReservationPolicy {
         peerRowLayoutRequested: Boolean,
     ): Boolean = carrierSettled && !peerRowLayoutRequested
 
-    // Native FAKE row capacity is strict. Native measuredWidth already
-    // includes child padding, so the corrected peer measure must fit.
+    // Native FAKE row capacity uses the exact OEM measured/layout footprint,
+    // including child padding and the NetworkSpeedView special-case width.
     fun fitsFakeNativePeerRow(
         rowWidthPx: Int,
         contentWidthPx: Int,

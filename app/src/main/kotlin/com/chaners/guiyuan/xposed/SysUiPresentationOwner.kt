@@ -1596,6 +1596,16 @@ internal object SysUiPresentationOwner {
             if (active && surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
                 !nativeLayoutOwnershipDeferred && statusIcons.get()?.isLayoutRequested == false
             ) appliedTransitionSlotWidthPx else null
+        private val networkSpeedWidthMethod =
+            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
+                optionalNativeRead {
+                    Class.forName(
+                        "com.android.systemui.statusbar.views.NetworkSpeedView",
+                        false,
+                        statusIcons.javaClass.classLoader,
+                    ).getMethod("getNetworkSpeedWidth")
+                }
+            } else null
         private val fakePeerMetrics =
             if (
                 surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
@@ -2361,19 +2371,28 @@ internal object SysUiPresentationOwner {
                 ?: return null
             if (spacing < 0 || views.size > group.childCount) return null
 
-            // Match the measured native row without counting child padding
-            // twice: native measuredWidth already includes that padding.
+            // Match this exact ROM's MiuiStatusIconContainer.onMeasure and
+            // onLayout, not a generic View measured-width approximation.
             var width = group.paddingStart.toLong()
             views.forEachIndexed { index, item ->
                 val view = item as? View ?: return null
-                if (view.parent !== group || view.measuredWidth < 0) return null
-                // View.measuredWidth is the outer measured dimension and
-                // already includes the View's own start/end padding. Adding
-                // padding again double-counts native peer width and falsely
-                // trips the CC capacity fence on a one-pixel margin.
-                val measured = view.measuredWidth.toLong()
-                if (measured > 0L) {
-                    width += measured
+                if (view.parent !== group) return null
+                val speedLayoutWidth =
+                    if (view.javaClass.name ==
+                        "com.android.systemui.statusbar.views.NetworkSpeedView"
+                    ) {
+                        optionalNativeRead {
+                            networkSpeedWidthMethod?.invoke(view) as? Int
+                        } ?: return null
+                    } else null
+                val footprint = EndReservationPolicy.measuredNativePeerFootprint(
+                    measuredWidthPx = view.measuredWidth,
+                    paddingStartPx = view.paddingStart,
+                    paddingEndPx = view.paddingEnd,
+                    networkSpeedLayoutWidthPx = speedLayoutWidth,
+                ) ?: return null
+                if (footprint > 0) {
+                    width += footprint
                     if (index > 0) width += spacing
                 }
             }
