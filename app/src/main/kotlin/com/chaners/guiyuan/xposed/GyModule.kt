@@ -8,6 +8,7 @@ import android.view.View
 import com.chaners.guiyuan.settings.FontAxes
 import com.chaners.guiyuan.settings.FontWeightAxis
 import com.chaners.guiyuan.settings.NativeFontAxis
+import com.chaners.guiyuan.settings.NativeFontAxisPolicy
 import java.io.File
 import java.io.FileInputStream
 import java.nio.channels.FileChannel
@@ -1968,7 +1969,7 @@ class GyModule : XposedModule() {
                 }.getOrElse { error ->
                     SysUiHotReload.rethrowFatal(error)
                     null
-                }?.let(NativeFontAxis::checked)
+                }?.let(NativeFontAxisPolicy::checked)
                     ?.takeIf { axis ->
                         kotlin.math.ceil(axis.min.toDouble()).toInt() <
                             kotlin.math.floor(axis.max.toDouble()).toInt()
