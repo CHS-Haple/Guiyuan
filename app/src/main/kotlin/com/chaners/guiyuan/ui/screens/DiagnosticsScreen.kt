@@ -138,16 +138,10 @@ internal fun DiagnosticsScreen(
         }
     }
 
-    fun reloadSnapshot() {
+    fun reloadSnapshot(showRefreshIndicator: Boolean = false) {
         if (loading) return
         loading = true
-        scope.launch { captureSnapshot() }
-    }
-
-    fun refresh() {
-        if (loading) return
-        loading = true
-        refreshing = true
+        if (showRefreshIndicator) refreshing = true
         scope.launch { captureSnapshot() }
     }
 
@@ -334,7 +328,7 @@ internal fun DiagnosticsScreen(
             } else {
                 SettingsPullToRefresh(
                     refreshing = refreshing,
-                    onRefresh = ::refresh,
+                    onRefresh = { reloadSnapshot(showRefreshIndicator = true) },
                     texts = refreshTexts,
                 )
             },
@@ -366,7 +360,7 @@ internal fun DiagnosticsScreen(
             ),
             context = context,
             onToggle = { rowKey -> expandedKey = if (expandedKey == rowKey) null else rowKey },
-            onRetry = ::refresh,
+            onRetry = { reloadSnapshot(showRefreshIndicator = true) },
         )
     }
 
