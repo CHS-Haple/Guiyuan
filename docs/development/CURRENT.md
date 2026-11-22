@@ -54,8 +54,10 @@ execution ownership is in [architecture](../architecture/README.md).
   every SIM switch, VPN transport transition, idle-activity visibility or
   alternate carrier tree. Missing network observations may leave a partial
   combined display when the render model and native owner remain valid; they
-  are not themselves evidence of an unsafe native write. Never invent signal,
-  subscriptions or network state. Unsupported host identity, ownership,
+  are not themselves evidence of an unsafe native write. Unexpected source
+  callback exceptions may arise in downstream renderer updates and therefore
+  still require a safety shutdown unless the origin is verified. Never invent
+  signal, subscriptions or network state. Unsupported host identity, ownership,
   masking or restoration still fail native for the smallest affected surface,
   without resetting saved user preferences.
 - **Runtime failure policy:** independent Keyguard/AOD and CC failures release

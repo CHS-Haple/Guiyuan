@@ -911,7 +911,7 @@ class GyModule : XposedModule() {
                 ),
                 diagnostics = SysUiNetworkSource.Diagnostics(
                     onRuntimeFailure = { source, error ->
-                        onDataSourceRuntimeFailure("network-" + source, error)
+                        onPresentationCallbackFailure("network-" + source, error)
                     },
                     onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
                     isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
@@ -1723,7 +1723,7 @@ class GyModule : XposedModule() {
                 module = this,
                 classLoader = classLoader,
                 onRuntimeFailure = { source, error ->
-                    onDataSourceRuntimeFailure("battery-" + source, error)
+                    onPresentationCallbackFailure("battery-" + source, error)
                 },
                 onBatteryState = { state ->
                     val trace = beginRenderTrace("battery")
@@ -1786,7 +1786,7 @@ class GyModule : XposedModule() {
                 classLoader = classLoader,
                 onTintState = ::onTintStateUpdate,
                 onTintRuntimeFailure = { error ->
-                    onDataSourceRuntimeFailure("tint", error)
+                    onPresentationCallbackFailure("tint", error)
                 },
                 onSceneState = ::onSceneStateUpdate,
                 onSceneRuntimeFailure = { error ->
@@ -2935,18 +2935,6 @@ class GyModule : XposedModule() {
                 )
             }
         }
-    }
-
-    private fun onDataSourceRuntimeFailure(source: String, error: Throwable) {
-        // Observation failures never authorize a native slot mutation or global shutdown.
-        logDiagnostic(
-            level = Log.WARN,
-            event = "runtime.callback",
-            component = source + "Source",
-            state = "degraded",
-            "reason" to (error.message ?: error.javaClass.simpleName),
-            "fallback" to "retain-combined-unless-owner-invalid",
-        )
     }
 
     private fun onKeyguardSourceRuntimeFailure(source: String, error: Throwable) {

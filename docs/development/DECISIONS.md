@@ -30,12 +30,15 @@ need not become APK runtime dependencies.
 
 ## Fail native protects ownership, not observer completeness
 
-**Decision:** missing network/battery/tint observer data is a diagnosable visual
-degradation, not proof that the native host or its writer is unsafe. A steady
-Home replacement may be visible when its complete render model and verified
-native owner can safely cut over, even if the optional mobile collector did
-not install. Never fabricate a subscription or convert unknown signal into an
-observed zero-strength value.
+**Decision:** absent network/battery/tint observer data or partially installed
+mobile collectors are diagnosable visual degradation, not proof that the native
+host or its writer is unsafe. A steady Home replacement may be visible when
+its complete render model and verified native owner can safely cut over.
+Never fabricate a subscription or convert unknown signal into an observed
+zero-strength value. A **throwing runtime source callback is different**:
+existing source hooks invoke downstream state and render callbacks, so do not
+treat an arbitrary exception from that combined chain as a harmless read
+error. Until origin is proven, it remains a global safety failure.
 
 **Boundary:** native host identity, exact represented slots, lifecycle,
 masking, capacity and rollback receipts remain hard prerequisites. Ordinary
