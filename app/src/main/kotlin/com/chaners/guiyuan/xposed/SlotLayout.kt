@@ -52,6 +52,31 @@ internal object HomeCarrierAnchorPolicy {
         if (carrierLeftPx < 0 || right > hostWidthPx.toLong()) return null
         return native.copy(left = carrierLeftPx, right = right.toInt())
     }
+
+    // The native battery may expand its outer width (e.g. 105 -> 135 px
+    // during charging) while the real battery_icon_container stays 105 px.
+    // Its left edge is then no longer the right-side compact slot's edge.
+    // Follow the native battery's end for an expanded slot; keep the core
+    // carrier as authority while the outer width is the stable width.
+    fun resolveExpandedBattery(
+        hostWidthPx: Int,
+        hostHeightPx: Int,
+        carrierWidthPx: Int,
+        carrierLeftPx: Int,
+        nativeBatteryWidthPx: Int,
+        nativeBatteryRightPx: Int,
+    ): SteadyLayout? {
+        val native = resolve(
+            hostWidthPx,
+            hostHeightPx,
+            carrierWidthPx,
+            carrierLeftPx,
+        ) ?: return null
+        if (nativeBatteryWidthPx <= carrierWidthPx) return native
+        val left = nativeBatteryRightPx.toLong() - carrierWidthPx
+        if (left < 0 || nativeBatteryRightPx > hostWidthPx) return null
+        return native.copy(left = left.toInt(), right = nativeBatteryRightPx)
+    }
 }
 
 /** The exact native Home privacy chip occupies the BatteryContainer end only in two states. */
