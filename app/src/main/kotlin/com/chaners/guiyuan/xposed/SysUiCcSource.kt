@@ -258,12 +258,12 @@ internal object SysUiCcSource {
                             val result = chain.proceed()
                             val sample = fraction
                             if (handled && sample != null) {
+                                // Commit the native fraction-zero Home handoff
+                                // only AFTER SystemUI finishes its own view
+                                // alpha/translation/visibility mutations.
                                 dispatchRuntimeCallback(
-                                    callback = {
-                                        if (isProbeEnabled()) {
-                                            onAfterNativeExpansion?.invoke(sample)
-                                        }
-                                    },
+                                    callback = { onAfterNativeExpansion?.invoke(sample) },
+                                    onFailure = onRuntimeFailure,
                                 )
                             }
                             result

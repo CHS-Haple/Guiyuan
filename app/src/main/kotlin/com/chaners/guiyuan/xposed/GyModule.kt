@@ -95,6 +95,9 @@ class GyModule : XposedModule() {
     private var ccExpansion = 0f
     private var ccProjectionReadyForHandoff = false
     private var ccHomeYieldedToPanel = false
+    // onExpansionChanged is intercepted BEFORE SystemUI's native body.
+    // The zero handoff must commit AFTER native updates its scene visuals.
+    private var ccNativeZeroAwaitingCommit = false
     // Guiyuan presentation readiness is separate from the latest native readiness callback.
     private var keyguardRuntimeReady = false
     private var aodRendererAttached = false
@@ -603,6 +606,7 @@ class GyModule : XposedModule() {
         ccExpansion = 0f
         ccProjectionReadyForHandoff = false
         ccHomeYieldedToPanel = false
+        ccNativeZeroAwaitingCommit = false
         controlCenterSourceScene = SourceScene.UNKNOWN
         steadyStatusSourceScene = SourceScene.UNKNOWN
         stableFamilyScene = ScenePolicy.StableKeyguardAodScene.UNKNOWN
@@ -1031,8 +1035,14 @@ class GyModule : XposedModule() {
                     if (ccSourceInstalled) onCcUpdate(update)
                 },
                 onAfterNativeExpansion = { progress ->
-                    if (ccSourceInstalled && deepDiagnosticsEnabled) {
-                        onCcNativeGeometry(progress)
+                    if (ccSourceInstalled) {
+                        // The native body now owns the frame's final alpha,
+                        // translation and visibility before Home is revealed.
+                        if (progress <= 0f && ccNativeZeroAwaitingCommit) {
+                            ccNativeZeroAwaitingCommit = false
+                            reconcileCcHomeAuthority("native-fraction-after-proceed")
+                        }
+                        if (deepDiagnosticsEnabled) onCcNativeGeometry(progress)
                     }
                 },
                 onFakePresentationAttached = { host ->
@@ -1386,6 +1396,7 @@ class GyModule : XposedModule() {
         val fraction = rawFraction.coerceIn(0f, 1f)
         val previous = ccExpansion
         ccExpansion = fraction
+        ccNativeZeroAwaitingCommit = fraction == 0f && controlCenterSceneVisible
         // The fraction-zero boundary precedes onVisibleChanged(false) during
         // a slow upward gesture. Without this reconciliation, CC has already
         // ended its transition while Home remains invisible and only native
@@ -1664,6 +1675,7 @@ class GyModule : XposedModule() {
         val yielded = CcHomeHandoffPolicy.yieldToNativePanel(
             nativePanelVisible = controlCenterSceneVisible,
             nativeExpansion = ccExpansion,
+            nativeZeroAwaitingCommit = ccNativeZeroAwaitingCommit,
         )
         val changed = yielded != ccHomeYieldedToPanel
         ccHomeYieldedToPanel = yielded
@@ -1679,6 +1691,7 @@ class GyModule : XposedModule() {
                 "source" to source,
                 "nativeVisible" to controlCenterSceneVisible,
                 "nativeFraction" to ccExpansion,
+                "nativeZeroAwaitingCommit" to ccNativeZeroAwaitingCommit,
                 "projectionReady" to ccProjectionReadyForHandoff,
                 "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
                 "homeVisibility" to HomeRenderSession.visibilityWitness(),
@@ -4761,6 +4774,7 @@ class GyModule : XposedModule() {
         ccExpansion = 0f
         ccProjectionReadyForHandoff = false
         ccHomeYieldedToPanel = false
+        ccNativeZeroAwaitingCommit = false
         // A failing surface must not prevent sibling native representations from returning.
         val failures = ArrayList<Throwable>(1)
         fun release(action: () -> Unit) {

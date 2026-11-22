@@ -35,8 +35,11 @@ internal object CcHomeHandoffPolicy {
     fun yieldToNativePanel(
         nativePanelVisible: Boolean,
         nativeExpansion: Float,
+        nativeZeroAwaitingCommit: Boolean = false,
     ): Boolean =
-        nativePanelVisible && nativeExpansion.isFinite() && nativeExpansion > 0f
+        nativePanelVisible &&
+            (nativeZeroAwaitingCommit ||
+                (nativeExpansion.isFinite() && nativeExpansion > 0f))
 }
 
 internal object VisualMaskPolicy {
