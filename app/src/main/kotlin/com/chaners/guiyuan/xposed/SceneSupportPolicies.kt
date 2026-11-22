@@ -143,7 +143,7 @@ internal object SceneAodBoundaryPolicy {
         return if (pendingTargetToLockScreen) {
             !toAod
         } else {
-            SysUiKeyguardAodSource.isStableAod(
+            SysUiKeyguardAodPolicy.isStableAod(
                 toAod = toAod,
                 isAodAnimate = isAodAnimate,
             )
