@@ -1156,7 +1156,7 @@ class GyModule : XposedModule() {
                 "nativeKeyguardShown" to keyguard?.host?.isShown,
                 "nativeStatusAlpha" to keyguard?.statusIcons?.alpha,
                 "nativeSleepLinkage" to
-                    keyguard?.let(SysUiKeyguardHostResolver::sleepLinkageState),
+                    keyguard?.let(SysUiSleepLinkageDiagnostic::read),
             )
         }
         if (
@@ -2144,7 +2144,7 @@ class GyModule : XposedModule() {
                 component = "keyguardAod",
                 state = "sampled",
                 "source" to "animateFullAod:before",
-                "native" to host?.let(SysUiKeyguardHostResolver::sleepLinkageState),
+                "native" to host?.let(SysUiSleepLinkageDiagnostic::read),
             )
         }
     }
@@ -2351,7 +2351,7 @@ class GyModule : XposedModule() {
                 "ccTransitionVisual" to CcTransitionOwner.visualState(),
                 "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
                 "nativeSleepLinkage" to
-                    SysUiKeyguardHostResolver.sleepLinkageState(resolution.host),
+                    SysUiSleepLinkageDiagnostic.read(resolution.host),
                 "nativeKeyguardShown" to resolution.host.host.isShown,
                 "nativeStatusShown" to resolution.host.statusIcons.isShown,
                 "nativeStatusAlpha" to resolution.host.statusIcons.alpha,
@@ -2914,7 +2914,7 @@ class GyModule : XposedModule() {
                         (SysUiKeyguardHostResolver.current()
                             as? SysUiKeyguardHostResolver.ResolveResult.Ready)
                             ?.host
-                            ?.let(SysUiKeyguardHostResolver::sleepLinkageState),
+                            ?.let(SysUiSleepLinkageDiagnostic::read),
                     "ccVisible" to controlCenterSceneVisible,
                     "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
                     "familyVisual" to KeyguardRenderSession.visualState(),
