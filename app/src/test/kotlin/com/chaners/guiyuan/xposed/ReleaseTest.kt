@@ -7,6 +7,26 @@ import org.junit.Test
 
 class ReleaseTest {
     @Test
+    fun independentCleanupRunsEverySiblingAfterFailures() {
+        val attempts = mutableListOf<String>()
+        val first = IllegalStateException("cc-release-failed")
+        val second = IllegalArgumentException("aod-release-failed")
+
+        val caught = runCatching {
+            releaseAll(
+                { attempts += "cc"; throw first },
+                { attempts += "home" },
+                { attempts += "aod"; throw second },
+                { attempts += "keyguard" },
+            )
+        }.exceptionOrNull()
+
+        assertEquals(listOf("cc", "home", "aod", "keyguard"), attempts)
+        assertSame(first, caught)
+        assertEquals(listOf(second), caught?.suppressed?.toList())
+    }
+
+    @Test
     fun emptyCleanupFailuresDoNotThrow() {
         throwIfCleanupIncomplete("no-failure", emptyList())
     }

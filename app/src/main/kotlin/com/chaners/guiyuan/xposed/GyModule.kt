@@ -4504,36 +4504,52 @@ class GyModule : XposedModule() {
         ) {
             homeAodFallback = HomeAodFallback.NONE
         }
-        HomeRenderSession.onFeatureCfgChanged(cfg)
-        if (cfg.enabled) HomeRenderSession.onPresentationStateChanged()
-        KeyguardRenderSession.onFeatureCfgChanged(cfg)
-        CcRenderSession.onFeatureCfgChanged(cfg)
-
-        if (!cfg.enabled) {
-            releaseFeatureOwnership("feature-disabled")
-            deactivateAodRuntime("feature-disabled")
-            deactivateKeyguardRuntime("feature-disabled")
-        } else {
-            if (!cfg.keyguard) {
-                deactivateKeyguardRuntime("keyguard-feature-disabled")
+        // A disabled setting must remain committed even when native cleanup is incomplete.
+        // Run every independent release before reporting an error; otherwise one failing
+        // surface can strand another Guiyuan owner and roll back FeaturePrefsOwner's state.
+        val cleanupError =
+            if (!cfg.enabled) {
+                runCatching {
+                    releaseAll(
+                        { HomeRenderSession.onFeatureCfgChanged(cfg) },
+                        { KeyguardRenderSession.onFeatureCfgChanged(cfg) },
+                        { CcRenderSession.onFeatureCfgChanged(cfg) },
+                        { releaseFeatureOwnership("feature-disabled") },
+                        { deactivateAodRuntime("feature-disabled") },
+                        { deactivateKeyguardRuntime("feature-disabled") },
+                        { refreshCcSourceEligibility("feature-settings") },
+                    )
+                }.exceptionOrNull()?.also(SysUiPresentationRuntime::throwIfFatal)
+            } else {
+                HomeRenderSession.onFeatureCfgChanged(cfg)
+                HomeRenderSession.onPresentationStateChanged()
+                KeyguardRenderSession.onFeatureCfgChanged(cfg)
+                CcRenderSession.onFeatureCfgChanged(cfg)
+                if (!cfg.keyguard) {
+                    deactivateKeyguardRuntime("keyguard-feature-disabled")
+                }
+                if (!cfg.aod) {
+                    deactivateAodRuntime("aod-feature-disabled")
+                }
+                SysUiKeyguardHostResolver.current()?.let { resolution ->
+                    onKeyguardHostResolution(
+                        resolution = resolution,
+                        source = "feature-settings",
+                    )
+                }
+                refreshCcSourceEligibility("feature-settings")
+                null
             }
-            if (!cfg.aod) {
-                deactivateAodRuntime("aod-feature-disabled")
-            }
-            SysUiKeyguardHostResolver.current()?.let { resolution ->
-                onKeyguardHostResolution(
-                    resolution = resolution,
-                    source = "feature-settings",
-                )
-            }
-        }
-        refreshCcSourceEligibility("feature-settings")
 
         logDiagnostic(
-            level = Log.INFO,
+            level = if (cleanupError == null) Log.INFO else Log.ERROR,
             event = "featureSettings.changed",
             component = "combinedStatus",
-            state = if (cfg.enabled) "enabled" else "disabled",
+            state = when {
+                cleanupError != null -> "cleanup-incomplete"
+                cfg.enabled -> "enabled"
+                else -> "disabled"
+            },
             "combinedStatusEnabled" to cfg.enabled,
             "keyguardEnabled" to cfg.keyguard,
             "aodEnabled" to cfg.aod,
@@ -4543,7 +4559,12 @@ class GyModule : XposedModule() {
                         ?.let { nanos -> nanos / 1_000_000.0 }
                         ?: "initial-bind"
                 ),
-            "fallback" to if (cfg.enabled) "combined-status" else "native-systemui",
+            "reason" to cleanupError?.message,
+            "fallback" to when {
+                cfg.enabled -> "combined-status"
+                cleanupError != null -> "unconfirmed"
+                else -> "native-systemui"
+            },
         )
     }
 
