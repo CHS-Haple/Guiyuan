@@ -8,8 +8,10 @@ Resolved dependency versions come from Gradle, not this document.
 ## Libraries and tooling
 
 - [libxposed API and service](https://github.com/libxposed): Apache-2.0
-- [DexKit](https://github.com/LuckyPray/DexKit): Apache-2.0 for library API;
-  [native Core](https://github.com/LuckyPray/DexKit/blob/master/Core/LICENSE) LGPL-3.0.
+- [DexKit 2.3.0](https://github.com/LuckyPray/DexKit/tree/2.3.0): Apache-2.0 for library API;
+  native Core is LGPL-3.0; [verbatim Core license](dexkit-core/LICENSE)
+  copied from the pinned upstream tag. Before distributing the combined APK,
+  verify applicable LGPL source, relinking, and notice obligations.
 - [AndroidX](https://github.com/androidx/androidx): Apache-2.0
 - [MIUIX](https://github.com/compose-miuix-ui/miuix): Apache-2.0
 - [kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization):
