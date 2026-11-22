@@ -2212,6 +2212,11 @@ internal object SysUiPresentationOwner {
                 return false
             }
             ownedPersistentIgnoredSlots = owned
+            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE && owned.isNotEmpty()) {
+                // Native icon-row measurement must reflect the newly ignored slots,
+                // even when SystemUI's addIgnoredSlots leaves prior bounds intact.
+                group.requestLayout()
+            }
             onEvent(
                 eventPrefix + " ignoredSlots active lifetime=presentation-session" +
                     " owned=" + owned.joinToString(",") +
