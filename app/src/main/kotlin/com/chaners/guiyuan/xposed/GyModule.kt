@@ -93,6 +93,8 @@ class GyModule : XposedModule() {
     private var homeAodOriginPending = false
     private var homeAodTargetPrearmPending = false
     private var ccExpansion = 0f
+    private var ccProjectionReadyForHandoff = false
+    private var ccHomeYieldedToProjection = false
     // Guiyuan presentation readiness is separate from the latest native readiness callback.
     private var keyguardRuntimeReady = false
     private var aodRendererAttached = false
@@ -598,6 +600,9 @@ class GyModule : XposedModule() {
         ccSourceInstalled = false
         controlCenterSceneVisible = false
         controlCenterSceneEligible = false
+        ccExpansion = 0f
+        ccProjectionReadyForHandoff = false
+        ccHomeYieldedToProjection = false
         controlCenterSourceScene = SourceScene.UNKNOWN
         steadyStatusSourceScene = SourceScene.UNKNOWN
         stableFamilyScene = ScenePolicy.StableKeyguardAodScene.UNKNOWN
@@ -1204,10 +1209,12 @@ class GyModule : XposedModule() {
         val visible = update.visible ?: return null
         if (!visible) {
             controlCenterSceneVisible = false
-            // Restore Home first. QS_FAKE compact presentation remains prearmed
-            // for the lifetime of the native fake root; only the Combined
-            // overlay visibility changes with Control Center visibility.
-            HomeRenderSession.onControlCenterAuthorityChanged(true)
+            // The hidden boundary also terminates any missing final native
+            // fraction-zero callback. Home no longer waits for CC readiness.
+            onCcExpansion(0f)
+            ccProjectionReadyForHandoff = false
+            reconcileCcHomeAuthority("native-panel-hidden")
+            // Keep the QS_FAKE owner prearmed for the native fake-root lifetime.
             CcRenderSession.setRequestedVisible(false)
             if (deepDiagnosticsEnabled) {
                 val keyguard =
@@ -1245,8 +1252,9 @@ class GyModule : XposedModule() {
         }
 
         controlCenterSceneVisible = true
+        ccProjectionReadyForHandoff = false
         if (!CcRenderSession.beginVisibleCycle()) {
-            HomeRenderSession.onControlCenterAuthorityChanged(true)
+            reconcileCcHomeAuthority("native-visible-rearm-failed")
             logDiagnostic(
                 level = Log.WARN,
                 event = "projection.visibleCycle",
@@ -1283,7 +1291,8 @@ class GyModule : XposedModule() {
         )
         val carrier = update.presentationHost
         if (carrier == null) {
-            HomeRenderSession.onControlCenterAuthorityChanged(true)
+            ccProjectionReadyForHandoff = false
+            reconcileCcHomeAuthority("fake-root-unavailable")
             logDiagnostic(
                 level = Log.WARN,
                 event = "projection.attach",
@@ -1297,13 +1306,12 @@ class GyModule : XposedModule() {
 
         val prepareFailure = prepareCcFake(carrier, "visible-fallback")
         if (prepareFailure == null) {
-            val ready =
-                CcRenderSession.setRequestedVisible(true)
-            if (!ready) {
-                HomeRenderSession.onControlCenterAuthorityChanged(true)
-            }
+            val ready = CcRenderSession.setRequestedVisible(true)
+            ccProjectionReadyForHandoff = ready
+            reconcileCcHomeAuthority("native-visible-projection")
         } else {
-            HomeRenderSession.onControlCenterAuthorityChanged(true)
+            ccProjectionReadyForHandoff = false
+            reconcileCcHomeAuthority("native-visible-prepare-failed")
             logDiagnostic(
                 level = Log.WARN,
                 event = "projection.attach",
@@ -1378,6 +1386,11 @@ class GyModule : XposedModule() {
         val fraction = rawFraction.coerceIn(0f, 1f)
         val previous = ccExpansion
         ccExpansion = fraction
+        // The fraction-zero boundary precedes onVisibleChanged(false) during
+        // a slow upward gesture. Without this reconciliation, CC has already
+        // ended its transition while Home remains invisible and only native
+        // icons remain. It also works when native skips the zero callback.
+        reconcileCcHomeAuthority("native-fraction")
 
         if (fraction > 0f) {
             if (
@@ -1644,14 +1657,38 @@ class GyModule : XposedModule() {
         return failure?.reason
     }
 
+    // Single Home visibility decision shared by native expansion, native
+    // visible, and projected-ready callbacks. All originate on SystemUI's UI
+    // thread; a late ready=true cannot win over a native fraction-zero edge.
+    private fun reconcileCcHomeAuthority(source: String) {
+        val yielded = CcHomeHandoffPolicy.yieldToProjection(
+            nativePanelVisible = controlCenterSceneVisible,
+            nativeExpansion = ccExpansion,
+            projectionReady = ccProjectionReadyForHandoff,
+        )
+        val changed = yielded != ccHomeYieldedToProjection
+        ccHomeYieldedToProjection = yielded
+        HomeRenderSession.onControlCenterAuthorityChanged(!yielded)
+        if (changed && deepDiagnosticsEnabled) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "presentation.handoff",
+                component = "controlCenterProjection",
+                state = if (yielded) "cc-owner" else "home-owner",
+                "source" to source,
+                "nativeVisible" to controlCenterSceneVisible,
+                "nativeFraction" to ccExpansion,
+                "projectionReady" to ccProjectionReadyForHandoff,
+                "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
+            )
+        }
+    }
+
     private fun onCcProjectionReadyChanged(ready: Boolean) {
         CcTransitionOwner.onProjectionReadinessChanged(ready)
-        if (!controlCenterSceneVisible) {
-            return
-        }
-        // Projected owner is already visible when ready=true. On the reverse
-        // edge Home is restored before the projected owner is removed.
-        HomeRenderSession.onControlCenterAuthorityChanged(!ready)
+        if (!controlCenterSceneVisible) return
+        ccProjectionReadyForHandoff = ready
+        reconcileCcHomeAuthority("projection-readiness")
     }
 
     private fun onCcRuntimeFailure(error: Throwable) {
@@ -4700,6 +4737,9 @@ class GyModule : XposedModule() {
         homeAodTargetPrearmPending = false
         controlCenterSceneEligible = false
         keyguardCcLeaseActive = false
+        ccExpansion = 0f
+        ccProjectionReadyForHandoff = false
+        ccHomeYieldedToProjection = false
         // A failing surface must not prevent sibling native representations from returning.
         val failures = ArrayList<Throwable>(1)
         fun release(action: () -> Unit) {
