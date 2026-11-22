@@ -9,7 +9,17 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 internal object RingGapPolicy {
-    // Same circle-intersection span for curved and split signal-dot openings.    private fun ringIntersectionSpreadDegrees(        distance: Double,        ringRadius: Double,        reach: Double,    ): Double =        if (reach >= distance + ringRadius) 180.0 else Math.toDegrees(            acos(((distance * distance + ringRadius * ringRadius - reach * reach) /                (2.0 * distance * ringRadius)).coerceIn(-1.0, 1.0)),        )
+    // Same circle-intersection span for curved and split signal-dot openings.
+    private fun ringIntersectionSpreadDegrees(
+        distance: Double,
+        ringRadius: Double,
+        reach: Double,
+    ): Double =
+        if (reach >= distance + ringRadius) 180.0 else Math.toDegrees(
+            acos(((distance * distance + ringRadius * ringRadius - reach * reach) /
+                (2.0 * distance * ringRadius)).coerceIn(-1.0, 1.0)),
+        )
+
     internal fun followingLowerHalfGap(
         geometry: OuterGeometry.Resolved,
             dual: Boolean,
