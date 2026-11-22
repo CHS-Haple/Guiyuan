@@ -128,6 +128,30 @@ execution ownership is in [architecture](../architecture/README.md).
   The revised policy and a bounded readiness-driven native-return diagnostic
   are source-tested; B1905 on-device confirmation remains required.
 
+
+  B1903 screenshot at 00:12 while charging shows the combined ring/readout
+  intruding toward adjacent mute/network icons. The accompanying
+  2026-11-23 00:11 log proves a separate concrete displacement input:
+  Home core battery width 105 px but outer native battery 135 px when the
+  Home owner reacquired, and the original native padding owner reconciled
+  an end delta of -30 px. B1902's Home anchor uses the live *core left*
+  coordinate; when the outer battery widens, that left coordinate can
+  shift left with the expanded content. B1905 now preserves the native
+  core-based anchor when outer/core widths agree, and aligns the compact
+  105 px visual to the measured native outer battery right edge only
+  when that outer width truly expands; it does not introduce a user
+  vertical offset or alter SystemUI native geometry/padding ownership.
+  In the same log Home was deactivated at 00:11:00.209 on
+  `readiness-lost:hostCapture` and reactivated at 00:11:03.466, aligning
+  with the observed temporary native icons. QS_FAKE separately failed its
+  capacity contract with `fake-native-peer-row-overflow` at 00:10:47,
+  00:10:56 and 00:11:03. The fake peer capacity gate previously read the
+  cached row's `measureViews` even while the peer row requested another
+  native measure; it now defers this check until the native peer's frame
+  settles, retaining strict Fail native if a measured settled overflow
+  genuinely persists. These corrections are backed by source and
+  reproducible diagnostics but still require one B1905 signed-device test.
+
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
   [dual-SIM work #1205](https://github.com/CHS-Haple/Guiyuan/pull/1205)
