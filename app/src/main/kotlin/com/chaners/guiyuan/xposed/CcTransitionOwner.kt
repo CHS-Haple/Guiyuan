@@ -257,6 +257,9 @@ internal object CcTransitionOwner {
         private val finalRootRef = WeakReference(finalRoot)
         private val sourceViewRef = WeakReference(sourceView)
         private val sourceAnchorRef = WeakReference(sourceAnchor)
+        // This source snapshot is frozen in the root's native viewport frame.
+        private val rootFrameWidth = root.width
+        private val rootFrameHeight = root.height
         private val painter = StatusPainter(root.context)
         private val drawable = TransitionDrawable(this)
         private val sourceMask = MaskState(
@@ -500,6 +503,12 @@ internal object CcTransitionOwner {
             sourceAnchor: View,
         ): Boolean =
             rootRef.get() === root &&
+                CcCarrierGeometryPolicy.sameNativeRootFrame(
+                    capturedWidth = rootFrameWidth,
+                    capturedHeight = rootFrameHeight,
+                    liveWidth = root.width,
+                    liveHeight = root.height,
+                ) &&
                 fakeRootRef.get() === fakeRoot &&
                 finalRootRef.get() === finalRoot &&
                 sourceViewRef.get() === sourceView &&
@@ -513,6 +522,9 @@ internal object CcTransitionOwner {
                 ":finalOpacity=" +
                 (finalRootRef.get()?.let(::endpointAlpha) ?: "unavailable") +
                 ":sourceWidth=" + (sourceViewRef.get()?.width ?: "unavailable") +
+                ":rootFrame=" + rootFrameWidth + "x" + rootFrameHeight +
+                ":currentRootFrame=" + (rootRef.get()?.width ?: -1) + "x" +
+                    (rootRef.get()?.height ?: -1) +
                 ":progress=" + progress
 
         fun batteryNumberProbe(): String =
