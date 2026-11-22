@@ -81,10 +81,12 @@ internal object SceneCcPolicy {
 
     fun controlCenterProjectionEligible(
         featureEnabled: Boolean,
+        mobileSourceReady: Boolean,
         sourceScene: SourceScene,
         keyguardEnabled: Boolean,
     ): Boolean =
         featureEnabled &&
+            mobileSourceReady &&
             when (sourceScene) {
                 SourceScene.HOME -> true
                 SourceScene.KEYGUARD -> keyguardEnabled

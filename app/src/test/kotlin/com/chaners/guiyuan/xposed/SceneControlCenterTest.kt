@@ -10,6 +10,7 @@ class SceneControlCenterTest {
         assertTrue(
             SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
+                mobileSourceReady = true,
                 sourceScene = SourceScene.HOME,
                 keyguardEnabled = false,
             ),
@@ -17,6 +18,7 @@ class SceneControlCenterTest {
         assertFalse(
             SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
+                mobileSourceReady = true,
                 sourceScene = SourceScene.KEYGUARD,
                 keyguardEnabled = false,
             ),
@@ -24,6 +26,7 @@ class SceneControlCenterTest {
         assertTrue(
             SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
+                mobileSourceReady = true,
                 sourceScene = SourceScene.KEYGUARD,
                 keyguardEnabled = true,
             ),
@@ -31,6 +34,7 @@ class SceneControlCenterTest {
         assertFalse(
             SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
+                mobileSourceReady = true,
                 sourceScene = SourceScene.UNKNOWN,
                 keyguardEnabled = true,
             ),
@@ -38,6 +42,7 @@ class SceneControlCenterTest {
         assertFalse(
             SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = false,
+                mobileSourceReady = true,
                 sourceScene = SourceScene.HOME,
                 keyguardEnabled = true,
             ),
@@ -45,10 +50,25 @@ class SceneControlCenterTest {
         assertFalse(
             SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = false,
+                mobileSourceReady = true,
                 sourceScene = SourceScene.KEYGUARD,
                 keyguardEnabled = true,
             ),
         )
+    }
+
+    @Test
+    fun missingMobileCollectorRetainsNativeControlCenterForBothSceneFamilies() {
+        for (scene in listOf(SourceScene.HOME, SourceScene.KEYGUARD)) {
+            assertFalse(
+                SceneCcPolicy.controlCenterProjectionEligible(
+                    featureEnabled = true,
+                    mobileSourceReady = false,
+                    sourceScene = scene,
+                    keyguardEnabled = true,
+                ),
+            )
+        }
     }
 
     @Test

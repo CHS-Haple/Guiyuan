@@ -1340,11 +1340,11 @@ class GyModule : XposedModule() {
         val keyguardEligible =
             settings.enabled &&
                 settings.keyguard &&
-                SysUiNetworkRuntime.mobileReady &&
                 keyguardPresentationReady
         val nextEligible =
             SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = settings.enabled,
+                mobileSourceReady = SysUiNetworkRuntime.mobileReady,
                 sourceScene = sourceScene,
                 keyguardEnabled = keyguardEligible,
             )
