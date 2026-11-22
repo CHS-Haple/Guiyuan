@@ -110,10 +110,10 @@ internal object ScenePolicy {
         if (feature.isAodAnimate) {
             return resolveAnimatingKeyguardAodProjection(input)
         }
-        if (SysUiKeyguardAodSource.isStableAod(feature.toAod, feature.isAodAnimate)) {
+        if (SysUiKeyguardAodPolicy.isStableAod(feature.toAod, feature.isAodAnimate)) {
             return if (feature.aodEnabled) KeyguardAodProjection.AOD else KeyguardAodProjection.NATIVE
         }
-        if (SysUiKeyguardAodSource.blocksKeyguardProjection(feature.toAod, feature.isAodAnimate)) {
+        if (SysUiKeyguardAodPolicy.blocksKeyguardProjection(feature.toAod, feature.isAodAnimate)) {
             return KeyguardAodProjection.NATIVE
         }
         if (scene.steadySourceScene == SourceScene.HOME) return KeyguardAodProjection.NATIVE
