@@ -23,7 +23,6 @@ import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batteryBuiltInColor
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.IconButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -37,7 +36,7 @@ internal fun BatterySchemeSettingsCard(
     onSlotClick: (BatteryColorSlot) -> Unit,
     onSettingsCardMeasured: (Int) -> Unit,
 ) {
-    Card(
+    BatterySheetCard(
         modifier =
             Modifier
                 .fillMaxWidth()

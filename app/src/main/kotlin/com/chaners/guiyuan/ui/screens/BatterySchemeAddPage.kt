@@ -26,7 +26,6 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_CUSTOM_MAX
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.FloatingActionButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -50,9 +49,9 @@ internal fun BatteryAddSchemePage(
     Column(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Card(
+        BatterySheetCard(
             modifier = Modifier.fillMaxWidth(),
-            colors =
+            nativeColors =
                 CardDefaults.defaultColors(
                     color = MiuixTheme.colorScheme.surface,
                     contentColor = MiuixTheme.colorScheme.onSurface,
@@ -97,7 +96,7 @@ private fun BatteryAddSchemePlaceholder(
     onClick: () -> Unit,
 ) {
     val density = LocalDensity.current
-    Card(
+    BatterySheetCard(
         modifier = Modifier.fillMaxWidth().then(
             if (settingsCardHeightPx > 0) {
                 Modifier.height(with(density) { settingsCardHeightPx.toDp() })

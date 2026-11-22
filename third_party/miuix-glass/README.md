@@ -138,3 +138,10 @@ retaining submenu content through its exit animation. The local top-bar
 fallback caches its fixed gradient shader like upstream; its own title and
 unclipped action slots remain Guiyuan-owned. These source adaptations and
 published Android artifact compilation require separate Guiyuan CI verification.
+
+Battery Colors now selects upstream `GlassCard` for its OS4 glass-sheet
+content groups, preserving the outer/inner card hierarchy, slot-row actions,
+and the add-card click feedback. OS3 UI style retains its original MIUIX
+`Card` colors and interactions. The 20 dp GlassCard corner and translucent
+fill are upstream defaults, not local custom material settings; this scoped
+UI change still requires light/dark and editor-sheet device acceptance.
