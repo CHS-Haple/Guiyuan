@@ -18,13 +18,11 @@ internal fun IndicatorVerticalOffsetSlider(
     @StringRes titleRes: Int,
     @DrawableRes iconRes: Int,
     enabled: Boolean,
-    summary: String? = null,
 ) {
     SliderPreference(
         value = value,
         onValueChange = onValueChange,
         title = stringResource(titleRes),
-        summary = summary,
         startAction = {
             SemanticLeadingIcon(iconRes, enabled, R.drawable.ic_material_symbol_height_w500)
         },
