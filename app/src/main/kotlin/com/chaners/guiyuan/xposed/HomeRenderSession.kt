@@ -310,6 +310,25 @@ internal object HomeRenderSession {
                 true
             }
 
+        private fun registerNativeDrawListener() {
+            val observer = batteryContainer.get()
+                ?.takeIf { it.isAttachedToWindow }
+                ?.viewTreeObserver
+                ?.takeIf { it.isAlive }
+                ?: return
+            if (nativeDrawObserver === observer) return
+            unregisterNativeDrawListener()
+            nativeDrawObserver = observer
+            observer.addOnPreDrawListener(nativeDrawListener)
+        }
+
+        private fun unregisterNativeDrawListener() {
+            nativeDrawObserver?.let { observer ->
+                if (observer.isAlive) observer.removeOnPreDrawListener(nativeDrawListener)
+            }
+            nativeDrawObserver = null
+        }
+
         fun matches(
             host: ViewGroup,
             batteryContainer: ViewGroup,
@@ -334,10 +353,7 @@ internal object HomeRenderSession {
             battery.addOnLayoutChangeListener(nativeLayoutListener)
             carrier.addOnLayoutChangeListener(nativeLayoutListener)
             statusIcons.get()?.addOnLayoutChangeListener(nativeLayoutListener)
-            overlayHost.viewTreeObserver.takeIf { it.isAlive }?.let { observer ->
-                nativeDrawObserver = observer
-                observer.addOnPreDrawListener(nativeDrawListener)
-            }
+            registerNativeDrawListener()
             probeView.visibility = View.GONE
             (probeView.parent as? ViewGroup)?.removeView(probeView)
             overlayHost.addView(
@@ -383,12 +399,7 @@ internal object HomeRenderSession {
                 { batteryView.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { batteryCarrier.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { statusIcons.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
-                {
-                    nativeDrawObserver?.let { observer ->
-                        if (observer.isAlive) observer.removeOnPreDrawListener(nativeDrawListener)
-                    }
-                    nativeDrawObserver = null
-                },
+                { unregisterNativeDrawListener() },
                 { if (removeVisual) (probeView.parent as? ViewGroup)?.removeView(probeView) },
             )
         }
@@ -565,10 +576,12 @@ internal object HomeRenderSession {
         }
 
         override fun onViewAttachedToWindow(view: View) {
+            registerNativeDrawListener()
             layoutProbe()
         }
 
         override fun onViewDetachedFromWindow(view: View) {
+            unregisterNativeDrawListener()
             if (layoutReady) {
                 layoutReady = false
                 dispatchPresentationReadiness("host-detached")
