@@ -231,6 +231,50 @@ class HomeRenderSessionTest {
     }
 
     @Test
+    fun expandedChargingBatteryRetainsCompactVisualAtNativeEnd() {
+        // SystemUI widens its battery object from 105 to 135 px. Anchoring
+        // the compact visual to battery_icon_container.left would shift the
+        // entire ring 30 px toward the previous peer row.
+        val charging = HomeCarrierAnchorPolicy.resolveExpandedBattery(
+            hostWidthPx = 600,
+            hostHeightPx = 108,
+            carrierWidthPx = 105,
+            carrierLeftPx = 465,
+            nativeBatteryWidthPx = 135,
+            nativeBatteryRightPx = 600,
+        )
+        assertEquals(495, charging?.left)
+        assertEquals(600, charging?.right)
+        assertEquals(105, charging?.visualWidth)
+
+        val normal = HomeCarrierAnchorPolicy.resolveExpandedBattery(
+            hostWidthPx = 600,
+            hostHeightPx = 108,
+            carrierWidthPx = 105,
+            carrierLeftPx = 495,
+            nativeBatteryWidthPx = 105,
+            nativeBatteryRightPx = 600,
+        )
+        assertEquals(normal?.left, charging?.left)
+        assertEquals(normal?.right, charging?.right)
+    }
+
+    @Test
+    fun expandedChargingBatteryKeepsNativeViewportBoundary() {
+        assertEquals(
+            null,
+            HomeCarrierAnchorPolicy.resolveExpandedBattery(
+                hostWidthPx = 600,
+                hostHeightPx = 108,
+                carrierWidthPx = 105,
+                carrierLeftPx = 465,
+                nativeBatteryWidthPx = 135,
+                nativeBatteryRightPx = 635,
+            ),
+        )
+    }
+
+    @Test
     fun invalidOrUnfinishedNativeHomeCarrierNeverUsesStaleHostEndEstimate() {
         assertEquals(null, HomeCarrierAnchorPolicy.resolve(587, 108, 105, -1))
         assertEquals(null, HomeCarrierAnchorPolicy.resolve(587, 108, 105, 500))
