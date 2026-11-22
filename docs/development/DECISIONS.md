@@ -21,6 +21,28 @@ future OS/ROM support.
 built APKs are checked for accidental non-arm64 JNI entries. This does not
 change Java/LSPosed APIs, the SystemUI runtime policy or native fallback.
 
+## Verified native contracts before dynamic DEX lookup
+
+**Decision:** prefer direct access to verified native SystemUI contracts and
+binary-specific compatibility profiles. Do not ship runtime DEX scanning solely
+because a future ROM might rename compiler-generated classes.
+
+**Why:** matching a coroutine class by field names and method shape cannot
+establish its signal semantics, subscription authority or lifecycle. Scanning
+adds another runtime failure path, JNI distribution and licensing obligations
+without reducing the need to inspect the actual target. A broader module that
+hooks many unrelated, obfuscated applications has a different cost-benefit
+balance from Guiyuan's bounded SystemUI integration.
+
+**Consequence:** preserve the [DexKit experiment #1801](https://github.com/CHS-Haple/Guiyuan/pull/1801)
+as reviewable evidence, not an accepted dependency. For a newly supported ROM,
+first verify its exact SystemUI binary, native event sources and owner lifetime.
+Consider narrowly scoped runtime discovery only after a concrete name-drift
+case shows a unique, semantically justified match and measurable maintenance
+benefit over updating the verified profile. Keep a single Hook owner and fail
+native for missing or ambiguous matches. Developer-side binary analysis tools
+need not become APK runtime dependencies.
+
 ## Native host over duplicate participant
 
 **Decision:** reuse a verified native SystemUI host whenever it already owns the
