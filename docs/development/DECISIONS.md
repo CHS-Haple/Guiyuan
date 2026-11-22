@@ -293,6 +293,35 @@ the existing native fallback on actual unsafe conditions. Tests cover
 slow-close, late-ready, partial gesture and fast-close/reopen traces.
 Real-device validation still required.
 
+## Native header visual exit is a transition ownership boundary
+
+**Decision:** During a confirmed native CC closing motion from HOME,
+observe both existing native fake and final status-header roots at the
+transition's already-owned pre-draw boundary. If both are absent from
+the visible native root (including a native orientation detach), retire
+the transient overlay and restore its original Home-source clip before
+handing Home display authority back. The terminal witness remains scoped
+to the same native visible cycle, even if a repeated `visible=true`
+event arrives; a new visible cycle clears it. Do not use a guessed
+time/alpha threshold, rewrite native status-bar geometry, or add a hook.
+
+**Evidence:** A B1902 portrait return after rotating inside Control
+Center reproduced a short empty status-header slot while other Home
+status icons were present, then recovered without any Fail native.
+B1902 source clips the Home render surface at transition start, and
+only unclips it on later transition retirement; the supplied runtime
+log subsequently records `transitionReservation cleared` but lacks
+native header occupancy and callback timestamps in the brief gap.
+This identifies a missing source-clip ownership boundary; the exact
+native endpoint state during the gap is still unmeasured.
+
+**Consequence:** Use read-only, native View visibility/alpha and
+`getGlobalVisibleRect` checks with the observed closing direction,
+then release the existing scoped transition and notify the single Home
+visibility coordinator. Emit one bounded terminal event to verify
+whether this path explains the reverse-rotation gap. Preserve native
+behavior and prior Home/Keyguard/AOD ownership otherwise.
+
 ## CC frozen source geometry is viewport-scoped
 
 **Decision:** A live CC transition session with frozen Home source and
