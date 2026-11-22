@@ -64,11 +64,20 @@ internal object CcTransitionOwner {
     private var sourceScene = SourceScene.UNKNOWN
     private var endpoints: SysUiCcSource.TransitionEndpoints? = null
     private var current: Session? = null
+    private var terminalNativeVisualAbsent = false
+    private var onNativeCloseVisualEnded: (() -> Unit)? = null
 
     @Synchronized
-    fun onSourceUpdate(update: SysUiCcSource.Update) {
+    fun onSourceUpdate(
+        update: SysUiCcSource.Update,
+        onNativeCloseVisualEnded: (() -> Unit)? = null,
+    ) {
+        if (onNativeCloseVisualEnded != null) {
+            this.onNativeCloseVisualEnded = onNativeCloseVisualEnded
+        }
         update.visible?.let { nextVisible ->
             visible = nextVisible
+            if (nextVisible) terminalNativeVisualAbsent = false
             if (!nextVisible) {
                 nativeProgress = null
                 nativeAppearance = false
@@ -142,6 +151,20 @@ internal object CcTransitionOwner {
         nativeBatteryIslandActive = null
         sourceScene = SourceScene.UNKNOWN
         endpoints = null
+        terminalNativeVisualAbsent = false
+        onNativeCloseVisualEnded = null
+    }
+
+    // A native pre-draw observation is authoritative for a completed visual
+    // close even if the delegate's last positive expansion sample is delayed.
+    // Retire the scoped clip and overlay before returning Home eligibility.
+    @Synchronized
+    private fun onNativeCloseVisualCompleted(owner: Session) {
+        if (current !== owner || sourceScene != SourceScene.HOME) return
+        terminalNativeVisualAbsent = true
+        owner.stop("native-header-visual-end")
+        current = null
+        onNativeCloseVisualEnded?.invoke()
     }
 
     private fun sync(source: String) {
@@ -149,6 +172,7 @@ internal object CcTransitionOwner {
         val endpoint = endpoints
         val shouldRun =
             visible &&
+                !terminalNativeVisualAbsent &&
                 sceneEligible &&
                 projectionReady &&
                 progress != null &&
@@ -336,6 +360,7 @@ internal object CcTransitionOwner {
         private var progress = 0f
         private var nativeAppearance = false
         private var nativeAppearanceAnimated = false
+        private var nativeCloseObserved = false
         private var started = false
         private var stopping = false
         private var registeredObserver: ViewTreeObserver? = null
@@ -363,6 +388,15 @@ internal object CcTransitionOwner {
         private val sampleValues = FloatArray(9)
         private val boundsMatrix = Matrix()
         private val boundsValues = FloatArray(9)
+        private val nativeVisibleRect = Rect()
+
+        private fun nativeHeaderVisible(view: View): Boolean =
+            view.isAttachedToWindow &&
+                view.isShown &&
+                view.width > 0 && view.height > 0 &&
+                endpointAlpha(view) > 0f &&
+                view.getGlobalVisibleRect(nativeVisibleRect) &&
+                !nativeVisibleRect.isEmpty
 
         private val preDrawListener =
             ViewTreeObserver.OnPreDrawListener {
@@ -385,6 +419,18 @@ internal object CcTransitionOwner {
                     !sourceAnchor.isAttachedToWindow
                 ) {
                     CcTransitionOwner.detach("pre-draw-detached")
+                    return@OnPreDrawListener true
+                }
+
+                if (
+                    CcTransitionOwner.sourceScene == SourceScene.HOME &&
+                    CcHomeHandoffPolicy.nativeCloseVisualCompleted(
+                        closing = nativeCloseObserved,
+                        fakeHeaderVisible = nativeHeaderVisible(fake),
+                        finalHeaderVisible = nativeHeaderVisible(final),
+                    )
+                ) {
+                    CcTransitionOwner.onNativeCloseVisualCompleted(this)
                     return@OnPreDrawListener true
                 }
 
@@ -716,7 +762,10 @@ internal object CcTransitionOwner {
             val appearanceChanged =
                 this.nativeAppearance != nativeAppearance ||
                     this.nativeAppearanceAnimated != nativeAppearanceAnimated
-            this.progress = progress.coerceIn(0f, 1f)
+            val next = progress.coerceIn(0f, 1f)
+            if (next < this.progress) nativeCloseObserved = true
+            if (next > this.progress) nativeCloseObserved = false
+            this.progress = next
             acceptSourceSnapshot(sourceSnapshot)
             this.nativeAppearance = nativeAppearance
             this.nativeAppearanceAnimated = nativeAppearanceAnimated
