@@ -100,6 +100,21 @@ execution ownership is in [architecture](../architecture/README.md).
   temporary transition owner on native root-size change, recapturing the
   current source, native final targets and carrier offsets. A regression
   test covers both orientation directions with identical View identity.
+  B1902 device follow-up narrowed a remaining Home visual gap to closing
+  CC after landscape→portrait rotation (portrait→landscape is unaffected).
+  Video around 19:50:37 showed the Home status bar already visible but
+  no combined icon for a fraction of a second, then a normal spontaneous
+  return. Diagnostics contain no Fail native; they record later CC
+  transition-reservation release without the native header opacity and
+  viewport witness at the missing frames. The live transition still owned
+  an empty Home-source clip until that release. B1903 observes the
+  existing native fake/final header endpoints at the transition's pre-draw:
+  a genuine closing direction with both headers outside the visible native
+  root retires the old overlay and scoped clip and returns Home ownership,
+  even if a positive expansion callback is still in flight. One-time
+  terminal latch survives duplicate visible=true notifications. No timer,
+  new Hook, native geometry/alpha write or broad Fail native is introduced.
+  The exact event ordering remains subject to B1903 on-device verification.
 
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
