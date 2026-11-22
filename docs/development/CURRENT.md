@@ -91,6 +91,15 @@ execution ownership is in [architecture](../architecture/README.md).
   callbacks (fraction, visible, ready), then resets state on hidden or
   runtime retirement. The result still needs first/slow-up-swipe device
   acceptance and new event evidence.
+  A second stale-coordinate dependency was found in
+  CcTransitionOwner: Session.matches() compared native View identities but
+  not the root viewport dimensions, despite caching a frozen source frame
+  and fake-carrier root-relative offset. When SystemUI retains the Views
+  while switching portrait/landscape, the old coordinate frame can leak
+  into the closing transition. B1902 now invalidates and recreates that
+  temporary transition owner on native root-size change, recapturing the
+  current source, native final targets and carrier offsets. A regression
+  test covers both orientation directions with identical View identity.
 
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
