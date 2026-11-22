@@ -1396,7 +1396,13 @@ class GyModule : XposedModule() {
         val fraction = rawFraction.coerceIn(0f, 1f)
         val previous = ccExpansion
         ccExpansion = fraction
-        ccNativeZeroAwaitingCommit = fraction == 0f && controlCenterSceneVisible
+        ccNativeZeroAwaitingCommit =
+            CcHomeHandoffPolicy.awaitNativeZeroCommit(
+                nativePanelVisible = controlCenterSceneVisible,
+                previousFraction = previous,
+                currentFraction = fraction,
+                ccOwnedBeforeCallback = ccHomeYieldedToPanel,
+            )
         // The fraction-zero boundary precedes onVisibleChanged(false) during
         // a slow upward gesture. Without this reconciliation, CC has already
         // ended its transition while Home remains invisible and only native

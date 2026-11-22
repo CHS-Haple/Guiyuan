@@ -32,6 +32,28 @@ class CcHomeHandoffPolicyTest {
     }
 
     @Test
+    fun repeatedZeroDoesNotRevokeAnAlreadyCommittedHomeOwner() {
+        assertTrue(CcHomeHandoffPolicy.awaitNativeZeroCommit(
+            nativePanelVisible = true,
+            previousFraction = 0.12f,
+            currentFraction = 0f,
+            ccOwnedBeforeCallback = true,
+        ))
+        assertFalse(CcHomeHandoffPolicy.awaitNativeZeroCommit(
+            nativePanelVisible = true,
+            previousFraction = 0f,
+            currentFraction = 0f,
+            ccOwnedBeforeCallback = false,
+        ))
+        assertFalse(CcHomeHandoffPolicy.awaitNativeZeroCommit(
+            nativePanelVisible = false,
+            previousFraction = 0.12f,
+            currentFraction = 0f,
+            ccOwnedBeforeCallback = true,
+        ))
+    }
+
+    @Test
     fun delayedReadyCallbackCannotHideHomeAfterSlowClose() {
         assertFalse(yieldToCc(visible = true, fraction = 0f))
         assertFalse(yieldToCc(visible = true, fraction = 0f))
