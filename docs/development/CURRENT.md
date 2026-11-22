@@ -101,38 +101,33 @@ execution ownership is in [architecture](../architecture/README.md).
   current source, native final targets and carrier offsets. A regression
   test covers both orientation directions with identical View identity.
   B1902 device follow-up narrowed a remaining Home visual gap to closing
-  CC after landscape→portrait rotation (portrait→landscape is unaffected).
-  Video around 19:50:37 showed the Home status bar already visible but
-  no combined icon for a fraction of a second, then a normal spontaneous
-  return. Diagnostics contain no Fail native; they record later CC
-  transition-reservation release without the native header opacity and
-  viewport witness at the missing frames. The live transition still owned
-  an empty Home-source clip until that release. B1903 observes the
-  existing native fake/final header endpoints at the transition's pre-draw:
-  a genuine closing direction with both headers outside the visible native
-  root retires the old overlay and scoped clip and returns Home ownership,
-  even if a positive expansion callback is still in flight. One-time
-  terminal latch survives duplicate visible=true notifications. No timer,
-  new Hook, native geometry/alpha write or broad Fail native is introduced.
-  The exact event ordering remains subject to B1903 on-device verification.
-  B1903 on-device follow-up confirmed that this visual gap persists.
-  The exported B1903 report at 20:21:39 has
-  `runtimeLevel=not-observed`, `structuredEntries=5`, and only the
-  20:21:13–20:21:35 latest LSPosed log tail, including a module OFF–ON
-  cycle. It therefore does not record the actual visual-gap interval or
-  establish whether B1903's terminal probe fired.
-  A source-lifecycle review found that B1903 observed terminal native
-  fake/final header visibility solely from the Control Center root's
-  `OnPreDraw`. Once that root stops drawing, the observer cannot release
-  a still-clipped Home render source, even when the separate Home root
-  is already drawing its native peer icons. B1904 additionally performs
-  the exact same scoped, read-only terminal check from the Home session's
-  *existing* pre-draw observer. It requires the same original Home
-  render-view identity, native closing direction and BOTH native CC
-  endpoints absent, and reports the witness origin on the single Home
-  ownership handoff. There are no new hooks, timers or native writes;
-  the actual B1904 runtime branch and visual effect remain device
-  acceptance conditions.
+  Control Center after landscape→portrait rotation. Around 19:50:37 Home
+  native peers were visible while the combined icon remained absent for
+  a fraction of a second; portrait→landscape was unaffected. No Fail native
+  appeared. The B1903 device candidate retained the same gap. Its exported
+  20:21:39 diagnostic has `runtimeLevel=not-observed`,
+  `structuredEntries=5`, and only a post-event LSPosed log tail including
+  module OFF–ON. The actual blank frames and terminal witness were not
+  captured, so their exact native fractions and header visibility are
+  unverified.
+  A subsequent full source trace corrected the prior **mistaken clip
+  assumption**: `CcTransitionOwner.Session.start()` masks
+  `CcRenderSession.transitionSourceSnapshot().view`, which is the
+  **QS_FAKE render View**, not `HomeRenderSession.probeView`. The Home icon
+  instead remains GONE whenever `GyModule.reconcileCcHomeAuthority()`
+  still yields to CC based on native visible, positive fraction and CC
+  projection readiness, despite the native Home peer row already drawing.
+  B1903's native-header-completed check runs only on the CC root pre-draw
+  and cannot observe a terminal exit after that root stops drawing.
+  B1904 reuses Home's existing pre-draw to read the same scoped native
+  closing and fake/final-header visibility facts. It authenticates the
+  live Home RenderView identity (distinct from QS_FAKE), retires only the
+  CC transition session and returns Home eligibility via the existing
+  single coordinator. Both CC and Home observers use the same native
+  terminal predicate; the event identifies the witnessing root. No new
+  hook, timer, or geometry/alpha writer is added. The proposed handoff
+  is source-supported but still awaits the first B1904 real-device
+  native-endpoint witness and visual acceptance.
 
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
