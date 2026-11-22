@@ -458,95 +458,125 @@ fun GlassNavigationBar(
                     .padding(horizontal = GlassNavigationBarDefaults.ContentPaddingHorizontal),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                val pressedIndexProvider = remember { { pressedIndexState.intValue } }
                 items.forEachIndexed { position, item ->
                     key(item) {
-                        val selected = position == index
-                        val tintState = animateColorAsState(
-                            targetValue = if (selected) selectedColor else unselectedColor,
-                            animationSpec = GlassMotion.navContent(),
-                            label = "glassNavigationTint",
+                        GlassNavigationBarItemContent(
+                            item = item,
+                            position = position,
+                            selected = position == index,
+                            pressedIndexProvider = pressedIndexProvider,
+                            selectedColor = selectedColor,
+                            unselectedColor = unselectedColor,
+                            labelSize = labelSize,
+                            height = height,
+                            interactionEnabled = inputEnabled,
+                            onSelect = onSelectState,
                         )
-                        val tintProducer = remember { ColorProducer { tintState.value } }
-                        val pressAlpha = animateFloatAsState(
-                            targetValue = if (position == pressedIndexState.intValue) {
-                                GlassNavigationBarDefaults.PressedAlpha
-                            } else {
-                                1f
-                            },
-                            animationSpec = GlassMotion.navContentFloat(),
-                            label = "glassNavigationPress",
-                        )
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .heightIn(min = height)
-                                .graphicsLayer { this.alpha = pressAlpha.value }
-                                .padding(
-                                    horizontal = GlassNavigationBarDefaults.IndicatorOverhang,
-                                    vertical = GlassNavigationBarDefaults.ContentPaddingVertical,
-                                )
-                                .then(
-                                    if (inputEnabled) {
-                                        Modifier
-                                            .semantics(mergeDescendants = true) {
-                                                this.role = Role.Tab
-                                                this.selected = selected
-                                                (item.contentDescription ?: item.label)?.let {
-                                                    this.contentDescription = it
-                                                }
-                                                onClick {
-                                                    onSelectState(position)
-                                                    true
-                                                }
-                                            }
-                                            .onKeyEvent { event ->
-                                                val activationKey = event.key == Key.Enter ||
-                                                    event.key == Key.NumPadEnter ||
-                                                    event.key == Key.Spacebar
-                                                if (activationKey) {
-                                                    if (event.type == KeyEventType.KeyUp) onSelectState(position)
-                                                    true
-                                                } else {
-                                                    false
-                                                }
-                                            }
-                                            .focusable()
-                                    } else {
-                                        Modifier.clearAndSetSemantics { }
-                                    },
-                                ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            androidx.compose.foundation.layout.Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(GlassNavigationBarDefaults.LabelSpacing),
-                            ) {
-                                BadgedBox(badge = { item.badge?.invoke() }) {
-                                    Icon(
-                                        painter = rememberVectorPainter(item.icon),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(GlassNavigationBarDefaults.IconSize),
-                                        tint = tintProducer,
-                                    )
-                                }
-                                item.label?.let { label ->
-                                    val baseLabelStyle = MiuixTheme.textStyles.footnote2
-                                    val labelTextStyle = remember(baseLabelStyle, labelSize) {
-                                        baseLabelStyle.copy(fontSize = labelSize)
-                                    }
-                                    Text(
-                                        text = label,
-                                        style = labelTextStyle,
-                                        color = tintProducer,
-                                        textAlign = TextAlign.Center,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.GlassNavigationBarItemContent(
+    item: GlassNavigationItem,
+    position: Int,
+    selected: Boolean,
+    pressedIndexProvider: () -> Int,
+    selectedColor: Color,
+    unselectedColor: Color,
+    labelSize: androidx.compose.ui.unit.TextUnit,
+    height: Dp,
+    interactionEnabled: Boolean,
+    onSelect: (Int) -> Unit,
+) {
+    val tintState = animateColorAsState(
+        targetValue = if (selected) selectedColor else unselectedColor,
+        animationSpec = GlassMotion.navContent(),
+        label = "glassNavigationTint",
+    )
+    val tintProducer = remember { ColorProducer { tintState.value } }
+    val isPressed by remember(position) {
+        computedStateOf { pressedIndexProvider() == position }
+    }
+    val pressAlpha = animateFloatAsState(
+        targetValue = if (isPressed) {
+            GlassNavigationBarDefaults.PressedAlpha
+        } else {
+            1f
+        },
+        animationSpec = GlassMotion.navContentFloat(),
+        label = "glassNavigationPress",
+    )
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .heightIn(min = height)
+            .graphicsLayer { this.alpha = pressAlpha.value }
+            .padding(
+                horizontal = GlassNavigationBarDefaults.IndicatorOverhang,
+                vertical = GlassNavigationBarDefaults.ContentPaddingVertical,
+            )
+            .then(
+                if (interactionEnabled) {
+                    Modifier
+                        .semantics(mergeDescendants = true) {
+                            this.role = Role.Tab
+                            this.selected = selected
+                            (item.contentDescription ?: item.label)?.let {
+                                this.contentDescription = it
+                            }
+                            onClick {
+                                onSelect(position)
+                                true
+                            }
+                        }
+                        .onKeyEvent { event ->
+                            val activationKey = event.key == Key.Enter ||
+                                event.key == Key.NumPadEnter ||
+                                event.key == Key.Spacebar
+                            if (activationKey) {
+                                if (event.type == KeyEventType.KeyUp) onSelect(position)
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        .focusable()
+                } else {
+                    Modifier.clearAndSetSemantics { }
+                },
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        androidx.compose.foundation.layout.Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(GlassNavigationBarDefaults.LabelSpacing),
+        ) {
+            BadgedBox(badge = { item.badge?.invoke() }) {
+                Icon(
+                    painter = rememberVectorPainter(item.icon),
+                    tint = tintProducer,
+                    contentDescription = null,
+                    modifier = Modifier.size(GlassNavigationBarDefaults.IconSize),
+                )
+            }
+            if (item.label != null) {
+                val baseLabelStyle = MiuixTheme.textStyles.footnote2
+                val labelTextStyle = remember(baseLabelStyle, labelSize) {
+                    baseLabelStyle.copy(fontSize = labelSize)
+                }
+                Text(
+                    text = item.label,
+                    color = tintProducer,
+                    style = labelTextStyle,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }
