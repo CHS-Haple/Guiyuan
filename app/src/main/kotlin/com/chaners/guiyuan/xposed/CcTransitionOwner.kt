@@ -76,8 +76,8 @@ internal object CcTransitionOwner {
             this.onNativeCloseVisualEnded = onNativeCloseVisualEnded
         }
         update.visible?.let { nextVisible ->
+            if (nextVisible && !visible) terminalNativeVisualAbsent = false
             visible = nextVisible
-            if (nextVisible) terminalNativeVisualAbsent = false
             if (!nextVisible) {
                 nativeProgress = null
                 nativeAppearance = false
