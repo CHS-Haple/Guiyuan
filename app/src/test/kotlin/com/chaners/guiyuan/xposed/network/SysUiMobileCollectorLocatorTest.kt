@@ -45,6 +45,13 @@ class SysUiMobileCollectorLocatorTest {
     }
 
     @Test
+    fun sharedGeneratedClassCannotClaimMultipleCollectorRoles() {
+        assertTrue(locator.hasDistinctOwners(listOf("originalSignal", "activityResource", "visibility")))
+        assertFalse(locator.hasDistinctOwners(listOf("originalSignal", "generated", "generated")))
+        assertFalse(locator.hasDistinctOwners(listOf("originalSignal", "originalSignal")))
+    }
+
+    @Test
     fun verifiedExistingNamesNeverInvokeDexKit() {
         val known = mapOf(
             Role.SIGNAL to SignalCollector::class.java.name,

@@ -32,7 +32,7 @@ internal object SysUiMobileCollectorLocator {
         return try {
             System.loadLibrary("dexkit")
             DexKitBridge.create(classLoader, false).use { bridge ->
-                buildMap {
+                val discovered = buildMap {
                     for (role in missing) {
                         val candidates = bridge.findClass {
                             searchPackages(BINDER_PACKAGE)
@@ -77,12 +77,20 @@ internal object SysUiMobileCollectorLocator {
                         if (candidates.size == 1) put(role, candidates.single())
                     }
                 }
+                // A generated switch class shared across two roles would install
+                // overlapping Hooks on the same method. Never guess ownership.
+                val originalNames = knownClasses.filterKeys { it !in missing }.values
+                val allNames = originalNames + discovered.values.map(Class<*>::getName)
+                if (hasDistinctOwners(allNames)) discovered else emptyMap()
             }
         } catch (error: Throwable) {
             rethrowFatal(error)
             emptyMap()
         }
     }
+
+    internal fun hasDistinctOwners(classNames: Collection<String>): Boolean =
+        classNames.size == classNames.toSet().size
 
     internal fun isVerifiedCandidate(
         candidate: Class<*>,
