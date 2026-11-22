@@ -461,15 +461,22 @@ internal object SysUiNetworkSource {
                 ),
             )
         }
-        fun generatedCollector(name: String, role: SysUiMobileCollectorLocator.Role): Class<*> =
-            try {
+        fun generatedCollector(name: String, role: SysUiMobileCollectorLocator.Role): Class<*> {
+            val direct = try {
                 Class.forName(name, false, classLoader)
-            } catch (notFound: ClassNotFoundException) {
-                dynamicCollectors[role] ?: throw ClassNotFoundException(
-                    "dexkit-no-unique-collector role=${role.name} original=$name",
-                    notFound,
-                )
+            } catch (_: ClassNotFoundException) {
+                null
             }
+            if (
+                direct != null &&
+                SysUiMobileCollectorLocator.matchesCollectorShape(direct, role, classLoader)
+            ) return direct
+
+            return dynamicCollectors[role] ?: throw NoSuchMethodException(
+                "dexkit-no-unique-collector role=${role.name} original=$name direct=" +
+                    if (direct == null) "missing" else "incompatible",
+            )
+        }
 
         return try {
             val mobileBinderClass =

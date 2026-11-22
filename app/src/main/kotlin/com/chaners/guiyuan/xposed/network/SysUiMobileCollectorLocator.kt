@@ -3,7 +3,8 @@ package com.chaners.guiyuan.xposed.network
 import android.widget.ImageView
 import org.luckypray.dexkit.DexKitBridge
 
-// Only missing compiler-generated classes are searched; stable hooks stay direct.
+// Direct generated classes are used only when their reflected shape is compatible.
+// Stable non-generated SystemUI hooks remain outside this dynamic resolver.
 internal object SysUiMobileCollectorLocator {
     private const val BINDER_PACKAGE = "com.android.systemui.statusbar.pipeline.mobile.ui.binder"
     private const val CLASS_ID_FIELD = "\$r8\$classId"
@@ -18,27 +19,27 @@ internal object SysUiMobileCollectorLocator {
         classLoader: ClassLoader,
         knownClasses: Map<Role, String>,
     ): Map<Role, Class<*>> {
-        val missing = knownClasses.keys.filter { role ->
-            try {
+        val needsDiscovery = knownClasses.keys.filter { role ->
+            val direct = try {
                 Class.forName(knownClasses.getValue(role), false, classLoader)
-                false
             } catch (_: ClassNotFoundException) {
-                true
+                null
             }
+            direct == null || !matchesCollectorShape(direct, role, classLoader)
         }
-        if (missing.isEmpty()) return emptyMap()
+        if (needsDiscovery.isEmpty()) return emptyMap()
 
         // The caller already records install failures and restores native state.
         // Preserve scanner exceptions instead of reporting a false class-not-found.
         System.loadLibrary("dexkit")
         return DexKitBridge.create(classLoader, false).use { bridge ->
             val discovered = buildMap {
-                for (role in missing) {
+                for (role in needsDiscovery) {
                     findUniqueCandidate(bridge, role, classLoader)?.let { put(role, it) }
                 }
             }
             // Never install two role-specific Hooks on one generated switch class.
-            val knownNames = knownClasses.filterKeys { it !in missing }.values
+            val knownNames = knownClasses.filterKeys { it !in needsDiscovery }.values
             if (hasDistinctOwners(knownNames + discovered.values.map(Class<*>::getName))) {
                 discovered
             } else {

@@ -118,8 +118,9 @@ arbitrary third-party modules. Preserve those limits in future code review and
 ## Compiler-generated collector discovery
 
 For the current verified mobile pipeline, directly resolve the known native binder and
-collector class names first. Only if a generated mobile collector class is missing
-may the optional DexKit search inspect the host DEX. Require a unique match within
+collector class names first and check their reflected contract. Only when a
+generated mobile collector is absent or structurally incompatible may DexKit
+search the host DEX. Require a unique match within
 the mobile binder family, the captured ImageView field and the exact coroutine
 method signature; an absent or ambiguous result keeps the existing mobile-branch
 fail-native behavior. Do not use DexKit for stable host, layout or battery hooks.
