@@ -13,7 +13,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.nio.channels.FileChannel
 import com.chaners.guiyuan.settings.FontAxes
-import com.chaners.guiyuan.settings.NativeFontAxis
+import com.chaners.guiyuan.settings.NativeFontAxisPolicy
 import java.util.concurrent.ConcurrentHashMap
 import com.chaners.guiyuan.xposed.network.SysUiMobileTypeSource
 import com.chaners.guiyuan.xposed.NativePresentationResolver.NetworkType
@@ -84,7 +84,7 @@ internal object NativeMobileTypePresentation {
             if (file.isFile && file.length() in 1..(64L * 1024 * 1024)) {
                 val axis = FileInputStream(file).channel.use { channel ->
                     FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
-                }?.let(NativeFontAxis::checked)
+                }?.let(NativeFontAxisPolicy::checked)
                 face.takeIf { axis != null }
             } else {
                 null
