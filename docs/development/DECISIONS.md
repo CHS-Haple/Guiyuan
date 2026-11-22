@@ -323,7 +323,7 @@ QS_FAKE transition RenderView; it never directly clips Home's RenderView.
 onLayout, revalidate at the native pre-draw, log an event on deferred,
 recovered or settled-invalid geometry changes and log readiness-driven
 native return in the Home coordinator. Structural detach and a settled
-invalid source still fail native. B1905 remains a source-level correction
+invalid source still fail native. B1906 remains a source-level correction
 until device logs demonstrate that this exact path corresponds to the
 reported visual gap; otherwise investigate the independent native CC
 visible/fraction/ready handoff without stacking time-based fallbacks.
