@@ -104,8 +104,10 @@ reference, not this public repository.
   including onboarding; OS3 keeps its own native title style. Eligible OS4
   scrollable lists feed MIUIX's explicit elastic offset into the bar without a
   second overscroll engine; refresh/Sheet and OS3 paths retain their respective
-  owners. Battery Colors retains its original MIUIX `Card` hierarchy, colors
-  and `Regular` Glass shadows.
+  owners. Battery Colors preserves its scheme/editor and nested-card hierarchy;
+  OS4 uses upstream `GlassCard` defaults inside `GlassBottomSheet`, while OS3
+  keeps native `Card` colors and controls. Glass back actions retain the
+  source-matched `Regular` shadow.
 - This focused acceptance does not establish exhaustive RTL, extreme font scale,
   GPU resume, keyboard/cutout geometry, predictive Back, OS3 dark-mode
   overscroll seam or every Framework/ROM combination.

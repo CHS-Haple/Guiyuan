@@ -79,9 +79,10 @@ copy shared shaders into the app or add a second Material model.
   extension and exact native icon/material semantics. Do not replace a
   caller-owned touch or animation boundary with a similar-looking upstream
   sample. Glass icon canvas and displayed navigation icon size differ.
-- Preserve the original Battery Colors outer/inner MIUIX `Card` hierarchy,
-  native `surface/onSurface` color pair, default inner Card material and
-  regular `GlassIconButton` / popup shadow pairing.
+- Battery Colors preserves its outer/inner card hierarchy. In OS4 glass
+  sheets it uses the upstream `GlassCard` translucent fill and 20 dp corner
+  without custom alpha; OS3 retains the native `Card` colors. Retain regular
+  glass button and popup shadow behavior.
 - Prefer native MIUIX progress, material, shape and motion; do not introduce
   ad-hoc geometry, z-order, shader, seam or delayed-animation workarounds.
   Reproduce an actual deviation before changing native ownership.
@@ -98,6 +99,17 @@ Navigation destinations and `GlassNavigationBarDefaults` now also use the upstre
 The identical `GlassNavigationRailDefaults` object is likewise taken from upstream; app-specific rail state remains local because it uses a private morph clock and supports a trailing action absent from the public upstream Rail API.
 The public glass surface and constant-alpha shadow modifiers now resolve to MIUIX's published API; only app-specific action-bar underlay and state-driven shadow helpers remain local.
 Integer and scheme-rename dialogs use published `GlassTextField` in OS4, retaining native `TextField` for OS3. Card-embedded numeric/hex fields keep their existing non-Glass presentation.
+Local Glass rendering keeps Guiyuan's action-bar underlay but now caches
+the colour-blend RenderEffects and edge/rim/mask brushes using the upstream
+material/blur APIs; it lets the backdrop node reuse effects when only the
+foreground stroke changes. Local button press feedback uses the upstream
+`MiuixIndication`, with explicit Guiyuan long-press, disabled and held-state
+bridges. The transformed popup anchor tracks attached Compose coordinates via
+upstream-style Modifier Nodes and releases them on detach; obsolete local
+dropdown-value anchor state and fading code was removed. The local navigation
+bar scopes pressed-item state to each item while preserving Guiyuan's
+touch-extension and pointer selection owner.
+
 The remaining app-local Glass files preserve the accepted navigation/rail,
 noninteractive preview and touch exclusion, controlled search, popup anchor
 and Back lifecycle, long-press/held-state button, title slots and custom
