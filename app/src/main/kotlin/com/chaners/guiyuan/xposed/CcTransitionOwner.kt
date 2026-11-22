@@ -454,13 +454,9 @@ internal object CcTransitionOwner {
                     // A proven closing gesture with no visible native header
                     // must return the clipped Home source, not strand it.
                     if (
-                        source?.isAttachedToWindow == true &&
+                        source != null &&
                         CcTransitionOwner.sourceScene == SourceScene.HOME &&
-                        CcHomeHandoffPolicy.nativeCloseVisualCompleted(
-                            closing = nativeCloseObserved,
-                            fakeHeaderVisible = nativeHeaderVisible(fake),
-                            finalHeaderVisible = nativeHeaderVisible(final),
-                        )
+                        nativeCloseCompletedForHome(source)
                     ) {
                         CcTransitionOwner.onNativeCloseVisualCompleted(this, "cc-pre-draw-detached")
                     } else {
@@ -471,11 +467,7 @@ internal object CcTransitionOwner {
 
                 if (
                     CcTransitionOwner.sourceScene == SourceScene.HOME &&
-                    CcHomeHandoffPolicy.nativeCloseVisualCompleted(
-                        closing = nativeCloseObserved,
-                        fakeHeaderVisible = nativeHeaderVisible(fake),
-                        finalHeaderVisible = nativeHeaderVisible(final),
-                    )
+                    nativeCloseCompletedForHome(source)
                 ) {
                     CcTransitionOwner.onNativeCloseVisualCompleted(this, "cc-pre-draw")
                     return@OnPreDrawListener true
