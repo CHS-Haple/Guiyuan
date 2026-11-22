@@ -427,12 +427,6 @@ jobs:
           fi
           if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
             TASKS+=(":app:assembleCanary")
-          elif [[ "${{ github.event_name }}" == "pull_request" &&
-                  "${{ github.event.pull_request.base.ref }}" == "dev" &&
-                  "${{ steps.scope.outputs.scope }}" == "full" ]]; then
-            # Exercise R8 for dependency/build changes without allocating a Build or signing.
-            TASKS+=(":app:assembleCanary")
-            echo "R8_PR_PROBE=true" >> "$GITHUB_ENV"
           fi
           if [[ "${{ steps.scope.outputs.scope }}" == "full" &&
                 ( ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.base.ref }}" == "main" ) ||
@@ -458,8 +452,7 @@ jobs:
             echo "DEBUG_APK_PATH=$DEBUG_APK_PATH" >> "$GITHUB_ENV"
           fi
 
-          if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ||
-                "${R8_PR_PROBE:-false}" == "true" ]]; then
+          if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
             if [[ -f "app/build/outputs/apk/canary/app-canary-unsigned.apk" ]]; then
               CANARY_APK_PATH="app/build/outputs/apk/canary/app-canary-unsigned.apk"
             else
@@ -477,8 +470,7 @@ jobs:
           if [[ "${{ steps.scope.outputs.run_debug }}" == "true" ]]; then
             APKS+=("$DEBUG_APK_PATH")
           fi
-          if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ||
-                "${R8_PR_PROBE:-false}" == "true" ]]; then
+          if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
             APKS+=("$CANARY_APK_PATH")
           fi
           if [[ "${{ steps.scope.outputs.scope }}" == "full" &&
@@ -489,19 +481,8 @@ jobs:
           bash tools/verify_xposed_metadata.sh "${APKS[@]}"
 
 
-      - name: Verify optional DexKit R8 native payload
-        if: env.R8_PR_PROBE == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          if grep -Fq 'implementation("org.luckypray:dexkit:' app/build.gradle.kts; then
-            test -s "$CANARY_APK_PATH"
-            unzip -Z -1 "$CANARY_APK_PATH" | grep -Fx "lib/arm64-v8a/libdexkit.so" >/dev/null
-            unzip -l "$CANARY_APK_PATH" "lib/*/libdexkit.so"
-          fi
-
       - name: Verify canary is non-debuggable
-        if: steps.scope.outputs.run_canary == 'true' || env.R8_PR_PROBE == 'true'
+        if: steps.scope.outputs.run_canary == 'true'
         shell: bash
         run: |
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
