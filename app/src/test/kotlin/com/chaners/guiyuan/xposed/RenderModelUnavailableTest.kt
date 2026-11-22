@@ -17,6 +17,34 @@ private const val NATIVE_SYSTEMUI_PACKAGE = "com.android.systemui"
 
 class RenderModelUnavailableTest {
     @Test
+    fun absentMobileCollectorDataStillPermitsCompleteWifiAndBatteryModel() {
+        val model =
+            RenderModel.from(
+                snapshot = snapshot(
+                    wifi = StatusStateStore.WifiState.Visible(
+                        iconResId = 10,
+                        signal = SignalStrength.Level(2),
+                        internetValidated = true,
+                    ),
+                    mobile = emptyMap(),
+                ),
+                presentation = presentation(
+                    connectivity = connectivity(
+                        transport = SysUiConnectivitySource.Transport.WIFI,
+                        validated = true,
+                    ),
+                    networkType = null,
+                ),
+                defaultDataSubscriptionId = -1,
+            )
+
+        assertTrue(model != null)
+        assertTrue(model?.centerIndicator is CenterIndicator.Wifi)
+        assertNull(model?.mobileLevel)
+        assertEquals(80, model?.batteryPercent)
+    }
+
+    @Test
     fun nativeNoSimPresentationOverridesStaleMobileSignalAndType() {
         val noSimIcon =
             PresentationStore.NativeIconResource(

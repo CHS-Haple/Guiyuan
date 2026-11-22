@@ -160,6 +160,15 @@ internal object SysUiPresentationOwner {
     internal fun homeClaimed(): Boolean =
         current?.hasPresentationClaim() == true
 
+    @Synchronized
+    internal fun allScenesReleased(): Boolean =
+        current == null &&
+            controlCenterCurrent == null &&
+            keyguardFamilyCurrent == null &&
+            homeRetirement.pending == null &&
+            ccRetirement.pending == null &&
+            familyRetirement.pending == null
+
     internal fun homeCarrierVisible(): Boolean =
         current?.isNativeCarrierPresentationVisible() == true
 
