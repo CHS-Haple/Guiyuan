@@ -196,17 +196,26 @@ and final-only participants.
 threshold. Guiyuan does not suppress the final native surface or take over final
 alpha/translation.
 
-## Capacity and motion are different
+## QS_FAKE native width is a SystemUI-only property
 
-**Decision:** QS_FAKE carrier capacity, peer reservation and visual motion are
-separate responsibilities.
+**Decision:** The fake status-bar carrier width, measured icon-row reservation
+and visual motion have separate owners. Guiyuan does not resize or restore
+`QS_FAKE.system_icon_area.layoutParams.width`; SystemUI determines it from
+`realSystemIcons`. Guiyuan may only reserve measured native peer space through
+its independently reversible `paddingEnd` receipt.
 
-**Why:** using leased measurement width as motion geometry moves the visual
-carrier and creates scene-wide jumps.
+**Evidence:** B1898/B1899 rotation logs show native width 587 → 1361 while
+Guiyuan held a prior 818-wide lease, followed by local Fail native and
+reacquisition. The verified native controller's
+`updateFakeStatusIconsSize()` already writes that width, making the competing
+lease fundamentally unsafe.
 
-**Consequence:** capacity may be leased only inside the verified parent and
-released at the native lifecycle boundary; the one reservation writer may change
-occupancy, but leased leading capacity never becomes motion displacement.
+**Consequence:** Remove the fake width lease, hidden-cycle release/restore,
+writer-conflict fallback and capacity-as-motion logic. Wait for native
+layout completion instead of interpreting a native orientation rewrite as
+a competing Guiyuan owner; preserve independent restoration checks for
+ignored slots, clip masks and end padding. CI checks alone do not establish
+whether the first real-device swipe is visually smooth.
 
 ## Native resource identity is preferred
 
