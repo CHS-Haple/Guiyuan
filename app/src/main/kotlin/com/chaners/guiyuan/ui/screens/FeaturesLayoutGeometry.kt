@@ -10,8 +10,6 @@ import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
-import com.chaners.guiyuan.settings.NETWORK_TOP_OFFSET_MAX
-import com.chaners.guiyuan.settings.NETWORK_TOP_OFFSET_MIN
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_MAX
 import com.chaners.guiyuan.settings.OUTER_WEIGHT_SCALE_MIN
@@ -43,46 +41,20 @@ private fun ColumnScope.featureBatteryCenteredOffsets(
 ) {
     AnimatedPreferenceGroup(visible = visual.layout == ContentLayout.BATTERY_CENTER) {
         if (search.matches(R.string.wifi_vertical_offset)) {
-            SliderPreference(
+            IndicatorVerticalOffsetSlider(
                 value = visual.wifiOffsetY,
                 onValueChange = visualRepo::setWifiOffsetY,
-                title = stringResource(R.string.wifi_vertical_offset),
-                startAction = {
-                    SemanticLeadingIcon(
-                        R.drawable.ic_material_symbol_wifi,
-                        enabled,
-                        R.drawable.ic_material_symbol_height_w500,
-                    )
-                },
-                valueText = stringResource(R.string.battery_top_offset_value, visual.wifiOffsetY.roundToInt()),
-                valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                steps = 19,
-                showKeyPoints = true,
-                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                keyPoints = listOf(0f),
-                magnetThreshold = 0.035f,
+                titleRes = R.string.wifi_vertical_offset,
+                iconRes = R.drawable.ic_material_symbol_wifi,
                 enabled = enabled,
             )
         }
         if (search.matches(R.string.mobile_type_vertical_offset)) {
-            SliderPreference(
+            IndicatorVerticalOffsetSlider(
                 value = visual.mobileTypeOffsetY,
                 onValueChange = visualRepo::setMobileTypeOffsetY,
-                title = stringResource(R.string.mobile_type_vertical_offset),
-                startAction = {
-                    SemanticLeadingIcon(
-                        R.drawable.ic_material_symbol_5g,
-                        enabled,
-                        R.drawable.ic_material_symbol_height_w500,
-                    )
-                },
-                valueText = stringResource(R.string.battery_top_offset_value, visual.mobileTypeOffsetY.roundToInt()),
-                valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                steps = 19,
-                showKeyPoints = true,
-                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                keyPoints = listOf(0f),
-                magnetThreshold = 0.035f,
+                titleRes = R.string.mobile_type_vertical_offset,
+                iconRes = R.drawable.ic_material_symbol_5g,
                 enabled = enabled,
             )
         }
@@ -126,27 +98,11 @@ private fun ColumnScope.featureRelativePositionOffsets(
     }
     AnimatedPreferenceGroup(visible = visual.centeredMobileSignal) {
         if (search.matches(R.string.mobile_type_bottom_offset)) {
-            SliderPreference(
+            IndicatorVerticalOffsetSlider(
                 value = visual.mobileTypeBottomOffsetY,
                 onValueChange = visualRepo::setMobileTypeBottomOffsetY,
-                title = stringResource(R.string.mobile_type_bottom_offset),
-                startAction = {
-                    SemanticLeadingIcon(
-                        R.drawable.ic_material_symbol_5g,
-                        enabled,
-                        R.drawable.ic_material_symbol_height_w500,
-                    )
-                },
-                valueText = stringResource(
-                    R.string.battery_top_offset_value,
-                    visual.mobileTypeBottomOffsetY.roundToInt(),
-                ),
-                valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                steps = 19,
-                showKeyPoints = true,
-                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                keyPoints = listOf(0f),
-                magnetThreshold = 0.035f,
+                titleRes = R.string.mobile_type_bottom_offset,
+                iconRes = R.drawable.ic_material_symbol_5g,
                 enabled = enabled,
             )
         }
