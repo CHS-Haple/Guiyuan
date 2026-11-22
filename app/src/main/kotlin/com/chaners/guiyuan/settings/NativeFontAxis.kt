@@ -30,20 +30,6 @@ internal object NativeFontAxis {
         data class Variable(val axis: FontWeightAxis) : State
     }
 
-    internal fun state(reported: Boolean, axis: FontWeightAxis?): State =
-        if (!reported) State.Pending
-        else checked(axis)?.let(State::Variable) ?: State.Unavailable
-
-    internal fun isSystemUiSender(uid: Int, pkg: String?, installedUid: Int?): Boolean =
-        uid >= 0 && pkg == SYSTEM_UI && uid == installedUid
-
-    fun checked(axis: FontWeightAxis?): FontWeightAxis? =
-        axis?.takeIf {
-            it.min.isFinite() && it.default.isFinite() && it.max.isFinite() &&
-                it.min >= 1f && it.min <= it.default && it.default <= it.max &&
-                it.max <= 1000f && it.min < it.max
-        }
-
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -68,7 +54,7 @@ internal object NativeFontAxis {
         if (boot < 0 || prefs.getInt(BOOT, -1) != boot) {
             State.Pending
         } else {
-            state(
+            NativeFontAxisPolicy.state(
                 reported = prefs.getBoolean(REPORTED, false),
                 axis = FontWeightAxis(
                     min = prefs.getFloat(min, Float.NaN),
@@ -130,11 +116,11 @@ class NativeFontAxisReceiver : BroadcastReceiver() {
         val systemUiUid = runCatching {
             context.packageManager.getPackageUid(NativeFontAxis.SYSTEM_UI, 0)
         }.onFailure(NativeFontAxis::rethrowFatal).getOrNull()
-        if (!NativeFontAxis.isSystemUiSender(sentFromUid, sentFromPackage, systemUiUid)) return
+        if (!NativeFontAxisPolicy.isSystemUiSender(sentFromUid, sentFromPackage, systemUiUid)) return
 
         fun axis(min: String, default: String, max: String): FontWeightAxis? =
             if (intent.hasExtra(min) && intent.hasExtra(default) && intent.hasExtra(max)) {
-                NativeFontAxis.checked(
+                NativeFontAxisPolicy.checked(
                     FontWeightAxis(
                         intent.getFloatExtra(min, Float.NaN),
                         intent.getFloatExtra(default, Float.NaN),
