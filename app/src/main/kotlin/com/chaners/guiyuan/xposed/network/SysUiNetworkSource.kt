@@ -547,6 +547,17 @@ internal object SysUiNetworkSource {
                     SysUiMobileCollectorLocator.Role.ACTIVITY_VISIBILITY,
                 )
             }
+            atStage("mobile.resolve.distinctCollectorOwners") {
+                check(
+                    SysUiMobileCollectorLocator.hasDistinctOwners(
+                        listOf(
+                            mobileSignalEmitterClass.name,
+                            activityResourceCollector.name,
+                            activityVisibilityCollector.name,
+                        ),
+                    ),
+                ) { "mobile-collector-role-overlap" }
+            }
             val activityResourceField = atStage("mobile.resolve.activityResourceField") {
                 activityResourceCollector.getDeclaredField("\$leftInOut").apply { isAccessible = true }
             }
