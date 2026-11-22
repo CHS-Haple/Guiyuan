@@ -1,5 +1,12 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import com.chaners.guiyuan.ui.components.UiOverlayDialog
+import com.chaners.guiyuan.ui.components.UiDialogButton
+import com.chaners.guiyuan.ui.components.dialogActionGap
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -184,4 +191,39 @@ private fun ColumnScope.GuideRootPermission(
                                 )
                             }
 
+}
+
+@Composable
+internal fun GuidePermissionWarningDialog(
+    show: Boolean,
+    onDismissRequest: () -> Unit,
+    onDismissFinished: () -> Unit,
+    onReturn: () -> Unit,
+    onContinue: () -> Unit,
+) {
+    UiOverlayDialog(
+        show = show,
+        title = stringResource(R.string.guide_permission_warning_title),
+        summary = stringResource(R.string.guide_permission_warning_summary),
+        onDismissRequest = onDismissRequest,
+        onDismissFinished = onDismissFinished,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            UiDialogButton(
+                text = stringResource(R.string.guide_permission_return),
+                modifier = Modifier.weight(1f),
+                role = GlassDialogButtonRole.Primary,
+                onClick = onReturn,
+            )
+            Spacer(Modifier.width(dialogActionGap()))
+            UiDialogButton(
+                text = stringResource(R.string.guide_permission_continue),
+                modifier = Modifier.weight(1f),
+                onClick = onContinue,
+            )
+        }
+    }
 }
