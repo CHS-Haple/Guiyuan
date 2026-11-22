@@ -1229,7 +1229,8 @@ class GyModule : XposedModule() {
             // replacement draws; do not create a second scene owner.
             ccFakeHideAwaitingHomeDraw = CcHomeHandoffPolicy.retainFakeUntilHomeDraw(
                 panelHidden = true,
-                homeClaimed = SysUiPresentationOwner.homeClaimed(),
+                homeClaimed = controlCenterSourceScene == SourceScene.HOME &&
+                    SysUiPresentationOwner.homeClaimed(),
                 homeFrameReady = HomeRenderSession.canDrawHome(),
             )
             if (ccFakeHideAwaitingHomeDraw) {
