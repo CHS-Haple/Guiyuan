@@ -2407,7 +2407,10 @@ internal object SysUiPresentationOwner {
             // measureViews and its prior width are then not a capacity witness.
             // The existing native onLayout/pre-draw reconciliation retries.
             if (surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
-                (!nativeFakeCarrierLayoutSettled() || group.isLayoutRequested)
+                !EndReservationPolicy.fakeNativePeerMeasureReady(
+                    carrierSettled = nativeFakeCarrierLayoutSettled(),
+                    peerRowLayoutRequested = group.isLayoutRequested,
+                )
             ) return true
             val baseline = nativePadding ?: PaddingState.from(group).also { nativePadding = it }
             val live = PaddingState.from(group)
