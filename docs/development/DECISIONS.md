@@ -267,6 +267,32 @@ an invalid/out-of-bounds carrier geometry instead of inventing a pixel
 offset. The exact ROM4.0.4 runtime transform remains a device-test
 evidence gap, not a proven static SystemUI binary behavior.
 
+## CC zero-fraction is a Home ownership boundary
+
+**Decision:** The CC projected owner hides Home only when native panel
+visibility, positive native expansion progress, and projected readiness
+all agree. A terminal native progress of zero returns Home ownership
+immediately even if `onVisibleChanged(false)` has not arrived yet.
+A subsequent late `ready=true` cannot suppress Home while native
+progress remains zero. Hidden visibility resets motion/readiness state
+for the next cycle. This remains a UI-thread transition and introduces
+neither polling nor an extra hook.
+
+**Evidence:** The B1901 real-device regression is gesture-speed dependent:
+partial pulls preserve the combined icon, fast full upward swipes usually
+work, slow upward swipes reaching the closed endpoint reveal the native
+status icons. In the source, `CcTransitionOwner` already stops at native
+fraction zero, while `GyModule.onCcExpansion` did not return Home
+eligibility there and `onCcProjectionReadyChanged(true)` could continue
+hiding it until a later visible-false event.
+
+**Consequence:** One pure `CcHomeHandoffPolicy` is used by the native
+fraction, visibility and projected-readiness callbacks. Keep Home
+mask/slot ownership separate from CC projection ownership and maintain
+the existing native fallback on actual unsafe conditions. Tests cover
+slow-close, late-ready, partial gesture and fast-close/reopen traces.
+Real-device validation still required.
+
 ## Native resource identity is preferred
 
 **Decision:** when a verified native drawable/resource expresses the needed
