@@ -24,6 +24,7 @@ val miuixDisplayRevision =
     if (miuixSourceDir == null) miuixRevision
     else miuixSourceRevision ?: "unverified local source"
 val libxposedVersion = "102.0.0"
+val dexkitVersion = "2.3.0"
 val coreVersion = "1.19.1"
 val activityComposeVersion = "1.13.0"
 val navigationEventComposeVersion = "1.2.0"
@@ -157,6 +158,7 @@ android {
 dependencies {
     compileOnly("io.github.libxposed:api:$libxposedVersion")
     implementation("io.github.libxposed:service:$libxposedVersion")
+    implementation("org.luckypray:dexkit:$dexkitVersion")
 
     testImplementation("junit:junit:$junitVersion")
 

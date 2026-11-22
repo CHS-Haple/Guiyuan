@@ -451,6 +451,22 @@ internal object SysUiNetworkSource {
         val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val created = mutableListOf<HookHandle>()
         val active = AtomicBoolean(false)
+        val dynamicCollectors by lazy(LazyThreadSafetyMode.NONE) {
+            SysUiMobileCollectorLocator.findMissing(
+                classLoader,
+                mapOf(
+                    SysUiMobileCollectorLocator.Role.SIGNAL to MOBILE_SIGNAL_EMITTER_CLASS_NAME,
+                    SysUiMobileCollectorLocator.Role.ACTIVITY_RESOURCE to MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME,
+                    SysUiMobileCollectorLocator.Role.ACTIVITY_VISIBILITY to MOBILE_ACTIVITY_VISIBILITY_COLLECTOR_CLASS_NAME,
+                ),
+            )
+        }
+        fun generatedCollector(name: String, role: SysUiMobileCollectorLocator.Role): Class<*> =
+            try {
+                Class.forName(name, false, classLoader)
+            } catch (notFound: ClassNotFoundException) {
+                dynamicCollectors[role] ?: throw notFound
+            }
 
         return try {
             val mobileBinderClass =
@@ -481,7 +497,7 @@ internal object SysUiNetworkSource {
                 }
             val mobileSignalEmitterClass =
                 atStage("mobile.resolve.signalEmitterClass") {
-                    Class.forName(MOBILE_SIGNAL_EMITTER_CLASS_NAME, false, classLoader)
+                    generatedCollector(MOBILE_SIGNAL_EMITTER_CLASS_NAME, SysUiMobileCollectorLocator.Role.SIGNAL)
                 }
             val mobileSignalEmitMethod =
                 atStage("mobile.resolve.signalEmitMethod") {
@@ -559,7 +575,9 @@ internal object SysUiNetworkSource {
             // replacement. If either cannot be hooked, roll back the mobile
             // branch rather than announcing an incomplete native state owner.
             created += atStage("mobile.hook.activityResource") {
-                val collector = Class.forName(MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME, false, classLoader)
+                val collector = generatedCollector(
+                    MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME, SysUiMobileCollectorLocator.Role.ACTIVITY_RESOURCE,
+                )
                 val activityField = collector.getDeclaredField("\$leftInOut").apply { isAccessible = true }
                 val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
                 module.hook(method)
@@ -623,8 +641,9 @@ internal object SysUiNetworkSource {
             // The native visibility collector is independent of getInOutResId().
             // Observe its already-applied View state; do not collect a second Flow.
             created += atStage("mobile.hook.activityVisibility") {
-                val collector = Class.forName(
-                    MOBILE_ACTIVITY_VISIBILITY_COLLECTOR_CLASS_NAME, false, classLoader,
+                val collector = generatedCollector(
+                    MOBILE_ACTIVITY_VISIBILITY_COLLECTOR_CLASS_NAME,
+                    SysUiMobileCollectorLocator.Role.ACTIVITY_VISIBILITY,
                 )
                 val imageField = collector.getDeclaredField("\$satellite").apply { isAccessible = true }
                 val classIdField = collector.getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME).apply { isAccessible = true }

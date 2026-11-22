@@ -114,3 +114,18 @@ These are implementation guardrails for the accepted target, not a promise of
 tested exceptional setter behavior, cross-device compatibility or support for
 arbitrary third-party modules. Preserve those limits in future code review and
 1.0.0 release qualification.
+
+## Compiler-generated collector discovery
+
+For the current verified mobile pipeline, directly resolve the known native binder and
+collector class names first. Only if a generated mobile collector class is missing
+may the optional DexKit search inspect the host DEX. Require a unique match within
+the mobile binder family, the captured ImageView field and the exact coroutine
+method signature; an absent or ambiguous result keeps the existing mobile-branch
+fail-native behavior. Do not use DexKit for stable host, layout or battery hooks.
+
+This search is an adaptation candidate, not proof of native signal semantics or
+HyperOS 5 support. Review changed collector discriminators, writer ownership and
+real-device event delivery against each new SystemUI fingerprint before widening
+replacement ownership. The matched current ROM still uses direct reflection and
+never opens the DexKit scanner during normal hook installation.
