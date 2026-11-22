@@ -134,12 +134,15 @@ execution ownership is in [architecture](../architecture/README.md).
   while optional transition padding exceeded available space by 1-7 px.
   B1913 real-device evidence confirmed bounded FAKE padding (8 events, no
   overflow Fail native), but Wi-Fi/cellular switching still shifted the CC
-  header. The candidate now gates latent reveal on the applied native lease
-  rather than the original semantic request. The native CC hidden callback
-  also drops FAKE before the first Home draw; the candidate retains this
-  temporary visual until an owned Home frame or an unsafe-owner release.
-  Native compositor handoff and orientation-specific behavior are still
-  device-acceptance gates, not implied by these source changes.
+  header. B1914 gates latent reveal on the applied native lease, but the
+  crowded-peer disorder and the landscape-to-portrait disappearance both
+  persist on-device. Its child-only FAKE hold cannot survive native ancestor
+  alpha=0, so the unaccepted hold state was removed in the next source-only
+  audit. A native capacity clamp now yields a read-only FAKE/FINAL participant
+  geometry witness, including cached and live carrier-root offsets, using the
+  existing callback and without additional hooks, timers or layout writers.
+  The exact ROM403 native method body and rotation compositor timing remain
+  independent verification gaps; this diagnostic is not a visual fix.
 
   B1903 screenshot at 00:12 while charging shows the combined ring/readout
   intruding toward adjacent mute/network icons. The accompanying

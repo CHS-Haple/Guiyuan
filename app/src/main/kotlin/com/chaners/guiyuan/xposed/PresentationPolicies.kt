@@ -32,13 +32,6 @@ internal object SteadyPeerMirrorPolicy {
 // expansion, even if the QS_FAKE projection has locally failed native.
 // Only native fraction zero returns Home ownership.
 internal object CcHomeHandoffPolicy {
-    // The native hidden callback may precede Home's first drawn replacement.
-    fun retainFakeUntilHomeDraw(
-        panelHidden: Boolean,
-        homeClaimed: Boolean,
-        homeFrameReady: Boolean,
-    ): Boolean = panelHidden && homeClaimed && !homeFrameReady
-
     // Repeated native zero callbacks after Home is already restored must not
     // hide and reveal the overlay in the same callback.
     fun awaitNativeZeroCommit(

@@ -131,6 +131,9 @@ internal object CcTransitionOwner {
     fun wifiMotionProbe(): String? = current?.wifiMotionProbe()
 
     @Synchronized
+    fun capacityGeometryProbe(): String? = current?.capacityGeometryProbe()
+
+    @Synchronized
     fun detach(source: String = "detach") {
         current?.stop(source)
         current = null
@@ -603,8 +606,12 @@ internal object CcTransitionOwner {
 
         // Sample both native carriers in one frame; neither layer is a stable
         // proxy for the other while HyperOS switches CC presentation.
-        fun wifiMotionProbe(): String? {
-            if (currentSnapshot.model.centerIndicator !is CenterIndicator.Wifi) return null
+        fun wifiMotionProbe(): String? =
+            if (currentSnapshot.model.centerIndicator is CenterIndicator.Wifi) {
+                capacityGeometryProbe()
+            } else null
+
+        fun capacityGeometryProbe(): String? {
             val root = rootRef.get() ?: return null
             val source = sourceViewRef.get() ?: return null
 
@@ -647,7 +654,15 @@ internal object CcTransitionOwner {
             val finalWifi = slotViews(finalStatusIcons, WIFI_SLOT).firstOrNull {
                 it.visibility == View.VISIBLE && isUsableSlotView(it)
             }
-            return "progress=$progress fakeAlpha=${fakeRootRef.get()?.let(::endpointAlpha)}" +
+            val fakeFrame = fakeRootRef.get()?.let { sample(it, root) }
+            val liveCarrier = sample(fakeStatusIcons, root)
+            val liveRootOffsetX =
+                if (fakeFrame != null && liveCarrier != null) {
+                    liveCarrier[0] - fakeFrame[0]
+                } else null
+            return "progress=$progress cachedCarrierRootX=$fakeCarrierRootOffsetX" +
+                " liveCarrierRootX=$liveRootOffsetX" +
+                " fakeAlpha=${fakeRootRef.get()?.let(::endpointAlpha)}" +
                 " finalAlpha=${finalRootRef.get()?.let(::endpointAlpha)}" +
                 " semanticWidth=$lastReservationWidthPx peerWidth=$lastNativeReservationWidthPx" +
                 " endOffset=$lastNativePeerTargetEndOffsetPx" +
