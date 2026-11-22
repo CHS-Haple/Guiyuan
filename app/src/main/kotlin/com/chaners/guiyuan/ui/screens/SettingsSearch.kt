@@ -179,8 +179,6 @@ internal class PageSearch(private val context: Context) {
     }
 }
 
-// Curated task vocabulary has lower recall than free-text descriptions but avoids
-// pulling unrelated controls into searches through incidental summary words.
 @Composable
 internal fun rememberPageSearch(): PageSearch {
     val context = LocalContext.current

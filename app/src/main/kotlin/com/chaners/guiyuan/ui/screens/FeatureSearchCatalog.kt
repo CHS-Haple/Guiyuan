@@ -66,6 +66,8 @@ private val cellularTerms = listOf(
     "蜂窝数据", "蜂窝移动", "移动通信", "4G", "LTE", "5G", "5GA",
 )
 
+// Curated task vocabulary has lower recall than free-text descriptions but avoids
+// pulling unrelated controls into searches through incidental summary words.
 internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
     R.string.keyguard_combined_status_title -> listOf("锁屏状态栏", "锁屏图标")
     R.string.aod_combined_status_title -> listOf("息屏显示", "熄屏显示", "常亮显示", "AOD")
