@@ -45,6 +45,18 @@ class SysUiMobileCollectorLocatorTest {
     }
 
     @Test
+    fun existingCollectorNamesDoNotTriggerDiscoveryOnExtraShapeRequirements() {
+        val known = mapOf(
+            Role.SIGNAL to WrongImageType::class.java.name,
+            Role.ACTIVITY_RESOURCE to ActivityResourceCollector::class.java.name,
+            Role.ACTIVITY_VISIBILITY to ActivityVisibilityCollector::class.java.name,
+        )
+        assertFalse(locator.matchesCollectorShape(WrongImageType::class.java, Role.SIGNAL, loader))
+        // Original owner checks native fields and methods before installing Hooks.
+        assertTrue(locator.findMissing(loader, known).isEmpty())
+    }
+
+    @Test
     fun sharedGeneratedClassCannotClaimMultipleCollectorRoles() {
         val signal = "originalSignal"
         val generated = "generated"

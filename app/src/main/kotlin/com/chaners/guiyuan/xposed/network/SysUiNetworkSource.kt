@@ -467,21 +467,18 @@ internal object SysUiNetworkSource {
             } catch (_: ClassNotFoundException) {
                 null
             }
-            if (
-                direct != null &&
-                SysUiMobileCollectorLocator.matchesCollectorShape(direct, role, classLoader)
-            ) return direct
+            // Preserve the accepted direct path; the existing owner validates
+            // native fields and methods before registering any mobile Hook.
+            if (direct != null) return direct
 
             val discovered = dynamicCollectors[role] ?: throw NoSuchMethodException(
-                "dexkit-no-unique-collector role=${role.name} original=$name direct=" +
-                    if (direct == null) "missing" else "incompatible",
+                "dexkit-no-unique-collector role=${role.name} original=$name direct=missing",
             )
             // This rare install-time fallback must also be observable in Canary diagnostics.
             optionalNativeRead {
                 onEvent?.invoke(
                     "networkPipeline mobile dexkitCollector role=${role.name}" +
-                        " original=$name chosen=${discovered.name}" +
-                        " direct=" + if (direct == null) "missing" else "incompatible",
+                        " original=$name chosen=${discovered.name} direct=missing",
                 )
             }
             return discovered

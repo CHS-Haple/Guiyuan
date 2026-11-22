@@ -21,12 +21,12 @@ internal object SysUiMobileCollectorLocator {
         knownClasses: Map<Role, String>,
     ): Map<Role, Class<*>> {
         val needsDiscovery = knownClasses.keys.filter { role ->
-            val direct = try {
+            try {
                 Class.forName(knownClasses.getValue(role), false, classLoader)
+                false
             } catch (_: ClassNotFoundException) {
-                null
+                true
             }
-            direct == null || !matchesCollectorShape(direct, role, classLoader)
         }
         if (needsDiscovery.isEmpty()) return emptyMap()
 
