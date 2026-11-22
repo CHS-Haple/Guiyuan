@@ -331,10 +331,22 @@ fun GlassTopAppBar(
                     .layout { measurable, constraints ->
                         // Track the actual native title layout, including compact and bottom-content rows.
                         // The upstream blur band uses the measured height plus its gradient overhang.
-                        val coveredHeight = maxOf(
+                        val fallbackCoveredHeight = maxOf(
                             constraints.maxHeight.toFloat(),
                             topInsets.getTop(this) + TopAppBarDefaults.CollapsedHeight.toPx(),
                         )
+                        val coveredHeight = if (useCollapseProgress && scrollBehavior != null) {
+                            val state = scrollBehavior.state
+                            val limit = state.heightOffsetLimit
+                            if (limit <= 0f && limit >= -constraints.maxHeight.toFloat()) {
+                                (constraints.maxHeight.toFloat() + limit - state.heightOffset)
+                                    .coerceAtLeast(TopAppBarDefaults.CollapsedHeight.toPx())
+                            } else {
+                                fallbackCoveredHeight
+                            }
+                        } else {
+                            fallbackCoveredHeight
+                        }
                         val height = (coveredHeight + bandOverhang.toPx().coerceAtLeast(0f)).fastRoundToInt()
                         val placeable = measurable.measure(constraints.copy(minHeight = height, maxHeight = height))
                         layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(0, 0) }
