@@ -1257,9 +1257,12 @@ class GyModule : XposedModule() {
             return null
         }
 
+        val wasVisible = controlCenterSceneVisible
         controlCenterSceneVisible = true
-        ccNativeVisualExitObserved = false
-        ccProjectionReadyForHandoff = false
+        if (!wasVisible) {
+            ccNativeVisualExitObserved = false
+            ccProjectionReadyForHandoff = false
+        }
         if (!CcRenderSession.beginVisibleCycle()) {
             reconcileCcHomeAuthority("native-visible-rearm-failed")
             logDiagnostic(
