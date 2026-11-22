@@ -47,6 +47,14 @@ execution ownership is in [architecture](../architecture/README.md).
   receipts. Failed independent release must keep ownership/ineligibility
   visible rather than declaring a successful rollback or reusing the session.
   Do not modify native FINAL geometry to hide drawing differences.
+  B1899 device evidence on ROM 4.0.4.0.XOBCNXM.D02 (SystemUI
+  17.03.260226.r) identified a competing QS_FAKE width writer:
+  SystemUI resized the fake status-bar area 587 → 1361 while the old
+  Guiyuan 818-wide lease was active, triggering Fail native and reacquisition.
+  The current PR #1817 candidate removes the fake width lease entirely
+  and waits for the native layout before updating a measured peer-row
+  reservation. This is source-validated design work, not yet accepted
+  real-device first-gesture behavior; do not merge before focused testing.
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
   [dual-SIM work #1205](https://github.com/CHS-Haple/Guiyuan/pull/1205)
