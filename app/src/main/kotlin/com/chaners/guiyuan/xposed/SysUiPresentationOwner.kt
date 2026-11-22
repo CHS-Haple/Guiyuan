@@ -2376,6 +2376,17 @@ internal object SysUiPresentationOwner {
                     targetPaddingEndPx = baseline.end + requestedReservationDelta,
                 )
             ) {
+                emitDiagnostic {
+                    onEvent(
+                        eventPrefix + " fakePeerCapacity state=overflow" +
+                            " rowWidth=" + width +
+                            " contentWidth=" + contentWidth +
+                            " requestedPaddingEnd=" + (baseline.end + requestedReservationDelta) +
+                            " nativeHide=" + nativeHide +
+                            " compactSlotWidth=" + compactSlotWidthPx +
+                            " groupLayoutRequested=" + isLayoutRequested,
+                    )
+                }
                 onFailNative("fake-native-peer-row-overflow")
                 return false
             }
@@ -2391,8 +2402,13 @@ internal object SysUiPresentationOwner {
             val container = batteryContainer.get() ?: run { onFailNative("battery-container-released"); return false }
             val batteryView = battery.get() ?: run { onFailNative("battery-view-released"); return false }
             val hostView = host.get() ?: run { onFailNative(surfaceName + "-host-released"); return false }
-            // Do not write end padding against an unfinished native rotation layout.
-            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE && !nativeFakeCarrierLayoutSettled()) return true
+            // The native fake host can be settled while its peer row still has
+            // a pending measure after an orientation or battery-mode change.
+            // measureViews and its prior width are then not a capacity witness.
+            // The existing native onLayout/pre-draw reconciliation retries.
+            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
+                (!nativeFakeCarrierLayoutSettled() || group.isLayoutRequested)
+            ) return true
             val baseline = nativePadding ?: PaddingState.from(group).also { nativePadding = it }
             val live = PaddingState.from(group)
             val previousApplied = appliedPadding
