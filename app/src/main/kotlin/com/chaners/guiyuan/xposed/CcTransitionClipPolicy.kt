@@ -2,7 +2,6 @@ package com.chaners.guiyuan.xposed
 
 import com.chaners.guiyuan.settings.finiteIn
 
-// Stateless clip decisions. The native CC session remains the single writer.
 internal object CcTransitionClipPolicy {
     fun horizontalClipBounds(
         bounds: StatusPainter.TransitionBounds,

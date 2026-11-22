@@ -1,9 +1,7 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import kotlin.math.sqrt
 
-// Stateless spatial decisions. The native CC session remains the single writer.
 internal object CcTransitionSpatialPolicy {
     // Keep a retargeted projected participant still at the held native fraction.
     // Continued panel motion, not a new timer, brings it to the live endpoint.

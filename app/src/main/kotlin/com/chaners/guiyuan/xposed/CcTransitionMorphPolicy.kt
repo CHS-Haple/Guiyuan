@@ -2,7 +2,6 @@ package com.chaners.guiyuan.xposed
 
 import kotlin.math.min
 
-// Stateless morph decisions. The native CC session remains the single writer.
 internal object CcTransitionMorphPolicy {
     fun interpolateGeometry(
         source: FloatArray,
@@ -111,7 +110,7 @@ internal object CcTransitionMorphPolicy {
         return interpolateSimilarityGeometry(
             source = carriedSource,
             target = target,
-            progress = geometryProgress(progress),
+            progress = CcTransitionPolicy.geometryProgress(progress),
             scalePolicy = scalePolicy,
         )
     }

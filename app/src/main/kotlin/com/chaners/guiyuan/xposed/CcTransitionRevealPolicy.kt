@@ -4,7 +4,6 @@ import com.chaners.guiyuan.settings.finiteIn
 import kotlin.math.min
 import kotlin.math.sqrt
 
-// Stateless reveal decisions. The native CC session remains the single writer.
 internal object CcTransitionRevealPolicy {
     private const val LATENT_REVEAL_COMPLETE_FRACTION = 0.35f
 
