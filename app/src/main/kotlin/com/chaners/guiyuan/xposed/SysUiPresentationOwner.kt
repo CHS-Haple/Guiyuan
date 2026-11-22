@@ -2488,10 +2488,14 @@ internal object SysUiPresentationOwner {
             val nativeHost = host.get() ?: return false
             val parent = nativeHost.parent as? ViewGroup ?: return false
             val width = nativeHost.layoutParams?.width ?: return false
-            return nativeHost.isAttachedToWindow && width > 0 &&
-                nativeHost.width == width && !nativeHost.isLayoutRequested &&
-                parent.childCount == 1 && parent.getChildAt(0) === nativeHost &&
-                isFakeCarrierEndAnchored(nativeHost, parent)
+            return FakeCarrierNativeGeometryPolicy.isSettled(
+                nativeWidthPx = width,
+                laidOutWidthPx = nativeHost.width,
+                attached = nativeHost.isAttachedToWindow,
+                layoutRequested = nativeHost.isLayoutRequested,
+                exclusiveParent = parent.childCount == 1 && parent.getChildAt(0) === nativeHost,
+                endAnchored = isFakeCarrierEndAnchored(nativeHost, parent),
+            )
         }
 
         private fun isFakeCarrierEndAnchored(nativeHost: View, parent: ViewGroup): Boolean {
