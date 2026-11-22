@@ -41,140 +41,51 @@ execution ownership is in [architecture](../architecture/README.md).
   Center transition source. Scene change, host replacement and stale native
   references invalidate only the affected projection; do not retain old View
   objects after replacement or recreate competing native writers.
-- **Control Center:** fully expanded CC remains native. Partial handoff
-  requires verified native FAKE/FINAL state and measured native peers.
-  The CC session owns only its temporary presentation, listeners and native
-  receipts. Failed independent release must keep ownership/ineligibility
-  visible rather than declaring a successful rollback or reusing the session.
-  Do not modify native FINAL geometry to hide drawing differences.
-  B1899 device evidence on ROM 4.0.4.0.XOBCNXM.D02 (SystemUI
-  17.03.260226.r) identified a competing QS_FAKE width writer:
-  SystemUI resized the fake status-bar area 587 → 1361 while the old
-  Guiyuan 818-wide lease was active, triggering Fail native and reacquisition.
-  The current PR #1817 candidate removes the fake width lease entirely
-  and waits for the native layout before updating a measured peer-row
-  reservation. This is source-validated design work, not yet accepted
-  real-device first-gesture behavior; do not merge before focused testing.
-  The B1900 device recording/log (2026-11-22, 18:47:49) then showed
-  `preLayoutVisualMask active=false` without any subsequent `layoutReady`
-  or Fail native. Removing the fake-width write had also removed the only
-  reliable trigger for another native icon-row layout; a child `onLayout`
-  may execute before the fake parent's layout-requested state clears.
-  PR #1817 now requests one native status-icon relayout and resolves cutover
-  from the native ViewTreeObserver pre-draw boundary (after measured
-  reservations), without owning the native host width. This B1901 correction
-  still requires focused real-device acceptance before merge.
-  B1901 device evidence (2026-11-22 19:14) showed CC fake cutover
-  `native-pre-draw-after-complete-layout` and `controlCenterPresentation
-  active`, but closing CC after rotating to landscape exposed a Home
-  positioning fault: original network-speed/Bluetooth/notification icons
-  crossed into the Guiyuan carrier instead of remaining on its leading
-  side. B1901 diagnostics contain no post-rotation native Home geometry
-  snapshot or Fail native. A source audit found HomeRenderSession derived
-  its overlay x solely from BatteryContainer.width, while the native
-  battery_icon_container may move relative to that parent without its
-  dimensions changing. B1902 resolves the Home anchor from the real
-  native carrier window position, observes translation-only changes at
-  native pre-draw without mutating SystemUI geometry, and keeps one
-  per-session observer with attach/detach cleanup. This is an evidence-based
-  correction of the stale-coordinate contract; exact post-rotation
-  measured displacement still needs the B1902 device diagnostic.
-  The same user narrowed the remaining native-only regression: a half
-  pull stays combined, a fast full upward swipe usually stays combined,
-  but slowly closing to zero reliably exposes native icons. Source tracing
-  found CC→Home visibility followed only native visible/ready callbacks,
-  while CcTransitionOwner already ended motion at native fraction zero.
-  A slow close can therefore leave a ready CC owner hiding Home after
-  motion ends and before onVisibleChanged(false); late ready=true can
-  also re-hide it. B1902 reconciles Home eligibility from native panel
-  visible AND positive fraction AND ready projection at all three
-  callbacks (fraction, visible, ready), then resets state on hidden or
-  runtime retirement. The result still needs first/slow-up-swipe device
-  acceptance and new event evidence.
-  A second stale-coordinate dependency was found in
-  CcTransitionOwner: Session.matches() compared native View identities but
-  not the root viewport dimensions, despite caching a frozen source frame
-  and fake-carrier root-relative offset. When SystemUI retains the Views
-  while switching portrait/landscape, the old coordinate frame can leak
-  into the closing transition. B1902 now invalidates and recreates that
-  temporary transition owner on native root-size change, recapturing the
-  current source, native final targets and carrier offsets. A regression
-  test covers both orientation directions with identical View identity.
-  B1902/B1903 device clips and the subsequent 20:46 full-swipe video show
-  the combined Home icon briefly replaced by a native mobile/5GA/battery
-  row, then restored without user intervention; the latter demonstrates two
-  repetitions in a 5.5-second recording. The B1903 diagnostic exported at
-  20:21 has `runtimeLevel=not-observed` and no transition-time witness, so
-  there is no proof of the actual native fraction or owner state during the
-  gap. The previous B1903/B1904 terminal-native-header visual predicate was
-  neither supported by such device data nor effective as a verified solution.
-  It is removed from the candidate source rather than retained as a fallback.
-  Corrected source ownership: CcTransitionOwner masks QS_FAKE's transition
-  source RenderView, **not** Home's RenderView; Home visibility belongs to
-  HomeRenderSession and GyModule's eligibility coordinator.
-
-  A separate, deterministic Home lifecycle flaw was found: native child
-  onLayout can run before the whole host's layout is settled. If its carrier
-  position is then temporarily unresolvable, HomeRenderSession used to set
-  `layoutReady=false` immediately, which led GyModule.onHomeReadyChanged(false)
-  to deactivate native masks and reveal original small mobile type/battery
-  icons. The existing Home pre-draw recheck was gated by
-  `!nativeHandoffActive`; once the invalid layout had triggered native
-  handoff, this blocked same-frame re-acquisition until another layout
-  callback. B1906 separates provisional native-layout events from the
-  complete pre-draw boundary and permits recovery even during native
-  handoff. Detached hosts and a genuinely invalid settled native frame still
-  release Home, without width/alpha changes, polling, timers or new hooks.
-  The revised policy and a bounded readiness-driven native-return diagnostic
-  are source-tested; B1906 on-device confirmation remains required.
-
-
-  B1912 on-device Wi-Fi/cellular switching exposed 11 QS_FAKE peer capacity
-  failures: a measured native row of 448 px with content of 293/386 px,
-  while optional transition padding exceeded available space by 1-7 px.
-  B1913 real-device evidence confirmed bounded FAKE padding (8 events, no
-  overflow Fail native), but Wi-Fi/cellular switching still shifted the CC
-  header. B1914 gates latent reveal on the applied native lease, but the
-  crowded-peer disorder and the landscape-to-portrait disappearance both
-  persist on-device. Its child-only FAKE hold cannot survive native ancestor
-  alpha=0, so the unaccepted hold state was removed in the next source-only
-  audit. A native capacity clamp now yields a read-only FAKE/FINAL participant
-  geometry witness, including cached and live carrier-root offsets, using the
-  existing callback and without additional hooks, timers or layout writers.
-  Exact ROM403 D02 APK inspection now confirms a concrete OEM width-contract
-  discrepancy: MiuiStatusIconContainer.onMeasure and onLayout add each peer
-  child’s start/end padding beyond measuredWidth, and NetworkSpeedView has
-  a separate layout footprint for its empty-content state. The candidate
-  mirrors those native width inputs, avoiding the B1914 peer-content
-  undercount; optional animation padding alone can shrink to zero when native
-  peers already overflow, but unsafe mandatory representation still fails
-  locally. The exact native CC header callback also owns FAKE/FINAL alpha and
-  distinct translations, including batteryWidthDiff. Rotation's compositor
-  frame order remains unverified; no visual completion is claimed.
-
-  B1903 screenshot at 00:12 while charging shows the combined ring/readout
-  intruding toward adjacent mute/network icons. The accompanying
-  2026-11-23 00:11 log proves a separate concrete displacement input:
-  Home core battery width 105 px but outer native battery 135 px when the
-  Home owner reacquired, and the original native padding owner reconciled
-  an end delta of -30 px. B1902's Home anchor uses the live *core left*
-  coordinate; when the outer battery widens, that left coordinate can
-  shift left with the expanded content. B1906 now preserves the native
-  core-based anchor when outer/core widths agree, and aligns the compact
-  105 px visual to the measured native outer battery right edge only
-  when that outer width truly expands; it does not introduce a user
-  vertical offset or alter SystemUI native geometry/padding ownership.
-  In the same log Home was deactivated at 00:11:00.209 on
-  `readiness-lost:hostCapture` and reactivated at 00:11:03.466, aligning
-  with the observed temporary native icons. QS_FAKE separately failed its
-  capacity contract with `fake-native-peer-row-overflow` at 00:10:47,
-  00:10:56 and 00:11:03. The fake peer capacity gate previously read the
-  cached row's `measureViews` even while the peer row requested another
-  native measure; it now defers this check until the native peer's frame
-  settles, retaining strict Fail native if a measured settled overflow
-  genuinely persists. These corrections are backed by source and
-  reproducible diagnostics but still require one B1906 signed-device test.
-
+- **Control Center:** SystemUI owns `QS_FAKE.system_icon_area` width,
+  native FAKE/FINAL header alpha and translations, icon membership, and full
+  expansion. Guiyuan may own only its scoped icon exclusions, reversible peer
+  `paddingEnd` reservation, and temporary FAKE overlay. The native FAKE area
+  can reflow to an end-anchored overhang after rotation; never reinstate a
+  competing fake-host width lease or alter native FINAL geometry.
+  Cutover requires settled native carrier and peer layout, checked at
+  pre-draw; a child `onLayout` is not a completed parent traversal.
+  The OEM peer-width calculation includes per-child start/end padding and a
+  separate `NetworkSpeedView` layout footprint. Optional animation padding
+  may be bounded by actual peer space; mandatory compact-space and
+  ownership failures still fail native locally.
+- **CC-to-Home handoff:** `GyModule` is the single scene authority. The
+  native CC fraction-zero callback can precede `onVisibleChanged(false)`;
+  resolve Home ownership after the native expansion callback has finished
+  applying SystemUI's own geometry/appearance, not from the stale
+  pre-proceed state. Home `onDraw` is an application callback, **not** a
+  SurfaceControl/compositor completion fence. Do not hold only a FAKE
+  child expecting it to override an alpha-zero native ancestor.
+  Native FAKE/FINAL alpha, translation and composited visibility remain
+  independent inputs; slow-close, held-close and rotated-close visual
+  continuity are **not yet accepted on device**.
+- **Home native layout:** `HomeRenderSession` renders in the verified
+  `system_icon_area` host overlay, outside the native battery child's
+  measured lifetime. Native child `onLayout` may provide provisional
+  geometry during charging, privacy and orientation reflow; the existing
+  host pre-draw checks the completed native anchor and can recover from a
+  transient invalid state. An actual detach or settled invalid anchor
+  still retires native ownership. Charging may widen the outer native
+  battery beyond its stable inner core: align the combined visual to the
+  measured native end without modifying native width/translation/alpha.
+- **Open SystemUI candidate:** [PR #1817](https://github.com/CHS-Haple/Guiyuan/pull/1817)
+  carries the source-level corrections and bounded native geometry witnesses.
+  A capped native peer reservation and a requested animation span are
+  **not** interchangeable: the currently applied width gates some latent
+  reveals, but does not yet certify the whole transition envelope. A
+  session-cached FAKE carrier-root offset may also differ from the live
+  offset after an in-session reflow; the actual mismatch has not been
+  established in the reported frame. The user's ROM 4.0.4.0.D02 reports
+  SystemUI 17.03.260226.r, but exact installed-binary parity with the
+  ROM403 reference and compositor frame order are unverified.
+  Preserve separate native owner/writer/lifecycle semantics, remove rejected
+  workarounds, and keep the PR isolated until exact-HEAD quality review and
+  focused signed-device acceptance. CI alone does not validate the
+  rotated/crowded/held-upswipe behaviors.
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
   [dual-SIM work #1205](https://github.com/CHS-Haple/Guiyuan/pull/1205)
