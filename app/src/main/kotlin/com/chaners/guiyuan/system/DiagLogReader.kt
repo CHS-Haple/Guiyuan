@@ -6,6 +6,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 internal object DiagLogReader {
+    private const val MODULE_PACKAGE = "com.chaners.guiyuan"
+    private const val SYSTEM_UI_PACKAGE = "com.android.systemui"
     private const val TIMEOUT_SEC = 10L
     private const val MODULE_LOG_TAG = "CombinedStatus"
     private const val HISTORY_PREFS = "guiyuan_diagnostics_history"
@@ -55,12 +57,12 @@ internal object DiagLogReader {
             "/data/adb/lspd/log.old/modules_*.log 2>/dev/null | head -n 8); " +
             "fallback=''; selected=''; " +
             "for f in \$files; do " +
-            "if [ -z \"\$fallback\" ] && grep -Fq 'com.chaners.guiyuan' \"\$f\"; then " +
+            "if [ -z \"\$fallback\" ] && grep -Fq '$MODULE_PACKAGE' \"\$f\"; then " +
             "fallback=\"\$f\"; fi; " +
-            "if grep -F 'com.chaners.guiyuan' \"\$f\" | " +
-            "grep -Fq '(com.android.systemui)'; then selected=\"\$f\"; break; fi; done; " +
+            "if grep -F '$MODULE_PACKAGE' \"\$f\" | " +
+            "grep -Fq '($SYSTEM_UI_PACKAGE)'; then selected=\"\$f\"; break; fi; done; " +
             "target=\${selected:-\$fallback}; " +
-            "if [ -n \"\$target\" ]; then grep -F 'com.chaners.guiyuan' \"\$target\" || true; fi"
+            "if [ -n \"\$target\" ]; then grep -F '$MODULE_PACKAGE' \"\$target\" || true; fi"
 
     private const val LOGCAT_CMD =
         "logcat -d -b all -v threadtime -t 3000"
@@ -122,12 +124,12 @@ internal object DiagLogReader {
         val lines =
             output.lineSequence()
                 .filter { line ->
-                    line.contains("com.chaners.guiyuan") &&
+                    line.contains("$MODULE_PACKAGE") &&
                         line.contains(MODULE_LOG_TAG)
                 }
                 .toList()
         val systemUi = lines.filter { line ->
-            DiagLogParser.parse(line).hostPkg == "com.android.systemui"
+            DiagLogParser.parse(line).hostPkg == "$SYSTEM_UI_PACKAGE"
         }
         return systemUi.ifEmpty { lines }
     }
@@ -138,7 +140,7 @@ internal object DiagLogReader {
             .filter { line ->
                 when {
                     MODULE_LOG_TAG !in line -> false
-                    "com.chaners.guiyuan" in line -> true
+                    "$MODULE_PACKAGE" in line -> true
                     else -> {
                         val entry = DiagLogParser.parse(line)
                         entry.framework == "logcat" &&
