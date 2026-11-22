@@ -390,11 +390,13 @@ internal object CcTransitionOwner {
         private val boundsValues = FloatArray(9)
         private val nativeVisibleRect = Rect()
 
-        private fun nativeHeaderVisible(view: View): Boolean =
-            view.isAttachedToWindow &&
+        private fun nativeHeaderVisible(view: View?): Boolean =
+            view != null &&
+                view.isAttachedToWindow &&
                 view.isShown &&
                 view.width > 0 && view.height > 0 &&
                 endpointAlpha(view) > 0f &&
+                view.rootView.alpha > 0f &&
                 view.getGlobalVisibleRect(nativeVisibleRect) &&
                 !nativeVisibleRect.isEmpty
 
@@ -418,7 +420,23 @@ internal object CcTransitionOwner {
                     !source.isAttachedToWindow ||
                     !sourceAnchor.isAttachedToWindow
                 ) {
-                    CcTransitionOwner.detach("pre-draw-detached")
+                    // During a reverse orientation change the native CC roots
+                    // may be detached before the final zero-fraction callback.
+                    // A proven closing gesture with no visible native header
+                    // must return the clipped Home source, not strand it.
+                    if (
+                        source?.isAttachedToWindow == true &&
+                        CcTransitionOwner.sourceScene == SourceScene.HOME &&
+                        CcHomeHandoffPolicy.nativeCloseVisualCompleted(
+                            closing = nativeCloseObserved,
+                            fakeHeaderVisible = nativeHeaderVisible(fake),
+                            finalHeaderVisible = nativeHeaderVisible(final),
+                        )
+                    ) {
+                        CcTransitionOwner.onNativeCloseVisualCompleted(this)
+                    } else {
+                        CcTransitionOwner.detach("pre-draw-detached")
+                    }
                     return@OnPreDrawListener true
                 }
 
