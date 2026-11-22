@@ -140,7 +140,7 @@ class GlassPopupAnchor {
     /** Whether to keep the panel opaque during the transition instead of fading with the icon. */
     internal var floating: Boolean = false
 
-    /** Hides the whole transform anchor, or only the dropdown value, while the popup is open. */
+    /** Hides the transform anchor throughout opening, expansion and exit. */
     internal var contentHidden: Boolean by mutableStateOf(false)
 
     internal fun updateContainerCoordinates(coordinates: LayoutCoordinates) {

@@ -94,11 +94,17 @@ fun BoxScope.GlassIconDropdownMenu(
         label = "glassCascadeVisibility",
     )
     val latestOnDismissFinished by rememberUpdatedState(onDismissFinished)
+    // A newly mounted PopupLayout starts with show=false until its opening effect runs.
+    // Only an actual opened session may complete an exit and retire the host.
+    var hasShown by remember { mutableStateOf(false) }
     LaunchedEffect(show) {
-        if (!show) {
+        if (show) {
+            hasShown = true
+        } else if (hasShown) {
             submenu = false
             // Both popups own separate exit transitions; neither may unmount the other.
             snapshotFlow { !anchor.contentHidden && !submenuPresent }.first { it }
+            hasShown = false
             latestOnDismissFinished?.invoke()
         }
     }
