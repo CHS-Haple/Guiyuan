@@ -61,6 +61,8 @@ android {
         applicationId = "com.chaners.guiyuan"
         minSdk = 36
         targetSdk = 37
+        // One native ABI across Debug, Canary and Release; ROM compatibility remains separately gated.
+        ndk { abiFilters += "arm64-v8a" }
         versionCode = appVersionCode
         versionName = appVersionName
 
