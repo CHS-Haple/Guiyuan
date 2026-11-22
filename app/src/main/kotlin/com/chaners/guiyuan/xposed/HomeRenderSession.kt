@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed
 
 import android.graphics.Rect
 import android.os.Looper
+import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
@@ -269,21 +270,27 @@ internal object HomeRenderSession {
         private val statusIcons = WeakReference(statusIcons)
         private val batteryView = WeakReference(batteryView)
         private val batteryCarrier = WeakReference(batteryCarrier)
+        private var lastCompletedDrawUptimeMs = 0L
         private val probeView =
-            RenderView(host.context) { latencyMs, committedOnMainThread, sample ->
-                if (sample != null && onLatencySample != null) {
-                    // Telemetry runs from RenderView.onDraw; it never owns drawing.
-                    SysUiPresentationRuntime.emitPassiveDiagnostic {
-                        onLatencySample.invoke(sample)
+            RenderView(
+                context = host.context,
+                // Passive draw witness: the Overlay child may report isShown=false
+                // even when the native host actually dispatches its overlay.
+                onDrawn = { lastCompletedDrawUptimeMs = SystemClock.uptimeMillis() },
+                onStateRendered = { latencyMs, committedOnMainThread, sample ->
+                    if (sample != null && onLatencySample != null) {
+                        SysUiPresentationRuntime.emitPassiveDiagnostic {
+                            onLatencySample.invoke(sample)
+                        }
+                    } else {
+                        emitEvent {
+                            "homeRenderLatency stateToDrawMs=" + latencyMs +
+                                " commitMainThread=" + committedOnMainThread +
+                                " scheduling=sameFramePreferred"
+                        }
                     }
-                } else {
-                    emitEvent {
-                        "homeRenderLatency stateToDrawMs=" + latencyMs +
-                            " commitMainThread=" + committedOnMainThread +
-                            " scheduling=sameFramePreferred"
-                    }
-                }
-            }
+                },
+            )
         private val renderController = RenderController(probeView)
         private var readyLogged = false
         private var layoutLogged = false
@@ -470,6 +477,8 @@ internal object HomeRenderSession {
             val nativeContainer = batteryContainer.get()
             return "renderVisibility=${probeView.visibility}" +
                 " renderShown=${probeView.isShown}" +
+                " renderShownSemantics=overlay-parent-unparented" +
+                " lastCompletedDrawUptimeMs=$lastCompletedDrawUptimeMs" +
                 " renderAlpha=${probeView.alpha}" +
                 " renderBounds=${probeView.left}..${probeView.right}" +
                 " overlayParent=${probeView.parent?.javaClass?.simpleName}" +
