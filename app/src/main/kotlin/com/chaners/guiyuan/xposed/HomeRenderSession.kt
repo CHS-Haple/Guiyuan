@@ -301,7 +301,7 @@ internal object HomeRenderSession {
                 if (
                     !nativeHandoffActive &&
                     featureEnabled &&
-                    batteryContainer.get()?.isAttachedToWindow == true &&
+                    this@Session.batteryContainer.get()?.isAttachedToWindow == true &&
                     resolveNativeAnchor(observedAnchorRect) &&
                     observedAnchorRect != anchorRect
                 ) {
