@@ -3,10 +3,10 @@ package com.chaners.guiyuan.settings
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-private const val FLAG_KEY = FLAG_KEY
-private const val SCALE_KEY = SCALE_KEY
-private const val WEIGHT_KEY = WEIGHT_KEY
-private const val STYLE_KEY = STYLE_KEY
+private const val FLAG_KEY = "flag"
+private const val SCALE_KEY = "scale"
+private const val WEIGHT_KEY = "weight"
+private const val STYLE_KEY = "style"
 
 class VisualProfileReadTest {
     private val layout = ContentLayout.BATTERY_CENTER
