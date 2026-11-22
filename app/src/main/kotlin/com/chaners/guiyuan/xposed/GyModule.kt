@@ -1690,6 +1690,9 @@ class GyModule : XposedModule() {
         safely("home-authority") {
             HomeRenderSession.onControlCenterAuthorityChanged(true)
         }
+        if (!SysUiPresentationOwner.ccReleased()) {
+            cleanupFailures += "control-center-retirement-pending"
+        }
         if (cleanupFailures.isNotEmpty()) {
             onPresentationCallbackFailure("panel-release-incomplete", error)
         }
@@ -2966,7 +2969,25 @@ class GyModule : XposedModule() {
         }
         restore("aod") { deactivateAodRuntime(source + "-callback-failed") }
         restore("keyguard") { deactivateKeyguardRuntime(source + "-callback-failed") }
-        restore("cc-projection") { refreshCcSourceEligibility("keyguard-source-failed") }
+        if (controlCenterSourceScene == SourceScene.KEYGUARD) {
+            controlCenterSceneEligible = false
+            restore("cc-renderer") { CcRenderSession.setSceneEligible(false) }
+            restore("cc-transition") { CcTransitionOwner.setSceneEligible(false) }
+            restore("cc-lease") {
+                releaseKeyguardCcLease(
+                    source = "keyguard-source-failed",
+                    reconcileReadiness = false,
+                )
+            }
+        } else {
+            restore("cc-projection") { refreshCcSourceEligibility("keyguard-source-failed") }
+        }
+        if (!SysUiPresentationOwner.keyguardFamilyReleased()) {
+            failures += "family-native-retirement-pending"
+        }
+        if (controlCenterSourceScene == SourceScene.KEYGUARD && !SysUiPresentationOwner.ccReleased()) {
+            failures += "control-center-retirement-pending"
+        }
         if (failures.isNotEmpty()) {
             onPresentationCallbackFailure(source + "-release-incomplete", error)
         }
@@ -3735,14 +3756,19 @@ class GyModule : XposedModule() {
         keyguardReadyObserved = false
         keyguardRuntimeReady = false
         KeyguardRenderSession.setNativeHandoffActive(true)
+        val released = SysUiPresentationOwner.keyguardFamilyReleased()
         logDiagnostic(
-            level = Log.WARN,
+            level = if (released) Log.WARN else Log.ERROR,
             event = "presentation.failNative",
             component = "keyguardPresentation",
-            state = "native",
+            state = if (released) "native" else "cleanup-incomplete",
             "reason" to reason,
-            "fallback" to "native-keyguard",
+            "fallback" to if (released) "native-keyguard" else "unconfirmed",
         )
+        if (!released) {
+            onPresentationCallbackFailure("keyguard-release-incomplete", IllegalStateException(reason))
+            return
+        }
         reconcileCcForKeyguard("keyguard-fail-native")
     }
 
@@ -3904,14 +3930,18 @@ class GyModule : XposedModule() {
 
     private fun onAodRuntimeFailure(reason: String) {
         KeyguardRenderSession.setAodNativeHandoffActive(true)
+        val released = SysUiPresentationOwner.keyguardFamilyReleased()
         logDiagnostic(
-            level = Log.WARN,
+            level = if (released) Log.WARN else Log.ERROR,
             event = "presentation.failNative",
             component = "aodPresentation",
-            state = "native",
+            state = if (released) "native" else "cleanup-incomplete",
             "reason" to reason,
-            "fallback" to "native-aod",
+            "fallback" to if (released) "native-aod" else "unconfirmed",
         )
+        if (!released) {
+            onPresentationCallbackFailure("aod-release-incomplete", IllegalStateException(reason))
+        }
     }
 
     private fun deactivateAodRuntime(source: String) {
@@ -4371,14 +4401,18 @@ class GyModule : XposedModule() {
 
     private fun onHomeRuntimeFailure(reason: String) {
         HomeRenderSession.setNativeHandoffActive(true)
+        val released = SysUiPresentationOwner.homeReleased()
         logDiagnostic(
-            level = Log.WARN,
+            level = if (released) Log.WARN else Log.ERROR,
             event = "presentation.failNative",
             component = "homePresentation",
-            state = "native",
+            state = if (released) "native" else "cleanup-incomplete",
             "reason" to reason,
-            "fallback" to "native-systemui",
+            "fallback" to if (released) "native-systemui" else "unconfirmed",
         )
+        if (!released) {
+            onPresentationCallbackFailure("home-release-incomplete", IllegalStateException(reason))
+        }
     }
 
     private fun scheduleNativeSlotProbe(
