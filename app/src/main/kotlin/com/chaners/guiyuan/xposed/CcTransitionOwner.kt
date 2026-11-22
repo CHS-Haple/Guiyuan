@@ -65,12 +65,12 @@ internal object CcTransitionOwner {
     private var endpoints: SysUiCcSource.TransitionEndpoints? = null
     private var current: Session? = null
     private var terminalNativeVisualAbsent = false
-    private var onNativeCloseVisualEnded: (() -> Unit)? = null
+    private var onNativeCloseVisualEnded: ((String) -> Unit)? = null
 
     @Synchronized
     fun onSourceUpdate(
         update: SysUiCcSource.Update,
-        onNativeCloseVisualEnded: (() -> Unit)? = null,
+        onNativeCloseVisualEnded: ((String) -> Unit)? = null,
     ) {
         if (onNativeCloseVisualEnded != null) {
             this.onNativeCloseVisualEnded = onNativeCloseVisualEnded
@@ -155,11 +155,22 @@ internal object CcTransitionOwner {
         onNativeCloseVisualEnded = null
     }
 
-    // A native pre-draw observation is authoritative for a completed visual
-    // close even if the delegate's last positive expansion sample is delayed.
-    // Retire the scoped clip and overlay before returning Home eligibility.
+    // CC's own pre-draw may stop after the CC window exits, while Home's
+    // separate native root is already rendering. Observe the same native
+    // exit contract from Home's existing pre-draw, without adding a hook.
     @Synchronized
-    private fun onNativeCloseVisualCompleted(owner: Session) {
+    fun onHomePreDraw(sourceView: View) {
+        val owner = current ?: return
+        if (sourceScene != SourceScene.HOME ||
+            !owner.nativeCloseCompletedForHome(sourceView)
+        ) return
+        onNativeCloseVisualCompleted(owner, "home-pre-draw")
+    }
+
+    // A verified terminal native visual boundary retires the scoped clip
+    // before the single Home presentation writer regains display ownership.
+    @Synchronized
+    private fun onNativeCloseVisualCompleted(owner: Session, witness: String) {
         if (current !== owner || sourceScene != SourceScene.HOME) return
         terminalNativeVisualAbsent = true
         current = null
@@ -170,7 +181,7 @@ internal object CcTransitionOwner {
             terminalNativeVisualAbsent = false
             throw error
         }
-        onNativeCloseVisualEnded?.invoke()
+        onNativeCloseVisualEnded?.invoke(witness)
     }
 
     private fun sync(source: String) {
@@ -406,6 +417,18 @@ internal object CcTransitionOwner {
                 view.getGlobalVisibleRect(nativeVisibleRect) &&
                 !nativeVisibleRect.isEmpty
 
+        // Source View identity is important: a retired Home session must
+        // not release a new Control Center transition after host replacement.
+        fun nativeCloseCompletedForHome(source: View): Boolean =
+            started &&
+                sourceViewRef.get() === source &&
+                source.isAttachedToWindow &&
+                CcHomeHandoffPolicy.nativeCloseVisualCompleted(
+                    closing = nativeCloseObserved,
+                    fakeHeaderVisible = nativeHeaderVisible(fakeRootRef.get()),
+                    finalHeaderVisible = nativeHeaderVisible(finalRootRef.get()),
+                )
+
         private val preDrawListener =
             ViewTreeObserver.OnPreDrawListener {
                 if (!started) return@OnPreDrawListener true
@@ -439,7 +462,7 @@ internal object CcTransitionOwner {
                             finalHeaderVisible = nativeHeaderVisible(final),
                         )
                     ) {
-                        CcTransitionOwner.onNativeCloseVisualCompleted(this)
+                        CcTransitionOwner.onNativeCloseVisualCompleted(this, "cc-pre-draw-detached")
                     } else {
                         CcTransitionOwner.detach("pre-draw-detached")
                     }
@@ -454,7 +477,7 @@ internal object CcTransitionOwner {
                         finalHeaderVisible = nativeHeaderVisible(final),
                     )
                 ) {
-                    CcTransitionOwner.onNativeCloseVisualCompleted(this)
+                    CcTransitionOwner.onNativeCloseVisualCompleted(this, "cc-pre-draw")
                     return@OnPreDrawListener true
                 }
 
