@@ -141,9 +141,6 @@ internal object HomeRenderSession {
     fun isOverlayShown(): Boolean = current?.isOverlayShown() == true
 
     @Synchronized
-    fun ownsRenderView(view: View): Boolean = current?.ownsRenderView(view) == true
-
-    @Synchronized
     fun setNativeHandoffActive(active: Boolean) {
         current?.setNativeHandoffActive(active)
     }
@@ -301,11 +298,6 @@ internal object HomeRenderSession {
         // our own overlay bounds.
         private val nativeDrawListener =
             ViewTreeObserver.OnPreDrawListener {
-                // When the CC window stops rendering, its pre-draw listener
-                // can no longer return the temporary Home-source clip.
-                // Home still receives native pre-draw for the visible status
-                // bar, so reuse this already-owned listener at that boundary.
-                CcTransitionOwner.onHomePreDraw(probeView)
                 if (
                     !nativeHandoffActive &&
                     featureEnabled &&
@@ -446,8 +438,6 @@ internal object HomeRenderSession {
         }
 
         fun isOverlayShown(): Boolean = probeView.isShown
-
-        fun ownsRenderView(view: View): Boolean = probeView === view
 
         fun setFeatureEnabled(enabled: Boolean) {
             if (Looper.myLooper() !== Looper.getMainLooper()) {
