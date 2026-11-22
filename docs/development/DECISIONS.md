@@ -240,6 +240,33 @@ exact rollback receipts. Unverified native frame geometry still releases
 only its affected presentation. A passing CI is not a claim of device
 acceptance.
 
+## Home carrier position follows native geometry, not container size
+
+**Decision:** Use the actual `battery_icon_container` native window location
+relative to `MiuiStatusBatteryContainer` for the compact Home overlay x.
+The previously assumed end-aligned `BatteryContainer.width - slotWidth`
+is an invalid location source if the native carrier translates within an
+unchanged host during Control Center rotation/handoff. Keep the separate
+native Home privacy-chip anchor behavior and all native ownership rules.
+
+**Evidence:** B1901 video shows the correct left-to-right sequence
+network-speed, Bluetooth, silent, Guiyuan before opening CC; rotating inside
+CC then swiping up draws the original network-speed and peers across the
+Home Guiyuan ring. In B1901 logs, the CC fake owner had activated via
+native pre-draw and continued reporting successful transition-reservation
+clears; no Fail native event explains the Home overlay displacement.
+The Home overlay used `SteadyLayoutResolver` relative to host width and
+observed onLayout but not native view-only translations.
+
+**Consequence:** Observe a single session-owned native pre-draw event and
+reposition only Guiyuan's overlay when the physically measured native
+carrier anchor changes. Also re-read the native position on Home eligibility
+return and battery-parent layout. Do not write native View translation,
+width, padding beyond existing owned reservation, or animations. Reject
+an invalid/out-of-bounds carrier geometry instead of inventing a pixel
+offset. The exact ROM4.0.4 runtime transform remains a device-test
+evidence gap, not a proven static SystemUI binary behavior.
+
 ## Native resource identity is preferred
 
 **Decision:** when a verified native drawable/resource expresses the needed
