@@ -33,79 +33,30 @@ internal object VisualMaskPolicy {
         deferVisualMaskUntilLayout: Boolean,
         laidOut: Boolean,
         layoutRequested: Boolean,
-        capacityLeaseAwaitingLayout: Boolean = false,
         width: Int,
         height: Int,
     ): Boolean =
         deferVisualMaskUntilLayout &&
             laidOut &&
             !layoutRequested &&
-            !capacityLeaseAwaitingLayout &&
             width > 0 &&
             height > 0
 }
 
-internal object FakeCarrierCapacityLeasePolicy {
-    // The native QS Fake status area may extend to the left of its narrower
-    // parent while retaining the parent's end anchor. Its existing width is
-    // not a lease: accept only a laid-out, attached native overhang and never
-    // write a smaller parent width back to the SystemUI carrier.
-    fun mayInheritNativeOverhang(
-        nativeCarrierWidthPx: Int,
-        parentContentWidthPx: Int,
-        laidOutCarrierWidthPx: Int,
+// For QS_FAKE, SystemUI owns the host width. Both normal and native
+// end-overhanging layouts are valid once the native layout has completed.
+internal object FakeCarrierNativeGeometryPolicy {
+    fun isSettled(
+        nativeWidthPx: Int,
+        laidOutWidthPx: Int,
         attached: Boolean,
+        layoutRequested: Boolean,
+        exclusiveParent: Boolean,
         endAnchored: Boolean,
     ): Boolean =
-        nativeCarrierWidthPx > parentContentWidthPx &&
-            parentContentWidthPx > 0 &&
-            laidOutCarrierWidthPx == nativeCarrierWidthPx &&
-            attached && endAnchored
-
-    enum class ExistingLeaseAction {
-        REUSE,
-        ADOPT_HIDDEN_NATIVE,
-        FAIL_WRITER_CONFLICT,
-    }
-
-    fun resolveExistingLeaseAction(
-        visibleCycleActive: Boolean,
-        liveWidthPx: Int,
-        appliedWidthPx: Int,
-        currentParentContentWidthPx: Int,
-        leasedParentContentWidthPx: Int?,
-        verifiedNativeOverhang: Boolean = false,
-    ): ExistingLeaseAction {
-        // A hidden/prearm lease can be superseded by a completed SystemUI
-        // landscape end-overhang after the native parent changes size.
-        // Never adopt an unverified or already-visible foreign width writer.
-        if (
-            !visibleCycleActive &&
-            liveWidthPx != appliedWidthPx &&
-            verifiedNativeOverhang &&
-            currentParentContentWidthPx > 0 &&
-            liveWidthPx > currentParentContentWidthPx
-        ) {
-            return ExistingLeaseAction.ADOPT_HIDDEN_NATIVE
-        }
-        if (
-            leasedParentContentWidthPx == null ||
-            leasedParentContentWidthPx != currentParentContentWidthPx
-        ) {
-            return ExistingLeaseAction.FAIL_WRITER_CONFLICT
-        }
-        if (liveWidthPx == appliedWidthPx) {
-            return ExistingLeaseAction.REUSE
-        }
-        if (
-            !visibleCycleActive &&
-            liveWidthPx > 0 &&
-            liveWidthPx <= currentParentContentWidthPx
-        ) {
-            return ExistingLeaseAction.ADOPT_HIDDEN_NATIVE
-        }
-        return ExistingLeaseAction.FAIL_WRITER_CONFLICT
-    }
+        nativeWidthPx > 0 &&
+            nativeWidthPx == laidOutWidthPx &&
+            attached && !layoutRequested && exclusiveParent && endAnchored
 }
 
 internal object EndReservationPolicy {
@@ -133,24 +84,7 @@ internal object EndReservationPolicy {
         }
     }
 
-    fun resolveCapacityBoundedReservationDelta(
-        nativeHide: Boolean,
-        compactSlotWidthPx: Int,
-        requestedReservationDeltaPx: Int,
-        capacityDeltaPx: Int,
-    ): Int {
-        val compact = compactSlotWidthPx.coerceAtLeast(0)
-        val capacity = capacityDeltaPx.coerceAtLeast(0)
-        val maxNativeReservation =
-            if (nativeHide) {
-                compact + capacity
-            } else {
-                capacity
-            }
-        return requestedReservationDeltaPx.coerceAtMost(maxNativeReservation)
-    }
-
-    // Native icon-row occupancy is distinct from the fake carrier width lease.
+    // Bound the actual peer row; never infer capacity from changing host width.
     fun fitsFakeNativePeerRow(
         rowWidthPx: Int,
         contentWidthPx: Int,
@@ -161,27 +95,6 @@ internal object EndReservationPolicy {
             targetPaddingEndPx >= 0 &&
             contentWidthPx.toLong() + targetPaddingEndPx <= rowWidthPx.toLong()
 
-    fun resolveFakeCarrierCapacityRequirement(
-        nativeHide: Boolean,
-        compactSlotWidthPx: Int,
-        reservationDeltaPx: Int,
-    ): Int {
-        val reservation = reservationDeltaPx.coerceAtLeast(0)
-        return if (nativeHide) {
-            (reservation - compactSlotWidthPx.coerceAtLeast(0)).coerceAtLeast(0)
-        } else {
-            reservation
-        }
-    }
-
-    fun resolveFakeCarrierCapacityDelta(
-        nativeCarrierWidthPx: Int,
-        parentContentWidthPx: Int,
-    ): Int? {
-        if (nativeCarrierWidthPx <= 0 || parentContentWidthPx <= 0) return null
-        if (nativeCarrierWidthPx > parentContentWidthPx) return null
-        return parentContentWidthPx - nativeCarrierWidthPx
-    }
 }
 
 internal object OwnedEntries {
