@@ -1656,7 +1656,7 @@ internal object SysUiPresentationOwner {
                         } else if (shouldAdoptNativeLayout(group)) {
                             releaseCcCutoverListener()
                             val masked = refreshClipMasks()
-                            onNativeLayoutCompleted(masked)
+                            onNativeLayoutCompleted(masked, "native-pre-draw-after-complete-layout")
                         } else if (group.isLayoutRequested) {
                             // An end-padding write requested a second native measure pass.
                             draw = false
@@ -2648,7 +2648,10 @@ internal object SysUiPresentationOwner {
                     (nativeFakeCarrierLayoutSettled() &&
                         statusIcons.get()?.isLayoutRequested != true))
 
-        fun onNativeLayoutCompleted(maskedViews: Int) {
+        fun onNativeLayoutCompleted(
+            maskedViews: Int,
+            source: String = "native-status-icons-onLayout",
+        ) {
             if (
                 !active ||
                 !started ||
@@ -2663,7 +2666,7 @@ internal object SysUiPresentationOwner {
             val callback = layoutReadyCallback
             layoutReadyCallback = null
             onEvent(
-                eventPrefix + " layoutReady source=native-status-icons-onLayout" +
+                eventPrefix + " layoutReady source=" + source +
                     LOG_MASKED_VIEWS + maskedViews,
             )
             callback?.invoke(maskedViews)
