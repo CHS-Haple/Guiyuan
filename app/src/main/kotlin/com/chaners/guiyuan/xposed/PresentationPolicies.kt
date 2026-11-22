@@ -28,6 +28,22 @@ internal object SteadyPeerMirrorPolicy {
         nativeIslandShowing && !steadyMirrorActive
 }
 
+// CC visibility is not the same as its motion fraction. A slow close can
+// reach the zero endpoint before native onVisibleChanged(false) arrives.
+// Home must already be allowed at that native endpoint, and a late CC ready
+// callback must not hide it again while the fraction remains zero.
+internal object CcHomeHandoffPolicy {
+    fun yieldToProjection(
+        nativePanelVisible: Boolean,
+        nativeExpansion: Float,
+        projectionReady: Boolean,
+    ): Boolean =
+        nativePanelVisible &&
+            nativeExpansion.isFinite() &&
+            nativeExpansion > 0f &&
+            projectionReady
+}
+
 internal object VisualMaskPolicy {
     fun shouldAdoptExistingNativeLayout(
         deferVisualMaskUntilLayout: Boolean,
