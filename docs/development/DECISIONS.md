@@ -6,6 +6,21 @@ design or regression work. It is not a build log.
 Detailed implementation history, rejected experiments, CI runs, and device
 investigation notes remain available in Git history.
 
+## Ship only arm64-v8a native libraries
+
+**Decision:** distribute one APK with only `arm64-v8a` JNI libraries. Apply the
+same ABI filter to Debug, Canary and Release rather than maintaining separate
+architecture-specific products.
+
+**Why:** the currently supported Xiaomi 15 Pro uses arm64. Shipping ARMv7/x86
+libraries does not extend verified HyperOS/SystemUI compatibility and adds
+native dependency payload. This is a packaging decision, not an assurance of
+future OS/ROM support.
+
+**Consequence:** 32-bit-only and x86 devices/emulators are unsupported, and
+built APKs are checked for accidental non-arm64 JNI entries. This does not
+change Java/LSPosed APIs, the SystemUI runtime policy or native fallback.
+
 ## Native host over duplicate participant
 
 **Decision:** reuse a verified native SystemUI host whenever it already owns the
