@@ -547,6 +547,36 @@ internal object SysUiNetworkSource {
                     SysUiMobileCollectorLocator.Role.ACTIVITY_VISIBILITY,
                 )
             }
+            val activityResourceField = atStage("mobile.resolve.activityResourceField") {
+                activityResourceCollector.getDeclaredField("\$leftInOut").apply { isAccessible = true }
+            }
+            val activityResourceMethod = atStage("mobile.resolve.activityResourceMethod") {
+                activityResourceCollector.getDeclaredMethod("invokeSuspend", Any::class.java)
+            }
+            val activityVisibilityField = atStage("mobile.resolve.activityVisibilityField") {
+                activityVisibilityCollector.getDeclaredField("\$satellite").apply { isAccessible = true }
+            }
+            val activityVisibilityClassId = atStage("mobile.resolve.activityVisibilityClassId") {
+                activityVisibilityCollector.getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME)
+                    .apply { isAccessible = true }
+            }
+            val activityVisibilityMethod = atStage("mobile.resolve.activityVisibilityMethod") {
+                resolveEmitterMethod(activityVisibilityCollector, MOBILE_SIGNAL_EMIT_METHOD_NAME)
+            }
+            // Verify native activity visibility prerequisites before registering any Hook.
+            val nativeBindingField = atStage("mobile.resolve.visibilityBinding") {
+                Class.forName(MODERN_STATUS_BAR_VIEW_CLASS_NAME, false, classLoader)
+                    .getField("binding").apply { isAccessible = true }
+            }
+            val nativeShouldVisibleMethod = atStage("mobile.resolve.shouldIconBeVisible") {
+                Class.forName(MODERN_STATUS_BAR_VIEW_BINDING_CLASS_NAME, false, classLoader)
+                    .getMethod("getShouldIconBeVisible").apply {
+                        check(returnType == Boolean::class.javaPrimitiveType) {
+                            "mobile-native-visibility-return-type-mismatch"
+                        }
+                        isAccessible = true
+                    }
+            }
             created +=
                 atStage("mobile.hook.bind") {
                     module
@@ -578,35 +608,16 @@ internal object SysUiNetworkSource {
                         )
                 }
 
-            // The exact OEM binder reads isVisible().value.first via this
-            // binding. The child visibility is written by getInOutVisible()
-            // independently of getInOutResId(); neither uses View.isShown.
-            val nativeBindingField = atStage("mobile.resolve.visibilityBinding") {
-                Class.forName(MODERN_STATUS_BAR_VIEW_CLASS_NAME, false, classLoader)
-                    .getField("binding").apply { isAccessible = true }
-            }
-            val nativeShouldVisibleMethod = atStage("mobile.resolve.shouldIconBeVisible") {
-                Class.forName(MODERN_STATUS_BAR_VIEW_BINDING_CLASS_NAME, false, classLoader)
-                    .getMethod("getShouldIconBeVisible").apply {
-                        check(returnType == Boolean::class.javaPrimitiveType) {
-                            "mobile-native-visibility-return-type-mismatch"
-                        }
-                        isAccessible = true
-                    }
-            }
             // Both native activity collectors are required for the verified OS4
             // replacement. If either cannot be hooked, roll back the mobile
             // branch rather than announcing an incomplete native state owner.
             created += atStage("mobile.hook.activityResource") {
-                val collector = activityResourceCollector
-                val activityField = collector.getDeclaredField("\$leftInOut").apply { isAccessible = true }
-                val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
-                module.hook(method)
+                module.hook(activityResourceMethod)
                     .setId(MOBILE_ACTIVITY_HOOK_ID)
                     .intercept(Hooker { chain ->
                         val result = chain.proceed()
                         if (active.get()) {
-                            val image = optionalNativeRead { activityField.get(chain.thisObject) as? ImageView }
+                            val image = optionalNativeRead { activityResourceField.get(chain.thisObject) as? ImageView }
                             val binding = image?.let(::findNativeHomeMobileBinding)
                             if (image != null && binding != null) {
                                 try {
@@ -662,24 +673,20 @@ internal object SysUiNetworkSource {
             // The native visibility collector is independent of getInOutResId().
             // Observe its already-applied View state; do not collect a second Flow.
             created += atStage("mobile.hook.activityVisibility") {
-                val collector = activityVisibilityCollector
-                val imageField = collector.getDeclaredField("\$satellite").apply { isAccessible = true }
-                val classIdField = collector.getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME).apply { isAccessible = true }
-                val method = resolveEmitterMethod(collector, MOBILE_SIGNAL_EMIT_METHOD_NAME)
-                module.hook(method)
+                module.hook(activityVisibilityMethod)
                     .setId(MOBILE_ACTIVITY_VISIBILITY_HOOK_ID)
                     .intercept(Hooker { chain ->
                         val result = chain.proceed()
                         if (
                             active.get() &&
-                            optionalNativeRead { classIdField.getInt(chain.thisObject) } ==
+                            optionalNativeRead { activityVisibilityClassId.getInt(chain.thisObject) } ==
                             MOBILE_ACTIVITY_VISIBILITY_CLASS_ID
                         ) {
                             // The OEM has already applied the Flow's Pair to its
                             // View. Read its authoritative Home binding and child
                             // visibility instead of casting a host Kotlin Pair
                             // through the module's ClassLoader.
-                            val image = optionalNativeRead { imageField.get(chain.thisObject) as? ImageView }
+                            val image = optionalNativeRead { activityVisibilityField.get(chain.thisObject) as? ImageView }
                             val binding = image?.let(::findNativeHomeMobileBinding)
                             val rootVisible = binding?.let { owner ->
                                 nativeMobileRootVisible(
