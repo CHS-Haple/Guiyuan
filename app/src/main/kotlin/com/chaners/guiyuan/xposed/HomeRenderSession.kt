@@ -4,6 +4,7 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
@@ -280,12 +281,33 @@ internal object HomeRenderSession {
         private var layoutReady = false
         private var lastPresentationReady = false
         private val anchorRect = Rect()
+        private val observedAnchorRect = Rect()
+        private val carrierWindowLocation = IntArray(2)
+        private val hostWindowLocation = IntArray(2)
+        private var nativeDrawObserver: ViewTreeObserver? = null
 
         // The privacy-sensitive icons group can relayout without its parent.
         // Listen on all three native Views, with a separate receipt for each View.
         private val nativeLayoutListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                 layoutProbe()
+            }
+        // SystemUI may translate the carrier during a Control Center rotation
+        // without changing this host's measured size or firing onLayout.
+        // Read native geometry before drawing; only a changed anchor writes
+        // our own overlay bounds.
+        private val nativeDrawListener =
+            ViewTreeObserver.OnPreDrawListener {
+                if (
+                    !nativeHandoffActive &&
+                    featureEnabled &&
+                    batteryContainer.get()?.isAttachedToWindow == true &&
+                    resolveNativeAnchor(observedAnchorRect) &&
+                    observedAnchorRect != anchorRect
+                ) {
+                    layoutProbe("native-carrier-moved")
+                }
+                true
             }
 
         fun matches(
@@ -309,8 +331,13 @@ internal object HomeRenderSession {
 
             overlayHost.addOnAttachStateChangeListener(this)
             overlayHost.addOnLayoutChangeListener(nativeLayoutListener)
+            battery.addOnLayoutChangeListener(nativeLayoutListener)
             carrier.addOnLayoutChangeListener(nativeLayoutListener)
             statusIcons.get()?.addOnLayoutChangeListener(nativeLayoutListener)
+            overlayHost.viewTreeObserver.takeIf { it.isAlive }?.let { observer ->
+                nativeDrawObserver = observer
+                observer.addOnPreDrawListener(nativeDrawListener)
+            }
             probeView.visibility = View.GONE
             (probeView.parent as? ViewGroup)?.removeView(probeView)
             overlayHost.addView(
@@ -353,8 +380,15 @@ internal object HomeRenderSession {
                 { if (notifyReadinessOnStop) dispatchPresentationReadiness("stop") },
                 { batteryContainer.get()?.removeOnAttachStateChangeListener(this) },
                 { batteryContainer.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
+                { batteryView.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { batteryCarrier.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { statusIcons.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
+                {
+                    nativeDrawObserver?.let { observer ->
+                        if (observer.isAlive) observer.removeOnPreDrawListener(nativeDrawListener)
+                    }
+                    nativeDrawObserver = null
+                },
                 { if (removeVisual) (probeView.parent as? ViewGroup)?.removeView(probeView) },
             )
         }
@@ -380,6 +414,7 @@ internal object HomeRenderSession {
             }
             controlCenterAllowsHome = homeEligible
             if (SandboxHost.active()) update(StatusStateStore.snapshot())
+            if (homeEligible) layoutProbe("control-center-return")
             val visible = applyResolvedVisibility()
             emitEvent {
                 "homeRenderControlCenterEligibility" +
@@ -540,13 +575,26 @@ internal object HomeRenderSession {
             }
         }
 
-        private fun layoutProbe() {
-            if (!resolveNativeAnchor(anchorRect)) {
+        private fun layoutProbe(source: String = "native-layout") {
+            if (!resolveNativeAnchor(observedAnchorRect)) {
                 if (layoutReady) {
                     layoutReady = false
                     dispatchPresentationReadiness("layout-unavailable")
                 }
                 return
+            }
+            val moved = observedAnchorRect != anchorRect
+            if (moved) {
+                anchorRect.set(observedAnchorRect)
+                if (layoutLogged) {
+                    emitEvent {
+                        "homeRenderNativeAnchor source=" + source +
+                            " carrierLeft=" + anchorRect.left +
+                            " carrierRight=" + anchorRect.right +
+                            " carrierWidth=" + anchorRect.width() +
+                            " hostWidth=" + (batteryContainer.get()?.width ?: -1)
+                    }
+                }
             }
             probeView.layoutAtAnchor(anchorRect)
             layoutReady = true
@@ -642,9 +690,8 @@ internal object HomeRenderSession {
                     if (nativeIcons.parent !== overlayHost ||
                         !nativeIcons.isLaidOut || nativeIcons.width <= 0
                     ) return false
-                    // Exact target onLayout ends the icon group at the privacy
-                    // child's measured boundary. The module's end reservation
-                    // sits inside this group's native edge.
+                    // Privacy occupies the Home end; continue using the
+                    // observed native status-icon edge in that special state.
                     HomePrivacyAnchorPolicy.resolve(
                         hostWidthPx = hostWidth,
                         hostHeightPx = hostHeight,
@@ -654,11 +701,17 @@ internal object HomeRenderSession {
                         isRtl = isRtl,
                     )
                 } else {
-                    SteadyLayoutResolver.resolve(
+                    if (!overlayHost.isAttachedToWindow ||
+                        !carrier.isAttachedToWindow ||
+                        carrier.width <= 0
+                    ) return false
+                    carrier.getLocationInWindow(carrierWindowLocation)
+                    overlayHost.getLocationInWindow(hostWindowLocation)
+                    HomeCarrierAnchorPolicy.resolve(
                         hostWidthPx = hostWidth,
                         hostHeightPx = hostHeight,
-                        baseCarrierWidthPx = baseCarrierWidth,
-                        isRtl = isRtl,
+                        carrierWidthPx = baseCarrierWidth,
+                        carrierLeftPx = carrierWindowLocation[0] - hostWindowLocation[0],
                     )
                 } ?: return false
             out.set(resolved.left, 0, resolved.right, hostHeight)
