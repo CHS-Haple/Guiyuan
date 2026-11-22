@@ -123,4 +123,3 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
     R.string.restore_feature_defaults -> listOf("重置设置", "重置功能", "恢复功能默认值", "还原默认设置", "还原设置", "重置配置", "Reset defaults", "Reset settings")
     else -> emptyList()
 }
-
