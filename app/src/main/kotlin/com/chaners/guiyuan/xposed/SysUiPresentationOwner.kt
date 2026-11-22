@@ -2348,14 +2348,17 @@ internal object SysUiPresentationOwner {
                 ?: return null
             if (spacing < 0 || views.size > group.childCount) return null
 
-            // Match the native onMeasure inputs, including its ignored-slot filter.
+            // Match the measured native row without counting child padding
+            // twice: native measuredWidth already includes that padding.
             var width = group.paddingStart.toLong()
             views.forEachIndexed { index, item ->
                 val view = item as? View ?: return null
                 if (view.parent !== group || view.measuredWidth < 0) return null
-                val measured =
-                    view.measuredWidth.toLong() + view.paddingStart + view.paddingEnd
-                if (measured < 0L) return null
+                // View.measuredWidth is the outer measured dimension and
+                // already includes the View's own start/end padding. Adding
+                // padding again double-counts native peer width and falsely
+                // trips the CC capacity fence on a one-pixel margin.
+                val measured = view.measuredWidth.toLong()
                 if (measured > 0L) {
                     width += measured
                     if (index > 0) width += spacing

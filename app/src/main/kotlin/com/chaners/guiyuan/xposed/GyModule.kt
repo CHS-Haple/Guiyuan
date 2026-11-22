@@ -1684,6 +1684,8 @@ class GyModule : XposedModule() {
                 "homeVisibility" to HomeRenderSession.visibilityWitness(),
                 "homeClaimed" to SysUiPresentationOwner.homeClaimed(),
                 "homeCarrierShown" to SysUiPresentationOwner.homeCarrierVisible(),
+                "ccFakeVisual" to CcRenderSession.visualState(),
+                "ccTransitionVisual" to CcTransitionOwner.visualState(),
             )
         }
     }

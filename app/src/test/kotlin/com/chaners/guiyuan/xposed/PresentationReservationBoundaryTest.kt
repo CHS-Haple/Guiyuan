@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -90,10 +91,10 @@ class PresentationReservationBoundaryTest {
 
     @Test
     fun overhangDoesNotBypassMeasuredPeerEndReservationCapacity() {
-        assertFalse(EndReservationPolicy.fitsFakeNativePeerRow(
+        assertEquals(null, EndReservationPolicy.boundedFakeNativePeerPaddingEnd(
             rowWidthPx = 1230, contentWidthPx = 1190, targetPaddingEndPx = 105,
         ))
-        assertTrue(EndReservationPolicy.fitsFakeNativePeerRow(
+        assertEquals(105, EndReservationPolicy.boundedFakeNativePeerPaddingEnd(
             rowWidthPx = 1230, contentWidthPx = 900, targetPaddingEndPx = 105,
         ))
     }

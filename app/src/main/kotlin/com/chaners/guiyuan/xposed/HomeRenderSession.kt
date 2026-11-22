@@ -467,9 +467,17 @@ internal object HomeRenderSession {
             val nativeContainer = batteryContainer.get()
             return "renderVisibility=${probeView.visibility}" +
                 " renderShown=${probeView.isShown}" +
+                " renderAlpha=${probeView.alpha}" +
+                " renderBounds=${probeView.left}..${probeView.right}" +
+                " overlayParent=${probeView.parent?.javaClass?.simpleName}" +
                 " rootShown=${root?.isShown}" +
+                " rootAlpha=${root?.alpha}" +
+                " rootTranslationX=${root?.translationX}" +
+                " rootBounds=${root?.left}..${root?.right}" +
                 " rootAttached=${root?.isAttachedToWindow}" +
                 " nativeContainerShown=${nativeContainer?.isShown}" +
+                " statusIconsShown=${statusIcons.get()?.isShown}" +
+                " statusIconsAlpha=${statusIcons.get()?.alpha}" +
                 " nativeContainerSize=${nativeContainer?.width}x${nativeContainer?.height}" +
                 " nativeBatteryWidth=${batteryView.get()?.width}" +
                 " nativeHide=${SysUiPresentationOwner.homeBatteryNativeHidden()}" +
