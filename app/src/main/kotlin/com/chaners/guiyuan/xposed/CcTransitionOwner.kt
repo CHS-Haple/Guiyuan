@@ -942,7 +942,8 @@ internal object CcTransitionOwner {
                                 CcCarrierGeometryPolicy.shouldRecaptureFakeRootOffset(
                                     capturedHostWidthPx = fakeCarrierHostWidthPx,
                                     liveHostWidthPx = fakeHost.width,
-                                    hostLayoutRequested = fakeHost.isLayoutRequested,
+                                    hostLayoutRequested = fakeHost.isLayoutRequested ||
+                                        fakeStatusIcons.isLayoutRequested,
                                 )
                             ) {
                                 fakeCarrierHostWidthPx = fakeHost.width
