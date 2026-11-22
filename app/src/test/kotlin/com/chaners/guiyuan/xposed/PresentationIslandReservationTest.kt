@@ -1,97 +1,12 @@
 package com.chaners.guiyuan.xposed
 
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PresentationIslandReservationTest {
     @Test
-    fun chargingIslandCapacityCountsOnlyExpansionBeyondCompactSlot() {
-        assertEquals(
-            0,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    reservationDeltaPx = 105,
-                ),
-        )
-        assertEquals(
-            144,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    reservationDeltaPx = 249,
-                ),
-        )
-        assertEquals(
-            249,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    reservationDeltaPx = 354,
-                ),
-        )
-        assertEquals(
-            249,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
-                    nativeHide = false,
-                    compactSlotWidthPx = 105,
-                    reservationDeltaPx = 249,
-                ),
-        )
-    }
-
-    @Test
-    fun controlCenterNativeReservationStopsAtPhysicalCarrierCapacity() {
-        assertEquals(
-            354,
-            EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    requestedReservationDeltaPx = 354,
-                    capacityDeltaPx = 249,
-                ),
-        )
-        assertEquals(
-            354,
-            EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    requestedReservationDeltaPx = 382,
-                    capacityDeltaPx = 249,
-                ),
-        )
-        assertEquals(
-            200,
-            EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
-                    nativeHide = false,
-                    compactSlotWidthPx = 105,
-                    requestedReservationDeltaPx = 200,
-                    capacityDeltaPx = 249,
-                ),
-        )
-        assertEquals(
-            249,
-            EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
-                    nativeHide = false,
-                    compactSlotWidthPx = 105,
-                    requestedReservationDeltaPx = 382,
-                    capacityDeltaPx = 249,
-                ),
-        )
-    }
-
-    @Test
-    fun nativeFakePeerRowUsesMeasuredSlackBeyondCarrierLease() {
+    fun nativeFakePeerRowUsesMeasuredNativeSlackWithoutHostWidthLease() {
         // Synthetic native measure boundaries, not a claim about device pixels.
         assertTrue(
             EndReservationPolicy.fitsFakeNativePeerRow(
