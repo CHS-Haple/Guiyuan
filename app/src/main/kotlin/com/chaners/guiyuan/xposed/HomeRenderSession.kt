@@ -296,6 +296,7 @@ internal object HomeRenderSession {
         private val anchorRect = Rect()
         private val observedAnchorRect = Rect()
         private val carrierWindowLocation = IntArray(2)
+        private val batteryWindowLocation = IntArray(2)
         private val hostWindowLocation = IntArray(2)
         private var nativeDrawObserver: ViewTreeObserver? = null
         private var deferredNativeAnchor = false
@@ -771,13 +772,19 @@ internal object HomeRenderSession {
                         !carrier.isAttachedToWindow ||
                         carrier.width <= 0
                     ) return false
+                    val battery = batteryView.get() ?: return false
+                    if (!battery.isAttachedToWindow || battery.width <= 0) return false
                     carrier.getLocationInWindow(carrierWindowLocation)
+                    battery.getLocationInWindow(batteryWindowLocation)
                     overlayHost.getLocationInWindow(hostWindowLocation)
-                    HomeCarrierAnchorPolicy.resolve(
+                    HomeCarrierAnchorPolicy.resolveExpandedBattery(
                         hostWidthPx = hostWidth,
                         hostHeightPx = hostHeight,
                         carrierWidthPx = baseCarrierWidth,
                         carrierLeftPx = carrierWindowLocation[0] - hostWindowLocation[0],
+                        nativeBatteryWidthPx = battery.width,
+                        nativeBatteryRightPx =
+                            batteryWindowLocation[0] - hostWindowLocation[0] + battery.width,
                     )
                 } ?: return false
             out.set(resolved.left, 0, resolved.right, hostHeight)
