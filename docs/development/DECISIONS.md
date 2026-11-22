@@ -328,6 +328,49 @@ until device logs demonstrate that this exact path corresponds to the
 reported visual gap; otherwise investigate the independent native CC
 visible/fraction/ready handoff without stacking time-based fallbacks.
 
+## Charging-expanded native battery requires a right-edge compact anchor
+
+**Decision:** If the measured outer native Home battery width exceeds the
+stable 105-px `battery_icon_container`, position the compact replacement
+within the outer battery's actual right edge. Otherwise follow the live
+native core position for rotation and island motion. Preserve the original
+SystemUI owner of peer end-padding and native size/translation; this
+changes only the module's overlay bounds.
+
+**Evidence:** On B1903 at 00:11:03, the native `MiuiBatteryMeterView`
+expanded from 105 to 135 px while its core remained 105 px. The Home
+status-icon end-padding reservation became -30 px to compensate that
+extra native width. Using the expanded battery's inner core left
+as the visual anchor can move the ring 30 px into the peer row as
+shown by the charging screenshot. Reading the native battery's end
+instead for this expansion makes the compact overlay fill the same
+right-side 105 px as before. Actual on-screen coordinates were not
+captured and device acceptance is still required.
+
+**Consequence:** No new offset preference, animation or Xposed Hook.
+Unit regression asserts normal 105 and charging 135 both end at the
+native right boundary, while a bad native end coordinate is rejected.
+
+## QS_FAKE peer capacity is valid only after its native measure
+
+**Decision:** A pending `MiuiStatusIconContainer` native
+`isLayoutRequested` invalidates previously measured
+`measureViews` row capacity, even when the outer QS_FAKE host is
+already settled. Defer custom end-padding writes and overflow
+decisions until the native peer-row measure completes. Still reject
+a genuinely overfull measured row with the scoped Fail native policy.
+
+**Evidence:** B1903 reported `fake-native-peer-row-overflow` in the
+00:10:47–00:11:03 interval, repeatedly reinitializing the fake
+presentation. Native `onMeasure` excludes ignored slots and the
+`measureViews` collection is only a current measurement witness.
+The prior guard checked outer host settlement but not the peer row's
+pending layout. The logs do not expose the exact width or pending
+flag at each failure; the new bounded diagnostic includes them.
+
+**Consequence:** Preserve SystemUI-owned fake width and avoid
+guessing extra space or force-fitting the native peer row.
+
 ## CC frozen source geometry is viewport-scoped
 
 **Decision:** A live CC transition session with frozen Home source and
