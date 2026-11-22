@@ -3030,12 +3030,14 @@ internal object SysUiPresentationOwner {
                 !active ||
                 !started ||
                 !deferVisualMaskUntilLayout ||
-                compactLayoutReady ||
                 nativeLayoutOwnershipDeferred
             ) {
                 return
             }
+            // Each completed native layout acknowledges the latest capacity lease,
+            // including visible cycles after the initial compact cutover.
             capacityLeaseAwaitingLayout = false
+            if (compactLayoutReady) return
             compactLayoutReady = true
             val callback = layoutReadyCallback
             layoutReadyCallback = null
