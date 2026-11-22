@@ -321,7 +321,7 @@ internal object HomeRenderSession {
             ViewTreeObserver.OnPreDrawListener {
                 if (
                     featureEnabled &&
-                    host.get()?.isAttachedToWindow == true
+                    this@Session.host.get()?.isAttachedToWindow == true
                 ) {
                     val resolved = resolveNativeAnchor(observedAnchorRect)
                     // Recheck an interrupted native layout even when the
