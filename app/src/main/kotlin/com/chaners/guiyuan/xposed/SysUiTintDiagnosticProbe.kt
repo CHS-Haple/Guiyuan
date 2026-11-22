@@ -25,11 +25,11 @@ internal object SysUiTintDiagnosticProbe {
             optionalNativeRead {
                 iconField.get(sourceView) as? View
             } ?: return
-    
+
         if (synchronized(SysUiTintSource) { batteryIconStructureLogged.containsKey(iconView) }) {
             return
         }
-    
+
         val semanticTints = mutableSetOf<Int>()
         val clipFieldsText =
             collectClipDrawableFields(iconView).joinToString(",") { field ->
@@ -57,7 +57,7 @@ internal object SysUiTintDiagnosticProbe {
         )
         synchronized(SysUiTintSource) { batteryIconStructureLogged[iconView] = Unit }
     }
-    
+
     private fun readColorFilterColor(filter: android.graphics.ColorFilter?): Int? {
         if (filter == null) {
             return null
@@ -92,14 +92,14 @@ internal object SysUiTintDiagnosticProbe {
             (getter.invoke(filter) as? Number)?.toInt()
         }
     }
-    
-    
+
+
     private fun collectClipDrawableFields(iconView: View): List<Field> {
         val iconClass = iconView.javaClass
         synchronized(SysUiTintSource) {
             batteryIconClipFields[iconClass]?.let { return it }
         }
-    
+
         val fields = mutableListOf<Field>()
         var current: Class<*>? = iconClass
         while (
@@ -122,7 +122,7 @@ internal object SysUiTintDiagnosticProbe {
         }
         return resolved
     }
-    
+
     private fun isChromaticTint(color: Int): Boolean {
         val red = color ushr 16 and 0xff
         val green = color ushr 8 and 0xff
