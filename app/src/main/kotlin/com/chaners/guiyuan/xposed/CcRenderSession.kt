@@ -731,6 +731,7 @@ internal object CcRenderSession {
         fun visualState(): String =
             "requested=" + requestedVisible +
                 ":eligible=" + sceneEligible +
+                ":childVisibility=" + renderView.visibility +
                 ":childShown=" + renderView.isShown +
                 ":childAlpha=" + renderView.alpha +
                 ":hostShown=" + (host.get()?.isShown ?: "unavailable") +

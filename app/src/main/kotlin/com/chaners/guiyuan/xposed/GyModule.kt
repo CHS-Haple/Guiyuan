@@ -4355,6 +4355,19 @@ class GyModule : XposedModule() {
                         onHomeReadyChanged(host, ready, source, readinessSource)
                     },
                     onHomeFrameDrawn = {
+                        if (detailedDiagnosticsEnabled) {
+                            logDiagnostic(
+                                level = Log.INFO,
+                                event = "presentation.homeFrameDrawn",
+                                component = "homePresentation",
+                                state = "ready",
+                                "nativePanelVisible" to controlCenterSceneVisible,
+                                "nativeFraction" to ccExpansion,
+                                "homeVisibility" to HomeRenderSession.visibilityWitness(),
+                                "ccFakeVisual" to CcRenderSession.visualState(),
+                                "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
+                            )
+                        }
                         reconcileCcHomeAuthority("home-frame-drawn")
                     },
                     onBatteryDrawn = { model, elapsedMs ->
