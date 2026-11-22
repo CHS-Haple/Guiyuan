@@ -193,17 +193,24 @@ class HomeRenderSessionTest {
         assertEquals(587, portrait?.right)
         assertEquals(105, portrait?.visualWidth)
 
-        // Native SystemUI may move the carrier while keeping its own width.
-        // The old host-end estimate incorrectly stayed at 482 in this case.
-        val reflow = HomeCarrierAnchorPolicy.resolve(
+        // Identical parent dimensions but different real carrier coordinates:
+        // the old host-end estimate would always return 655.
+        val before = HomeCarrierAnchorPolicy.resolve(
+            hostWidthPx = 760,
+            hostHeightPx = 108,
+            carrierWidthPx = 105,
+            carrierLeftPx = 655,
+        )
+        val afterNativeTranslation = HomeCarrierAnchorPolicy.resolve(
             hostWidthPx = 760,
             hostHeightPx = 108,
             carrierWidthPx = 105,
             carrierLeftPx = 605,
         )
-        assertEquals(605, reflow?.left)
-        assertEquals(710, reflow?.right)
-        assertEquals(105, reflow?.visualWidth)
+        assertEquals(655, before?.left)
+        assertEquals(605, afterNativeTranslation?.left)
+        assertEquals(710, afterNativeTranslation?.right)
+        assertEquals(105, afterNativeTranslation?.visualWidth)
     }
 
     @Test
