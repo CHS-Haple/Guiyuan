@@ -1799,7 +1799,18 @@ class GyModule : XposedModule() {
                 },
                 onBatteryState = { state ->
                     val trace = beginRenderTrace("battery")
+                    val previousCharging = StatusStateStore.snapshot().battery?.charging
                     StatusStateStore.updateBattery(state)?.let { snapshot ->
+                        if (detailedDiagnosticsEnabled && previousCharging != state.charging) {
+                            logDiagnostic(
+                                level = Log.INFO,
+                                event = "battery.stateCommitted",
+                                component = "batteryState",
+                                state = if (state.charging) "charging" else "not-charging",
+                                "semantic" to (state.semanticState?.name ?: "unavailable"),
+                                "commitElapsedRealtimeMs" to SystemClock.elapsedRealtime(),
+                            )
+                        }
                         onCombinedStateChanged(
                             snapshot = snapshot,
                             trace = markStateCommitted(trace),
@@ -4345,6 +4356,18 @@ class GyModule : XposedModule() {
                     },
                     onHomeFrameDrawn = {
                         reconcileCcHomeAuthority("home-frame-drawn")
+                    },
+                    onBatteryDrawn = { model, elapsedMs ->
+                        if (detailedDiagnosticsEnabled) {
+                            logDiagnostic(
+                                level = Log.INFO,
+                                event = "battery.visualDraw",
+                                component = "homeRenderer",
+                                state = if (model.charging) "charging" else "not-charging",
+                                "semantic" to model.batterySemanticState.name,
+                                "drawElapsedRealtimeMs" to elapsedMs,
+                            )
+                        }
                     },
                 )
             } catch (error: Throwable) {

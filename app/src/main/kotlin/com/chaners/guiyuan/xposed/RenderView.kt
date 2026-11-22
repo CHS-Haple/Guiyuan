@@ -19,6 +19,7 @@ import com.chaners.guiyuan.xposed.network.CenterIndicator
 internal class RenderView(
     context: Context,
     private val onDrawn: ((View) -> Unit)? = null,
+    private val onModelDrawn: ((RenderModel) -> Unit)? = null,
     private val onShownChanged: ((View) -> Unit)? = null,
     private val preview: Boolean = false,
     private val onStateRendered: ((
@@ -397,6 +398,7 @@ internal class RenderView(
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
         )
         canvas.restoreToCount(viewportSave)
+        onModelDrawn?.invoke(current)
         onDrawn?.invoke(this)
 
         reportDrawLatency()

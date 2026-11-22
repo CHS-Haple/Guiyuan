@@ -195,8 +195,17 @@ internal object SysUiBatterySource {
         fun publish(
             iconView: View,
             sourceMethod: String,
+            levelCallbackCharging: Boolean? = null,
         ) {
             val state = readState(iconView) ?: return
+            if (levelCallbackCharging != null && levelCallbackCharging != state.charging) {
+                report {
+                    "batteryLevelOrdering source=" + sourceMethod +
+                        " nativeChargingArgument=" + levelCallbackCharging +
+                        " observedIconCharging=" + state.charging +
+                        " iconIdentity=" + System.identityHashCode(iconView)
+                }
+            }
             val delivery =
                 synchronized(this) {
                     updateChargingIconReceiptLocked(state)
@@ -219,6 +228,7 @@ internal object SysUiBatterySource {
                 "batteryState source=" + sourceMethod +
                     " percent=" + state.percent +
                     " charging=" + state.charging +
+                    " iconIdentity=" + System.identityHashCode(iconView) +
                     " semantic=" + (state.semanticState?.name ?: "unavailable") +
                     " systemColor=" +
                     (state.systemSemanticColor?.let(::colorHex) ?: "status-icon") +
@@ -283,6 +293,10 @@ internal object SysUiBatterySource {
                                 publish(
                                     iconView = iconView,
                                     sourceMethod = method.declaringClass.simpleName + "." + method.name,
+                                    levelCallbackCharging =
+                                        if (method.name == BATTERY_LEVEL_METHOD_NAME) {
+                                            chain.args.getOrNull(2) as? Boolean
+                                        } else null,
                                 )
                             } catch (error: Throwable) {
                                 fallback("state", error)

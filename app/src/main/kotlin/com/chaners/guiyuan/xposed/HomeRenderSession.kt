@@ -6,6 +6,7 @@ import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
+import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
@@ -48,6 +49,7 @@ internal object HomeRenderSession {
         allowLiveTintSeed: Boolean = true,
         onPresentationReadinessChanged: ((Boolean, String) -> Unit)? = null,
         onHomeFrameDrawn: (() -> Unit)? = null,
+        onBatteryDrawn: ((RenderModel, Long) -> Unit)? = null,
     ): String? {
         if (retirement.pending != null) return "home-render-release-incomplete"
         val hostView = host as? ViewGroup
@@ -94,6 +96,7 @@ internal object HomeRenderSession {
                 FeaturePrefsOwner.current().enabled,
             onPresentationReadinessChanged = onPresentationReadinessChanged,
             onHomeFrameDrawn = onHomeFrameDrawn,
+            onBatteryDrawn = onBatteryDrawn,
         )
         current = session
         session.start()
@@ -272,6 +275,7 @@ internal object HomeRenderSession {
         initialFeatureEnabled: Boolean,
         private val onPresentationReadinessChanged: ((Boolean, String) -> Unit)?,
         private val onHomeFrameDrawn: (() -> Unit)?,
+        private val onBatteryDrawn: ((RenderModel, Long) -> Unit)?,
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
         private val batteryContainer = WeakReference(batteryContainer)
@@ -279,11 +283,22 @@ internal object HomeRenderSession {
         private val batteryView = WeakReference(batteryView)
         private val batteryCarrier = WeakReference(batteryCarrier)
         private var lastCompletedDrawElapsedRealtimeMs = 0L
+        private var lastDrawnCharging: Boolean? = null
+        private var lastDrawnBatterySemantic: BatterySemanticState? = null
         private val probeView =
             RenderView(
                 context = host.context,
                 // Passive draw witness: the Overlay child may report isShown=false
                 // even when the native host actually dispatches its overlay.
+                onModelDrawn = { drawn ->
+                    if (drawn.charging != lastDrawnCharging ||
+                        drawn.batterySemanticState != lastDrawnBatterySemantic
+                    ) {
+                        lastDrawnCharging = drawn.charging
+                        lastDrawnBatterySemantic = drawn.batterySemanticState
+                        onBatteryDrawn?.invoke(drawn, SystemClock.elapsedRealtime())
+                    }
+                },
                 onDrawn = {
                     lastCompletedDrawElapsedRealtimeMs = SystemClock.elapsedRealtime()
                     if (
