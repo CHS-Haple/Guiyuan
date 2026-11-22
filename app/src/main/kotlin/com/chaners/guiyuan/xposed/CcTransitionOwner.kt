@@ -162,8 +162,14 @@ internal object CcTransitionOwner {
     private fun onNativeCloseVisualCompleted(owner: Session) {
         if (current !== owner || sourceScene != SourceScene.HOME) return
         terminalNativeVisualAbsent = true
-        owner.stop("native-header-visual-end")
         current = null
+        try {
+            owner.stop("native-header-visual-end")
+        } catch (error: Throwable) {
+            current = owner // Preserve the unfinished release for the next native event.
+            terminalNativeVisualAbsent = false
+            throw error
+        }
         onNativeCloseVisualEnded?.invoke()
     }
 
