@@ -1,6 +1,18 @@
 package com.chaners.guiyuan.xposed
 
 internal object CcCarrierGeometryPolicy {
+    // A transition source is frozen in the root's coordinate frame.
+    // Reuse is safe only while that native frame retains the same dimensions;
+    // rotation may retain every View identity but invalidate all frozen points.
+    fun sameNativeRootFrame(
+        capturedWidth: Int,
+        capturedHeight: Int,
+        liveWidth: Int,
+        liveHeight: Int,
+    ): Boolean =
+        capturedWidth > 0 && capturedHeight > 0 &&
+            capturedWidth == liveWidth && capturedHeight == liveHeight
+
     fun composeSourceGeometry(
         positionAuthority: FloatArray,
         basisAuthority: FloatArray,
