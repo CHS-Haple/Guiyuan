@@ -1345,6 +1345,7 @@ class GyModule : XposedModule() {
         val nextEligible =
             SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = settings.enabled,
+                mobileSourceReady = SysUiNetworkRuntime.mobileReady,
                 sourceScene = sourceScene,
                 keyguardEnabled = keyguardEligible,
             )
@@ -3248,6 +3249,11 @@ class GyModule : XposedModule() {
                 if (!settings.enabled) {
                     deactivateAodRuntime("feature-ineligible")
                     deactivateKeyguardRuntime("feature-ineligible")
+                    return
+                }
+                if (!SysUiNetworkRuntime.mobileReady) {
+                    deactivateAodRuntime("mobile-source-unavailable")
+                    deactivateKeyguardRuntime("mobile-source-unavailable")
                     return
                 }
                 if (!SysUiPresentationRuntime.keyguardAodReady) {
