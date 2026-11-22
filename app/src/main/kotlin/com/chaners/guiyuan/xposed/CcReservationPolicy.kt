@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.xposed
 
 import kotlin.math.min
-import kotlin.math.roundToInt
 
 internal object CcReservationPolicy {
     fun usesSemanticTransitionReservation(sourceScene: SourceScene): Boolean =
@@ -55,35 +54,6 @@ internal object CcReservationPolicy {
             right = maxOf(right, currentRight)
         }
         return kotlin.math.ceil((right - left).coerceAtLeast(compact.toFloat())).toInt()
-    }
-
-    fun resolveFinalReservationWidth(
-        compactWidthPx: Int,
-        spans: List<ReservationSpan>,
-    ): Int =
-        resolveReservationWidth(
-            compactWidthPx = compactWidthPx,
-            spans = spans,
-            progress = 1f,
-        )
-
-    fun resolveTransitionReservationWidth(
-        compactWidthPx: Int,
-        spans: List<ReservationSpan>,
-        progress: Float,
-    ): Int {
-        val compact = compactWidthPx.coerceAtLeast(0)
-        if (compact == 0) return 0
-        val finalWidth =
-            resolveFinalReservationWidth(
-                compactWidthPx = compact,
-                spans = spans,
-            )
-        val p = CcTransitionPolicy.geometryProgress(progress)
-        return (
-            compact +
-                (finalWidth - compact) * p
-            ).roundToInt().coerceAtLeast(compact)
     }
 
     fun resolveBatteryIslandNativePeerReservationWidth(

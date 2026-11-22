@@ -50,8 +50,8 @@ class CcTransitionSourceContractTest {
         val previous = listOf(CcReservationPolicy.ReservationSpan(-20f, -10f, -150f, -130f))
         val current = listOf(CcReservationPolicy.ReservationSpan(-20f, -10f, -210f, -190f))
         val held = 0.5f
-        val before = CcReservationPolicy.resolveTransitionReservationWidth(compact, previous, held)
-        val after = CcReservationPolicy.resolveTransitionReservationWidth(compact, current, held)
+        val before = CcReservationPolicy.resolveReservationWidth(compact, previous, held)
+        val after = CcReservationPolicy.resolveReservationWidth(compact, current, held)
         val shift = CcTransitionPolicy.retargetShift(0f, null, held, (after - before).toFloat())
 
         assertEquals(

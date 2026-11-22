@@ -2481,12 +2481,12 @@ internal object CcTransitionOwner {
                 // Freeze source semantics, not FINAL geometry across charge modes.
                 val refreshed = resolveReservationSpans()
                 if (refreshed != null) {
-                    val oldWidth = CcReservationPolicy.resolveTransitionReservationWidth(
+                    val oldWidth = CcReservationPolicy.resolveReservationWidth(
                         compactWidthPx = compactWidth,
                         spans = spans,
                         progress = progress,
                     )
-                    val newWidth = CcReservationPolicy.resolveTransitionReservationWidth(
+                    val newWidth = CcReservationPolicy.resolveReservationWidth(
                         compactWidthPx = compactWidth,
                         spans = refreshed,
                         progress = progress,
@@ -2506,7 +2506,7 @@ internal object CcTransitionOwner {
                     spans = refreshed
                 }
             }
-            val baseWidth = CcReservationPolicy.resolveTransitionReservationWidth(
+            val baseWidth = CcReservationPolicy.resolveReservationWidth(
                 compactWidthPx = compactWidth,
                 spans = spans,
                 progress = progress,

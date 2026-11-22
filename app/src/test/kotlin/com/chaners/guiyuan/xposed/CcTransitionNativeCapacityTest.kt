@@ -21,7 +21,7 @@ class CcTransitionNativeCapacityTest {
             ),
         )
         fun width(spans: List<CcReservationPolicy.ReservationSpan>, p: Float) =
-            CcReservationPolicy.resolveTransitionReservationWidth(
+            CcReservationPolicy.resolveReservationWidth(
                 compactWidthPx = compact, spans = spans, progress = p,
             )
         val held = 0.6f
@@ -72,7 +72,7 @@ class CcTransitionNativeCapacityTest {
         assertEquals(
             10,
             CcReservationPolicy
-                .resolveTransitionReservationWidth(
+                .resolveReservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
                     progress = 0f,
@@ -81,7 +81,7 @@ class CcTransitionNativeCapacityTest {
         assertEquals(
             20,
             CcReservationPolicy
-                .resolveTransitionReservationWidth(
+                .resolveReservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
                     progress = 0.5f,
@@ -90,7 +90,7 @@ class CcTransitionNativeCapacityTest {
         assertEquals(
             30,
             CcReservationPolicy
-                .resolveTransitionReservationWidth(
+                .resolveReservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
                     progress = 1f,
@@ -99,7 +99,7 @@ class CcTransitionNativeCapacityTest {
     }
 
     @Test
-    fun totalWidthInterpolationAvoidsOverlappingSpanDeadZone() {
+    fun latentTargetOnlyReservesSpaceAsItEntersTheNativePeerSide() {
         val spans =
             listOf(
                 CcReservationPolicy.ReservationSpan(
@@ -110,23 +110,11 @@ class CcTransitionNativeCapacityTest {
                 ),
             )
 
-        val oldGeometryUnion =
-            CcReservationPolicy.resolveReservationWidth(
-                compactWidthPx = 105,
-                spans = spans,
-                progress = 0.25f,
-            )
-        val transitionWidth =
-            CcReservationPolicy
-                .resolveTransitionReservationWidth(
-                    compactWidthPx = 105,
-                    spans = spans,
-                    progress = 0.25f,
-                )
-
-        assertEquals(105, oldGeometryUnion)
-        assertTrue(transitionWidth > 105)
-        assertTrue(transitionWidth < 180)
+        // A future FINAL destination is not current native FAKE occupancy.
+        assertEquals(105, CcReservationPolicy.resolveReservationWidth(105, spans, 0f))
+        assertEquals(105, CcReservationPolicy.resolveReservationWidth(105, spans, 0.25f))
+        assertEquals(135, CcReservationPolicy.resolveReservationWidth(105, spans, 0.75f))
+        assertEquals(180, CcReservationPolicy.resolveReservationWidth(105, spans, 1f))
     }
 
     @Test
@@ -142,7 +130,7 @@ class CcTransitionNativeCapacityTest {
             )
         val semantic =
             CcReservationPolicy
-                .resolveTransitionReservationWidth(
+                .resolveReservationWidth(
                     compactWidthPx = 105,
                     spans = spans,
                     progress = 0.25f,
