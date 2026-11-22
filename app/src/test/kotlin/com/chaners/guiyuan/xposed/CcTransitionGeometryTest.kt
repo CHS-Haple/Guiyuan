@@ -40,6 +40,29 @@ class CcTransitionGeometryTest {
     }
 
     @Test
+    fun settledNativeFakeHostReflowRecapturesCachedCarrierOffset() {
+        val policy = CcCarrierGeometryPolicy
+        assertFalse(policy.shouldRecaptureFakeRootOffset(587, 1361, true))
+        assertFalse(policy.shouldRecaptureFakeRootOffset(587, 0, false))
+        assertFalse(policy.shouldRecaptureFakeRootOffset(587, 587, false))
+        assertTrue(policy.shouldRecaptureFakeRootOffset(587, 1361, false))
+        assertTrue(policy.shouldRecaptureFakeRootOffset(null, 587, false))
+        assertTrue(policy.shouldRecaptureFakeRootOffset(1361, 587, false))
+
+        val carrier = floatArrayOf(180f, 70f, 105f, 0f, 0f, 108f)
+        val fakeRoot = floatArrayOf(100f, 70f, 587f, 0f, 0f, 108f)
+        val stale = CcTransitionSpatialPolicy.rootAnchoredCarrier(
+            carrier = carrier, root = fakeRoot, rootRelativeX = 30f,
+        )
+        val corrected = CcTransitionSpatialPolicy.rootAnchoredCarrier(
+            carrier = carrier, root = fakeRoot,
+            rootRelativeX = carrier[0] - fakeRoot[0],
+        )
+        assertEquals(130f, stale[0], 0.0001f)
+        assertEquals(180f, corrected[0], 0.0001f)
+    }
+
+    @Test
     fun nativeWifiReflowUsesLastCoherentBatteryRelativeTarget() {
         val normalWifi = floatArrayOf(1195.5f, 240f, 75f, 0f, 0f, 75f)
         val battery = floatArrayOf(1330.5f, 240f, 135f, 0f, 0f, 169f)

@@ -77,9 +77,10 @@ execution ownership is in [architecture](../architecture/README.md).
   A capped native peer reservation and a requested animation span are
   **not** interchangeable: the currently applied width gates some latent
   reveals, but does not yet certify the whole transition envelope. A
-  session-cached FAKE carrier-root offset may also differ from the live
-  offset after an in-session reflow; the actual mismatch has not been
-  established in the reported frame. The user's ROM 4.0.4.0.D02 reports
+  session-cached FAKE carrier-root offset is now recaptured only after a
+  completed native FAKE-host width reflow; an unfinished layout and peer-only
+  relayout retain the previous motion anchor. The specific device-frame
+  mismatch remains unverified. The user's ROM 4.0.4.0.D02 reports
   SystemUI 17.03.260226.r, but exact installed-binary parity with the
   ROM403 reference and compositor frame order are unverified.
   Preserve separate native owner/writer/lifecycle semantics, remove rejected

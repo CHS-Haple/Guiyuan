@@ -13,6 +13,16 @@ internal object CcCarrierGeometryPolicy {
         capturedWidth > 0 && capturedHeight > 0 &&
             capturedWidth == liveWidth && capturedHeight == liveHeight
 
+    // Only a completed SystemUI FAKE-host width epoch can replace the
+    // carrier-to-root anchor. A peer-row-only relayout keeps its held motion.
+    fun shouldRecaptureFakeRootOffset(
+        capturedHostWidthPx: Int?,
+        liveHostWidthPx: Int,
+        hostLayoutRequested: Boolean,
+    ): Boolean =
+        liveHostWidthPx > 0 && !hostLayoutRequested &&
+            capturedHostWidthPx != liveHostWidthPx
+
     fun composeSourceGeometry(
         positionAuthority: FloatArray,
         basisAuthority: FloatArray,

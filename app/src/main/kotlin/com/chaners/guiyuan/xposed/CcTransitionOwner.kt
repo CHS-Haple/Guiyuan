@@ -361,6 +361,7 @@ internal object CcTransitionOwner {
         private var lastChargeLayout: ChargeLayout? = null
         private var chargeRetarget: ChargeRetarget? = null
         private var fakeCarrierRootOffsetX: Float? = null
+        private var fakeCarrierHostWidthPx: Int? = null
         // Main-thread render scratch; returned geometries remain independent.
         private val sampleMatrix = Matrix()
         private val sampleValues = FloatArray(9)
@@ -674,6 +675,8 @@ internal object CcTransitionOwner {
                 } else null
             return "progress=$progress cachedCarrierRootX=$fakeCarrierRootOffsetX" +
                 " liveCarrierRootX=$liveRootOffsetX" +
+                " cachedFakeHostWidth=$fakeCarrierHostWidthPx" +
+                " liveFakeHostWidth=" + (fakeStatusIcons.parent as? View)?.width +
                 " nativeLayoutPending=${fakeStatusIcons.isLayoutRequested}," +
                 "${finalStatusIcons.isLayoutRequested}" +
                 " frozenReservationLayout=$reservationLayout" +
@@ -931,8 +934,19 @@ internal object CcTransitionOwner {
                         if (currentCarrier == null || fakeFrame == null) {
                             null
                         } else {
-                            // Battery remeasurement moves the fake icon row's edge,
-                            // even while its root and represented Wi-Fi stay in place.
+                            // Keep root-relative motion through peer-row relayout,
+                            // but recapture when SystemUI completes a new FAKE-host width.
+                            val fakeHost = fakeStatusIcons.parent as? View
+                            if (fakeHost != null && fakeHost.isAttachedToWindow &&
+                                CcCarrierGeometryPolicy.shouldRecaptureFakeRootOffset(
+                                    capturedHostWidthPx = fakeCarrierHostWidthPx,
+                                    liveHostWidthPx = fakeHost.width,
+                                    hostLayoutRequested = fakeHost.isLayoutRequested,
+                                )
+                            ) {
+                                fakeCarrierHostWidthPx = fakeHost.width
+                                fakeCarrierRootOffsetX = null
+                            }
                             val rootOffset =
                                 fakeCarrierRootOffsetX
                                     ?: (currentCarrier[0] - fakeFrame[0]).also {
