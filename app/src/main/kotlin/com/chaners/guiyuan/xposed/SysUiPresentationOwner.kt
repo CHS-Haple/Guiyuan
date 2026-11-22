@@ -1621,14 +1621,12 @@ internal object SysUiPresentationOwner {
         // commit CC cutover only at pre-draw, after the complete native layout.
         private var ccCutoverObserver: ViewTreeObserver? = null
         private var ccCutoverListener: ViewTreeObserver.OnPreDrawListener? = null
-        private var ccCutoverDraws = 0
 
         private fun releaseCcCutoverListener() {
             val observer = ccCutoverObserver
             val listener = ccCutoverListener
             ccCutoverObserver = null
             ccCutoverListener = null
-            ccCutoverDraws = 0
             if (observer?.isAlive == true && listener != null) {
                 observer.removeOnPreDrawListener(listener)
             }
@@ -1664,15 +1662,21 @@ internal object SysUiPresentationOwner {
                             draw = false
                         }
                     }
-                    if (ccCutoverListener != null && ++ccCutoverDraws >= 6) {
+                    // A completed native frame with no pending layout and an
+                    // invalid host contract cannot become ready by waiting longer.
+                    // Release the affected CC owner instead of leaving ignored
+                    // slots active with no replacement visual.
+                    val nativeHost = host.get()
+                    if (
+                        ccCutoverListener != null &&
+                        nativeHost?.isAttachedToWindow == true &&
+                        !nativeHost.isLayoutRequested &&
+                        !group.isLayoutRequested &&
+                        group.isLaidOut &&
+                        !nativeFakeCarrierLayoutSettled()
+                    ) {
                         releaseCcCutoverListener()
-                        onEvent(
-                            eventPrefix + " nativeCutover=deferred reason=native-layout-unsettled" +
-                                " hostSettled=" + nativeFakeCarrierLayoutSettled() +
-                                " iconsLayoutRequested=" + group.isLayoutRequested +
-                                " hostWidth=" + (host.get()?.width ?: -1) +
-                                " hostLayoutWidth=" + (host.get()?.layoutParams?.width ?: -1),
-                        )
+                        onFailNative("fake-native-carrier-layout-contract-invalid")
                     }
                 }
                 draw
