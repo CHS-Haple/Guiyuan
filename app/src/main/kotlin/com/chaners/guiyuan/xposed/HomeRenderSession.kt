@@ -291,8 +291,9 @@ internal object HomeRenderSession {
                 // Passive draw witness: the Overlay child may report isShown=false
                 // even when the native host actually dispatches its overlay.
                 onModelDrawn = { drawn ->
-                    if (drawn.charging != lastDrawnCharging ||
-                        drawn.batterySemanticState != lastDrawnBatterySemantic
+                    if (HomeRenderSession.current === this &&
+                        (drawn.charging != lastDrawnCharging ||
+                            drawn.batterySemanticState != lastDrawnBatterySemantic)
                     ) {
                         lastDrawnCharging = drawn.charging
                         lastDrawnBatterySemantic = drawn.batterySemanticState
