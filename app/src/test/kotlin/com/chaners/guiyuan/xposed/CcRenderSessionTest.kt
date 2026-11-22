@@ -93,4 +93,38 @@ class CcRenderSessionTest {
         )
     }
 
+
+    @Test
+    fun fakeVisualRetiresAtHomeCutoverWithoutRetiringNativePanelLease() {
+        assertTrue(
+            CcRenderSession.resolveFakeVisible(
+                nativeRequested = true,
+                projectionReady = true,
+                panelVisualOwner = true,
+            ),
+        )
+        // Native visible=true may outlive native fraction zero; it must not
+        // keep Guiyuan FAKE painting over the newly returned Home projection.
+        assertFalse(
+            CcRenderSession.resolveFakeVisible(
+                nativeRequested = true,
+                projectionReady = true,
+                panelVisualOwner = false,
+            ),
+        )
+        assertFalse(
+            CcRenderSession.resolveFakeVisible(
+                nativeRequested = false,
+                projectionReady = true,
+                panelVisualOwner = true,
+            ),
+        )
+        assertFalse(
+            CcRenderSession.resolveFakeVisible(
+                nativeRequested = true,
+                projectionReady = false,
+                panelVisualOwner = true,
+            ),
+        )
+    }
 }

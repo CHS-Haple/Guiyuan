@@ -143,6 +143,11 @@ internal object HomeRenderSession {
     @Synchronized
     fun isOverlayShown(): Boolean = current?.isOverlayShown() == true
 
+    // Native owner readiness is insufficient during scene return: the Home
+    // projection must also have valid live content and actual visibility.
+    @Synchronized
+    fun canDrawHome(): Boolean = current?.canDrawHome() == true
+
     @Synchronized
     fun visibilityWitness(): String = current?.visibilityWitness() ?: "home-session-unbound"
 
@@ -471,6 +476,17 @@ internal object HomeRenderSession {
         }
 
         fun isOverlayShown(): Boolean = probeView.isShown
+
+        fun canDrawHome(): Boolean =
+            featureEnabled &&
+                controlCenterAllowsHome &&
+                !nativeHandoffActive &&
+                modelReady &&
+                tintReady &&
+                layoutReady &&
+                probeView.visibility == View.VISIBLE &&
+                host.get()?.isAttachedToWindow == true &&
+                host.get()?.isShown == true
 
         fun visibilityWitness(): String {
             val root = host.get()

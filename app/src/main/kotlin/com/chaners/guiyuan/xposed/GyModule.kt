@@ -1687,6 +1687,13 @@ class GyModule : XposedModule() {
         val changed = yielded != ccHomeYieldedToPanel
         ccHomeYieldedToPanel = yielded
         HomeRenderSession.onControlCenterAuthorityChanged(!yielded)
+        // The FAKE native lifetime and Guiyuan FAKE visual lifetime differ:
+        // native CC may stay visible after fraction zero. Keep its ignored
+        // slots until native hidden, but never paint two Guiyuan owners once
+        // a live Home projection can draw.
+        CcRenderSession.setPanelVisualOwner(
+            yielded || !HomeRenderSession.canDrawHome(),
+        )
         if (changed) {
             // One record per actual ownership edge, even if detailed diagnostics
             // were not active during the short native-return interval.
@@ -4417,6 +4424,9 @@ class GyModule : XposedModule() {
             val visibilityBeforeRelease = HomeRenderSession.visibilityWitness()
             HomeRenderSession.setNativeHandoffActive(true)
             SysUiPresentationOwner.deactivate("readiness-lost:" + source)
+            if (controlCenterSceneVisible) {
+                reconcileCcHomeAuthority("home-readiness-lost")
+            }
             logDiagnostic(
                 level = Log.INFO,
                 event = "presentation.cutover",
@@ -4435,6 +4445,9 @@ class GyModule : XposedModule() {
         when (val result = SysUiPresentationOwner.activate(host)) {
             is SysUiPresentationOwner.Result.Active -> {
                 HomeRenderSession.setNativeHandoffActive(false)
+                if (controlCenterSceneVisible) {
+                    reconcileCcHomeAuthority("home-readiness-combined")
+                }
                 logDiagnostic(
                     level = Log.INFO,
                     event = "presentation.cutover",

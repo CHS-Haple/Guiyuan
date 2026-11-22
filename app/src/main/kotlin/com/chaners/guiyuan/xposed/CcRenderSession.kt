@@ -31,6 +31,9 @@ internal object CcRenderSession {
     private var pendingPrearm: PendingPrearm? = null
     private var sceneEligible = false
     private var sourceScene = SourceScene.UNKNOWN
+    // This affects only the FAKE RenderView. Native QS slot masks stay owned
+    // by the actual onVisibleChanged lifecycle until SystemUI retires them.
+    private var panelVisualOwner = false
 
     internal data class AttachFailure(
         val reason: String,
@@ -146,6 +149,7 @@ internal object CcRenderSession {
                 onProjectionReadinessChanged = onProjectionReadinessChanged,
                 initialSceneEligible = sceneEligible,
                 initialSourceScene = sourceScene,
+                initialPanelVisualOwner = panelVisualOwner,
             )
         current = session
         return try {
@@ -174,6 +178,19 @@ internal object CcRenderSession {
 
     @Synchronized
     fun visualState(): String? = current?.visualState()
+
+    @Synchronized
+    fun setPanelVisualOwner(owned: Boolean) {
+        if (panelVisualOwner == owned) return
+        panelVisualOwner = owned
+        current?.setPanelVisualOwner(owned)
+    }
+
+    internal fun resolveFakeVisible(
+        nativeRequested: Boolean,
+        projectionReady: Boolean,
+        panelVisualOwner: Boolean,
+    ): Boolean = nativeRequested && projectionReady && panelVisualOwner
 
     @Synchronized
     fun setRequestedVisible(visible: Boolean): Boolean =
@@ -571,6 +588,7 @@ internal object CcRenderSession {
         private val onProjectionReadinessChanged: (Boolean) -> Unit,
         initialSceneEligible: Boolean,
         initialSourceScene: SourceScene,
+        initialPanelVisualOwner: Boolean,
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
         private val statusBarArea = WeakReference(statusBarArea)
@@ -586,6 +604,7 @@ internal object CcRenderSession {
         private var currentModel: RenderModel? = null
         private var currentTint: TintState? = null
         private var sourceScene = initialSourceScene
+        private var panelVisualOwner = initialPanelVisualOwner
         private var visual = VisualPrefsOwner.current()
         private var transitionStateVersion = 0L
         private var cachedTransitionSourceSnapshot: TransitionSourceSnapshot? = null
@@ -717,6 +736,7 @@ internal object CcRenderSession {
                 ":hostShown=" + (host.get()?.isShown ?: "unavailable") +
                 ":hostAlpha=" + (host.get()?.alpha ?: "unavailable") +
                 ":sourceScene=" + sourceScene +
+                ":panelVisualOwner=" + panelVisualOwner +
                 ":effectiveTint=" + (currentTint?.appliedTint?.let(::tintHexDigits) ?: "none") +
                 ":homeTint=" + (HomeRenderSession.currentTintState()?.appliedTint?.let(::tintHexDigits) ?: "none") +
                 ":nativeFakeTint=" + (battery.get()
@@ -888,6 +908,12 @@ internal object CcRenderSession {
             refreshTint()
         }
 
+        fun setPanelVisualOwner(owned: Boolean) {
+            if (panelVisualOwner == owned) return
+            panelVisualOwner = owned
+            applyVisibility()
+        }
+
         fun setSceneEligible(eligible: Boolean) {
             sceneEligible = eligible
             if (!eligible) {
@@ -1046,8 +1072,13 @@ internal object CcRenderSession {
         }
 
         private fun applyVisibility() {
-            val visible = requestedVisible && projectionReady()
-            renderView.updateRenderVisibility(visible)
+            renderView.updateRenderVisibility(
+                resolveFakeVisible(
+                    nativeRequested = requestedVisible,
+                    projectionReady = projectionReady(),
+                    panelVisualOwner = panelVisualOwner,
+                ),
+            )
         }
 
         private fun dispatchReadiness(source: String) {
