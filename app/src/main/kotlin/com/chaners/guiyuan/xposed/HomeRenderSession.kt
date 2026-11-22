@@ -295,7 +295,7 @@ internal object HomeRenderSession {
                         modelReady &&
                         tintReady &&
                         layoutReady &&
-                        host.get()?.isShown == true
+                        this@Session.host.get()?.isShown == true
                     ) {
                         homeFrameDrawnAfterPanel = true
                         onHomeFrameDrawn?.invoke()
