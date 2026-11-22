@@ -8,6 +8,7 @@ import org.luckypray.dexkit.DexKitBridge
 internal object SysUiMobileCollectorLocator {
     private const val BINDER_PACKAGE = "com.android.systemui.statusbar.pipeline.mobile.ui.binder"
     private const val CLASS_ID_FIELD = "\$r8\$classId"
+    private const val OBJECT_TYPE_NAME = "java.lang.Object"
 
     enum class Role(val viewField: String, val methodName: String, val hasClassId: Boolean) {
         SIGNAL("\$mobile", "emit", true),
@@ -71,11 +72,11 @@ internal object SysUiMobileCollectorLocator {
                 methods {
                     add {
                         name = role.methodName
-                        returnType = "java.lang.Object"
+                        returnType = OBJECT_TYPE_NAME
                         if (role.methodName == "emit") {
-                            paramTypes("java.lang.Object", "kotlin.coroutines.Continuation")
+                            paramTypes(OBJECT_TYPE_NAME, "kotlin.coroutines.Continuation")
                         } else {
-                            paramTypes("java.lang.Object")
+                            paramTypes(OBJECT_TYPE_NAME)
                         }
                     }
                 }
@@ -112,12 +113,16 @@ internal object SysUiMobileCollectorLocator {
             ) {
                 false
             } else {
-                val params = if (role.methodName == "emit") {
-                    arrayOf(Any::class.java, Class.forName("kotlin.coroutines.Continuation", false, classLoader))
+                val method = if (role.methodName == "emit") {
+                    candidate.getDeclaredMethod(
+                        role.methodName,
+                        Any::class.java,
+                        Class.forName("kotlin.coroutines.Continuation", false, classLoader),
+                    )
                 } else {
-                    arrayOf(Any::class.java)
+                    candidate.getDeclaredMethod(role.methodName, Any::class.java)
                 }
-                candidate.getDeclaredMethod(role.methodName, *params).returnType == Any::class.java
+                method.returnType == Any::class.java
             }
         } catch (_: ReflectiveOperationException) {
             false

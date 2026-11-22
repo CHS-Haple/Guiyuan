@@ -46,9 +46,11 @@ class SysUiMobileCollectorLocatorTest {
 
     @Test
     fun sharedGeneratedClassCannotClaimMultipleCollectorRoles() {
-        assertTrue(locator.hasDistinctOwners(listOf("originalSignal", "activityResource", "visibility")))
-        assertFalse(locator.hasDistinctOwners(listOf("originalSignal", "generated", "generated")))
-        assertFalse(locator.hasDistinctOwners(listOf("originalSignal", "originalSignal")))
+        val signal = "originalSignal"
+        val generated = "generated"
+        assertTrue(locator.hasDistinctOwners(listOf(signal, "activityResource", "visibility")))
+        assertFalse(locator.hasDistinctOwners(listOf(signal, generated, generated)))
+        assertFalse(locator.hasDistinctOwners(listOf(signal, signal)))
     }
 
     @Test
