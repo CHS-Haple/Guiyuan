@@ -38,6 +38,23 @@ class HomeRenderSessionTest {
     }
 
     @Test
+    fun nativeIntermediateLayoutDoesNotDiscardVerifiedHomeOwnership() {
+        val retire = HomeRenderSession::shouldRetireUnresolvedAnchor
+        assertFalse(retire(true, true, true, false, false))
+        assertFalse(retire(true, true, true, false, true))
+        assertFalse(retire(true, true, true, true, true))
+        assertFalse(retire(false, true, true, true, false))
+    }
+
+    @Test
+    fun completedNativeFrameAndRealDetachReleaseUnsafeHomeOwnership() {
+        val retire = HomeRenderSession::shouldRetireUnresolvedAnchor
+        assertTrue(retire(true, true, true, true, false))
+        assertTrue(retire(true, false, true, false, true))
+        assertTrue(retire(true, true, false, false, true))
+    }
+
+    @Test
     fun overlayVisibilityRequiresControlCenterOwnership() {
         assertTrue(
             HomeRenderSession.resolveOverlayVisible(
