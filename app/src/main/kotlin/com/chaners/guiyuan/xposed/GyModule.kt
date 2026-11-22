@@ -1669,7 +1669,9 @@ class GyModule : XposedModule() {
         val changed = yielded != ccHomeYieldedToProjection
         ccHomeYieldedToProjection = yielded
         HomeRenderSession.onControlCenterAuthorityChanged(!yielded)
-        if (changed && deepDiagnosticsEnabled) {
+        if (changed) {
+            // One record per actual ownership edge, even if detailed diagnostics
+            // were not active during the short native-return interval.
             logDiagnostic(
                 level = Log.INFO,
                 event = "presentation.handoff",
@@ -1680,6 +1682,8 @@ class GyModule : XposedModule() {
                 "nativeFraction" to ccExpansion,
                 "projectionReady" to ccProjectionReadyForHandoff,
                 "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
+                "homeClaimed" to SysUiPresentationOwner.homeClaimed(),
+                "homeCarrierShown" to SysUiPresentationOwner.homeCarrierVisible(),
             )
         }
     }
