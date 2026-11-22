@@ -4,6 +4,7 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
@@ -928,7 +929,7 @@ internal object SysUiPresentationOwner {
                 batteryCarrier = batteryCarrier,
             ) == true
         if (!sameHost && (host.width <= 0 || host.layoutParams?.width != host.width)) {
-            // The fake carrier must finish its native layout before we lease its width.
+            // The fake carrier must finish the native width layout before projection.
             return Result.Failure("fake-carrier-native-layout-pending", retryAfterLayout = true)
         }
         if (sameHost) {
@@ -1615,6 +1616,78 @@ internal object SysUiPresentationOwner {
                 }
             }
 
+        // One native traversal is needed after applying persistent ignored slots.
+        // A child's onLayout may finish before its parent's isLayoutRequested clears;
+        // commit CC cutover only at pre-draw, after the complete native layout.
+        private var ccCutoverObserver: ViewTreeObserver? = null
+        private var ccCutoverListener: ViewTreeObserver.OnPreDrawListener? = null
+        private var ccCutoverDraws = 0
+
+        private fun releaseCcCutoverListener() {
+            val observer = ccCutoverObserver
+            val listener = ccCutoverListener
+            ccCutoverObserver = null
+            ccCutoverListener = null
+            ccCutoverDraws = 0
+            if (observer?.isAlive == true && listener != null) {
+                observer.removeOnPreDrawListener(listener)
+            }
+        }
+
+        private fun awaitCcNativeLayout(group: ViewGroup) {
+            if (
+                surfaceName != CONTROL_CENTER_FAKE_SURFACE ||
+                !active || !started || !deferVisualMaskUntilLayout ||
+                compactLayoutReady || nativeLayoutOwnershipDeferred ||
+                ccCutoverListener != null
+            ) return
+            val observer = group.viewTreeObserver
+            if (!observer.isAlive) {
+                onEvent(eventPrefix + " nativeCutover=deferred reason=view-tree-unavailable")
+                return
+            }
+
+            val listener = ViewTreeObserver.OnPreDrawListener {
+                var draw = true
+                afterNativeCallback(this, "cc-native-cutover-pre-draw") {
+                    if (!active || !started || compactLayoutReady || nativeLayoutOwnershipDeferred) {
+                        releaseCcCutoverListener()
+                    } else if (shouldAdoptNativeLayout(group)) {
+                        if (!syncEndReservation()) {
+                            releaseCcCutoverListener()
+                        } else if (shouldAdoptNativeLayout(group)) {
+                            releaseCcCutoverListener()
+                            val masked = refreshClipMasks()
+                            onNativeLayoutCompleted(masked)
+                        } else if (group.isLayoutRequested) {
+                            // An end-padding write requested a second native measure pass.
+                            draw = false
+                        }
+                    }
+                    if (ccCutoverListener != null && ++ccCutoverDraws >= 6) {
+                        releaseCcCutoverListener()
+                        onEvent(
+                            eventPrefix + " nativeCutover=deferred reason=native-layout-unsettled" +
+                                " hostSettled=" + nativeFakeCarrierLayoutSettled() +
+                                " iconsLayoutRequested=" + group.isLayoutRequested +
+                                " hostWidth=" + (host.get()?.width ?: -1) +
+                                " hostLayoutWidth=" + (host.get()?.layoutParams?.width ?: -1),
+                        )
+                    }
+                }
+                draw
+            }
+            ccCutoverObserver = observer
+            ccCutoverListener = listener
+            observer.addOnPreDrawListener(listener)
+            if (!group.isLayoutRequested) group.requestLayout()
+            onEvent(
+                eventPrefix + " nativeCutover=await-native-layout" +
+                    " iconsLayoutRequested=" + group.isLayoutRequested +
+                    " hostSettled=" + nativeFakeCarrierLayoutSettled(),
+            )
+        }
+
         fun matches(
             host: ViewGroup,
             statusIcons: ViewGroup,
@@ -1735,11 +1808,12 @@ internal object SysUiPresentationOwner {
                     compactLayoutReady = false
                     return refreshClipMasks()
                 }
-                syncEndReservation()
+                if (!syncEndReservation()) return 0
                 if (isLayoutCutoverReady()) {
                     layoutReadyCallback = null
                     return refreshClipMasks()
                 }
+                statusIcons.get()?.let(::awaitCcNativeLayout)
                 return if (
                     deferVisualMaskUntilLayout && preMaskBeforeLayout
                 ) {
@@ -1807,6 +1881,7 @@ internal object SysUiPresentationOwner {
                             "native-until-native-layout"
                         },
                 )
+                awaitCcNativeLayout(group)
                 return masked
             }
 
@@ -1949,6 +2024,7 @@ internal object SysUiPresentationOwner {
             deferVisualMaskUntilLayout = false
 
             val failures = ArrayList<Throwable>(1)
+            releaseAttempt(failures) { releaseCcCutoverListener() }
             releaseAttempt(failures) { host.get()?.removeOnAttachStateChangeListener(this) }
             releaseAttempt(failures) {
                 battery.get()?.removeOnLayoutChangeListener(reservationWidthListener)
@@ -2431,9 +2507,14 @@ internal object SysUiPresentationOwner {
                             " paddingEndDelta=" + reservationDelta +
                             " basePaddingEnd=" + baseline.end +
                             LOG_APPLIED_PADDING_END + target.end +
-                            " nativeFakeCarrierWidth=" + (hostView.layoutParams?.width ?: -1) +
-                            " carrierAuthority=battery_icon_container " +
-                            "owner=systemui-fake-width+statusIcons-paddingEnd",
+                            (if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
+                                " nativeFakeCarrierWidth=" + (hostView.layoutParams?.width ?: -1) +
+                                    " carrierAuthority=battery_icon_container " +
+                                    "owner=systemui-fake-width+statusIcons-paddingEnd"
+                            } else {
+                                " carrierAuthority=battery_icon_container " +
+                                    "owner=statusIcons-paddingEnd"
+                            }),
                     )
                 }
             }
@@ -2573,6 +2654,7 @@ internal object SysUiPresentationOwner {
                 return
             }
             if (compactLayoutReady) return
+            releaseCcCutoverListener()
             compactLayoutReady = true
             val callback = layoutReadyCallback
             layoutReadyCallback = null
