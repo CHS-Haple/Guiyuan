@@ -120,7 +120,7 @@ class CcTransitionMorphGeometryTest {
         for (progress in listOf(0.57f, 0.72f, 1f)) {
             for ((source, target) in listOf(top to topTarget, bottom to bottomTarget)) {
                 val actual = frame(source, target, progress)
-                val single = CcTransitionPolicy.interpolateSimilarityGeometry(
+                val single = CcTransitionMorphPolicy.interpolateSimilarityGeometry(
                     source = source,
                     target = target,
                     progress = progress,
@@ -191,7 +191,7 @@ class CcTransitionMorphGeometryTest {
         assertEquals(ParticipantVisualSnapshot.RowShape.DOTS, rows.bottomShape)
 
         val bounds = StatusPainter.TransitionBounds(0f, 0f, 80f, 70f)
-        val anchors = CcTransitionPolicy.aggregateAnchors(
+        val anchors = CcTransitionSpatialPolicy.aggregateAnchors(
             bounds = bounds,
             rows = rows,
             widthCompensation = 1f,

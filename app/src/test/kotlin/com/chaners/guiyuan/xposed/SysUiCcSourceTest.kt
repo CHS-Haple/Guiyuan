@@ -330,7 +330,7 @@ class SysUiCcGeometryTest {
         val source = floatArrayOf(10f, 20f, 60f, 0f, 0f, 30f)
         val target = floatArrayOf(110f, 220f, 100f, 0f, 0f, 100f)
         val end =
-            CcTransitionPolicy.interpolateSimilarityGeometry(
+            CcTransitionMorphPolicy.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -350,7 +350,7 @@ class SysUiCcGeometryTest {
         val source = floatArrayOf(0f, 0f, 10f, 0f, 0f, 10f)
         val target = floatArrayOf(20f, 40f, 20f, 0f, 0f, 20f)
         val mid =
-            CcTransitionPolicy.interpolateGeometry(
+            CcTransitionMorphPolicy.interpolateGeometry(
                 source,
                 target,
                 0.5f,

@@ -51,7 +51,7 @@ class CcTransitionSignalScaleTest {
         val target = transitionGeometry(width = 30f, height = 20f)
 
         val result =
-            CcTransitionPolicy.interpolateSimilarityGeometry(
+            CcTransitionMorphPolicy.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -68,7 +68,7 @@ class CcTransitionSignalScaleTest {
         val target = transitionGeometry(width = 20f, height = 20f)
 
         val result =
-            CcTransitionPolicy.interpolateSimilarityGeometry(
+            CcTransitionMorphPolicy.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = 1f,

@@ -82,7 +82,7 @@ internal object CcCarrierGeometryPolicy {
                 sourceCarrier = sourceCarrier,
                 currentCarrier = currentCarrier,
             )
-        return CcTransitionPolicy.interpolateGeometry(
+        return CcTransitionMorphPolicy.interpolateGeometry(
             source = carriedSource,
             target = target,
             progress = CcTransitionPolicy.geometryProgress(progress),

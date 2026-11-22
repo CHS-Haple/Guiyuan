@@ -898,7 +898,7 @@ internal object CcTransitionOwner {
                             CarrierFrames(
                                 source = frozen.motionCarrierGeometry,
                                 current =
-                                    CcTransitionPolicy.rootAnchoredCarrier(
+                                    CcTransitionSpatialPolicy.rootAnchoredCarrier(
                                         carrier = currentCarrier,
                                         root = fakeFrame,
                                         rootRelativeX = rootOffset,
@@ -1087,7 +1087,7 @@ internal object CcTransitionOwner {
                                     anchor.slot === witness.slotView &&
                                         anchor.optical === witness.opticalView
                                 }?.let { anchor ->
-                                    CcTransitionPolicy.followBatteryAnchor(
+                                    CcTransitionSpatialPolicy.followBatteryAnchor(
                                         target = anchor.target,
                                         previousBattery = anchor.battery,
                                         currentBattery = battery,
@@ -1524,7 +1524,7 @@ internal object CcTransitionOwner {
                         // FINAL may bind after the source changes; FAKE alpha owns the handoff.
                         1f
                     } else {
-                        CcTransitionPolicy.unmatchedExitOpacity(motionProgress)
+                        CcTransitionRevealPolicy.unmatchedExitOpacity(motionProgress)
                     }
                 if (componentVisibleFraction <= 0f || opacity <= 0f) return@forEach
                 val matrixBounds =
@@ -1590,7 +1590,7 @@ internal object CcTransitionOwner {
                             sourceView.layoutDirection != View.LAYOUT_DIRECTION_RTL
                         }
                     val clip =
-                        CcTransitionPolicy.horizontalClipBounds(
+                        CcTransitionClipPolicy.horizontalClipBounds(
                             bounds = matrixBounds,
                             visibleFraction = componentVisibleFraction,
                             anchorRight = clipAnchorRight,
@@ -1628,7 +1628,7 @@ internal object CcTransitionOwner {
                             StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL &&
                             targetGeometry != null
                         ) {
-                            CcTransitionPolicy.relativeGeometryWidth(
+                            CcTransitionSpatialPolicy.relativeGeometryWidth(
                                 target = targetGeometry,
                                 current = sourceGeometry,
                             )
@@ -1641,7 +1641,7 @@ internal object CcTransitionOwner {
                             StatusPainter.TransitionShapePolicy.MOBILE_SIGNAL &&
                             targetGeometry != null
                         ) {
-                            CcTransitionPolicy.relativeGeometryHeight(
+                            CcTransitionSpatialPolicy.relativeGeometryHeight(
                                 target = targetGeometry,
                                 current = sourceGeometry,
                             )
@@ -1748,7 +1748,7 @@ internal object CcTransitionOwner {
             bounds: StatusPainter.TransitionBounds,
             visibleFraction: Float,
         ): FloatArray? =
-            CcTransitionPolicy.horizontalClipBounds(
+            CcTransitionClipPolicy.horizontalClipBounds(
                 bounds = bounds,
                 visibleFraction = visibleFraction,
                 anchorRight =
@@ -1807,12 +1807,12 @@ internal object CcTransitionOwner {
                     ) ?: return@forEach
                 val targetBars = mobileTargetBars(witness)
                 val targetWidthRatio =
-                    CcTransitionPolicy.relativeGeometryWidth(
+                    CcTransitionSpatialPolicy.relativeGeometryWidth(
                         target = targetGeometry,
                         current = sourceGeometry,
                     )
                 val targetHeightRatio =
-                    CcTransitionPolicy.relativeGeometryHeight(
+                    CcTransitionSpatialPolicy.relativeGeometryHeight(
                         target = targetGeometry,
                         current = sourceGeometry,
                     )
@@ -1822,7 +1822,7 @@ internal object CcTransitionOwner {
                         targetHeightRatio = targetHeightRatio,
                     )
                 val clipBounds =
-                    CcTransitionPolicy.expandedClipBounds(
+                    CcTransitionClipPolicy.expandedClipBounds(
                         bounds = mobileSpec.sourceBounds,
                         widthScale =
                             MobileSignalTargetGeometry
@@ -2095,7 +2095,7 @@ internal object CcTransitionOwner {
         private fun coherentWifiLayout(root: View, slot: View): Boolean {
             val wifi = sample(slot, root) ?: return false
             val battery = sample(finalBattery, root) ?: return false
-            return CcTransitionPolicy.wifiBeforeBattery(
+            return CcTransitionSpatialPolicy.wifiBeforeBattery(
                 wifi = wifi,
                 battery = battery,
                 rtl = finalStatusIcons.layoutDirection == View.LAYOUT_DIRECTION_RTL,
@@ -2178,7 +2178,7 @@ internal object CcTransitionOwner {
                     currentCarrier = frames.current,
                     progress = progress,
                 )
-            } ?: CcTransitionPolicy.interpolateGeometry(
+            } ?: CcTransitionMorphPolicy.interpolateGeometry(
                 source = source,
                 target = target,
                 progress = CcTransitionPolicy.geometryProgress(progress),
@@ -2200,7 +2200,7 @@ internal object CcTransitionOwner {
                     progress = progress,
                     scalePolicy = scalePolicy,
                 )
-            } ?: CcTransitionPolicy.interpolateSimilarityGeometry(
+            } ?: CcTransitionMorphPolicy.interpolateSimilarityGeometry(
                 source = source,
                 target = target,
                 progress = CcTransitionPolicy.geometryProgress(progress),
@@ -2252,13 +2252,13 @@ internal object CcTransitionOwner {
                     ?: return 0f
 
             val reservationProgress =
-                CcTransitionPolicy.latentReservationProgress(
+                CcTransitionRevealPolicy.latentReservationProgress(
                     compactWidthPx = compactWidth,
                     currentReservationPx = currentReservation,
                     requiredReservationPx = requiredReservation,
                     visualWidthPx = targetWidth,
                 )
-            return CcTransitionPolicy.latentRevealVisibleFraction(
+            return CcTransitionRevealPolicy.latentRevealVisibleFraction(
                 current = currentGeometry,
                 target = targetGeometry,
                 visualExtent = visualExtent,
@@ -2951,7 +2951,7 @@ internal object CcTransitionOwner {
                     target.preferredChildEntries.isNotEmpty() &&
                     optical == null
                 ) {
-                    CcTransitionPolicy.semanticFallbackBounds(
+                    CcTransitionClipPolicy.semanticFallbackBounds(
                         preferredChildEntries = target.preferredChildEntries,
                         isRtl =
                             slotRoot.layoutDirection ==
