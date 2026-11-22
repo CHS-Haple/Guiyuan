@@ -121,12 +121,12 @@ execution ownership is in [architecture](../architecture/README.md).
   icons. The existing Home pre-draw recheck was gated by
   `!nativeHandoffActive`; once the invalid layout had triggered native
   handoff, this blocked same-frame re-acquisition until another layout
-  callback. B1905 separates provisional native-layout events from the
+  callback. B1906 separates provisional native-layout events from the
   complete pre-draw boundary and permits recovery even during native
   handoff. Detached hosts and a genuinely invalid settled native frame still
   release Home, without width/alpha changes, polling, timers or new hooks.
   The revised policy and a bounded readiness-driven native-return diagnostic
-  are source-tested; B1905 on-device confirmation remains required.
+  are source-tested; B1906 on-device confirmation remains required.
 
 
   B1903 screenshot at 00:12 while charging shows the combined ring/readout
@@ -136,7 +136,7 @@ execution ownership is in [architecture](../architecture/README.md).
   Home owner reacquired, and the original native padding owner reconciled
   an end delta of -30 px. B1902's Home anchor uses the live *core left*
   coordinate; when the outer battery widens, that left coordinate can
-  shift left with the expanded content. B1905 now preserves the native
+  shift left with the expanded content. B1906 now preserves the native
   core-based anchor when outer/core widths agree, and aligns the compact
   105 px visual to the measured native outer battery right edge only
   when that outer width truly expands; it does not introduce a user
@@ -150,7 +150,7 @@ execution ownership is in [architecture](../architecture/README.md).
   native measure; it now defers this check until the native peer's frame
   settles, retaining strict Fail native if a measured settled overflow
   genuinely persists. These corrections are backed by source and
-  reproducible diagnostics but still require one B1905 signed-device test.
+  reproducible diagnostics but still require one B1906 signed-device test.
 
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
