@@ -200,7 +200,7 @@ internal object SysUiBatterySource {
             val state = readState(iconView) ?: return
             if (levelCallbackCharging != null && levelCallbackCharging != state.charging) {
                 report {
-                    "batteryLevelOrdering source=" + sourceMethod +
+                    "batteryLevelParameterMismatch source=" + sourceMethod +
                         " nativeChargingArgument=" + levelCallbackCharging +
                         " observedIconCharging=" + state.charging +
                         " iconIdentity=" + System.identityHashCode(iconView)
@@ -277,6 +277,11 @@ internal object SysUiBatterySource {
                 .setId(hookId)
                 .intercept(
                     Hooker { chain ->
+                        // Capture the callback argument before native/other Hook work.
+                        val levelChargingAtEntry =
+                            if (method.name == BATTERY_LEVEL_METHOD_NAME) {
+                                optionalNativeRead { chain.args.getOrNull(2) as? Boolean }
+                            } else null
                         val result = chain.proceed()
                         val targetView =
                             if (hooksReady) optionalNativeRead { chain.thisObject as? View } else null
@@ -293,10 +298,7 @@ internal object SysUiBatterySource {
                                 publish(
                                     iconView = iconView,
                                     sourceMethod = method.declaringClass.simpleName + "." + method.name,
-                                    levelCallbackCharging =
-                                        if (method.name == BATTERY_LEVEL_METHOD_NAME) {
-                                            chain.args.getOrNull(2) as? Boolean
-                                        } else null,
+                                    levelCallbackCharging = levelChargingAtEntry,
                                 )
                             } catch (error: Throwable) {
                                 fallback("state", error)

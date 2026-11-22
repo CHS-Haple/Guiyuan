@@ -296,7 +296,10 @@ internal object HomeRenderSession {
                     ) {
                         lastDrawnCharging = drawn.charging
                         lastDrawnBatterySemantic = drawn.batterySemanticState
-                        onBatteryDrawn?.invoke(drawn, SystemClock.elapsedRealtime())
+                        val drawElapsedMs = SystemClock.elapsedRealtime()
+                        SysUiPresentationRuntime.emitPassiveDiagnostic {
+                            onBatteryDrawn?.invoke(drawn, drawElapsedMs)
+                        }
                     }
                 },
                 onDrawn = {

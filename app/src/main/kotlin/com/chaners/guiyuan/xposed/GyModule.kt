@@ -4361,7 +4361,7 @@ class GyModule : XposedModule() {
                         if (detailedDiagnosticsEnabled) {
                             logDiagnostic(
                                 level = Log.INFO,
-                                event = "battery.visualDraw",
+                                event = "battery.onDraw",
                                 component = "homeRenderer",
                                 state = if (model.charging) "charging" else "not-charging",
                                 "semantic" to model.batterySemanticState.name,
