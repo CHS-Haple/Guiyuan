@@ -8,6 +8,38 @@ import org.junit.Test
 
 class CcTransitionGeometryTest {
     @Test
+    fun rotationInvalidatesFrozenCcGeometryEvenWithSameNativeViewIdentities() {
+        assertTrue(
+            CcCarrierGeometryPolicy.sameNativeRootFrame(
+                capturedWidth = 1440,
+                capturedHeight = 3200,
+                liveWidth = 1440,
+                liveHeight = 3200,
+            ),
+        )
+        // The original CC session matched only the identities of its Views,
+        // so it could continue carrying portrait source frames into landscape.
+        assertFalse(
+            CcCarrierGeometryPolicy.sameNativeRootFrame(
+                capturedWidth = 1440,
+                capturedHeight = 3200,
+                liveWidth = 3200,
+                liveHeight = 1440,
+            ),
+        )
+        assertFalse(
+            CcCarrierGeometryPolicy.sameNativeRootFrame(
+                capturedWidth = 3200,
+                capturedHeight = 1440,
+                liveWidth = 1440,
+                liveHeight = 3200,
+            ),
+        )
+        assertFalse(CcCarrierGeometryPolicy.sameNativeRootFrame(0, 0, 1440, 3200))
+        assertTrue(CcCarrierGeometryPolicy.sameNativeRootFrame(3200, 1440, 3200, 1440))
+    }
+
+    @Test
     fun nativeWifiReflowUsesLastCoherentBatteryRelativeTarget() {
         val normalWifi = floatArrayOf(1195.5f, 240f, 75f, 0f, 0f, 75f)
         val battery = floatArrayOf(1330.5f, 240f, 135f, 0f, 0f, 169f)
