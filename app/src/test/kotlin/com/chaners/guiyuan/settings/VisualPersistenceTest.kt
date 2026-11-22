@@ -250,6 +250,40 @@ class VisualPersistenceTest {
     }
 
     @Test
+    fun everyBatterySlotReadsItsOwnModeAndColorKeys() {
+        for (slot in BatteryColorSlot.entries) {
+            val prefs = VisualTestPreferences()
+            val color = 0xFF123456.toInt()
+            prefs.edit()
+                .putString(batteryColorModeKey(slot), BatteryColorMode.FOLLOW_SYSTEM.persistedValue)
+                .putInt(batteryColorOverrideKey(slot), color)
+                .apply()
+            val visual = prefs.readVisualCfg()
+            for (other in BatteryColorSlot.entries) {
+                assertEquals(
+                    if (other == slot) BatteryColorMode.FOLLOW_SYSTEM else BatteryColorMode.PRESET,
+                    visual.batteryColorModes.modeFor(other),
+                )
+                assertEquals(
+                    if (other == slot) color else null,
+                    visual.batteryColorOverrides.colorFor(other),
+                )
+            }
+        }
+    }
+
+    @Test
+    fun legacyBatteryColorWithoutExplicitModeKeepsCustomFallbackForEverySlot() {
+        for (slot in BatteryColorSlot.entries) {
+            val prefs = VisualTestPreferences()
+            prefs.edit().putInt(batteryColorOverrideKey(slot), 0xFF123456.toInt()).apply()
+            val visual = prefs.readVisualCfg()
+            assertEquals(BatteryColorMode.CUSTOM, visual.batteryColorModes.modeFor(slot))
+            assertEquals(0xFF123456.toInt(), visual.batteryColorOverrides.colorFor(slot))
+        }
+    }
+
+    @Test
     fun singleAndDualKeepSeparateGeometryButShareBatteryColors() {
         val prefs = VisualTestPreferences()
         val single = VisualCfg(

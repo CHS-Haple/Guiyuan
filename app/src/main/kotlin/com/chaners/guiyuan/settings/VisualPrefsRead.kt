@@ -119,55 +119,28 @@ private fun SharedPreferences.readBatteryColorPreset(): BatteryColorPreset =
 
 private fun SharedPreferences.readBatteryColorModes(): BatteryColorModes =
     BatteryColorModes(
-        normal =
-            batteryColorMode(
-                modeKey = BATTERY_COLOR_MODE_NORMAL_KEY,
-                colorKey = BATTERY_COLOR_NORMAL_KEY,
-            ),
-        powerSave =
-            batteryColorMode(
-                modeKey = BATTERY_COLOR_MODE_POWER_SAVE_KEY,
-                colorKey = BATTERY_COLOR_POWER_SAVE_KEY,
-            ),
-        performance =
-            batteryColorMode(
-                modeKey = BATTERY_COLOR_MODE_PERFORMANCE_KEY,
-                colorKey = BATTERY_COLOR_PERFORMANCE_KEY,
-            ),
-        superPowerSave =
-            batteryColorMode(
-                modeKey = BATTERY_COLOR_MODE_SUPER_POWER_SAVE_KEY,
-                colorKey = BATTERY_COLOR_SUPER_POWER_SAVE_KEY,
-            ),
-        charging =
-            batteryColorMode(
-                modeKey = BATTERY_COLOR_MODE_CHARGING_KEY,
-                colorKey = BATTERY_COLOR_CHARGING_KEY,
-            ),
-        low =
-            batteryColorMode(
-                modeKey = BATTERY_COLOR_MODE_LOW_KEY,
-                colorKey = BATTERY_COLOR_LOW_KEY,
-            ),
+        normal = batteryColorMode(BatteryColorSlot.NORMAL),
+        powerSave = batteryColorMode(BatteryColorSlot.POWER_SAVE),
+        performance = batteryColorMode(BatteryColorSlot.PERFORMANCE),
+        superPowerSave = batteryColorMode(BatteryColorSlot.SUPER_POWER_SAVE),
+        charging = batteryColorMode(BatteryColorSlot.CHARGING),
+        low = batteryColorMode(BatteryColorSlot.LOW),
     )
 
 private fun SharedPreferences.readBatteryColorOverrides(): BatteryColorOverrides =
     BatteryColorOverrides(
-        normal = optionalColor(BATTERY_COLOR_NORMAL_KEY),
-        powerSave = optionalColor(BATTERY_COLOR_POWER_SAVE_KEY),
-        performance = optionalColor(BATTERY_COLOR_PERFORMANCE_KEY),
-        superPowerSave = optionalColor(BATTERY_COLOR_SUPER_POWER_SAVE_KEY),
-        charging = optionalColor(BATTERY_COLOR_CHARGING_KEY),
-        low = optionalColor(BATTERY_COLOR_LOW_KEY),
+        normal = optionalColor(batteryColorOverrideKey(BatteryColorSlot.NORMAL)),
+        powerSave = optionalColor(batteryColorOverrideKey(BatteryColorSlot.POWER_SAVE)),
+        performance = optionalColor(batteryColorOverrideKey(BatteryColorSlot.PERFORMANCE)),
+        superPowerSave = optionalColor(batteryColorOverrideKey(BatteryColorSlot.SUPER_POWER_SAVE)),
+        charging = optionalColor(batteryColorOverrideKey(BatteryColorSlot.CHARGING)),
+        low = optionalColor(batteryColorOverrideKey(BatteryColorSlot.LOW)),
     )
 
-private fun SharedPreferences.batteryColorMode(
-    modeKey: String,
-    colorKey: String,
-): BatteryColorMode =
+private fun SharedPreferences.batteryColorMode(slot: BatteryColorSlot): BatteryColorMode =
     batteryColorModeFromPersisted(
-        persistedMode = getString(modeKey, null),
-        hasStoredColor = contains(colorKey),
+        persistedMode = getString(batteryColorModeKey(slot), null),
+        hasStoredColor = contains(batteryColorOverrideKey(slot)),
     )
 
 private fun SharedPreferences.optionalColor(key: String): Int? =
