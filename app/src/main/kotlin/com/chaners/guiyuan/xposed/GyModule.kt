@@ -95,7 +95,6 @@ class GyModule : XposedModule() {
     private var ccExpansion = 0f
     private var ccProjectionReadyForHandoff = false
     private var ccHomeYieldedToProjection = false
-    private var ccNativeVisualExitObserved = false
     // Guiyuan presentation readiness is separate from the latest native readiness callback.
     private var keyguardRuntimeReady = false
     private var aodRendererAttached = false
@@ -604,7 +603,6 @@ class GyModule : XposedModule() {
         ccExpansion = 0f
         ccProjectionReadyForHandoff = false
         ccHomeYieldedToProjection = false
-        ccNativeVisualExitObserved = false
         controlCenterSourceScene = SourceScene.UNKNOWN
         steadyStatusSourceScene = SourceScene.UNKNOWN
         stableFamilyScene = ScenePolicy.StableKeyguardAodScene.UNKNOWN
@@ -1120,10 +1118,7 @@ class GyModule : XposedModule() {
             } else {
                 update
             }
-        CcTransitionOwner.onSourceUpdate(
-            transitionUpdate,
-            onNativeCloseVisualEnded = ::onCcNativeCloseVisualEnded,
-        )
+        CcTransitionOwner.onSourceUpdate(transitionUpdate)
         if (update.visible == false) {
             lastMobileTargetProbeSummary = null
             ccWifiGeometryStage = -1
@@ -1214,7 +1209,6 @@ class GyModule : XposedModule() {
         val visible = update.visible ?: return null
         if (!visible) {
             controlCenterSceneVisible = false
-            ccNativeVisualExitObserved = false
             // The hidden boundary also terminates any missing final native
             // fraction-zero callback. Home no longer waits for CC readiness.
             onCcExpansion(0f)
@@ -1257,12 +1251,8 @@ class GyModule : XposedModule() {
             return null
         }
 
-        val wasVisible = controlCenterSceneVisible
         controlCenterSceneVisible = true
-        if (!wasVisible) {
-            ccNativeVisualExitObserved = false
-            ccProjectionReadyForHandoff = false
-        }
+        ccProjectionReadyForHandoff = false
         if (!CcRenderSession.beginVisibleCycle()) {
             reconcileCcHomeAuthority("native-visible-rearm-failed")
             logDiagnostic(
@@ -1671,12 +1661,11 @@ class GyModule : XposedModule() {
     // visible, and projected-ready callbacks. All originate on SystemUI's UI
     // thread; a late ready=true cannot win over a native fraction-zero edge.
     private fun reconcileCcHomeAuthority(source: String) {
-        val yielded = !ccNativeVisualExitObserved &&
-            CcHomeHandoffPolicy.yieldToProjection(
-                nativePanelVisible = controlCenterSceneVisible,
-                nativeExpansion = ccExpansion,
-                projectionReady = ccProjectionReadyForHandoff,
-            )
+        val yielded = CcHomeHandoffPolicy.yieldToProjection(
+            nativePanelVisible = controlCenterSceneVisible,
+            nativeExpansion = ccExpansion,
+            projectionReady = ccProjectionReadyForHandoff,
+        )
         val changed = yielded != ccHomeYieldedToProjection
         ccHomeYieldedToProjection = yielded
         HomeRenderSession.onControlCenterAuthorityChanged(!yielded)
@@ -1693,28 +1682,6 @@ class GyModule : XposedModule() {
                 "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
             )
         }
-    }
-
-    private fun onCcNativeCloseVisualEnded(witness: String) {
-        if (!controlCenterSceneVisible ||
-            controlCenterSourceScene != SourceScene.HOME ||
-            ccNativeVisualExitObserved
-        ) return
-        // The native fake/final header Views have both left the visible
-        // viewport before the last delegate fraction/visibility callback.
-        ccNativeVisualExitObserved = true
-        reconcileCcHomeAuthority("native-header-visual-end")
-        logDiagnostic(
-            level = Log.INFO,
-            event = "presentation.handoff",
-            component = "controlCenterProjection",
-            state = "home-native-visual-end",
-            "witness" to witness,
-            "nativeFraction" to ccExpansion,
-            "nativeVisible" to controlCenterSceneVisible,
-            "projectionReady" to ccProjectionReadyForHandoff,
-            "homeOverlayShown" to HomeRenderSession.isOverlayShown(),
-        )
     }
 
     private fun onCcProjectionReadyChanged(ready: Boolean) {
@@ -1746,7 +1713,6 @@ class GyModule : XposedModule() {
         }
         controlCenterSceneEligible = false
         ccProjectionReadyForHandoff = false
-        ccNativeVisualExitObserved = false
         controlCenterSourceScene = SourceScene.UNKNOWN
         safely("source-scene") {
             SysUiPresentationOwner.updateCcSourceScene(SourceScene.UNKNOWN)
@@ -4775,7 +4741,6 @@ class GyModule : XposedModule() {
         ccExpansion = 0f
         ccProjectionReadyForHandoff = false
         ccHomeYieldedToProjection = false
-        ccNativeVisualExitObserved = false
         // A failing surface must not prevent sibling native representations from returning.
         val failures = ArrayList<Throwable>(1)
         fun release(action: () -> Unit) {
