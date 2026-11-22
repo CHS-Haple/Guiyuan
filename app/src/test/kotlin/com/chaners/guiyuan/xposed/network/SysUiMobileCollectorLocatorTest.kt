@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed.network
 
 import android.widget.ImageView
+import com.chaners.guiyuan.xposed.network.SysUiMobileCollectorLocator.Role
 import kotlin.coroutines.Continuation
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -12,33 +13,33 @@ class SysUiMobileCollectorLocatorTest {
 
     @Test
     fun acceptsOnlyTheExpectedGeneratedCollectorContracts() {
-        assertTrue(locator.isVerifiedCandidate(SignalCollector::class.java, locator.Role.SIGNAL, loader))
+        assertTrue(locator.isVerifiedCandidate(SignalCollector::class.java, Role.SIGNAL, loader))
         assertTrue(
             locator.isVerifiedCandidate(
-                ActivityResourceCollector::class.java, locator.Role.ACTIVITY_RESOURCE, loader,
+                ActivityResourceCollector::class.java, Role.ACTIVITY_RESOURCE, loader,
             ),
         )
         assertTrue(
             locator.isVerifiedCandidate(
-                ActivityVisibilityCollector::class.java, locator.Role.ACTIVITY_VISIBILITY, loader,
+                ActivityVisibilityCollector::class.java, Role.ACTIVITY_VISIBILITY, loader,
             ),
         )
     }
 
     @Test
     fun rejectsMissingOrMistypedSignalFields() {
-        assertFalse(locator.isVerifiedCandidate(MissingClassId::class.java, locator.Role.SIGNAL, loader))
-        assertFalse(locator.isVerifiedCandidate(WrongImageType::class.java, locator.Role.SIGNAL, loader))
-        assertFalse(locator.isVerifiedCandidate(WrongClassIdType::class.java, locator.Role.SIGNAL, loader))
+        assertFalse(locator.isVerifiedCandidate(MissingClassId::class.java, Role.SIGNAL, loader))
+        assertFalse(locator.isVerifiedCandidate(WrongImageType::class.java, Role.SIGNAL, loader))
+        assertFalse(locator.isVerifiedCandidate(WrongClassIdType::class.java, Role.SIGNAL, loader))
     }
 
     @Test
     fun rejectsMismatchedMethodSignaturesAndCrossRoleCollectors() {
-        assertFalse(locator.isVerifiedCandidate(WrongSignalSignature::class.java, locator.Role.SIGNAL, loader))
-        assertFalse(locator.isVerifiedCandidate(ActivityResourceCollector::class.java, locator.Role.SIGNAL, loader))
+        assertFalse(locator.isVerifiedCandidate(WrongSignalSignature::class.java, Role.SIGNAL, loader))
+        assertFalse(locator.isVerifiedCandidate(ActivityResourceCollector::class.java, Role.SIGNAL, loader))
         assertFalse(
             locator.isVerifiedCandidate(
-                ActivityVisibilityCollector::class.java, locator.Role.ACTIVITY_RESOURCE, loader,
+                ActivityVisibilityCollector::class.java, Role.ACTIVITY_RESOURCE, loader,
             ),
         )
     }
@@ -46,9 +47,9 @@ class SysUiMobileCollectorLocatorTest {
     @Test
     fun verifiedExistingNamesNeverInvokeDexKit() {
         val known = mapOf(
-            locator.Role.SIGNAL to SignalCollector::class.java.name,
-            locator.Role.ACTIVITY_RESOURCE to ActivityResourceCollector::class.java.name,
-            locator.Role.ACTIVITY_VISIBILITY to ActivityVisibilityCollector::class.java.name,
+            Role.SIGNAL to SignalCollector::class.java.name,
+            Role.ACTIVITY_RESOURCE to ActivityResourceCollector::class.java.name,
+            Role.ACTIVITY_VISIBILITY to ActivityVisibilityCollector::class.java.name,
         )
         // The JVM unit-test classpath has no DexKit JNI runtime.
         assertTrue(locator.findMissing(loader, known).isEmpty())
