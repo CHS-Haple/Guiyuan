@@ -167,8 +167,8 @@ internal object CcTransitionOwner {
         onNativeCloseVisualCompleted(owner, "home-pre-draw")
     }
 
-    // A verified terminal native visual boundary retires the scoped clip
-    // before the single Home presentation writer regains display ownership.
+    // Retire the QS_FAKE transition clip first, then return Home visibility
+    // authority through the single coordinator. No Home clip is owned here.
     @Synchronized
     private fun onNativeCloseVisualCompleted(owner: Session, witness: String) {
         if (current !== owner || sourceScene != SourceScene.HOME) return
@@ -417,11 +417,12 @@ internal object CcTransitionOwner {
                 view.getGlobalVisibleRect(nativeVisibleRect) &&
                 !nativeVisibleRect.isEmpty
 
-        // Source View identity is important: a retired Home session must
-        // not release a new Control Center transition after host replacement.
+        // The CC transition masks the QS_FAKE render View, not Home.
+        // Authenticate the separately observed Home render View against
+        // its live steady session before returning Home display authority.
         fun nativeCloseCompletedForHome(source: View): Boolean =
             started &&
-                sourceViewRef.get() === source &&
+                HomeRenderSession.ownsRenderView(source) &&
                 source.isAttachedToWindow &&
                 CcHomeHandoffPolicy.nativeCloseVisualCompleted(
                     closing = nativeCloseObserved,
