@@ -29,6 +29,8 @@ import com.chaners.guiyuan.ui.icons.Os4GlassDelete
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.IconButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -38,8 +40,6 @@ import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
-import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
-import com.chaners.guiyuan.ui.glass.GlassIconButton
 import com.chaners.guiyuan.ui.glass.GlassTransformPopup
 import kotlinx.coroutines.flow.first
 import com.chaners.guiyuan.ui.glass.glassPopupAnchor
@@ -108,7 +108,7 @@ private fun BatterySchemeGlassManageMenu(
     GlassManageMenuExitEffect(state) { anchor.contentHidden }
     GlassManageMenuTrigger(
         modifier = modifier.glassPopupAnchor(
-            anchor, cornerRadius = GlassTopAppBarDefaults.ButtonSize / 2, floating = true,
+            anchor, cornerRadius = IconButtonDefaults.MinHeight / 2, floating = false,
         ),
         anchorContent = Modifier.glassPopupAnchorContent(anchor),
         onClick = { state.toggle { haptic.performHapticFeedback(HapticFeedbackType.ContextClick) } },
@@ -169,11 +169,9 @@ private fun GlassManageMenuTrigger(
     onClick: () -> Unit,
 ) {
     TooltipBox(text = stringResource(R.string.battery_custom_scheme_manage)) {
-        GlassIconButton(
+        IconButton(
             onClick = onClick,
             modifier = modifier,
-            // The sheet records this button in its own backdrop. Do not sample
-            // that same layer from the button (recursive HWUI RenderNode).
         ) {
             Icon(
                 imageVector = Os4GlassMore,
