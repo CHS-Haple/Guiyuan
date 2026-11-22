@@ -144,7 +144,7 @@ class CcTransitionNativeCapacityTest {
                     progress = 0.25f,
                 )
 
-        assertTrue(semantic > 105)
+        assertEquals(105, semantic)
         assertEquals(105, native)
     }
 
