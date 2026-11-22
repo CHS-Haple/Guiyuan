@@ -797,9 +797,12 @@ internal object HomeRenderSession {
                 } else {
                     if (!overlayHost.isAttachedToWindow ||
                         !nativeContainer.isAttachedToWindow ||
-                        !carrier.isAttachedToWindow ||
-                        carrier.width <= 0
+                        !carrier.isAttachedToWindow
                     ) return false
+                    // Width is already resolved by resolveWidthPx above,
+                    // which accepts a valid native measuredWidth while the
+                    // battery_icon_container's laid-out width is transiently
+                    // zero during the charging-island layout traversal.
                     // system_icon_area owns Home placement and island motion.
                     // Battery child translation/fade on island exit must not
                     // invalidate or move the independently hosted overlay.

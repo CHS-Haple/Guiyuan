@@ -211,6 +211,20 @@ class HomeRenderSessionTest {
     }
 
     @Test
+    fun chargeIslandCanRetainHomeWhileChildLayoutWidthIsTransientlyZero() {
+        val nativeWidth = NativeSlotGeometry.resolveStableChildWidth(
+            layoutWidth = 0,
+            measuredWidth = 105,
+        )
+        assertEquals(105, nativeWidth)
+        val stable = requireNotNull(
+            SteadyLayoutResolver.resolve(587, 108, requireNotNull(nativeWidth), false),
+        )
+        assertEquals(482, stable.left)
+        assertEquals(587, stable.right)
+    }
+
+    @Test
     fun invalidHomeHostDoesNotClaimTheOverlay() {
         assertEquals(null, SteadyLayoutResolver.resolve(0, 108, 105, false))
         assertEquals(null, SteadyLayoutResolver.resolve(587, 0, 105, false))
