@@ -8,15 +8,15 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 ## Source and licensing
 
 - The active source and Maven graph use the successfully published MIUIX
-  snapshot `0.9.5-c83aacd8-SNAPSHOT` at full revision
-  `c83aacd8ee737c44e0f98747b68091317d747eec`.
-  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/44919198318)
-  and [tests](https://github.com/compose-miuix-ui/miuix/actions/runs/44919198367)
-  passed. This is an exact source-pinned pre-release snapshot, **not** a stable
-  v0.9.5 release. Previously device-accepted B1892 used `715ac29a`;
-  `c83aacd8` contains progressive blur/noise/padding fixes and Glass top-bar
-  coverage correction. The B1893 candidate requires its own on-device check
-  of OS4 glass blur, navigation and title bar before integration into `dev`.
+  snapshot `0.9.5-28d45984-SNAPSHOT` at full revision
+  `28d459841e1ff7d873097991c3f923c94a98adf7`.
+  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45061606326)
+  and [tests](https://github.com/compose-miuix-ui/miuix/actions/runs/45061606276)
+  passed for the exact source revision. This remains a pre-release snapshot,
+  **not** a stable v0.9.5 release. Relative to `c83aacd8`, the graph adds
+  Glass dialog motion, GlassCard, Switch dragging, and drawing/caching fixes.
+  Device acceptance of the new snapshot, especially OS4 glass dialogs, blur,
+  menu dismissal, navigation, and OS3-style controls, is still required.
   Keep source checkout and published Maven graph on the same exact revision.
   Guiyuan-specific Back, long-press, touch-extension and title clip boundaries
   remain locally owned.
@@ -124,10 +124,17 @@ Dated integration evidence is in
 history. The previous long-form conformance/audit investigations remain
 accessible in Git history, not in active documentation.
 
-The B1893 Glass alignment replaces the obsolete approximate
+The prior B1893 Glass alignment replaced the obsolete approximate
 `(barHeight + 20.dp) * 1.2f` band geometry with the measured title height
 plus the configured gradient overhang, matching upstream's correction.
 Adapted internal popup, navigation and rail layouts use upstream-aligned
 Compose fast rounding/clamping utilities. The new blur shader, kernel,
 noise-layer and padding fixes are consumed from published `miuix-blur`,
 not copied into the app. The OS3 UI style retains its native MIUIX path.
+
+The 28d45984 alignment also makes the app-local Glass cascading menu skip
+secondary backdrop recording and popup composition when no submenu is active,
+retaining submenu content through its exit animation. The local top-bar
+fallback caches its fixed gradient shader like upstream; its own title and
+unclipped action slots remain Guiyuan-owned. These source adaptations and
+published Android artifact compilation require separate Guiyuan CI verification.
