@@ -4380,8 +4380,18 @@ class GyModule : XposedModule() {
             return
         }
         if (!ready) {
+            val previouslyClaimed = SysUiPresentationOwner.homeClaimed()
             HomeRenderSession.setNativeHandoffActive(true)
             SysUiPresentationOwner.deactivate("readiness-lost:" + source)
+            logDiagnostic(
+                level = Log.INFO,
+                event = "presentation.cutover",
+                component = "homePresentation",
+                state = "native",
+                "reason" to "owner-readiness-lost",
+                "source" to source,
+                "previouslyClaimed" to previouslyClaimed,
+            )
             return
         }
         // Missing mobile data is a diagnosable degradation, not an unsafe host.
