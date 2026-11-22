@@ -1261,7 +1261,7 @@ internal object CcTransitionOwner {
                                             parentHeight = sourceHeight,
                                             bounds = rowSpec.sourceBounds,
                                         )?.let { rowSource ->
-                                            CcTransitionMorphPolicy.dualMobileRowMotionGeometry(
+                                            CcTransitionPolicy.dualMobileRowMotionGeometry(
                                                 source = carriedSourceGeometry(rowSource, carrierFrames),
                                                 target = target.second,
                                                 groupTravelX = dualRowTravel[0],
@@ -1427,7 +1427,7 @@ internal object CcTransitionOwner {
 
                         matchedTargetGeometry != null &&
                             spec.mobileRow != null && dualRowTravel != null ->
-                            CcTransitionMorphPolicy.dualMobileRowMotionGeometry(
+                            CcTransitionPolicy.dualMobileRowMotionGeometry(
                                 source = carriedSourceGeometry(sourceGeometry, carrierFrames),
                                 target = matchedTargetGeometry,
                                 groupTravelX =
@@ -2192,7 +2192,7 @@ internal object CcTransitionOwner {
             carrierFrames: CarrierFrames?,
         ): FloatArray =
             carrierFrames?.let { frames ->
-                CcTransitionMorphPolicy.interpolateCarriedSourceToRootTarget(
+                CcTransitionPolicy.interpolateCarriedSourceToRootTarget(
                     source = source,
                     target = target,
                     sourceCarrier = frames.source,
