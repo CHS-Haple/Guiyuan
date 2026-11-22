@@ -41,19 +41,16 @@ internal object CcReservationPolicy {
         val compact = compactWidthPx.coerceAtLeast(0)
         if (compact == 0) return 0
         val p = CcTransitionPolicy.geometryProgress(progress)
-        var left = -compact.toFloat()
-        var right = 0f
+        var peerSideLeft = -compact.toFloat()
         spans.forEach { span ->
             val currentLeft =
                 span.sourceLeft +
                     (span.targetLeft - span.sourceLeft) * p
-            val currentRight =
-                span.sourceRight +
-                    (span.targetRight - span.sourceRight) * p
-            left = min(left, currentLeft)
-            right = maxOf(right, currentRight)
+            peerSideLeft = min(peerSideLeft, currentLeft)
         }
-        return kotlin.math.ceil((right - left).coerceAtLeast(compact.toFloat())).toInt()
+        // paddingEnd reserves only space toward the native peer icons.
+        // End-side drawing overflow is not extra native peer occupancy.
+        return kotlin.math.ceil(-peerSideLeft).toInt()
     }
 
     fun resolveBatteryIslandNativePeerReservationWidth(

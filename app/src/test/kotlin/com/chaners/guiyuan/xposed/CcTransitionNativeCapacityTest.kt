@@ -99,6 +99,24 @@ class CcTransitionNativeCapacityTest {
     }
 
     @Test
+    fun endSideOverflowDoesNotConsumeNativePeerReservation() {
+        val spans =
+            listOf(
+                CcReservationPolicy.ReservationSpan(
+                    sourceLeft = -20f,
+                    sourceRight = 10f,
+                    targetLeft = -150f,
+                    targetRight = 50f,
+                ),
+            )
+
+        // Only geometry left of the native FAKE end edge occupies peer space.
+        assertEquals(105, CcReservationPolicy.resolveReservationWidth(105, spans, 0f))
+        assertEquals(105, CcReservationPolicy.resolveReservationWidth(105, spans, 0.5f))
+        assertEquals(150, CcReservationPolicy.resolveReservationWidth(105, spans, 1f))
+    }
+
+    @Test
     fun latentTargetOnlyReservesSpaceAsItEntersTheNativePeerSide() {
         val spans =
             listOf(

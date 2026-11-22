@@ -2422,11 +2422,8 @@ internal object CcTransitionOwner {
                 (frozenSource?.width ?: source.width)
                     .coerceAtLeast(0)
                     .toFloat()
-            val left = min(-compact, min(targetA, targetB))
-            val right = maxOf(0f, maxOf(targetA, targetB))
-            return kotlin.math.ceil(
-                (right - left).coerceAtLeast(compact),
-            ).toInt()
+            val peerSideLeft = min(-compact, min(targetA, targetB))
+            return kotlin.math.ceil(-peerSideLeft).toInt()
         }
 
         private fun sourceRepresentsAny(vararg slots: String): Boolean {
