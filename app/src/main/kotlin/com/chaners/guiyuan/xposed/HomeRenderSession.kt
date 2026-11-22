@@ -298,6 +298,11 @@ internal object HomeRenderSession {
         // our own overlay bounds.
         private val nativeDrawListener =
             ViewTreeObserver.OnPreDrawListener {
+                // When the CC window stops rendering, its pre-draw listener
+                // can no longer return the temporary Home-source clip.
+                // Home still receives native pre-draw for the visible status
+                // bar, so reuse this already-owned listener at that boundary.
+                CcTransitionOwner.onHomePreDraw(probeView)
                 if (
                     !nativeHandoffActive &&
                     featureEnabled &&
