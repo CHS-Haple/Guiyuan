@@ -55,6 +55,15 @@ execution ownership is in [architecture](../architecture/README.md).
   and waits for the native layout before updating a measured peer-row
   reservation. This is source-validated design work, not yet accepted
   real-device first-gesture behavior; do not merge before focused testing.
+  The B1900 device recording/log (2026-11-22, 18:47:49) then showed
+  `preLayoutVisualMask active=false` without any subsequent `layoutReady`
+  or Fail native. Removing the fake-width write had also removed the only
+  reliable trigger for another native icon-row layout; a child `onLayout`
+  may execute before the fake parent's layout-requested state clears.
+  PR #1817 now requests one native status-icon relayout and resolves cutover
+  from the native ViewTreeObserver pre-draw boundary (after measured
+  reservations), without owning the native host width. This B1901 correction
+  still requires focused real-device acceptance before merge.
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
   [dual-SIM work #1205](https://github.com/CHS-Haple/Guiyuan/pull/1205)
