@@ -22,11 +22,11 @@ internal object RingGapPolicy {
 
     internal fun followingLowerHalfGap(
         geometry: OuterGeometry.Resolved,
-            dual: Boolean,
-            style: SignalDotArrangement,
-            offsetY: Float,
-            additionalContentHalfGap: Float,
-        ): Float {
+        dual: Boolean,
+        style: SignalDotArrangement,
+        offsetY: Float,
+        additionalContentHalfGap: Float,
+    ): Float {
         with(geometry) {
             if (dual && style == SignalDotArrangement.BOTH_SIDES) {
                 // The default layout reserves exactly the same lower half as
@@ -62,9 +62,9 @@ internal object RingGapPolicy {
 
     private fun requiredBothSidesHalfGap(
         geometry: OuterGeometry.Resolved,
-            style: SignalDotArrangement,
-            atOffset: Float,
-        ): Double {
+        style: SignalDotArrangement,
+        atOffset: Float,
+    ): Double {
         with(geometry) {
             val clearance = (bothSidesMobileDotRadius + ringStroke / 2f + 2f).toDouble()
             val radius = OuterGeometry.RING_RADIUS.toDouble()
