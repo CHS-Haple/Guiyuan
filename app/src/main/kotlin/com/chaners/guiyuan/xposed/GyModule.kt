@@ -1655,6 +1655,7 @@ class GyModule : XposedModule() {
     }
 
     private fun onCcRuntimeFailure(error: Throwable) {
+        if (retiredForHotReload) return
         val cleanupFailures = mutableListOf<String>()
         fun safely(step: String, block: () -> Unit) {
             try {
@@ -2949,7 +2950,7 @@ class GyModule : XposedModule() {
     }
 
     private fun onKeyguardSourceRuntimeFailure(source: String, error: Throwable) {
-        if (failNativeGate.suspended) return
+        if (retiredForHotReload || failNativeGate.suspended) return
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             val posted = postSettingsChangeToMain(
                 Runnable { onKeyguardSourceRuntimeFailure(source, error) },
@@ -3004,8 +3005,10 @@ class GyModule : XposedModule() {
 
     // An actual cross-scene failure fences *all* new owners before starting cleanup.
     private fun onPresentationCallbackFailure(source: String, error: Throwable) {
-        if (!failNativeGate.beginGlobalFailure()) return
+        if (retiredForHotReload || !failNativeGate.beginGlobalFailure()) return
         val release = Runnable {
+            // An old module's queued callback cannot release a newer ClassLoader owner.
+            if (retiredForHotReload) return@Runnable
             val failures = mutableListOf<String>()
             fun restore(step: String, action: () -> Unit) {
                 try {
@@ -3751,6 +3754,7 @@ class GyModule : XposedModule() {
     }
 
     private fun onKeyguardRuntimeFailure(reason: String) {
+        if (retiredForHotReload) return
         clearBoundaryHandoff()
         keyguardCcLeaseActive = false
         keyguardReadyObserved = false
@@ -3929,6 +3933,7 @@ class GyModule : XposedModule() {
     }
 
     private fun onAodRuntimeFailure(reason: String) {
+        if (retiredForHotReload) return
         KeyguardRenderSession.setAodNativeHandoffActive(true)
         val released = SysUiPresentationOwner.keyguardFamilyReleased()
         logDiagnostic(
@@ -4400,6 +4405,7 @@ class GyModule : XposedModule() {
     }
 
     private fun onHomeRuntimeFailure(reason: String) {
+        if (retiredForHotReload) return
         HomeRenderSession.setNativeHandoffActive(true)
         val released = SysUiPresentationOwner.homeReleased()
         logDiagnostic(

@@ -52,8 +52,18 @@ execution ownership is in [architecture](../architecture/README.md).
   [dual-SIM work #1205](https://github.com/CHS-Haple/Guiyuan/pull/1205)
   includes a bounded SIM2-default-data activity check; it does not certify
   every SIM switch, VPN transport transition, idle-activity visibility or
-  alternate carrier tree. Missing/ambiguous native facts fail native for the
-  smallest surface, without resetting saved user preferences.
+  alternate carrier tree. Missing network observations may leave a partial
+  combined display when the render model and native owner remain valid; they
+  are not themselves evidence of an unsafe native write. Never invent signal,
+  subscriptions or network state. Unsupported host identity, ownership,
+  masking or restoration still fail native for the smallest affected surface,
+  without resetting saved user preferences.
+- **Runtime failure policy:** independent Keyguard/AOD and CC failures release
+  their affected owners; unresolved retirement receipts or a cross-scene
+  callback failure suspend the complete module takeover for the current
+  generation. New ownership is fenced until a complete manual OFF-ON cycle;
+  unconfirmed cleanup needs a SystemUI restart. The preference itself stays
+  unchanged. No periodic retry, auto-disable or extra Xposed Hook is used.
 - **Battery, geometry and fonts:** preserve verified native resource identity
   and charging/optimization semantics; keep native slot occupancy separate
   from drawing and transition geometry. Use measured native font geometry for

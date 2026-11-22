@@ -28,6 +28,36 @@ benefit over updating the verified profile. Keep a single Hook owner and fail
 native for missing or ambiguous matches. Developer-side binary analysis tools
 need not become APK runtime dependencies.
 
+## Fail native protects ownership, not observer completeness
+
+**Decision:** missing network/battery/tint observer data is a diagnosable visual
+degradation, not proof that the native host or its writer is unsafe. A steady
+Home replacement may be visible when its complete render model and verified
+native owner can safely cut over, even if the optional mobile collector did
+not install. Never fabricate a subscription or convert unknown signal into an
+observed zero-strength value.
+
+**Boundary:** native host identity, exact represented slots, lifecycle,
+masking, capacity and rollback receipts remain hard prerequisites. Ordinary
+Home, shared Keyguard/AOD family and CC may each release only their invalid
+surface. CC and Keyguard/AOD source failures must release their affected family
+and dependent projection. If any actual native owner retirement is
+unconfirmed, escalate to the whole-module runtime stop instead of asserting
+successful fallback.
+
+**Global stop:** a true cross-scene state/AOD callback failure or unconfirmed
+local native release atomically fences further Home, Keyguard/AOD and CC
+acquisition before independent, main-thread owner cleanup. All surviving native
+receipts must be gone to report success. A complete manual OFF then ON is the
+only same-generation retry. Incomplete cleanup requires a SystemUI restart;
+runtime stop never writes the saved user preference or disables LSPosed.
+Retired Hot Reload callbacks cannot release a new-generation owner.
+
+**Hot Reload exception:** early Home prearm is a native masking operation
+before renderer readiness. It still needs verified mobile and battery
+installation; this is deliberately stricter than the ordinary steady
+Home cutover and must not be relaxed merely because data degradation is allowed.
+
 ## Native host over duplicate participant
 
 **Decision:** reuse a verified native SystemUI host whenever it already owns the

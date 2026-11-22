@@ -31,8 +31,13 @@ Current boundaries:
   addition and static-icon visibility); `SysUiPresentationOwner` owns
   represented-slot masking and reservation. Native network icon suppression is
   not performed by the observer.
-- Any ambiguity in host, lifecycle, writer ownership, or compatibility triggers
-  fail-native behavior for the smallest affected surface.
+- Ambiguity in host, lifecycle or native writer ownership triggers fail-native
+  for the smallest affected surface. Missing observer data alone may degrade
+  the combined icon without revoking an otherwise verified native owner.
+- Cross-scene failure or incomplete local native retirement fences all further
+  Guiyuan takeover until explicit complete manual reset or SystemUI restart.
+  Read actual retirement receipts; a null current-session pointer is not proof
+  that restoration succeeded.
 
 The steady Home hierarchy is:
 
