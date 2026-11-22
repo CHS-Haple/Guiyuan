@@ -61,17 +61,17 @@ class CcTransitionClipGeometryTest {
     fun unmatchedComponentsFadeOutFastWithoutChangingTheirScale() {
         assertEquals(
             1f,
-            CcTransitionPolicy.unmatchedExitOpacity(0f),
+            CcTransitionRevealPolicy.unmatchedExitOpacity(0f),
             0.0001f,
         )
         assertEquals(
             0.125f,
-            CcTransitionPolicy.unmatchedExitOpacity(0.5f),
+            CcTransitionRevealPolicy.unmatchedExitOpacity(0.5f),
             0.0001f,
         )
         assertEquals(
             0f,
-            CcTransitionPolicy.unmatchedExitOpacity(1f),
+            CcTransitionRevealPolicy.unmatchedExitOpacity(1f),
             0.0001f,
         )
     }
@@ -119,7 +119,7 @@ class CcTransitionClipGeometryTest {
                 bottom = 60f,
             )
         val expanded =
-            CcTransitionPolicy.expandedClipBounds(
+            CcTransitionClipPolicy.expandedClipBounds(
                 bounds = source,
                 widthScale = 1.5f,
                 heightScale = 1.25f,
@@ -131,7 +131,7 @@ class CcTransitionClipGeometryTest {
         assertEquals(65f, expanded.bottom, 0.0001f)
 
         val unchanged =
-            CcTransitionPolicy.expandedClipBounds(
+            CcTransitionClipPolicy.expandedClipBounds(
                 bounds = source,
                 widthScale = 0.75f,
                 heightScale = Float.NaN,

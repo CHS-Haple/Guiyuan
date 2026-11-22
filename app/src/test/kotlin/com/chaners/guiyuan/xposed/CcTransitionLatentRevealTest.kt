@@ -11,7 +11,7 @@ class CcTransitionLatentRevealTest {
 
         assertEquals(
             0f,
-            CcTransitionPolicy.latentRevealVisibleFraction(
+            CcTransitionRevealPolicy.latentRevealVisibleFraction(
                 current = transitionGeometry(centerX = 95f, centerY = 100f, width = 20f, height = 20f),
                 target = target,
                 visualExtent = 20f,
@@ -21,7 +21,7 @@ class CcTransitionLatentRevealTest {
         )
         assertEquals(
             0f,
-            CcTransitionPolicy.latentRevealVisibleFraction(
+            CcTransitionRevealPolicy.latentRevealVisibleFraction(
                 current = transitionGeometry(centerX = 79f, centerY = 100f, width = 20f, height = 20f),
                 target = target,
                 visualExtent = 20f,
@@ -31,7 +31,7 @@ class CcTransitionLatentRevealTest {
         )
         assertEquals(
             1f,
-            CcTransitionPolicy.latentRevealVisibleFraction(
+            CcTransitionRevealPolicy.latentRevealVisibleFraction(
                 current = transitionGeometry(centerX = 90f, centerY = 100f, width = 20f, height = 20f),
                 target = target,
                 visualExtent = 20f,
@@ -41,7 +41,7 @@ class CcTransitionLatentRevealTest {
         )
         assertEquals(
             1f,
-            CcTransitionPolicy.latentRevealVisibleFraction(
+            CcTransitionRevealPolicy.latentRevealVisibleFraction(
                 current = transitionGeometry(centerX = 93f, centerY = 100f, width = 20f, height = 20f),
                 target = target,
                 visualExtent = 20f,
@@ -51,7 +51,7 @@ class CcTransitionLatentRevealTest {
         )
         assertEquals(
             1f,
-            CcTransitionPolicy.latentRevealVisibleFraction(
+            CcTransitionRevealPolicy.latentRevealVisibleFraction(
                 current = target,
                 target = target,
                 visualExtent = 20f,
@@ -91,7 +91,7 @@ class CcTransitionLatentRevealTest {
     fun latentReservationProgressTracksVisibleEnvelopeCoverage() {
         assertEquals(
             0f,
-            CcTransitionPolicy.latentReservationProgress(
+            CcTransitionRevealPolicy.latentReservationProgress(
                 compactWidthPx = 100,
                 currentReservationPx = 100,
                 requiredReservationPx = 200,
@@ -101,7 +101,7 @@ class CcTransitionLatentRevealTest {
         )
         assertEquals(
             0.5f,
-            CcTransitionPolicy.latentReservationProgress(
+            CcTransitionRevealPolicy.latentReservationProgress(
                 compactWidthPx = 100,
                 currentReservationPx = 150,
                 requiredReservationPx = 200,
@@ -111,7 +111,7 @@ class CcTransitionLatentRevealTest {
         )
         assertEquals(
             1f,
-            CcTransitionPolicy.latentReservationProgress(
+            CcTransitionRevealPolicy.latentReservationProgress(
                 compactWidthPx = 100,
                 currentReservationPx = 200,
                 requiredReservationPx = 200,

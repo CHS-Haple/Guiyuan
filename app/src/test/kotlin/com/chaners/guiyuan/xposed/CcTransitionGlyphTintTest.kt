@@ -33,7 +33,7 @@ class CcTransitionGlyphTintTest {
         val target = transitionGeometry(centerX = 100f, centerY = 200f, width = 30f, height = 24f)
 
         val result =
-            CcTransitionPolicy.interpolateGeometry(
+            CcTransitionMorphPolicy.interpolateGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
