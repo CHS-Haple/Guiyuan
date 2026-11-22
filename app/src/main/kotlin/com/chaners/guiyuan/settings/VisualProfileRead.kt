@@ -11,20 +11,29 @@ private fun storedProfileKey(
     return if (legacyDualBank) visualModeKey(true, sharedKey) else sharedKey
 }
 
+// Keep all typed readers on the same profile-key fallback contract.
+// An absent retired dual-bank key must not inherit the unrelated base value.
+private fun SharedPreferences.profileReadKey(
+    layout: ContentLayout,
+    baseKey: String,
+    legacyDualBank: Boolean,
+): String? {
+    val profileKey = storedProfileKey(layout, baseKey, legacyDualBank)
+    return when {
+        contains(profileKey) -> profileKey
+        legacyDualBank -> null
+        else -> baseKey
+    }
+}
+
 internal fun SharedPreferences.profileBoolean(
     layout: ContentLayout,
     baseKey: String,
     defaultValue: Boolean,
     legacyDualBank: Boolean = false,
 ): Boolean {
-    val profileKey = storedProfileKey(layout, baseKey, legacyDualBank)
-    return if (contains(profileKey)) {
-        getBoolean(profileKey, defaultValue)
-    } else if (legacyDualBank) {
-        defaultValue
-    } else {
-        getBoolean(baseKey, defaultValue)
-    }
+    val key = profileReadKey(layout, baseKey, legacyDualBank) ?: return defaultValue
+    return getBoolean(key, defaultValue)
 }
 
 internal fun SharedPreferences.profileFloat(
@@ -33,14 +42,8 @@ internal fun SharedPreferences.profileFloat(
     defaultValue: Float,
     legacyDualBank: Boolean = false,
 ): Float {
-    val profileKey = storedProfileKey(layout, baseKey, legacyDualBank)
-    return if (contains(profileKey)) {
-        getFloat(profileKey, defaultValue)
-    } else if (legacyDualBank) {
-        defaultValue
-    } else {
-        getFloat(baseKey, defaultValue)
-    }
+    val key = profileReadKey(layout, baseKey, legacyDualBank) ?: return defaultValue
+    return getFloat(key, defaultValue)
 }
 
 internal fun SharedPreferences.profileInt(
@@ -49,14 +52,8 @@ internal fun SharedPreferences.profileInt(
     defaultValue: Int,
     legacyDualBank: Boolean = false,
 ): Int {
-    val profileKey = storedProfileKey(layout, baseKey, legacyDualBank)
-    return if (contains(profileKey)) {
-        getInt(profileKey, defaultValue)
-    } else if (legacyDualBank) {
-        defaultValue
-    } else {
-        getInt(baseKey, defaultValue)
-    }
+    val key = profileReadKey(layout, baseKey, legacyDualBank) ?: return defaultValue
+    return getInt(key, defaultValue)
 }
 
 internal fun SharedPreferences.profileString(
@@ -65,10 +62,6 @@ internal fun SharedPreferences.profileString(
     defaultValue: String?,
     legacyDualBank: Boolean,
 ): String? {
-    val profileKey = storedProfileKey(layout, baseKey, legacyDualBank)
-    return when {
-        contains(profileKey) -> getString(profileKey, defaultValue)
-        legacyDualBank -> defaultValue
-        else -> getString(baseKey, defaultValue)
-    }
+    val key = profileReadKey(layout, baseKey, legacyDualBank) ?: return defaultValue
+    return getString(key, defaultValue)
 }
