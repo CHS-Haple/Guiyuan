@@ -188,6 +188,19 @@ internal object HomeRenderSession {
             layoutReady &&
             hostAttached
 
+    // A child onLayout can run before SystemUI's parent finishes its traversal.
+    // Retire an already verified Home owner only on actual detach, or at the
+    // complete native pre-draw boundary after pending layout has settled.
+    internal fun shouldRetireUnresolvedAnchor(
+        wasReady: Boolean,
+        hostAttached: Boolean,
+        carrierAttached: Boolean,
+        nativePreDraw: Boolean,
+        layoutPending: Boolean,
+    ): Boolean =
+        wasReady &&
+            (!hostAttached || !carrierAttached || (nativePreDraw && !layoutPending))
+
     internal data class InitialTintSeed(
         val state: TintState,
         val source: String,
@@ -285,12 +298,16 @@ internal object HomeRenderSession {
         private val carrierWindowLocation = IntArray(2)
         private val hostWindowLocation = IntArray(2)
         private var nativeDrawObserver: ViewTreeObserver? = null
+        private var deferredNativeAnchor = false
 
         // The privacy-sensitive icons group can relayout without its parent.
         // Listen on all three native Views, with a separate receipt for each View.
         private val nativeLayoutListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                layoutProbe()
+                // Child layout callbacks are not evidence that the whole
+                // native status-bar frame has finished. An initial recovery
+                // cutover happens at the native pre-draw boundary instead.
+                if (layoutReady) layoutProbe()
             }
         // SystemUI may translate the carrier during a Control Center rotation
         // without changing this host's measured size or firing onLayout.
@@ -299,13 +316,17 @@ internal object HomeRenderSession {
         private val nativeDrawListener =
             ViewTreeObserver.OnPreDrawListener {
                 if (
-                    !nativeHandoffActive &&
                     featureEnabled &&
-                    this@Session.batteryContainer.get()?.isAttachedToWindow == true &&
-                    resolveNativeAnchor(observedAnchorRect) &&
-                    observedAnchorRect != anchorRect
+                    this@Session.batteryContainer.get()?.isAttachedToWindow == true
                 ) {
-                    layoutProbe("native-carrier-moved")
+                    val resolved = resolveNativeAnchor(observedAnchorRect)
+                    // Recheck an interrupted native layout even when the
+                    // previous invalidation already yielded to native.
+                    // The old nativeHandoffActive guard stranded that path
+                    // until a later, unrelated onLayout callback.
+                    if (!resolved || !layoutReady || observedAnchorRect != anchorRect) {
+                        layoutProbe("native-pre-draw")
+                    }
                 }
                 true
             }
@@ -590,11 +611,43 @@ internal object HomeRenderSession {
 
         private fun layoutProbe(source: String = "native-layout") {
             if (!resolveNativeAnchor(observedAnchorRect)) {
-                if (layoutReady) {
+                val nativeLayoutPending =
+                    host.get()?.isLayoutRequested == true ||
+                        batteryContainer.get()?.isLayoutRequested == true ||
+                        statusIcons.get()?.isLayoutRequested == true ||
+                        batteryCarrier.get()?.isLayoutRequested == true
+                val hostAttached = batteryContainer.get()?.isAttachedToWindow == true
+                val carrierAttached = batteryCarrier.get()?.isAttachedToWindow == true
+                if (
+                    shouldRetireUnresolvedAnchor(
+                        wasReady = layoutReady,
+                        hostAttached = hostAttached,
+                        carrierAttached = carrierAttached,
+                        nativePreDraw = source == "native-pre-draw",
+                        layoutPending = nativeLayoutPending,
+                    )
+                ) {
                     layoutReady = false
-                    dispatchPresentationReadiness("layout-unavailable")
+                    deferredNativeAnchor = false
+                    emitEvent {
+                        "homeRenderNativeAnchor state=invalid source=" + source +
+                            " nativeLayoutPending=" + nativeLayoutPending +
+                            " hostAttached=" + hostAttached +
+                            " carrierAttached=" + carrierAttached
+                    }
+                    dispatchPresentationReadiness("native-anchor-invalid")
+                } else if (layoutReady && !deferredNativeAnchor) {
+                    deferredNativeAnchor = true
+                    emitEvent {
+                        "homeRenderNativeAnchor state=deferred source=" + source +
+                            " nativeLayoutPending=" + nativeLayoutPending
+                    }
                 }
                 return
+            }
+            if (deferredNativeAnchor) {
+                deferredNativeAnchor = false
+                emitEvent { "homeRenderNativeAnchor state=recovered source=" + source }
             }
             val moved = observedAnchorRect != anchorRect
             if (moved) {
