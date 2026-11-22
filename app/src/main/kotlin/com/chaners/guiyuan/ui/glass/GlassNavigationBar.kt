@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.computedStateOf
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -184,7 +185,7 @@ fun GlassNavigationBar(
     val overhang = with(density) { GlassNavigationBarDefaults.IndicatorOverhang.toPx() }
 
     val barWidthState = remember { mutableIntStateOf(0) }
-    var pressedIndex by remember { mutableIntStateOf(-1) }
+    val pressedIndexState = remember { mutableIntStateOf(-1) }
     val dragging = remember { mutableStateOf(false) }
     var settleGeneration by remember { mutableIntStateOf(0) }
 
@@ -233,7 +234,9 @@ fun GlassNavigationBar(
         }
     }
 
-    val chipPressed = pressedIndex >= 0
+    val chipPressed by remember(pressedIndexState) {
+        computedStateOf { pressedIndexState.intValue >= 0 }
+    }
 
     val onSelectState by rememberUpdatedState(onSelect)
     val bottomPadding = if (defaultWindowInsetsPadding) {
@@ -360,7 +363,7 @@ fun GlassNavigationBar(
                                 val downX = logicalX(down.position.x)
                                 var selectionX = downX
                                 var current = indexAt(downX)
-                                pressedIndex = current
+                                pressedIndexState.intValue = current
                                 dragging.value = true
                                 val pressedLeft = minLeft + current * selectionSlot
                                 animateIndicator(pressedLeft, pressedLeft + selectionSlot + overhang * 2f)
@@ -391,7 +394,7 @@ fun GlassNavigationBar(
                                         selectionX += delta
                                         if (grabOffset.isNaN()) {
                                             if (abs(selectionX - downX) < viewConfiguration.touchSlop) {
-                                                pressedIndex = indexAt(selectionX)
+                                                pressedIndexState.intValue = indexAt(selectionX)
                                                 continue
                                             }
                                             // Preserve the press anchor, not the unfinished animation's lag.
@@ -402,11 +405,11 @@ fun GlassNavigationBar(
                                         val target = navigationDragTarget(chipLeft, chipW, 0f, width, delta, next != current)
                                         animateIndicator(target.left, target.right, target.leftSpring, target.rightSpring)
                                         current = next
-                                        pressedIndex = next
+                                        pressedIndexState.intValue = next
                                         change.consume()
                                     }
                                 } finally {
-                                    pressedIndex = -1
+                                    pressedIndexState.intValue = -1
                                     dragging.value = false
                                     settleGeneration++
                                 }
@@ -465,7 +468,7 @@ fun GlassNavigationBar(
                         )
                         val tintProducer = remember { ColorProducer { tintState.value } }
                         val pressAlpha = animateFloatAsState(
-                            targetValue = if (position == pressedIndex) {
+                            targetValue = if (position == pressedIndexState.intValue) {
                                 GlassNavigationBarDefaults.PressedAlpha
                             } else {
                                 1f
