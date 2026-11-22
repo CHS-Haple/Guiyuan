@@ -7,8 +7,6 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.BOTH_SIDES_BOTTOM_INFO_SCALE_MAX
 import com.chaners.guiyuan.settings.BOTH_SIDES_BOTTOM_INFO_SCALE_MIN
-import com.chaners.guiyuan.settings.NETWORK_TOP_OFFSET_MAX
-import com.chaners.guiyuan.settings.NETWORK_TOP_OFFSET_MIN
 import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.VisualRepo
@@ -131,27 +129,11 @@ private fun ColumnScope.featureBothSidesActivityVerticalOffset(
     enabled: Boolean,
 ) {
         if (search.matches(R.string.both_sides_activity_vertical_offset)) {
-            SliderPreference(
+            IndicatorVerticalOffsetSlider(
                 value = visual.bothSidesActivityOffsetY,
                 onValueChange = visualRepo::setBothSidesActivityOffsetY,
-                title = stringResource(R.string.both_sides_activity_vertical_offset),
-                startAction = {
-                    SemanticLeadingIcon(
-                        R.drawable.ic_guiyuan_network_activity_triangles,
-                        enabled,
-                        R.drawable.ic_material_symbol_height_w500,
-                    )
-                },
-                valueText = stringResource(
-                    R.string.battery_top_offset_value,
-                    visual.bothSidesActivityOffsetY.roundToInt(),
-                ),
-                valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                steps = 19,
-                showKeyPoints = true,
-                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                keyPoints = listOf(0f),
-                magnetThreshold = 0.035f,
+                titleRes = R.string.both_sides_activity_vertical_offset,
+                iconRes = R.drawable.ic_guiyuan_network_activity_triangles,
                 enabled = enabled,
             )
         }
@@ -180,28 +162,12 @@ private fun ColumnScope.featureBothSidesChargingOptions(
     }
     AnimatedPreferenceGroup(visible = visual.bothSidesBottomCharging && visual.showChargingIcon) {
         if (search.matches(R.string.both_sides_charging_vertical_offset)) {
-            SliderPreference(
+            IndicatorVerticalOffsetSlider(
                 value = visual.bothSidesChargingOffsetY,
                 onValueChange = visualRepo::setBothSidesChargingOffsetY,
-                title = stringResource(R.string.both_sides_charging_vertical_offset),
-                startAction = {
-                    SemanticLeadingIcon(
-                        R.drawable.ic_material_symbol_bolt,
-                        enabled,
-                        R.drawable.ic_material_symbol_height_w500,
-                )
-            },
-            valueText = stringResource(
-                R.string.battery_top_offset_value,
-                visual.bothSidesChargingOffsetY.roundToInt(),
-            ),
-            valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-            steps = 19,
-            showKeyPoints = true,
-            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-            keyPoints = listOf(0f),
-            magnetThreshold = 0.035f,
-            enabled = enabled,
+                titleRes = R.string.both_sides_charging_vertical_offset,
+                iconRes = R.drawable.ic_material_symbol_bolt,
+                enabled = enabled,
             )
         }
     }
