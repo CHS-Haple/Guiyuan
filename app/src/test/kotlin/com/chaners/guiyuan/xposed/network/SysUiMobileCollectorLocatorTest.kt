@@ -13,14 +13,14 @@ class SysUiMobileCollectorLocatorTest {
 
     @Test
     fun acceptsOnlyTheExpectedGeneratedCollectorContracts() {
-        assertTrue(locator.isVerifiedCandidate(SignalCollector::class.java, Role.SIGNAL, loader))
+        assertTrue(locator.matchesCollectorShape(SignalCollector::class.java, Role.SIGNAL, loader))
         assertTrue(
-            locator.isVerifiedCandidate(
+            locator.matchesCollectorShape(
                 ActivityResourceCollector::class.java, Role.ACTIVITY_RESOURCE, loader,
             ),
         )
         assertTrue(
-            locator.isVerifiedCandidate(
+            locator.matchesCollectorShape(
                 ActivityVisibilityCollector::class.java, Role.ACTIVITY_VISIBILITY, loader,
             ),
         )
@@ -28,17 +28,17 @@ class SysUiMobileCollectorLocatorTest {
 
     @Test
     fun rejectsMissingOrMistypedSignalFields() {
-        assertFalse(locator.isVerifiedCandidate(MissingClassId::class.java, Role.SIGNAL, loader))
-        assertFalse(locator.isVerifiedCandidate(WrongImageType::class.java, Role.SIGNAL, loader))
-        assertFalse(locator.isVerifiedCandidate(WrongClassIdType::class.java, Role.SIGNAL, loader))
+        assertFalse(locator.matchesCollectorShape(MissingClassId::class.java, Role.SIGNAL, loader))
+        assertFalse(locator.matchesCollectorShape(WrongImageType::class.java, Role.SIGNAL, loader))
+        assertFalse(locator.matchesCollectorShape(WrongClassIdType::class.java, Role.SIGNAL, loader))
     }
 
     @Test
     fun rejectsMismatchedMethodSignaturesAndCrossRoleCollectors() {
-        assertFalse(locator.isVerifiedCandidate(WrongSignalSignature::class.java, Role.SIGNAL, loader))
-        assertFalse(locator.isVerifiedCandidate(ActivityResourceCollector::class.java, Role.SIGNAL, loader))
+        assertFalse(locator.matchesCollectorShape(WrongSignalSignature::class.java, Role.SIGNAL, loader))
+        assertFalse(locator.matchesCollectorShape(ActivityResourceCollector::class.java, Role.SIGNAL, loader))
         assertFalse(
-            locator.isVerifiedCandidate(
+            locator.matchesCollectorShape(
                 ActivityVisibilityCollector::class.java, Role.ACTIVITY_RESOURCE, loader,
             ),
         )

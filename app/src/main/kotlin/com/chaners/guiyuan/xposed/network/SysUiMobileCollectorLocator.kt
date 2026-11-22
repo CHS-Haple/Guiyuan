@@ -28,67 +28,76 @@ internal object SysUiMobileCollectorLocator {
         }
         if (missing.isEmpty()) return emptyMap()
 
-        // The installing branch already records failures and restores native state.
-        // Keep the real DexKit error instead of disguising it as a missing class.
+        // The caller already records install failures and restores native state.
+        // Preserve scanner exceptions instead of reporting a false class-not-found.
         System.loadLibrary("dexkit")
         return DexKitBridge.create(classLoader, false).use { bridge ->
             val discovered = buildMap {
                 for (role in missing) {
-                    val candidates = bridge.findClass {
-                        searchPackages(BINDER_PACKAGE)
-                        matcher {
-                            fields {
-                                add {
-                                    name = role.viewField
-                                    type = ImageView::class.java.name
-                                }
-                                if (role.hasClassId) {
-                                    add {
-                                        name = CLASS_ID_FIELD
-                                        type = "int"
-                                    }
-                                }
-                            }
-                            methods {
-                                add {
-                                    name = role.methodName
-                                    returnType = "java.lang.Object"
-                                    if (role.methodName == "emit") {
-                                        paramTypes("java.lang.Object", "kotlin.coroutines.Continuation")
-                                    } else {
-                                        paramTypes("java.lang.Object")
-                                    }
-                                }
-                            }
-                        }
-                    }.mapNotNull { data ->
-                        if (!data.name.startsWith(BINDER_PACKAGE + ".MiuiMobileIconBinder\$bind\$")) {
-                            null
-                        } else {
-                            try {
-                                Class.forName(data.name, false, classLoader)
-                            } catch (_: ClassNotFoundException) {
-                                null
-                            }
-                        }
-                    }.filter { candidate -> isVerifiedCandidate(candidate, role, classLoader) }
-
-                    // An ambiguous match must not claim SystemUI ownership.
-                    if (candidates.size == 1) put(role, candidates.single())
+                    findUniqueCandidate(bridge, role, classLoader)?.let { put(role, it) }
                 }
             }
-            // A generated switch class shared across two roles would install
-            // overlapping Hooks on the same method. Never guess ownership.
-            val originalNames = knownClasses.filterKeys { it !in missing }.values
-            val allNames = originalNames + discovered.values.map(Class<*>::getName)
-            if (hasDistinctOwners(allNames)) discovered else emptyMap()
+            // Never install two role-specific Hooks on one generated switch class.
+            val knownNames = knownClasses.filterKeys { it !in missing }.values
+            if (hasDistinctOwners(knownNames + discovered.values.map(Class<*>::getName))) {
+                discovered
+            } else {
+                emptyMap()
+            }
         }
     }
+
+    private fun findUniqueCandidate(
+        bridge: DexKitBridge,
+        role: Role,
+        classLoader: ClassLoader,
+    ): Class<*>? =
+        bridge.findClass {
+            searchPackages(BINDER_PACKAGE)
+            matcher {
+                fields {
+                    add {
+                        name = role.viewField
+                        type = ImageView::class.java.name
+                    }
+                    if (role.hasClassId) {
+                        add {
+                            name = CLASS_ID_FIELD
+                            type = "int"
+                        }
+                    }
+                }
+                methods {
+                    add {
+                        name = role.methodName
+                        returnType = "java.lang.Object"
+                        if (role.methodName == "emit") {
+                            paramTypes("java.lang.Object", "kotlin.coroutines.Continuation")
+                        } else {
+                            paramTypes("java.lang.Object")
+                        }
+                    }
+                }
+            }
+        }.asSequence()
+            .filter { data ->
+                data.name.startsWith(BINDER_PACKAGE + ".MiuiMobileIconBinder\$bind\$")
+            }
+            .mapNotNull { data ->
+                try {
+                    Class.forName(data.name, false, classLoader)
+                } catch (_: ClassNotFoundException) {
+                    null
+                }
+            }
+            .filter { candidate -> matchesCollectorShape(candidate, role, classLoader) }
+            .singleOrNull()
 
     internal fun hasDistinctOwners(classNames: Collection<String>): Boolean =
         classNames.size == classNames.toSet().size
 
-    internal fun isVerifiedCandidate(
+    // Structural proof only: actual signal semantics require runtime verification.
+    internal fun matchesCollectorShape(
         candidate: Class<*>,
         role: Role,
         classLoader: ClassLoader,
