@@ -6,6 +6,22 @@ import org.junit.Test
 
 class PresentationIslandReservationTest {
     @Test
+    fun nativeFakePeerCapacityIsOnlyCheckedAfterItsOwnNativeMeasure() {
+        assertFalse(EndReservationPolicy.fakeNativePeerMeasureReady(
+            carrierSettled = false,
+            peerRowLayoutRequested = false,
+        ))
+        assertFalse(EndReservationPolicy.fakeNativePeerMeasureReady(
+            carrierSettled = true,
+            peerRowLayoutRequested = true,
+        ))
+        assertTrue(EndReservationPolicy.fakeNativePeerMeasureReady(
+            carrierSettled = true,
+            peerRowLayoutRequested = false,
+        ))
+    }
+
+    @Test
     fun nativeFakePeerRowUsesMeasuredNativeSlackWithoutHostWidthLease() {
         // Synthetic native measure boundaries, not a claim about device pixels.
         assertTrue(
