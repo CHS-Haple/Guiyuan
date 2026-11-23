@@ -53,51 +53,22 @@ internal fun Modifier.glassOnActionBar(
     underlayMaterial: GlassMaterial,
     stroke: EdgeStroke?,
     enabled: Boolean = true,
-): Modifier = glassImpl(
-    backdrop = backdrop,
-    shape = shape,
-    style = style,
-    alpha = alpha,
-    tint = Color.Unspecified,
-    material = material,
-    underlayMaterial = underlayMaterial,
-    noiseCoefficient = GlassDefaults.NoiseCoefficient,
-    stroke = stroke,
-    contentBlendMode = BlendMode.SrcOver,
-    enabled = enabled,
-    shading = false,
-)
-
-private fun Modifier.glassImpl(
-    backdrop: Backdrop,
-    shape: GlassShape,
-    style: GlassStyle,
-    alpha: Float,
-    tint: Color,
-    material: GlassMaterial?,
-    underlayMaterial: GlassMaterial?,
-    noiseCoefficient: Float,
-    stroke: EdgeStroke?,
-    contentBlendMode: BlendMode,
-    enabled: Boolean,
-    shading: Boolean,
 ): Modifier = drawBackdrop(
     backdrop = backdrop,
     pipeline = GlassPipeline(
         glassShape = shape,
         style = style,
         alpha = alpha,
-        tint = tint,
+        tint = Color.Unspecified,
         material = material,
         underlayMaterial = underlayMaterial,
-        noiseCoefficient = noiseCoefficient,
+        noiseCoefficient = GlassDefaults.NoiseCoefficient,
         stroke = stroke,
-        shading = shading,
+        shading = false,
     ),
-    contentBlendMode = contentBlendMode,
+    contentBlendMode = BlendMode.SrcOver,
     enabled = enabled,
 )
-
 /**
  * Glass pipeline as a value: equal inputs keep the backdrop node, so a recomposition no longer
  * rebuilds the blur, colour and shading passes.
@@ -182,15 +153,8 @@ private class GlassPipeline(
         other.shading == shading
 
     override fun equals(other: Any?): Boolean = other is GlassPipeline &&
-        other.glassShape == glassShape &&
-        other.style == style &&
-        other.alpha == alpha &&
-        other.tint == tint &&
-        other.material == material &&
-        other.underlayMaterial == underlayMaterial &&
-        other.noiseCoefficient == noiseCoefficient &&
-        other.stroke == stroke &&
-        other.shading == shading
+        hasSameBackdropEffects(other) &&
+        other.stroke == stroke
 
     override fun hashCode(): Int {
         var result = glassShape.hashCode()
