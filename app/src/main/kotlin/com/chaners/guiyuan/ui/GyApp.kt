@@ -14,10 +14,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import com.chaners.guiyuan.settings.OnboardingPrefs
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
-import com.chaners.guiyuan.settings.LiquidMode
-import com.chaners.guiyuan.settings.NavContent
-import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.ui.navigation.AppRoute
@@ -31,8 +27,6 @@ import com.chaners.guiyuan.ui.screens.TermsOfUseScreen
 import com.chaners.guiyuan.ui.screens.StaticScopeScreen
 import com.chaners.guiyuan.ui.screens.AppearanceScreen
 import com.chaners.guiyuan.ui.screens.AppearanceThemeActions
-import com.chaners.guiyuan.ui.screens.AppearanceStyleActions
-import com.chaners.guiyuan.ui.screens.AppearanceNavigationActions
 import com.chaners.guiyuan.ui.screens.AppearanceVisualActions
 import com.chaners.guiyuan.ui.screens.DiagnosticsScreen
 import com.chaners.guiyuan.ui.screens.PreviewSandboxScreen
@@ -57,8 +51,6 @@ import top.yukonga.miuix.kmp.nav.core.rememberNavSystemCornerRadius
 import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.ThemeColorSpec
-import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 @Composable
 internal fun GyApp(
@@ -72,19 +64,9 @@ internal fun GyApp(
     lang: AppLang,
     iconHidden: Boolean,
     onHotReload: () -> Unit,
-    onUiStyleChange: (UiStyle) -> Unit,
-    onTopBarProgressiveBlurChange: (Boolean) -> Unit,
-    onThemeChange: (ThemeMode) -> Unit,
-    onDynamicChange: (Boolean) -> Unit,
-    onColorSpecChange: (ThemeColorSpec?) -> Unit,
-    onPaletteStyleChange: (ThemePaletteStyle) -> Unit,
-    onNavEnabledChange: (Boolean) -> Unit,
-    onNavStyleChange: (NavStyle) -> Unit,
-    onNavTouchExtensionChange: (Boolean) -> Unit,
-    onNavContentChange: (NavContent) -> Unit,
-    onLiquidModeChange: (LiquidMode) -> Unit,
+    themeActions: AppearanceThemeActions,
+    visualActions: AppearanceVisualActions,
     onSwipeBackChange: (Boolean) -> Unit,
-    onUiScaleChange: (Int) -> Unit,
     onLangChange: (AppLang) -> Unit,
     onIconHiddenChange: (Boolean) -> Unit,
 ) {
@@ -177,26 +159,8 @@ internal fun GyApp(
                 AppearanceScreen(
                     appearance = appearance,
                     dark = dark,
-                    themeActions = AppearanceThemeActions(
-                        onThemeChange = onThemeChange,
-                        onDynamicChange = onDynamicChange,
-                        onColorSpecChange = onColorSpecChange,
-                        onPaletteStyleChange = onPaletteStyleChange,
-                    ),
-                    visualActions = AppearanceVisualActions(
-                        style = AppearanceStyleActions(
-                            onUiStyleChange = onUiStyleChange,
-                            onTopBarProgressiveBlurChange = onTopBarProgressiveBlurChange,
-                            onUiScaleChange = onUiScaleChange,
-                        ),
-                        navigation = AppearanceNavigationActions(
-                            onNavEnabledChange = onNavEnabledChange,
-                            onNavStyleChange = onNavStyleChange,
-                            onNavTouchExtensionChange = onNavTouchExtensionChange,
-                            onNavContentChange = onNavContentChange,
-                            onLiquidModeChange = onLiquidModeChange,
-                        ),
-                    ),
+                    themeActions = themeActions,
+                    visualActions = visualActions,
                     onBack = ::navigateBack,
                 )
             }

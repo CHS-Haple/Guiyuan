@@ -34,6 +34,10 @@ import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.GyApp
+import com.chaners.guiyuan.ui.screens.AppearanceThemeActions
+import com.chaners.guiyuan.ui.screens.AppearanceStyleActions
+import com.chaners.guiyuan.ui.screens.AppearanceNavigationActions
+import com.chaners.guiyuan.ui.screens.AppearanceVisualActions
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 import kotlinx.coroutines.launch
@@ -141,44 +145,52 @@ class MainActivity : ComponentActivity() {
                     onHotReload = {
                         (application as GyApplication).hotReloadSysUi()
                     },
-                    onUiStyleChange = { style: UiStyle ->
-                        scope.launch { repo.setUiStyle(style) }
-                    },
-                    onTopBarProgressiveBlurChange = { enabled ->
-                        scope.launch { repo.setTopBarProgressiveBlur(enabled) }
-                    },
-                    onThemeChange = { mode ->
-                        scope.launch { repo.setTheme(mode) }
-                    },
-                    onDynamicChange = { enabled ->
-                        scope.launch { repo.setDynamicColor(enabled) }
-                    },
-                    onColorSpecChange = { spec: ThemeColorSpec? ->
-                        scope.launch { repo.setColorSpec(spec) }
-                    },
-                    onPaletteStyleChange = { style: ThemePaletteStyle ->
-                        scope.launch { repo.setPaletteStyle(style) }
-                    },
-                    onNavEnabledChange = { enabled ->
-                        scope.launch { repo.setNavEnabled(enabled) }
-                    },
-                    onNavTouchExtensionChange = { enabled ->
-                        scope.launch { repo.setNavTouchExtension(enabled) }
-                    },
-                    onNavStyleChange = { style: NavStyle ->
-                        scope.launch { repo.setNavStyle(style) }
-                    },
-                    onNavContentChange = { content: NavContent ->
-                        scope.launch { repo.setNavContent(content) }
-                    },
-                    onLiquidModeChange = { mode: LiquidMode ->
-                        scope.launch { repo.setLiquidMode(mode) }
-                    },
+                    themeActions = AppearanceThemeActions(
+                        onThemeChange = { mode ->
+                            scope.launch { repo.setTheme(mode) }
+                        },
+                        onDynamicChange = { enabled ->
+                            scope.launch { repo.setDynamicColor(enabled) }
+                        },
+                        onColorSpecChange = { spec: ThemeColorSpec? ->
+                            scope.launch { repo.setColorSpec(spec) }
+                        },
+                        onPaletteStyleChange = { style: ThemePaletteStyle ->
+                            scope.launch { repo.setPaletteStyle(style) }
+                        },
+                    ),
+                    visualActions = AppearanceVisualActions(
+                        style = AppearanceStyleActions(
+                            onUiStyleChange = { style: UiStyle ->
+                                scope.launch { repo.setUiStyle(style) }
+                            },
+                            onTopBarProgressiveBlurChange = { enabled ->
+                                scope.launch { repo.setTopBarProgressiveBlur(enabled) }
+                            },
+                            onUiScaleChange = { percent ->
+                                scope.launch { repo.setUiScalePercent(percent) }
+                            },
+                        ),
+                        navigation = AppearanceNavigationActions(
+                            onNavEnabledChange = { enabled ->
+                                scope.launch { repo.setNavEnabled(enabled) }
+                            },
+                            onNavStyleChange = { style: NavStyle ->
+                                scope.launch { repo.setNavStyle(style) }
+                            },
+                            onNavTouchExtensionChange = { enabled ->
+                                scope.launch { repo.setNavTouchExtension(enabled) }
+                            },
+                            onNavContentChange = { content: NavContent ->
+                                scope.launch { repo.setNavContent(content) }
+                            },
+                            onLiquidModeChange = { mode: LiquidMode ->
+                                scope.launch { repo.setLiquidMode(mode) }
+                            },
+                        ),
+                    ),
                     onSwipeBackChange = { enabled ->
                         scope.launch { repo.setSwipeBack(enabled) }
-                    },
-                    onUiScaleChange = { percent ->
-                        scope.launch { repo.setUiScalePercent(percent) }
                     },
                     onLangChange = { language ->
                         if (language != lang) {
