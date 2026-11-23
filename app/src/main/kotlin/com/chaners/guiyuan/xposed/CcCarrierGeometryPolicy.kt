@@ -45,7 +45,9 @@ internal object CcCarrierGeometryPolicy {
         logicalWidth: Int,
         isRtl: Boolean,
     ): FloatArray? =
-        endAnchoredSlotGeometry(
+        // This is a virtual motion reference, not a physical slot. Its
+        // captured width can exceed the current host after a rotation.
+        endAnchoredGeometry(
             hostGeometry = carrierGeometry,
             hostWidth = carrierWidth,
             hostHeight = carrierHeight,
@@ -60,12 +62,22 @@ internal object CcCarrierGeometryPolicy {
         slotWidth: Int,
         isRtl: Boolean,
     ): FloatArray? {
+        if (slotWidth > hostWidth) return null
+        return endAnchoredGeometry(hostGeometry, hostWidth, hostHeight, slotWidth, isRtl)
+    }
+
+    private fun endAnchoredGeometry(
+        hostGeometry: FloatArray,
+        hostWidth: Int,
+        hostHeight: Int,
+        slotWidth: Int,
+        isRtl: Boolean,
+    ): FloatArray? {
         if (
             hostGeometry.size != 6 ||
             hostWidth <= 0 ||
             hostHeight <= 0 ||
-            slotWidth <= 0 ||
-            slotWidth > hostWidth
+            slotWidth <= 0
         ) {
             return null
         }

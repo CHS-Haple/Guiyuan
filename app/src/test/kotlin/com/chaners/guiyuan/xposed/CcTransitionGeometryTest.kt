@@ -198,6 +198,35 @@ class CcTransitionGeometryTest {
     }
 
     @Test
+    fun virtualMotionCarrierRetainsEndAnchorWhenNativeHostContracts() {
+        val host = floatArrayOf(872f, 129.5f, 710f, 0f, 0f, 169f)
+        val ltr = requireNotNull(
+            CcCarrierGeometryPolicy.endAnchoredMotionCarrierGeometry(
+                host, 710, 169, 1220, false,
+            ),
+        )
+        val rtl = requireNotNull(
+            CcCarrierGeometryPolicy.endAnchoredMotionCarrierGeometry(
+                host, 710, 169, 1220, true,
+            ),
+        )
+        assertEquals(617f, ltr[0], 0.0001f)
+        assertEquals(1127f, rtl[0], 0.0001f)
+        assertEquals(1220f, ltr[2], 0.0001f)
+        assertEquals(1220f, rtl[2], 0.0001f)
+
+        val sourceCarrier = floatArrayOf(2240f, 54f, 1220f, 0f, 0f, 108f)
+        val source = floatArrayOf(2902.5f, 55f, 105f, 0f, 0f, 108f)
+        val carried = CcCarrierGeometryPolicy.rebaseSourceToCurrentCarrier(
+            source, sourceCarrier, ltr,
+        )
+        assertEquals(1279.5f, carried[0], 0.0001f)
+        assertEquals(105f, carried[2], 0.0001f)
+        assertNull(CcCarrierGeometryPolicy.endAnchoredSlotGeometry(host, 710, 169, 1220, false))
+        assertNull(CcCarrierGeometryPolicy.endAnchoredSlotGeometry(host, 710, 169, 1220, true))
+    }
+
+    @Test
     fun fakeCapacityLeaseKeepsRtlMotionCarrierStartAnchored() {
         val expandedCarrier =
             floatArrayOf(
