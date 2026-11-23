@@ -247,7 +247,7 @@ internal object CcTransitionOwner {
             }
         }
 
-        if (current?.hasProjectedPeerOverlap() == true) {
+        if (current?.hasNewPeerOverlap() == true) {
             current?.stop("native-peer-reveal-overlap")
             current = null
             nativeCrossfadeOnlyCycle = true
@@ -296,10 +296,12 @@ internal object CcTransitionOwner {
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
         private val mobileTargetsDirty = AtomicBoolean(false)
         private val nativeChildren = ArrayList<View>()
+        private var nativePeerLayoutChanged = false
         // Native children can change while the icon container keeps the same bounds.
         private val nativeMembershipListener =
             ViewTreeObserver.OnGlobalLayoutListener {
                 if (started) {
+                    nativePeerLayoutChanged = true
                     if (
                         captureNativeChildren() &&
                         currentSnapshot.model.dualMobileLevels == null
@@ -716,6 +718,12 @@ internal object CcTransitionOwner {
         // FAKE and FINAL are sampled in the same native root coordinates.
         // Do not paint an expanding projection through a still-visible peer.
         // In that case retain the compact FAKE source and OEM crossfade.
+        fun hasNewPeerOverlap(): Boolean {
+            if (!nativePeerLayoutChanged) return false
+            nativePeerLayoutChanged = false
+            return hasProjectedPeerOverlap()
+        }
+
         fun hasProjectedPeerOverlap(): Boolean {
             val root = rootRef.get() ?: return true
             val peers = (0 until fakeStatusIcons.childCount)
