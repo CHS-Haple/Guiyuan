@@ -35,7 +35,6 @@ import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.SnackbarDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -295,9 +294,9 @@ private fun BatterySchemePageContent(
                 .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                 .verticalScroll(scrollState),
     ) {
-        Card(
+        BatterySheetCard(
             modifier = Modifier.fillMaxWidth(),
-            colors =
+            nativeColors =
                 CardDefaults.defaultColors(
                     color = MiuixTheme.colorScheme.surface,
                     contentColor = MiuixTheme.colorScheme.onSurface,

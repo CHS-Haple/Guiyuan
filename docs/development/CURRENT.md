@@ -41,73 +41,29 @@ execution ownership is in [architecture](../architecture/README.md).
   Center transition source. Scene change, host replacement and stale native
   references invalidate only the affected projection; do not retain old View
   objects after replacement or recreate competing native writers.
-- **Control Center:** SystemUI owns `QS_FAKE.system_icon_area` width,
-  native FAKE/FINAL header alpha and translations, icon membership, and full
-  expansion. Guiyuan may own only its scoped icon exclusions, reversible peer
-  `paddingEnd` reservation, and temporary FAKE overlay. The native FAKE area
-  can reflow to an end-anchored overhang after rotation; never reinstate a
-  competing fake-host width lease or alter native FINAL geometry.
-  Cutover requires settled native carrier and peer layout, checked at
-  pre-draw; a child `onLayout` is not a completed parent traversal.
-  The OEM peer-width calculation includes per-child start/end padding and a
-  separate `NetworkSpeedView` layout footprint. Optional animation padding
-  may be bounded by actual peer space; mandatory compact-space and
-  ownership failures still fail native locally.
-- **CC-to-Home handoff:** `GyModule` is the single scene authority. The
-  native CC fraction-zero callback can precede `onVisibleChanged(false)`;
-  resolve Home ownership after the native expansion callback has finished
-  applying SystemUI's own geometry/appearance, not from the stale
-  pre-proceed state. Home `onDraw` is an application callback, **not** a
-  SurfaceControl/compositor completion fence. Do not hold only a FAKE
-  child expecting it to override an alpha-zero native ancestor.
-  Native FAKE/FINAL alpha, translation and composited visibility remain
-  independent inputs; slow-close, held-close and rotated-close visual
-  continuity are **not yet accepted on device**.
-- **Home native layout:** `HomeRenderSession` renders in the verified
-  `system_icon_area` host overlay, outside the native battery child's
-  measured lifetime. Native child `onLayout` may provide provisional
-  geometry during charging, privacy and orientation reflow; the existing
-  host pre-draw checks the completed native anchor and can recover from a
-  transient invalid state. An actual detach or settled invalid anchor
-  still retires native ownership. Charging may widen the outer native
-  battery beyond its stable inner core: align the combined visual to the
-  measured native end without modifying native width/translation/alpha.
-- **Open SystemUI candidate:** [PR #1817](https://github.com/CHS-Haple/Guiyuan/pull/1817)
-  carries the source-level corrections and bounded native geometry witnesses.
-  The ROM403 peer-row native layout handles underflow and signals.
-  The current PR now requests actual projected FAKE peer-side occupancy
-  through reversible end padding, without an all-candidate cap or canvas
-  cutoff. Crowded native signals, FAKE/FINAL overlap, charge and rotation
-  still require signed on-device acceptance. The session-cached FAKE
-  carrier-root offset is now recaptured only after a
-  completed native FAKE-host width reflow; an unfinished layout and peer-only
-  relayout retain the previous motion anchor. The specific device-frame
-  mismatch remains unverified. The user's ROM 4.0.4.0.D02 reports
-  SystemUI 17.03.260226.r, but exact installed-binary parity with the
-  ROM403 reference and compositor frame order are unverified.
-  Preserve separate native owner/writer/lifecycle semantics, remove rejected
-  workarounds, and keep the PR isolated until exact-HEAD quality review and
-  focused signed-device acceptance. CI alone does not validate the
-  rotated/crowded/held-upswipe behaviors.
+- **Control Center:** fully expanded CC remains native. Partial handoff
+  requires verified native FAKE/FINAL state and measured native peers.
+  The CC session owns only its temporary presentation, listeners and native
+  receipts. Failed independent release must keep ownership/ineligibility
+  visible rather than declaring a successful rollback or reusing the session.
+  Do not modify native FINAL geometry to hide drawing differences.
+- **Open SystemUI work [#1817](https://github.com/CHS-Haple/Guiyuan/pull/1817):**
+  retain Home and CC projections in their separate native lifecycles.
+  Exact ROM403 source confirms native peer-row underflow, signal exceptions
+  and `paddingEnd` ownership. The work-branch requests current QS_FAKE
+  peer-side occupancy via reversible padding, and has removed the
+  parallel all-candidate width cap and canvas clipping. Native FAKE host
+  width, native FINAL, native alpha/motion and Hot Reload remain OEM-owned.
+  Crowded/rotated FAKE, charging/island states, visual handoff and exact
+  installed ROM404 binary parity still require focused acceptance.
+  No earlier B1917 APK certifies this source revision.
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
   [dual-SIM work #1205](https://github.com/CHS-Haple/Guiyuan/pull/1205)
   includes a bounded SIM2-default-data activity check; it does not certify
   every SIM switch, VPN transport transition, idle-activity visibility or
-  alternate carrier tree. Missing network observations may leave a partial
-  combined display when the render model and native owner remain valid; they
-  are not themselves evidence of an unsafe native write. Unexpected source
-  callback exceptions may arise in downstream renderer updates and therefore
-  still require a safety shutdown unless the origin is verified. Never invent
-  signal, subscriptions or network state. Unsupported host identity, ownership,
-  masking or restoration still fail native for the smallest affected surface,
-  without resetting saved user preferences.
-- **Runtime failure policy:** independent Keyguard/AOD and CC failures release
-  their affected owners; unresolved retirement receipts or a cross-scene
-  callback failure suspend the complete module takeover for the current
-  generation. New ownership is fenced until a complete manual OFF-ON cycle;
-  unconfirmed cleanup needs a SystemUI restart. The preference itself stays
-  unchanged. No periodic retry, auto-disable or extra Xposed Hook is used.
+  alternate carrier tree. Missing/ambiguous native facts fail native for the
+  smallest surface, without resetting saved user preferences.
 - **Battery, geometry and fonts:** preserve verified native resource identity
   and charging/optimization semantics; keep native slot occupancy separate
   from drawing and transition geometry. Use measured native font geometry for
@@ -158,8 +114,13 @@ reference, not this public repository.
   including onboarding; OS3 keeps its own native title style. Eligible OS4
   scrollable lists feed MIUIX's explicit elastic offset into the bar without a
   second overscroll engine; refresh/Sheet and OS3 paths retain their respective
-  owners. Battery Colors retains its original MIUIX `Card` hierarchy, colors
-  and `Regular` Glass shadows.
+  owners. Battery Colors preserves its scheme/editor and nested-card hierarchy;
+  OS4 uses upstream `GlassCard` defaults inside `GlassBottomSheet`, while OS3
+  keeps native `Card` colors and controls. The OS4 custom-scheme More
+  control inside GlassCard uses upstream `basic.IconButton` without the
+  floating glass shadow; separate floating Glass back controls retain their
+  source-matched `Regular` shadow. Guiyuan's local navigation first-layout
+  fallback and deferred-shadow brush cache follow MIUIX `28d45984`.
 - This focused acceptance does not establish exhaustive RTL, extreme font scale,
   GPU resume, keyboard/cutout geometry, predictive Back, OS3 dark-mode
   overscroll seam or every Framework/ROM combination.

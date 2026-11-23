@@ -36,14 +36,12 @@ internal fun Os4CascadingMenu(
     val anchor = rememberGlassPopupAnchor()
     var expanded by remember { mutableStateOf(false) }
     val mounted = remember { mutableStateOf(false) }
-    var hasExpanded by remember { mutableStateOf(false) }
     GlassIconButton(
         onClick = {
             if (expanded) {
                 expanded = false
             } else {
                 if (mounted.value) {
-                    hasExpanded = true
                     expanded = true
                 } else {
                     mounted.value = true
@@ -69,7 +67,6 @@ internal fun Os4CascadingMenu(
             Box(Modifier.fillMaxSize()) {
                 LaunchedEffect(Unit) {
                     // Record the opening request before publishing its visible state.
-                    hasExpanded = true
                     expanded = true
                 }
                 GlassIconDropdownMenu(
@@ -81,10 +78,7 @@ internal fun Os4CascadingMenu(
                     backdrop = backdrop,
                     collapseOnSelection = collapseOnSelection,
                     onDismissFinished = {
-                        if (!expanded && hasExpanded) {
-                            mounted.value = false
-                            hasExpanded = false
-                        }
+                        if (!expanded) mounted.value = false
                     },
                 )
             }
