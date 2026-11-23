@@ -32,4 +32,3 @@ internal fun rememberNavigationTrailingAction(
     val keepRetiringAction by remember(progress) { computedStateOf { progress.value > 0f } }
     return action ?: retainedAction.value.takeIf { keepRetiringAction }
 }
-
