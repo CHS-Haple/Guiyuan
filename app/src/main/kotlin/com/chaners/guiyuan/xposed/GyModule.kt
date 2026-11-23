@@ -1043,7 +1043,9 @@ class GyModule : XposedModule() {
                             reconcileCcHomeAuthority("native-fraction-after-proceed")
                         }
                         if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
-                            onCcNativeGeometry(progress)
+                            SysUiPresentationRuntime.emitPassiveDiagnostic {
+                                onCcNativeGeometry(progress)
+                            }
                         }
                     }
                 },
@@ -1095,14 +1097,16 @@ class GyModule : XposedModule() {
     private fun onCcNativeGeometry(progress: Float) {
         val fraction = progress.coerceIn(0f, 1f)
         val stage = when {
-            fraction >= 1f -> 5
-            fraction >= 0.98f -> 4
-            fraction >= 0.85f -> 3
-            fraction >= 0.6f -> 2
-            fraction >= 0.3f -> 1
+            fraction >= 1f -> 7
+            fraction >= 0.98f -> 6
+            fraction >= 0.85f -> 5
+            fraction >= 0.6f -> 4
+            fraction >= 0.3f -> 3
+            fraction >= 0.08f -> 2
+            fraction > 0f -> 1
             else -> 0
         }
-        if (stage == ccPeerGeometryStage || ccPeerGeometrySamples >= 12) return
+        if (stage == ccPeerGeometryStage || ccPeerGeometrySamples >= 16) return
         val snapshot = CcTransitionOwner.capacityGeometryProbe()
         val direction = if (stage < ccPeerGeometryStage) "closing" else "opening"
         ccPeerGeometryStage = stage
