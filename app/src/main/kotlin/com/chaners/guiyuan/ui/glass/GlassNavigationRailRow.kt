@@ -35,19 +35,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
@@ -190,23 +179,11 @@ private fun Modifier.railRowInteraction(
     // Keeping the native row-wide indication would paint a second solid grey pill on press.
     .then(if (liquidIndicator) Modifier else Modifier.indication(identity.interactionSource, LocalIndication.current))
     .hoverable(identity.interactionSource, enabled = motion.expanded)
-    .semantics(mergeDescendants = true) {
-        role = Role.Tab
-        this.selected = identity.selected
-        (identity.item.contentDescription ?: identity.item.label)?.let { contentDescription = it }
-        onClick {
-            identity.onClick()
-            true
-        }
-    }
-    .onKeyEvent { event ->
-        if (event.key == Key.Enter || event.key == Key.NumPadEnter || event.key == Key.Spacebar) {
-            if (event.type == KeyEventType.KeyUp) identity.onClick()
-            true
-        } else {
-            false
-        }
-    }
+    .navigationTabActivation(
+        selected = identity.selected,
+        description = identity.item.contentDescription ?: identity.item.label,
+        onActivate = identity.onClick,
+    )
     .focusable(interactionSource = identity.interactionSource)
     .graphicsLayer { alpha = pressAlpha }
 

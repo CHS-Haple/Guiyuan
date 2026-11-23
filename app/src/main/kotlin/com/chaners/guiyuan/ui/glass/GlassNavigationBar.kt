@@ -59,24 +59,13 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -527,28 +516,11 @@ private fun androidx.compose.foundation.layout.RowScope.GlassNavigationBarItemCo
             .then(
                 if (interactionEnabled) {
                     Modifier
-                        .semantics(mergeDescendants = true) {
-                            this.role = Role.Tab
-                            this.selected = selected
-                            (item.contentDescription ?: item.label)?.let {
-                                this.contentDescription = it
-                            }
-                            onClick {
-                                onSelect(position)
-                                true
-                            }
-                        }
-                        .onKeyEvent { event ->
-                            val activationKey = event.key == Key.Enter ||
-                                event.key == Key.NumPadEnter ||
-                                event.key == Key.Spacebar
-                            if (activationKey) {
-                                if (event.type == KeyEventType.KeyUp) onSelect(position)
-                                true
-                            } else {
-                                false
-                            }
-                        }
+                        .navigationTabActivation(
+                            selected = selected,
+                            description = item.contentDescription ?: item.label,
+                            onActivate = { onSelect(position) },
+                        )
                         .focusable()
                 } else {
                     Modifier.clearAndSetSemantics { }
