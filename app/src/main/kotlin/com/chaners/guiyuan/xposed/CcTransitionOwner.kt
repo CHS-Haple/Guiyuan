@@ -135,12 +135,6 @@ internal object CcTransitionOwner {
     @Synchronized
     fun capacityGeometryProbe(): String? = current?.capacityGeometryProbe()
 
-    // Read the existing native battery optical targets of the active CC
-    // transition. Header root bounds are not the indicator's paint bounds.
-    @Synchronized
-    fun nativeBatteryOpticalScreenTops(): Pair<Int?, Int?>? =
-        current?.nativeBatteryOpticalScreenTops()
-
     // Canary-only read of existing draw and native View state.
     @Synchronized
     fun frameWitness(): String = current?.frameWitness() ?: "transition-session=inactive"
@@ -282,18 +276,6 @@ internal object CcTransitionOwner {
             nativeClip = sourceView.clipBounds?.let(::Rect),
             appliedClip = Rect(0, 0, 0, 0),
         )
-        // Resolve through the same verified native battery target accessor
-        // used by the transition painter; no new reflection or property writer.
-        private val fakeBatteryOptical by lazy(LazyThreadSafetyMode.NONE) {
-            fakeRootRef.get()
-                ?.let { uniqueDescendantView(it, BATTERY_VIEW_CLASS_NAME) }
-                ?.let(::resolveBatteryIconTarget)
-        }
-        private val finalBatteryOptical by lazy(LazyThreadSafetyMode.NONE) {
-            resolveBatteryIconTarget(finalBattery)
-        }
-        private val opticalScreenLocation = IntArray(2)
-
         private val mobileSubIdFields = HashMap<Class<*>, Field?>()
         private val targetCache = HashMap<TargetCacheKey, TargetWitness>()
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
@@ -377,6 +359,8 @@ internal object CcTransitionOwner {
         private var lastDrawPhase = "never"
         private var lastDrawOpacity = 0f
         private val lastDrawClip = Rect()
+        private var lastBatteryDrawGeometry: FloatArray? = null
+        private var lastBatteryClipRejected: Boolean? = null
         private var cachedNativePeerTint: Int? = null
         private var frozenReservationSpans: List<CcReservationPolicy.ReservationSpan>? = null
         private var reservationLayout: ChargeLayout? = null
@@ -735,6 +719,10 @@ internal object CcTransitionOwner {
                 " peerClipChildren=${fakeStatusIcons.clipChildren}," +
                 "${(fakeStatusIcons.parent as? ViewGroup)?.clipChildren}," +
                 "${fakeRootRef.get()?.clipChildren}" +
+                " frozenCarrierWidth=${frozenSource?.motionCarrierWidth}" +
+                " frozenSourceGeometry=${frozenSource?.geometry?.contentToString()}" +
+                " frozenCarrierGeometry=${frozenSource?.motionCarrierGeometry?.contentToString()}" +
+                " liveCarrierGeometry=${liveCarrier?.contentToString()}" +
                 " cachedCarrierRootX=$fakeCarrierRootOffsetX" +
                 " liveCarrierRootX=$liveRootOffsetX" +
                 " cachedFakeHostWidth=$fakeCarrierHostWidthPx" +
@@ -904,6 +892,8 @@ internal object CcTransitionOwner {
                     (if (lastDrawPaintMs == 0L) "never" else now - lastDrawPaintMs) +
                 " paintComponents=$lastDrawComponents phase=$lastDrawPhase" +
                 " drawOpacity=$lastDrawOpacity canvasClip=$lastDrawClip" +
+                " batteryGeometry=${lastBatteryDrawGeometry?.contentToString()}" +
+                " batteryClipRejected=$lastBatteryClipRejected" +
                 " sourceMaskApplied=$sourceMaskApplied sourceClip=" + source?.clipBounds +
                 " sourceVisible=" + source?.visibility +
                 " rootId=" + root?.let { System.identityHashCode(it.rootView) } +
@@ -912,19 +902,6 @@ internal object CcTransitionOwner {
                 " fakeEffectiveAlpha=" + fake?.let(::endpointAlpha) +
                 " finalEffectiveAlpha=" + final?.let(::endpointAlpha) +
                 " fakeChain=" + hierarchy(fake) + " finalChain=" + hierarchy(final)
-        }
-
-        fun nativeBatteryOpticalScreenTops(): Pair<Int?, Int?> {
-            fun screenTop(view: View?): Int? {
-                if (view?.isAttachedToWindow != true || !view.isLaidOut ||
-                    view.height <= 0 || !view.isShown
-                ) return null
-                return readOrNull {
-                    view.getLocationOnScreen(opticalScreenLocation)
-                    opticalScreenLocation[1]
-                }
-            }
-            return screenTop(fakeBatteryOptical) to screenTop(finalBatteryOptical)
         }
 
         fun start(): Boolean {
@@ -1104,16 +1081,18 @@ internal object CcTransitionOwner {
                 lastDrawComponents = 0
                 lastDrawOpacity = 0f
                 canvas.getClipBounds(lastDrawClip)
+                lastBatteryDrawGeometry = null
+                lastBatteryClipRejected = null
             }
-            if (!started) { lastDrawPhase = "stopped"; return }
-            val rootView = rootRef.get() ?: run { lastDrawPhase = "root-missing"; return }
-            val fake = fakeRootRef.get() ?: run { lastDrawPhase = "fake-missing"; return }
+            if (!started) { if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "stopped"; return }
+            val rootView = rootRef.get() ?: run { if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "root-missing"; return }
+            val fake = fakeRootRef.get() ?: run { if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "fake-missing"; return }
             val sourceView = sourceViewRef.get()
-                ?: run { lastDrawPhase = "source-missing"; return }
+                ?: run { if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "source-missing"; return }
             val sourceAnchor = sourceAnchorRef.get()
-                ?: run { lastDrawPhase = "anchor-missing"; return }
+                ?: run { if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "anchor-missing"; return }
             if (sourceView.width <= 0 || sourceView.height <= 0) {
-                lastDrawPhase = "source-size-zero"
+                if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "source-size-zero"
                 return
             }
 
@@ -1138,7 +1117,7 @@ internal object CcTransitionOwner {
                 }
             val sourceParentGeometry =
                 frozenSource?.geometry ?: liveSourceParentGeometry
-                    ?: run { lastDrawPhase = "source-geometry-missing"; return }
+                    ?: run { if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "source-geometry-missing"; return }
             val sourceWidth = frozenSource?.width ?: sourceView.width
             val sourceHeight = frozenSource?.height ?: sourceView.height
             val opacity = endpointAlpha(fake)
@@ -1146,7 +1125,7 @@ internal object CcTransitionOwner {
                 lastDrawOpacity = opacity
                 lastDrawPhase = "alpha-checked"
             }
-            if (opacity <= 0f) { lastDrawPhase = "fake-alpha-zero"; return }
+            if (opacity <= 0f) { if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "fake-alpha-zero"; return }
             val finalOpacity =
                 finalRootRef.get()
                     ?.let(::endpointAlpha)
@@ -1208,7 +1187,7 @@ internal object CcTransitionOwner {
                     visual = currentSnapshot.visual,
                 )
             if (baseSpecs.isEmpty()) {
-                lastDrawPhase = "no-component-specs"
+                if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "no-component-specs"
                 return
             }
             if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "component-specs-ready"
@@ -1900,6 +1879,13 @@ internal object CcTransitionOwner {
                     lastDrawPhase = "painting"
                     lastDrawComponents++
                     lastDrawPaintMs = SystemClock.elapsedRealtime()
+                    if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
+                        lastBatteryDrawGeometry = renderedGeometry
+                        lastBatteryClipRejected = canvas.quickReject(
+                            matrixBounds.left, matrixBounds.top,
+                            matrixBounds.right, matrixBounds.bottom,
+                        )
+                    }
                 }
                 painter.drawTransitionComponent(
                     canvas = canvas,

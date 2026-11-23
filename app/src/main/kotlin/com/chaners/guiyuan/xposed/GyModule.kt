@@ -12,7 +12,6 @@ import com.chaners.guiyuan.settings.NativeFontAxisPolicy
 import java.io.File
 import java.io.FileInputStream
 import java.nio.channels.FileChannel
-import java.lang.ref.WeakReference
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
@@ -96,16 +95,6 @@ class GyModule : XposedModule() {
     private var ccExpansion = 0f
     private var ccProjectionReadyForHandoff = false
     private var ccHomeYieldedToPanel = false
-    // A closing FAKE header can leave the steady status-bar area exposed
-    // after rotation. These are observations, not additional native writers.
-    private var ccClosingVisualFrame = false
-    // One witness per geometry stage in a native gesture (never per frame).
-    private var ccUnderlayProbeStageMask = 0
-    // Passive one-shot paint chain observation, four stage receipts per close.
-    private var ccPaintChainStageMask = 0
-    private var ccFakeRootRef = WeakReference<ViewGroup>(null)
-    private var ccFinalRootRef = WeakReference<ViewGroup>(null)
-    private val ccHeaderScreenLocation = IntArray(2)
     // onExpansionChanged is intercepted BEFORE SystemUI's native body.
     // The zero handoff must commit AFTER native updates its scene visuals.
     private var ccNativeZeroAwaitingCommit = false
@@ -617,11 +606,6 @@ class GyModule : XposedModule() {
         ccExpansion = 0f
         ccProjectionReadyForHandoff = false
         ccHomeYieldedToPanel = false
-        ccClosingVisualFrame = false
-        ccUnderlayProbeStageMask = 0
-        ccPaintChainStageMask = 0
-        ccFakeRootRef = WeakReference(null)
-        ccFinalRootRef = WeakReference(null)
         ccNativeZeroAwaitingCommit = false
         controlCenterSourceScene = SourceScene.UNKNOWN
         steadyStatusSourceScene = SourceScene.UNKNOWN
@@ -1058,10 +1042,8 @@ class GyModule : XposedModule() {
                             ccNativeZeroAwaitingCommit = false
                             reconcileCcHomeAuthority("native-fraction-after-proceed")
                         }
-                        updateCcClosingHomeUnderlay(progress)
                         if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
                             onCcNativeGeometry(progress)
-                            onCcPaintChainWitness(progress)
                         }
                     }
                 },
@@ -1110,38 +1092,6 @@ class GyModule : XposedModule() {
         }
     }
 
-    private fun onCcPaintChainWitness(progress: Float) {
-        // Four post-native receipts per closing gesture; never a new frame
-        // listener or native property writer.
-        if (!ccClosingVisualFrame && progress > 0f) return
-        val stage =
-            when {
-                progress <= 0f -> 3
-                progress > 0.8f -> 0
-                progress >= 0.45f -> 1
-                else -> 2
-            }
-        val bit = 1 shl stage
-        if (ccPaintChainStageMask and bit != 0) return
-        ccPaintChainStageMask = ccPaintChainStageMask or bit
-        logDiagnostic(
-            level = Log.INFO,
-            event = "paint.chain",
-            component = "controlCenterProjection",
-            state = "after-native-expansion",
-            "fraction" to progress,
-            "closing" to ccClosingVisualFrame,
-            "scene" to controlCenterSourceScene.name,
-            "nativeVisible" to controlCenterSceneVisible,
-            "homeYielded" to ccHomeYieldedToPanel,
-            "home" to HomeRenderSession.frameWitness(),
-            "fake" to CcRenderSession.frameWitness(),
-            "transition" to CcTransitionOwner.frameWitness(),
-            "native" to SysUiCcSource.nativeVisualState(),
-        )
-        if (progress <= 0f) ccPaintChainStageMask = 0
-    }
-
     private fun onCcNativeGeometry(progress: Float) {
         val fraction = progress.coerceIn(0f, 1f)
         val stage = when {
@@ -1169,23 +1119,27 @@ class GyModule : XposedModule() {
             "nativeVisual" to SysUiCcSource.nativeVisualState(),
             "snapshot" to snapshot,
         )
+        if (direction == "closing") {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "paint.chain",
+                component = "controlCenterProjection",
+                state = "after-native-expansion",
+                "fraction" to fraction,
+                "scene" to controlCenterSourceScene.name,
+                "nativeVisible" to controlCenterSceneVisible,
+                "homeYielded" to ccHomeYieldedToPanel,
+                "home" to HomeRenderSession.frameWitness(),
+                "fake" to CcRenderSession.frameWitness(),
+                "transition" to CcTransitionOwner.frameWitness(),
+                "native" to SysUiCcSource.nativeVisualState(),
+            )
+        }
     }
 
     private fun onCcUpdate(
         update: SysUiCcSource.Update,
     ) {
-        update.transitionEndpoints?.let { endpoints ->
-            ccFakeRootRef = WeakReference(endpoints.fakeRoot)
-            ccFinalRootRef = WeakReference(endpoints.finalRoot)
-        }
-        if (update.visible == false) {
-            ccClosingVisualFrame = false
-            ccUnderlayProbeStageMask = 0
-            ccPaintChainStageMask = 0
-            HomeRenderSession.setCcClosingUnderlayVisible(false)
-            ccFakeRootRef = WeakReference(null)
-            ccFinalRootRef = WeakReference(null)
-        }
         val effectiveSourceScene = handleCcUpdate(update)
         val transitionUpdate =
             if (effectiveSourceScene != null) {
@@ -1451,7 +1405,6 @@ class GyModule : XposedModule() {
         val fraction = rawFraction.coerceIn(0f, 1f)
         val previous = ccExpansion
         ccExpansion = fraction
-        ccClosingVisualFrame = fraction > 0f && fraction < previous
         ccNativeZeroAwaitingCommit =
             CcHomeHandoffPolicy.awaitNativeZeroCommit(
                 nativePanelVisible = controlCenterSceneVisible,
@@ -1489,71 +1442,6 @@ class GyModule : XposedModule() {
                 source = "native-fraction-zero",
                 reconcileReadiness = true,
             )
-        }
-    }
-
-    // The native CC header may be physically below Home during an upward
-    // close after rotation (B1931: both header roots 387px; Home ends at 254px).
-    // Only show Home's own overlay while both native header roots are entirely
-    // outside its slot. CC remains the native owner until its fraction-zero
-    // callback completes; this never changes ignored slots or CC peer motion.
-    private fun updateCcClosingHomeUnderlay(progress: Float) {
-        val eligible =
-            ccClosingVisualFrame && progress > 0f &&
-                controlCenterSceneVisible && controlCenterSceneEligible &&
-                controlCenterSourceScene == SourceScene.HOME
-        val homeBottom = if (eligible) HomeRenderSession.homeSlotBottomScreenY() else null
-        fun nativeTop(root: ViewGroup?): Int? {
-            if (root?.isAttachedToWindow != true || !root.isLaidOut) return null
-            return SysUiPresentationRuntime.optionalNativeRead {
-                root.getLocationOnScreen(ccHeaderScreenLocation)
-                ccHeaderScreenLocation[1]
-            }
-        }
-        val fakeTop = if (eligible) nativeTop(ccFakeRootRef.get()) else null
-        val finalTop = if (eligible) nativeTop(ccFinalRootRef.get()) else null
-        val opticalTop =
-            if (eligible) CcTransitionOwner.nativeBatteryOpticalScreenTops() else null
-        val show =
-            CcHomeCloseUnderlayPolicy.shouldShow(
-                nativePanelVisible = controlCenterSceneVisible,
-                closing = eligible,
-                homeSlotBottomPx = homeBottom,
-                fakeHeaderTopPx = fakeTop,
-                finalHeaderTopPx = finalTop,
-                fakeBatteryOpticalTopPx = opticalTop?.first,
-                finalBatteryOpticalTopPx = opticalTop?.second,
-            )
-        HomeRenderSession.setCcClosingUnderlayVisible(show)
-        if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
-            if (progress <= 0f || progress >= 1f) {
-                ccUnderlayProbeStageMask = 0
-                ccPaintChainStageMask = 0
-            } else {
-                val stage = if (progress > 0.8f) 1 else if (progress < 0.4f) 0 else -1
-                val stageBit = if (stage >= 0) 1 shl stage else 0
-                if (stageBit != 0 && ccUnderlayProbeStageMask and stageBit == 0) {
-                    ccUnderlayProbeStageMask = ccUnderlayProbeStageMask or stageBit
-                    logDiagnostic(
-                        level = Log.INFO,
-                        event = "underlay.admission",
-                        component = "controlCenterProjection",
-                        state = if (show) "accepted" else "rejected",
-                        "fraction" to progress,
-                        "closing" to ccClosingVisualFrame,
-                        "nativePanelVisible" to controlCenterSceneVisible,
-                        "sceneEligible" to controlCenterSceneEligible,
-                        "sourceScene" to controlCenterSourceScene.name,
-                        "homeRenderBottomPx" to homeBottom,
-                        "homeVisibility" to HomeRenderSession.visibilityWitness(),
-                        "fakeTopPx" to fakeTop,
-                        "finalTopPx" to finalTop,
-                        "fakeBatteryOpticalTopPx" to opticalTop?.first,
-                        "finalBatteryOpticalTopPx" to opticalTop?.second,
-                        "geometryAdmitted" to show,
-                    )
-                }
-            }
         }
     }
 
@@ -1847,12 +1735,6 @@ class GyModule : XposedModule() {
 
     private fun onCcRuntimeFailure(error: Throwable) {
         if (retiredForHotReload) return
-        ccClosingVisualFrame = false
-        ccUnderlayProbeStageMask = 0
-        ccPaintChainStageMask = 0
-        HomeRenderSession.setCcClosingUnderlayVisible(false)
-        ccFakeRootRef = WeakReference(null)
-        ccFinalRootRef = WeakReference(null)
         val cleanupFailures = mutableListOf<String>()
         fun safely(step: String, block: () -> Unit) {
             try {

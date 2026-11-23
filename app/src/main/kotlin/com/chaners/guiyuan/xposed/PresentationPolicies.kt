@@ -54,23 +54,6 @@ internal object CcHomeHandoffPolicy {
                 (nativeExpansion.isFinite() && nativeExpansion > 0f))
 }
 
-internal object CcHomeCloseUnderlayPolicy {
-    fun shouldShow(
-        nativePanelVisible: Boolean,
-        closing: Boolean,
-        homeSlotBottomPx: Int?,
-        fakeHeaderTopPx: Int?,
-        finalHeaderTopPx: Int?,
-        fakeBatteryOpticalTopPx: Int? = null,
-        finalBatteryOpticalTopPx: Int? = null,
-    ): Boolean =
-        nativePanelVisible && closing &&
-            homeSlotBottomPx != null &&
-            fakeHeaderTopPx != null && finalHeaderTopPx != null &&
-            (fakeBatteryOpticalTopPx ?: fakeHeaderTopPx) >= homeSlotBottomPx &&
-            (finalBatteryOpticalTopPx ?: finalHeaderTopPx) >= homeSlotBottomPx
-}
-
 internal object VisualMaskPolicy {
     fun shouldAdoptExistingNativeLayout(
         deferVisualMaskUntilLayout: Boolean,
