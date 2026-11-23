@@ -63,7 +63,7 @@ internal fun GlassNavigationBarLayout(
                         alpha = fraction
                     }.then(
                         if (trailingAction == null) {
-                            Modifier.blockRetiringNavigationActionInput()
+                            Modifier.blockVisualOnlyInput()
                         } else {
                             Modifier
                         },

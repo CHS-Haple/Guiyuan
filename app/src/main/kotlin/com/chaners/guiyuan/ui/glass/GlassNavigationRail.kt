@@ -337,7 +337,7 @@ private fun RailWindowTrailingAction(
                 }
                 .then(
                     if (action == null) {
-                        Modifier.blockRetiringNavigationActionInput()
+                        Modifier.blockVisualOnlyInput()
                     } else Modifier,
                 ),
         ) { presentedAction() }

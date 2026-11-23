@@ -58,7 +58,6 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -253,15 +252,7 @@ internal fun GlassPopupSurface(
                 if (interactive) {
                     Modifier
                 } else {
-                    Modifier
-                        .clearAndSetSemantics { }
-                        .pointerInput(Unit) {
-                            awaitPointerEventScope {
-                                while (true) {
-                                    awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
-                                }
-                            }
-                        }
+                    Modifier.blockVisualOnlyInput()
                 },
             ),
         content = {
