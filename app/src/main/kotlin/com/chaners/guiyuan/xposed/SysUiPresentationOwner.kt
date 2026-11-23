@@ -1589,6 +1589,80 @@ internal object SysUiPresentationOwner {
                 }
             }
 
+        // Native QS_FAKE's own width changes on rotation, independently of
+        // battery/carrier layout. Reconcile its receipt after a complete frame.
+        private val ccFakeHostLayoutListener =
+            View.OnLayoutChangeListener {
+                    _,
+                    left,
+                    _,
+                    right,
+                    _,
+                    oldLeft,
+                    _,
+                    oldRight,
+                    _,
+                ->
+                if (right - left != oldRight - oldLeft) awaitCcFakeHostReflow()
+            }
+        private var ccReflowObserver: ViewTreeObserver? = null
+        private var ccReflowListener: ViewTreeObserver.OnPreDrawListener? = null
+
+        private fun releaseCcReflowListener() {
+            val observer = ccReflowObserver
+            val listener = ccReflowListener
+            if (observer != null && listener != null && observer.isAlive) {
+                observer.removeOnPreDrawListener(listener)
+            }
+            ccReflowObserver = null
+            ccReflowListener = null
+        }
+
+        private fun awaitCcFakeHostReflow() {
+            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE ||
+                !active || !started || !compactLayoutReady ||
+                ccReflowListener != null
+            ) return
+            val fakeHost = host.get()?.takeIf { it.isAttachedToWindow } ?: return
+            val observer = fakeHost.viewTreeObserver.takeIf { it.isAlive } ?: return
+            val listener = ViewTreeObserver.OnPreDrawListener {
+                afterNativeCallback(this, "cc-fake-host-reflow-pre-draw") {
+                    val nativeParent = fakeHost.parent as? View
+                    val peerRow = statusIcons.get()
+                    if (!active || !started || !compactLayoutReady ||
+                        !fakeHost.isAttachedToWindow
+                    ) {
+                        releaseCcReflowListener()
+                    } else if (
+                        nativeParent?.isLayoutRequested != true &&
+                        peerRow?.isLayoutRequested == false &&
+                        nativeFakeCarrierLayoutSettled()
+                    ) {
+                        val applied = ccAppliedWidthPx
+                        val replaced =
+                            applied != null &&
+                                FakeCarrierNativeGeometryPolicy.nativeReplacedLease(
+                                    applied,
+                                    fakeHost.layoutParams?.width ?: -1,
+                                )
+                        if (!syncEndReservation()) {
+                            releaseCcReflowListener()
+                        } else if (replaced && ccAppliedWidthPx == null) {
+                            // Do not reborrow in the callback that yielded
+                            // SystemUI's new width. Recheck its next drawn frame.
+                            fakeHost.postInvalidateOnAnimation()
+                        } else {
+                            releaseCcReflowListener()
+                        }
+                    }
+                }
+                true
+            }
+            ccReflowObserver = observer
+            ccReflowListener = listener
+            observer.addOnPreDrawListener(listener)
+        }
+
         // One native traversal is needed after applying persistent ignored slots.
         // A child's onLayout may finish before its parent's isLayoutRequested clears;
         // commit CC cutover only at pre-draw, after the complete native layout.
@@ -1818,6 +1892,9 @@ internal object SysUiPresentationOwner {
             nativePadding = PaddingState.from(group)
             battery.get()?.addOnLayoutChangeListener(reservationWidthListener)
             batteryCarrier.get()?.addOnLayoutChangeListener(reservationWidthListener)
+            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
+                host.get()?.addOnLayoutChangeListener(ccFakeHostLayoutListener)
+            }
             if (deferNativeLayoutOwnershipUntilCommit) {
                 nativeLayoutOwnershipDeferred = true
                 compactLayoutReady = false
@@ -2009,6 +2086,8 @@ internal object SysUiPresentationOwner {
 
             val failures = ArrayList<Throwable>(1)
             releaseAttempt(failures) { releaseCcCutoverListener() }
+            releaseAttempt(failures) { releaseCcReflowListener() }
+            releaseAttempt(failures) { host.get()?.removeOnLayoutChangeListener(ccFakeHostLayoutListener) }
             releaseAttempt(failures) { host.get()?.removeOnAttachStateChangeListener(this) }
             releaseAttempt(failures) {
                 battery.get()?.removeOnLayoutChangeListener(reservationWidthListener)
