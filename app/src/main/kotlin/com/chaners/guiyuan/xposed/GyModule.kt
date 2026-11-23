@@ -1042,7 +1042,9 @@ class GyModule : XposedModule() {
                             ccNativeZeroAwaitingCommit = false
                             reconcileCcHomeAuthority("native-fraction-after-proceed")
                         }
-                        if (deepDiagnosticsEnabled) onCcNativeGeometry(progress)
+                        if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
+                            onCcNativeGeometry(progress)
+                        }
                     }
                 },
                 onFakePresentationAttached = { host ->
@@ -1101,23 +1103,22 @@ class GyModule : XposedModule() {
             else -> 0
         }
         if (stage == ccPeerGeometryStage || ccPeerGeometrySamples >= 12) return
-        CcTransitionOwner.capacityGeometryProbe()?.let { snapshot ->
-            val direction = if (stage < ccPeerGeometryStage) "closing" else "opening"
-            ccPeerGeometryStage = stage
-            ccPeerGeometrySamples++
-            logDiagnostic(
-                level = Log.INFO,
-                event = "transition.peerGeometry",
-                component = "ccNativePeers",
-                state = "sampled",
-                "sample" to stage,
-                "direction" to direction,
-                "phase" to "after-native-expansion",
-                "homeIslandShowing" to SysUiIslandSource.currentShowing(),
-                "nativeVisual" to SysUiCcSource.nativeVisualState(),
-                "snapshot" to snapshot,
-            )
-        }
+        val snapshot = CcTransitionOwner.capacityGeometryProbe()
+        val direction = if (stage < ccPeerGeometryStage) "closing" else "opening"
+        ccPeerGeometryStage = stage
+        ccPeerGeometrySamples++
+        logDiagnostic(
+            level = Log.INFO,
+            event = "transition.peerGeometry",
+            component = "ccNativePeers",
+            state = if (snapshot != null) "sampled" else "transition-unavailable",
+            "sample" to stage,
+            "direction" to direction,
+            "phase" to "after-native-expansion",
+            "homeIslandShowing" to SysUiIslandSource.currentShowing(),
+            "nativeVisual" to SysUiCcSource.nativeVisualState(),
+            "snapshot" to snapshot,
+        )
     }
 
     private fun onCcUpdate(

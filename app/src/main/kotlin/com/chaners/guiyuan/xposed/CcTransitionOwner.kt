@@ -623,11 +623,6 @@ internal object CcTransitionOwner {
             fun peers(group: ViewGroup): String =
                 (0 until group.childCount)
                     .asSequence()
-                    .filter { index ->
-                        val child = group.getChildAt(index)
-                        child.visibility == View.VISIBLE &&
-                            child.width > 0 && child.height > 0
-                    }
                     .take(16)
                     .joinToString(",") { index ->
                         val child = group.getChildAt(index)
@@ -639,7 +634,7 @@ internal object CcTransitionOwner {
                         } ?: "-"
                         val state = NativeStatusObserver.readIslandVisibilityState(group, child)
                         "$index:$slot:" + viewPos(child) +
-                            ":shown=${child.isShown}:clip=$mask" +
+                            ":visibility=${child.visibility}:shown=${child.isShown}:clip=$mask" +
                             ":native=${state?.visibleState}/${state?.inIslandState}/${state?.hiddenBySpace}"
                     }
 
@@ -693,6 +688,8 @@ internal object CcTransitionOwner {
                     NativeStatusSlots.findResourceView(wifi, "wifi_signal")
                 })}" +
                 " source=${viewPos(source)} finalBattery=${viewPos(finalBattery)}" +
+                " fakeChildren=${fakeStatusIcons.childCount}" +
+                " finalChildren=${finalStatusIcons.childCount}" +
                 " fakePeers=[${peers(fakeStatusIcons)}]" +
                 " finalPeers=[${peers(finalStatusIcons)}]"
         }
