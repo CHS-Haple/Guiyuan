@@ -1620,11 +1620,15 @@ internal object SysUiPresentationOwner {
 
         private fun awaitCcFakeHostReflow() {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE ||
-                !active || !started || !compactLayoutReady ||
-                ccReflowListener != null
+                !active || !started || !compactLayoutReady
             ) return
             val fakeHost = host.get()?.takeIf { it.isAttachedToWindow } ?: return
             val observer = fakeHost.viewTreeObserver.takeIf { it.isAlive } ?: return
+            if (ccReflowListener != null) {
+                if (ccReflowObserver === observer) return
+                // A rotated/replaced native tree may leave an old observer alive.
+                releaseCcReflowListener()
+            }
             val listener = ViewTreeObserver.OnPreDrawListener {
                 afterNativeCallback(this, "cc-fake-host-reflow-pre-draw") {
                     val nativeParent = fakeHost.parent as? View
