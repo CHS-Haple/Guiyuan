@@ -68,6 +68,34 @@ class PreviewSandboxStatePersistenceTest {
     }
 
     @Test
+    fun presentationAcrossSimModesMatchesOriginalSelectionPolicy() {
+        for (mode in PreviewNetworkMode.entries) {
+            for (mobile in PreviewMobileNetwork.entries) {
+                for (simCards in PreviewSimCards.entries) {
+                    for (dataSim in PreviewDataSim.entries) {
+                        val raw = PreviewSandboxUiState(
+                            networkMode = mode,
+                            mobileNetwork = mobile,
+                            simCards = simCards,
+                            dataSim = dataSim,
+                        )
+                        val originalDisplayMode = if (
+                            mode == PreviewNetworkMode.MOBILE &&
+                            simCards == PreviewSimCards.SIM1_ONLY &&
+                            mobile == PreviewMobileNetwork.NONE
+                        ) PreviewNetworkMode.NONE else mode
+                        val displayed = raw.previewForPresentation()
+                        assertEquals(originalDisplayMode, displayed.networkMode)
+                        assertEquals(mobile, displayed.mobileNetwork)
+                        assertEquals(simCards, displayed.simCards)
+                        assertEquals(raw, decodePreviewSelection(encodePreviewSelection(raw)))
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     fun selectingMobileRestoresDefaultTypeInSingleStateWrite() {
         val selection = PreviewSandboxUiState(
             networkMode = PreviewNetworkMode.WIFI,
