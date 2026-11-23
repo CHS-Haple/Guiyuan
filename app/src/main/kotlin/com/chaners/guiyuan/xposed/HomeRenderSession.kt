@@ -584,6 +584,9 @@ internal object HomeRenderSession {
                     SystemClock.elapsedRealtime() - lastCompletedDrawElapsedRealtimeMs
                 } else "never") +
                 " renderAlpha=${probeView.alpha}" +
+                " renderAttached=${probeView.isAttachedToWindow}" +
+                " renderClip=${probeView.clipBounds}" +
+                " modelReady=$modelReady tintReady=$tintReady" +
                 " renderBounds=${probeView.left}..${probeView.right}" +
                 " overlayParent=${probeView.parent?.javaClass?.simpleName}" +
                 " rootShown=${root?.isShown}" +
