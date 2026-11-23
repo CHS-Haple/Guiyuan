@@ -2,7 +2,6 @@ package com.chaners.guiyuan.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.WindowInsets
@@ -45,21 +44,17 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
-import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.settings.UiStyle
@@ -95,10 +90,6 @@ import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.NavigationBarDisplayMode
-import top.yukonga.miuix.kmp.basic.NavigationRail
-import top.yukonga.miuix.kmp.basic.NavigationRailState
-import top.yukonga.miuix.kmp.basic.NavigationRailDefaults
-import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
@@ -121,75 +112,6 @@ private const val TopLevelPageCount = 3
 
 /** Read the shared rail morph in drawing/layout; non-rail routes remain fully visible. */
 internal val LocalGlassRailProgress = staticCompositionLocalOf<() -> Float> { { 1f } }
-
-/** Keep a full-width page beside the upstream expanded rail; insets are relative to logical start. */
-internal fun canPlaceGlassRail(
-    windowSize: androidx.compose.ui.unit.DpSize,
-    startInset: androidx.compose.ui.unit.Dp,
-    endInset: androidx.compose.ui.unit.Dp,
-    verticalInsets: androidx.compose.ui.unit.Dp,
-): Boolean {
-    val occupiedWidth = GlassNavigationRailDefaults.ExpandedWidth +
-        GlassNavigationRailDefaults.Margin * 2 + startInset
-    return windowSize.width >= occupiedWidth + endInset + 360.dp &&
-        windowSize.height >= verticalInsets + 320.dp
-}
-
-/** Native rail replaces the current bottom bar only when the whole page still fits. */
-internal fun canPlaceNativeRail(
-    window: DpSize,
-    startInset: Dp,
-    endInset: Dp,
-    verticalInsets: Dp,
-): Boolean = window.width >= NavigationRailDefaults.ExpandedWidth + startInset + endInset + 360.dp &&
-    window.height >= verticalInsets + 320.dp
-
-/** A style-level policy with no orientation or device-brand assumptions. */
-internal fun useNativeRailFor(
-    appearance: Appearance,
-    glassBackdropAvailable: Boolean,
-    window: DpSize,
-    safePadding: PaddingValues,
-    direction: LayoutDirection,
-): Boolean {
-    if (!appearance.navEnabled) return false
-    // OS4 Glass and Liquid share the original GlassRail layout; OS3 uses native Rail.
-    if (appearance.uiStyle == UiStyle.OS4 && glassBackdropAvailable &&
-        (appearance.navStyle == NavStyle.Glass || appearance.navStyle == NavStyle.Liquid)
-    ) return false
-    return canPlaceNativeRail(
-        window,
-        safePadding.calculateStartPadding(direction),
-        safePadding.calculateEndPadding(direction),
-        safePadding.calculateTopPadding() + safePadding.calculateBottomPadding(),
-    )
-}
-
-private data class MainNavItem(
-    val label: String,
-    val icon: ImageVector,
-)
-
-/** Map app destinations to the MIUIX-native rail; no parallel press or selected lens. */
-@Composable
-private fun HubNativeRail(
-    state: NavigationRailState,
-    items: List<MainNavItem>,
-    selectedIndex: Int,
-    onSelect: (Int) -> Unit,
-) {
-    NavigationRail(state = state, modifier = Modifier.fillMaxHeight()) {
-        items.forEachIndexed { index, item ->
-            NavigationRailItem(
-                selected = selectedIndex == index,
-                onClick = { onSelect(index) },
-                icon = item.icon,
-                label = item.label,
-            )
-        }
-    }
-}
-
 
 @Composable
 internal fun MainHub(
