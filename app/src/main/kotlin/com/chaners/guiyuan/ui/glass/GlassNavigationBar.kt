@@ -10,16 +10,12 @@ import top.yukonga.miuix.kmp.glass.GlassMotion
 
 import top.yukonga.miuix.kmp.glass.glassPanel
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -42,20 +38,16 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.computedStateOf
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorProducer
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
@@ -66,8 +58,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
@@ -75,9 +65,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
-import top.yukonga.miuix.kmp.basic.BadgedBox
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
@@ -468,91 +455,6 @@ fun GlassNavigationBar(
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun androidx.compose.foundation.layout.RowScope.GlassNavigationBarItemContent(
-    item: GlassNavigationItem,
-    position: Int,
-    selected: Boolean,
-    pressedIndexProvider: () -> Int,
-    selectedColor: Color,
-    unselectedColor: Color,
-    labelSize: androidx.compose.ui.unit.TextUnit,
-    height: Dp,
-    interactionEnabled: Boolean,
-    onSelect: (Int) -> Unit,
-) {
-    val tintState = animateColorAsState(
-        targetValue = if (selected) selectedColor else unselectedColor,
-        animationSpec = GlassMotion.navContent(),
-        label = "glassNavigationTint",
-    )
-    val tintProducer = remember { ColorProducer { tintState.value } }
-    val isPressed by remember(position) {
-        computedStateOf { pressedIndexProvider() == position }
-    }
-    val pressAlpha = animateFloatAsState(
-        targetValue = if (isPressed) {
-            GlassNavigationBarDefaults.PressedAlpha
-        } else {
-            1f
-        },
-        animationSpec = GlassMotion.navContentFloat(),
-        label = "glassNavigationPress",
-    )
-    Box(
-        modifier = Modifier
-            .weight(1f)
-            .heightIn(min = height)
-            .graphicsLayer { this.alpha = pressAlpha.value }
-            .padding(
-                horizontal = GlassNavigationBarDefaults.IndicatorOverhang,
-                vertical = GlassNavigationBarDefaults.ContentPaddingVertical,
-            )
-            .then(
-                if (interactionEnabled) {
-                    Modifier
-                        .navigationTabActivation(
-                            selected = selected,
-                            description = item.contentDescription ?: item.label,
-                            onActivate = { onSelect(position) },
-                        )
-                        .focusable()
-                } else {
-                    Modifier.clearAndSetSemantics { }
-                },
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        androidx.compose.foundation.layout.Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(GlassNavigationBarDefaults.LabelSpacing),
-        ) {
-            BadgedBox(badge = { item.badge?.invoke() }) {
-                Icon(
-                    painter = rememberVectorPainter(item.icon),
-                    tint = tintProducer,
-                    contentDescription = null,
-                    modifier = Modifier.size(GlassNavigationBarDefaults.IconSize),
-                )
-            }
-            item.label?.let { label ->
-                val baseLabelStyle = MiuixTheme.textStyles.footnote2
-                val labelTextStyle = remember(baseLabelStyle, labelSize) {
-                    baseLabelStyle.copy(fontSize = labelSize)
-                }
-                Text(
-                    text = label,
-                    color = tintProducer,
-                    style = labelTextStyle,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
             }
         }
     }
