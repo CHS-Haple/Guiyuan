@@ -72,6 +72,11 @@ internal object VisualMaskPolicy {
 // Native FAKE width must settle before an optional, receipt-scoped capacity
 // lease. Native end-overhang must not be narrowed by the module.
 internal object FakeCarrierNativeGeometryPolicy {
+    // Any overwrite ends this generation of a temporary width receipt.
+    // Native layout (including orientation reflow) is authoritative.
+    fun nativeReplacedLease(appliedWidthPx: Int, liveWidthPx: Int): Boolean =
+        appliedWidthPx != liveWidthPx
+
     fun leaseWidth(nativeWidthPx: Int, parentContentWidthPx: Int, clearMargins: Boolean): Int? =
         parentContentWidthPx.takeIf { clearMargins && nativeWidthPx > 0 && it > nativeWidthPx }
 

@@ -2475,9 +2475,19 @@ internal object SysUiPresentationOwner {
             val params = fake.layoutParams ?: return true
             val applied = ccAppliedWidthPx
             if (applied != null) {
-                if (params.width == applied) return true
-                onFailNative("fake-carrier-width-writer-conflict")
-                return false
+                if (!FakeCarrierNativeGeometryPolicy.nativeReplacedLease(applied, params.width)) {
+                    return true
+                }
+                // SystemUI reassigns this width on rotation / scene reflow.
+                // Yield only the width receipt; retaining CC presentation keeps
+                // its native peer masks and the Home handoff intact.
+                if (!restoreCcFakeCapacityLease()) {
+                    onFailNative("fake-carrier-width-receipt-release-incomplete")
+                    return false
+                }
+                // Never reborrow within the same native layout callback.
+                // The next settled native layout can admit a new lease.
+                return true
             }
             if (!nativeFakeCarrierLayoutSettled()) return true
             val parent = fake.parent as? ViewGroup ?: return true
@@ -2510,7 +2520,7 @@ internal object SysUiPresentationOwner {
             val original = ccNativeWidthPx ?: return false
             val fake = host.get() ?: return false
             val params = fake.layoutParams ?: return false
-            if (params.width == applied) {
+            if (!FakeCarrierNativeGeometryPolicy.nativeReplacedLease(applied, params.width)) {
                 params.width = original
                 fake.layoutParams = params
                 if (fake.layoutParams?.width != original) return false

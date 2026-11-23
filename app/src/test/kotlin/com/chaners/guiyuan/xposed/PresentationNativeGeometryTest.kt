@@ -33,6 +33,16 @@ class PresentationNativeGeometryTest {
     }
 
     @Test
+    fun nativeWidthChangeYieldsCurrentLeaseRatherThanFailingCcSession() {
+        // Reproduced B1929: portrait 587 -> leased 819 -> native landscape 1357.
+        assertFalse(FakeCarrierNativeGeometryPolicy.nativeReplacedLease(819, 819))
+        assertTrue(FakeCarrierNativeGeometryPolicy.nativeReplacedLease(819, 1357))
+        assertTrue(FakeCarrierNativeGeometryPolicy.nativeReplacedLease(819, 587))
+        // A provisional zero is not permission to overwrite native layout.
+        assertTrue(FakeCarrierNativeGeometryPolicy.nativeReplacedLease(819, 0))
+    }
+
+    @Test
     fun portraitNativeNarrowCarrierRemainsSystemUiOwned() {
         // Native ownership establishes the 587px baseline before any lease.
         assertTrue(settled(nativeWidth = 587))
