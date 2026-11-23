@@ -671,7 +671,22 @@ internal object CcTransitionOwner {
                 if (fakeFrame != null && liveCarrier != null) {
                     liveCarrier[0] - fakeFrame[0]
                 } else null
-            return "progress=$progress cachedCarrierRootX=$fakeCarrierRootOffsetX" +
+            val finalOpacity = finalRootRef.get()?.let(::endpointAlpha) ?: 0f
+            val spatialProgress =
+                CcTransitionPolicy.spatialHandoffProgress(progress, finalOpacity)
+            val compactWidth = CompactReservationPolicy.resolveCenteredVisualWidth(
+                baseSlotWidthPx = frozenSource?.width ?: source.width,
+                userScale = currentSnapshot.visual.combinedScale,
+            )
+            val projectedWidth = frozenReservationSpans?.let { spans ->
+                CcReservationPolicy.resolveReservationWidth(
+                    compactWidthPx = compactWidth,
+                    spans = spans,
+                    progress = spatialProgress,
+                )
+            }
+            return "progress=$progress spatialProgress=$spatialProgress" +
+                " projectedWidth=$projectedWidth cachedCarrierRootX=$fakeCarrierRootOffsetX" +
                 " liveCarrierRootX=$liveRootOffsetX" +
                 " cachedFakeHostWidth=$fakeCarrierHostWidthPx" +
                 " liveFakeHostWidth=" + (fakeStatusIcons.parent as? View)?.width +
