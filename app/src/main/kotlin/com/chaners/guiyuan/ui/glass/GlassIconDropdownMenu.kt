@@ -72,6 +72,7 @@ fun BoxScope.GlassIconDropdownMenu(
     onDismissFinished: (() -> Unit)? = null,
 ) {
     val density = LocalDensity.current
+    var submenu by remember { mutableStateOf(false) }
     // Primary leaf rows and submenu leaves share the same commit/dismiss order.
     fun activateLeaf(onClick: (() -> Unit)?) {
         onClick?.invoke()
@@ -80,7 +81,6 @@ fun BoxScope.GlassIconDropdownMenu(
             onDismissRequest()
         }
     }
-    var submenu by remember { mutableStateOf(false) }
     var submenuPresent by remember { mutableStateOf(false) }
     val submenuPathState = remember { mutableStateOf<Pair<Int, Int>?>(null) }
     val submenuPath = submenuPathState.value
