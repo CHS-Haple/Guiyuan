@@ -10,13 +10,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.LayoutDirection
 import com.chaners.guiyuan.settings.OnboardingPrefs
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.ui.navigation.AppRoute
+import com.chaners.guiyuan.ui.navigation.appSwipeDismissDirection
 import com.chaners.guiyuan.ui.screens.AboutScreen
 import com.chaners.guiyuan.ui.screens.AboutThirdPartyScreen
 import com.chaners.guiyuan.ui.screens.OnboardingFlow
@@ -48,7 +48,6 @@ import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
 import top.yukonga.miuix.kmp.nav.core.rememberNavBackStack
 import top.yukonga.miuix.kmp.nav.core.rememberNavSystemCornerRadius
-import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -116,11 +115,7 @@ internal fun GyApp(
                 if (currentRoute == AppRoute.PreviewSandbox) onSandboxStop()
             }
         }
-        val swipeBackDirection = when {
-            !appearance.swipeBack -> NavSwipeDirection.None
-            LocalLayoutDirection.current == LayoutDirection.Ltr -> NavSwipeDirection.LeftToRight
-            else -> NavSwipeDirection.RightToLeft
-        }
+        val swipeBackDirection = appSwipeDismissDirection(appearance.swipeBack, LocalLayoutDirection.current)
 
         fun navigate(route: AppRoute) {
             if (route !in backStack) {

@@ -43,6 +43,7 @@ import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.OnboardingPrefs
+import com.chaners.guiyuan.ui.navigation.appSwipeDismissDirection
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
@@ -130,11 +131,7 @@ internal fun OnboardingFlow(
     val sysUiInScope = connected?.sysUiInScope == true
     val canRequestScope = connected != null && connected.apiVersion >= 102 &&
         !scopeBusy && !reloadBusy && !restartBusy
-    val swipeBackDirection = when {
-        !swipeBackEnabled -> NavSwipeDirection.None
-        LocalLayoutDirection.current == LayoutDirection.Ltr -> NavSwipeDirection.LeftToRight
-        else -> NavSwipeDirection.RightToLeft
-    }
+    val swipeBackDirection = appSwipeDismissDirection(swipeBackEnabled, LocalLayoutDirection.current)
 
     // An unfinished guide begins at its entry page on each new app session.
     // Save settings and agreement completion, not the partial page stack.
