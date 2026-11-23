@@ -732,6 +732,9 @@ internal object CcTransitionOwner {
                     NativeStatusSlots.slotOf(peer) !in replacedNetworkSlots &&
                         peer.isShown && peer.width > 0 && peer.height > 0 &&
                         peer.alpha > 0f &&
+                        NativeStatusObserver
+                            .readIslandVisibilityState(fakeStatusIcons, peer)
+                            ?.hiddenBySpace != true &&
                         peer.clipBounds?.let { it.width() <= 0 || it.height() <= 0 } != true
                 }
             if (peers.isEmpty()) return false
