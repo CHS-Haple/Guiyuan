@@ -11,79 +11,46 @@ import top.yukonga.miuix.kmp.glass.GlassMotion
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.SpringSpec
-import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.lerp
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BadgeDefaults
-import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.material.GlassDefaults
-import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
-import top.yukonga.miuix.kmp.material.GlassMaterial
-import top.yukonga.miuix.kmp.material.GlassMaterials
-import top.yukonga.miuix.kmp.material.GlassShadow
-import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.GlassShadows
-import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
-import com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale
 import kotlin.math.ceil
 import androidx.compose.ui.util.fastCoerceIn
-import androidx.compose.ui.util.fastRoundToInt
 
 /**
  * State of a [GlassNavigationRail].
@@ -147,11 +114,6 @@ private class RailAnimationState(
     val rows: List<Animatable<Float, AnimationVector1D>>,
     val iconAlpha: Animatable<Float, AnimationVector1D>,
     val liquid: RailLiquidMotion,
-)
-
-private class RailPlacement(
-    val geometry: RailPanelGeometry,
-    val motion: RailPanelMotion,
 )
 
 /**
@@ -344,105 +306,6 @@ private fun RailWindowTrailingAction(
     }
 }
 
-/** One derived layout coordinate shared by the panel, lens and independent action. */
-private fun Density.railCollapsedVisualCenterOffset(
-    progress: Float,
-    actionFraction: Float,
-    collapsedWidth: Dp,
-    panelHeight: Dp,
-    liquid: RailLiquidMotion?,
-): Dp {
-    val fraction = progress.fastCoerceIn(0f, 1f)
-    val collapsed = 1f - fraction
-    val reserve = (GlassNavigationBarDefaults.ActionSpacing + GlassNavigationRailDefaults.CollapsedHeight).toPx()
-    val groupShift = railCollapsedActionGroupShift(reserve, actionFraction, collapsed)
-    if (liquid == null || actionFraction <= 0f) return groupShift.toDp()
-
-    val width = collapsedWidth +
-        (GlassNavigationRailDefaults.ExpandedWidth - collapsedWidth) * fraction
-    val widthPx = width.toPx()
-    val scale = liquidPanelPressScale(
-        widthPx, panelHeight.toPx(), LiquidFeedbackSpec.PressedPanelGrowth.toPx(), liquid.press.value,
-    )
-    val lensShift = railLiquidGroupCenterCorrection(
-        liquid.lensEdge.overhangPx(widthPx, scale, LiquidFeedbackSpec.PressedLensGrowth.toPx()),
-        collapsed,
-    )
-    return (groupShift + lensShift).toDp()
-}
-
-/** Reserve the independent action inside the same visual centre as the capsule. */
-internal fun railCollapsedActionGroupShift(reservedWidthPx: Float, actionFraction: Float, collapsedFraction: Float): Float =
-    -reservedWidthPx * actionFraction.fastCoerceIn(0f, 1f) * collapsedFraction.fastCoerceIn(0f, 1f) / 2f
-
-/** One right-overhanging lens must not move the centre of the capsule-action group. */
-internal fun railLiquidGroupCenterCorrection(endOverhangPx: Float, collapsedFraction: Float): Float =
-    -endOverhangPx.coerceAtLeast(0f) * collapsedFraction.fastCoerceIn(0f, 1f) / 2f
-
-/** Render the action next to the existing rail panel at its physical press edge. */
-private fun Density.railTrailingActionOffset(
-    progress: Float,
-    placement: RailPlacement,
-    actionSize: Dp,
-    liquid: Boolean,
-): IntOffset {
-    val capsuleWidth = placement.geometry.endpoints.collapsedWidth
-    val panelWidth = capsuleWidth +
-        (GlassNavigationRailDefaults.ExpandedWidth - capsuleWidth) * progress
-    val panelStart = placement.motion.panelStart()
-    val panelHeightPx = placement.motion.panelHeight().toPx()
-    val panelWidthPx = panelWidth.toPx()
-    val actionSizePx = actionSize.toPx()
-    val x = (panelStart + railSearchActionSideOffset(panelWidth, progress, actionSize)).toPx()
-    val y = (GlassNavigationRailDefaults.CollapsedTop + RailExpandedToggleTop * progress).toPx()
-
-    val press = if (liquid) placement.motion.liquid.press.value.fastCoerceIn(0f, 1f) else 0f
-    val scale = if (liquid) {
-        liquidPanelPressScale(
-            panelWidthPx, panelHeightPx, LiquidFeedbackSpec.PressedPanelGrowth.toPx(), press,
-        )
-    } else 1f
-    val lensOverhang = if (liquid) placement.motion.liquid.lensEdge.overhangPx(
-        panelWidthPx, scale, LiquidFeedbackSpec.PressedLensGrowth.toPx(),
-    ) else 0f
-
-    return IntOffset(
-        x = (x + railSearchActionPlannedShift(
-            x + actionSizePx / 2f - panelStart.toPx() - panelWidthPx / 2f,
-            panelWidthPx / 2f, scale, 1f - progress, lensOverhang,
-        )).fastRoundToInt(),
-        y = (y + railSearchActionPressShift(
-            y + actionSizePx / 2f,
-            GlassNavigationRailDefaults.CollapsedTop.toPx() + panelHeightPx / 2f,
-            scale,
-        )).fastRoundToInt(),
-    )
-}
-
-/** A point follows the panel's existing centre-origin scale; no independent press animation. */
-internal fun railSearchActionPressShift(actionCenter: Float, panelCenter: Float, scale: Float): Float =
-    (actionCenter - panelCenter) * (scale - 1f)
-
-/** Collapsed: follow the actual visible end. Expanded: preserve the native header's scale. */
-internal fun railSearchActionPlannedShift(
-    distanceFromPanelCenter: Float,
-    panelHalfWidthPx: Float,
-    scale: Float,
-    collapsedFraction: Float,
-    lensOverhangPx: Float,
-): Float {
-    val nativeShift = distanceFromPanelCenter * (scale - 1f)
-    val visibleEndShift = panelHalfWidthPx * (scale - 1f) + lensOverhangPx
-    return lerp(nativeShift, visibleEndShift, collapsedFraction.fastCoerceIn(0f, 1f))
-}
-
-/** Logical end of the capsule when collapsed; right-side header slot when expanded. */
-internal fun railSearchActionSideOffset(panelWidth: Dp, progress: Float, actionSize: Dp): Dp {
-    val fraction = progress.fastCoerceIn(0f, 1f)
-    return panelWidth + GlassNavigationBarDefaults.ActionSpacing * (1f - fraction) -
-        (RailExpandedToggleStart + actionSize) * fraction
-}
-
 @Composable
 private fun RailWindowPanel(
     request: RailWindowRequest,
@@ -496,130 +359,3 @@ private fun RailWindowPanel(
         ),
     )
 }
-
-/** Deterministic capsule width and slot compression; does not own motion or touch state. */
-internal class RailCapsuleGeometry(
-    val contentStart: Dp,
-    val width: Dp,
-    val widthRatio: Float,
-)
-
-internal fun railCapsuleGeometry(
-    viewportWidth: Dp,
-    sourceWidths: List<Dp>,
-    showToggle: Boolean,
-): RailCapsuleGeometry {
-    val totalSlots = sourceWidths.fold(0.dp) { sum, width -> sum + width }
-    val leadingActionWidth = if (showToggle) RailLeadingActionWidth else 0.dp
-    val contentStart = GlassNavigationBarDefaults.ContentPaddingHorizontal + leadingActionWidth
-    val chrome = contentStart + RailCollapsedEndPadding
-    // Preserve upstream's side reserve and compression for narrow but nonzero windows.
-    val neededWidth = chrome + totalSlots
-    val capsuleWidth = neededWidth
-        .coerceAtMost((viewportWidth - RailCollapsedSideReserve * 2).coerceAtLeast(RailMinCollapsedWidth))
-        .coerceAtMost(viewportWidth)
-    val widthRatio = if (totalSlots > 0.dp) {
-        ((capsuleWidth - chrome) / totalSlots).coerceAtLeast(0f)
-    } else {
-        1f
-    }
-    return RailCapsuleGeometry(contentStart, capsuleWidth, widthRatio)
-}
-
-/** The Liquid panel's physical X follows its width's morph clock in both directions. */
-internal fun railLiquidPanelStart(collapsed: Dp, expanded: Dp, progress: Float): Dp =
-    collapsed + (expanded - collapsed) * progress.fastCoerceIn(0f, 1f)
-
-/** A corner that eases from the capsule's half-height to the panel's radius as [progress] rises. */
-@Stable
-internal class RailMorphCorner(private val progress: () -> Float) : CornerSize {
-    override fun toPx(shapeSize: Size, density: Density): Float = with(density) {
-        lerp(RailCollapsedCornerRadius.toPx(), RailExpandedCornerRadius.toPx(), progress().fastCoerceIn(0f, 1f))
-    }
-}
-
-/**
- * Keeps one geometry value on [target]; the native Glass rail may animate window/label
- * target changes, matching upstream. The Liquid rail still owns its single morph clock.
- */
-@Composable
-private fun rememberRailMotion(
-    target: Dp,
-    expanded: Boolean,
-    targetChangeSpec: AnimationSpec<Dp>? = null,
-    spec: (expanding: Boolean) -> AnimationSpec<Dp>,
-): Animatable<Dp, AnimationVector1D> {
-    val animatable = remember { Animatable(target, Dp.VectorConverter) }
-    val currentTarget by rememberUpdatedState(target)
-    val currentExpanded by rememberUpdatedState(expanded)
-    val currentSpec by rememberUpdatedState(spec)
-    val currentTargetChangeSpec by rememberUpdatedState(targetChangeSpec)
-    LaunchedEffect(animatable) {
-        var settledExpanded = currentExpanded
-        var animating = false
-        snapshotFlow { currentExpanded to currentTarget }.collectLatest { (expanding, value) ->
-            if (expanding != settledExpanded || animating) {
-                settledExpanded = expanding
-                animating = true
-                animatable.animateTo(value, currentSpec(expanding))
-                animating = false
-            } else {
-                val targetSpec = currentTargetChangeSpec
-                if (targetSpec != null) animatable.animateTo(value, targetSpec)
-                else animatable.snapTo(value)
-            }
-        }
-    }
-    return animatable
-}
-
-/** One row's flight. Later rows respond slightly slower, so the column follows its leader. */
-private fun railRowMotion(position: Int, expanded: Boolean): SpringSpec<Float> {
-    val frequency = (if (expanded) 26.75f else 21.5f) / (1f + 0.03f * position)
-    return spring(stiffness = frequency * frequency, dampingRatio = 0.97f, visibilityThreshold = 0.001f)
-}
-
-/** The panel's height settle: a short rebound when expanding, crisp when collapsing. */
-private fun railHeightMotion(expanded: Boolean, distance: Dp): SpringSpec<Dp> {
-    val (stiffness, dampingRatio) = if (expanded) 220f to 0.83f else 462.25f to 0.97f
-    return spring(
-        stiffness = stiffness,
-        dampingRatio = dampingRatio,
-        visibilityThreshold = (distance * 0.001f).coerceAtLeast(0.1.dp),
-    )
-}
-
-internal val RailMorphEasing = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)
-internal val RailMorphMotion = tween<Float>(durationMillis = 300, easing = RailMorphEasing)
-internal val RailMorphDpMotion = tween<Dp>(durationMillis = 300, easing = RailMorphEasing)
-internal val RailReboundMotion = spring<Dp>(stiffness = 200f, dampingRatio = 0.8f)
-internal val RailIconEnterMotion = tween<Float>(durationMillis = 200, easing = RailMorphEasing)
-internal val RailIconExitMotion = tween<Float>(durationMillis = 120, easing = RailMorphEasing)
-
-internal val RailIconSize = 24.dp
-internal val RailIconColumnWidth = RailIconSize + 12.dp
-internal val RailItemContentPadding = 12.dp
-internal val RailItemHorizontalMargin = 12.dp
-internal val RailCollapsedRowHeight = GlassNavigationRailDefaults.CollapsedHeight -
-    GlassNavigationBarDefaults.IndicatorPaddingVertical * 2
-internal val RailRowGrowth = 4.dp
-internal val RailExpandedRowHeight = RailCollapsedRowHeight + RailRowGrowth
-internal val RailRowPitch = RailExpandedRowHeight + 4.dp
-internal val RailRowTop = GlassNavigationBarDefaults.IndicatorPaddingVertical
-internal val RailExpandedRowTop = 64.dp
-internal val RailHeaderHeight = RailExpandedRowTop - (RailRowPitch - RailExpandedRowHeight)
-internal val RailCollapsedCornerRadius = GlassNavigationRailDefaults.CollapsedHeight / 2
-internal val RailExpandedCornerRadius = 20.dp
-
-/** The toggle's box: the bar's leading slot while collapsed, the header corner while expanded. */
-internal val RailToggleBoxSize = GlassTopAppBarDefaults.ButtonSize
-internal val RailLeadingActionWidth = RailToggleBoxSize + 4.dp
-internal val RailCollapsedToggleBoxStart = GlassNavigationBarDefaults.ContentPaddingHorizontal - 2.dp
-internal val RailExpandedToggleStart = 16.dp
-internal val RailExpandedToggleTop = 12.dp
-internal val RailCollapsedEndPadding = 3.dp
-
-/** A collapsed slot's padding around its label, the bar's indicator reach on each side. */
-internal val RailSlotPadding = RailIconSize + GlassNavigationBarDefaults.IndicatorOverhang * 2
-internal val RailCollapsedSideReserve = 81.dp
-internal val RailMinCollapsedWidth = 192.dp
